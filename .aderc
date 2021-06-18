@@ -5,5 +5,5 @@ export ADE_DISABLE_NVIDIA_DOCKER=true
 export ADE_IMAGES="
   ghcr.io/andreafinazzi/ade:ssh
   registry.gitlab.com/autowarefoundation/autoware.auto/autowareauto/amd64/binary-foxy:master
-
+"
 export ROS_DISTRO=foxy
