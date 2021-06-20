@@ -23,5 +23,4 @@ RUN ( \
   ) > /etc/ssh/sshd_config_test_clion \
   && mkdir /run/sshd
 
-COPY ./setclion.sh /home/$USER/$ADE_NAME/setclion.sh
 COPY ./ade_entrypoint /
