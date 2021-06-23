@@ -13,6 +13,8 @@ RUN apt-get update \
       tar \
       python \
       wget \
+      ros-foxy-raptor-dbw-msgs \
+      ros-foxy-autoware-auto-msgs \
   && apt-get clean
 
 RUN ( \
