@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(nif_common_nodes)
+project(nif_control_nodes)
 
 # Default to C++14
 if(NOT CMAKE_CXX_STANDARD)
@@ -16,18 +16,19 @@ ament_auto_find_build_dependencies()
 
 # Library
 ament_auto_add_library(${PROJECT_NAME} SHARED
-        src/base_node.cpp
-        src/base_synchronized_node.cpp)
+        src/control_node.cpp)
+
+ament_auto_add_executable(control_node_exe
+        src/control_main.cpp)
 
 if(BUILD_TESTING)
-#  find_package(ament_gtest REQUIRED)
+  #  find_package(ament_gtest REQUIRED)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
 
   ament_add_gtest(${PROJECT_NAME}_test
           test/gtest_main.cpp
-          test/test_base_node.cpp
-  )
+          )
 
   target_include_directories(${PROJECT_NAME}_test PRIVATE "include")
   target_link_libraries(${PROJECT_NAME}_test ${PROJECT_NAME})
