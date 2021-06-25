@@ -46,7 +46,7 @@ private:
      */
     rclcpp::Publisher<ControlCmd>::SharedPtr control_pub;
 
-    void controlCallback(ControlCmd control_cmd);
+    void controlCallback(const ControlCmd::SharedPtr & msg);
 };
 
 }

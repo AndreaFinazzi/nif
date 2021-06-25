@@ -16,9 +16,9 @@ ament_auto_find_build_dependencies()
 
 # Library
 ament_auto_add_library(${PROJECT_NAME} SHARED
-        src/planning_node.cpp)
+        src/planner_node.cpp)
 
-ament_auto_add_executable(planning_node_exe
+ament_auto_add_executable(planner_node_exe
         src/planning_main.cpp)
 
 if(BUILD_TESTING)

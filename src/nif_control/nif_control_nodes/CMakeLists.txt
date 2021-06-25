@@ -16,7 +16,7 @@ ament_auto_find_build_dependencies()
 
 # Library
 ament_auto_add_library(${PROJECT_NAME} SHARED
-        src/control_node.cpp)
+        src/controller_node.cpp)
 
 ament_auto_add_executable(control_node_exe
         src/control_main.cpp)

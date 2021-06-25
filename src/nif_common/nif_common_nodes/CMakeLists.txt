@@ -16,7 +16,7 @@ ament_auto_find_build_dependencies()
 
 # Library
 ament_auto_add_library(${PROJECT_NAME} SHARED
-        src/base_node.cpp
+        src/i_base_node.cpp
         src/base_synchronized_node.cpp)
 
 if(BUILD_TESTING)

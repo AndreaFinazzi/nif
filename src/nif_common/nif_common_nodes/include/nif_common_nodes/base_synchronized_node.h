@@ -6,7 +6,7 @@
 #define NIF_COMMON_NODES_BASESYNCHRONIZEDNODE_H
 
 #include "rclcpp/rclcpp.hpp"
-#include "base_node.h"
+#include "i_base_node.h"
 
 namespace nif {
 namespace common {
