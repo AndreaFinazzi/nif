@@ -5,8 +5,10 @@
 #ifndef ROS2MASTER_CONTROL_NODE_H
 #define ROS2MASTER_CONTROL_NODE_H
 
+#include "nif_common/types.h"
+#include "nif_common_nodes/i_base_synchronized_node.h"
+
 #include "rclcpp/rclcpp.hpp"
-#include "nif_common_nodes/base_synchronized_node.h"
 #include "autoware_auto_msgs/msg/trajectory.hpp"
 
 namespace nif {
@@ -25,7 +27,7 @@ protected:
     /**
      * Actual cmd fed to the vehicle at the last iteration.
      */
-    ControlCmd::SharedPtr control_cmd_prev;
+    nif::common::ControlCmd control_cmd_prev;
 
 private:
     /**
@@ -35,14 +37,14 @@ private:
     virtual void storeTraj(autoware_auto_msgs::msg::Trajectory::SharedPtr trajectory);
 
     rclcpp::Subscription<autoware_auto_msgs::msg::Trajectory>::SharedPtr planner_sub;
-    rclcpp::Subscription<ControlCmd>::SharedPtr control_cmd_prev_sub;
-    rclcpp::Publisher<ControlCmd>::SharedPtr control_cmd_pub;
+    rclcpp::Subscription<nif::common::ControlCmd>::SharedPtr control_cmd_prev_sub;
+    rclcpp::Publisher<nif::common::ControlCmd>::SharedPtr control_cmd_pub;
 
-    void controlCmdPrevCallback(const ControlCmd::SharedPtr & msg);
+    void controlCmdPrevCallback(const nif::common::ControlCmd::SharedPtr & msg);
 
     void plannerCallback(const autoware_auto_msgs::msg::Trajectory::SharedPtr & msg);
 
-    virtual ControlCmd::SharedPtr solve() = 0;
+    virtual nif::common::ControlCmd & solve() = 0;
 };
 
 }}

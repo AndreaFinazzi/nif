@@ -17,10 +17,9 @@ ament_auto_find_build_dependencies()
 # Library
 ament_auto_add_library(${PROJECT_NAME} SHARED
         src/i_base_node.cpp
-        src/base_synchronized_node.cpp)
+        src/i_base_synchronized_node.cpp)
 
 if(BUILD_TESTING)
-#  find_package(ament_gtest REQUIRED)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
 

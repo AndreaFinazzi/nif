@@ -3,7 +3,7 @@
 //
 
 #include "gtest/gtest.h"
-#include "base_node.h"
+#include "nif_common_nodes/i_base_node.h"
 
 class BaseNodeTest : public ::testing::Test {
 protected:
@@ -15,9 +15,9 @@ protected:
 };
 
 TEST_F(BaseNodeTest, MockTestOne) {
-  ASSERT_EQ(3, 3)
+  ASSERT_EQ(3, 3);
 }
 
 TEST_F(BaseNodeTest, MockTestTwo) {
-ASSERT_EQ(3, 3)
+ASSERT_EQ(3, 3);
 }

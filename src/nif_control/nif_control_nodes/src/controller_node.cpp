@@ -1,1 +1,1 @@
-#include "../include/nif_control/controller_node.h"
+#include "nif_control_nodes/controller_node.h"

@@ -6,8 +6,11 @@
 #define ROS2MASTER_LOCALIZATION_NODE_H
 
 
+#include "nif_common/types.h"
+#include "nif_common_nodes/i_base_node.h"
+#include "nif_racing_line/racing_line_manager.h"
+
 #include "rclcpp/rclcpp.hpp"
-#include "nif_common_nodes/base_node.h"
 #include "autoware_auto_msgs/msg/trajectory.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 #include "sensor_msgs/msg/point_cloud2.hpp"
@@ -23,19 +26,19 @@ namespace nif {
 
         private:
 
-            GRaceLineManager g_race_line_manager;
+            nif::common::RacingLineManager racing_line_manager;
 
             rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr gps_data_sub;
-            rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odometry_pub;
-            rclcpp::Subscription<sensor_msgs::msg::Pointcloud2>::SharedPtr lidar_mesh_sub;
-            rclcpp::Subscription<Polynomial>::SharedPtr track_boundaries_sub;
+            rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr lidar_mesh_sub;
+            rclcpp::Subscription<nif::common::Polynomial>::SharedPtr track_boundaries_sub;
 
+            rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odometry_pub;
 
             void gpsDataCallback(nav_msgs::msg::Odometry::SharedPtr & msg);
             void lidarMeshCallback(sensor_msgs::msg::PointCloud2 & msg);
 
 //            TODO: Polynomial type yet to be defined.
-            void trackBoundariesCallback(Polynomial::SharedPtr & msg);
+            void trackBoundariesCallback(nif::common::Polynomial::SharedPtr & msg);
 
         };
 

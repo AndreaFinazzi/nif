@@ -18,8 +18,8 @@ public:
 
 
 protected:
-  template<class DurationRepT>
-  template<class DurationT>
+
+  template<class DurationRepT, class DurationT>
   IBaseSynchronizedNode(const std::string &node_name, const rclcpp::NodeOptions &options, const std::chrono::duration<DurationRepT, DurationT> period);
 
   /**

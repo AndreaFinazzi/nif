@@ -6,16 +6,22 @@
 #define ROS2MASTER_PERCEPTION_NODE_H
 
 
+#include "nif_common_nodes/i_base_node.h"
+#include "nif_common/types.h"
+#include "nif_tracking/tracking_manager.h"
+#include "nif_sensor_fusion/sensor_fusion_manager.h"
+#include "nif_racing_line/racing_line_manager.h"
+
 #include "rclcpp/rclcpp.hpp"
-#include "nif_common_nodes/base_node.h"
+#include "message_filters/subscriber.h"
+#include "message_filters/time_synchronizer.h"
+
 #include "autoware_auto_msgs/msg/trajectory.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 #include "sensor_msgs/msg/point_cloud2.hpp"
 #include "sensor_msgs/msg/image.hpp"
 #include "delphi_esr_msgs/msg/esr_track.hpp"
 
-#include "message_filters/subscriber.h"
-#include "message_filters/time_synchronizer.h"
 
 namespace nif {
     namespace perception {
@@ -27,26 +33,13 @@ namespace nif {
         protected:
 
         private:
+            nif::common::RacingLineManager racing_line_manager;
 
-            GRaceLineManager g_race_line_manager;
+            // TODO: Define precise type for this
+//            PerceptionNeuralModel neural_model;
 
-            rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr gps_data_sub;
-            rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odometry_pub;
-            rclcpp::Subscription<sensor_msgs::msg::Pointcloud2>::SharedPtr lidar_mesh_sub;
-            rclcpp::Subscription<Polynomial>::SharedPtr track_boundaries_sub;
-
-
-            void gpsDataCallback(nav_msgs::msg::Odometry::SharedPtr & msg);
-            void lidarMeshCallback(sensor_msgs::msg::PointCloud2 & msg);
-
-//            TODO: Polynomial type yet to be defined.
-            void trackBoundariesCallback(Polynomial::SharedPtr & msg);
-
-
-            GRaceLineManager g_race_line_manager;
-            PerceptionNeuralModel neural_model;
-            SensorFusionManager sensor_fusion_manager;
-            TrackingManager tracking_manager;
+            nif::perception::SensorFusionManager sensor_fusion_manager;
+            nif::perception::TrackingManager tracking_manager;
 
 
              message_filters::TimeSynchronizer<
@@ -61,11 +54,21 @@ namespace nif {
 //             sensors_message_filter(camera_NODENAME_sub x 6, lidar_mesh_sub, radar_mesh_sub, 3);
 //             sync_.registerCallback(std::bind(&sensorMessageFilterCallback, this, std::placeholders::_1, std::placeholders::_2));
 
-             ROS2Sub<Image> x 6 camera_NODENAME_sub;
-             ROS2Sub<Pointcloud2> lidar_mesh_sub;
-             ROS2Sub<RadarOutput> radar_mesh_sub;
-             ROS2Sub<V2XMessageType> v2x_sub;
-             ROS2Sub<Collection<OppoVehicleState>> opponents_state_pub;
+//          TODO : Define a better way to do this. Hardcoding the camera subs significantly reduces reusability.
+            rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr camera_front_left_sub;
+            rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr camera_front_left_center_sub;
+            rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr camera_front_right_center_sub;
+            rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr camera_front_right_sub;
+            rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr camera_rear_right_sub;
+            rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr camera_rear_left_sub;
+
+
+            rclcpp::Subscription<delphi_esr_msgs::msg::EsrTrack> radar_mesh_sub;
+
+//            TODO: still to decide whether to use v2x communication or not.
+//            rclcpp::Subscription<V2XMessageType> v2x_sub;
+
+             rclcpp::Subscription<nif::common::t_oppo_collection_states> opponents_state_pub;
 
 
             void sensorMessageFilterCallback(

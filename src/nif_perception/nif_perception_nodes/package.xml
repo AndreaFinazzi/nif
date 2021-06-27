@@ -13,8 +13,15 @@
   <test_depend>ament_lint_common</test_depend>
   <test_depend>ament_cmake_gtest</test_depend>
 
+  <depend>nif_common</depend>
+  <depend>nif_common_nodes</depend>
+  <depend>nif_tracking</depend>
+  <depend>nif_sensor_fusion</depend>
+  <depend>nif_racing_line</depend>
+
   <depend>rclcpp</depend>
   <depend>std_msgs</depend>
+  <depend>sensor_msgs</depend>
   <depend>astuff_sensor_msgs</depend>
 
   <export>

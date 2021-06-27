@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(nif_tracking_manager)
+project(nif_tracking)
 
 # Default to C++14
 if(NOT CMAKE_CXX_STANDARD)

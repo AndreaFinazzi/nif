@@ -5,6 +5,8 @@
 #ifndef NIF_COMMON_NODES_UTILS_GEOMETRY_H
 #define NIF_COMMON_NODES_UTILS_GEOMETRY_H
 
+#include <rclcpp/parameter.hpp>
+#include <string>
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "geometry_msgs/msg/pose.hpp"
 #include "geometry_msgs/msg/point.hpp"
@@ -31,15 +33,16 @@ namespace geometry {
 
 namespace io {
 //  TODO: define precisely (do we need this?)
-    Collection<Param> readConfig(String file_name);
+    std::vector<rclcpp::Parameter> & readConfig(std::string& file_name);
 
 }
 
 // TODO: numeric is an awful name, needs something better.
 namespace numeric {
 
-    std::tuple<min_value, min_value_idx> findMinValueNIdx(std::vector<double>& vec);
-    std::tuple<max_value, max_value_idx> findMaxValueNIdx(std::vector<double>& vec);
+//    TODO: provide exaustive description of these two functions, along wth teir params' description.
+//    std::tuple<min_value, min_value_idx> findMinValueNIdx(std::vector<double>& vec);
+//    std::tuple<max_value, max_value_idx> findMaxValueNIdx(std::vector<double>& vec);
 
 //  TODO: define precisely
     double clip(double min, double max, double target);
