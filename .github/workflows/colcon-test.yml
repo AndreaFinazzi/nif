@@ -22,13 +22,11 @@ jobs:
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-        # You may pin to the exact commit or the version.
-        # uses: AutoModality/action-ros-clang-format@e6bdc58082b38ba8b66bfa39f11c7d77e9bb811a
-      - uses: AutoModality/action-ros-clang-format@v1.0.1        
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          author-email: usrgiac@gmail.com
+#       - uses: AutoModality/action-ros-clang-format@v1.0.1        
+#         env:
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#         with:
+#           author-email: usrgiac@gmail.com
 
       - uses: ros-tooling/setup-ros@v0.2
         with:
