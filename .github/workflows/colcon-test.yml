@@ -31,10 +31,13 @@ jobs:
       - uses: ros-tooling/setup-ros@v0.2
         with:
           required-ros-distributions: foxy
+#       - run: export PACKAGE_PATHS=
       - uses: ros-tooling/action-ros-ci@v0.2
+        id: action-ros-ci-step
         with:
           target-ros2-distro: foxy
-          colcon-extra-args: --base-paths src/*
+          colcon-extra-args: --base-paths $(colcon list --paths-only)/src/*
+#           extra-cmake-args: 
           import-token: ${{ secrets.IMPORT_TOKEN }}
           colcon-defaults: |
             {
