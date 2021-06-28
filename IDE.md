@@ -58,9 +58,10 @@ This guide is an adaptation of https://www.allaban.me/posts/2020/08/ros2-setup-i
 
 1. Almost done. Run the last command (`ssh $USER@localhost -p2222`) or `ade enter` to open a shell into the container, and run:
    ```shell
-   ~/nif/setclion.sh
+   ~/nif/nifbuild
    ```
    and copy the output you get from the command. You need it in the next step.
 
 1. Copy and paste the output into CLion’s CMake environment setting. ![clion cmake env](clion-env-settings.png)
-   Finally, close and reopen CLion and check autocompletion is working.
+   
+1. Finally, close and reopen CLion and run `Tools > Resync with remote host` (`Ctrl + Shift + A` for action searching). At the end of the process, check that autocompletion is working properly.

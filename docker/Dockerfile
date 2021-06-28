@@ -13,6 +13,9 @@ RUN apt-get update \
       tar \
       python \
       wget \
+      ros-foxy-raptor-dbw-msgs \
+      ros-foxy-autoware-auto-msgs \
+      ros-foxy-astuff-sensor-msgs \
   && apt-get clean
 
 RUN ( \

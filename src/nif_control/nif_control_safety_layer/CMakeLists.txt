@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 3.5)
-project(nif_common_nodes)
+project(nif_control_safety_layer)
+
+# Default to C99
+if(NOT CMAKE_C_STANDARD)
+  set(CMAKE_C_STANDARD 99)
+endif()
 
 # Default to C++14
 if(NOT CMAKE_CXX_STANDARD)
@@ -10,23 +15,24 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-# find dependencies
 find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
 
 # Library
 ament_auto_add_library(${PROJECT_NAME} SHARED
-        src/i_base_node.cpp
-        src/i_base_synchronized_node.cpp)
+          src/control_safety_layer_node.cpp)
+
+ament_auto_add_executable(control_safety_layer_node_exe
+        src/control_safety_layer_main.cpp)
 
 if(BUILD_TESTING)
+  #  find_package(ament_gtest REQUIRED)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
 
   ament_add_gtest(${PROJECT_NAME}_test
           test/gtest_main.cpp
-          test/test_base_node.cpp
-  )
+          )
 
   target_include_directories(${PROJECT_NAME}_test PRIVATE "include")
   target_link_libraries(${PROJECT_NAME}_test ${PROJECT_NAME})
