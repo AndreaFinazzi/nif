@@ -10,8 +10,6 @@ protected:
   void SetUp() override {
 
   }
-
-//  IBaseNode node();
 };
 
 TEST_F(BaseNodeTest, MockTestOne) {

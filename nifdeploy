@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+. /opt/ros/foxy/setup.bash
+if ! [ -f /etc/ros/rosdep/sources.list.d/20-default.list ]; then
+  sudo -u $USER rosdep init
+fi
+
+sudo -u $USER rosdep update && sudo -u $USER rosdep install -y --from . --ignore-src --rosdistro $ROS_DISTRO
+colcon build --base-paths src/* --merge-install --install-base /opt/nif --cmake-args -DCMAKE_BUILD_TYPE=Release

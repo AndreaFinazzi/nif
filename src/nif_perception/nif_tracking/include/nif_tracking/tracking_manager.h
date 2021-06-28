@@ -26,7 +26,7 @@ private:
      *
      * @param oppo_vehicle_states
      */
-    void solve(nif::common::t_oppo_collection_states & oppo_vehicle_states);
+    void solve(nif::common::types::t_oppo_collection_states & oppo_vehicle_states);
 
 };
 

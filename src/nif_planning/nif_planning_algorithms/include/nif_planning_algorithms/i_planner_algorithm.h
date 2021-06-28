@@ -7,8 +7,6 @@
 
 #include <memory>
 
-#include "autoware_auto_msgs/msg/trajectory.hpp"
-#include "autoware_auto_msgs/msg/vehicle_kinematic_state.hpp"
 #include "nif_common/types.h"
 #include "nif_common/vehicle_model.h"
 #include "nif_racing_line/racing_line_manager.h"
@@ -26,14 +24,14 @@ private:
     /**
      * Last known vehicle state.
      */
-    autoware_auto_msgs::msg::VehicleKinematicState::SharedPtr vehicle_state_prev;
+    nif::common::msgs::VehicleKinematicState::SharedPtr vehicle_state_prev;
 
     /**
      * Collection of opponent vehicles' kinematic states.
      */
-    std::shared_ptr<nif::common::t_oppo_collection_states> opponents_states;
+    std::shared_ptr<nif::common::types::t_oppo_collection_states> opponents_states;
 
-    nif::common::TrackState track_state;
+    nif::common::msgs::TrackState track_state;
 
     // TODO: Will it be static or not?
     nif::common::RacingLineManager racing_line_manager;
@@ -49,7 +47,7 @@ private:
      */
 //    BehaviorState behavior_state;
 
-    virtual autoware_auto_msgs::msg::Trajectory solve() = 0;
+    virtual nif::common::msgs::Trajectory solve() = 0;
 };
 }
 }

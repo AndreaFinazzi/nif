@@ -16,7 +16,6 @@
 #include "message_filters/subscriber.h"
 #include "message_filters/time_synchronizer.h"
 
-#include "autoware_auto_msgs/msg/trajectory.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 #include "sensor_msgs/msg/point_cloud2.hpp"
 #include "sensor_msgs/msg/image.hpp"
@@ -68,7 +67,7 @@ namespace nif {
 //            TODO: still to decide whether to use v2x communication or not.
 //            rclcpp::Subscription<V2XMessageType> v2x_sub;
 
-             rclcpp::Subscription<nif::common::t_oppo_collection_states> opponents_state_pub;
+             rclcpp::Subscription<nif::common::types::t_oppo_collection_states> opponents_state_pub;
 
 
             void sensorMessageFilterCallback(

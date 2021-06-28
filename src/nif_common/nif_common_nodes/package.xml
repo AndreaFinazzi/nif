@@ -16,7 +16,6 @@
   <depend>nif_common</depend>
   <depend>rclcpp</depend>
   <depend>time_utils</depend>
-  <depend>autoware_auto_msgs</depend>
   <depend>raptor_dbw_msgs</depend>
 
   <depend>nif_utils</depend>

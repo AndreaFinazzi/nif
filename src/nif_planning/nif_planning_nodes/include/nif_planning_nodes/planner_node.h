@@ -9,8 +9,6 @@
 #include "nif_common_nodes/i_base_node.h"
 #include "nif_planning_algorithms/i_planner_algorithm.h"
 
-#include "autoware_auto_msgs/msg/trajectory.hpp"
-
 namespace nif {
 namespace planning {
 
@@ -23,19 +21,19 @@ protected:
     /**
      * Subscribtion to opponents vehicles' states.
      */
-    rclcpp::Subscription<nif::common::t_oppo_collection_states> opponents_state_sub;
+    rclcpp::Subscription<nif::common::types::t_oppo_collection_states> opponents_state_sub;
 
 
-    rclcpp::Subscription<nif::common::TrackState> track_state_sub;
+    rclcpp::Subscription<nif::common::msgs::TrackState> track_state_sub;
 
-    rclcpp::Publisher<autoware_auto_msgs::msg::Trajectory> trajectory_pub;
+    rclcpp::Publisher<nif::common::msgs::Trajectory> trajectory_pub;
 
     nif::planning::algorithms::IPlannerAlgorithm & planner_algorithm;
 
 
-    void opponentsStateCallback(const nif::common::t_oppo_collection_states & msg);
+    void opponentsStateCallback(const nif::common::types::t_oppo_collection_states & msg);
 
-    void trackStateCallback(const nif::common::TrackState::SharedPtr & msg);
+    void trackStateCallback(const nif::common::msgs::TrackState::SharedPtr & msg);
 
 
 private:

@@ -58,7 +58,7 @@ This guide is an adaptation of https://www.allaban.me/posts/2020/08/ros2-setup-i
 
 1. Almost done. Run the last command (`ssh $USER@localhost -p2222`) or `ade enter` to open a shell into the container, and run:
    ```shell
-   ~/nif/setclion.sh
+   ~/nif/nifbuild
    ```
    and copy the output you get from the command. You need it in the next step.
 

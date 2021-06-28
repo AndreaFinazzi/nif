@@ -26,13 +26,13 @@ namespace nif {
 
             rclcpp::Time gclock_node_init;
 
-            nif::common::t_vehicle_kinematic_state ego_vehicle_state;
+            nif::common::msgs::VehicleKinematicState ego_vehicle_state;
 
 //            TODO : finalize SystemState class
-            nif::common::SystemState system_state;
+            nif::common::msgs::SystemState system_state;
 
 //          TODO : finalize RaceControlState class
-            nif::common::RaceControlState race_control_state;
+            nif::common::msgs::RaceControlState race_control_state;
 
 //  Reference to utils not needed, as it'll be everything static (probably)
 //  nif::common::utils:: utils;
@@ -43,16 +43,16 @@ namespace nif {
              */
             IBaseNode();
 
-            rclcpp::Subscription<nif::common::t_vehicle_kinematic_state>::SharedPtr ego_vehicle_state_sub;
-            rclcpp::Subscription<SystemState>::SharedPtr system_state_sub;
-            rclcpp::Subscription<RaceControlState>::SharedPtr race_control_state_sub;
+            rclcpp::Subscription<nif::common::msgs::VehicleKinematicState>::SharedPtr ego_vehicle_state_sub;
+            rclcpp::Subscription<nif::common::msgs::SystemState>::SharedPtr system_state_sub;
+            rclcpp::Subscription<nif::common::msgs::RaceControlState>::SharedPtr race_control_state_sub;
 
             virtual void declareParameters() = 0;
             virtual void getParameters() = 0;
 
-            void egoVehicleStateCallback(const nif::common::t_vehicle_kinematic_state::SharedPtr msg);
-            void systemStateCallback(const nif::common::SystemState::SharedPtr msg);
-            void raceControlStateCallback(const nif::common::RaceControlState::SharedPtr msg);
+            void egoVehicleStateCallback(const nif::common::msgs::VehicleKinematicState::SharedPtr msg);
+            void systemStateCallback(const nif::common::msgs::SystemState::SharedPtr msg);
+            void raceControlStateCallback(const nif::common::msgs::RaceControlState::SharedPtr msg);
 
 
         };

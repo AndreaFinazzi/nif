@@ -22,7 +22,8 @@ namespace geometry {
 
     double calEuclideanDistance(const geometry_msgs::msg::Point& a, const geometry_msgs::msg::Point& b);
 
-    double calEuclideanDistance(const std::vector<double,double>& a, const std::vector<double,double>& b);
+//    TODO: fix static override problems
+//    double calEuclideanDistance(const std::vector<double,double>& a, const std::vector<double,double>& b);
 
     double mph2kph(double mph);
 

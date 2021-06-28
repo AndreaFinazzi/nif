@@ -16,7 +16,6 @@
   <depend>nif_common</depend>
   <depend>nif_racing_line</depend>
 
-  <depend>autoware_auto_msgs</depend>
   <depend>std_msgs</depend>
 
   <export>

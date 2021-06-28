@@ -7,27 +7,34 @@
 
 #include "constants.h"
 #include "autoware_auto_msgs/msg/vehicle_kinematic_state.hpp"
+#include "autoware_auto_msgs/msg/trajectory.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 
 namespace nif {
     namespace common {
-//        TODO : THIS IS WRONG AND MUST BE CHANGED -- START --
-        typedef autoware_auto_msgs::msg::VehicleKinematicState TrackState;
-        typedef autoware_auto_msgs::msg::VehicleKinematicState SystemState;
-        typedef autoware_auto_msgs::msg::VehicleKinematicState RaceControlState;
+        namespace msgs {
+//          TODO : THIS IS WRONG AND MUST BE CHANGED -- START --
+            using TrackState = autoware_auto_msgs::msg::VehicleKinematicState;
+            using SystemState = autoware_auto_msgs::msg::VehicleKinematicState;
+            using RaceControlState = autoware_auto_msgs::msg::VehicleKinematicState;
 
-        // TODO: replace with real polynomial!
-        typedef nav_msgs::msg::Odometry Polynomial;
-        typedef nav_msgs::msg::Odometry ControlCmd;
-//        TODO : THIS IS WRONG AND MUST BE CHANGED -- END --
+            // TODO: replace with real polynomial!
+            using Polynomial = nav_msgs::msg::Odometry;
+            using ControlCmd = nav_msgs::msg::Odometry;
+//          TODO : THIS IS WRONG AND MUST BE CHANGED -- END --
 
-        typedef autoware_auto_msgs::msg::VehicleKinematicState t_vehicle_kinematic_state;
+            using Trajectory = autoware_auto_msgs::msg::Trajectory;
+            using VehicleKinematicState = autoware_auto_msgs::msg::VehicleKinematicState;
+        }
 
-        template<typename T>
-        using t_oppo_collection = std::array<T, nif::common::NUMBER_OF_OPPO_MAX>;
+        namespace types {
 
-        typedef t_oppo_collection<t_vehicle_kinematic_state> t_oppo_collection_states;
+            template<typename T>
+            using t_oppo_collection = std::array<T, nif::common::NUMBER_OF_OPPO_MAX>;
 
+            using t_oppo_collection_states = t_oppo_collection<msgs::VehicleKinematicState>;
+
+        }
     }
 }
 #endif //NIFCOMMON_TYPES_H

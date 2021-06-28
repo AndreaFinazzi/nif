@@ -19,8 +19,8 @@ IBaseNode::IBaseNode(const std::string &node_name, const rclcpp::NodeOptions &op
     gclock_node_init = this->now();
 
 //                TODO : Define QoS macros
-    this->system_state_sub = this->create_subscription<nif::common::SystemState>("", 5, std::bind(&IBaseNode::systemStateCallback, this, std::placeholders::_1));
-    this->race_control_state_sub = this->create_subscription<nif::common::RaceControlState>("", 5, std::bind(&IBaseNode::raceControlStateCallback, this, std::placeholders::_1));
-    this->ego_vehicle_state_sub = this->create_subscription<nif::common::t_vehicle_kinematic_state>("", 5, std::bind(&IBaseNode::egoVehicleStateCallback, this, std::placeholders::_1));
+    this->system_state_sub = this->create_subscription<nif::common::msgs::SystemState>("", 5, std::bind(&IBaseNode::systemStateCallback, this, std::placeholders::_1));
+    this->race_control_state_sub = this->create_subscription<nif::common::msgs::RaceControlState>("", 5, std::bind(&IBaseNode::raceControlStateCallback, this, std::placeholders::_1));
+    this->ego_vehicle_state_sub = this->create_subscription<nif::common::msgs::VehicleKinematicState>("", 5, std::bind(&IBaseNode::egoVehicleStateCallback, this, std::placeholders::_1));
 }
 

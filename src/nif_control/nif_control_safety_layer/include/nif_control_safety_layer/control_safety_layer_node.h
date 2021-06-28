@@ -40,19 +40,19 @@ private:
     /**
      * Stores control commands coming from the controllers' stack. It's flushed at every iteration by run(), that is it must store only the controls relative to a time quantum.
      */
-    std::priority_queue<nif::common::ControlCmd> control_buffer;
+    std::priority_queue<nif::common::msgs::ControlCmd> control_buffer;
 
     /**
      * Subscriber to the topic of control commands. Each incoming command is then saved in the buffer (should check the age).
      */
-    rclcpp::Subscription<nif::common::ControlCmd>::SharedPtr control_sub;
+    rclcpp::Subscription<nif::common::msgs::ControlCmd>::SharedPtr control_sub;
 
     /**
      * Control publisher. Publishes the effective command to the vehicle interface topic.
      */
-    rclcpp::Publisher<nif::common::ControlCmd>::SharedPtr control_pub;
+    rclcpp::Publisher<nif::common::msgs::ControlCmd>::SharedPtr control_pub;
 
-    void controlCallback(const nif::common::ControlCmd::SharedPtr & msg);
+    void controlCallback(const nif::common::msgs::ControlCmd::SharedPtr & msg);
 };
 
 }
