@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(nif_control_safety_layer)
+project(nif_control_safety_layer_nodes)
 
 # Default to C99
 if(NOT CMAKE_C_STANDARD)
@@ -27,8 +27,8 @@ ament_auto_add_executable(control_safety_layer_node_exe
 
 if(BUILD_TESTING)
   #  find_package(ament_gtest REQUIRED)
-  find_package(ament_lint_auto REQUIRED)
-  ament_lint_auto_find_test_dependencies()
+#  find_package(ament_lint_auto REQUIRED)
+#  ament_lint_auto_find_test_dependencies()
 
   ament_add_gtest(${PROJECT_NAME}_test
           test/gtest_main.cpp

@@ -20,3 +20,15 @@ double nif::common::utils::geometry::calEuclideanDistance(const geometry_msgs::m
     return calEuclideanDistance(a.pose, b.pose);
 }
 
+double nif::common::utils::geometry::mph2kph(const double mph) {
+    return MPH_TO_KPH_FACTOR * mph;
+}
+
+
+double nif::common::utils::geometry::kph2mph(const double kph) {
+    return KPH_TO_MPH_FACTOR * kph;
+}
+
+double nif::common::utils::numeric::clip(const double min, const double max, const double target) {
+    return std::max(min, std::min(target, max));
+}

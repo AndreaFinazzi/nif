@@ -20,8 +20,8 @@ ament_auto_add_library(${PROJECT_NAME} SHARED
 
 if(BUILD_TESTING)
   #  find_package(ament_gtest REQUIRED)
-  find_package(ament_lint_auto REQUIRED)
-  ament_lint_auto_find_test_dependencies()
+#  find_package(ament_lint_auto REQUIRED)
+#  ament_lint_auto_find_test_dependencies()
 
   ament_add_gtest(${PROJECT_NAME}_test
           test/gtest_main.cpp

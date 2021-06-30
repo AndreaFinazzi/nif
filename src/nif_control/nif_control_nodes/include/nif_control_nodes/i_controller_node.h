@@ -31,15 +31,15 @@ protected:
     nif::common::msgs::ControlCmd::SharedPtr control_cmd_prev;
 
 private:
+    rclcpp::Subscription<nif::common::msgs::Trajectory>::SharedPtr planner_sub;
+    rclcpp::Subscription<nif::common::msgs::ControlCmd>::SharedPtr control_cmd_prev_sub;
+    rclcpp::Publisher<nif::common::msgs::ControlCmd>::SharedPtr control_cmd_pub;
+
     /**
      * Store the last trajectory computed by the subscribed planner. It's called by the subscription callback, and it can be customized.
      * @param trajectory
      */
     virtual void storeTraj(nif::common::msgs::Trajectory::SharedPtr trajectory);
-
-    rclcpp::Subscription<nif::common::msgs::Trajectory>::SharedPtr planner_sub;
-    rclcpp::Subscription<nif::common::msgs::ControlCmd>::SharedPtr control_cmd_prev_sub;
-    rclcpp::Publisher<nif::common::msgs::ControlCmd>::SharedPtr control_cmd_pub;
 
     void controlCmdPrevCallback(const nif::common::msgs::ControlCmd::SharedPtr & msg);
 
