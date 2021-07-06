@@ -19,9 +19,9 @@ void nif::control::ControlSafetyLayerNode::run() {
 //  const auto selected_cmd = this->control_buffer.pop();
   nif::common::msgs::ControlCmd msg;
 //  msg.header.stamp = this->gclock_current;
-  try {
-    this->control_pub->publish(msg);
-  } catch (std::exception &e) {
-    RCLCPP_ERROR(get_logger(), e.what());
-  }
+//  try {
+//    this->control_pub->publish(msg);
+//  } catch (std::exception &e) {
+//    RCLCPP_ERROR(get_logger(), e.what());
+//  }
 }
