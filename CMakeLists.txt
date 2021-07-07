@@ -34,6 +34,7 @@ function(colcon_add_subdirectories)
             get_filename_component(BUILD_PATH "${name}" ABSOLUTE BASE_DIR "${ARG_BUILD_BASE}")
 
             add_subdirectory("${path}" "${BUILD_PATH}")
+            include_directories("${path}/include")
         endif()
     endforeach()
 endfunction()
