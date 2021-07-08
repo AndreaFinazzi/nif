@@ -25,7 +25,7 @@ namespace common {
 class IBaseNode : public rclcpp::Node {
 public:
 protected:
-  IBaseNode(const std::string &node_name, const rclcpp::NodeOptions &options);
+  IBaseNode(const std::string& node_name, const rclcpp::NodeOptions& options);
 
   /// Expose time to children
 
@@ -33,10 +33,10 @@ protected:
 
   nif::common::msgs::VehicleKinematicState ego_vehicle_state;
 
-  //            TODO : finalize SystemState class
+  // TODO : finalize SystemState class
   nif::common::msgs::SystemState system_state;
 
-  //          TODO : finalize RaceControlState class
+  // TODO : finalize RaceControlState class
   nif::common::msgs::RaceControlState race_control_state;
 
   //  Reference to utils not needed, as it'll be everything static (probably)

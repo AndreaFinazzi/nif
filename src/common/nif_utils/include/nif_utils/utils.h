@@ -28,8 +28,8 @@ const float KPH_TO_MPH_FACTOR = 0.621371;
  * @param b Point/Pose/PoseStamped
  * @return Euclidean distance between Point/Pose/PoseStamped
  */
-double calEuclideanDistance(const geometry_msgs::msg::PoseStamped &a,
-                            const geometry_msgs::msg::PoseStamped &b);
+double calEuclideanDistance(const geometry_msgs::msg::PoseStamped& a,
+                            const geometry_msgs::msg::PoseStamped& b);
 
 /**
  * Calculate Euclidean distance between Point/Pose/PoseStamped
@@ -37,8 +37,8 @@ double calEuclideanDistance(const geometry_msgs::msg::PoseStamped &a,
  * @param b Point/Pose/PoseStamped
  * @return Euclidean distance between Point/Pose/PoseStamped
  */
-double calEuclideanDistance(const geometry_msgs::msg::Pose &a,
-                            const geometry_msgs::msg::Pose &b);
+double calEuclideanDistance(const geometry_msgs::msg::Pose& a,
+                            const geometry_msgs::msg::Pose& b);
 
 /**
  * Calculate Euclidean distance between Point/Pose/PoseStamped
@@ -46,8 +46,8 @@ double calEuclideanDistance(const geometry_msgs::msg::Pose &a,
  * @param b Point/Pose/PoseStamped
  * @return Euclidean distance between Point/Pose/PoseStamped
  */
-double calEuclideanDistance(const geometry_msgs::msg::Point &a,
-                            const geometry_msgs::msg::Point &b);
+double calEuclideanDistance(const geometry_msgs::msg::Point& a,
+                            const geometry_msgs::msg::Point& b);
 
 //    TODO: fix static override problems
 //    double calEuclideanDistance(const std::vector<double,double>& a, const
@@ -71,24 +71,25 @@ double kph2mph(double kph);
 
 namespace io {
 //  TODO: define precisely (do we need this?)
-std::vector<rclcpp::Parameter> &readConfig(std::string &file_name);
+std::vector<rclcpp::Parameter>& readConfig(std::string& file_name);
 
 } // namespace io
 
 // TODO: numeric is an awful name, needs something better.
 namespace numeric {
 
-//    TODO: provide exaustive description of these two functions, along wth teir params' description.
+//    TODO: provide exaustive description of these two functions, along wth teir
+//    params' description.
 //     std::tuple<min_value, min_value_idx>
 //    findMinValueNIdx(std::vector<double>& vec); std::tuple<max_value,
 //    max_value_idx> findMaxValueNIdx(std::vector<double>& vec);
 
 template <typename T>
-constexpr
-inline const T&
-clip(const T& min, const T& max, const T& target) {
+constexpr inline const T& clip(const T& min, const T& max, const T& target) {
   return std::max<T>(min, std::min<T>(target, max));
 }
+
+#define PI 3.141592653589793
 
 } // namespace numeric
 

@@ -16,14 +16,13 @@
 
 #include "nav_msgs/msg/path.hpp"
 
-class WaypointManagerMinimal : public IWaypointManager
-{
+class WaypointManagerMinimal : public IWaypointManager {
 public:
   WaypointManagerMinimal() {}
   WaypointManagerMinimal(WaypointManagerMinimal& wpt_manager_);
   WaypointManagerMinimal(string wpt_file_path_,
-  string wpt_alias = "",
-  double wpt_interval = 0.5);
+                         string wpt_alias = "",
+                         double wpt_interval = 0.5);
   ~WaypointManagerMinimal();
 
   void loadWPTFile(
@@ -72,7 +71,6 @@ public:
   const vector<double>& getMapTrackYawInBodyDeg() const {
     return m_map_track_yaw_inbody_deg;
   }
-
   void setWptInterval(double interval_) {
     m_wpt_interval = interval_;
   }
@@ -97,4 +95,4 @@ private:
   vector<double> m_map_track_yaw_inbody_deg;
 };
 
-#endif //NIF_WAYPOINT_MANAGER_MINIMAL_H
+#endif // NIF_WAYPOINT_MANAGER_MINIMAL_H
