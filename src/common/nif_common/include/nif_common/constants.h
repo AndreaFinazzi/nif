@@ -39,7 +39,7 @@ const std::chrono::microseconds SYNC_PERIOD_MAX(10000);
  */
 const char* const LOG_MAIN_LOGGER_NAME = "MAIN_LOGGER";
 
-}
+} // namespace constants
 } // namespace common
 } // namespace nif
 

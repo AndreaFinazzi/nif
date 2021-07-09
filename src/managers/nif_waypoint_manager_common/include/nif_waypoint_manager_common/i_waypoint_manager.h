@@ -8,23 +8,30 @@
 #ifndef NIF_WAYPOINT_MANAGER_COMMON_I_WAYPOINT_MANAGER_H
 #define NIF_WAYPOINT_MANAGER_COMMON_I_WAYPOINT_MANAGER_H
 
-#include "nav_msgs/msg/path.hpp"
+#include "c_wpt.h"
 #include "nav_msgs/msg/odometry.hpp"
+#include "nav_msgs/msg/path.hpp"
 
-class IWaypointManager
-{
+class IWaypointManager {
 public:
-  virtual std::vector<nav_msgs::msg::Path> & getRacingLines();
+  IWaypointManager() {}
+  IWaypointManager(string wpt_file_path_);
+  void updateCurrentPose(nav_msgs::msg::Odometry& ego_vehicle_odom){};
 
-  virtual void update(nav_msgs::msg::Odometry & ego_vehicle_odom){};
+  nav_msgs::msg::Path& getWPTInNavMsg();
+  c_wpt& getWPT();
 
-  virtual void update(nav_msgs::msg::Odometry & ego_vehicle_odom, nav_msgs::msg::Path & local_path ) {};
+  nav_msgs::msg::Path& getMapTrackInBody();
+  nav_msgs::msg::Path& getMapTrackInGlobal();
 
-  virtual void update(nav_msgs::msg::Odometry & ego_vehicle_odom, nav_msgs::msg::Path & local_path,  nav_msgs::msg::Path & global_path) {};
+  virtual void update(nav_msgs::msg::Odometry& ego_vehicle_odom,
+                      nav_msgs::msg::Path& local_path) = 0;
+  virtual void update(nav_msgs::msg::Odometry& ego_vehicle_odom,
+                      nav_msgs::msg::Path& local_path,
+                      nav_msgs::msg::Path& global_path) = 0;
 
-  nav_msgs::msg::Path & getMapTrackInBody();
-  nav_msgs::msg::Path & getMapTrackInGlobal();
-
+private:
+  c_wpt m_wpt;
 };
 
 #endif // NIF_WAYPOINT_MANAGER_COMMON_I_WAYPOINT_MANAGER_H

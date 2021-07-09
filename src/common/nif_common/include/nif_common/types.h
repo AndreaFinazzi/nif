@@ -34,7 +34,8 @@ using VehicleKinematicState = autoware_auto_msgs::msg::VehicleKinematicState;
 namespace types {
 
 template <typename T>
-using t_oppo_collection = std::array<T, nif::common::constants::NUMBER_OF_OPPO_MAX>;
+using t_oppo_collection =
+    std::array<T, nif::common::constants::NUMBER_OF_OPPO_MAX>;
 
 using t_oppo_collection_states = t_oppo_collection<msgs::VehicleKinematicState>;
 

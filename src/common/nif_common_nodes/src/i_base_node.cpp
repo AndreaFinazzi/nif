@@ -14,27 +14,32 @@ IBaseNode::IBaseNode() : Node("no_name_node") {
                               "node_name. Creating empty node.");
 }
 
-IBaseNode::IBaseNode(const std::string &node_name,
-                     const rclcpp::NodeOptions &options)
-    : Node(node_name, options) {
+IBaseNode::IBaseNode(const std::string& node_name,
+                     const rclcpp::NodeOptions& options)
+  : Node(node_name, options) {
   gclock_node_init = this->now();
   gclock_current = gclock_node_init;
 
   //                TODO : Define QoS macros
   this->system_state_sub =
       this->create_subscription<nif::common::msgs::SystemState>(
-          "system_state", 5,
-          std::bind(&IBaseNode::systemStateCallback, this,
-                    std::placeholders::_1));
+          "system_state",
+          5,
+          std::bind(
+              &IBaseNode::systemStateCallback, this, std::placeholders::_1));
   this->race_control_state_sub =
       this->create_subscription<nif::common::msgs::RaceControlState>(
-          "race_control_state", 5,
-          std::bind(&IBaseNode::raceControlStateCallback, this,
+          "race_control_state",
+          5,
+          std::bind(&IBaseNode::raceControlStateCallback,
+                    this,
                     std::placeholders::_1));
   this->ego_vehicle_state_sub =
       this->create_subscription<nif::common::msgs::VehicleKinematicState>(
-          "vehicle_kinematic_state", 5,
-          std::bind(&IBaseNode::egoVehicleStateCallback, this,
+          "vehicle_kinematic_state",
+          5,
+          std::bind(&IBaseNode::egoVehicleStateCallback,
+                    this,
                     std::placeholders::_1));
 }
 
