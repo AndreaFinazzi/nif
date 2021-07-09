@@ -11,27 +11,37 @@
 
 #include "nif_utils/utils.h"
 #include "gtest/gtest.h"
+#include <chrono>
 
 TEST(UtilsNumericClipTest, ClipTestMin) {
   {
-    double a = 0.1, b = 1.1, c = 0.005;
-    auto res = nif::common::utils::numeric::clip<double>(a, b, c);
+    double min = 0.1, max = 1.1, target = 0.005;
+    auto res = nif::common::utils::numeric::clip<double>(min, max, target);
     ASSERT_DOUBLE_EQ(res, 0.1);
   }
 }
 
 TEST(UtilsNumericClipTest, ClipTestMax) {
   {
-    double a = 0.1, b = 1.1, c = 0.005;
-    auto res = nif::common::utils::numeric::clip<double>(a, b, c);
+    double min = 0.1, max = 1.1, target = 0.005;
+    auto res = nif::common::utils::numeric::clip<double>(min, max, target);
     ASSERT_DOUBLE_EQ(res, 1.1);
   }
 }
 
 TEST(UtilsNumericClipTest, ClipTestPass) {
   {
-    double a = 0.1, b = 1.1, c = 0.505;
-    auto res = nif::common::utils::numeric::clip<double>(a, b, c);
-    ASSERT_DOUBLE_EQ(res, 0.505);
+    {
+      double min = 0.1, max = 1.1, target = 0.505;
+      auto res = nif::common::utils::numeric::clip<double>(min, max, target);
+      ASSERT_DOUBLE_EQ(res, 0.505);
+    }
+
+    {
+      const std::chrono::microseconds min(1000), max(12000),
+          target(10000); //  10ms
+      auto res = nif::common::utils::numeric::clip<std::chrono::microseconds>(min, max, target);
+      ASSERT_EQ(res, std::chrono::microseconds(10000));
+    }
   }
 }

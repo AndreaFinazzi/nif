@@ -83,6 +83,14 @@ namespace numeric {
 //    findMinValueNIdx(std::vector<double>& vec); std::tuple<max_value,
 //    max_value_idx> findMaxValueNIdx(std::vector<double>& vec);
 
+/**
+ * Clip the target value to min-max bounds.
+ * @tparam T datatype must implement comparison operators
+ * @param min Minimum value.
+ * @param max Maximum value.
+ * @param target Target value to be clipped.
+ * @return Clipped value.
+ */
 template <typename T>
 constexpr
 inline const T&
