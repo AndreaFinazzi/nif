@@ -12,7 +12,7 @@ endif()
 
 # find dependencies
 find_package(ament_cmake_auto REQUIRED)
-find_package(OpenCV REQUIRED PATHS "/usr/include/opencv4/opencv2")
+find_package(OpenCV 4.0.0 REQUIRED PATHS "/usr/include/opencv4")
 ament_auto_find_build_dependencies()
 
 # Library

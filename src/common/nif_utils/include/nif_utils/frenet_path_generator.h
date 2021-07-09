@@ -62,7 +62,6 @@ public:
   calcOptimalFrenetPathByMode(
       FRENET_GEN_MODE gen_mode,
       std::shared_ptr<CubicSpliner2D>& ref_cubic_spliner_2D,
-      double ref_splined_end_s,
       double current_position_d,
       double current_position_s,
       double current_velocity_d,
