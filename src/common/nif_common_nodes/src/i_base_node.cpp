@@ -23,21 +23,21 @@ IBaseNode::IBaseNode(const std::string& node_name,
   //                TODO : Define QoS macros
   this->system_state_sub =
       this->create_subscription<nif::common::msgs::SystemState>(
-          "system_state",
-          5,
+          "topic_system_state",
+          nif::common::constants::QOS_DEFAULT,
           std::bind(
               &IBaseNode::systemStateCallback, this, std::placeholders::_1));
   this->race_control_state_sub =
       this->create_subscription<nif::common::msgs::RaceControlState>(
-          "race_control_state",
-          5,
+          "topic_race_control_state",
+          nif::common::constants::QOS_DEFAULT,
           std::bind(&IBaseNode::raceControlStateCallback,
                     this,
                     std::placeholders::_1));
   this->ego_vehicle_state_sub =
       this->create_subscription<nif::common::msgs::VehicleKinematicState>(
-          "vehicle_kinematic_state",
-          5,
+          "topic_vehicle_kinematic_state",
+          nif::common::constants::QOS_DEFAULT,
           std::bind(&IBaseNode::egoVehicleStateCallback,
                     this,
                     std::placeholders::_1));
@@ -48,7 +48,10 @@ IBaseNode::IBaseNode(const std::string& node_name,
  * @param msg
  */
 void IBaseNode::egoVehicleStateCallback(
-    const nif::common::msgs::VehicleKinematicState::SharedPtr msg) {}
+    const nif::common::msgs::VehicleKinematicState::SharedPtr msg) {
+
+ this->ego_vehicle_state = msg;
+}
 
 /**
  * TODO implement callback

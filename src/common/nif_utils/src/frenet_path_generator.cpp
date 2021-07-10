@@ -1,3 +1,4 @@
+#include "nif_common/constants.h"
 #include "nif_utils/frenet_path_generator.h"
 
 // cost weights
@@ -6,9 +7,6 @@
 // #define cost_param_k_d 0
 // #define cost_param_k_lat 10.0
 // #define cost_param_k_lon 1.0
-
-// math
-#define PI 3.1415926535897
 
 using namespace std;
 using namespace Frenet;
@@ -636,8 +634,8 @@ void FrenetPathGenerator::convertFrenetPathsInGlobal(
 
       double point_d = frenet_path->points_d()[j];
 
-      double frenet_x = point_x + point_d * cos(yaw + PI / 2.0);
-      double frenet_y = point_y + point_d * sin(yaw + PI / 2.0);
+      double frenet_x = point_x + point_d * cos(yaw + nif::common::constants::numeric::PI / 2.0);
+      double frenet_y = point_y + point_d * sin(yaw + nif::common::constants::numeric::PI / 2.0);
 
       frenet_path->push_back_point_y(frenet_y);
       frenet_path->push_back_point_x(frenet_x);

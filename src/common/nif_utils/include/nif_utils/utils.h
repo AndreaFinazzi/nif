@@ -97,8 +97,6 @@ constexpr inline const T& clip(const T& min, const T& max, const T& target) {
   return std::max<T>(min, std::min<T>(target, max));
 }
 
-#define PI 3.141592653589793
-
 } // namespace numeric
 
 } // namespace utils

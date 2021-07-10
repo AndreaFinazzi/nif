@@ -4,11 +4,12 @@
 #include "nif_utils/frenet_path_generator.h"
 
 #include <fstream>
-#include <geometry_msgs/PoseStamped.h>
 #include <iostream>
-#include <nav_msgs/Paht.h>
 #include <string>
 #include <vector>
+
+#include <geometry_msgs/msg/pose_stamped.hpp>
+#include <nav_msgs/msg/path.hpp>
 
 using namespace std;
 

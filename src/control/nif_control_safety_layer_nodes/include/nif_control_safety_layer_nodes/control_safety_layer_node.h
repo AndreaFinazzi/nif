@@ -8,13 +8,11 @@
 #ifndef ROS2MASTER_CONTROL_SAFETY_LAYER_NODE_H
 #define ROS2MASTER_CONTROL_SAFETY_LAYER_NODE_H
 
-#include <nav_msgs/msg/detail/odometry__struct.hpp>
 #include <queue>
 
 #include "nif_common/types.h"
 #include "nif_common_nodes/i_base_synchronized_node.h"
 
-#include "../../../../nif_common/nif_common/include/nif_common/types.h"
 #include "rclcpp/rclcpp.hpp"
 
 namespace nif {
