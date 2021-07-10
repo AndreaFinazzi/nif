@@ -12,7 +12,7 @@ endif()
 
 # find dependencies
 find_package(ament_cmake_auto REQUIRED)
-find_package(OpenCV 4.0.0 REQUIRED PATHS "/usr/include/opencv4")
+
 ament_auto_find_build_dependencies()
 
 # Library
@@ -25,7 +25,7 @@ ament_auto_add_library(${PROJECT_NAME} SHARED
         src/frenet_path.cpp
         src/frenet_path_generator.cpp)
 
-ament_target_dependencies(${PROJECT_NAME} OpenCV)
+#ament_target_dependencies(${PROJECT_NAME} OpenCV)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

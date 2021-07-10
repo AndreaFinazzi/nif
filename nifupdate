@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+. /opt/ros/foxy/setup.bash
+sudo apt update
+rosdep update
+rosdep install -ir -y --from-path src/ --rosdistro $ROS_DISTRO
