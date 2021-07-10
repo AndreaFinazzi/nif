@@ -21,6 +21,16 @@ namespace constants {
 const int NUMBER_OF_OPPO_MAX = 10;
 
 /**
+ * DEGREE to RADIAN.
+ */
+const double DEG2RAD = 0.0174533;
+
+/**
+ * RADIAN to DEGREE.
+ */
+const double RAD2DEG = 57.2958;
+
+/**
  * Default period for synchronized node.
  */
 const std::chrono::microseconds SYNC_PERIOD_DEFAULT(10000);
