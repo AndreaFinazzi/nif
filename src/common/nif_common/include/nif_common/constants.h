@@ -49,6 +49,15 @@ const std::chrono::microseconds SYNC_PERIOD_MAX(10000);
  */
 const char* const LOG_MAIN_LOGGER_NAME = "MAIN_LOGGER";
 
+namespace numeric {
+/**
+ * pi is pi
+ */
+const float PI = 3.141592653589793;
+
+
+}
+
 } // namespace constants
 } // namespace common
 } // namespace nif
