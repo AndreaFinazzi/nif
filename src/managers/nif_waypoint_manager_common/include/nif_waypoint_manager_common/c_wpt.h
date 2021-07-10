@@ -8,9 +8,6 @@
 #include <string>
 #include <vector>
 
-#include "geometry_msgs/msg/pose_stamped.hpp"
-#include "nav_msgs/msg/path.hpp"
-
 using namespace std;
 
 class c_wpt { // static wpt common class

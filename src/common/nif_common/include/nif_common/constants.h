@@ -9,6 +9,7 @@
 #define NIF_COMMON_CONSTANTS_H
 
 #include <chrono>
+#include <rclcpp/qos.hpp>
 
 namespace nif {
 namespace common {
@@ -45,9 +46,25 @@ const std::chrono::microseconds SYNC_PERIOD_MIN(10000);
 const std::chrono::microseconds SYNC_PERIOD_MAX(10000);
 
 /**
+ * Default QoS parameter.
+ * TODO look into details and take proper decision
+ */
+const rclcpp::QoS QOS_DEFAULT(5);
+
+
+/**
  * Name for the main logger.
  */
 const char* const LOG_MAIN_LOGGER_NAME = "MAIN_LOGGER";
+
+namespace numeric {
+/**
+ * pi is pi
+ */
+const float PI = 3.141592653589793;
+
+
+}
 
 } // namespace constants
 } // namespace common
