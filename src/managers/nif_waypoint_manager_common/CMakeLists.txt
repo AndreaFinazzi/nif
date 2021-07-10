@@ -16,6 +16,7 @@ ament_auto_find_build_dependencies()
 
 # Library
 ament_auto_add_library(${PROJECT_NAME} SHARED
+        src/c_wpt.cpp
         src/i_waypoint_manager.cpp)
 
 if(BUILD_TESTING)

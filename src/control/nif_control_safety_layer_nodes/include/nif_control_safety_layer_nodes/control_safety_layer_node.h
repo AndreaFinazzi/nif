@@ -14,7 +14,7 @@
 #include "nif_common/types.h"
 #include "nif_common_nodes/i_base_synchronized_node.h"
 
-#include "../../../../nif_common/nif_common/include/nif_common/types.h"
+//#include "../../../../nif_common/nif_common/include/nif_common/types.h"
 #include "rclcpp/rclcpp.hpp"
 
 namespace nif {
