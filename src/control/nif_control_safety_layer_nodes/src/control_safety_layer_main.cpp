@@ -1,3 +1,7 @@
+//
+// Created by usrg on 7/11/21.
+//
+
 //  Copyright (c) 2021 Unmanned System Research Group @ KAIST
 //  Author:
 
@@ -24,7 +28,7 @@ int32_t main(int32_t argc, char **argv) {
 
   try {
     RCLCPP_INFO(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
-                 "Instantiating ControlSafetyLayerNode with name: %s; sync_period: %d", node_name, sync_period);
+                "Instantiating ControlSafetyLayerNode with name: %s; sync_period: %d", node_name, sync_period);
     nd = std::make_shared<ControlSafetyLayerNode>(
         node_name,
         rclcpp::NodeOptions{},

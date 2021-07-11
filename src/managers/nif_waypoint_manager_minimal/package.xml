@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>nif_waypoint_manager_common</name>
+  <name>nif_waypoint_manager_minimal</name>
   <version>0.0.0</version>
   <description>TODO: Package description</description>
   <maintainer email="usrg@todo.todo">usrg</maintainer>
@@ -14,6 +14,8 @@
   <test_depend>ament_cmake_gtest</test_depend>
 
   <depend>nif_common</depend>
+  <depend>nif_common_nodes</depend>
+  <depend>nif_waypoint_manager_common</depend>
 
   <depend>std_msgs</depend>
 

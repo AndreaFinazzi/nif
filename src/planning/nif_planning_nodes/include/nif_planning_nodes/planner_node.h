@@ -16,9 +16,8 @@ namespace nif {
 namespace planning {
 
 class PlannerNode : public nif::common::IBaseNode {
-
 public:
-  PlannerNode(nif::planning::algorithms::IPlannerAlgorithm &planner_algorithm_);
+  PlannerNode(nif::planning::algorithms::IPlannerAlgorithm& planner_algorithm_);
 
 protected:
   /**
@@ -27,16 +26,17 @@ protected:
   rclcpp::Subscription<nif::common::types::t_oppo_collection_states>
       opponents_state_sub;
 
-  rclcpp::Subscription<nif::common::msgs::TrackState> track_state_sub;
+  rclcpp::Subscription<nif::common::msgs::TerrainState> track_state_sub;
 
   rclcpp::Publisher<nif::common::msgs::Trajectory> trajectory_pub;
 
-  nif::planning::algorithms::IPlannerAlgorithm &planner_algorithm;
+  nif::planning::algorithms::IPlannerAlgorithm& planner_algorithm;
 
   void opponentsStateCallback(
-      const nif::common::types::t_oppo_collection_states &msg);
+      const nif::common::types::t_oppo_collection_states& msg);
 
-  void trackStateCallback(const nif::common::msgs::TrackState::SharedPtr &msg);
+  void
+  terrainStateCallback(const nif::common::msgs::TerrainState::SharedPtr& msg);
 
 private:
 };

@@ -5,14 +5,14 @@
 // Created by usrg on 6/18/21.
 //
 
-#include "nif_common_nodes/i_base_node.h"
+#include "base_node_test_node.h"
 #include "gtest/gtest.h"
 
-class BaseNodeTest : public ::testing::Test {
-protected:
-  void SetUp() override {}
-};
 
-TEST_F(BaseNodeTest, MockTestOne) { ASSERT_EQ(3, 3); }
+TEST(BaseNodeTest, MockTestOne)
+{
+  TestNode node;
+  node.stateReport();
+}
 
-TEST_F(BaseNodeTest, MockTestTwo) { ASSERT_EQ(3, 3); }
+//TEST_F(BaseNodeTest, MockTestTwo) { ASSERT_EQ(3, 3); }

@@ -12,11 +12,20 @@ endif()
 
 # find dependencies
 find_package(ament_cmake_auto REQUIRED)
+
 ament_auto_find_build_dependencies()
 
 # Library
 ament_auto_add_library(${PROJECT_NAME} SHARED
-        src/utils.cpp)
+        src/utils.cpp
+        src/quartic_polynomial.cpp
+        src/quintic_polynomial.cpp
+        src/cubic_spliner.cpp
+        src/cubic_spliner_2D.cpp
+        src/frenet_path.cpp
+        src/frenet_path_generator.cpp)
+
+#ament_target_dependencies(${PROJECT_NAME} OpenCV)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -30,8 +39,7 @@ if(BUILD_TESTING)
 
   target_include_directories(${PROJECT_NAME}_test PRIVATE "include")
   target_link_libraries(${PROJECT_NAME}_test ${PROJECT_NAME})
-#  ament_target_dependencies(${PROJECT_NAME}_test
-#          "rclcpp")
+#  ament_target_dependencies(${PROJECT_NAME}_test Opencv)
 endif()
 
 ament_auto_package()

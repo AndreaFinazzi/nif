@@ -16,7 +16,6 @@ IBaseSynchronizedNode::IBaseSynchronizedNode(const std::string &node_name,
     : IBaseSynchronizedNode(node_name, options,
                             constants::SYNC_PERIOD_DEFAULT) {}
 
-
 void IBaseSynchronizedNode::gClockCallback() {
   /// Update clock value
   //  TODO : make now() available in this context.
@@ -24,5 +23,4 @@ void IBaseSynchronizedNode::gClockCallback() {
   this->run();
 }
 
-void nif::common::IBaseSynchronizedNode::declareParameters() {}
-void nif::common::IBaseSynchronizedNode::getParameters() {}
+IBaseSynchronizedNode::~IBaseSynchronizedNode() {}

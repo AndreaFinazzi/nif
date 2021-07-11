@@ -14,7 +14,7 @@
 #include "nif_common/types.h"
 #include "nif_common_nodes/i_base_synchronized_node.h"
 
-#include "../../../../nif_common/nif_common/include/nif_common/types.h"
+//#include "../../../../nif_common/nif_common/include/nif_common/types.h"
 #include "rclcpp/rclcpp.hpp"
 
 namespace nif {
@@ -49,6 +49,10 @@ protected:
 private:
   // Prevent default constructor to be called from the outside
   ControlSafetyLayerNode();
+
+  void initParameters();
+  void getParameters();
+
   /**
    * Stores control commands coming from the controllers' stack. It's flushed at
    * every iteration by run(), that is it must store only the controls relative

@@ -15,24 +15,20 @@ namespace nif {
 namespace common {
 
 class IBaseSynchronizedNode : public IBaseNode {
-
 public:
-protected:
-  IBaseSynchronizedNode(
-      const std::string &node_name,
-      const rclcpp::NodeOptions &options);
+  virtual ~IBaseSynchronizedNode();
 
+protected:
+  IBaseSynchronizedNode(const std::string &node_name,
+                        const rclcpp::NodeOptions &options);
 
   template <typename DurationRepT, typename DurationT>
   IBaseSynchronizedNode(
-      const std::string &node_name,
-      const rclcpp::NodeOptions &options,
+      const std::string &node_name, const rclcpp::NodeOptions &options,
       const std::chrono::duration<DurationRepT, DurationT> period)
       : IBaseNode(node_name, options) {
-
     if (period >= nif::common::constants::SYNC_PERIOD_MIN &&
         period <= nif::common::constants::SYNC_PERIOD_MAX) {
-
       gclock_timer = this->create_wall_timer(
           period, std::bind(&IBaseSynchronizedNode::gClockCallback, this));
     } else {
@@ -41,6 +37,9 @@ protected:
     }
   }
 
+  void initParameters() override = 0;
+  void getParameters() override = 0;
+
   /**
    * run() is called by the timer callback, and must be defined by the derived
    * classes.
@@ -48,11 +47,8 @@ protected:
   virtual void run() = 0;
 
 private:
-
   rclcpp::TimerBase::SharedPtr gclock_timer;
 
-  void declareParameters() override;
-  void getParameters() override;
   void gClockCallback();
 };
 

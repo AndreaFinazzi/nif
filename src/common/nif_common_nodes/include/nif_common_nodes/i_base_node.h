@@ -13,7 +13,6 @@
 
 #include <string>
 
-#include "../../../nif_common/include/nif_common/types.h"
 #include "nif_common/types.h"
 #include "nif_utils/utils.h"
 
@@ -25,18 +24,20 @@ namespace common {
 class IBaseNode : public rclcpp::Node {
 public:
 protected:
-  IBaseNode(const std::string &node_name, const rclcpp::NodeOptions &options);
-
+  IBaseNode(const std::string& node_name, const rclcpp::NodeOptions& options);
+  IBaseNode(const std::string& node_name);
   /// Expose time to children
 
   rclcpp::Time gclock_node_init, gclock_current;
 
-  nif::common::msgs::VehicleKinematicState ego_vehicle_state;
+  nif::common::msgs::Odometry ego_odometry;
 
-  //            TODO : finalize SystemState class
+  nif::common::msgs::PowertrainState ego_powertrain_state;
+
+  // TODO : finalize SystemState class
   nif::common::msgs::SystemState system_state;
 
-  //          TODO : finalize RaceControlState class
+  // TODO : finalize RaceControlState class
   nif::common::msgs::RaceControlState race_control_state;
 
   //  Reference to utils not needed, as it'll be everything static (probably)
@@ -49,19 +50,27 @@ private:
    */
   IBaseNode();
 
-  rclcpp::Subscription<nif::common::msgs::VehicleKinematicState>::SharedPtr
-      ego_vehicle_state_sub;
+  rclcpp::Subscription<nif::common::msgs::Odometry>::SharedPtr ego_odometry_sub;
+
+  rclcpp::Subscription<nif::common::msgs::PowertrainState>::SharedPtr
+      ego_powertrain_state_sub;
+
   rclcpp::Subscription<nif::common::msgs::SystemState>::SharedPtr
       system_state_sub;
+
   rclcpp::Subscription<nif::common::msgs::RaceControlState>::SharedPtr
       race_control_state_sub;
 
-  virtual void declareParameters() = 0;
+  virtual void initParameters() = 0;
   virtual void getParameters() = 0;
 
-  void egoVehicleStateCallback(
-      const nif::common::msgs::VehicleKinematicState::SharedPtr msg);
+  void egoOdometryCallback(const nif::common::msgs::Odometry::SharedPtr msg);
+
+  void egoPowertrainCallback(
+      const nif::common::msgs::PowertrainState::SharedPtr msg);
+
   void systemStateCallback(const nif::common::msgs::SystemState::SharedPtr msg);
+
   void raceControlStateCallback(
       const nif::common::msgs::RaceControlState::SharedPtr msg);
 };
