@@ -10,8 +10,11 @@
 
 #include "autoware_auto_msgs/msg/trajectory.hpp"
 #include "autoware_auto_msgs/msg/vehicle_kinematic_state.hpp"
+
 #include "constants.h"
 #include "nav_msgs/msg/odometry.hpp"
+//#include "nif_msgs/msg/.h"
+#include "nif_msgs/msg/terrain_status.h"
 
 namespace nif {
 namespace common {
@@ -28,7 +31,7 @@ using TerrainState = nif_msgs::msg::TerrainStatus;
  * raptor computer in the racing vehicle.
  * TODO: should be changed based on the bag file
  */
-using RaptorState = raptor_dbw_msgs::msg::VehicleKinematicState;
+//using RaptorState = raptor_dbw_msgs::msg::;
 
 /**
  * This message contains the race flag information from the race control.
@@ -101,7 +104,7 @@ template <typename T>
 using t_oppo_collection =
     std::array<T, nif::common::constants::NUMBER_OF_OPPO_MAX>;
 
-using t_oppo_collection_states = t_oppo_collection<msgs::PerceptionResult>;
+using t_oppo_collection_states = t_oppo_collection<nif::common::msgs::PerceptionResult>;
 
 } // namespace types
 } // namespace common
