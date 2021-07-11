@@ -33,6 +33,9 @@ protected:
 
   nif::common::msgs::PowertrainState ego_powertrain_state;
 
+  // added by chanyoung
+  nav_msgs::msgs::odometry ego_localization_state;
+
   // TODO : finalize RaptorState class
   nif::common::msgs::RaptorState raptor_state;
 
@@ -51,6 +54,8 @@ private:
 
   rclcpp::Subscription<nif::common::msgs::PowertrainState>::SharedPtr
       ego_powertrain_state_sub;
+  rclcpp::Subscription<nav_msgs::msgs::odometry>::SharedPtr
+      ego_localization_state_sub;
   rclcpp::Subscription<nif::common::msgs::RaptorState>::SharedPtr
       raptor_state_sub;
   rclcpp::Subscription<nif::common::msgs::RaceControlState>::SharedPtr
@@ -61,6 +66,7 @@ private:
 
   void egoVehiclePowertrainCallback(
       const nif::common::msgs::PowertrainState::SharedPtr msg);
+  void egoLocalizationCallback(const nav_msgs::msgs::odometry::SharedPtr msg);
   void raptorStateCallback(const nif::common::msgs::RaptorState::SharedPtr msg);
   void raceControlStateCallback(
       const nif::common::msgs::RaceControlState::SharedPtr msg);

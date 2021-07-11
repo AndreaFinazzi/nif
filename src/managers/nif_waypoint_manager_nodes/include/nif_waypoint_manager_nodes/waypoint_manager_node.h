@@ -9,21 +9,24 @@
 #include "nif_waypoint_manager_common/i_waypoint_manager.h"
 #include "nif_waypoint_manager_minimal/waypoint_manager_minimal.h"
 
-class WaypointManagerNode : public nif::common::IBaseNode{
+class WaypointManagerNode : public nif::common::IBaseNode {
 public:
+  WaypointManagerNode()
+    : WaypointManagerNode(std::make_shared<WaypointManagerMinimal>()) {
+    //        this->ego_vehicle_state
+  }
 
-    WaypointManagerNode() {
-        wpt_manager = std::make_shared<WaypointManagerMinimal>(..);
+  WaypointManagerNode(std::shared_ptr<WaypointManagerMinimal> wpt_manager_ptr) {
+    wpt_manager = wpt_manager_ptr;
 
-//        this->ego_vehicle_state
-    }
+    //        this->ego_vehicle_state
+  }
 
 private:
-    std::shared_ptr<WaypointManagerMinimal> wpt_manager;
+  std::shared_ptr<WaypointManagerMinimal> wpt_manager;
 
-//    Subscribers
-//
+  //    Subscribers
+  //
 };
 
-
-#endif //ROS2MASTER_WAYPOINT_MANAGER_NODE_H
+#endif // ROS2MASTER_WAYPOINT_MANAGER_NODE_H

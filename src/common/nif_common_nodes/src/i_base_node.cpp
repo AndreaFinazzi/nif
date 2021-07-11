@@ -34,6 +34,13 @@ IBaseNode::IBaseNode(const std::string& node_name,
           std::bind(&IBaseNode::raceControlStateCallback,
                     this,
                     std::placeholders::_1));
+  this->ego_localization_state_sub =
+      this->create_subscription<nav_msgs::msgs::odometry>(
+          "topic_localization_state",
+          nif::common::constants::QOS_DEFAULT,
+          std::bind(&IBaseNode::egoLocalizationCallback,
+                    this,
+                    std::placeholders::_1));
   this->ego_vehicle_state_sub =
       this->create_subscription<nif::common::msgs::PowertrainState>(
           "topic_powertrain_state",
@@ -50,6 +57,11 @@ IBaseNode::IBaseNode(const std::string& node_name,
 void IBaseNode::egoVehiclePowertrainCallback(
     const nif::common::msgs::PowertrainState::SharedPtr msg) {
   this->ego_powertrain_state = msg;
+}
+
+void IBaseNode::egoLocalizationCallback(
+    const nav_msgs::msgs::odometry::SharedPtr msg) {
+  this->ego_localization_state = msg;
 }
 
 /**
