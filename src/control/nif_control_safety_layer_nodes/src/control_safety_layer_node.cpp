@@ -11,26 +11,29 @@ nif::control::ControlSafetyLayerNode::ControlSafetyLayerNode(
   this->control_pub = this->create_publisher<nif::common::msgs::ControlCmd>("/control_safety_layer/control_cmd", rclcpp::QoS{5});
 }
 
+void nif::control::ControlSafetyLayerNode::initParameters() {}
+
+void nif::control::ControlSafetyLayerNode::getParameters() {}
+
 void nif::control::ControlSafetyLayerNode::controlCallback(
     const nif::common::msgs::ControlCmd::SharedPtr &msg) {
 
 //  this->control_buffer.push(msg.control_cmd);
 }
 
+
 void nif::control::ControlSafetyLayerNode::run() {
 //  const auto selected_cmd = this->control_buffer.pop();
   auto msg = nif::common::msgs::ControlCmd();
-  msg. = 12345;
 
   RCLCPP_INFO(this->get_logger(), "ControlSafetyLayerNode::run(): START");
 //  msg.stamp = this->gclock_current;
-//  try {
+  try {
     RCLCPP_INFO(this->get_logger(), "ControlSafetyLayerNode::run(): PUBLISH START");
     this->control_pub->publish(msg);
     RCLCPP_INFO(this->get_logger(), "ControlSafetyLayerNode::run(): PUBLISH END");
-//  } catch (std::exception &e) {
-//    RCLCPP_ERROR(this->get_logger(), e.what());
-//  }
+  } catch (std::exception &e) {
+    RCLCPP_ERROR(this->get_logger(), e.what());
+  }
   RCLCPP_INFO(this->get_logger(), "ControlSafetyLayerNode::run(): END");
-
 }

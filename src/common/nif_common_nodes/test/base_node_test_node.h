@@ -12,14 +12,11 @@ public:
   TestNode() : IBaseNode("test_node", rclcpp::NodeOptions{}) {}
 
   void stateReport() {
-    // RCLCPP_INFO(
-    //     this->get_logger(), "ego_vehicle_state: %s",
-    //     (this->ego_vehicle_state));
-    // RCLCPP_INFO(this->get_logger(),
-    //             "race_control_state: %s",
-    //             (this->race_control_state));
-    // RCLCPP_INFO(this->get_logger(), "system_state: %s",
-    // (this->system_state));
+    RCLCPP_INFO(this->get_logger(), "ego_odometry: %s", (this->ego_odometry));
+    RCLCPP_INFO(this->get_logger(),
+                "race_control_state: %s",
+                (this->race_control_state));
+    RCLCPP_INFO(this->get_logger(), "system_state: %s", (this->system_state));
   }
 
 private:

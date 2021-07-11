@@ -26,12 +26,20 @@ IBaseNode::IBaseNode(const std::string& node_name,
 
   //  Declare subscriptions
   //                TODO : Define QoS macros
-  this->raptor_state_sub =
-      this->create_subscription<nif::common::msgs::RaptorState>(
-          "topic_raptor_state",
+  this->ego_odometry_sub =
+      this->create_subscription<nif::common::msgs::Odometry>(
+          "topic_ego_odometry",
           nif::common::constants::QOS_DEFAULT,
           std::bind(
-              &IBaseNode::raptorStateCallback, this, std::placeholders::_1));
+              &IBaseNode::egoOdometryCallback, this, std::placeholders::_1));
+
+  this->system_state_sub =
+      this->create_subscription<nif::common::msgs::SystemState>(
+          "topic_system_state",
+          nif::common::constants::QOS_DEFAULT,
+          std::bind(
+              &IBaseNode::systemStateCallback, this, std::placeholders::_1));
+
   this->race_control_state_sub =
       this->create_subscription<nif::common::msgs::RaceControlState>(
           "topic_race_control_state",
@@ -39,20 +47,12 @@ IBaseNode::IBaseNode(const std::string& node_name,
           std::bind(&IBaseNode::raceControlStateCallback,
                     this,
                     std::placeholders::_1));
-  this->ego_localization_state_sub =
-      this->create_subscription<nav_msgs::msg::Odometry>(
-          "topic_localization_state",
-          nif::common::constants::QOS_DEFAULT,
-          std::bind(&IBaseNode::egoLocalizationCallback,
-                    this,
-                    std::placeholders::_1));
   this->ego_powertrain_state_sub =
       this->create_subscription<nif::common::msgs::PowertrainState>(
           "topic_powertrain_state",
           nif::common::constants::QOS_DEFAULT,
-          std::bind(&IBaseNode::egoVehiclePowertrainCallback,
-                    this,
-                    std::placeholders::_1));
+          std::bind(
+              &IBaseNode::egoPowertrainCallback, this, std::placeholders::_1));
 
   //  TODO Declare node_state_pub to notify the node state
   //
@@ -64,23 +64,27 @@ IBaseNode::IBaseNode(const std::string& node_name,
  * TODO implement callback
  * @param msg
  */
-void IBaseNode::egoVehiclePowertrainCallback(
+void IBaseNode::egoPowertrainCallback(
     const nif::common::msgs::PowertrainState::SharedPtr msg) {
   this->ego_powertrain_state = *msg;
 }
 
-void IBaseNode::egoLocalizationCallback(
-    const nav_msgs::msg::Odometry::SharedPtr msg) {
-  this->ego_localization_state = *msg;
+/**
+ *
+ * @param msg
+ */
+void IBaseNode::egoOdometryCallback(
+    const nif::common::msgs::Odometry::SharedPtr msg) {
+  this->ego_odometry = *msg;
 }
 
 /**
  * TODO implement callback
  * @param msg
  */
-void IBaseNode::raptorStateCallback(
-    const nif::common::msgs::RaptorState::SharedPtr msg) {
-  this->raptor_state = *msg;
+void IBaseNode::systemStateCallback(
+    const nif::common::msgs::SystemState::SharedPtr msg) {
+  this->system_state = *msg;
 }
 
 /**

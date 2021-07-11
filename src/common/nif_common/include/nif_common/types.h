@@ -28,6 +28,12 @@ namespace common {
 namespace msgs {
 
 /**
+ * This message contains the odometry (pose + twist) information which should be updated by the
+ * localization node.
+ */
+using Odometry = nav_msgs::msg::Odometry;
+
+/**
  * This message contains the terrain information which should updated in the
  * terrain manager. (e.g. Frictions, back angle)
  */
@@ -38,7 +44,7 @@ using TerrainState = nif_msgs::msg::TerrainStatus;
  * raptor computer in the racing vehicle.
  * TODO: should be changed based on the bag file
  */
-using RaptorState = autoware_auto_msgs::msg::VehicleKinematicState;
+//using RaptorState = raptor_dbw_msgs::msg::;
 
 /**
  * This message contains the race flag information from the race control.
@@ -112,7 +118,7 @@ template <typename T>
 using t_oppo_collection =
     std::array<T, nif::common::constants::NUMBER_OF_OPPO_MAX>;
 
-using t_oppo_collection_states = t_oppo_collection<msgs::PerceptionResult>;
+using t_oppo_collection_states = t_oppo_collection<nif::common::msgs::PerceptionResult>;
 
 } // namespace types
 } // namespace common

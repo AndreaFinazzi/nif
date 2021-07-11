@@ -30,13 +30,12 @@ protected:
 
   rclcpp::Time gclock_node_init, gclock_current;
 
+  nif::common::msgs::Odometry ego_odometry;
+
   nif::common::msgs::PowertrainState ego_powertrain_state;
 
-  // added by chanyoung
-  nav_msgs::msg::Odometry ego_localization_state;
-
-  // TODO : finalize RaptorState class
-  nif::common::msgs::RaptorState raptor_state;
+  // TODO : finalize SystemState class
+  nif::common::msgs::SystemState system_state;
 
   // TODO : finalize RaceControlState class
   nif::common::msgs::RaceControlState race_control_state;
@@ -51,22 +50,27 @@ private:
    */
   IBaseNode();
 
+  rclcpp::Subscription<nif::common::msgs::Odometry>::SharedPtr ego_odometry_sub;
+
   rclcpp::Subscription<nif::common::msgs::PowertrainState>::SharedPtr
       ego_powertrain_state_sub;
-  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr
-      ego_localization_state_sub;
-  rclcpp::Subscription<nif::common::msgs::RaptorState>::SharedPtr
-      raptor_state_sub;
+
+  rclcpp::Subscription<nif::common::msgs::SystemState>::SharedPtr
+      system_state_sub;
+
   rclcpp::Subscription<nif::common::msgs::RaceControlState>::SharedPtr
       race_control_state_sub;
 
   virtual void initParameters() = 0;
   virtual void getParameters() = 0;
 
-  void egoVehiclePowertrainCallback(
+  void egoOdometryCallback(const nif::common::msgs::Odometry::SharedPtr msg);
+
+  void egoPowertrainCallback(
       const nif::common::msgs::PowertrainState::SharedPtr msg);
-  void egoLocalizationCallback(const nav_msgs::msg::Odometry::SharedPtr msg);
-  void raptorStateCallback(const nif::common::msgs::RaptorState::SharedPtr msg);
+
+  void systemStateCallback(const nif::common::msgs::SystemState::SharedPtr msg);
+
   void raceControlStateCallback(
       const nif::common::msgs::RaceControlState::SharedPtr msg);
 };
