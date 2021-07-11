@@ -10,15 +10,28 @@
 
 #include "autoware_auto_msgs/msg/trajectory.hpp"
 #include "autoware_auto_msgs/msg/vehicle_kinematic_state.hpp"
-
 #include "constants.h"
 #include "nav_msgs/msg/odometry.hpp"
-//#include "nif_msgs/msg/.h"
-#include "nif_msgs/msg/terrain_status.h"
+
+#include "nif_msgs/msg/autonomy_status.hpp"
+#include "nif_msgs/msg/health.hpp"
+#include "nif_msgs/msg/perception3_d.hpp"
+#include "nif_msgs/msg/perception3_d_array.hpp"
+#include "nif_msgs/msg/powertrain_status.hpp"
+#include "nif_msgs/msg/system_status.hpp"
+#include "nif_msgs/msg/terrain_status.hpp"
+#include "nif_msgs/msg/waypoints.hpp"
+#include "nif_msgs/msg/waypoints_array.hpp"
 
 namespace nif {
 namespace common {
 namespace msgs {
+
+/**
+ * This message contains the odometry (pose + twist) information which should be updated by the
+ * localization node.
+ */
+using Odometry = nav_msgs::msg::Odometry;
 
 /**
  * This message contains the terrain information which should updated in the
@@ -40,8 +53,8 @@ using TerrainState = nif_msgs::msg::TerrainStatus;
 using RaceControlState = autoware_auto_msgs::msg::VehicleKinematicState;
 
 /**
- * This message contains the autonomy status information which should updated in
- * the ??.
+ * This message contains the autonomy status information which should updated
+ * in the ??.
  */
 using AutonomyState = nif_msgs::msg::AutonomyStatus;
 
@@ -85,8 +98,8 @@ using WaypointState = nif_msgs::msg::Waypoints;
 
 /**
  * This message contains the list of truncated waypoints and the current index
- * regarding to the multiple racing lines. It should be updated in the waypoint
- * mananger.
+ * regarding to the multiple racing lines. It should be updated in the
+ * waypoint mananger.
  */
 using WaypointStateList = nif_msgs::msg::WaypointsArray;
 
@@ -95,7 +108,8 @@ using Polynomial = nav_msgs::msg::Odometry;
 using ControlCmd = std_msgs::msg::Header;
 
 using Trajectory = autoware_auto_msgs::msg::Trajectory;
-// using VehicleKinematicState = autoware_auto_msgs::msg::VehicleKinematicState;
+// using VehicleKinematicState =
+// autoware_auto_msgs::msg::VehicleKinematicState;
 } // namespace msgs
 
 namespace types {

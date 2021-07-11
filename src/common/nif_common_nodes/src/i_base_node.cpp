@@ -37,14 +37,18 @@ IBaseNode::IBaseNode(const std::string &node_name,
 
   this->race_control_state_sub =
       this->create_subscription<nif::common::msgs::RaceControlState>(
-          "topic_race_control_state", nif::common::constants::QOS_DEFAULT,
-          std::bind(&IBaseNode::raceControlStateCallback, this,
+          "topic_race_control_state",
+          nif::common::constants::QOS_DEFAULT,
+          std::bind(&IBaseNode::raceControlStateCallback,
+                    this,
                     std::placeholders::_1));
 
-  this->ego_powertrain_state =
+  this->ego_powertrain_state_sub =
       this->create_subscription<nif::common::msgs::PowertrainState>(
-          "topic_powertrain_state", nif::common::constants::QOS_DEFAULT,
-          std::bind(&IBaseNode::egoPowertrainCallback, this,
+          "topic_powertrain_state",
+          nif::common::constants::QOS_DEFAULT,
+          std::bind(&IBaseNode::egoPowertrainCallback,
+                    this,
                     std::placeholders::_1));
 
   //  TODO Declare node_state_pub to notify the node state
@@ -57,7 +61,7 @@ IBaseNode::IBaseNode(const std::string &node_name,
  * TODO implement callback
  * @param msg
  */
-void IBaseNode::egoVehiclePowertrainCallback(
+void IBaseNode::egoPowertrainCallback(
     const nif::common::msgs::PowertrainState::SharedPtr msg) {
   this->ego_powertrain_state = *msg;
 }

@@ -24,7 +24,7 @@ namespace common {
 class IBaseNode : public rclcpp::Node {
 public:
 protected:
-  IBaseNode(const std::string &node_name, const rclcpp::NodeOptions &options);
+  IBaseNode(const std::string& node_name, const rclcpp::NodeOptions& options);
 
   /// Expose time to children
 
