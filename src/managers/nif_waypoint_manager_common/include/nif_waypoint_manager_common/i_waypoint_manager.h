@@ -57,8 +57,8 @@ public:
                                           int current_idx_);
   nav_msgs::msg::Path setMapTrackInBody(nav_msgs::msg::Path& reference_path_);
 
-  // virtual void updateDesiredWPT(nav_msgs::msg::Odometry& ego_vehicle_odom,
-  //                               nav_msgs::msg::Path& local_path) = 0;
+  virtual void updateDesiredWPT(nav_msgs::msg::Odometry& ego_vehicle_odom,
+                                nav_msgs::msg::Path& local_path);
 
 private:
   vector<c_wpt> m_wpt_list;
@@ -82,7 +82,6 @@ private:
   nav_msgs::msg::Path
       m_desired_maptrack_in_global; // dynamically updated path (if not updated,
                                     // set as a default one)
-
   nav_msgs::msg::Odometry
       m_current_pose; // current vehicle pose, this should be updated as fast as
                       // possible in the node subscriber

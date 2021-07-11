@@ -5,8 +5,8 @@
 // Created by usrg on 7/6/21.
 //
 
-#include <tf2/LinearMath/Quaternion.h>
 #include "nif_waypoint_manager_common/i_waypoint_manager.h"
+#include <tf2/LinearMath/Quaternion.h>
 
 IWaypointManager::IWaypointManager(string& wpt_yaml_path_,
                                    string& body_frame_id_,
@@ -37,11 +37,13 @@ void IWaypointManager::updateCurrentPose(
   m_current_idx_list.clear();
 
   for (int wpt_idx = 0; wpt_idx < m_wpt_list.size(); wpt_idx++) {
-      nav_msgs::msg::Path wpt_in_nav_path = (m_wpt_list[wpt_idx].getWPTinNavPath());
-      int current_idx = getCurrentIdx(wpt_in_nav_path, ego_vehicle_odom);
+    nav_msgs::msg::Path wpt_in_nav_path =
+        (m_wpt_list[wpt_idx].getWPTinNavPath());
+    int current_idx = getCurrentIdx(wpt_in_nav_path, ego_vehicle_odom);
 
     m_current_idx_list.push_back(current_idx);
-    m_maptrack_in_global_list.push_back(setMapTrackInGlobal(wpt_in_nav_path, current_idx));
+    m_maptrack_in_global_list.push_back(
+        setMapTrackInGlobal(wpt_in_nav_path, current_idx));
     m_maptrack_in_body_list.push_back(
         setMapTrackInBody(m_maptrack_in_global_list[-1]));
   }
@@ -67,11 +69,10 @@ void IWaypointManager::setCurrentIdx(
   m_current_idx = current_idx;
 }
 
-int IWaypointManager::getCurrentIdx(
-        nav_msgs::msg::Path& reference_path,
-        nav_msgs::msg::Odometry& ego_vehicle_odom) {
-    setCurrentIdx(reference_path,ego_vehicle_odom);
-    return m_current_idx;
+int IWaypointManager::getCurrentIdx(nav_msgs::msg::Path& reference_path,
+                                    nav_msgs::msg::Odometry& ego_vehicle_odom) {
+  setCurrentIdx(reference_path, ego_vehicle_odom);
+  return m_current_idx;
 }
 
 nav_msgs::msg::Path
@@ -111,8 +112,8 @@ IWaypointManager::setMapTrackInBody(nav_msgs::msg::Path& map_track_in_global_) {
 }
 
 geometry_msgs::msg::PoseStamped IWaypointManager::convertPtBodytoGlobal(
-        geometry_msgs::msg::PoseStamped& point_in_body_) {
-    geometry_msgs::msg::PoseStamped point_in_global;
+    geometry_msgs::msg::PoseStamped& point_in_body_) {
+  geometry_msgs::msg::PoseStamped point_in_global;
   point_in_global.header.frame_id = m_global_frame_id;
   point_in_global.pose.position.x = m_current_pose.pose.pose.position.x +
       point_in_body_.pose.position.x * cos(m_current_yaw_rad) -
@@ -126,8 +127,8 @@ geometry_msgs::msg::PoseStamped IWaypointManager::convertPtBodytoGlobal(
 }
 
 geometry_msgs::msg::PoseStamped IWaypointManager::convertPtGlobaltoBody(
-        geometry_msgs::msg::PoseStamped& point_in_global_) {
-    geometry_msgs::msg::PoseStamped point_in_body;
+    geometry_msgs::msg::PoseStamped& point_in_global_) {
+  geometry_msgs::msg::PoseStamped point_in_body;
   point_in_body.header.frame_id = m_body_frame_id;
   point_in_body.pose.position.x = cos(-1 * m_current_yaw_rad) *
           (point_in_global_.pose.position.x -
@@ -157,8 +158,8 @@ IWaypointManager::convertPathBodytoGlobal(nav_msgs::msg::Path& path_in_body_) {
   return path_in_global;
 }
 
-nav_msgs::msg::Path
-IWaypointManager::convertPathGlobaltoBody(nav_msgs::msg::Path& path_in_global_) {
+nav_msgs::msg::Path IWaypointManager::convertPathGlobaltoBody(
+    nav_msgs::msg::Path& path_in_global_) {
   nav_msgs::msg::Path path_in_body;
   path_in_body.header.frame_id = m_body_frame_id;
   for (int pt_idx = 0; pt_idx < path_in_global_.poses.size(); pt_idx++) {
@@ -167,3 +168,7 @@ IWaypointManager::convertPathGlobaltoBody(nav_msgs::msg::Path& path_in_global_) 
   }
   return path_in_body;
 }
+
+void IWaypointManager::updateDesiredWPT(
+    nav_msgs::msg::Odometry& ego_vehicle_odom,
+    nav_msgs::msg::Path& local_path) {}
