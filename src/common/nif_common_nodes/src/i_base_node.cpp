@@ -14,15 +14,17 @@ IBaseNode::IBaseNode() : Node("no_name_node") {
                               "node_name. Creating empty node.");
 }
 
+IBaseNode::IBaseNode(const std::string& node_name)
+  : IBaseNode(node_name, rclcpp::NodeOptions{}) {}
+
 IBaseNode::IBaseNode(const std::string& node_name,
                      const rclcpp::NodeOptions& options)
-  : Node(node_name, options)
-{
-//  Initialize timers
+  : Node(node_name, options) {
+  //  Initialize timers
   gclock_node_init = this->now();
   gclock_current = gclock_node_init;
 
-//  Declare subscriptions
+  //  Declare subscriptions
   //                TODO : Define QoS macros
   this->raptor_state_sub =
       this->create_subscription<nif::common::msgs::RaptorState>(
@@ -38,13 +40,13 @@ IBaseNode::IBaseNode(const std::string& node_name,
                     this,
                     std::placeholders::_1));
   this->ego_localization_state_sub =
-      this->create_subscription<nav_msgs::msgs::odometry>(
+      this->create_subscription<nav_msgs::msg::Odometry>(
           "topic_localization_state",
           nif::common::constants::QOS_DEFAULT,
           std::bind(&IBaseNode::egoLocalizationCallback,
                     this,
                     std::placeholders::_1));
-  this->ego_vehicle_state_sub =
+  this->ego_powertrain_state_sub =
       this->create_subscription<nif::common::msgs::PowertrainState>(
           "topic_powertrain_state",
           nif::common::constants::QOS_DEFAULT,
@@ -52,10 +54,10 @@ IBaseNode::IBaseNode(const std::string& node_name,
                     this,
                     std::placeholders::_1));
 
-//  TODO Declare node_state_pub to notify the node state
-//
-//
-//
+  //  TODO Declare node_state_pub to notify the node state
+  //
+  //
+  //
 }
 
 /**
@@ -68,8 +70,8 @@ void IBaseNode::egoVehiclePowertrainCallback(
 }
 
 void IBaseNode::egoLocalizationCallback(
-    const nav_msgs::msgs::odometry::SharedPtr msg) {
-  this->ego_localization_state = msg;
+    const nav_msgs::msg::Odometry::SharedPtr msg) {
+  this->ego_localization_state = *msg;
 }
 
 /**
@@ -77,9 +79,8 @@ void IBaseNode::egoLocalizationCallback(
  * @param msg
  */
 void IBaseNode::raptorStateCallback(
-    const nif::common::msgs::RaptorState::SharedPtr msg)
-{
-  this->system_state = *msg;
+    const nif::common::msgs::RaptorState::SharedPtr msg) {
+  this->raptor_state = *msg;
 }
 
 /**
@@ -87,8 +88,6 @@ void IBaseNode::raptorStateCallback(
  * @param msg
  */
 void IBaseNode::raceControlStateCallback(
-    const nif::common::msgs::RaceControlState::SharedPtr msg)
-{
-
+    const nif::common::msgs::RaceControlState::SharedPtr msg) {
   this->race_control_state = *msg;
 }

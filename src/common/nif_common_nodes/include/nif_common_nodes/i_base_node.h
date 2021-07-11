@@ -25,7 +25,7 @@ class IBaseNode : public rclcpp::Node {
 public:
 protected:
   IBaseNode(const std::string& node_name, const rclcpp::NodeOptions& options);
-
+  IBaseNode(const std::string& node_name);
   /// Expose time to children
 
   rclcpp::Time gclock_node_init, gclock_current;
@@ -33,7 +33,7 @@ protected:
   nif::common::msgs::PowertrainState ego_powertrain_state;
 
   // added by chanyoung
-  nav_msgs::msgs::odometry ego_localization_state;
+  nav_msgs::msg::Odometry ego_localization_state;
 
   // TODO : finalize RaptorState class
   nif::common::msgs::RaptorState raptor_state;
@@ -53,7 +53,7 @@ private:
 
   rclcpp::Subscription<nif::common::msgs::PowertrainState>::SharedPtr
       ego_powertrain_state_sub;
-  rclcpp::Subscription<nav_msgs::msgs::odometry>::SharedPtr
+  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr
       ego_localization_state_sub;
   rclcpp::Subscription<nif::common::msgs::RaptorState>::SharedPtr
       raptor_state_sub;
@@ -65,7 +65,7 @@ private:
 
   void egoVehiclePowertrainCallback(
       const nif::common::msgs::PowertrainState::SharedPtr msg);
-  void egoLocalizationCallback(const nav_msgs::msgs::odometry::SharedPtr msg);
+  void egoLocalizationCallback(const nav_msgs::msg::Odometry::SharedPtr msg);
   void raptorStateCallback(const nif::common::msgs::RaptorState::SharedPtr msg);
   void raceControlStateCallback(
       const nif::common::msgs::RaceControlState::SharedPtr msg);

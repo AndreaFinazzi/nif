@@ -11,18 +11,22 @@
 
 class WaypointManagerNode : public nif::common::IBaseNode {
 public:
-  WaypointManagerNode()
-    : WaypointManagerNode(std::make_shared<WaypointManagerMinimal>()) {
-    //        this->ego_vehicle_state
-  }
+  /**
+   *
+   * Using default WaypointManager -> WaypointManagerMinimal
+   *
+   **/
+  WaypointManagerNode(std::string node_name_,
+                      string& wpt_yaml_path_,
+                      string& body_frame_id_,
+                      string& global_frame_id_);
 
-  WaypointManagerNode(std::shared_ptr<WaypointManagerMinimal> wpt_manager_ptr) {
-    wpt_manager = wpt_manager_ptr;
-
-    //        this->ego_vehicle_state
-  }
+  WaypointManagerNode(std::string node_name_,
+                      std::shared_ptr<WaypointManagerMinimal> wpt_manager_ptr);
 
 private:
+  WaypointManagerNode();
+
   std::shared_ptr<WaypointManagerMinimal> wpt_manager;
 
   //    Subscribers
