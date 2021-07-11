@@ -22,5 +22,4 @@ void IBaseSynchronizedNode::gClockCallback() {
   this->run();
 }
 
-void nif::common::IBaseSynchronizedNode::declareParameters() {}
-void nif::common::IBaseSynchronizedNode::getParameters() {}
+IBaseSynchronizedNode::~IBaseSynchronizedNode() {}

@@ -26,7 +26,6 @@ using RaceControlState = autoware_auto_msgs::msg::VehicleKinematicState;
 using Polynomial = nav_msgs::msg::Odometry;
 using ControlCmd = std_msgs::msg::Header;
 //          TODO : THIS IS WRONG AND MUST BE CHANGED -- END --
-ControlCmd msg;
 
 using Trajectory = autoware_auto_msgs::msg::Trajectory;
 using VehicleKinematicState = autoware_auto_msgs::msg::VehicleKinematicState;
