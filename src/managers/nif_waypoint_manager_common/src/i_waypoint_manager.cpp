@@ -20,6 +20,8 @@ IWaypointManager::IWaypointManager(string& wpt_yaml_path_,
   // yaml file example
   // default wpt(c_default_wpt) and candidates wpt
   // c_desired_wpt = c_default_wpt;
+  // m_default_wpt_in_nav_path = c_default_wpt.getWPTinNavPath();
+  // m_desired_wpt_in_nav_path = m_default_wpt_in_nav_path;
 }
 
 void IWaypointManager::updateCurrentPose(
@@ -190,5 +192,56 @@ nav_msgs::msg::Path IWaypointManager::convertPathGlobaltoBody(
 }
 
 void IWaypointManager::updateDesiredWPT(
-    nav_msgs::msg::Odometry& ego_vehicle_odom,
-    nav_msgs::msg::Path& local_path) {}
+    nav_msgs::msg::Path& local_path_in_body) {
+  nav_msgs::msg::Path local_path_in_global =
+      convertPathBodytoGlobal(local_path_in_body);
+  int start_wpt_idx =
+      getWPTIdx(m_desired_wpt_in_nav_path, local_path_in_global.poses[0]);
+  int end_wpt_idx =
+      getWPTIdx(m_desired_wpt_in_nav_path, local_path_in_global.poses[-1]);
+
+  double dist = sqrt(pow(local_path_in_global.poses[0].pose.position.x -
+                             local_path_in_global.poses[-1].pose.position.x,
+                         2) +
+                     pow(local_path_in_global.poses[0].pose.position.y -
+                             local_path_in_global.poses[-1].pose.position.y,
+                         2));
+
+  if (dist < 2.0) {
+    // local path distance is too short to calculate the both index. In this
+    // case, it can be inverted. Ignore this case.
+  } else {
+    if (end_wpt_idx > start_wpt_idx) {
+      vector<geometry_msgs::msg::PoseStamped> updated_poses;
+      updated_poses = vector<geometry_msgs::msg::PoseStamped>(
+          m_desired_wpt_in_nav_path.poses.begin(),
+          m_desired_wpt_in_nav_path.poses.begin() + start_wpt_idx - 1);
+      updated_poses.insert(updated_poses.end(),
+                           local_path_in_global.poses.begin(),
+                           local_path_in_global.poses.end());
+      updated_poses.insert(updated_poses.end(),
+                           m_desired_wpt_in_nav_path.poses.begin() +
+                               end_wpt_idx,
+                           m_desired_wpt_in_nav_path.poses.end() - 1);
+      m_desired_wpt_in_nav_path.poses = updated_poses;
+      setCurrentIdx(m_desired_wpt_in_nav_path, m_current_pose);
+    } else {
+      vector<geometry_msgs::msg::PoseStamped> updated_poses;
+      int closest_to_origin_wpt_idx_in_local_wpt =
+          getWPTIdx(local_path_in_global, m_desired_wpt_in_nav_path.poses[0]);
+      updated_poses = vector<geometry_msgs::msg::PoseStamped>(
+          local_path_in_global.poses.begin() +
+              closest_to_origin_wpt_idx_in_local_wpt - 1,
+          local_path_in_global.poses.end());
+      updated_poses.insert(updated_poses.end(),
+                           m_desired_wpt_in_nav_path.poses.begin() +
+                               end_wpt_idx,
+                           m_desired_wpt_in_nav_path.poses.end());
+      updated_poses.insert(updated_poses.end(),
+                           local_path_in_global.poses.begin(),
+                           local_path_in_global.poses.begin() +
+                               closest_to_origin_wpt_idx_in_local_wpt - 1);
+      setCurrentIdx(m_desired_wpt_in_nav_path, m_current_pose);
+    }
+  }
+}
