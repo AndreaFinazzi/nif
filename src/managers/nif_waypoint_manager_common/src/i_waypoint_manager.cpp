@@ -191,6 +191,11 @@ nav_msgs::msg::Path IWaypointManager::convertPathGlobaltoBody(
   return path_in_body;
 }
 
+void IWaypointManager::resetDesiredWPT() {
+  c_desired_wpt = c_default_wpt;
+  m_desired_wpt_in_nav_path = m_default_wpt_in_nav_path;
+}
+
 void IWaypointManager::updateDesiredWPT(
     nav_msgs::msg::Path& local_path_in_body) {
   nav_msgs::msg::Path local_path_in_global =

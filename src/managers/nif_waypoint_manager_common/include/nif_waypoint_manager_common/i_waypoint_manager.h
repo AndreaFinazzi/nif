@@ -49,6 +49,7 @@ public:
   void setSizeOfMapTrack(int size_of_map_track_) {
     m_size_of_map_track = size_of_map_track_;
   }
+  void resetDesiredWPT();
   void setCurrentIdx(nav_msgs::msg::Path& reference_path,
                      nav_msgs::msg::Odometry& ego_vehicle_odom);
   int getCurrentIdx(nav_msgs::msg::Path& reference_path,
@@ -70,15 +71,16 @@ private:
   c_wpt c_desired_wpt; // dynamically updated from the planning node and any
                        // other else
 
+  nav_msgs::msg::Path m_default_wpt_in_nav_path; // default wpt path in nav_msgs
+  nav_msgs::msg::Path
+      m_desired_wpt_in_nav_path; // dynamically updated path (if not updated,
+                                 // set as a default one)
+
   string m_body_frame_id, m_global_frame_id; // frame_id
 
   vector<nav_msgs::msg::Path> m_maptrack_in_body_list;   // map_track
   vector<nav_msgs::msg::Path> m_maptrack_in_global_list; // map_track
 
-  nav_msgs::msg::Path m_default_wpt_in_nav_path; // default wpt path in nav_msgs
-  nav_msgs::msg::Path
-      m_desired_wpt_in_nav_path; // dynamically updated path (if not updated,
-                                 // set as a default one)
   nav_msgs::msg::Path
       m_desired_maptrack_in_body; // dynamically updated path (if not updated,
                                   // set as a default one)
