@@ -8,9 +8,6 @@
 #include <string>
 #include <vector>
 
-#include <geometry_msgs/msg/pose_stamped.hpp>
-#include <nav_msgs/msg/path.hpp>
-
 using namespace std;
 
 class c_wpt { // static wpt common class
@@ -18,10 +15,10 @@ public:
   c_wpt() {}
   c_wpt(c_wpt& wpt_);
   c_wpt(string wpt_file_path_,
-        string wpt_alias_ = "",
-        string global_frame_id_ = "odom",
-        bool 3d_wpt_file_flg_ = true;
-        bool spline_flg_ = true, double spline_interval_ = 0.5);
+        string wpt_alias_,
+        string global_frame_id_,
+        bool wpt_3d_file_flg_,
+        bool spline_flg_, double spline_interval_);
   ~c_wpt();
 
   vector<tuple<double, double>>
@@ -29,30 +26,30 @@ public:
   vector<tuple<double, double, double>>
   load3DWPTFile(string wpt_3d_file_path_); // load 3d wpt from the file
 
-  const string getWPTFilePath() const {return m_wpt_file_path};
-  const string getWPTAlias() const {return m_wpt_alias};
-  const bool isWPTSplined() const {
+  string getWPTFilePath() {return m_wpt_file_path;}
+  string getWPTAlias() {return m_wpt_alias;}
+  bool isWPTSplined() {
     return m_spline_flg;
-  };
-  const bool is3DWPT() const {
+  }
+  bool is3DWPT() {
     return m_3d_wpt_flg;
-  };
-  const int getWPTSize() const {return m_wpt_size};
-  const double getWPTLength() const {return m_wpt_length};
-  const double getWPTSplineInterval() const {return m_spline_interval};
+  }
+  int getWPTSize() {return m_wpt_size;}
+  double getWPTLength() {return m_wpt_length;}
+  double getWPTSplineInterval() {return m_spline_interval;}
 
-  const nav_msgs::Path getWPTinNavPath() const {return m_wpt_inglobal};
+  nav_msgs::msg::Path getWPTinNavPath() {return m_wpt_inglobal;}
 
-  const vector<double> getWPTX() const {return m_wpt_raw_x};
-  const vector<double> getWPTY() const {return m_wpt_raw_y};
-  const vector<double> getWPTZ() const {return m_wpt_raw_z};
+  vector<double> getWPTX() {return m_wpt_raw_x;}
+  vector<double> getWPTY() {return m_wpt_raw_y;}
+  vector<double> getWPTZ() {return m_wpt_raw_z;}
 
-  const vector<double> getSplinedWPTX() const {return m_wpt_splined_x};
-  const vector<double> getSplinedWPTY() const {return m_wpt_splined_y};
-  const vector<double> getSplinedWPTZ() const {return m_wpt_splined_z};
-  const vector<double> getSplinedWPTYaw() const {return m_wpt_splined_yaw};
-  const vector<double> getSplinedWPTCurvature() const {
-      return m_wpt_splined_curvature};
+  vector<double> getSplinedWPTX() {return m_wpt_splined_x;}
+  vector<double> getSplinedWPTY() {return m_wpt_splined_y;}
+  vector<double> getSplinedWPTZ() {return m_wpt_splined_z;}
+  vector<double> getSplinedWPTYaw() {return m_wpt_splined_yaw;}
+  vector<double> getSplinedWPTCurvature() {
+      return m_wpt_splined_curvature;}
 
 private:
   string m_wpt_file_path;
@@ -70,6 +67,6 @@ private:
   vector<double> m_wpt_raw_x, m_wpt_raw_y, m_wpt_raw_z;
   vector<double> m_wpt_splined_x, m_wpt_splined_y, m_wpt_splined_z,
       m_wpt_splined_yaw, m_wpt_splined_curvature;
-}
+};
 
 #endif // C_WPT_H_

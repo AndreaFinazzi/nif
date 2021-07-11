@@ -1,9 +1,9 @@
-#include "c_wpt.h"
+#include "nif_waypoint_manager_common/c_wpt.h"
 
 c_wpt::c_wpt(string wpt_file_path_,
              string wpt_alias_ = "",
              string global_frame_id_ = "odom",
-             bool 3d_wpt_file_flg_ = true;
+             bool wpt_3d_file_flg_ = true,
              bool spline_flg_ = true, double spline_interval_ = 0.5) {
   //  init
   m_wpt_raw_x.clear();
@@ -18,7 +18,7 @@ c_wpt::c_wpt(string wpt_file_path_,
   m_global_frame_id = global_frame_id_;
   m_spline_interval = spline_interval_;
   m_spline_flg = spline_flg_;
-  m_3d_wpt_flg = 3d_wpt_file_flg_;
+  m_3d_wpt_flg = wpt_3d_file_flg_;
 
   m_wpt_inglobal.header.frame_id = m_global_frame_id;
 
@@ -39,7 +39,7 @@ c_wpt::c_wpt(string wpt_file_path_,
     }
     if (m_spline_flg) {
       shared_ptr<CubicSpliner2D> cubic_spliner_2D(
-          new CubicSpliner2D(&m_wpt_raw_x, &m_wpt_raw_y));
+          new CubicSpliner2D(m_wpt_raw_x, m_wpt_raw_y));
       shared_ptr<CubicSpliner> cubic_spliner_sz_ = shared_ptr<CubicSpliner>(
           new CubicSpliner(cubic_spliner_2D->points_ss(), m_wpt_raw_z));
       double point_s = 0.0;
@@ -91,7 +91,7 @@ c_wpt::c_wpt(string wpt_file_path_,
     }
     if (m_spline_flg) {
       shared_ptr<CubicSpliner2D> cubic_spliner_2D(
-          new CubicSpliner2D(&m_wpt_raw_x, &m_wpt_raw_y));
+          new CubicSpliner2D(m_wpt_raw_x, m_wpt_raw_y));
       double point_s = 0.0;
       double point_s_end = cubic_spliner_2D->points_s().back();
       m_wpt_length = point_s_end;
@@ -127,7 +127,7 @@ c_wpt::c_wpt(string wpt_file_path_,
 
 vector<tuple<double, double>> c_wpt::load2DWPTFile(string wpt_2d_file_path_) {
   vector<tuple<double, double>> data;
-  ifstream inputFile(wpt_file_path_);
+  ifstream inputFile(wpt_2d_file_path_);
   int l = 0;
   while (inputFile) {
     l++;
@@ -149,7 +149,7 @@ vector<tuple<double, double>> c_wpt::load2DWPTFile(string wpt_2d_file_path_) {
           else if (cnt == 1)
             get<1>(record) = stof(line);
         } catch (const invalid_argument e) {
-          cout << "NaN found in file " << inputFileName << " line " << l
+          cout << "NaN found in file " << wpt_2d_file_path_ << " line " << l
                << endl;
           e.what();
           nan_flg = true;
@@ -161,7 +161,7 @@ vector<tuple<double, double>> c_wpt::load2DWPTFile(string wpt_2d_file_path_) {
     }
   }
   if (!inputFile.eof()) {
-    cerr << "Could not read file " << wpt_file_path_ << "\n";
+    cerr << "Could not read file " << wpt_2d_file_path_ << "\n";
     __throw_invalid_argument("File not found.");
   }
   return data;
@@ -170,7 +170,7 @@ vector<tuple<double, double>> c_wpt::load2DWPTFile(string wpt_2d_file_path_) {
 vector<tuple<double, double, double>>
 c_wpt::load3DWPTFile(string wpt_3d_file_path_) {
   vector<tuple<double, double, double>> data;
-  ifstream inputFile(inputFileName);
+  ifstream inputFile(wpt_3d_file_path_);
   int l = 0;
 
   while (inputFile) {
@@ -196,7 +196,7 @@ c_wpt::load3DWPTFile(string wpt_3d_file_path_) {
           else if (cnt == 2)
             get<2>(record) = stof(line);
         } catch (const invalid_argument e) {
-          cout << "NaN found in file " << inputFileName << " line " << l
+          cout << "NaN found in file " << wpt_3d_file_path_ << " line " << l
                << endl;
           e.what();
           nan_flg = true;
@@ -209,7 +209,7 @@ c_wpt::load3DWPTFile(string wpt_3d_file_path_) {
   }
 
   if (!inputFile.eof()) {
-    cerr << "Could not read file " << inputFileName << "\n";
+    cerr << "Could not read file " << wpt_3d_file_path_ << "\n";
     __throw_invalid_argument("File not found.");
   }
 

@@ -10,7 +10,12 @@
 
 #include "nav_msgs/msg/odometry.hpp"
 #include "nav_msgs/msg/path.hpp"
+#include "tf2/LinearMath/Quaternion.h"
+#include "tf2/LinearMath/Matrix3x3.h"
+
 #include "nif_waypoint_manager_common/c_wpt.h"
+
+
 
 class IWaypointManager {
 public:
@@ -34,12 +39,12 @@ public:
   nav_msgs::msg::Path& getDesiredMapTrackInGlobal() {
     return m_desired_maptrack_in_global;
   }
-  geometry_msgs::PoseStamped
-  convertPtBodytoGlobal(geometry_msgs::PoseStamped& point_in_body_);
+  geometry_msgs::msg::PoseStamped
+  convertPtBodytoGlobal(geometry_msgs::msg::PoseStamped& point_in_body_);
   nav_msgs::msg::Path
   convertPathBodytoGlobal(nav_msgs::msg::Path& path_in_body_);
-  geometry_msgs::PoseStamped
-  convertPtGlobaltoBody(geometry_msgs::PoseStamped& point_in_global_);
+    geometry_msgs::msg::PoseStamped
+  convertPtGlobaltoBody(geometry_msgs::msg::PoseStamped& point_in_global_);
   nav_msgs::msg::Path
   convertPathGlobaltoBody(nav_msgs::msg::Path& path_in_global_);
   void updateCurrentPose(nav_msgs::msg::Odometry& ego_vehicle_odom);
@@ -48,6 +53,8 @@ public:
   }
   void setCurrentIdx(nav_msgs::msg::Path& reference_path,
                      nav_msgs::msg::Odometry& ego_vehicle_odom);
+  int getCurrentIdx(nav_msgs::msg::Path& reference_path,
+                       nav_msgs::msg::Odometry& ego_vehicle_odom);
   nav_msgs::msg::Path setMapTrackInGlobal(nav_msgs::msg::Path& reference_path_,
                                           int current_idx_);
   nav_msgs::msg::Path setMapTrackInBody(nav_msgs::msg::Path& reference_path_);

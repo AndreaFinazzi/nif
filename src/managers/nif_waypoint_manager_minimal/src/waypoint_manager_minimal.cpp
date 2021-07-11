@@ -5,4 +5,4 @@
 // Created by usrg on 7/6/21.
 //
 
-#include "waypoint_manager.h"
+#include "nif_waypoint_manager_minimal/waypoint_manager_minimal.h"

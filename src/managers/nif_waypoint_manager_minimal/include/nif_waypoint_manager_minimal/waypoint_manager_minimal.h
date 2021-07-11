@@ -13,8 +13,7 @@
 #include <vector>
 
 #include "nif_waypoint_manager_common/i_waypoint_manager.h"
-
-#include "nav_msgs/msg/path.hpp"
+#include "nif_common_nodes/i_base_node.h"
 
 class WaypointManagerMinimal : public IWaypointManager {
 public:
