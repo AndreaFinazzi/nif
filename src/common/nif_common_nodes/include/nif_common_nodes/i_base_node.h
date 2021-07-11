@@ -13,7 +13,6 @@
 
 #include <string>
 
-#include "../../../nif_common/include/nif_common/types.h"
 #include "nif_common/types.h"
 #include "nif_utils/utils.h"
 
@@ -61,7 +60,7 @@ private:
   rclcpp::Subscription<nif::common::msgs::RaceControlState>::SharedPtr
       race_control_state_sub;
 
-  virtual void declareParameters() = 0;
+  virtual void initParameters() = 0;
   virtual void getParameters() = 0;
 
   void egoVehiclePowertrainCallback(

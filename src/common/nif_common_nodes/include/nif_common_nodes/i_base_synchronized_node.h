@@ -16,6 +16,8 @@ namespace common {
 
 class IBaseSynchronizedNode : public IBaseNode {
 public:
+  virtual ~IBaseSynchronizedNode();
+
 protected:
   IBaseSynchronizedNode(const std::string& node_name,
                         const rclcpp::NodeOptions& options);
@@ -36,6 +38,9 @@ protected:
     }
   }
 
+  void initParameters() override = 0;
+  void getParameters() override = 0;
+
   /**
    * run() is called by the timer callback, and must be defined by the derived
    * classes.
@@ -45,8 +50,6 @@ protected:
 private:
   rclcpp::TimerBase::SharedPtr gclock_timer;
 
-  void declareParameters() override;
-  void getParameters() override;
   void gClockCallback();
 };
 

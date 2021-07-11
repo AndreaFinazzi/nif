@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Import external repos
+vcs import < nif.foxy.repos --workers=1
+
 . /opt/ros/foxy/setup.bash
 #sudo apt update
 #rosdep update

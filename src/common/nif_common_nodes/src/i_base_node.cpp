@@ -16,10 +16,13 @@ IBaseNode::IBaseNode() : Node("no_name_node") {
 
 IBaseNode::IBaseNode(const std::string& node_name,
                      const rclcpp::NodeOptions& options)
-  : Node(node_name, options) {
+  : Node(node_name, options)
+{
+//  Initialize timers
   gclock_node_init = this->now();
   gclock_current = gclock_node_init;
 
+//  Declare subscriptions
   //                TODO : Define QoS macros
   this->raptor_state_sub =
       this->create_subscription<nif::common::msgs::RaptorState>(
@@ -48,6 +51,11 @@ IBaseNode::IBaseNode(const std::string& node_name,
           std::bind(&IBaseNode::egoVehiclePowertrainCallback,
                     this,
                     std::placeholders::_1));
+
+//  TODO Declare node_state_pub to notify the node state
+//
+//
+//
 }
 
 /**
@@ -56,7 +64,7 @@ IBaseNode::IBaseNode(const std::string& node_name,
  */
 void IBaseNode::egoVehiclePowertrainCallback(
     const nif::common::msgs::PowertrainState::SharedPtr msg) {
-  this->ego_powertrain_state = msg;
+  this->ego_powertrain_state = *msg;
 }
 
 void IBaseNode::egoLocalizationCallback(
@@ -69,11 +77,18 @@ void IBaseNode::egoLocalizationCallback(
  * @param msg
  */
 void IBaseNode::raptorStateCallback(
-    const nif::common::msgs::RaptorState::SharedPtr msg) {}
+    const nif::common::msgs::RaptorState::SharedPtr msg)
+{
+  this->system_state = *msg;
+}
 
 /**
  * TODO implement callback
  * @param msg
  */
 void IBaseNode::raceControlStateCallback(
-    const nif::common::msgs::RaceControlState::SharedPtr msg) {}
+    const nif::common::msgs::RaceControlState::SharedPtr msg)
+{
+
+  this->race_control_state = *msg;
+}
