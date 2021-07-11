@@ -31,10 +31,10 @@ protected:
 
   rclcpp::Time gclock_node_init, gclock_current;
 
-  nif::common::msgs::VehicleKinematicState ego_vehicle_state;
+  nif::common::msgs::PowertrainState ego_powertrain_state;
 
-  // TODO : finalize SystemState class
-  nif::common::msgs::SystemState system_state;
+  // TODO : finalize RaptorState class
+  nif::common::msgs::RaptorState raptor_state;
 
   // TODO : finalize RaceControlState class
   nif::common::msgs::RaceControlState race_control_state;
@@ -49,19 +49,19 @@ private:
    */
   IBaseNode();
 
-  rclcpp::Subscription<nif::common::msgs::VehicleKinematicState>::SharedPtr
-      ego_vehicle_state_sub;
-  rclcpp::Subscription<nif::common::msgs::SystemState>::SharedPtr
-      system_state_sub;
+  rclcpp::Subscription<nif::common::msgs::PowertrainState>::SharedPtr
+      ego_powertrain_state_sub;
+  rclcpp::Subscription<nif::common::msgs::RaptorState>::SharedPtr
+      raptor_state_sub;
   rclcpp::Subscription<nif::common::msgs::RaceControlState>::SharedPtr
       race_control_state_sub;
 
   virtual void declareParameters() = 0;
   virtual void getParameters() = 0;
 
-  void egoVehicleStateCallback(
-      const nif::common::msgs::VehicleKinematicState::SharedPtr msg);
-  void systemStateCallback(const nif::common::msgs::SystemState::SharedPtr msg);
+  void egoVehiclePowertrainCallback(
+      const nif::common::msgs::PowertrainState::SharedPtr msg);
+  void raptorStateCallback(const nif::common::msgs::RaptorState::SharedPtr msg);
   void raceControlStateCallback(
       const nif::common::msgs::RaceControlState::SharedPtr msg);
 };

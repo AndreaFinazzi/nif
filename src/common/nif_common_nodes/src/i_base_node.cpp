@@ -21,12 +21,12 @@ IBaseNode::IBaseNode(const std::string& node_name,
   gclock_current = gclock_node_init;
 
   //                TODO : Define QoS macros
-  this->system_state_sub =
-      this->create_subscription<nif::common::msgs::SystemState>(
-          "topic_system_state",
+  this->raptor_state_sub =
+      this->create_subscription<nif::common::msgs::RaptorState>(
+          "topic_raptor_state",
           nif::common::constants::QOS_DEFAULT,
           std::bind(
-              &IBaseNode::systemStateCallback, this, std::placeholders::_1));
+              &IBaseNode::raptorStateCallback, this, std::placeholders::_1));
   this->race_control_state_sub =
       this->create_subscription<nif::common::msgs::RaceControlState>(
           "topic_race_control_state",
@@ -35,10 +35,10 @@ IBaseNode::IBaseNode(const std::string& node_name,
                     this,
                     std::placeholders::_1));
   this->ego_vehicle_state_sub =
-      this->create_subscription<nif::common::msgs::VehicleKinematicState>(
-          "topic_vehicle_kinematic_state",
+      this->create_subscription<nif::common::msgs::PowertrainState>(
+          "topic_powertrain_state",
           nif::common::constants::QOS_DEFAULT,
-          std::bind(&IBaseNode::egoVehicleStateCallback,
+          std::bind(&IBaseNode::egoVehiclePowertrainCallback,
                     this,
                     std::placeholders::_1));
 }
@@ -47,18 +47,17 @@ IBaseNode::IBaseNode(const std::string& node_name,
  * TODO implement callback
  * @param msg
  */
-void IBaseNode::egoVehicleStateCallback(
-    const nif::common::msgs::VehicleKinematicState::SharedPtr msg) {
-
- this->ego_vehicle_state = msg;
+void IBaseNode::egoVehiclePowertrainCallback(
+    const nif::common::msgs::PowertrainState::SharedPtr msg) {
+  this->ego_powertrain_state = msg;
 }
 
 /**
  * TODO implement callback
  * @param msg
  */
-void IBaseNode::systemStateCallback(
-    const nif::common::msgs::SystemState::SharedPtr msg) {}
+void IBaseNode::raptorStateCallback(
+    const nif::common::msgs::RaptorState::SharedPtr msg) {}
 
 /**
  * TODO implement callback

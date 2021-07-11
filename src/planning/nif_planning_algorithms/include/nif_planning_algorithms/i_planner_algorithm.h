@@ -25,7 +25,7 @@ private:
   /**
    * Last known vehicle state.
    */
-  nif::common::msgs::VehicleKinematicState::SharedPtr vehicle_state_prev;
+  nif::common::msgs::PowertrainState::SharedPtr vehicle_state_prev;
 
   /**
    * Collection of opponent vehicles' kinematic states.
@@ -33,7 +33,7 @@ private:
   std::shared_ptr<nif::common::types::t_oppo_collection_states>
       opponents_states;
 
-  nif::common::msgs::TrackState track_state;
+  nif::common::msgs::TerrainState track_state;
 
   // TODO: Will it be static or not?
   nif::common::RacingLineManager racing_line_manager;
