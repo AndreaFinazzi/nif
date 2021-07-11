@@ -53,6 +53,8 @@ public:
                      nav_msgs::msg::Odometry& ego_vehicle_odom);
   int getCurrentIdx(nav_msgs::msg::Path& reference_path,
                     nav_msgs::msg::Odometry& ego_vehicle_odom);
+  int getWPTIdx(nav_msgs::msg::Path& reference_path,
+                geometry_msgs::msg::PoseStamped& target_pose);
   nav_msgs::msg::Path setMapTrackInGlobal(nav_msgs::msg::Path& reference_path_,
                                           int current_idx_);
   nav_msgs::msg::Path setMapTrackInBody(nav_msgs::msg::Path& reference_path_);
@@ -65,6 +67,7 @@ private:
   vector<int>
       m_current_idx_list; // current idxs with repective to the multiple wpts
 
+  c_wpt c_default_wpt; // default wpt when the waypoint file is loaded.
   c_wpt c_desired_wpt; // dynamically updated from the planning node and any
                        // other else
 

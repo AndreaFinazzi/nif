@@ -18,7 +18,8 @@ IWaypointManager::IWaypointManager(string& wpt_yaml_path_,
   m_global_frame_id = global_frame_id_;
 
   // yaml file example
-  // default wpt and candidates wpt
+  // default wpt(c_default_wpt) and candidates wpt
+  // c_desired_wpt = c_default_wpt;
 }
 
 void IWaypointManager::updateCurrentPose(
@@ -73,6 +74,25 @@ int IWaypointManager::getCurrentIdx(nav_msgs::msg::Path& reference_path,
                                     nav_msgs::msg::Odometry& ego_vehicle_odom) {
   setCurrentIdx(reference_path, ego_vehicle_odom);
   return m_current_idx;
+}
+
+int IWaypointManager::getWPTIdx(nav_msgs::msg::Path& reference_path,
+                                geometry_msgs::msg::PoseStamped& target_pose) {
+  int target_idx;
+  double min_dist = INFINITY;
+  for (int pt_idx = 0; pt_idx < reference_path.poses.size(); pt_idx++) {
+    double dist = sqrt(pow(target_pose.pose.position.x -
+                               reference_path.poses[pt_idx].pose.position.x,
+                           2) +
+                       pow(target_pose.pose.position.y -
+                               reference_path.poses[pt_idx].pose.position.y,
+                           2));
+    if (min_dist > dist) {
+      min_dist = dist;
+      target_idx = pt_idx;
+    }
+  }
+  return target_idx;
 }
 
 nav_msgs::msg::Path
