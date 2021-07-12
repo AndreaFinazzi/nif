@@ -64,10 +64,10 @@ public:
   int getWPTIdx(nav_msgs::msg::Path& reference_path,
                 geometry_msgs::msg::PoseStamped& target_pose);
 
-  nav_msgs::msg::Path getMapTrackInGlobal(nav_msgs::msg::Path& reference_path_,
-                                          int current_idx_);
+  nav_msgs::msg::Path calcMapTrackInGlobal(nav_msgs::msg::Path& reference_path_,
+                                           int current_idx_);
 
-  nav_msgs::msg::Path getMapTrackInBody(nav_msgs::msg::Path& reference_path_);
+  nav_msgs::msg::Path calcMapTrackInBody(nav_msgs::msg::Path& reference_path_);
 
   virtual void updateDesiredWPT(nav_msgs::msg::Path& local_path_in_body);
 

@@ -31,6 +31,9 @@ public:
 private:
   WaypointManagerNode();
   void timer_callback();
+
+  // TODO: not used function. @Andrea told that these functions should be fixed
+  // or removed
   void initParameters();
   void getParameters();
 

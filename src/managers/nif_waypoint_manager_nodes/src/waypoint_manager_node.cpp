@@ -27,6 +27,7 @@ WaypointManagerNode::WaypointManagerNode(
 void WaypointManagerNode::timer_callback() {
   RCLCPP_INFO(this->get_logger(), "WaypointManagerNode timer callback");
   nav_msgs::msg::Path test;
+  this->wpt_manager->setCurrentPose(this->ego_odometry);
   test = this->wpt_manager->getDesiredMapTrackInGlobal();
 }
 

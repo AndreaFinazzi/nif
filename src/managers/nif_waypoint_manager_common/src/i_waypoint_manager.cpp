@@ -33,6 +33,9 @@ IWaypointManager::IWaypointManager(vector<string>& wpt_file_path_list_,
   // default racing line file path should be the first
   c_default_wpt = m_wpt_list[0];
   c_desired_wpt = c_default_wpt;
+
+  m_default_wpt_in_nav_path = c_default_wpt.getWPTinNavPath();
+  m_desired_wpt_in_nav_path = c_desired_wpt.getWPTinNavPath();
 }
 
 void IWaypointManager::setCurrentPose(
@@ -48,19 +51,26 @@ void IWaypointManager::setCurrentPose(
   tf2::Matrix3x3(quat).getRPY(
       m_current_roll_rad, m_current_pitch_rad, m_current_yaw_rad);
 
-  m_current_idx_list.clear();
+  // m_current_idx_list.clear();
 
-  for (int wpt_idx = 0; wpt_idx < m_wpt_list.size(); wpt_idx++) {
-    nav_msgs::msg::Path wpt_in_nav_path =
-        (m_wpt_list[wpt_idx].getWPTinNavPath());
-    int current_idx = getCurrentIdx(wpt_in_nav_path, ego_vehicle_odom);
+  // for (int wpt_idx = 0; wpt_idx < m_wpt_list.size(); wpt_idx++) {
+  //   nav_msgs::msg::Path wpt_in_nav_path =
+  //       (m_wpt_list[wpt_idx].getWPTinNavPath());
+  //   int current_idx = getCurrentIdx(wpt_in_nav_path, ego_vehicle_odom);
 
-    m_current_idx_list.push_back(current_idx);
-    m_maptrack_in_global_list.push_back(
-        getMapTrackInGlobal(wpt_in_nav_path, current_idx));
-    m_maptrack_in_body_list.push_back(
-        getMapTrackInBody(m_maptrack_in_global_list[-1]));
-  }
+  //   m_current_idx_list.push_back(current_idx);
+  //   m_maptrack_in_global_list.push_back(
+  //       calcMapTrackInGlobal(wpt_in_nav_path, current_idx));
+  //   m_maptrack_in_body_list.push_back(
+  //       calcMapTrackInBody(m_maptrack_in_global_list[-1]));
+  // }
+
+  // TODO : should add above code in another function
+  int current_idx = getCurrentIdx(m_desired_wpt_in_nav_path, ego_vehicle_odom);
+  m_desired_maptrack_in_global =
+      calcMapTrackInGlobal(m_desired_wpt_in_nav_path, current_idx);
+  m_desired_maptrack_in_body =
+      getPathGlobaltoBody(m_desired_maptrack_in_global);
 }
 
 void IWaypointManager::setCurrentIdx(
@@ -109,8 +119,8 @@ int IWaypointManager::getWPTIdx(nav_msgs::msg::Path& reference_path,
 }
 
 nav_msgs::msg::Path
-IWaypointManager::getMapTrackInGlobal(nav_msgs::msg::Path& reference_path_,
-                                      int current_idx_) {
+IWaypointManager::calcMapTrackInGlobal(nav_msgs::msg::Path& reference_path_,
+                                       int current_idx_) {
   //   If the vehicle is on the end of the wpt, current idx is going to
   //   zero again. Make sure that there is no memory overflow when you access
   //   based on this current idx
@@ -136,8 +146,8 @@ IWaypointManager::getMapTrackInGlobal(nav_msgs::msg::Path& reference_path_,
   return map_track_in_global;
 }
 
-nav_msgs::msg::Path
-IWaypointManager::getMapTrackInBody(nav_msgs::msg::Path& map_track_in_global_) {
+nav_msgs::msg::Path IWaypointManager::calcMapTrackInBody(
+    nav_msgs::msg::Path& map_track_in_global_) {
   nav_msgs::msg::Path map_track_in_body;
   map_track_in_body.header.frame_id = m_body_frame_id;
   map_track_in_body = getPathGlobaltoBody(map_track_in_global_);
