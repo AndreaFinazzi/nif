@@ -20,15 +20,18 @@ WaypointManagerNode::WaypointManagerNode(
     std::string& node_name_,
     std::shared_ptr<WaypointManagerMinimal> wpt_manager_ptr)
   : wpt_manager(wpt_manager_ptr), IBaseNode(node_name_) {
-  timer_ = this->create_wall_timer(
+  m_timer = this->create_wall_timer(
       10ms, std::bind(&WaypointManagerNode::timer_callback, this));
+  m_map_track_publisher = this->create_publisher<nav_msgs::msg::Path>(
+      "nif/wpt_manager/maptrack_path", 10);
 }
 
 void WaypointManagerNode::timer_callback() {
   RCLCPP_INFO(this->get_logger(), "WaypointManagerNode timer callback");
-  nav_msgs::msg::Path test;
+  nav_msgs::msg::Path maptrack;
   this->wpt_manager->setCurrentPose(this->ego_odometry);
-  test = this->wpt_manager->getDesiredMapTrackInGlobal();
+  maptrack = this->wpt_manager->getDesiredMapTrackInGlobal();
+  m_map_track_publisher->publish(maptrack);
 }
 
 void WaypointManagerNode::initParameters() {}
