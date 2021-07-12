@@ -98,6 +98,20 @@ std::string RADAR_LEFT = "left_radar";
 std::string RADAR_RIGHT = "right_radar";
 } // namespace radar
 
+namespace gps {
+/**
+ * TODO: should be renamed more clearly
+ * GPS antenas which are installed in left and right
+ */
+std::string GPS_HORIZONTAL = "gps_horizontal";
+
+/**
+ * TODO: should be renamed more clearly
+ * GPS antenas which are installed in front and rear
+ */
+std::string GPS_VERTICAL = "gps_vertical";
+} // namespace gps
+
 } // namespace frame_id
 } // namespace common
 } // namespace nif

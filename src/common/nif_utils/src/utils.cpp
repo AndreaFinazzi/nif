@@ -6,7 +6,7 @@
 //
 
 #include "nif_utils/utils.h"
-#include <cmath>
+#include <math.h>
 
 double nif::common::utils::geometry::calEuclideanDistance(
     const geometry_msgs::msg::Point& a, const geometry_msgs::msg::Point& b) {
