@@ -8,6 +8,31 @@
 #include "nif_waypoint_manager_common/i_waypoint_manager.h"
 #include <tf2/LinearMath/Quaternion.h>
 
+IWaypointManager::IWaypointManager(vector<string>& wpt_file_path_list_,
+                                   string& body_frame_id_,
+                                   string& global_frame_id_) {
+  assert(wpt_file_path_list_.size() != 0);
+  m_body_frame_id = body_frame_id_;
+  m_global_frame_id = global_frame_id_;
+  m_wpt_list.clear();
+
+  bool wpt_3d_flg = false;
+  bool spline_flg = true;
+
+  for (int wpt_file_idx = 0; wpt_file_idx < wpt_file_path_list_.size();
+       wpt_file_idx++) {
+    c_wpt obj(wpt_file_path_list_[wpt_file_idx],
+              "",
+              m_global_frame_id,
+              wpt_3d_flg,
+              spline_flg,
+              0.5);
+    m_wpt_list.push_back(obj);
+  }
+  c_default_wpt = m_wpt_list[0];
+  c_desired_wpt = c_default_wpt;
+}
+
 IWaypointManager::IWaypointManager(string& wpt_yaml_path_,
                                    string& body_frame_id_,
                                    string& global_frame_id_) {

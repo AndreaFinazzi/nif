@@ -18,6 +18,9 @@
 class IWaypointManager {
 public:
   IWaypointManager() {}
+  IWaypointManager(vector<string>& wpt_file_path_list_,
+                   string& body_frame_id_,
+                   string& global_frame_id_);
   IWaypointManager(string& wpt_yaml_path_,
                    string& body_frame_id_,
                    string& global_frame_id_);

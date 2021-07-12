@@ -20,7 +20,6 @@ public:
   WaypointManagerMinimal(string& wpt_yaml_path_,
                          string& body_frame_id_,
                          string& global_frame_id_);
-  ~WaypointManagerMinimal();
 
 private:
   WaypointManagerMinimal() {}

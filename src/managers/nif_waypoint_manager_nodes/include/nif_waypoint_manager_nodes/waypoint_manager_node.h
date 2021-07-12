@@ -9,6 +9,10 @@
 #include "nif_waypoint_manager_common/i_waypoint_manager.h"
 #include "nif_waypoint_manager_minimal/waypoint_manager_minimal.h"
 
+#include "nav_msgs/msg/odometry.hpp"
+
+#include "rclcpp/rclcpp.hpp"
+
 class WaypointManagerNode : public nif::common::IBaseNode {
 public:
   /**
@@ -26,11 +30,14 @@ public:
 
 private:
   WaypointManagerNode();
+  void timer_callback();
+  void initParameters();
+  void getParameters();
 
   std::shared_ptr<WaypointManagerMinimal> wpt_manager;
 
-  //    Subscribers
-  //
+  rclcpp::TimerBase::SharedPtr timer_;
+  nif::common::msgs::Odometry m_current_pose;
 };
 
 #endif // ROS2MASTER_WAYPOINT_MANAGER_NODE_H
