@@ -21,9 +21,6 @@ public:
   IWaypointManager(vector<string>& wpt_file_path_list_,
                    string& body_frame_id_,
                    string& global_frame_id_);
-  IWaypointManager(string& wpt_yaml_path_,
-                   string& body_frame_id_,
-                   string& global_frame_id_);
 
   vector<c_wpt>& getListOfWPT() {
     return m_wpt_list;
@@ -41,27 +38,36 @@ public:
     return m_desired_maptrack_in_global;
   }
   geometry_msgs::msg::PoseStamped
-  convertPtBodytoGlobal(geometry_msgs::msg::PoseStamped& point_in_body_);
-  nav_msgs::msg::Path
-  convertPathBodytoGlobal(nav_msgs::msg::Path& path_in_body_);
+  getPtBodytoGlobal(geometry_msgs::msg::PoseStamped& point_in_body_);
+
+  nav_msgs::msg::Path getPathBodytoGlobal(nav_msgs::msg::Path& path_in_body_);
+
   geometry_msgs::msg::PoseStamped
-  convertPtGlobaltoBody(geometry_msgs::msg::PoseStamped& point_in_global_);
-  nav_msgs::msg::Path
-  convertPathGlobaltoBody(nav_msgs::msg::Path& path_in_global_);
-  void updateCurrentPose(nav_msgs::msg::Odometry& ego_vehicle_odom);
+  getPtGlobaltoBody(geometry_msgs::msg::PoseStamped& point_in_global_);
+
+  nav_msgs::msg::Path getPathGlobaltoBody(nav_msgs::msg::Path& path_in_global_);
+
+  void setCurrentPose(nav_msgs::msg::Odometry& ego_vehicle_odom);
+
   void setSizeOfMapTrack(int size_of_map_track_) {
     m_size_of_map_track = size_of_map_track_;
   }
+
   void resetDesiredWPT();
+
   void setCurrentIdx(nav_msgs::msg::Path& reference_path,
                      nav_msgs::msg::Odometry& ego_vehicle_odom);
+
   int getCurrentIdx(nav_msgs::msg::Path& reference_path,
                     nav_msgs::msg::Odometry& ego_vehicle_odom);
+
   int getWPTIdx(nav_msgs::msg::Path& reference_path,
                 geometry_msgs::msg::PoseStamped& target_pose);
-  nav_msgs::msg::Path setMapTrackInGlobal(nav_msgs::msg::Path& reference_path_,
+
+  nav_msgs::msg::Path getMapTrackInGlobal(nav_msgs::msg::Path& reference_path_,
                                           int current_idx_);
-  nav_msgs::msg::Path setMapTrackInBody(nav_msgs::msg::Path& reference_path_);
+
+  nav_msgs::msg::Path getMapTrackInBody(nav_msgs::msg::Path& reference_path_);
 
   virtual void updateDesiredWPT(nav_msgs::msg::Path& local_path_in_body);
 

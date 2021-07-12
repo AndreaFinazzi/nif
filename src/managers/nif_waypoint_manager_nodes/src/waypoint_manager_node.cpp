@@ -7,17 +7,17 @@
 #include "nif_utils/utils.h"
 #include "rcutils/error_handling.h"
 
-WaypointManagerNode::WaypointManagerNode(string node_name_,
-                                         string& wpt_yaml_path_,
+WaypointManagerNode::WaypointManagerNode(string& node_name_,
+                                         vector<string>& wpt_file_path_list_,
                                          string& body_frame_id_,
                                          string& global_frame_id_)
-  : WaypointManagerNode(node_name_,
-                        std::make_shared<WaypointManagerMinimal>(
-                            wpt_yaml_path_, body_frame_id_, global_frame_id_)) {
-}
+  : WaypointManagerNode(
+        node_name_,
+        std::make_shared<WaypointManagerMinimal>(
+            wpt_file_path_list_, body_frame_id_, global_frame_id_)) {}
 
 WaypointManagerNode::WaypointManagerNode(
-    std::string node_name_,
+    std::string& node_name_,
     std::shared_ptr<WaypointManagerMinimal> wpt_manager_ptr)
   : wpt_manager(wpt_manager_ptr), IBaseNode(node_name_) {
   timer_ = this->create_wall_timer(
@@ -39,9 +39,9 @@ int main(int argc, char* argv[]) {
   //   using nif::control::ControlSafetyLayerNode;
   using namespace nif::common::constants;
 
-  const char* node_name = "wappoint_manager";
+  string node_name = "wappoint_manager";
 
-  string wpt_yaml_path_test = "";
+  vector<string> file_path_list;
   string body_frame_id_test = "";
   string global_frame_id_test = "";
   const std::chrono::microseconds sync_period(10000); //  10ms
@@ -54,10 +54,8 @@ int main(int argc, char* argv[]) {
         "Instantiating WaypointManagerNode with name: %s; sync_period: %d",
         node_name,
         sync_period);
-    nd = std::make_shared<WaypointManagerNode>(node_name,
-                                               wpt_yaml_path_test,
-                                               body_frame_id_test,
-                                               global_frame_id_test);
+    nd = std::make_shared<WaypointManagerNode>(
+        node_name, file_path_list, body_frame_id_test, global_frame_id_test);
 
   } catch (std::range_error& e) {
     RCLCPP_ERROR(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
@@ -67,10 +65,8 @@ int main(int argc, char* argv[]) {
 
     //  Initialize with default period.
     //  TODO should we abort in these circumstances?
-    nd = std::make_shared<WaypointManagerNode>(node_name,
-                                               wpt_yaml_path_test,
-                                               body_frame_id_test,
-                                               global_frame_id_test);
+    nd = std::make_shared<WaypointManagerNode>(
+        node_name, file_path_list, body_frame_id_test, global_frame_id_test);
 
   } catch (std::exception& e) {
     RCLCPP_FATAL(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),

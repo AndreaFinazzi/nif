@@ -20,12 +20,12 @@ public:
    * Using default WaypointManager -> WaypointManagerMinimal
    *
    **/
-  WaypointManagerNode(std::string node_name_,
-                      string& wpt_yaml_path_,
+  WaypointManagerNode(std::string& node_name_,
+                      vector<string>& wpt_file_path_list_,
                       string& body_frame_id_,
                       string& global_frame_id_);
 
-  WaypointManagerNode(std::string node_name_,
+  WaypointManagerNode(std::string& node_name_,
                       std::shared_ptr<WaypointManagerMinimal> wpt_manager_ptr);
 
 private:
