@@ -11,6 +11,8 @@
 #include "geometry_msgs/msg/point.hpp"
 #include "geometry_msgs/msg/pose.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
+#include "geometry_msgs/msg/quaternion.hpp"
+#include "nif_common/constants.h"
 #include <rclcpp/parameter.hpp>
 #include <string>
 
@@ -98,6 +100,16 @@ constexpr inline const T& clip(const T& min, const T& max, const T& target) {
 }
 
 } // namespace numeric
+
+namespace coordination {
+
+double quat2yaw(geometry_msgs::msg::Quaternion& data);
+
+double angle_wrap(double diff);
+
+// geometry_msgs::msg::PoseStamped
+// PtGlobaltoBody(geometry_msgs::msg::PoseStamped& point_in_global_);
+} // namespace coordination
 
 } // namespace utils
 } // namespace common
