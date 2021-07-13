@@ -103,12 +103,10 @@ constexpr inline const T& clip(const T& min, const T& max, const T& target) {
 
 namespace coordination {
 
-double quat2yaw(geometry_msgs::msg::Quaternion& data);
+inline double quat2yaw(geometry_msgs::msg::Quaternion& data);
 
-double angle_wrap(double diff);
+inline double angle_wrap(double diff);
 
-// geometry_msgs::msg::PoseStamped
-// PtGlobaltoBody(geometry_msgs::msg::PoseStamped& point_in_global_);
 } // namespace coordination
 
 } // namespace utils

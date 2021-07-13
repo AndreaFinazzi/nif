@@ -10,34 +10,52 @@
 
 #include "nif_common/types.h"
 #include "nif_common_nodes/i_base_node.h"
-#include "nif_racing_line/racing_line_manager.h"
+#include "nif_localization_minimal/localization_minimal.h"
 
 #include "nav_msgs/msg/odometry.hpp"
+#include "novatel_gps_msgs/msg/inspva.hpp"
 #include "rclcpp/rclcpp.hpp"
-#include "sensor_msgs/msg/point_cloud2.hpp"
+
+#include "rcutils/error_handling.h"
+#include <chrono>
+#include <message_filters/subscriber.h>
+#include <message_filters/time_synchronizer.h>
 
 namespace nif {
 namespace perception {
+using namespace std::chrono_literals;
 
 class LocalizationNode : public nif::common::IBaseNode {
-
 public:
-protected:
+  LocalizationNode(
+      std::string& node_name_,
+      std::shared_ptr<LocalizationMinimal> localization_algorithm_ptr);
+
 private:
-  nif::common::RacingLineManager racing_line_manager;
+  LocalizationNode();
+  void timer_callback();
+  void syncGPSCallback(
+      const novatel_gps_msgs::msg::Inspva::ConstSharedPtr& gps_horizontal_,
+      const novatel_gps_msgs::msg::Inspva::ConstSharedPtr& gps_vertical_);
 
-  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr gps_data_sub;
-  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr lidar_mesh_sub;
-  rclcpp::Subscription<nif::common::msgs::Polynomial>::SharedPtr
-      track_boundaries_sub;
+  // TODO: not used function. @Andrea told that these functions should be
+  // fixed or removed
+  void initParameters();
+  void getParameters();
 
-  rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odometry_pub;
+  std::shared_ptr<LocalizationMinimal> m_localization_algorithm_ptr;
+  nav_msgs::msg::Odometry m_veh_odom;
+  rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr m_veh_odom_publisher;
 
-  void gpsDataCallback(nav_msgs::msg::Odometry::SharedPtr &msg);
-  void lidarMeshCallback(sensor_msgs::msg::PointCloud2 &msg);
-
-  //            TODO: Polynomial type yet to be defined.
-  void trackBoundariesCallback(nif::common::msgs::Polynomial::SharedPtr &msg);
+  message_filters::Subscriber<novatel_gps_msgs::msg::Inspva>
+      m_gps_horizontal_subscriber;
+  message_filters::Subscriber<novatel_gps_msgs::msg::Inspva>
+      m_gps_vertical_subscriber;
+  std::shared_ptr<
+      message_filters::TimeSynchronizer<novatel_gps_msgs::msg::Inspva,
+                                        novatel_gps_msgs::msg::Inspva>>
+      m_gps_sync_ptr;
+  rclcpp::TimerBase::SharedPtr m_timer;
 };
 
 } // namespace perception

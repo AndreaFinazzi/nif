@@ -7,10 +7,11 @@
 #include "nif_utils/utils.h"
 #include "rcutils/error_handling.h"
 
-WaypointManagerNode::WaypointManagerNode(string& node_name_,
-                                         vector<string>& wpt_file_path_list_,
-                                         string& body_frame_id_,
-                                         string& global_frame_id_)
+WaypointManagerNode::WaypointManagerNode(
+    std::string& node_name_,
+    std::vector<string>& wpt_file_path_list_,
+    std::string& body_frame_id_,
+    std::string& global_frame_id_)
   : WaypointManagerNode(
         node_name_,
         std::make_shared<WaypointManagerMinimal>(

@@ -13,8 +13,53 @@ LocalizationMinimal::LocalizationMinimal() {
 
 LocalizationMinimal::~LocalizationMinimal() {}
 
+nav_msgs::msg::Odometry LocalizationMinimal::getVehOdomByFusion() {
+  linearFusion();
+  return m_veh_odom_fused;
+}
+
+void LocalizationMinimal::linearFusion() {
+  // position linear fusion
+  m_veh_odom_fused.pose.pose.position.x =
+      (m_veh_odom_horizontal.pose.pose.position.x +
+       m_veh_odom_vertical.pose.pose.position.x) /
+      2.0;
+  m_veh_odom_fused.pose.pose.position.y =
+      (m_veh_odom_horizontal.pose.pose.position.y +
+       m_veh_odom_vertical.pose.pose.position.y) /
+      2.0;
+  m_veh_odom_fused.pose.pose.position.z =
+      (m_veh_odom_horizontal.pose.pose.position.z +
+       m_veh_odom_vertical.pose.pose.position.z) /
+      2.0;
+
+  // orientation linear fusion
+  m_veh_odom_fused.pose.pose.orientation.x =
+      (m_veh_odom_horizontal.pose.pose.orientation.x +
+       m_veh_odom_vertical.pose.pose.orientation.x) /
+      2.0;
+  m_veh_odom_fused.pose.pose.orientation.y =
+      (m_veh_odom_horizontal.pose.pose.orientation.y +
+       m_veh_odom_vertical.pose.pose.orientation.y) /
+      2.0;
+  m_veh_odom_fused.pose.pose.orientation.z =
+      (m_veh_odom_horizontal.pose.pose.orientation.z +
+       m_veh_odom_vertical.pose.pose.orientation.z) /
+      2.0;
+  m_veh_odom_fused.pose.pose.orientation.w =
+      (m_veh_odom_horizontal.pose.pose.orientation.w +
+       m_veh_odom_vertical.pose.pose.orientation.w) /
+      2.0;
+
+  // heading linear fusion
+  m_heading_rad_gps_fused =
+      m_heading_rad_gps_horizontal + m_heading_rad_gps_vertical;
+  m_heading_deg_gps_fused =
+      m_heading_deg_gps_horizontal + m_heading_deg_gps_vertical;
+}
+
 void LocalizationMinimal::setGPSHorizontalData(
-    novatel_gps_msgs::msg::Inspva& gps_horizontal_data_) {
+    const novatel_gps_msgs::msg::Inspva& gps_horizontal_data_) {
   m_geo_converter_ptr->geodetic2Ned(
       gps_horizontal_data_.latitude,
       gps_horizontal_data_.longitude,
@@ -40,7 +85,7 @@ void LocalizationMinimal::setGPSHorizontalData(
 }
 
 void LocalizationMinimal::setGPSVerticalData(
-    novatel_gps_msgs::msg::Inspva& gps_vertical_data_) {
+    const novatel_gps_msgs::msg::Inspva& gps_vertical_data_) {
   m_geo_converter_ptr->geodetic2Ned(gps_vertical_data_.latitude,
                                     gps_vertical_data_.longitude,
                                     0.0,

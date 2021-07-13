@@ -20,18 +20,34 @@ private:
   std::shared_ptr<GeodeticConverter> m_geo_converter_ptr;
 
   novatel_gps_msgs::msg::Inspva m_gps_horizontal, m_gps_vertical;
-  nav_msgs::msg::Odometry m_veh_odom_horizontal, m_veh_odom_vertical;
+  nav_msgs::msg::Odometry m_veh_odom_horizontal, m_veh_odom_vertical,
+      m_veh_odom_fused;
 
-  double m_heading_rad_gps_horizontal, m_heading_rad_gps_vertical;
-  double m_heading_deg_gps_horizontal, m_heading_deg_gps_vertical;
+  double m_heading_rad_gps_horizontal, m_heading_rad_gps_vertical,
+      m_heading_rad_gps_fused;
+  double m_heading_deg_gps_horizontal, m_heading_deg_gps_vertical,
+      m_heading_deg_gps_fused;
 
 public:
   LocalizationMinimal();
+
   ~LocalizationMinimal();
 
+  void setGPSHorizontalData(
+      const novatel_gps_msgs::msg::Inspva& gps_horizontal_data_);
+
   void
-  setGPSHorizontalData(novatel_gps_msgs::msg::Inspva& gps_horizontal_data_);
-  void setGPSVerticalData(novatel_gps_msgs::msg::Inspva& gps_vertical_data_);
+  setGPSVerticalData(const novatel_gps_msgs::msg::Inspva& gps_vertical_data_);
+
+  void linearFusion();
+
+  nav_msgs::msg::Odometry getVehOdomByHorizontalGPS() {
+    return m_veh_odom_horizontal;
+  }
+  nav_msgs::msg::Odometry getVehOdomByVerticalGPS() {
+    return m_veh_odom_vertical;
+  }
+  nav_msgs::msg::Odometry getVehOdomByFusion();
 };
 
 #endif // NIF_LOCALIZATION_MINIMAL_H

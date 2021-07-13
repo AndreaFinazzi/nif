@@ -15,9 +15,10 @@
 
   <depend>nif_common</depend>
   <depend>nif_common_nodes</depend>
-  <depend>nif_racing_line</depend>
+  <depend>nif_localization_minimal</depend>
   <depend>rclcpp</depend>
   <depend>std_msgs</depend>
+  <depend>message_filters</depend>
 
   <export>
     <build_type>ament_cmake</build_type>

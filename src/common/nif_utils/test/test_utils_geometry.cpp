@@ -50,21 +50,18 @@ protected:
 };
 
 TEST_F(UtilsGeometryEuclideanTest, EuclideanDistancePoseStamped) {
-
   double pose_stamped_res = nif::common::utils::geometry::calEuclideanDistance(
       pose_stamped_a, pose_stamped_b);
   ASSERT_NEAR(pose_stamped_res, 1.7320508076, DISTANCE_ABS_ERROR);
 }
 
 TEST_F(UtilsGeometryEuclideanTest, EuclideanDistancePose) {
-
   double pose_stamped_res =
       nif::common::utils::geometry::calEuclideanDistance(pose_a, pose_b);
   ASSERT_NEAR(pose_stamped_res, 1.7320508076, DISTANCE_ABS_ERROR);
 }
 
 TEST_F(UtilsGeometryEuclideanTest, EuclideanDistancePoint) {
-
   double pose_stamped_res =
       nif::common::utils::geometry::calEuclideanDistance(point_a, point_b);
   ASSERT_NEAR(pose_stamped_res, 1.7320508076, DISTANCE_ABS_ERROR);
