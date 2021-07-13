@@ -4,6 +4,7 @@
 
 #include "nif_waypoint_manager_nodes/waypoint_manager_node.h"
 
+// TODO sohuld pass node_name_ as a reference here
 WaypointManagerNode::WaypointManagerNode(std::string node_name_,
                                          string& wpt_yaml_path_,
                                          string& body_frame_id_,
@@ -13,6 +14,8 @@ WaypointManagerNode::WaypointManagerNode(std::string node_name_,
                             wpt_yaml_path_, body_frame_id_, global_frame_id_)) {
 }
 
+// TODO should pass node_name_ as a reference here
+// TODO IBaseNode should be initialized first
 WaypointManagerNode::WaypointManagerNode(
     std::string node_name_,
     std::shared_ptr<WaypointManagerMinimal> wpt_manager_ptr)
