@@ -10,14 +10,14 @@
 
 #include "nif_common/types.h"
 #include "nif_common_nodes/i_base_node.h"
-#include "nif_planning_algorithms/i_planner_algorithm.h"
+#include "nif_planning_common/i_planner_common.h"
 
 namespace nif {
 namespace planning {
 
 class PlannerNode : public nif::common::IBaseNode {
 public:
-  PlannerNode(nif::planning::algorithms::IPlannerAlgorithm& planner_algorithm_);
+  PlannerNode(nif::planning::common::IPlannerAlgorithm& planner_algorithm_);
 
 protected:
   /**
@@ -30,7 +30,7 @@ protected:
 
   rclcpp::Publisher<nif::common::msgs::Trajectory> trajectory_pub;
 
-  nif::planning::algorithms::IPlannerAlgorithm& planner_algorithm;
+  nif::planning::common::IPlannerAlgorithm& planner_algorithm;
 
   void opponentsStateCallback(
       const nif::common::types::t_oppo_collection_states& msg);

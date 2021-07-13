@@ -27,9 +27,11 @@ using namespace std::chrono_literals;
 
 class LocalizationNode : public nif::common::IBaseNode {
 public:
+  LocalizationNode(std::string& node_name_);
   LocalizationNode(
       std::string& node_name_,
       std::shared_ptr<LocalizationMinimal> localization_algorithm_ptr);
+  ~LocalizationNode() {}
 
 private:
   LocalizationNode();
@@ -40,8 +42,8 @@ private:
 
   // TODO: not used function. @Andrea told that these functions should be
   // fixed or removed
-  void initParameters();
-  void getParameters();
+  void initParameters() {}
+  void getParameters() {}
 
   std::shared_ptr<LocalizationMinimal> m_localization_algorithm_ptr;
   nav_msgs::msg::Odometry m_veh_odom;

@@ -9,6 +9,9 @@
 
 using namespace nif::perception;
 
+LocalizationNode::LocalizationNode(std::string& node_name_)
+  : LocalizationNode(node_name_, std::make_shared<LocalizationMinimal>()) {}
+
 LocalizationNode::LocalizationNode(
     std::string& node_name_,
     std::shared_ptr<LocalizationMinimal> localization_algorithm_ptr)
