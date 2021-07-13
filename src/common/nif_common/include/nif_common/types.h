@@ -12,8 +12,11 @@
 #include "autoware_auto_msgs/msg/vehicle_kinematic_state.hpp"
 #include "constants.h"
 #include "nav_msgs/msg/odometry.hpp"
+#include "std_msgs/msg/float32.hpp"
+#include "std_msgs/msg/int8.hpp"
 
 #include "nif_msgs/msg/autonomy_status.hpp"
+#include "nif_msgs/msg/control_command.hpp"
 #include "nif_msgs/msg/health.hpp"
 #include "nif_msgs/msg/perception3_d.hpp"
 #include "nif_msgs/msg/perception3_d_array.hpp"
@@ -28,8 +31,8 @@ namespace common {
 namespace msgs {
 
 /**
- * This message contains the odometry (pose + twist) information which should be updated by the
- * localization node.
+ * This message contains the odometry (pose + twist) information which should be
+ * updated by the localization node.
  */
 using Odometry = nav_msgs::msg::Odometry;
 
@@ -44,7 +47,7 @@ using TerrainState = nif_msgs::msg::TerrainStatus;
  * raptor computer in the racing vehicle.
  * TODO: should be changed based on the bag file
  */
-//using RaptorState = raptor_dbw_msgs::msg::;
+// using RaptorState = raptor_dbw_msgs::msg::;
 
 /**
  * This message contains the race flag information from the race control.
@@ -105,7 +108,13 @@ using WaypointStateList = nif_msgs::msg::WaypointsArray;
 
 // TODO: replace with real polynomial!
 using Polynomial = nav_msgs::msg::Odometry;
-using ControlCmd = std_msgs::msg::Header;
+
+using ControlCmd = nif_msgs::msg::ControlCommand;
+
+using ControlAcceleratorCmd = std_msgs::msg::Float32;
+using ControlBrakingCmd = std_msgs::msg::Float32;
+using ControlGearCmd = std_msgs::msg::Int8;
+using ControlSteeringCmd = std_msgs::msg::Float32;
 
 using Trajectory = autoware_auto_msgs::msg::Trajectory;
 // using VehicleKinematicState =
@@ -118,7 +127,8 @@ template <typename T>
 using t_oppo_collection =
     std::array<T, nif::common::constants::NUMBER_OF_OPPO_MAX>;
 
-using t_oppo_collection_states = t_oppo_collection<nif::common::msgs::PerceptionResult>;
+using t_oppo_collection_states =
+    t_oppo_collection<nif::common::msgs::PerceptionResult>;
 
 } // namespace types
 } // namespace common

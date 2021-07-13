@@ -21,7 +21,7 @@ int32_t main(int32_t argc, char **argv) {
   using nif::control::ControlSafetyLayerNode;
   using namespace nif::common::constants;
 
-  const char* node_name = "control_safety_layer";
+  const char* node_name = "control_safety_layer_node";
   const std::chrono::microseconds sync_period(10000); //  10ms
 
   rclcpp::Node::SharedPtr nd;
@@ -29,9 +29,11 @@ int32_t main(int32_t argc, char **argv) {
   try {
     RCLCPP_INFO(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
                 "Instantiating ControlSafetyLayerNode with name: %s; sync_period: %d", node_name, sync_period);
+    rclcpp::NodeOptions options;
+
     nd = std::make_shared<ControlSafetyLayerNode>(
         node_name,
-        rclcpp::NodeOptions{},
+        options,
         nif::common::utils::numeric::clip(SYNC_PERIOD_MIN, SYNC_PERIOD_MAX, sync_period));
 
   } catch (std::range_error & e) {
