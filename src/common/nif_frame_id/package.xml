@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>nif_localization_nodes</name>
+  <name>nif_frame_id</name>
   <version>0.0.0</version>
   <description>TODO: Package description</description>
-  <maintainer email="usrg@todo.todo">usrg</maintainer>
+  <maintainer email="cy.jung@kaist.ac.kr">usrg</maintainer>
   <license>TODO: License declaration</license>
 
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
@@ -14,11 +14,7 @@
   <test_depend>ament_cmake_gtest</test_depend>
 
   <depend>nif_common</depend>
-  <depend>nif_common_nodes</depend>
-  <depend>nif_localization_minimal</depend>
-  <depend>rclcpp</depend>
-  <depend>std_msgs</depend>
-  <depend>message_filters</depend>
+
 
   <export>
     <build_type>ament_cmake</build_type>

@@ -18,7 +18,7 @@
 class IWaypointManager {
 public:
   IWaypointManager() {}
-  IWaypointManager(string& wpt_yaml_path_,
+  IWaypointManager(vector<string>& wpt_file_path_list_,
                    string& body_frame_id_,
                    string& global_frame_id_);
 
@@ -38,35 +38,52 @@ public:
     return m_desired_maptrack_in_global;
   }
   geometry_msgs::msg::PoseStamped
-  convertPtBodytoGlobal(geometry_msgs::msg::PoseStamped& point_in_body_);
-  nav_msgs::msg::Path
-  convertPathBodytoGlobal(nav_msgs::msg::Path& path_in_body_);
+  getPtBodytoGlobal(geometry_msgs::msg::PoseStamped& point_in_body_);
+
+  nav_msgs::msg::Path getPathBodytoGlobal(nav_msgs::msg::Path& path_in_body_);
+
   geometry_msgs::msg::PoseStamped
-  convertPtGlobaltoBody(geometry_msgs::msg::PoseStamped& point_in_global_);
-  nav_msgs::msg::Path
-  convertPathGlobaltoBody(nav_msgs::msg::Path& path_in_global_);
-  void updateCurrentPose(nav_msgs::msg::Odometry& ego_vehicle_odom);
+  getPtGlobaltoBody(geometry_msgs::msg::PoseStamped& point_in_global_);
+
+  nav_msgs::msg::Path getPathGlobaltoBody(nav_msgs::msg::Path& path_in_global_);
+
+  void setCurrentPose(nav_msgs::msg::Odometry& ego_vehicle_odom);
+
   void setSizeOfMapTrack(int size_of_map_track_) {
     m_size_of_map_track = size_of_map_track_;
   }
+
+  void resetDesiredWPT();
+
   void setCurrentIdx(nav_msgs::msg::Path& reference_path,
                      nav_msgs::msg::Odometry& ego_vehicle_odom);
+
   int getCurrentIdx(nav_msgs::msg::Path& reference_path,
                     nav_msgs::msg::Odometry& ego_vehicle_odom);
-  nav_msgs::msg::Path setMapTrackInGlobal(nav_msgs::msg::Path& reference_path_,
-                                          int current_idx_);
-  nav_msgs::msg::Path setMapTrackInBody(nav_msgs::msg::Path& reference_path_);
 
-  // virtual void updateDesiredWPT(nav_msgs::msg::Odometry& ego_vehicle_odom,
-  //                               nav_msgs::msg::Path& local_path) = 0;
+  int getWPTIdx(nav_msgs::msg::Path& reference_path,
+                geometry_msgs::msg::PoseStamped& target_pose);
+
+  nav_msgs::msg::Path calcMapTrackInGlobal(nav_msgs::msg::Path& reference_path_,
+                                           int current_idx_);
+
+  nav_msgs::msg::Path calcMapTrackInBody(nav_msgs::msg::Path& reference_path_);
+
+  virtual void updateDesiredWPT(nav_msgs::msg::Path& local_path_in_body);
 
 private:
   vector<c_wpt> m_wpt_list;
   vector<int>
       m_current_idx_list; // current idxs with repective to the multiple wpts
 
+  c_wpt c_default_wpt; // default wpt when the waypoint file is loaded.
   c_wpt c_desired_wpt; // dynamically updated from the planning node and any
                        // other else
+
+  nav_msgs::msg::Path m_default_wpt_in_nav_path; // default wpt path in nav_msgs
+  nav_msgs::msg::Path
+      m_desired_wpt_in_nav_path; // dynamically updated path (if not updated,
+                                 // set as a default one)
 
   string m_body_frame_id, m_global_frame_id; // frame_id
 
@@ -74,15 +91,11 @@ private:
   vector<nav_msgs::msg::Path> m_maptrack_in_global_list; // map_track
 
   nav_msgs::msg::Path
-      m_desired_wpt_in_nav_path; // dynamically updated path (if not updated,
-                                 // set as a default one)
-  nav_msgs::msg::Path
       m_desired_maptrack_in_body; // dynamically updated path (if not updated,
                                   // set as a default one)
   nav_msgs::msg::Path
       m_desired_maptrack_in_global; // dynamically updated path (if not updated,
                                     // set as a default one)
-
   nav_msgs::msg::Odometry
       m_current_pose; // current vehicle pose, this should be updated as fast as
                       // possible in the node subscriber

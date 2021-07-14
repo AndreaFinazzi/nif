@@ -15,7 +15,7 @@
 
   <depend>nif_common</depend>
   <depend>nif_common_nodes</depend>
-  <depend>nif_planning_algorithms</depend>
+  <depend>nif_planning_common</depend>
 
   <depend>rclcpp</depend>
   <depend>std_msgs</depend>
