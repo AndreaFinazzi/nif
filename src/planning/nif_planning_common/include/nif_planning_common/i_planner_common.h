@@ -16,7 +16,7 @@
 
 namespace nif {
 namespace planning {
-namespace algorithms {
+namespace common {
 
 class IPlannerAlgorithm {
 public:
@@ -51,7 +51,7 @@ private:
 
   virtual nif::common::msgs::Trajectory solve() = 0;
 };
-} // namespace algorithms
+} // namespace common
 } // namespace planning
 } // namespace nif
 

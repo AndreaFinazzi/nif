@@ -14,7 +14,6 @@ using namespace std;
 class c_wpt { // static wpt common class
 public:
   c_wpt() {}
-  c_wpt(c_wpt& wpt_);
   c_wpt(string wpt_file_path_,
         string wpt_alias_,
         string global_frame_id_,
