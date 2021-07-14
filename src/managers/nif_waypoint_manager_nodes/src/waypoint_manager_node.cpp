@@ -7,6 +7,7 @@
 #include "nif_utils/utils.h"
 #include "rcutils/error_handling.h"
 
+
 WaypointManagerNode::WaypointManagerNode(
     std::string& node_name_,
     std::vector<string>& wpt_file_path_list_,
@@ -17,6 +18,8 @@ WaypointManagerNode::WaypointManagerNode(
         std::make_shared<WaypointManagerMinimal>(
             wpt_file_path_list_, body_frame_id_, global_frame_id_)) {}
 
+// TODO should pass node_name_ as a reference here
+// TODO IBaseNode should be initialized first
 WaypointManagerNode::WaypointManagerNode(
     std::string& node_name_,
     std::shared_ptr<WaypointManagerMinimal> wpt_manager_ptr)
