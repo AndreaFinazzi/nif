@@ -52,7 +52,7 @@ void LocalizationNode::syncGPSCallback(
 }
 
 void LocalizationNode::timer_callback() {
-  RCLCPP_INFO(this->get_logger(),
-              "LocalizationNode odom update timer callback");
+  // RCLCPP_INFO(this->get_logger(),
+  //             "LocalizationNode odom update timer callback");
   m_veh_odom_publisher->publish(m_veh_odom);
 }
