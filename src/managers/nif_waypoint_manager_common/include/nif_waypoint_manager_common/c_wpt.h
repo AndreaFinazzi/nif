@@ -20,7 +20,7 @@ public:
         bool wpt_3d_file_flg_,
         bool spline_flg_,
         double spline_interval_);
-  ~c_wpt();
+  ~c_wpt() {}
 
   vector<tuple<double, double>>
   load2DWPTFile(string wpt_2d_file_path_); // load 2d wpt from the file

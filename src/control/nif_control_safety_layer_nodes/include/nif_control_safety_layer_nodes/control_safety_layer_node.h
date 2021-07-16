@@ -97,7 +97,7 @@ namespace nif
    * every iteration by run(), that is it must store only the controls relative
    * to a time quantum.
    */
-            std::priority_queue<nif::common::msgs::ControlCmd> control_buffer;
+            std::priority_queue<nif::common::msgs::ControlCmd::SharedPtr> control_buffer;
 
             /**
    * Subscriber to the topic of control commands. Each incoming command is then

@@ -100,17 +100,17 @@ private:
       m_current_pose; // current vehicle pose, this should be updated as fast as
                       // possible in the node subscriber
 
-  int m_current_idx; // current idx with repective to the desired wpt
+  int m_current_idx = 0; // current idx with repective to the desired wpt
   int m_size_of_map_track =
       100; // size of map track which is set by the user
            // (yaml or set?), currently set as a default 100
 
-  double m_current_roll_deg;  // current pose (quartonion to eular)
-  double m_current_roll_rad;  // current pose (quartonion to eular)
-  double m_current_pitch_deg; // current pose (quartonion to eular)
-  double m_current_pitch_rad; // current pose (quartonion to eular)
-  double m_current_yaw_deg;   // current pose (quartonion to eular)
-  double m_current_yaw_rad;   // current pose (quartonion to eular)
+  double m_current_roll_deg = 0.0;  // current pose (quartonion to eular)
+  double m_current_roll_rad = 0.0;  // current pose (quartonion to eular)
+  double m_current_pitch_deg = 0.0; // current pose (quartonion to eular)
+  double m_current_pitch_rad = 0.0; // current pose (quartonion to eular)
+  double m_current_yaw_deg = 0.0;   // current pose (quartonion to eular)
+  double m_current_yaw_rad = 0.0;   // current pose (quartonion to eular)
 };
 
 #endif // NIF_WAYPOINT_MANAGER_COMMON_I_WAYPOINT_MANAGER_H

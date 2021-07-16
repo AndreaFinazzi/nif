@@ -27,3 +27,11 @@ RUN ( \
   && mkdir /run/sshd
 
 COPY ./ade_entrypoint /
+
+ADD https://download.jetbrains.com/cpp/CLion-2021.1.3.tar.gz /opt
+RUN sudo tar xvzf /opt/CLion-2021.1.3.tar.gz -C /opt/
+RUN rm -rf /opt/CLion-2021.1.3.tar.gz && \
+    rm -rf /opt/clion-2021.1.3/jre64 && \    
+    rm -rf /var/lib/apt/lists/* && \
+    rm -rf /tmp/*
+

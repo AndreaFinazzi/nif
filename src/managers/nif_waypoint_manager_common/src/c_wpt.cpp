@@ -91,8 +91,8 @@ c_wpt::c_wpt(string wpt_file_path_,
       m_wpt_inglobal.poses.push_back(wpt_pt);
     }
     if (m_spline_flg) {
-      shared_ptr<CubicSpliner2D> cubic_spliner_2D(
-          new CubicSpliner2D(m_wpt_raw_x, m_wpt_raw_y));
+      shared_ptr<CubicSpliner2D> cubic_spliner_2D =
+        make_shared<CubicSpliner2D>(m_wpt_raw_x, m_wpt_raw_y);
       double point_s = 0.0;
       double point_s_end = cubic_spliner_2D->points_s().back();
       m_wpt_length = point_s_end;
@@ -131,35 +131,37 @@ vector<tuple<double, double>> c_wpt::load2DWPTFile(string wpt_2d_file_path_) {
   ifstream inputFile(wpt_2d_file_path_);
   int l = 0;
   while (inputFile) {
-    l++;
-    string s;
-    if (!getline(inputFile, s))
-      break;
-    if (s[0] != '#') {
-      istringstream ss(s);
-      tuple<double, double> record(0.0, 0.0);
-      int cnt = 0;
-      bool nan_flg = false;
-      while (ss) {
-        string line;
-        if (!getline(ss, line, ','))
-          break;
-        try {
-          if (cnt == 0)
-            get<0>(record) = stof(line);
-          else if (cnt == 1)
-            get<1>(record) = stof(line);
-        } catch (const invalid_argument e) {
-          cout << "NaN found in file " << wpt_2d_file_path_ << " line " << l
-               << endl;
-          e.what();
-          nan_flg = true;
-        }
-        cnt++;
+      if (l % 1000 == 0) {
+          string s;
+          if (!getline(inputFile, s))
+              break;
+          if (s[0] != '#') {
+              istringstream ss(s);
+              tuple<double, double> record(0.0, 0.0);
+              int cnt = 0;
+              bool nan_flg = false;
+              while (ss) {
+                  string line;
+                  if (!getline(ss, line, ','))
+                      break;
+                  try {
+                      if (cnt == 0)
+                          get<0>(record) = stof(line);
+                      else if (cnt == 1)
+                          get<1>(record) = stof(line);
+                  } catch (const invalid_argument e) {
+                      cout << "NaN found in file " << wpt_2d_file_path_ << " line " << l
+                           << endl;
+                      e.what();
+                      nan_flg = true;
+                  }
+                  cnt++;
+              }
+              if (nan_flg == false && l % 1000 == 0)
+                  data.push_back(record);
+          }
       }
-      if (nan_flg == false)
-        data.push_back(record);
-    }
+      l++;
   }
   if (!inputFile.eof()) {
     cerr << "Could not read file " << wpt_2d_file_path_ << "\n";
@@ -173,40 +175,41 @@ c_wpt::load3DWPTFile(string wpt_3d_file_path_) {
   vector<tuple<double, double, double>> data;
   ifstream inputFile(wpt_3d_file_path_);
   int l = 0;
-
   while (inputFile) {
-    l++;
-    string s;
-    if (!getline(inputFile, s))
-      break;
-    if (s[0] != '#') {
-      istringstream ss(s);
-      tuple<double, double, double> record(0.0, 0.0, 0.0);
+      if (l % 100 == 0) {
+          string s;
+          if (!getline(inputFile, s))
+              break;
+          if (s[0] != '#') {
+              istringstream ss(s);
+              tuple<double, double, double> record(0.0, 0.0, 0.0);
 
-      int cnt = 0;
-      bool nan_flg = false;
-      while (ss) {
-        string line;
-        if (!getline(ss, line, ','))
-          break;
-        try {
-          if (cnt == 0)
-            get<0>(record) = stof(line);
-          else if (cnt == 1)
-            get<1>(record) = stof(line);
-          else if (cnt == 2)
-            get<2>(record) = stof(line);
-        } catch (const invalid_argument e) {
-          cout << "NaN found in file " << wpt_3d_file_path_ << " line " << l
-               << endl;
-          e.what();
-          nan_flg = true;
-        }
-        cnt++;
+              int cnt = 0;
+              bool nan_flg = false;
+              while (ss) {
+                  string line;
+                  if (!getline(ss, line, ','))
+                      break;
+                  try {
+                      if (cnt == 0)
+                          get<0>(record) = stof(line);
+                      else if (cnt == 1)
+                          get<1>(record) = stof(line);
+                      else if (cnt == 2)
+                          get<2>(record) = stof(line);
+                  } catch (const invalid_argument e) {
+                      cout << "NaN found in file " << wpt_3d_file_path_ << " line " << l
+                           << endl;
+                      e.what();
+                      nan_flg = true;
+                  }
+                  cnt++;
+              }
+              if (nan_flg == false)
+                  data.push_back(record);
+          }
       }
-      if (nan_flg == false)
-        data.push_back(record);
-    }
+  l++;
   }
 
   if (!inputFile.eof()) {

@@ -10,7 +10,8 @@
 
 IWaypointManager::IWaypointManager(vector<string>& wpt_file_path_list_,
                                    string& body_frame_id_,
-                                   string& global_frame_id_) {
+                                   string& global_frame_id_) 
+{
   assert(wpt_file_path_list_.size() != 0);
   m_body_frame_id = body_frame_id_;
   m_global_frame_id = global_frame_id_;
@@ -101,7 +102,7 @@ int IWaypointManager::getCurrentIdx(nav_msgs::msg::Path& reference_path,
 
 int IWaypointManager::getWPTIdx(nav_msgs::msg::Path& reference_path,
                                 geometry_msgs::msg::PoseStamped& target_pose) {
-  int target_idx;
+  int target_idx = 0;
   double min_dist = INFINITY;
   for (int pt_idx = 0; pt_idx < reference_path.poses.size(); pt_idx++) {
     double dist = sqrt(pow(target_pose.pose.position.x -

@@ -5,90 +5,63 @@
 #include "nif_waypoint_manager_nodes/waypoint_manager_node.h"
 #include "nif_common/constants.h"
 #include "nif_utils/utils.h"
+#include "nav_msgs/msg/path.hpp"
 #include "rcutils/error_handling.h"
 
+#include <ament_index_cpp/get_package_share_directory.hpp>
 
-WaypointManagerNode::WaypointManagerNode(
-    std::string& node_name_,
-    std::vector<string>& wpt_file_path_list_,
-    std::string& body_frame_id_,
-    std::string& global_frame_id_)
-  : WaypointManagerNode(
-        node_name_,
+nif::managers::WaypointManagerNode::WaypointManagerNode(
+    const std::string &node_name_)
+    : IBaseNode(node_name_)
+{
+    std::string package_share_directory;
+
+    try {
+        // This value shouldn't be used, it's as a backup if a config param is missing.
+        package_share_directory = ament_index_cpp::get_package_share_directory("nif_waypoint_manager_nodes");
+    } catch (std::exception e) {
+        RCLCPP_FATAL(this->get_logger(), "Can't get package_share_directory");
+    }
+    std::vector<std::string> file_path_list_defualt = {package_share_directory + "/maps/map.csv"};
+    this->declare_parameter("file_path_list", file_path_list_defualt );
+    this->declare_parameter("body_frame_id", "base_link");
+    this->declare_parameter("global_frame_id", "odom");
+
+    this->file_path_list = this->get_parameter("file_path_list").as_string_array();
+    this->body_frame_id = this->get_parameter("body_frame_id").as_string();
+    this->global_frame_id = this->get_parameter("global_frame_id").as_string();
+
+    // Could also inherit from IBaseSynchronizedNode
+    m_timer = this->create_wall_timer(
+        10ms, std::bind(&WaypointManagerNode::timer_callback, this));
+
+    m_map_track_publisher = this->create_publisher<nav_msgs::msg::Path>(
+        "nif/wpt_manager/maptrack_path", 10);
+
+    this->setWaypointManager(
         std::make_shared<WaypointManagerMinimal>(
-            wpt_file_path_list_, body_frame_id_, global_frame_id_)) {}
+            file_path_list, body_frame_id, global_frame_id));
+}
 
 // TODO should pass node_name_ as a reference here
 // TODO IBaseNode should be initialized first
-WaypointManagerNode::WaypointManagerNode(
-    std::string& node_name_,
-    std::shared_ptr<WaypointManagerMinimal> wpt_manager_ptr)
-  : wpt_manager(wpt_manager_ptr), IBaseNode(node_name_) {
-  m_timer = this->create_wall_timer(
-      10ms, std::bind(&WaypointManagerNode::timer_callback, this));
-  m_map_track_publisher = this->create_publisher<nav_msgs::msg::Path>(
-      "nif/wpt_manager/maptrack_path", 10);
+nif::managers::WaypointManagerNode::WaypointManagerNode(
+    const std::string &node_name_,
+    const std::shared_ptr<WaypointManagerMinimal> wpt_manager_ptr)
+    : WaypointManagerNode(node_name_)
+{
+    this->setWaypointManager(wpt_manager_ptr);
 }
 
-void WaypointManagerNode::timer_callback() {
-  RCLCPP_INFO(this->get_logger(), "WaypointManagerNode timer callback");
-  nav_msgs::msg::Path maptrack;
-  this->wpt_manager->setCurrentPose(this->ego_odometry);
-  maptrack = this->wpt_manager->getDesiredMapTrackInGlobal();
-  m_map_track_publisher->publish(maptrack);
+void nif::managers::WaypointManagerNode::timer_callback()
+{
+    RCLCPP_DEBUG(this->get_logger(), "WaypointManagerNode timer callback");
+    nav_msgs::msg::Path maptrack;
+
+    this->wpt_manager->setCurrentPose(this->ego_odometry);
+    maptrack = this->wpt_manager->getDesiredMapTrackInGlobal();
+    m_map_track_publisher->publish(maptrack);
 }
 
-void WaypointManagerNode::initParameters() {}
-void WaypointManagerNode::getParameters() {}
-
-int main(int argc, char* argv[]) {
-  rclcpp::init(argc, argv);
-
-  //   using nif::control::ControlSafetyLayerNode;
-  using namespace nif::common::constants;
-
-  string node_name = "wappoint_manager";
-
-  vector<string> file_path_list;
-  string body_frame_id_test = "";
-  string global_frame_id_test = "";
-  const std::chrono::microseconds sync_period(10000); //  10ms
-
-  rclcpp::Node::SharedPtr nd;
-
-  try {
-    RCLCPP_INFO(
-        rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
-        "Instantiating WaypointManagerNode with name: %s; sync_period: %d",
-        node_name,
-        sync_period);
-    nd = std::make_shared<WaypointManagerNode>(
-        node_name, file_path_list, body_frame_id_test, global_frame_id_test);
-
-  } catch (std::range_error& e) {
-    RCLCPP_ERROR(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
-                 "Bad initialization of node: %s. Initializing with "
-                 "SYNC_PERIOD_DEFAULT...\n%s",
-                 e.what());
-
-    //  Initialize with default period.
-    //  TODO should we abort in these circumstances?
-    nd = std::make_shared<WaypointManagerNode>(
-        node_name, file_path_list, body_frame_id_test, global_frame_id_test);
-
-  } catch (std::exception& e) {
-    RCLCPP_FATAL(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
-                 "FATAL ERROR during node initialization: ABORTING.\n%s",
-                 e.what());
-    return -1;
-  }
-
-  rclcpp::spin(nd);
-  rclcpp::shutdown();
-
-  RCLCPP_INFO(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
-              "Shutting down %s [WaypointManagerNode]",
-              node_name);
-
-  return 0;
-}
+void nif::managers::WaypointManagerNode::initParameters() {}
+void nif::managers::WaypointManagerNode::getParameters() {}

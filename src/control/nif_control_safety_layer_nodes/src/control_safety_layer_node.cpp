@@ -10,7 +10,7 @@ void nif::control::ControlSafetyLayerNode::getParameters() {}
 void nif::control::ControlSafetyLayerNode::controlCallback(
     const nif::common::msgs::ControlCmd::SharedPtr &msg) {
 
-  //  this->control_buffer.push(msg.control_cmd);
+    this->control_buffer.push(msg);
 }
 
 void nif::control::ControlSafetyLayerNode::run() {
