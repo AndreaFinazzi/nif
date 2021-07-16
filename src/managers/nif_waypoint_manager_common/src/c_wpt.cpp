@@ -39,15 +39,21 @@ c_wpt::c_wpt(string wpt_file_path_,
       m_wpt_inglobal.poses.push_back(wpt_pt);
     }
     if (m_spline_flg) {
-      shared_ptr<CubicSpliner2D> cubic_spliner_2D(
-          new CubicSpliner2D(m_wpt_raw_x, m_wpt_raw_y));
-      shared_ptr<CubicSpliner> cubic_spliner_sz_ = shared_ptr<CubicSpliner>(
-          new CubicSpliner(cubic_spliner_2D->points_ss(), m_wpt_raw_z));
+      shared_ptr<CubicSpliner2D> cubic_spliner_2D =
+          std::make_shared<CubicSpliner2D>(m_wpt_raw_x, m_wpt_raw_y);
+      shared_ptr<CubicSpliner> cubic_spliner_sz_ =
+          std::make_shared<CubicSpliner>(cubic_spliner_2D->points_ss(),
+                                         m_wpt_raw_z);
       double point_s = 0.0;
       double point_s_end = cubic_spliner_2D->points_s().back();
       m_wpt_length = point_s_end;
 
       m_wpt_inglobal.poses.clear();
+
+      if (point_s_end < nif::common::constants::planner::WPT_MINIMUM_LEN) {
+        throw std::domain_error("Lenth of the waypoint is abnormally short.");
+        return;
+      }
 
       while (point_s < point_s_end) {
         std::tuple<double, double> position =
@@ -59,6 +65,12 @@ c_wpt::c_wpt(string wpt_file_path_,
             cubic_spliner_sz_->calculate_zeroth_derivative(point_s);
         double yaw = cubic_spliner_2D->calculate_yaw(point_s);
         double curvature = cubic_spliner_2D->calculate_curvature(point_s);
+
+        if (std::isnan(point_x) || std::isnan(point_y) || std::isnan(point_z) ||
+            std::isnan(yaw) || std::isnan(curvature)) {
+          throw std::domain_error("Nan value is found in the splining result.");
+          return;
+        }
 
         m_wpt_splined_x.push_back(point_x);
         m_wpt_splined_y.push_back(point_y);
@@ -92,12 +104,17 @@ c_wpt::c_wpt(string wpt_file_path_,
     }
     if (m_spline_flg) {
       shared_ptr<CubicSpliner2D> cubic_spliner_2D =
-        make_shared<CubicSpliner2D>(m_wpt_raw_x, m_wpt_raw_y);
+          make_shared<CubicSpliner2D>(m_wpt_raw_x, m_wpt_raw_y);
       double point_s = 0.0;
       double point_s_end = cubic_spliner_2D->points_s().back();
       m_wpt_length = point_s_end;
 
       m_wpt_inglobal.poses.clear();
+
+      if (point_s_end < nif::common::constants::planner::WPT_MINIMUM_LEN) {
+        throw std::domain_error("Lenth of the waypoint is abnormally short.");
+        return;
+      }
 
       while (point_s < point_s_end) {
         std::tuple<double, double> position =
@@ -107,6 +124,12 @@ c_wpt::c_wpt(string wpt_file_path_,
         double point_y = std::get<1>(position);
         double yaw = cubic_spliner_2D->calculate_yaw(point_s);
         double curvature = cubic_spliner_2D->calculate_curvature(point_s);
+
+        if (std::isnan(point_x) || std::isnan(point_y) || std::isnan(yaw) ||
+            std::isnan(curvature)) {
+          throw std::domain_error("Nan value is found in the splining result.");
+          return;
+        }
 
         m_wpt_splined_x.push_back(point_x);
         m_wpt_splined_y.push_back(point_y);
@@ -126,42 +149,43 @@ c_wpt::c_wpt(string wpt_file_path_,
   }
 }
 
-vector<tuple<double, double>> c_wpt::load2DWPTFile(string wpt_2d_file_path_) {
+vector<tuple<double, double>> c_wpt::load2DWPTFile(string wpt_2d_file_path_,
+                                                   int wpt_sampling_interval_) {
   vector<tuple<double, double>> data;
   ifstream inputFile(wpt_2d_file_path_);
   int l = 0;
   while (inputFile) {
-      if (l % 1000 == 0) {
-          string s;
-          if (!getline(inputFile, s))
-              break;
-          if (s[0] != '#') {
-              istringstream ss(s);
-              tuple<double, double> record(0.0, 0.0);
-              int cnt = 0;
-              bool nan_flg = false;
-              while (ss) {
-                  string line;
-                  if (!getline(ss, line, ','))
-                      break;
-                  try {
-                      if (cnt == 0)
-                          get<0>(record) = stof(line);
-                      else if (cnt == 1)
-                          get<1>(record) = stof(line);
-                  } catch (const invalid_argument e) {
-                      cout << "NaN found in file " << wpt_2d_file_path_ << " line " << l
-                           << endl;
-                      e.what();
-                      nan_flg = true;
-                  }
-                  cnt++;
-              }
-              if (nan_flg == false && l % 1000 == 0)
-                  data.push_back(record);
+    l++;
+    string s;
+    if (!getline(inputFile, s))
+      break;
+    if (s[0] != '#') {
+      if (l % wpt_sampling_interval_ == 1) {
+        istringstream ss(s);
+        tuple<double, double> record(0.0, 0.0);
+        int cnt = 0;
+        bool nan_flg = false;
+        while (ss) {
+          string line;
+          if (!getline(ss, line, ','))
+            break;
+          try {
+            if (cnt == 0)
+              get<0>(record) = stof(line);
+            else if (cnt == 1)
+              get<1>(record) = stof(line);
+          } catch (const invalid_argument e) {
+            cout << "NaN found in file " << wpt_2d_file_path_ << " line " << l
+                 << endl;
+            e.what();
+            nan_flg = true;
           }
+          cnt++;
+        }
+        if (nan_flg == false)
+          data.push_back(record);
       }
-      l++;
+    }
   }
   if (!inputFile.eof()) {
     cerr << "Could not read file " << wpt_2d_file_path_ << "\n";
@@ -171,45 +195,45 @@ vector<tuple<double, double>> c_wpt::load2DWPTFile(string wpt_2d_file_path_) {
 }
 
 vector<tuple<double, double, double>>
-c_wpt::load3DWPTFile(string wpt_3d_file_path_) {
+c_wpt::load3DWPTFile(string wpt_3d_file_path_, int wpt_sampling_interval_) {
   vector<tuple<double, double, double>> data;
   ifstream inputFile(wpt_3d_file_path_);
   int l = 0;
   while (inputFile) {
-      if (l % 100 == 0) {
-          string s;
-          if (!getline(inputFile, s))
-              break;
-          if (s[0] != '#') {
-              istringstream ss(s);
-              tuple<double, double, double> record(0.0, 0.0, 0.0);
+    string s;
+    if (!getline(inputFile, s))
+      break;
+    if (s[0] != '#') {
+      if (l % wpt_sampling_interval_ == 1) {
+        istringstream ss(s);
+        tuple<double, double, double> record(0.0, 0.0, 0.0);
 
-              int cnt = 0;
-              bool nan_flg = false;
-              while (ss) {
-                  string line;
-                  if (!getline(ss, line, ','))
-                      break;
-                  try {
-                      if (cnt == 0)
-                          get<0>(record) = stof(line);
-                      else if (cnt == 1)
-                          get<1>(record) = stof(line);
-                      else if (cnt == 2)
-                          get<2>(record) = stof(line);
-                  } catch (const invalid_argument e) {
-                      cout << "NaN found in file " << wpt_3d_file_path_ << " line " << l
-                           << endl;
-                      e.what();
-                      nan_flg = true;
-                  }
-                  cnt++;
-              }
-              if (nan_flg == false)
-                  data.push_back(record);
+        int cnt = 0;
+        bool nan_flg = false;
+        while (ss) {
+          string line;
+          if (!getline(ss, line, ','))
+            break;
+          try {
+            if (cnt == 0)
+              get<0>(record) = stof(line);
+            else if (cnt == 1)
+              get<1>(record) = stof(line);
+            else if (cnt == 2)
+              get<2>(record) = stof(line);
+          } catch (const invalid_argument e) {
+            cout << "NaN found in file " << wpt_3d_file_path_ << " line " << l
+                 << endl;
+            e.what();
+            nan_flg = true;
           }
+          cnt++;
+        }
+        if (nan_flg == false)
+          data.push_back(record);
       }
-  l++;
+    }
+    l++;
   }
 
   if (!inputFile.eof()) {

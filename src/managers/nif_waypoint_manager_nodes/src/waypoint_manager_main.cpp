@@ -15,8 +15,7 @@
 #include "nif_waypoint_manager_nodes/waypoint_manager_node.h"
 #include "rcutils/error_handling.h"
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char* argv[]) {
   rclcpp::init(argc, argv);
 
   using nif::managers::WaypointManagerNode;
@@ -26,17 +25,13 @@ int main(int argc, char *argv[])
 
   rclcpp::Node::SharedPtr nd;
 
-  try
-  {
-    RCLCPP_INFO(
-        rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
-        "Instantiating WaypointManagerNode with name: %s;", node_name);
+  try {
+    RCLCPP_INFO(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
+                "Instantiating WaypointManagerNode with name: %s;",
+                node_name);
 
-    nd = std::make_shared<WaypointManagerNode>(
-        node_name);
-  }
-  catch (std::exception &e)
-  {
+    nd = std::make_shared<WaypointManagerNode>(node_name);
+  } catch (std::exception& e) {
     RCLCPP_FATAL(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
                  "FATAL ERROR during node initialization: ABORTING.\n%s",
                  e.what());
