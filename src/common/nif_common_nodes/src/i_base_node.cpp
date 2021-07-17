@@ -24,7 +24,13 @@ IBaseNode::IBaseNode(const std::string& node_name,
   gclock_node_init = this->now();
   gclock_current = gclock_node_init;
 
-  //  Declare subscriptions
+  this->declare_parameter("body_frame_id", "base_link");
+  this->declare_parameter("global_frame_id", "odom");
+
+  this->body_frame_id = this->get_parameter("body_frame_id").as_string();
+  this->global_frame_id = this->get_parameter("global_frame_id").as_string();
+
+    //  Declare subscriptions
   //                TODO : Define QoS macros
   this->ego_odometry_sub =
       this->create_subscription<nif::common::msgs::Odometry>(

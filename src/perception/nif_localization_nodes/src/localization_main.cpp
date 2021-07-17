@@ -19,7 +19,7 @@ int32_t main(int32_t argc, char** argv) {
   using namespace nif::common::constants;
   using namespace nif::perception;
 
-  std::string node_name = "localization_node";
+  const char* node_name = "localization_node";
 
   const std::chrono::microseconds sync_period(10000); //  10ms
   rclcpp::Node::SharedPtr nd;

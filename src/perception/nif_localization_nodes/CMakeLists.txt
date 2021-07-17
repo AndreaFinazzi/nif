@@ -25,6 +25,11 @@ if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
 
+  add_ros_test(
+          test/localization_test.launch.py
+          TIMEOUT "30"
+  )
+
   ament_add_gtest(${PROJECT_NAME}_test
           test/gtest_main.cpp
           )

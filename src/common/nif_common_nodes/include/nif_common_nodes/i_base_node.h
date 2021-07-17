@@ -16,6 +16,7 @@
 #include "nif_common/types.h"
 #include "nif_utils/utils.h"
 
+#include "tf2_ros/transform_broadcaster.h"
 #include <rclcpp/rclcpp.hpp>
 
 namespace nif {
@@ -27,6 +28,11 @@ protected:
   IBaseNode(const std::string& node_name, const rclcpp::NodeOptions& options);
   IBaseNode(const std::string& node_name);
   /// Expose time to children
+
+  std::string body_frame_id;
+
+//  TODO define precisely which frame is considered global
+  std::string global_frame_id;
 
   rclcpp::Time gclock_node_init, gclock_current;
 
@@ -50,7 +56,8 @@ private:
    */
   IBaseNode();
 
-  rclcpp::Subscription<nif::common::msgs::Odometry>::SharedPtr ego_odometry_sub;
+
+    rclcpp::Subscription<nif::common::msgs::Odometry>::SharedPtr ego_odometry_sub;
 
   rclcpp::Subscription<nif::common::msgs::PowertrainState>::SharedPtr
       ego_powertrain_state_sub;
