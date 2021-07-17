@@ -27,7 +27,7 @@ int32_t main(int32_t argc, char** argv) {
   try {
     RCLCPP_INFO(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
                 "Instantiating LocalizationNode with name: %s",
-                node_name);
+                &node_name);
     nd = std::make_shared<LocalizationNode>(node_name);
 
   } catch (std::range_error& e) {
