@@ -14,6 +14,8 @@ endif()
 find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
 
+add_subdirectory(src/StateEstimator)
+
 # Library
 ament_auto_add_library(${PROJECT_NAME} SHARED
         src/localization_node.cpp)
