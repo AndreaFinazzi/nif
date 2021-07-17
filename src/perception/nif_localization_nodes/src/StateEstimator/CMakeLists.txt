@@ -12,11 +12,11 @@ if(GTSAM_FOUND)
   include_directories(${GTSAM_INCLUDE_DIR})
 
   add_executable(StateEstimator StateEstimator.cpp)
-  target_link_libraries(StateEstimator ${catkin_LIBRARIES} ${ROS_LIBRARIES} gtsam ${GeographicLib_LIBRARIES} ${TBB_LIBRARIES} ar_diagnostics ${Boost_LIBRARIES})
-  add_dependencies(StateEstimator autorally_msgs_gencpp ${PROJECT_NAME}_gencfg)
+  target_link_libraries(StateEstimator ${catkin_LIBRARIES} ${ROS_LIBRARIES} gtsam ${GeographicLib_LIBRARIES} ${TBB_LIBRARIES}  ${Boost_LIBRARIES})
+  # add_dependencies(StateEstimator autorally_msgs_gencpp ${PROJECT_NAME}_gencfg)
 
   install(TARGETS StateEstimator
-          ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-          LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-          RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+          ARCHIVE DESTINATION ${lib}
+          LIBRARY DESTINATION ${lib}
+          RUNTIME DESTINATION ${bin})
 endif()

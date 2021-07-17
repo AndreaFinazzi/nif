@@ -53,43 +53,46 @@
 #include <fstream>
 #include <queue>
 
-#include <ros/ros.h>
-#include <ros/time.h>
-#include <std_msgs/Float64.h>
-#include <sensor_msgs/Imu.h>
-#include <sensor_msgs/NavSatFix.h>
+#include "rclcpp/rclcpp.hpp"
+#include "builtin_interfaces/msg/time.hpp"
+#include <std_msgs/msg/float64.hpp>
+#include <std_msgs/msg/int16.hpp>
+#include <sensor_msgs/msg/imu.hpp>
+#include <sensor_msgs/msg/nav_sat_fix.hpp>
 
-#include "autorally_core/Diagnostics.h"
 #include "BlockingQueue.h"
 
-#include <autorally_msgs/wheelSpeeds.h>
-#include <autorally_msgs/imageMask.h>
-#include <autorally_msgs/stateEstimatorStatus.h>
-#include <imu_3dm_gx4/FilterOutput.h>
-#include <nav_msgs/Odometry.h>
-#include <geometry_msgs/Point.h>
-#include <visualization_msgs/MarkerArray.h>
-
-#include <dynamic_reconfigure/server.h>
-#include <autorally_core/StateEstimatorParamsConfig.h>
+#include <imu_3dm_gx4/msg/filter_output.hpp>
+#include <nav_msgs/msg/odometry.hpp>
+#include <geometry_msgs/msg/point.hpp>
 
 #define PI 3.14159265358979323846264338
 
 
 namespace autorally_core
 {
-  class StateEstimator : public Diagnostics
+  class StateEstimator
   {
   private:
-    ros::NodeHandle nh_;
-    ros::Subscriber gpsSub_, imuSub_, odomSub_;
-    ros::Publisher  posePub_;
-    ros::Publisher  biasAccPub_, biasGyroPub_;
-    ros::Publisher  timePub_;
-    ros::Publisher statusPub_;
+    // ros::NodeHandle nh_;
+    // ros::Subscriber gpsSub_, imuSub_, odomSub_;
+    rclcpp::publisher<nav_msgs::msg::Odometry>::SharedPtr posePub_;
+    rclcpp::publisher<geometry_msgs::msg::Point>::SharedPtr biasAccPub_;
+    rclcpp::publisher<geometry_msgs::msg::Point>::SharedPtr biasGyroPub_;
+    rclcpp::publisher<geometry_msgs::msg::Point>::SharedPtr timePub_;
+    rclcpp::publisher<std_msgs::msg::Int16>::SharedPtr statusPub_;
+    rclcpp::Subscription<sensor_msgs::msg::NavSatFixPtr> gpsSub_;
+    rclcpp::Subscription<sensor_msgs::msg::ImuPtr> imuSub_;
+    rclcpp::Subscription<nav_msgs::msg::Odometry> odomSub_;
 
     double lastImuT_, lastImuTgps_;
-    unsigned char status_;
+    /**
+     * # possible statuses
+     * byte OK=0     # standard operation
+     * byte WARN=1   # state estimator is not currently trustworthy
+     * byte ERROR=2  # state estimator has encountered an unrecoverable error
+     */
+    int status_;
     double accelBiasSigma_, gyroBiasSigma_;
     double gpsSigma_;
     int maxQSize_;
@@ -120,9 +123,6 @@ namespace autorally_core
     double maxGPSError_;
 
 
-    // Dynamic Reconfigure
-    autorally_core::StateEstimatorParamsConfig StateEstimatorParams_;
-    dynamic_reconfigure::Server<StateEstimatorParamsConfig> dynServer_;
     bool hasNewDynamicParams_;
     double correction_x_;
     double correction_y_;
@@ -133,21 +133,18 @@ namespace autorally_core
     gtsam::Vector noiseModelBetweenBias_sigma_;
     gtsam::ISAM2 *isam_;
 
-    nav_msgs::OdometryConstPtr lastOdom_;
+    nav_msgs::msg::OdometryConstPtr lastOdom_;
 
   public:
     StateEstimator();
     ~StateEstimator();
-    void GpsCallback(sensor_msgs::NavSatFixPtr fix);
-    void ImuCallback(sensor_msgs::ImuPtr imu);
-    void WheelOdomCallback(nav_msgs::OdometryPtr odom);
+    void GpsCallback(sensor_msgs::msg::NavSatFixPtr fix); // TODO: check if it has to be changed into novatel_gps_msgs::msg::Inspva
+    void ImuCallback(sensor_msgs::msg::ImuPtr imu);
+    void WheelOdomCallback(nav_msgs::msg::OdometryPtr odom);
     void GpsHelper();
     void GpsHelper_1();
-    void diagnosticStatus(const ros::TimerEvent& time);
     gtsam::BetweenFactor<gtsam::Pose3> integrateWheelOdom(double prevTime, double stopTime, int curFactor);
-    void GetAccGyro(sensor_msgs::ImuConstPtr imu, gtsam::Vector3 &acc, gtsam::Vector3 &gyro);
-
-    void ConfigCallback(const StateEstimatorParamsConfig &config, uint32_t level);
+    void GetAccGyro(sensor_msgs::msg::ImuConstPtr imu, gtsam::Vector3 &acc, gtsam::Vector3 &gyro);
   };
 };
 
