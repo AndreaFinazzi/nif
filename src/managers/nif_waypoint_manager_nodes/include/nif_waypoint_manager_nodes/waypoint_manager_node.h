@@ -26,7 +26,7 @@ namespace nif
    **/
 
       // TODO  wpt_file_path_list_, body_frame_id_ and global_frame_id_ could be passed as rosparams
-      WaypointManagerNode(const std::string &node_name_);
+      explicit WaypointManagerNode(const std::string &node_name_);
 
       WaypointManagerNode(const std::string &node_name_,
                           const std::shared_ptr<WaypointManagerMinimal> wpt_manager_ptr);
@@ -46,8 +46,6 @@ namespace nif
       }
 
       std::vector<std::string> file_path_list{};
-      std::string body_frame_id{};
-      std::string global_frame_id{};
 
       std::shared_ptr<WaypointManagerMinimal> wpt_manager;
 

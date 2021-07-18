@@ -1,0 +1,42 @@
+//  Copyright (c) 2021 Unmanned System Research Group @ KAIST
+//  Author: Andrea Finazzi
+
+//
+// Created by usrg on 7/10/21.
+//
+
+#include "nif_control_common_nodes/i_controller_node.h"
+#include <python3.8/grammar.h>
+
+class MockControlNode : public nif::control::IControllerNode {
+public:
+  using nif::control::IControllerNode::IControllerNode;
+//  explicit MockControlNode(const std::string& node_name) : IControllerNode(node_name) {}
+
+  void stateReport() {
+    RCLCPP_INFO(this->get_logger(), "ego_odometry: %s", (this->getEgoOdometry().header.stamp));
+    RCLCPP_INFO(this->get_logger(),
+                "race_control_state: %s",
+                (this->getRaceControlState().track_cond));
+    RCLCPP_INFO(this->get_logger(), "system_state: %s", this->getSystemState().health_status.is_system_healty);
+  }
+
+private:
+  rclcpp::Parameter param_one;
+  rclcpp::Parameter param_two;
+
+  void initParameters() override {}
+
+  void getParameters() override {}
+
+  nif::common::msgs::ControlCmd &solve() override {
+    this->control_command->header.stamp = this->now();
+    this->control_command->header.frame_id = this->getBodyFrameId();
+    this->control_command->steering_control_cmd = this->now().nanoseconds() % 10000000;
+    this->control_command->gear_control_cmd = 1;
+    return *(this->control_command);
+  }
+
+  nif::common::msgs::ControlCmd::SharedPtr control_command;
+
+};

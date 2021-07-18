@@ -19,6 +19,7 @@
   <depend>nif_localization_minimal</depend>
   <depend>rclcpp</depend>
   <depend>std_msgs</depend>
+  <depend>sensor_msgs</depend>
   <depend>message_filters</depend>
 
   <export>

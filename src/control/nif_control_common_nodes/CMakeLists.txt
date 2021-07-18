@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(nif_control_nodes)
+project(nif_control_common_nodes)
 
 # Default to C++14
 if(NOT CMAKE_CXX_STANDARD)

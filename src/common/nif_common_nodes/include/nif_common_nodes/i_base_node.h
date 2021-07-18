@@ -26,16 +26,33 @@ class IBaseNode : public rclcpp::Node {
 public:
 protected:
   IBaseNode(const std::string& node_name, const rclcpp::NodeOptions& options);
-  IBaseNode(const std::string& node_name);
-  /// Expose time to children
+  explicit IBaseNode(const std::string& node_name);
+
+virtual ~IBaseNode() {}
+private:
+  /**
+   * The default constructor is hidden from the outside to prevent unnamed
+   * nodes.
+   */
+  IBaseNode();
 
   std::string body_frame_id;
 
 //  TODO define precisely which frame is considered global
   std::string global_frame_id;
 
-  rclcpp::Time gclock_node_init, gclock_current;
+  rclcpp::Time gclock_node_init;
 
+public:
+  const std::string &getBodyFrameId() const;
+  const std::string &getGlobalFrameId() const;
+  const rclcpp::Time &getGclockNodeInit() const;
+  const msgs::Odometry &getEgoOdometry() const;
+  const msgs::PowertrainState &getEgoPowertrainState() const;
+  const msgs::SystemState &getSystemState() const;
+  const msgs::RaceControlState &getRaceControlState() const;
+
+private:
   nif::common::msgs::Odometry ego_odometry;
 
   nif::common::msgs::PowertrainState ego_powertrain_state;
@@ -45,17 +62,6 @@ protected:
 
   // TODO : finalize RaceControlState class
   nif::common::msgs::RaceControlState race_control_state;
-
-  //  Reference to utils not needed, as it'll be everything static (probably)
-  //  nif::common::utils:: utils;
-
-private:
-  /**
-   * The default constructor is hidden from the outside to prevent unnamed
-   * nodes.
-   */
-  IBaseNode();
-
 
     rclcpp::Subscription<nif::common::msgs::Odometry>::SharedPtr ego_odometry_sub;
 

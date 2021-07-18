@@ -11,6 +11,12 @@
 #include <utility>
 
 using namespace nif::perception;
+using namespace message_filters;
+using namespace std::placeholders;
+
+typedef sync_policies::ApproximateTime<novatel_gps_msgs::msg::Inspva,
+                                       novatel_gps_msgs::msg::Inspva>
+    MySyncPolicy;
 
 LocalizationNode::LocalizationNode(const std::string& node_name_)
   : LocalizationNode(node_name_, std::make_shared<LocalizationMinimal>()) {}
@@ -22,8 +28,8 @@ LocalizationNode::LocalizationNode(
     m_localization_algorithm_ptr(std::move(localization_algorithm_ptr))
     {
 
-    this->m_veh_odom.header.frame_id = this->body_frame_id;
-    this->m_veh_odom.child_frame_id  = this->global_frame_id;
+    this->m_veh_odom.header.frame_id = this->getBodyFrameId();
+    this->m_veh_odom.child_frame_id  = this->getGlobalFrameId();
 
 
   m_timer = this->create_wall_timer(
@@ -32,13 +38,18 @@ LocalizationNode::LocalizationNode(
   m_veh_odom_publisher = this->create_publisher<nav_msgs::msg::Odometry>(
       "localization/ego_odom", 10);
 
-  m_gps_horizontal_subscriber.subscribe(this, "gnss_01", rclcpp::QoS(10).get_rmw_qos_profile());
-  m_gps_vertical_subscriber.subscribe(this, "gnss_02", rclcpp::QoS(10).get_rmw_qos_profile());
+  m_gps_horizontal_subscriber->subscribe(this, "gnss_01", rclcpp::QoS(10).get_rmw_qos_profile());
+  m_gps_vertical_subscriber->subscribe(this, "gnss_02", rclcpp::QoS(10).get_rmw_qos_profile());
 
-  m_gps_sync_ptr = std::make_shared<
-      message_filters::TimeSynchronizer<novatel_gps_msgs::msg::Inspva,
-                                        novatel_gps_msgs::msg::Inspva>>(
-      m_gps_horizontal_subscriber, m_gps_vertical_subscriber, 10);
+   m_gps_sync_ptr->registerCallback(
+       boost::bind(&LocalizationNode::syncGPSCallback,
+                   this,
+                   boost::placeholders::_1,
+                   boost::placeholders::_2));
+
+  message_filters::TimeSynchronizer<novatel_gps_msgs::msg::Inspva,
+                                    novatel_gps_msgs::msg::Inspva>
+      m_gps_sync(m_gps_horizontal_subscriber, m_gps_vertical_subscriber, 10);
 
 //  TODO REMEMBER that we may publish the same odom result in case we don't get data from the sensor
   m_gps_sync_ptr->registerCallback(std::bind(&LocalizationNode::syncGPSCallback,
@@ -53,6 +64,26 @@ LocalizationNode::LocalizationNode(
               std::bind(&LocalizationNode::gpsHorizontalCallback,
                         this,
                         std::placeholders::_1));
+  // m_gps_sync_ptr =
+  //     message_filters::TimeSynchronizer<novatel_gps_msgs::msg::Inspva,
+  //                                       novatel_gps_msgs::msg::Inspva>(
+  //         m_gps_horizontal_subscriber, m_gps_vertical_subscriber, 10);
+
+  m_gps_sync.registerCallback(std::bind(&LocalizationNode::syncGPSCallback,
+                                        this,
+                                        std::placeholders::_1,
+                                        std::placeholders::_2));
+
+  // typedef message_filters::sync_policies::ApproximateTime<
+  //     novatel_gps_msgs::msg::Inspva,
+  //     novatel_gps_msgs::msg::Inspva>
+  //     MySyncPolicy;
+  // message_filters::Synchronizer<MySyncPolicy> img_sync(
+  //     MySyncPolicy(10),
+  //     *m_gps_horizontal_subscriber,
+  //     *m_gps_vertical_subscriber);
+  // // img_sync.setMaxIntervalDuration(rclcpp::Duration(3.0));
+  // img_sync.registerCallback(&LocalizationNode::syncGPSCallback, this);
 }
 
 void LocalizationNode::syncGPSCallback(
@@ -65,7 +96,8 @@ void LocalizationNode::syncGPSCallback(
 
   this->m_localization_algorithm_ptr->setGPSHorizontalData(
       *gps_horizontal_ptr_);
-  this->m_localization_algorithm_ptr->setGPSVerticalData(*gps_vertical_ptr_);
+  this->m_localization_algorithm_ptr->setGPSVerticalData(
+      *gps_vertical_ptr_);
 //  TODO reuse message, here we're COPYING (wasting time)
   this->m_veh_odom = this->m_localization_algorithm_ptr->getVehOdomByFusion();
   this->m_veh_odom.header.frame_id = this->body_frame_id;
@@ -75,7 +107,7 @@ void LocalizationNode::syncGPSCallback(
 void LocalizationNode::timer_callback() {
   RCLCPP_DEBUG(this->get_logger(),
               "LocalizationNode odom update timer callback");
-  m_veh_odom_publisher->publish(this->m_veh_odom);
+  m_veh_odom_publisher->publish(m_veh_odom);
 }
 
 void LocalizationNode::gpsHorizontalCallback(

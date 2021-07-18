@@ -31,6 +31,7 @@ if(BUILD_TESTING)
 
     ament_add_gtest(${PROJECT_NAME}_test
             test/gtest_main.cpp
+            test/test_csl_node.cpp
             )
 
     target_include_directories(${PROJECT_NAME}_test PRIVATE "include")

@@ -8,10 +8,9 @@
 #include "nif_waypoint_manager_common/i_waypoint_manager.h"
 #include <tf2/LinearMath/Quaternion.h>
 
-IWaypointManager::IWaypointManager(vector<string>& wpt_file_path_list_,
-                                   string& body_frame_id_,
-                                   string& global_frame_id_) 
-{
+IWaypointManager::IWaypointManager(const vector<string>& wpt_file_path_list_,
+                                   const string& body_frame_id_,
+                                   const string& global_frame_id_) {
   assert(wpt_file_path_list_.size() != 0);
   m_body_frame_id = body_frame_id_;
   m_global_frame_id = global_frame_id_;
@@ -31,16 +30,21 @@ IWaypointManager::IWaypointManager(vector<string>& wpt_file_path_list_,
     m_wpt_list.push_back(obj);
   }
 
-  // default racing line file path should be the first
-  c_default_wpt = m_wpt_list[0];
-  c_desired_wpt = c_default_wpt;
+  if (m_wpt_list.size() > 0) {
+    c_default_wpt = m_wpt_list[0];
+    c_desired_wpt = c_default_wpt;
+  } else {
+    throw std::out_of_range("Waypoint is not properly loaded.");
+    return;
+  }
 
+  // defualt desired wpt is set to the wpt which is firstly loaded.
   m_default_wpt_in_nav_path = c_default_wpt.getWPTinNavPath();
   m_desired_wpt_in_nav_path = c_desired_wpt.getWPTinNavPath();
 }
 
-void IWaypointManager::setCurrentPose(
-    nav_msgs::msg::Odometry& ego_vehicle_odom) {
+void IWaypointManager::setCurrentOdometry(
+    const nav_msgs::msg::Odometry& ego_vehicle_odom) {
   m_current_pose = ego_vehicle_odom;
 
   // calc heading(yaw) in rad and deg
@@ -48,25 +52,9 @@ void IWaypointManager::setCurrentPose(
                        m_current_pose.pose.pose.orientation.y,
                        m_current_pose.pose.pose.orientation.z,
                        m_current_pose.pose.pose.orientation.w);
-
   tf2::Matrix3x3(quat).getRPY(
       m_current_roll_rad, m_current_pitch_rad, m_current_yaw_rad);
 
-  // m_current_idx_list.clear();
-
-  // for (int wpt_idx = 0; wpt_idx < m_wpt_list.size(); wpt_idx++) {
-  //   nav_msgs::msg::Path wpt_in_nav_path =
-  //       (m_wpt_list[wpt_idx].getWPTinNavPath());
-  //   int current_idx = getCurrentIdx(wpt_in_nav_path, ego_vehicle_odom);
-
-  //   m_current_idx_list.push_back(current_idx);
-  //   m_maptrack_in_global_list.push_back(
-  //       calcMapTrackInGlobal(wpt_in_nav_path, current_idx));
-  //   m_maptrack_in_body_list.push_back(
-  //       calcMapTrackInBody(m_maptrack_in_global_list[-1]));
-  // }
-
-  // TODO : should add above code in another function
   int current_idx = getCurrentIdx(m_desired_wpt_in_nav_path, ego_vehicle_odom);
   m_desired_maptrack_in_global =
       calcMapTrackInGlobal(m_desired_wpt_in_nav_path, current_idx);
@@ -75,8 +63,8 @@ void IWaypointManager::setCurrentPose(
 }
 
 void IWaypointManager::setCurrentIdx(
-    nav_msgs::msg::Path& reference_path,
-    nav_msgs::msg::Odometry& ego_vehicle_odom) {
+    const nav_msgs::msg::Path &reference_path,
+    const nav_msgs::msg::Odometry &ego_vehicle_odom) {
   int current_idx;
   double min_dist = INFINITY;
   for (int pt_idx = 0; pt_idx < reference_path.poses.size(); pt_idx++) {
@@ -91,11 +79,16 @@ void IWaypointManager::setCurrentIdx(
       current_idx = pt_idx;
     }
   }
+  if (current_idx > reference_path.poses.size()) {
+    throw std::length_error("I_WPT_MANAGER:Current index is not set properly.");
+    return;
+  }
   m_current_idx = current_idx;
 }
 
-int IWaypointManager::getCurrentIdx(nav_msgs::msg::Path& reference_path,
-                                    nav_msgs::msg::Odometry& ego_vehicle_odom) {
+int IWaypointManager::getCurrentIdx(
+    const nav_msgs::msg::Path &reference_path,
+    const nav_msgs::msg::Odometry &ego_vehicle_odom) {
   setCurrentIdx(reference_path, ego_vehicle_odom);
   return m_current_idx;
 }
@@ -119,30 +112,35 @@ int IWaypointManager::getWPTIdx(nav_msgs::msg::Path& reference_path,
   return target_idx;
 }
 
-nav_msgs::msg::Path
-IWaypointManager::calcMapTrackInGlobal(nav_msgs::msg::Path& reference_path_,
-                                       int current_idx_) {
+nav_msgs::msg::Path IWaypointManager::calcMapTrackInGlobal(
+    nav_msgs::msg::Path& reference_full_path_, int current_idx_) {
   //   If the vehicle is on the end of the wpt, current idx is going to
   //   zero again. Make sure that there is no memory overflow when you access
   //   based on this current idx
 
+  if (m_size_of_map_track > reference_full_path_.poses.size()) {
+    throw std::length_error("I_WPT_MANAGER : maptrack size is larger than the "
+                            "full reference path.");
+  }
+
   nav_msgs::msg::Path map_track_in_global;
 
-  if (current_idx_ + m_size_of_map_track < reference_path_.poses.size()) {
+  if (current_idx_ + m_size_of_map_track < reference_full_path_.poses.size()) {
     map_track_in_global.poses = vector<geometry_msgs::msg::PoseStamped>(
-        reference_path_.poses.begin() + current_idx_,
-        reference_path_.poses.begin() + current_idx_ + m_size_of_map_track);
+        reference_full_path_.poses.begin() + current_idx_,
+        reference_full_path_.poses.begin() + current_idx_ +
+            m_size_of_map_track);
   } else {
     // from current idx to end
     map_track_in_global.poses = vector<geometry_msgs::msg::PoseStamped>(
-        reference_path_.poses.begin() + current_idx_,
-        reference_path_.poses.end());
+        reference_full_path_.poses.begin() + current_idx_,
+        reference_full_path_.poses.end());
     // from 0 to left size
     map_track_in_global.poses.insert(map_track_in_global.poses.end(),
-                                     reference_path_.poses.begin(),
-                                     reference_path_.poses.begin() +
+                                     reference_full_path_.poses.begin(),
+                                     reference_full_path_.poses.begin() +
                                          (current_idx_ + m_size_of_map_track -
-                                          reference_path_.poses.size()));
+                                          reference_full_path_.poses.size()));
   }
   return map_track_in_global;
 }

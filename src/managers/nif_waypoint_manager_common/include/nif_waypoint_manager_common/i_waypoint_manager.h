@@ -18,9 +18,9 @@
 class IWaypointManager {
 public:
   IWaypointManager() {}
-  IWaypointManager(vector<string>& wpt_file_path_list_,
-                   string& body_frame_id_,
-                   string& global_frame_id_);
+  IWaypointManager(const vector<string>& wpt_file_path_list_,
+                   const string& body_frame_id_,
+                   const string& global_frame_id_);
 
   vector<c_wpt>& getListOfWPT() {
     return m_wpt_list;
@@ -47,7 +47,7 @@ public:
 
   nav_msgs::msg::Path getPathGlobaltoBody(nav_msgs::msg::Path& path_in_global_);
 
-  void setCurrentPose(nav_msgs::msg::Odometry& ego_vehicle_odom);
+  void setCurrentOdometry(const nav_msgs::msg::Odometry& ego_vehicle_odom);
 
   void setSizeOfMapTrack(int size_of_map_track_) {
     m_size_of_map_track = size_of_map_track_;
@@ -55,11 +55,11 @@ public:
 
   void resetDesiredWPT();
 
-  void setCurrentIdx(nav_msgs::msg::Path& reference_path,
-                     nav_msgs::msg::Odometry& ego_vehicle_odom);
+  void setCurrentIdx(const nav_msgs::msg::Path &reference_path,
+                     const nav_msgs::msg::Odometry &ego_vehicle_odom);
 
-  int getCurrentIdx(nav_msgs::msg::Path& reference_path,
-                    nav_msgs::msg::Odometry& ego_vehicle_odom);
+  int getCurrentIdx(const nav_msgs::msg::Path &reference_path,
+                    const nav_msgs::msg::Odometry &ego_vehicle_odom);
 
   int getWPTIdx(nav_msgs::msg::Path& reference_path,
                 geometry_msgs::msg::PoseStamped& target_pose);

@@ -3,6 +3,8 @@ ade start -f --update -- \
     -v /tmp/.X11-unix:/tmp/.X11-unix \
     -v /etc/localtime:/etc/localtime:ro \
     -v /dev/input:/dev/input \
+    -v /home/$USER/.config/JetBrains:/home/$USER/.config/JetBrains \
+    -v /home/$USER/.local/share/JetBrains:/home/$USER/.local/share/JetBrains \
     --env="DISPLAY" \
     --env="QT_X11_NO_MITSHM=1" \
     --env="XAUTHORITY" \
