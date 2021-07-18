@@ -17,6 +17,7 @@
   <depend>nif_msgs</depend>
   <depend>autoware_auto_msgs</depend>
   <depend>raptor_dbw_msgs</depend>
+  <depend>deep_orange_msgs</depend>
 
   <export>
     <build_type>ament_cmake</build_type>

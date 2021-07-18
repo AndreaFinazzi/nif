@@ -16,7 +16,11 @@ ament_auto_find_build_dependencies()
 
 # Library
 ament_auto_add_library(${PROJECT_NAME} SHARED
-        src/waypoint_manager_node.cpp)
+        src/waypoint_manager_node.cpp
+        )
+
+ament_auto_add_executable(waypoint_manager_node_exe
+  src/waypoint_manager_main.cpp)
 
 
 if(BUILD_TESTING)
@@ -33,4 +37,7 @@ if(BUILD_TESTING)
           "rclcpp")
 endif()
 
-ament_auto_package()
+ament_auto_package(INSTALL_TO_SHARE
+maps
+launch
+)

@@ -15,7 +15,8 @@
 #include "nif_control_safety_layer_nodes/control_safety_layer_node.h"
 #include "rcutils/error_handling.h"
 
-int32_t main(int32_t argc, char **argv) {
+int32_t main(int32_t argc, char **argv) 
+{
   rclcpp::init(argc, argv);
 
   using nif::control::ControlSafetyLayerNode;
