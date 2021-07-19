@@ -20,8 +20,8 @@ ament_auto_add_library(${PROJECT_NAME} SHARED
         src/control_pure_pursuit_node.cpp
         src/pure_pursuit.cpp)
 
-# ament_auto_add_executable (${PROJECT_NAME}_exe
-#         src/control_pure_pursuit_main.cpp)
+ament_auto_add_executable (${PROJECT_NAME}_exe
+        src/control_pure_pursuit_main.cpp)
 
 
 if(BUILD_TESTING)

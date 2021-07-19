@@ -27,7 +27,7 @@ public:
               bool use_lpf_flg_,
               double lfp_gain_,
               bool is_steer_sign_invert);
-  ~PurePursuit();
+  ~PurePursuit() {}
 
 private:
   nif::common::msgs::Odometry m_ego_pose_in_global;
