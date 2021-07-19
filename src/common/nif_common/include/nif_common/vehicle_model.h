@@ -10,7 +10,8 @@
 
 namespace nif {
 namespace common {
-namespace model {
+class VehicleModel {};
+namespace vehicle_dim {
 // TODO: it should be updated ASAP
 /**
  * Vehicle wheel base length in meter
@@ -36,9 +37,9 @@ const double VEH_MASS_KG = 5.0;
  * Steering ratio between steering wheel angle and steer angle.
  */
 const double STEERING_RATIO = 5.0;
-}; // namespace model
-
+} // namespace vehicle_dim
 } // namespace common
+
 } // namespace nif
 
 #endif // ROS2MASTER_VEHICLE_MODEL_H

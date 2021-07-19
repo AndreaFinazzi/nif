@@ -16,22 +16,26 @@ namespace common {
 
 class IBaseSynchronizedNode : public IBaseNode {
 public:
-  virtual ~IBaseSynchronizedNode();
+  explicit IBaseSynchronizedNode(const std::string& node_name);
 
 protected:
-  IBaseSynchronizedNode(const std::string &node_name,
-                        const rclcpp::NodeOptions &options);
+  IBaseSynchronizedNode(const std::string& node_name,
+                        const rclcpp::NodeOptions& options);
 
   template <typename DurationRepT, typename DurationT>
   IBaseSynchronizedNode(
-      const std::string &node_name, 
-      const rclcpp::NodeOptions &options,
+      const std::string& node_name,
+      const rclcpp::NodeOptions& options,
       const std::chrono::duration<DurationRepT, DurationT> period)
-      : IBaseNode(node_name, options) {
-    if (period >= nif::common::constants::SYNC_PERIOD_MIN &&
-        period <= nif::common::constants::SYNC_PERIOD_MAX) {
+    : IBaseNode(node_name, options),
+      gclock_period(
+          std::chrono::duration_cast<decltype(gclock_period)>(period)) {
+    if (this->gclock_period >= nif::common::constants::SYNC_PERIOD_MIN &&
+        this->gclock_period <= nif::common::constants::SYNC_PERIOD_MAX) {
       gclock_timer = this->create_wall_timer(
-          period, std::bind(&IBaseSynchronizedNode::gClockCallback, this));
+          this->gclock_period,
+          std::bind(&IBaseSynchronizedNode::gClockCallback, this));
+
     } else {
       //    Not allowed to instantiate with this period
       throw std::range_error("Sync Period out of range.");
@@ -41,6 +45,9 @@ protected:
   void initParameters() override = 0;
   void getParameters() override = 0;
 
+  const std::chrono::nanoseconds& getGclockPeriod() const;
+
+protected:
   /**
    * run() is called by the timer callback, and must be defined by the derived
    * classes.
@@ -49,6 +56,9 @@ protected:
 
 private:
   rclcpp::TimerBase::SharedPtr gclock_timer;
+
+  //  Not const to keep a door open (changing period at runtime)
+  std::chrono::nanoseconds gclock_period;
 
   void gClockCallback();
 };

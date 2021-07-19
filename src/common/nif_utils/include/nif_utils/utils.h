@@ -109,10 +109,10 @@ inline double quat2yaw(geometry_msgs::msg::Quaternion& data);
 inline double angle_wrap(double diff);
 
 geometry_msgs::msg::PoseStamped
-getPtBodytoGlobal(nav_msgs::msg::Odometry current_pose_,
+getPtBodytoGlobal(nav_msgs::msg::Odometry& current_pose_,
                   geometry_msgs::msg::PoseStamped& point_in_body_);
 geometry_msgs::msg::PoseStamped
-getPtGlobaltoBody(nav_msgs::msg::Odometry current_pose_,
+getPtGlobaltoBody(nav_msgs::msg::Odometry& current_pose_,
                   geometry_msgs::msg::PoseStamped& point_in_global_);
 
 } // namespace coordination

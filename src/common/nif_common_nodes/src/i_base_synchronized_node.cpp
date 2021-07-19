@@ -11,16 +11,19 @@
 
 using namespace nif::common;
 
-IBaseSynchronizedNode::IBaseSynchronizedNode(const std::string &node_name,
-                                             const rclcpp::NodeOptions &options)
-    : IBaseSynchronizedNode(node_name, options,
-                            constants::SYNC_PERIOD_DEFAULT) {}
+IBaseSynchronizedNode::IBaseSynchronizedNode(const std::string& node_name)
+  : IBaseSynchronizedNode(node_name, rclcpp::NodeOptions{}) {}
+
+IBaseSynchronizedNode::IBaseSynchronizedNode(const std::string& node_name,
+                                             const rclcpp::NodeOptions& options)
+  : IBaseSynchronizedNode(node_name, options, constants::SYNC_PERIOD_DEFAULT) {}
 
 void IBaseSynchronizedNode::gClockCallback() {
   /// Update clock value
   //  TODO : make now() available in this context.
-  this->gclock_current = this->now();
   this->run();
 }
 
-IBaseSynchronizedNode::~IBaseSynchronizedNode() {}
+const std::chrono::nanoseconds& IBaseSynchronizedNode::getGclockPeriod() const {
+  return gclock_period;
+}
