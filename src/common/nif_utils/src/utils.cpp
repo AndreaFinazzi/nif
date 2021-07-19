@@ -46,3 +46,45 @@ inline double nif::common::utils::coordination::angle_wrap(double diff) {
   diff -= nif::common::constants::numeric::PI;
   return diff;
 }
+
+geometry_msgs::msg::PoseStamped
+nif::common::utils::coordination::getPtBodytoGlobal(
+    nav_msgs::msg::Odometry& current_pose_,
+    geometry_msgs::msg::PoseStamped& point_in_body_) {
+  double current_yaw_rad = nif::common::utils::coordination::quat2yaw(
+      current_pose_.pose.pose.orientation);
+  geometry_msgs::msg::PoseStamped point_in_global;
+  point_in_global.pose.position.x = current_pose_.pose.pose.position.x +
+      point_in_body_.pose.position.x * cos(current_yaw_rad) -
+      point_in_body_.pose.position.y * sin(current_yaw_rad);
+  point_in_global.pose.position.y = current_pose_.pose.pose.position.y +
+      point_in_body_.pose.position.x * sin(current_yaw_rad) +
+      point_in_body_.pose.position.y * cos(current_yaw_rad);
+  point_in_global.pose.position.z =
+      current_pose_.pose.pose.position.y + point_in_body_.pose.position.z;
+  return point_in_global;
+}
+
+geometry_msgs::msg::PoseStamped
+nif::common::utils::coordination::getPtGlobaltoBody(
+    nav_msgs::msg::Odometry& current_pose_,
+    geometry_msgs::msg::PoseStamped& point_in_global_) {
+  double current_yaw_rad = nif::common::utils::coordination::quat2yaw(
+      current_pose_.pose.pose.orientation);
+  geometry_msgs::msg::PoseStamped point_in_body;
+  point_in_body.pose.position.x = cos(-1 * current_yaw_rad) *
+          (point_in_global_.pose.position.x -
+           current_pose_.pose.pose.position.x) -
+      sin(-1 * current_yaw_rad) *
+          (point_in_global_.pose.position.y -
+           current_pose_.pose.pose.position.y);
+  point_in_body.pose.position.y = sin(-1 * current_yaw_rad) *
+          (point_in_global_.pose.position.x -
+           current_pose_.pose.pose.position.x) +
+      cos(-1 * current_yaw_rad) *
+          (point_in_global_.pose.position.y -
+           current_pose_.pose.pose.position.y);
+  point_in_body.pose.position.z =
+      point_in_global_.pose.position.z - current_pose_.pose.pose.position.z;
+  return point_in_body;
+}

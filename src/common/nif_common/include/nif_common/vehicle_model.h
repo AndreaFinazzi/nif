@@ -10,8 +10,33 @@
 
 namespace nif {
 namespace common {
+namespace model {
+// TODO: it should be updated ASAP
+/**
+ * Vehicle wheel base length in meter
+ */
+const double VEH_WHEEL_BASE = 5.0;
 
-class VehicleModel {};
+/**
+ * Vehicle width in meter
+ */
+const double VEH_WIDTH = 5.0;
+
+/**
+ * Vehicle hight length in meter
+ */
+const double VEH_HEIGHT = 5.0;
+
+/**
+ * Vehicle mass in kg
+ */
+const double VEH_MASS_KG = 5.0;
+
+/**
+ * Steering ratio between steering wheel angle and steer angle.
+ */
+const double STEERING_RATIO = 5.0;
+}; // namespace model
 
 } // namespace common
 } // namespace nif
