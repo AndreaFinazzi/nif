@@ -1,13 +1,19 @@
+#!/usr/bin/env bash
+
+DOCKER_RUNTIMES=$(docker -D info | grep Runtimes)
+
+if [[ "$DOCKER_RUNTIMES" == *"nvidia"* ]];
+then
+    NVIDIA_OPTIONS="--env="NVIDIA_VISIBLE_DEVICES"=all \
+    --env="NVIDIA_DRIVER_CAPABILITIES"=all \
+    --runtime=nvidia"
+else
+    NVIDIA_OPTIONS=""
+fi
+
 ade start -f --update -- \
-    --privileged \
     -v /tmp/.X11-unix:/tmp/.X11-unix \
     -v /etc/localtime:/etc/localtime:ro \
-    -v /dev/input:/dev/input \
     -v /home/$USER/.config/JetBrains:/home/$USER/.config/JetBrains \
     -v /home/$USER/.local/share/JetBrains:/home/$USER/.local/share/JetBrains \
-    --env="DISPLAY" \
-    --env="QT_X11_NO_MITSHM=1" \
-    --env="XAUTHORITY" \
-    --env="NVIDIA_VISIBLE_DEVICES"=all \
-    --env="NVIDIA_DRIVER_CAPABILITIES"=all \
-    --runtime=nvidia
+    $NVIDIA_OPTIONS

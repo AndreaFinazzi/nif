@@ -10,7 +10,7 @@ rosdep install -ir -y --from-path src/ --rosdistro $ROS_DISTRO
 . install/setup.bash
 
 
-colcon build --symlink-install --base-paths src/* "$@"
+colcon build --symlink-install --base-paths src/* "$@" --cmake-args -DCMAKE_INSTALL_PREFIX=/home/$USER/nif/install
 . install/setup.bash
 
 ros_env="AMENT_PREFIX_PATH CMAKE_PREFIX_PATH COLCON_PREFIX_PATH PKG_CONFIG_PATH PYTHONPATH LD_LIBRARY_PATH PATH ROS_DISTRO ROS_PYTHON_VERSION ROS_LOCALHOST_ONLY ROS_VERSION"

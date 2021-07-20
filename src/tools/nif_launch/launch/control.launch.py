@@ -29,7 +29,7 @@ def generate_launch_description():
     )
 
     kin_control_param = DeclareLaunchArgument(
-        'nif_control_minimal_param_file',
+        'nif_control_minimal_param',
         default_value=kin_control_param_file,
         description='Path to config file for kin_control'
     )
@@ -38,7 +38,7 @@ def generate_launch_description():
         package='nif_control_minimal_nodes',
         executable='nif_control_minimal_nodes_exe',
         output='screen',
-        parameters=[LaunchConfiguration('nif_control_minimal_param_file')],
+        parameters=[LaunchConfiguration('nif_control_minimal_param')],
         remappings={
             ('out_control_cmd', '/control_pool/control_cmd')
         }
