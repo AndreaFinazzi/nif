@@ -12,6 +12,7 @@
 #include "geometry_msgs/msg/pose.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "geometry_msgs/msg/quaternion.hpp"
+#include "nav_msgs/msg/odometry.hpp"
 #include "nif_common/constants.h"
 #include <rclcpp/parameter.hpp>
 #include <string>
@@ -106,6 +107,13 @@ namespace coordination {
 inline double quat2yaw(geometry_msgs::msg::Quaternion& data);
 
 inline double angle_wrap(double diff);
+
+geometry_msgs::msg::PoseStamped
+getPtBodytoGlobal(nav_msgs::msg::Odometry& current_pose_,
+                  geometry_msgs::msg::PoseStamped& point_in_body_);
+geometry_msgs::msg::PoseStamped
+getPtGlobaltoBody(nav_msgs::msg::Odometry& current_pose_,
+                  geometry_msgs::msg::PoseStamped& point_in_global_);
 
 } // namespace coordination
 

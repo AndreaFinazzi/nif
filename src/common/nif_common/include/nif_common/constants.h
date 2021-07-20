@@ -9,6 +9,7 @@
 #define NIF_COMMON_CONSTANTS_H
 
 #include <chrono>
+#include <limits>
 #include <rclcpp/qos.hpp>
 
 namespace nif {
@@ -61,6 +62,16 @@ namespace numeric {
  * pi is pi
  */
 const float PI = 3.141592653589793;
+
+/**
+ * Infinite value (float)
+ */
+const float INF = std::numeric_limits<float>::max();
+
+/**
+ * Epsilon value (float)
+ */
+const float EPSILON = std::numeric_limits<float>::epsilon();
 
 } // namespace numeric
 

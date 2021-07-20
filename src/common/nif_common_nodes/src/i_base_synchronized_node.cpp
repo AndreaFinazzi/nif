@@ -11,9 +11,6 @@
 
 using namespace nif::common;
 
-IBaseSynchronizedNode::IBaseSynchronizedNode(const std::string &node_name)
-    : IBaseSynchronizedNode(node_name, rclcpp::NodeOptions{}) {}
-
 IBaseSynchronizedNode::IBaseSynchronizedNode(const std::string &node_name,
                                              const rclcpp::NodeOptions &options)
     : IBaseSynchronizedNode(node_name, options,
