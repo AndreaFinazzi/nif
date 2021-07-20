@@ -16,22 +16,24 @@ namespace common {
 
 class IBaseSynchronizedNode : public IBaseNode {
 public:
-  explicit IBaseSynchronizedNode(const std::string& node_name);
+
+  explicit IBaseSynchronizedNode(const std::string &node_name);
 
 protected:
-  IBaseSynchronizedNode(const std::string& node_name,
-                        const rclcpp::NodeOptions& options);
+  IBaseSynchronizedNode(const std::string &node_name,
+                        const rclcpp::NodeOptions &options);
 
   template <typename DurationRepT, typename DurationT>
   IBaseSynchronizedNode(
-      const std::string& node_name,
-      const rclcpp::NodeOptions& options,
+      const std::string &node_name, const rclcpp::NodeOptions &options,
       const std::chrono::duration<DurationRepT, DurationT> period)
-    : IBaseNode(node_name, options),
-      gclock_period(
-          std::chrono::duration_cast<decltype(gclock_period)>(period)) {
+      : IBaseNode(node_name, options),
+        gclock_period(
+            std::chrono::duration_cast<decltype(gclock_period)>(period)) {
+
     if (this->gclock_period >= nif::common::constants::SYNC_PERIOD_MIN &&
         this->gclock_period <= nif::common::constants::SYNC_PERIOD_MAX) {
+
       gclock_timer = this->create_wall_timer(
           this->gclock_period,
           std::bind(&IBaseSynchronizedNode::gClockCallback, this));
@@ -45,7 +47,7 @@ protected:
   void initParameters() override = 0;
   void getParameters() override = 0;
 
-  const std::chrono::nanoseconds& getGclockPeriod() const;
+  const std::chrono::nanoseconds &getGclockPeriod() const;
 
 protected:
   /**

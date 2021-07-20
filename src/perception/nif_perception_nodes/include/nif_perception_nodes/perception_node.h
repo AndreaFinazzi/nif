@@ -10,7 +10,6 @@
 
 #include "nif_common/types.h"
 #include "nif_common_nodes/i_base_node.h"
-#include "nif_racing_line/racing_line_manager.h"
 #include "nif_sensor_fusion/sensor_fusion_manager.h"
 #include "nif_tracking/tracking_manager.h"
 
@@ -31,8 +30,6 @@ class PerceptionNode : public nif::common::IBaseNode {
 public:
 protected:
 private:
-  nif::common::RacingLineManager racing_line_manager;
-
   // TODO: Define precise type for this
   //            PerceptionNeuralModel neural_model;
 

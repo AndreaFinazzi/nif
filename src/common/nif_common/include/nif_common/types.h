@@ -15,6 +15,7 @@
 #include "std_msgs/msg/float32.hpp"
 #include "std_msgs/msg/int8.hpp"
 
+#include "deep_orange_msgs/msg/rc_to_ct.hpp"
 #include "nif_msgs/msg/autonomy_status.hpp"
 #include "nif_msgs/msg/control_command.hpp"
 #include "nif_msgs/msg/health.hpp"
@@ -53,7 +54,7 @@ using TerrainState = nif_msgs::msg::TerrainStatus;
  * This message contains the race flag information from the race control.
  * TODO: should be changed based on the bag file
  */
-using RaceControlState = autoware_auto_msgs::msg::VehicleKinematicState;
+using RaceControlState = deep_orange_msgs::msg::RcToCt;
 
 /**
  * This message contains the autonomy status information which should updated

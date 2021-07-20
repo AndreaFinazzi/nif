@@ -17,9 +17,9 @@
 
 class WaypointManagerMinimal : public IWaypointManager {
 public:
-  WaypointManagerMinimal(vector<string>& wpt_file_path_list_,
-                         string& body_frame_id_,
-                         string& global_frame_id_);
+  WaypointManagerMinimal(const vector<string>& wpt_file_path_list_,
+                         const string& body_frame_id_,
+                         const string& global_frame_id_);
 
 private:
   WaypointManagerMinimal() {}

@@ -8,9 +8,9 @@
 #include "nif_waypoint_manager_common/i_waypoint_manager.h"
 #include <tf2/LinearMath/Quaternion.h>
 
-IWaypointManager::IWaypointManager(vector<string>& wpt_file_path_list_,
-                                   string& body_frame_id_,
-                                   string& global_frame_id_) {
+IWaypointManager::IWaypointManager(const vector<string>& wpt_file_path_list_,
+                                   const string& body_frame_id_,
+                                   const string& global_frame_id_) {
   assert(wpt_file_path_list_.size() != 0);
   m_body_frame_id = body_frame_id_;
   m_global_frame_id = global_frame_id_;
@@ -43,8 +43,8 @@ IWaypointManager::IWaypointManager(vector<string>& wpt_file_path_list_,
   m_desired_wpt_in_nav_path = c_desired_wpt.getWPTinNavPath();
 }
 
-void IWaypointManager::setCurrentPose(
-    nav_msgs::msg::Odometry& ego_vehicle_odom) {
+void IWaypointManager::setCurrentOdometry(
+    const nav_msgs::msg::Odometry& ego_vehicle_odom) {
   m_current_pose = ego_vehicle_odom;
 
   // calc heading(yaw) in rad and deg
@@ -63,8 +63,8 @@ void IWaypointManager::setCurrentPose(
 }
 
 void IWaypointManager::setCurrentIdx(
-    nav_msgs::msg::Path& reference_path,
-    nav_msgs::msg::Odometry& ego_vehicle_odom) {
+    const nav_msgs::msg::Path &reference_path,
+    const nav_msgs::msg::Odometry &ego_vehicle_odom) {
   int current_idx;
   double min_dist = INFINITY;
   for (int pt_idx = 0; pt_idx < reference_path.poses.size(); pt_idx++) {
@@ -86,8 +86,9 @@ void IWaypointManager::setCurrentIdx(
   m_current_idx = current_idx;
 }
 
-int IWaypointManager::getCurrentIdx(nav_msgs::msg::Path& reference_path,
-                                    nav_msgs::msg::Odometry& ego_vehicle_odom) {
+int IWaypointManager::getCurrentIdx(
+    const nav_msgs::msg::Path &reference_path,
+    const nav_msgs::msg::Odometry &ego_vehicle_odom) {
   setCurrentIdx(reference_path, ego_vehicle_odom);
   return m_current_idx;
 }

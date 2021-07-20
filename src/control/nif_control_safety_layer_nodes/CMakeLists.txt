@@ -25,18 +25,25 @@ ament_auto_add_library(${PROJECT_NAME} SHARED
 ament_auto_add_executable(control_safety_layer_node_exe
         src/control_safety_layer_main.cpp)
 
-if(BUILD_TESTING)
-    find_package(ament_lint_auto REQUIRED)
-    ament_lint_auto_find_test_dependencies()
 
-    ament_add_gtest(${PROJECT_NAME}_test
-            test/gtest_main.cpp
-            )
-
-    target_include_directories(${PROJECT_NAME}_test PRIVATE "include")
-    target_link_libraries(${PROJECT_NAME}_test ${PROJECT_NAME})
-    ament_target_dependencies(${PROJECT_NAME}_test
-            "rclcpp")
-endif()
+#if(BUILD_TESTING)
+#    find_package(ament_lint_auto REQUIRED)
+#    ament_lint_auto_find_test_dependencies()
+#
+#    ament_add_gtest(${PROJECT_NAME}_test
+#            test/gtest_main.cpp
+#            test/test_csl_node.cpp
+#            )
+#
+#    add_ros_test(
+#            test/test.launch.py
+#            TIMEOUT "30"
+#    )
+#
+#    target_include_directories(${PROJECT_NAME}_test PRIVATE "include")
+#    target_link_libraries(${PROJECT_NAME}_test ${PROJECT_NAME})
+#    ament_target_dependencies(${PROJECT_NAME}_test
+#            "rclcpp")
+#endif()
 
 ament_auto_package()

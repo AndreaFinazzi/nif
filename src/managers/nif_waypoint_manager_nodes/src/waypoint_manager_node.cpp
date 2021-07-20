@@ -31,8 +31,8 @@ nif::managers::WaypointManagerNode::WaypointManagerNode(
 
   this->file_path_list =
       this->get_parameter("file_path_list").as_string_array();
-  this->body_frame_id = this->get_parameter("body_frame_id").as_string();
-  this->global_frame_id = this->get_parameter("global_frame_id").as_string();
+//  this->body_frame_id = this->get_parameter("body_frame_id").as_string();
+//  this->global_frame_id = this->get_parameter("global_frame_id").as_string();
 
   // Could also inherit from IBaseSynchronizedNode
   m_timer = this->create_wall_timer(
@@ -42,7 +42,7 @@ nif::managers::WaypointManagerNode::WaypointManagerNode(
       "nif/wpt_manager/maptrack_path", 10);
 
   this->setWaypointManager(std::make_shared<WaypointManagerMinimal>(
-      file_path_list, body_frame_id, global_frame_id));
+      file_path_list, this->getBodyFrameId(), this->getGlobalFrameId()));
 }
 
 // TODO should pass node_name_ as a reference here
@@ -58,7 +58,7 @@ void nif::managers::WaypointManagerNode::timer_callback() {
   RCLCPP_DEBUG(this->get_logger(), "WaypointManagerNode timer callback");
   nav_msgs::msg::Path maptrack;
 
-  this->wpt_manager->setCurrentPose(this->ego_odometry);
+  this->wpt_manager->setCurrentOdometry(this->getEgoOdometry());
   maptrack = this->wpt_manager->getDesiredMapTrackInGlobal();
   m_map_track_publisher->publish(maptrack);
 }

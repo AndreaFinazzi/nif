@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+    <name>nif_launch</name>
+    <version>0.0.0</version>
+    <description>TODO: Package description</description>
+    <maintainer email="usrg@todo.todo">usrg</maintainer>
+    <license>TODO: License declaration</license>
+
+    <buildtool_depend>ament_cmake_auto</buildtool_depend>
+
+    <exec_depend>ament_index_python</exec_depend>
+    <exec_depend>avt_vimba_camera</exec_depend>
+    <exec_depend>raptor_dbw_can</exec_depend>
+    <exec_depend>ros2_socketcan</exec_depend>
+    <exec_depend>ssc_interface</exec_depend>
+    <exec_depend>long_control</exec_depend>
+    <exec_depend>nif_control_minimal_nodes</exec_depend>
+
+    <test_depend>ament_cmake_gtest</test_depend>
+    <test_depend>ament_lint_auto</test_depend>
+    <test_depend>ament_lint_common</test_depend>
+
+    <export>
+        <build_type>ament_cmake</build_type>
+    </export>
+</package>
