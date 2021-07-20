@@ -132,19 +132,19 @@ void PurePursuit::setLookAheadLateralError(
 
 void PurePursuit::calcSteerCmd() {
   m_veh_cmd_steer_rad = m_control_pt_curvature_sign *
-      atan2(nif::common::vehicle_dim::VEH_WHEEL_BASE,
+      atan2(nif::common::vehicle_param::VEH_WHEEL_BASE,
             2 * m_control_pt_curvature_magnitude -
-                nif::common::vehicle_dim::VEH_WHEEL_BASE);
+                nif::common::vehicle_param::VEH_WHEEL_BASE);
 
   if (m_use_lpf_flg == true) {
     m_veh_cmd_steer_rad = (1.0 - m_lpf_gain) * m_veh_cmd_steer_rad +
         m_lpf_gain * m_veh_cmd_prev_steer_rad;
   }
   m_veh_cmd_steerwheel_rad =
-      m_veh_cmd_steer_rad * nif::common::vehicle_dim::STEERING_RATIO;
+      m_veh_cmd_steer_rad * nif::common::vehicle_param::STEERING_RATIO;
 
   // store previous control command
   m_veh_cmd_prev_steer_rad = m_veh_cmd_steer_rad;
   m_veh_cmd_prev_steerwheel_rad =
-      m_veh_cmd_prev_steer_rad * nif::common::vehicle_dim::STEERING_RATIO;
+      m_veh_cmd_prev_steer_rad * nif::common::vehicle_param::STEERING_RATIO;
 }
