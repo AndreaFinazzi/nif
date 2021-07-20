@@ -62,7 +62,9 @@
 
 #include "BlockingQueue.h"
 
-#include <imu_3dm_gx4/msg/filter_output.hpp>
+// Temporarily replaced by copy & paste
+// #include <imu_3dm_gx4/msg/filter_output.hpp>
+#include <nif_msgs/msg/filter_out.hpp>
 #include <nav_msgs/msg/odometry.hpp>
 #include <geometry_msgs/msg/point.hpp>
 
@@ -71,19 +73,17 @@
 
 namespace autorally_core
 {
-  class StateEstimator
+  class StateEstimator : public rclcpp::Node
   {
   private:
-    // ros::NodeHandle nh_;
-    // ros::Subscriber gpsSub_, imuSub_, odomSub_;
-    rclcpp::publisher<nav_msgs::msg::Odometry>::SharedPtr posePub_;
-    rclcpp::publisher<geometry_msgs::msg::Point>::SharedPtr biasAccPub_;
-    rclcpp::publisher<geometry_msgs::msg::Point>::SharedPtr biasGyroPub_;
-    rclcpp::publisher<geometry_msgs::msg::Point>::SharedPtr timePub_;
-    rclcpp::publisher<std_msgs::msg::Int16>::SharedPtr statusPub_;
-    rclcpp::Subscription<sensor_msgs::msg::NavSatFixPtr> gpsSub_;
-    rclcpp::Subscription<sensor_msgs::msg::ImuPtr> imuSub_;
-    rclcpp::Subscription<nav_msgs::msg::Odometry> odomSub_;
+    rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr posePub_;
+    rclcpp::Publisher<geometry_msgs::msg::Point>::SharedPtr biasAccPub_;
+    rclcpp::Publisher<geometry_msgs::msg::Point>::SharedPtr biasGyroPub_;
+    rclcpp::Publisher<geometry_msgs::msg::Point>::SharedPtr timePub_;
+    rclcpp::Publisher<std_msgs::msg::Int16>::SharedPtr statusPub_;
+    rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr gpsSub_;
+    rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imuSub_;
+    rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odomSub_;
 
     double lastImuT_, lastImuTgps_;
     /**
@@ -97,9 +97,9 @@ namespace autorally_core
     double gpsSigma_;
     int maxQSize_;
 
-    BlockingQueue<sensor_msgs::NavSatFixConstPtr> gpsOptQ_;
-    BlockingQueue<sensor_msgs::ImuConstPtr> imuOptQ_;
-    BlockingQueue<nav_msgs::OdometryConstPtr> odomOptQ_;
+    BlockingQueue<sensor_msgs::msg::NavSatFix::SharedPtr> gpsOptQ_;
+    BlockingQueue<sensor_msgs::msg::Imu::SharedPtr> imuOptQ_;
+    BlockingQueue<nav_msgs::msg::Odometry::SharedPtr> odomOptQ_;
 
     boost::mutex optimizedStateMutex_;
     gtsam::NavState optimizedState_;
@@ -107,11 +107,11 @@ namespace autorally_core
     boost::shared_ptr<gtsam::PreintegratedImuMeasurements> imuPredictor_;
     double imuDt_;
     gtsam::imuBias::ConstantBias optimizedBias_, previousBias_;
-    sensor_msgs::ImuConstPtr lastIMU_;
+    sensor_msgs::msg::Imu::SharedPtr lastIMU_;
     boost::shared_ptr<gtsam::PreintegrationParams> preintegrationParams_;
 
-    std::list<sensor_msgs::ImuConstPtr> imuMeasurements_, imuGrav_;
-    imu_3dm_gx4::FilterOutput initialPose_;
+    std::list<sensor_msgs::msg::Imu::SharedPtr> imuMeasurements_, imuGrav_;
+    nif_msgs::msg::FilterOut initialPose_;
     gtsam::Pose3 bodyPSensor_, carENUPcarNED_;
     gtsam::Pose3 imuPgps_;
 
@@ -122,6 +122,7 @@ namespace autorally_core
     bool usingOdom_;
     double maxGPSError_;
 
+    bool received_imu_;
 
     bool hasNewDynamicParams_;
     double correction_x_;
@@ -133,18 +134,18 @@ namespace autorally_core
     gtsam::Vector noiseModelBetweenBias_sigma_;
     gtsam::ISAM2 *isam_;
 
-    nav_msgs::msg::OdometryConstPtr lastOdom_;
+    nav_msgs::msg::Odometry::SharedPtr lastOdom_;
 
   public:
     StateEstimator();
     ~StateEstimator();
-    void GpsCallback(sensor_msgs::msg::NavSatFixPtr fix); // TODO: check if it has to be changed into novatel_gps_msgs::msg::Inspva
-    void ImuCallback(sensor_msgs::msg::ImuPtr imu);
-    void WheelOdomCallback(nav_msgs::msg::OdometryPtr odom);
+    void GpsCallback(sensor_msgs::msg::NavSatFix::SharedPtr fix); // TODO: check if it has to be changed into novatel_gps_msgs::msg::Inspva
+    void ImuCallback(sensor_msgs::msg::Imu::SharedPtr imu);
+    void WheelOdomCallback(nav_msgs::msg::Odometry::SharedPtr odom);
     void GpsHelper();
     void GpsHelper_1();
     gtsam::BetweenFactor<gtsam::Pose3> integrateWheelOdom(double prevTime, double stopTime, int curFactor);
-    void GetAccGyro(sensor_msgs::msg::ImuConstPtr imu, gtsam::Vector3 &acc, gtsam::Vector3 &gyro);
+    void GetAccGyro(sensor_msgs::msg::Imu::SharedPtr imu, gtsam::Vector3 &acc, gtsam::Vector3 &gyro);
   };
 };
 

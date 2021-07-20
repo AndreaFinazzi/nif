@@ -71,20 +71,21 @@ using symbol_shorthand::G; // GPS pose
 
 // macro for getting the time stamp of a ros message
 // #define TIME(msg) ( (msg)->header.stamp.toSec() )
-#define TIME(msg) ( (msg)->header.stamp.sec + msg)->header.stamp.nanosec * 1e-9 )
+#define TIME(msg) ( (msg)->header.stamp.sec + (msg)->header.stamp.nanosec * 1e-9 )
 
 namespace autorally_core
 {
 
   StateEstimator::StateEstimator() :
-    nh_("~"),
+    Node("state_estimator"),
     lastImuT_(0.0),
     lastImuTgps_(0.0),
     maxQSize_(0),
     gpsOptQ_(40),
     imuOptQ_(400),
     odomOptQ_(100),
-    gotFirstFix_(false)
+    gotFirstFix_(false),
+    received_imu_(false)
   {
     // temporary variables to retrieve parameters
     double accSigma, gyroSigma, initialVelNoise, initialBiasNoiseAcc, initialBiasNoiseGyro, initialRotationNoise,
@@ -104,9 +105,9 @@ namespace autorally_core
     this->declare_parameter<double>("SensorTransformY",  0.0);
     this->declare_parameter<double>("SensorTransformZ",  0.0);
     this->declare_parameter<double>("SensorXAngle",  0);
-    this->declare_parameter<double>("SensorYAngle",  0);
-    this->declare_parameter<double>("SensorZAngle",  0);
-    this->declare_parameter<double>("CarXAngle",  0);
+    this->declare_parameter<double>("SensorYAngle",  3.14159265359);
+    this->declare_parameter<double>("SensorZAngle",  1.57079632679);
+    this->declare_parameter<double>("CarXAngle",  3.14159265359);
     this->declare_parameter<double>("CarYAngle",  0);
     this->declare_parameter<double>("CarZAngle",  0);
     this->declare_parameter<double>("Gravity",  9.8);
@@ -139,9 +140,9 @@ namespace autorally_core
     this->get_parameter("Imudt", imuDt_);
 
     double gpsx, gpsy, gpsz;
-    this->declare_parameter<double>("GPSX",  0);
+    this->declare_parameter<double>("GPSX",  -0.37);
     this->declare_parameter<double>("GPSY",  0);
-    this->declare_parameter<double>("GPSZ",  0);
+    this->declare_parameter<double>("GPSZ",  -0.06);
     this->get_parameter("GPSX", gpsx);
     this->get_parameter("GPSY", gpsy);
     this->get_parameter("GPSZ", gpsz);
@@ -152,7 +153,7 @@ namespace autorally_core
 
     bool fixedInitialPose;
     double initialRoll, intialPitch, initialYaw;
-    this->declare_parameter<bool>("FixedInitialPose", false);
+    this->declare_parameter<bool>("FixedInitialPose", true);
     this->declare_parameter<double>("initialRoll",  0);
     this->declare_parameter<double>("intialPitch",  0);
     this->declare_parameter<double>("initialYaw",  0);
@@ -163,9 +164,9 @@ namespace autorally_core
 
     double latOrigin, lonOrigin, altOrigin;
     this->declare_parameter<bool>("FixedOrigin", true);
-    this->declare_parameter<double>("latOrigin",  0);
-    this->declare_parameter<double>("lonOrigin",  0);
-    this->declare_parameter<double>("altOrigin",  0);
+    this->declare_parameter<double>("latOrigin",  36.3697107);
+    this->declare_parameter<double>("lonOrigin",  127.3678668);
+    this->declare_parameter<double>("altOrigin",  66.283);
     this->get_parameter("FixedOrigin", fixedOrigin_);
     this->get_parameter("latOrigin", latOrigin);
     this->get_parameter("lonOrigin", lonOrigin);
@@ -219,20 +220,22 @@ namespace autorally_core
 
     optimizedTime_ = 0;
 
-    imu_3dm_gx4::FilterOutputConstPtr ip;
+    nif_msgs::msg::FilterOut::SharedPtr ip;
+    
     if (!fixedInitialPose)
     {
+      // received_imu_
       while (!ip)
       {
-        RCLCPP_WARN(rclcpp::get_logger(), "Waiting for valid initial orientation");
+        RCLCPP_WARN(rclcpp::get_logger("state_estimator"), "Waiting for valid initial orientation");
         // TODO: Turn below ros::topic::waitForMessage into rclcpp::WaitSet something
-        // ip = ros::topic::waitForMessage<imu_3dm_gx4::FilterOutput>("filter", nh_, ros::Duration(15));
+        // ip = ros::topic::waitForMessage<imu_3dm_gx4::FilterOut>("filter", nh_, ros::Duration(15));
       }
       initialPose_ = *ip;
     }
     else
     {
-      RCLCPP_WARN(rclcpp::get_logger(), "Using fixed initial orientation");
+      RCLCPP_WARN(rclcpp::get_logger("state_estimator"), "Using fixed initial orientation");
       Rot3 initialRotation = Rot3::Ypr(initialYaw, intialPitch, initialRoll);
       initialPose_.orientation.w = initialRotation.quaternion()[0];
       initialPose_.orientation.x = initialRotation.quaternion()[1];
@@ -248,16 +251,16 @@ namespace autorally_core
 
     bodyPSensor_ = Pose3(Rot3::RzRyRx(sensorXAngle, sensorYAngle, sensorZAngle),
         Point3(sensorX, sensorY, sensorZ));
-    carENUPcarNED_ = Pose3(Rot3::RzRyRx(carXAngle, carYAngle, carZAngle), Point3());
+    carENUPcarNED_ = Pose3(Rot3::RzRyRx(carXAngle, carYAngle, carZAngle), Point3(0,0,0));
 
     bodyPSensor_.print("Body pose\n");
     carENUPcarNED_.print("CarBodyPose\n");
 
-    posePub_ = this->create_publisher<>("pose", rclcpp::QoS(1));
-    biasAccPub_ = this->create_publisher<>("bias_acc", rclcpp::QoS(1));
-    biasGyroPub_ = this->create_publisher<>("bias_gyro", rclcpp::QoS(1));
-    timePub_ = this->create_publisher<>("time_delays", rclcpp::QoS(1));
-    statusPub_ = this->create_publisher<>("status", rclcpp::QoS(1));
+    posePub_ = this->create_publisher<nav_msgs::msg::Odometry>("pose", rclcpp::QoS(1));
+    biasAccPub_ = this->create_publisher<geometry_msgs::msg::Point>("bias_acc", rclcpp::QoS(1));
+    biasGyroPub_ = this->create_publisher<geometry_msgs::msg::Point>("bias_gyro", rclcpp::QoS(1));
+    timePub_ = this->create_publisher<geometry_msgs::msg::Point>("time_delays", rclcpp::QoS(1));
+    statusPub_ = this->create_publisher<std_msgs::msg::Int16>("status", rclcpp::QoS(1));
 
     ISAM2Params params;
     params.factorization = ISAM2Params::QR;
@@ -288,12 +291,12 @@ namespace autorally_core
      sigma_gyro_bias_c << gyroBiasSigma_, gyroBiasSigma_, gyroBiasSigma_;
      noiseModelBetweenBias_sigma_ = (Vector(6) << sigma_acc_bias_c, sigma_gyro_bias_c).finished();
 
-     gpsSub_ = this->create_subscription<nav_msgs::msg::Odometry>(
-        "gps", rclcpp::QoS(1), std::bind(&StateEstimator::GpsCallback, this, _1)); // TODO: Que 300 messages?
-     imuSub_ = this->create_subscription<nav_msgs::msg::Odometry>(
-        "imu", rclcpp::QoS(1), std::bind(&StateEstimator::ImuCallback, this, _1)); // TODO: Que 600 messages?
+     gpsSub_ = this->create_subscription<sensor_msgs::msg::NavSatFix>(
+        "gps", rclcpp::QoS(300), std::bind(&StateEstimator::GpsCallback, this, std::placeholders::_1));
+     imuSub_ = this->create_subscription<sensor_msgs::msg::Imu>(
+        "imu", rclcpp::QoS(600), std::bind(&StateEstimator::ImuCallback, this, std::placeholders::_1));
      odomSub_ = this->create_subscription<nav_msgs::msg::Odometry>(
-        "wheel_odom", rclcpp::QoS(1), std::bind(&StateEstimator::WheelOdomCallback, this, _1)); // TODO: Que 300 messages?
+        "wheel_odom", rclcpp::QoS(300), std::bind(&StateEstimator::WheelOdomCallback, this, std::placeholders::_1));
 
      boost::thread optimizer(&StateEstimator::GpsHelper,this);
 
@@ -302,14 +305,15 @@ namespace autorally_core
   StateEstimator::~StateEstimator()
   {}
 
-  void StateEstimator::GpsCallback(sensor_msgs::msg::NavSatFixPtr fix)
+  void StateEstimator::GpsCallback(sensor_msgs::msg::NavSatFix::SharedPtr fix)
   {
-    fix->header.stamp = rclcpp::Time::now(); // comment this line for exact calculation. (1/3)
+    fix->header.stamp = this->get_clock()->now(); // comment this line for exact calculation. (1/3)
+    // fix->header.stamp = rclcpp::Time::now(); // comment this line for exact calculation. (1/3)
     if (!gpsOptQ_.pushNonBlocking(fix))
-      RCLCPP_WARN(rclcpp::get_logger(), "Dropping a GPS measurement due to full queue!!");
+      RCLCPP_WARN(rclcpp::get_logger("state_estimator"), "Dropping a GPS measurement due to full queue!!");
   }
 
-  void StateEstimator::GetAccGyro(sensor_msgs::msg::ImuConstPtr imu, Vector3 &acc, Vector3 &gyro)
+  void StateEstimator::GetAccGyro(sensor_msgs::msg::Imu::SharedPtr imu, Vector3 &acc, Vector3 &gyro)
   {
     double accx, accy, accz;
     if (invertx_) accx = -imu->linear_acceleration.x;
@@ -352,7 +356,7 @@ namespace autorally_core
 
       if (!gotFirstFix)
       {
-        sensor_msgs::msg::NavSatFixConstPtr fix = gpsOptQ_.popBlocking();
+        sensor_msgs::msg::NavSatFix::SharedPtr fix = gpsOptQ_.popBlocking();
         startTime = TIME(fix);
         if(usingOdom_) {
           lastOdom_ = odomOptQ_.popBlocking();
@@ -460,7 +464,7 @@ namespace autorally_core
         // add GPS measurements that are not ahead of the imu messages
         while (optimize && gpsOptQ_.size() > 0 && TIME(gpsOptQ_.front()) < (startTime + (imuKey-1)*0.1 + 1e-2))
         {
-          sensor_msgs::msg::NavSatFixConstPtr fix = gpsOptQ_.popBlocking();
+          sensor_msgs::msg::NavSatFix::SharedPtr fix = gpsOptQ_.popBlocking();
           double timeDiff = (TIME(fix) - startTime) / 0.1;
           int key = round(timeDiff);
           if (std::abs(timeDiff - key) < 1e-1)
@@ -492,7 +496,7 @@ namespace autorally_core
             }
             else
             {
-              RCLCPP_WARN(rclcpp::get_logger(), "Received bad GPS message");
+              RCLCPP_WARN(rclcpp::get_logger("state_estimator"), "Received bad GPS message");
               // diag_warn("Received bad GPS message");
             }
           }
@@ -559,12 +563,13 @@ namespace autorally_core
             ptGyro.y = prevBias.vector()[4];
             ptGyro.z = prevBias.vector()[5];
 
-            biasAccPub_.publish(ptAcc);
-            biasGyroPub_.publish(ptGyro);
+            biasAccPub_->publish(ptAcc);
+            biasGyroPub_->publish(ptGyro);
           }
           catch(gtsam::IndeterminantLinearSystemException ex)
           {
-            ROS_ERROR("Encountered Indeterminant System Error!");
+            RCLCPP_ERROR(rclcpp::get_logger("state_estimator"), "Encountered Indeterminant System Error!");
+            // ROS_ERROR("Encountered Indeterminant System Error!");
             // diag_error("State estimator has encountered indeterminant system error");
             status = 2;
             {
@@ -579,9 +584,11 @@ namespace autorally_core
   }
 
 
-  void StateEstimator::ImuCallback(sensor_msgs::msg::ImuPtr imu)
+  void StateEstimator::ImuCallback(sensor_msgs::msg::Imu::SharedPtr imu)
   {
-    imu->header.stamp = rclcpp::Time::now(); // comment this line for exact calculation. (2/3)
+    received_imu_ = true;
+    imu->header.stamp = this->get_clock()->now(); // comment this line for exact calculation. (2/3)
+    // imu->header.stamp = rclcpp::Time::now(); // comment this line for exact calculation. (2/3)
     double dt;
     if (lastImuT_ == 0) dt = 0.005;
     else dt = TIME(imu) - lastImuT_;
@@ -594,7 +601,7 @@ namespace autorally_core
     if (qSize > maxQSize_)
       maxQSize_ = qSize;
     if (!imuOptQ_.pushNonBlocking(imu))
-      RCLCPP_WARN(rclcpp::get_logger(), "Dropping an IMU measurement due to full queue!!");
+      RCLCPP_WARN(rclcpp::get_logger("state_estimator"), "Dropping an IMU measurement due to full queue!!");
 
     // Each time we get an imu measurement, calculate the incremental pose from the last GTSAM pose
     imuMeasurements_.push_back(imu);
@@ -674,28 +681,30 @@ namespace autorally_core
     poseNew.child_frame_id = "base_link";
     poseNew.header.frame_id = "odom";
 
-    posePub_.publish(poseNew);
+    posePub_->publish(poseNew);
 
     //ros::Time after = ros::Time::now();
     geometry_msgs::msg::Point delays;
     delays.x = TIME(imu);
     // delays.y = (rclcpp::Time::now() - imu->header.stamp).toSec();
     delays.z = TIME(imu) - optimizedTime;
-    timePub_.publish(delays);
+    timePub_->publish(delays);
 
     // publish the status of the estimate - set in the gpsHelper thread
     std_msgs::msg::Int16 statusMsgs;
     // statusMsgs.header.stamp = imu->header.stamp;
-    statusMsgs.status = status;
-    statusPub_.publish(statusMsgs);
+    // statusMsgs.status = status;
+    statusMsgs.data = status;
+    statusPub_->publish(statusMsgs);
     return;
   }
 
-  void StateEstimator::WheelOdomCallback(nav_msgs::msg::OdometryPtr odom)
+  void StateEstimator::WheelOdomCallback(nav_msgs::msg::Odometry::SharedPtr odom)
   {
-    odom->header.stamp = rclcpp::Time::now(); // comment this line for exact calculation. (3/3)
+    odom->header.stamp = this->get_clock()->now(); // comment this line for exact calculation. (3/3)
+    // odom->header.stamp = rclcpp::Time::now(); // comment this line for exact calculation. (3/3)
       if (!odomOptQ_.pushNonBlocking(odom))
-        RCLCPP_WARN(rclcpp::get_logger(), "Dropping an wheel odometry measurement due to full queue!!");
+        RCLCPP_WARN(rclcpp::get_logger("state_estimator"), "Dropping an wheel odometry measurement due to full queue!!");
   }
 
 
@@ -744,9 +753,10 @@ int main (int argc, char** argv)
   // autorally_core::StateEstimator wpt;
   // ros::spin();
 
-  rclcpp::init(arc, argv);
-  auto node = rclcpp::Node:make_shared("StateEstimator");
-  rclcpp.spin(node);
+  rclcpp::init(argc, argv);
+  auto node = std::make_shared<autorally_core::StateEstimator>();
+  rclcpp::spin(node);
+  rclcpp::shutdown();
 
   return 0;
 }
