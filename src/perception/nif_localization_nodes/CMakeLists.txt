@@ -23,7 +23,9 @@ ament_auto_add_library(${PROJECT_NAME} SHARED
 ament_auto_add_executable(localization_node_exe
         src/localization_main.cpp)
 
-# State estimator
+###################
+# State estimator #
+###################
 find_package(Boost REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package (GeographicLib REQUIRED)
@@ -63,4 +65,7 @@ if(BUILD_TESTING)
           "rclcpp")
 endif()
 
-ament_auto_package()
+ament_auto_package(
+  INSTALL_TO_SHARE
+    launch
+)

@@ -1,0 +1,32 @@
+state_estimator_node:
+  ros__parameters:
+    InitialRotationNoise: 0.25
+    InitialVelocityNoise: 0.1
+    InitialBiasNoiseAcc: 2.0e-1
+    InitialBiasNoiseGyro: 2.0e-2
+    AccelerometerSigma: 1.0e-2
+    GyroSigma: 8.73e-5
+    AccelBiasSigma: 3.9e-4
+    GyroBiasSigma: 4.8e-05
+    GPSSigma: 0.05
+    SensorTransformX: 0.0
+    SensorTransformY: 0.0
+    SensorTransformZ: 0.0
+    SensorXAngle: 0.0
+    SensorYAngle: 0.0 #3.14159265359
+    SensorZAngle: 0.0 #1.57079632679
+    CarXAngle: 3.14159265359
+    CarYAngle: 0.0
+    CarZAngle: 0.0
+    Gravity: 9.8
+    InvertX: false
+    InvertY: false
+    InvertZ: false
+    Imudt: 0.01
+    GPSX: 0.0 #-0.37
+    GPSY: 0.0
+    GPSZ: 0.0 #-0.06
+    FixedInitialPose: true
+    initialRoll:  0.0
+    intialPitch:  0.0
+    initialYaw:  0.0

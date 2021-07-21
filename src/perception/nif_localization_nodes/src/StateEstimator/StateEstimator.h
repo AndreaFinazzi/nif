@@ -60,6 +60,10 @@
 #include <sensor_msgs/msg/imu.hpp>
 #include <sensor_msgs/msg/nav_sat_fix.hpp>
 
+// NIF dependencies
+// #include <gps_msgs/msg/gps_fix.hpp>
+#include <novatel_gps_msgs/msg/inspva.hpp>
+
 #include "BlockingQueue.h"
 
 // Temporarily replaced by copy & paste
@@ -67,6 +71,11 @@
 #include <nif_msgs/msg/filter_out.hpp>
 #include <nav_msgs/msg/odometry.hpp>
 #include <geometry_msgs/msg/point.hpp>
+
+// TF2 broadcasting
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2_ros/transform_broadcaster.h>
+#include <geometry_msgs/msg/transform_stamped.hpp>
 
 #define PI 3.14159265358979323846264338
 
@@ -77,13 +86,15 @@ namespace autorally_core
   {
   private:
     rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr posePub_;
+    rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr insPub_;
     rclcpp::Publisher<geometry_msgs::msg::Point>::SharedPtr biasAccPub_;
     rclcpp::Publisher<geometry_msgs::msg::Point>::SharedPtr biasGyroPub_;
     rclcpp::Publisher<geometry_msgs::msg::Point>::SharedPtr timePub_;
     rclcpp::Publisher<std_msgs::msg::Int16>::SharedPtr statusPub_;
-    rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr gpsSub_;
+    rclcpp::Subscription<novatel_gps_msgs::msg::Inspva>::SharedPtr gpsSub_;
     rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imuSub_;
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odomSub_;
+    std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 
     double lastImuT_, lastImuTgps_;
     /**
@@ -97,7 +108,7 @@ namespace autorally_core
     double gpsSigma_;
     int maxQSize_;
 
-    BlockingQueue<sensor_msgs::msg::NavSatFix::SharedPtr> gpsOptQ_;
+    BlockingQueue<novatel_gps_msgs::msg::Inspva::SharedPtr> gpsOptQ_;
     BlockingQueue<sensor_msgs::msg::Imu::SharedPtr> imuOptQ_;
     BlockingQueue<nav_msgs::msg::Odometry::SharedPtr> odomOptQ_;
 
@@ -117,6 +128,8 @@ namespace autorally_core
 
     bool fixedOrigin_;
     GeographicLib::LocalCartesian enu_;   /// Object to put lat/lon coordinates into local cartesian
+    double E_, N_, U_;
+    std::vector<double> ego_v_;
     bool gotFirstFix_;
     bool invertx_, inverty_, invertz_;
     bool usingOdom_;
@@ -127,6 +140,9 @@ namespace autorally_core
     bool hasNewDynamicParams_;
     double correction_x_;
     double correction_y_;
+
+    std::string map_frame_;
+    std::string body_frame_;
 
     gtsam::SharedDiagonal priorNoisePose_;
     gtsam::SharedDiagonal priorNoiseVel_;
@@ -139,14 +155,16 @@ namespace autorally_core
   public:
     StateEstimator();
     ~StateEstimator();
-    void GpsCallback(sensor_msgs::msg::NavSatFix::SharedPtr fix); // TODO: check if it has to be changed into novatel_gps_msgs::msg::Inspva
+    void InsCallback(novatel_gps_msgs::msg::Inspva::SharedPtr ins); // TODO: check if it has to be changed into novatel_gps_msgs::msg::Inspva
+    void GpsCallback(novatel_gps_msgs::msg::Inspva::SharedPtr fix); // TODO: check if it has to be changed into novatel_gps_msgs::msg::Inspva
     void ImuCallback(sensor_msgs::msg::Imu::SharedPtr imu);
     void WheelOdomCallback(nav_msgs::msg::Odometry::SharedPtr odom);
     void GpsHelper();
     void GpsHelper_1();
+    void tfBroadcast(nav_msgs::msg::Odometry &msg, std::string str = "");
     gtsam::BetweenFactor<gtsam::Pose3> integrateWheelOdom(double prevTime, double stopTime, int curFactor);
     void GetAccGyro(sensor_msgs::msg::Imu::SharedPtr imu, gtsam::Vector3 &acc, gtsam::Vector3 &gyro);
   };
-};
+}
 
 #endif /* StateEstimator_H_ */
