@@ -13,7 +13,7 @@ void nif::control::ControlSafetyLayerNode::controlCallback(
   //  Store control command if it's not too old
   if ((this->now().nanoseconds() - msg->header.stamp.nanosec) <
       this->getGclockPeriod().count() || true) // TODO REMOVE THIS!!!
-    this->storeCommand(msg);
+    this->bufferStore(msg);
 }
 
 void nif::control::ControlSafetyLayerNode::run() {
@@ -33,7 +33,7 @@ void nif::control::ControlSafetyLayerNode::run() {
       RCLCPP_ERROR(this->get_logger(), e.what());
     }
 
-    this->flush
+//    this->flush
   }
 }
 
@@ -88,6 +88,7 @@ void nif::control::ControlSafetyLayerNode::bufferStore(
 
   this->control_buffer.push(msg);
 }
+
 void nif::control::ControlSafetyLayerNode::bufferFlush() {
-  this->control_buffer.
+//  this->control_buffer.
 }
