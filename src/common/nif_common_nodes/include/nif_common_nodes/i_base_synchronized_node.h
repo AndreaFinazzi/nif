@@ -17,15 +17,19 @@ namespace common {
 class IBaseSynchronizedNode : public IBaseNode {
 public:
 
-  explicit IBaseSynchronizedNode(const std::string &node_name);
+  explicit IBaseSynchronizedNode(const std::string &node_name)
+      : IBaseSynchronizedNode(node_name, rclcpp::NodeOptions{}) {}
 
 protected:
   IBaseSynchronizedNode(const std::string &node_name,
-                        const rclcpp::NodeOptions &options);
+                        const rclcpp::NodeOptions &options)
+      : IBaseSynchronizedNode(node_name, options, constants::SYNC_PERIOD_DEFAULT) {}
+
 
   template <typename DurationRepT, typename DurationT>
   IBaseSynchronizedNode(
-      const std::string &node_name, const rclcpp::NodeOptions &options,
+      const std::string &node_name,
+      const rclcpp::NodeOptions &options,
       const std::chrono::duration<DurationRepT, DurationT> period)
       : IBaseNode(node_name, options),
         gclock_period(
