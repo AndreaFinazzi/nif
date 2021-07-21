@@ -29,7 +29,7 @@ namespace control {
 
 class ControlPurePursuitNode : public nif::control::IControllerNode {
 public:
-  ControlPurePursuitNode(const std::string& node_name);
+  ControlPurePursuitNode(const std::string &node_name);
 
   nif::common::msgs::ControlCmd::SharedPtr control_cmd;
   std_msgs::msg::Float32 steering_cmd;
@@ -38,7 +38,7 @@ public:
 
 private:
   void mapTrackCallback(const nav_msgs::msg::Path::SharedPtr msg);
-  nif::common::msgs::ControlCmd& solve() override;
+  nif::common::msgs::ControlCmd &solve() override;
 
 protected:
   void initParameters() override;
