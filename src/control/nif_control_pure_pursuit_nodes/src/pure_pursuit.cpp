@@ -5,20 +5,48 @@ PurePursuit::PurePursuit(double min_lookahead_dist_ = 5.0,
                          double lookahead_speed_ratio_ = 1.0,
                          bool use_lpf_flg_ = false,
                          double lfp_gain_ = 0.5,
-                         bool is_steer_sign_invert = false)
+                         bool is_steer_sign_invert = false,
+                         double tau_ = 0.15, 
+                         double T_ = 0.1,
+                         double del_lookahead_dist_ = 0.5,
+                         )
   : m_min_lookahead_dist(min_lookahead_dist_),
     m_max_lookahead_dist(max_lookahead_dist_),
     m_lookahead_speed_ratio(lookahead_speed_ratio_),
     m_lpf_gain(lfp_gain_),
     m_use_lpf_flg(use_lpf_flg_),
-    m_steer_sign_flip_flg(is_steer_sign_invert) {}
+    m_steer_sign_flip_flg(is_steer_sign_invert),
+    m_tau(tau_),
+    m_T(T_),
+    m_del_lookahead_dist(del_lookahead_dist_) {}
+
+double PurePursuit::delayCompensation(double lookahead_dist_, double cur_vel_) {
+  // Delay compensation
+  //    w.r.t. time constant (Perception, Planning) and time delay (Actuator)
+  // Stable when: arcsin((d - v*tau)/(d + v*tau)) > T * sqrt(v / (d*tau))
+  // ref: http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.63.5514&rep=rep1&type=pdf
+  double stability_ineq;
+  while (true) {
+      stability_ineq = 
+          asin((lookahead_dist_ - cur_vel_*m_tau)/(lookahead_dist_ + cur_vel_*m_tau)) -
+          m_T * sqrt(cur_vel_ / (lookahead_dist_*m_tau));
+      if (stability_ineq > 0 || lookahead_dist_ > m_max_lookahead_dist) {
+        break;
+      }
+      else {
+        lookahead_dist_ += m_del_lookahead_dist;
+      }
+  }
+  return lookahead_dist_;
+}
 
 void PurePursuit::calcLookAheadDist(double cur_vel_) {
   double lookahead_dist;
   // TODO: do something algorithmic
   // Case 1. speed proportional lookahead distance settup
+  //         + delay compensation w.r.t. time constant and delay
   lookahead_dist = cur_vel_ * m_lookahead_speed_ratio;
-  m_lookahead_dist = lookahead_dist;
+  m_lookahead_dist = delayCompensation(lookahead_dist, cur_vel_);
 
   std::clamp(m_lookahead_dist, m_min_lookahead_dist, m_max_lookahead_dist);
 }
@@ -27,10 +55,11 @@ void PurePursuit::calcLookAheadDist() {
   double lookahead_dist;
   // TODO: do something algorithmic
   // Case 1. speed proportional lookahead distance settup
+  //         + delay compensation w.r.t. time constant and delay
   double cur_vel_ = sqrt(pow(m_ego_pose_in_global.twist.twist.linear.x, 2) +
                          pow(m_ego_pose_in_global.twist.twist.linear.y, 2));
   lookahead_dist = cur_vel_ * m_lookahead_speed_ratio;
-  m_lookahead_dist = lookahead_dist;
+  m_lookahead_dist = delayCompensation(lookahead_dist, cur_vel_);
 
   std::clamp(m_lookahead_dist, m_min_lookahead_dist, m_max_lookahead_dist);
 }

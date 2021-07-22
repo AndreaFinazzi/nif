@@ -48,6 +48,9 @@ private:
 
   double m_max_lookahead_dist, m_min_lookahead_dist;
   double m_lookahead_speed_ratio, m_lookahead_dist;
+  double m_tau; // time constant w.r.t. perception, planning (delay compensation)
+  double m_T;   // time delay w.r.t. low-level actuator (delay compensation)
+  double m_del_lookahead_dist; // increment of lookahead dist during delay compensation
 
   double m_control_pt_curvature_magnitude; // Curvature magnitude upto control
                                            // point
@@ -86,6 +89,7 @@ public:
   setVehicleStatus(nif::common::msgs::Odometry
                        ego_odom_); // set both (vehicle status and position)
 
+  double delayCompensation(double lookahead_dist_, double cur_vel_);
   double getLookAheadDist() {
     return m_lookahead_dist;
   }
