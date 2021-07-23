@@ -59,7 +59,12 @@ const int MAX_GEAR_POS = 6;
 /**
  * Min gear position
  */
-const int MIN_GEAR_POS = -1;
+const int MIN_GEAR_POS = 1;
+
+/**
+ * Min gear position for down shift
+ */
+const int MIN_GEAR_FOR_DOWNSHIFT_POS = 2;
 
 namespace ratio {
 
@@ -202,6 +207,16 @@ const std::vector<int> reference_rpm_vector{
     3444,
     3704,
 };
+
+const std::vector<double> speed_at_reference_rpm_vector{
+    0,
+    0,
+    2571/8.55671738,
+    2946/8.55671738,
+    3230/8.55671738,
+    3444/8.55671738,
+    3704/8.55671738,
+};
 } // namespace safe_downshift
 
 namespace aggressive_downshift_DONT_USE_THIS_NOW {
@@ -222,6 +237,16 @@ const std::vector<int> reference_rpm_vector{
     6026,
     6482,
 };
+
+const std::vector<double> speed_at_reference_rpm_vector{
+    0,
+    0,
+    4499/8.55671738,
+    5155/8.55671738,
+    5651/8.55671738,
+    6026/8.55671738,
+    6482/8.55671738,
+};
 } // namespace aggressive_downshift_DONT_USE_THIS_NOW
 
 namespace safe_upshift {
@@ -240,6 +265,16 @@ const std::vector<int> max_rpm_vector{
     4000,
     4000,
     10000000,
+};
+
+const std::vector<double> speed_at_max_rpm_vector{
+    0,
+    4000/8.55671738,
+    4000/8.55671738,
+    4000/8.55671738,
+    4000/8.55671738,
+    4000/8.55671738,
+    10000000/8.55671738,
 };
 } // namespace safe_upshift
 

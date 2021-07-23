@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.5)
 project(nif_control_common_nodes)
 
-# Default to C++14
+# Default to C++17
 if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 14)
+  set(CMAKE_CXX_STANDARD 17)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -16,7 +16,8 @@ ament_auto_find_build_dependencies()
 
 # Library
 ament_auto_add_library(${PROJECT_NAME} SHARED
-        src/i_controller_node.cpp)
+        src/i_controller_node.cpp
+        src/gear_shift_manager.cpp)
 
 
 if(BUILD_TESTING)
