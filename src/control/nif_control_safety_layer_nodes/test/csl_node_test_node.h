@@ -10,8 +10,14 @@
 
 class MockControlNode : public nif::control::IControllerNode {
 public:
-  using nif::control::IControllerNode::IControllerNode;
-//  explicit MockControlNode(const std::string& node_name) : IControllerNode(node_name) {}
+//  using nif::control::IControllerNode::IControllerNode;
+  explicit MockControlNode(const std::string& node_name) : IControllerNode(node_name) {
+    this->control_command = std::make_shared<nif::common::msgs::ControlCmd>();
+
+    this->csl_cmd_sub = this->create_subscription<nif::common::msgs::ControlCmd>(
+        "csl_control_cmd", nif::common::constants::QOS_DEFAULT, std::bind(&MockControlNode::controlCallback, this, std::placeholders::_1)
+        );
+  }
 
   void stateReport() {
     RCLCPP_INFO(this->get_logger(), "ego_odometry: %s", (this->getEgoOdometry().header.stamp));
@@ -20,6 +26,10 @@ public:
                 (this->getRaceControlState().track_cond));
     RCLCPP_INFO(this->get_logger(), "system_state: %s", this->getSystemState().health_status.is_system_healty);
   }
+
+  std::shared_ptr<rclcpp::Subscription<nif::common::msgs::ControlCmd>> csl_cmd_sub;
+  int passed_controls_counter = 0;
+  rclcpp::Time last_control_stamp{};
 
 private:
   rclcpp::Parameter param_one;
@@ -36,6 +46,12 @@ private:
     this->control_command->gear_control_cmd = 1;
     return *(this->control_command);
   }
+
+  void controlCallback(const nif::common::msgs::ControlCmd::SharedPtr msg) {
+    passed_controls_counter++;
+    last_control_stamp = msg->header.stamp;
+  }
+
 
   nif::common::msgs::ControlCmd::SharedPtr control_command;
 

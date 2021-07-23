@@ -5,17 +5,29 @@ import json
 import datetime
 import numpy as np
 import sys, os
-top_git_repo_path = "/home/usrg/nif/src/external/GraphBasedLocalTrajectoryPlanner/graph_ltpl"
-sys.path.insert(0, top_git_repo_path)
-for dir_name in os.listdir(top_git_repo_path):
-    dir_path = os.path.join(top_git_repo_path, dir_name)
+
+from ament_index_python import get_package_share_directory
+
+
+def get_share_file(package_name, file_name):
+    return os.path.join(get_package_share_directory(package_name), file_name)
+
+
+lib_path_default = get_share_file('nif_multilayer_planning_nodes',
+                                  "../../lib/GraphBasedLocalTrajectoryPlanner/graph_ltpl")
+
+sys.path.insert(0, lib_path_default)
+for dir_name in os.listdir(lib_path_default):
+    dir_path = os.path.join(lib_path_default, dir_name)
     if os.path.isdir(dir_path):
         sys.path.insert(0, dir_path)
 os.environ['OPENBLAS_NUM_THREADS'] = str(1)
 
+
 # TODO : I don't know why but currently, we have to import the graph library in this order
 from Graph_LTPL import Graph_LTPL
 from imp_global_traj.src import *
+
 
 from nif_msgs.msg import Perception3DArray
 from nav_msgs.msg import Path, Odometry
@@ -23,6 +35,7 @@ from geometry_msgs.msg import PoseStamped
 from std_msgs.msg import String
 from rclpy.node import Node
 import rclpy
+
 
 class GraphBasedPlanner(Node):
 

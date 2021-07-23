@@ -1,3 +1,4 @@
+
 //  Copyright (c) 2021 Unmanned System Research Group @ KAIST
 //  Author:
 
@@ -12,8 +13,6 @@
 
 #include "nif_common/types.h"
 #include "nif_common/vehicle_model.h"
-#include "nif_racing_line/racing_line_manager.h"
-
 namespace nif {
 namespace planning {
 namespace common {
@@ -34,9 +33,6 @@ private:
       opponents_states;
 
   nif::common::msgs::TerrainState track_state;
-
-  // TODO: Will it be static or not?
-  nif::common::RacingLineManager racing_line_manager;
 
   /**
    * Ego vehicle model. It stores the model dynamics parameters.
