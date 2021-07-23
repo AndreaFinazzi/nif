@@ -46,7 +46,7 @@ void ControlPurePursuitNode::initParameters() {}
 void ControlPurePursuitNode::getParameters() {}
 
 void ControlPurePursuitNode::egoUpdateTimerCallback() {
-  m_pure_pursuit_handler_ptr->setVehicleStatus(this->ego_odometry);
+  m_pure_pursuit_handler_ptr->setVehicleStatus(this->getEgoOdometry());
   m_ego_status_first_run = true;
 }
 

@@ -24,13 +24,13 @@ def generate_launch_description():
         description='Path to config file for long_control'
     )
 
-    kin_control_param_file = get_share_file(
+    nif_control_minimal_param_file = get_share_file(
         package_name='nif_control_minimal_nodes', file_name='config/params.yaml'
     )
 
-    kin_control_param = DeclareLaunchArgument(
-        'nif_control_minimal_param',
-        default_value=kin_control_param_file,
+    nif_control_minimal_param = DeclareLaunchArgument(
+        'nif_control_minimal_param_file',
+        default_value=nif_control_minimal_param_file,
         description='Path to config file for kin_control'
     )
 
@@ -38,7 +38,7 @@ def generate_launch_description():
         package='nif_control_minimal_nodes',
         executable='nif_control_minimal_nodes_exe',
         output='screen',
-        parameters=[LaunchConfiguration('nif_control_minimal_param')],
+        parameters=[LaunchConfiguration('nif_control_minimal_param_file')],
         remappings={
             ('out_control_cmd', '/control_pool/control_cmd')
         }
@@ -72,7 +72,7 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
-        kin_control_param,
+        nif_control_minimal_param,
         long_control_param,
         lat_control_node,
         long_control_node,
