@@ -29,7 +29,7 @@ namespace control {
 
 class ControlPurePursuitNode : public nif::control::IControllerNode {
 public:
-  ControlPurePursuitNode(const std::string &node_name);
+  explicit ControlPurePursuitNode(const std::string &node_name);
 
   nif::common::msgs::ControlCmd::SharedPtr control_cmd;
   std_msgs::msg::Float32 steering_cmd;
@@ -45,7 +45,8 @@ protected:
   void getParameters() override;
 
 private:
-  void egoUpdateTimerCallback();
+  void egoUpdateTimerCallback() const;
+
   rclcpp::TimerBase::SharedPtr m_ego_update_timer;
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr m_steer_cmd_pub;
   rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr m_map_track_sub;

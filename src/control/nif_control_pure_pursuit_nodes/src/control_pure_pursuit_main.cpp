@@ -24,7 +24,7 @@ int32_t main(int32_t argc, char** argv) {
   try {
     RCLCPP_INFO(
         rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
-        "Instantiating ControlPurePursuitNode with name: %s; sync_period: %d",
+        "Instantiating ControlPurePursuitNode with name: %s",
         node_name);
     rclcpp::NodeOptions options;
 
@@ -32,8 +32,8 @@ int32_t main(int32_t argc, char** argv) {
 
   } catch (std::exception& e) {
     RCLCPP_FATAL(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
-                 "FATAL ERROR during node initialization: ABORTING.\n%s",
-                 e.what());
+                 "FATAL ERROR during node %s initialization: ABORTING.\n%s",
+                 node_name, e.what());
     return -1;
   }
 

@@ -17,8 +17,8 @@ nif::control::IControllerNode::IControllerNode(const std::string &node_name)
                     std::placeholders::_1));
 
   this->reference_trajectory_sub =
-      this->create_subscription<nif::common::msgs::ControlCmd>(
-        "in_planner", nif::common::constants::QOS_DEFAULT,
+      this->create_subscription<nif::common::msgs::Trajectory>(
+        "in_reference_trajectory", nif::common::constants::QOS_DEFAULT,
         std::bind(&IControllerNode::referenceTrajectoryCallback, this,
                   std::placeholders::_1));
 
