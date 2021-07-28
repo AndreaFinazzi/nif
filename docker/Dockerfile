@@ -28,7 +28,8 @@ RUN ( \
   && mkdir /run/sshd
 
 ENV CLION_VERSION=2021.1.3
-ADD --chown="1000:1000" ./clion-2021.1.3 /opt/clion
+
+ADD --chown="1000:1000" ./clion-$CLION_VERSION /opt/clion-$CLION_VERSION
 COPY ./entrypoint /ade_entrypoint
 
 #ADD https://download.jetbrains.com/cpp/CLion-2021.1.3.tar.gz /opt
