@@ -124,6 +124,8 @@ using Trajectory = autoware_auto_msgs::msg::Trajectory;
 
 namespace types {
 
+using t_node_id = uint16_t;
+
 template <typename T>
 using t_oppo_collection =
     std::array<T, nif::common::constants::NUMBER_OF_OPPO_MAX>;

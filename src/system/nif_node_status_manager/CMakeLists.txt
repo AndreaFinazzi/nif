@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(nif_system_status_manager)
+project(nif_node_status_manager)
 
 # Default to C++14
 if(NOT CMAKE_CXX_STANDARD)
@@ -16,7 +16,7 @@ ament_auto_find_build_dependencies()
 
 # Library
 ament_auto_add_library(${PROJECT_NAME} SHARED
-        src/system_status_manager.cpp)
+        src/node_status_manager.cpp)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

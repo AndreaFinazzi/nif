@@ -53,6 +53,8 @@ public:
   const msgs::RaceControlState &getRaceControlState() const;
 
 private:
+  // nif::system::NodeStatusManager node_status_manager;
+
   nif::common::msgs::Odometry ego_odometry;
 
   nif::common::msgs::PowertrainState ego_powertrain_state;
@@ -63,7 +65,7 @@ private:
   // TODO : finalize RaceControlState class
   nif::common::msgs::RaceControlState race_control_state;
 
-    rclcpp::Subscription<nif::common::msgs::Odometry>::SharedPtr ego_odometry_sub;
+  rclcpp::Subscription<nif::common::msgs::Odometry>::SharedPtr ego_odometry_sub;
 
   rclcpp::Subscription<nif::common::msgs::PowertrainState>::SharedPtr
       ego_powertrain_state_sub;
