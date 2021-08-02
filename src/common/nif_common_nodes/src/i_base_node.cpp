@@ -9,7 +9,8 @@
 
 using namespace nif::common;
 
-IBaseNode::IBaseNode() : Node("no_name_node") {
+IBaseNode::IBaseNode() : Node("no_name_node"), node_status_manager(*this, nif::common::NodeType::SYSTEM)
+{
   throw std::invalid_argument("Cannot construct IBaseNode without specifying "
                               "node_name. Creating empty node.");
 }
@@ -19,7 +20,8 @@ IBaseNode::IBaseNode(const std::string &node_name)
 
 IBaseNode::IBaseNode(const std::string &node_name,
                      const rclcpp::NodeOptions &options)
-    : Node(node_name, options) {
+    : Node(node_name, options),
+      node_status_manager(*this, nif::common::NodeType::SYSTEM) {
   //  Initialize timers
   gclock_node_init = this->now();
 
@@ -54,6 +56,8 @@ IBaseNode::IBaseNode(const std::string &node_name,
           std::bind(&IBaseNode::egoPowertrainCallback, this,
                     std::placeholders::_1));
 
+
+  this->node_status_manager.update(nif::common::NodeStatusCode::INITIALIZED);
   //  TODO Declare node_state_pub to notify the node state
   //
   //

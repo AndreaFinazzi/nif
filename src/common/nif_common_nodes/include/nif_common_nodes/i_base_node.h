@@ -15,6 +15,7 @@
 
 #include "nif_common/types.h"
 #include "nif_utils/utils.h"
+#include "nif_common_nodes/node_status_manager.h"
 
 #include "tf2_ros/transform_broadcaster.h"
 #include <rclcpp/rclcpp.hpp>
@@ -41,6 +42,9 @@ private:
 //  TODO define precisely which frame is considered global
   std::string global_frame_id;
 
+/**
+ * Initialization time
+ **/ 
   rclcpp::Time gclock_node_init;
 
 public:
@@ -53,7 +57,7 @@ public:
   const msgs::RaceControlState &getRaceControlState() const;
 
 private:
-  // nif::system::NodeStatusManager node_status_manager;
+  nif::common::NodeStatusManager node_status_manager;
 
   nif::common::msgs::Odometry ego_odometry;
 

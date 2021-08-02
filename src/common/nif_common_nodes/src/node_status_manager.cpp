@@ -2,17 +2,21 @@
 // Created by usrg on 7/28/21.
 //
 
-#include "nif_node_status_manager/node_status.h"
-#include "nif_node_status_manager/node_status_manager.h"
+#include "nif_common_nodes/node_status_manager.h"
+#include "nif_common_nodes/i_base_node.h"
 
-using nif::system::NodeStatusManager;
+using nif::common::NodeStatusManager;
+using nif::common::NodeStatus;
+
+// Initialize static member
+std::unordered_map<nif::common::types::t_node_id, NodeStatus&> NodeStatusManager::node_statuses_map;
 
 NodeStatusManager::NodeStatusManager(
     const nif::common::IBaseNode &node,
     const NodeType node_type)
   : node_status(node, node_type, node.now())
 {
-  node_statuses_map.insert({
+  NodeStatusManager::node_statuses_map.insert({
       this->node_status.getNodeId(),
       this->node_status
   });

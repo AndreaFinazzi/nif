@@ -5,22 +5,24 @@
 #ifndef NIFNODESTATUSMANAGER_SYSTEM_STATUS_MANAGER_H
 #define NIFNODESTATUSMANAGER_SYSTEM_STATUS_MANAGER_H
 
-#include "nif_common_nodes/i_base_node.h"
+#include "nif_common/types.h"
+#include "nif_common_nodes/node_status.h"
+
 #include <memory>
 #include <vector>
 
 namespace nif {
-namespace system {
-
+namespace common {
 
 class NodeStatusManager {
 public:
   /**
    * Register the node in the static register. If destroyed, set node status to NodeStatusCode::DEAD.
    */
-  explicit NodeStatusManager(const nif::common::IBaseNode&, const NodeType);
+  explicit NodeStatusManager(const nif::common::IBaseNode&, const nif::common::NodeType);
 
-  void update(NodeStatusCode status_code);
+  void update(nif::common::NodeStatusCode status_code);
+  
   ~NodeStatusManager();
 
   //  NOT A SINGLETON ANYMORE
@@ -29,12 +31,12 @@ public:
 private:
   NodeStatusManager();
 
-  NodeStatus node_status;
+  nif::common::NodeStatus node_status;
 
 /**
  * Static list of node statuses, it's the common register for all node statuses.
  */
-  static std::unordered_map<nif::common::types::t_node_id, NodeStatus&> node_statuses_map;
+static std::unordered_map<nif::common::types::t_node_id, nif::common::NodeStatus&> node_statuses_map;
 
 //  NOT A SINGLETON ANYMORE
 //  static const NodeStatusManager* instance;
@@ -42,4 +44,5 @@ private:
 
 }
 }
+
 #endif // NIFNODESTATUSMANAGER_SYSTEM_STATUS_MANAGER_H
