@@ -29,7 +29,10 @@ protected:
   IBaseNode(const std::string& node_name, const rclcpp::NodeOptions& options);
   explicit IBaseNode(const std::string& node_name);
 
-virtual ~IBaseNode() {}
+virtual ~IBaseNode() {
+  this->node_status_manager.update(NodeStatusCode::DEAD);
+
+}
 private:
   /**
    * The default constructor is hidden from the outside to prevent unnamed
