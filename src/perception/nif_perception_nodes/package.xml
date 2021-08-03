@@ -17,7 +17,6 @@
   <depend>nif_common_nodes</depend>
   <depend>nif_tracking</depend>
   <depend>nif_sensor_fusion</depend>
-  <depend>nif_racing_line</depend>
 
   <depend>rclcpp</depend>
   <depend>std_msgs</depend>

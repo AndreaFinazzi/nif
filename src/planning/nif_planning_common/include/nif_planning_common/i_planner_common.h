@@ -1,3 +1,4 @@
+
 //  Copyright (c) 2021 Unmanned System Research Group @ KAIST
 //  Author:
 
@@ -5,15 +6,13 @@
 // Created by usrg on 6/24/21.
 //
 
-#ifndef ROS2MASTER_I_PLANNER_ALGORITHM_H
-#define ROS2MASTER_I_PLANNER_ALGORITHM_H
+#ifndef NIFPLANNINGCOMMON_I_PLANNER_ALGORITHM_H
+#define NIFPLANNINGCOMMON_I_PLANNER_ALGORITHM_H
 
 #include <memory>
 
 #include "nif_common/types.h"
 #include "nif_common/vehicle_model.h"
-#include "nif_racing_line/racing_line_manager.h"
-
 namespace nif {
 namespace planning {
 namespace common {
@@ -35,9 +34,6 @@ private:
 
   nif::common::msgs::TerrainState track_state;
 
-  // TODO: Will it be static or not?
-  nif::common::RacingLineManager racing_line_manager;
-
   /**
    * Ego vehicle model. It stores the model dynamics parameters.
    */
@@ -55,4 +51,4 @@ private:
 } // namespace planning
 } // namespace nif
 
-#endif // ROS2MASTER_I_PLANNER_ALGORITHM_H
+#endif // NIFPLANNINGCOMMON_I_PLANNER_ALGORITHM_H

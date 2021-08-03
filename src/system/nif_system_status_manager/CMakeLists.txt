@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(nif_racing_line)
+project(nif_planning_common)
 
 # Default to C++14
 if(NOT CMAKE_CXX_STANDARD)
@@ -16,7 +16,7 @@ ament_auto_find_build_dependencies()
 
 # Library
 ament_auto_add_library(${PROJECT_NAME} SHARED
-        src/racing_line_manager.cpp)
+        src/i_planner_common.cpp)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -28,8 +28,8 @@ if(BUILD_TESTING)
 
   target_include_directories(${PROJECT_NAME}_test PRIVATE "include")
   target_link_libraries(${PROJECT_NAME}_test ${PROJECT_NAME})
-  #  ament_target_dependencies(${PROJECT_NAME}_test
-  #          "rclcpp")
+#  ament_target_dependencies(${PROJECT_NAME}_test
+#          "rclcpp")
 endif()
 
 ament_auto_package()

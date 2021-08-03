@@ -15,6 +15,7 @@
 
 #include "nif_common/types.h"
 #include "nif_utils/utils.h"
+#include "nif_common_nodes/node_status_manager.h"
 
 #include "tf2_ros/transform_broadcaster.h"
 #include <rclcpp/rclcpp.hpp>
@@ -28,7 +29,10 @@ protected:
   IBaseNode(const std::string& node_name, const rclcpp::NodeOptions& options);
   explicit IBaseNode(const std::string& node_name);
 
-virtual ~IBaseNode() {}
+virtual ~IBaseNode() {
+  this->node_status_manager.update(NodeStatusCode::DEAD);
+
+}
 private:
   /**
    * The default constructor is hidden from the outside to prevent unnamed
@@ -41,6 +45,9 @@ private:
 //  TODO define precisely which frame is considered global
   std::string global_frame_id;
 
+/**
+ * Initialization time
+ **/ 
   rclcpp::Time gclock_node_init;
 
 public:
@@ -53,6 +60,8 @@ public:
   const msgs::RaceControlState &getRaceControlState() const;
 
 private:
+  nif::common::NodeStatusManager node_status_manager;
+
   nif::common::msgs::Odometry ego_odometry;
 
   nif::common::msgs::PowertrainState ego_powertrain_state;
@@ -63,7 +72,7 @@ private:
   // TODO : finalize RaceControlState class
   nif::common::msgs::RaceControlState race_control_state;
 
-    rclcpp::Subscription<nif::common::msgs::Odometry>::SharedPtr ego_odometry_sub;
+  rclcpp::Subscription<nif::common::msgs::Odometry>::SharedPtr ego_odometry_sub;
 
   rclcpp::Subscription<nif::common::msgs::PowertrainState>::SharedPtr
       ego_powertrain_state_sub;

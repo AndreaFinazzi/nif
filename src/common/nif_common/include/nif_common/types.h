@@ -29,6 +29,24 @@
 
 namespace nif {
 namespace common {
+
+enum NodeStatusCode : std::uint8_t {
+  OK = 0,
+  INITIALIZED = 1,
+  NOT_INITIALIZED = 200,
+  FATAL_ERROR = 254,
+  DEAD = 255
+};
+
+enum NodeType : std::int8_t {
+  PERCEPTION,
+  PLANNING,
+  PREDICTION,
+  CONTROL,
+  TOOL,
+  SYSTEM
+};
+
 namespace msgs {
 
 /**
@@ -123,6 +141,8 @@ using Trajectory = autoware_auto_msgs::msg::Trajectory;
 } // namespace msgs
 
 namespace types {
+
+using t_node_id = uint16_t;
 
 template <typename T>
 using t_oppo_collection =

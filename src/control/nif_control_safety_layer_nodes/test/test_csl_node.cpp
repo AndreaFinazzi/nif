@@ -30,7 +30,7 @@ TEST_F(sanity_check, testone) {
   using namespace nif::common::constants;
   using nif::control::ControlSafetyLayerNode;
 
-  rclcpp::Node::SharedPtr nd_t;
+  std::shared_ptr<MockControlNode> nd_t;
   rclcpp::Node::SharedPtr nd_csl;
 
   try {
@@ -52,16 +52,20 @@ TEST_F(sanity_check, testone) {
 
   {
     int i = 0;
+    rclcpp::executors::MultiThreadedExecutor multi_threaded_executor(rclcpp::ExecutorOptions{}, 2);
     rclcpp::executors::SingleThreadedExecutor exec;
     exec.add_node(nd_t);
-    exec.add_node(nd_csl);
-    while (i != 100) {
+//    exec.add_node(nd_csl);
+    while (i != 1000000) {
       exec.spin_some(std::chrono::milliseconds(10LL));
       i++;
     }
     // spin one more time for good measure
     exec.spin_some(std::chrono::milliseconds(100LL));
+
+    exec.spin();
   }
+
 
 
   RCLCPP_INFO(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),

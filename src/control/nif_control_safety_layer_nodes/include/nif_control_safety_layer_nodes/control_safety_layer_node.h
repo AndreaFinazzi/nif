@@ -14,6 +14,8 @@
 #include "nif_common/constants.h"
 #include "nif_common/types.h"
 #include "nif_common_nodes/i_base_synchronized_node.h"
+#include "nif_control_common/control_command_compare.h"
+
 #include "rclcpp/rclcpp.hpp"
 
 namespace nif {
@@ -50,12 +52,12 @@ public:
    * @param options
    * @param period Custom synchronization period. It's passed to
    * IBaseSynchronizedNode and determines the frequency run() is called at.
-   */
-  template <class DurationRepT, class DurationT>
+   */template <class DurationRepT, class DurationT>
   ControlSafetyLayerNode(
       const std::string &node_name, const rclcpp::NodeOptions &options,
       const std::chrono::duration<DurationRepT, DurationT> period)
-      : IBaseSynchronizedNode(node_name, options, period) {
+      : IBaseSynchronizedNode(node_name, options, period),
+        control_buffer(){
     this->control_sub =
         this->create_subscription<nif::common::msgs::ControlCmd>(
             "in_control_cmd", nif::common::constants::QOS_DEFAULT,
@@ -83,6 +85,16 @@ public:
   }
 
 protected:
+  /**
+   * Check if msg is valid, then push it in the ControlCmd buffer.
+   * @param msg
+   */
+  void bufferStore(nif::common::msgs::ControlCmd::SharedPtr msg);
+  void bufferFlush();
+  uint8_t getCommandsCount() const {
+    return control_buffer.size();
+  }
+
 private:
   // Prevent default constructor to be called from the outside
   ControlSafetyLayerNode();
@@ -95,7 +107,9 @@ private:
    * every iteration by run(), that is it must store only the controls relative
    * to a time quantum.
    */
-  std::priority_queue<nif::common::msgs::ControlCmd::SharedPtr> control_buffer;
+  std::priority_queue<nif::common::msgs::ControlCmd::SharedPtr,
+                      std::vector<nif::common::msgs::ControlCmd::SharedPtr>,
+                      nif::control::ControlCommandCompare> control_buffer;
 
   /**
    * Subscriber to the topic of control commands. Each incoming command is then
@@ -141,11 +155,10 @@ private:
 
   void run() override;
 
-  bool publishSteeringCmd(const nif::common::msgs::ControlSteeringCmd &msg);
-  bool
-  publishAcceleratorCmd(const nif::common::msgs::ControlAcceleratorCmd &msg);
-  bool publishBrakingCmd(const nif::common::msgs::ControlBrakingCmd &msg);
-  bool publishGearCmd(const nif::common::msgs::ControlGearCmd &msg);
+  bool publishSteeringCmd(const nif::common::msgs::ControlSteeringCmd &msg) const;
+  bool publishAcceleratorCmd(const nif::common::msgs::ControlAcceleratorCmd &msg) const;
+  bool publishBrakingCmd(const nif::common::msgs::ControlBrakingCmd &msg) const;
+  bool publishGearCmd(const nif::common::msgs::ControlGearCmd &msg) const;
 
   //  TODO define safety checks functions
 };

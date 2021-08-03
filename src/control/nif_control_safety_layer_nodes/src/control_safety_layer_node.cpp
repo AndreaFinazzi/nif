@@ -9,31 +9,36 @@ void nif::control::ControlSafetyLayerNode::getParameters() {}
 
 void nif::control::ControlSafetyLayerNode::controlCallback(
     const nif::common::msgs::ControlCmd::SharedPtr msg) {
-
-//  Store control command if it's not too old
-  if ((this->now().nanoseconds() - msg->header.stamp.nanosec ) < this->getGclockPeriod().count())
-    this->control_buffer.push(msg);
+//  TODO consider not to accept commands from the future!
+  //  Store control command if it's not too old
+  if ((this->now().nanoseconds() - msg->header.stamp.nanosec) <
+      this->getGclockPeriod().count() || true) // TODO REMOVE THIS!!!
+    this->bufferStore(msg);
 }
 
 void nif::control::ControlSafetyLayerNode::run() {
-  //  const auto selected_cmd = this->control_buffer.pop();
+
   nif::common::msgs::ControlCmd::SharedPtr msg;
+  if (!this->control_buffer.empty()) {
 
-  msg = (this->control_buffer.top());
+    msg = (this->control_buffer.top());
 
-// RE-STAMP
-  msg->header.stamp = this->now();
+    // RE-STAMP
+    msg->header.stamp = this->now();
+    msg->header.frame_id = this->getBodyFrameId();
+    try {
+      this->control_pub->publish(*msg);
 
-  try {
-   this->control_pub->publish(*msg);
+    } catch (std::exception &e) {
+      RCLCPP_ERROR(this->get_logger(), e.what());
+    }
 
-  } catch (std::exception &e) {
-    RCLCPP_ERROR(this->get_logger(), e.what());
+//    this->flush
   }
 }
 
 bool nif::control::ControlSafetyLayerNode::publishSteeringCmd(
-    const nif::common::msgs::ControlSteeringCmd &msg) {
+    const nif::common::msgs::ControlSteeringCmd &msg) const {
   //  TODO implement safety checks
   if (true) {
     this->steering_control_pub->publish(msg);
@@ -44,7 +49,7 @@ bool nif::control::ControlSafetyLayerNode::publishSteeringCmd(
 }
 
 bool nif::control::ControlSafetyLayerNode::publishAcceleratorCmd(
-    const nif::common::msgs::ControlAcceleratorCmd &msg) {
+    const nif::common::msgs::ControlAcceleratorCmd &msg) const {
   //  TODO implement safety checks
   if (true) {
     this->accelerator_control_pub->publish(msg);
@@ -55,7 +60,7 @@ bool nif::control::ControlSafetyLayerNode::publishAcceleratorCmd(
 }
 
 bool nif::control::ControlSafetyLayerNode::publishBrakingCmd(
-    const nif::common::msgs::ControlBrakingCmd &msg) {
+    const nif::common::msgs::ControlBrakingCmd &msg) const {
 
   //  TODO implement safety checks
   if (true) {
@@ -67,7 +72,7 @@ bool nif::control::ControlSafetyLayerNode::publishBrakingCmd(
 }
 
 bool nif::control::ControlSafetyLayerNode::publishGearCmd(
-    const nif::common::msgs::ControlGearCmd &msg) {
+    const nif::common::msgs::ControlGearCmd &msg) const {
 
   //  TODO implement safety checks
   if (msg.data >= 0 && msg.data < 6) {
@@ -76,4 +81,14 @@ bool nif::control::ControlSafetyLayerNode::publishGearCmd(
     return true; // OK
   }
   return false;
+}
+
+void nif::control::ControlSafetyLayerNode::bufferStore(
+    const nif::common::msgs::ControlCmd::SharedPtr msg) {
+
+  this->control_buffer.push(msg);
+}
+
+void nif::control::ControlSafetyLayerNode::bufferFlush() {
+//  this->control_buffer.
 }
