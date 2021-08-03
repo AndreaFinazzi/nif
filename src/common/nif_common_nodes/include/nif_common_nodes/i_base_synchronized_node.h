@@ -8,7 +8,7 @@
 #ifndef NIF_COMMON_NODES_BASESYNCHRONIZEDNODE_H
 #define NIF_COMMON_NODES_BASESYNCHRONIZEDNODE_H
 
-#include "i_base_node.h"
+#include "nif_common_nodes/i_base_node.h"
 #include "rclcpp/rclcpp.hpp"
 
 namespace nif {

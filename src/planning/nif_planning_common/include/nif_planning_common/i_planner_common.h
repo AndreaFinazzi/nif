@@ -6,8 +6,8 @@
 // Created by usrg on 6/24/21.
 //
 
-#ifndef ROS2MASTER_I_PLANNER_ALGORITHM_H
-#define ROS2MASTER_I_PLANNER_ALGORITHM_H
+#ifndef NIFPLANNINGCOMMON_I_PLANNER_ALGORITHM_H
+#define NIFPLANNINGCOMMON_I_PLANNER_ALGORITHM_H
 
 #include <memory>
 
@@ -51,4 +51,4 @@ private:
 } // namespace planning
 } // namespace nif
 
-#endif // ROS2MASTER_I_PLANNER_ALGORITHM_H
+#endif // NIFPLANNINGCOMMON_I_PLANNER_ALGORITHM_H

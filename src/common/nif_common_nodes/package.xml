@@ -18,6 +18,8 @@
 
   <depend>nif_common</depend>
   <depend>nif_utils</depend>
+  <!-- TODO solve cross-dependancy -->
+  <!-- <depend>nif_node_status_manager</depend> -->
 
   <export>
     <build_type>ament_cmake</build_type>

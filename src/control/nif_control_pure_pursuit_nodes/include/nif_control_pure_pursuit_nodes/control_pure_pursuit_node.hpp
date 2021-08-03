@@ -46,6 +46,7 @@ protected:
 
 private:
   void egoUpdateTimerCallback();
+
   rclcpp::TimerBase::SharedPtr m_ego_update_timer;
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr m_steer_cmd_pub;
   rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr m_map_track_sub;
@@ -65,6 +66,7 @@ private:
 
   std::shared_ptr<PurePursuit> m_pure_pursuit_handler_ptr;
   nif::common::msgs::ControlCmd::SharedPtr steer_control_cmd_msg;
+
 };
 
 } // namespace control
