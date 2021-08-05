@@ -36,6 +36,7 @@ public:
   void setGPSHorizontalData(
       const novatel_gps_msgs::msg::Inspva& gps_horizontal_data_);
 
+  void testGPSHorizontalData();
   void
   setGPSVerticalData(const novatel_gps_msgs::msg::Inspva& gps_vertical_data_);
 

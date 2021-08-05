@@ -9,14 +9,14 @@
 
 class TestNode : public nif::common::IBaseNode {
 public:
-  TestNode() : IBaseNode("test_node", rclcpp::NodeOptions{}) {}
+  TestNode() : IBaseNode("test_node") {}
 
   void stateReport() {
-    RCLCPP_INFO(this->get_logger(), "ego_odometry: %s", (this->ego_odometry));
+    RCLCPP_INFO(this->get_logger(), "ego_odometry: %s", (this->getEgoOdometry().header.stamp));
     RCLCPP_INFO(this->get_logger(),
                 "race_control_state: %s",
-                (this->race_control_state));
-    RCLCPP_INFO(this->get_logger(), "system_state: %s", (this->system_state));
+                (this->getRaceControlState().track_cond));
+    RCLCPP_INFO(this->get_logger(), "system_state: %s", this->getSystemState().health_status.is_system_healty);
   }
 
 private:

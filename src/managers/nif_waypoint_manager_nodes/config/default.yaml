@@ -1,0 +1,6 @@
+waypoint_manager_node:
+  ros__parameters:
+    body_frame_id: 'odom'
+    global_frame_id: 'base_link'
+    file_path_list:
+      - 'maps/LOR_inside_line.csv' 

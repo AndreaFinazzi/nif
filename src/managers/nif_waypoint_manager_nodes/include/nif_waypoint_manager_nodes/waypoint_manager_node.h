@@ -11,34 +11,48 @@
 
 #include "rclcpp/rclcpp.hpp"
 
-class WaypointManagerNode : public nif::common::IBaseNode {
-public:
-  /**
+namespace nif
+{
+  namespace managers
+  {
+
+    class WaypointManagerNode : public nif::common::IBaseNode
+    {
+    public:
+      /**
    *
    * Using default WaypointManager -> WaypointManagerMinimal
    *
    **/
-  WaypointManagerNode(std::string& node_name_,
-                      vector<string>& wpt_file_path_list_,
-                      string& body_frame_id_,
-                      string& global_frame_id_);
 
-  WaypointManagerNode(std::string& node_name_,
-                      std::shared_ptr<WaypointManagerMinimal> wpt_manager_ptr);
+      // TODO  wpt_file_path_list_, body_frame_id_ and global_frame_id_ could be passed as rosparams
+      explicit WaypointManagerNode(const std::string &node_name_);
 
-private:
-  WaypointManagerNode();
-  void timer_callback();
+      WaypointManagerNode(const std::string &node_name_,
+                          const std::shared_ptr<WaypointManagerMinimal> wpt_manager_ptr);
 
-  // TODO: not used function. @Andrea told that these functions should be fixed
-  // or removed
-  void initParameters();
-  void getParameters();
+    private:
+      WaypointManagerNode();
+      void timer_callback();
 
-  std::shared_ptr<WaypointManagerMinimal> wpt_manager;
+      // TODO: not used function. @Andrea told that these functions should be fixed
+      // or removed
+      void initParameters();
+      void getParameters();
 
-  rclcpp::TimerBase::SharedPtr m_timer;
-  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr m_map_track_publisher;
-};
+      void setWaypointManager(const std::shared_ptr<WaypointManagerMinimal> wpt_manager_ptr)
+      {
+        this->wpt_manager = wpt_manager_ptr;
+      }
 
+      std::vector<std::string> file_path_list{};
+
+      std::shared_ptr<WaypointManagerMinimal> wpt_manager;
+
+      rclcpp::TimerBase::SharedPtr m_timer;
+      rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr m_map_track_publisher;
+    };
+
+  }
+}
 #endif // ROS2MASTER_WAYPOINT_MANAGER_NODE_H

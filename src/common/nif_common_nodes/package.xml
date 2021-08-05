@@ -14,11 +14,12 @@
   <test_depend>ament_cmake_gtest</test_depend>
 
   <depend>rclcpp</depend>
-  <depend>time_utils</depend>
   <depend>raptor_dbw_msgs</depend>
 
   <depend>nif_common</depend>
   <depend>nif_utils</depend>
+  <!-- TODO solve cross-dependancy -->
+  <!-- <depend>nif_node_status_manager</depend> -->
 
   <export>
     <build_type>ament_cmake</build_type>

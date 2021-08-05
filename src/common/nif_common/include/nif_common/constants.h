@@ -9,6 +9,7 @@
 #define NIF_COMMON_CONSTANTS_H
 
 #include <chrono>
+#include <limits>
 #include <rclcpp/qos.hpp>
 
 namespace nif {
@@ -51,7 +52,6 @@ const std::chrono::microseconds SYNC_PERIOD_MAX(10000);
  */
 const rclcpp::QoS QOS_DEFAULT(5);
 
-
 /**
  * Name for the main logger.
  */
@@ -63,8 +63,25 @@ namespace numeric {
  */
 const float PI = 3.141592653589793;
 
+/**
+ * Infinite value (float)
+ */
+const float INF = std::numeric_limits<float>::max();
 
-}
+/**
+ * Epsilon value (float)
+ */
+const float EPSILON = std::numeric_limits<float>::epsilon();
+
+} // namespace numeric
+
+namespace planner {
+/**
+ * pi is pi
+ */
+const float WPT_MINIMUM_LEN = 1.0;
+
+} // namespace planner
 
 } // namespace constants
 } // namespace common

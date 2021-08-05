@@ -8,7 +8,8 @@
 #include "nif_localization_minimal/localization_minimal.h"
 
 LocalizationMinimal::LocalizationMinimal() {
-  m_geo_converter_ptr = std::make_shared<GeodeticConverter>();
+  m_geo_converter_ptr = std::make_shared<GeodeticConverter>(
+      39.8125900071711, -86.3418060783425, 0);
 }
 
 LocalizationMinimal::~LocalizationMinimal() {}
@@ -58,6 +59,46 @@ void LocalizationMinimal::linearFusion() {
       m_heading_deg_gps_horizontal + m_heading_deg_gps_vertical;
 }
 
+void LocalizationMinimal::testGPSHorizontalData() {
+  //   gps_horizontal_data_.latitude = 39.81184488617023;
+  //   gps_horizontal_data_.longitude = -86.34178892423053;
+
+  double latitude = 39.81184488617023;
+  double longitude = -86.34178892423053;
+
+  double roll = 0;
+  double pitch = 0;
+  double azimuth = 178.12580144670395;
+
+  m_geo_converter_ptr->geodetic2Ned(
+      latitude,
+      longitude,
+      0.0,
+      &m_veh_odom_horizontal.pose.pose.position.x,
+      &m_veh_odom_horizontal.pose.pose.position.y,
+      &m_veh_odom_horizontal.pose.pose.position.z);
+
+  std::cout << m_veh_odom_horizontal.pose.pose.position.x << " "
+            << m_veh_odom_horizontal.pose.pose.position.y << " "
+            << m_veh_odom_horizontal.pose.pose.position.z << std::endl;
+
+  // TODO : Not sure about passing the roll,pitch. Maybe we can
+  // just pass zero.
+  tf2::Quaternion vehicle_quat;
+  vehicle_quat.setRPY(roll * nif::common::constants::DEG2RAD,
+                      pitch * nif::common::constants::DEG2RAD,
+                      azimuth * nif::common::constants::DEG2RAD);
+  vehicle_quat = vehicle_quat.normalize();
+  m_veh_odom_horizontal.pose.pose.orientation.x = vehicle_quat.x();
+  m_veh_odom_horizontal.pose.pose.orientation.y = vehicle_quat.y();
+  m_veh_odom_horizontal.pose.pose.orientation.z = vehicle_quat.z();
+  m_veh_odom_horizontal.pose.pose.orientation.w = vehicle_quat.w();
+
+  m_heading_deg_gps_horizontal = azimuth;
+  m_heading_rad_gps_horizontal =
+      m_heading_deg_gps_horizontal * nif::common::constants::DEG2RAD;
+}
+
 void LocalizationMinimal::setGPSHorizontalData(
     const novatel_gps_msgs::msg::Inspva& gps_horizontal_data_) {
   m_geo_converter_ptr->geodetic2Ned(
@@ -68,7 +109,8 @@ void LocalizationMinimal::setGPSHorizontalData(
       &m_veh_odom_horizontal.pose.pose.position.y,
       &m_veh_odom_horizontal.pose.pose.position.z);
 
-  // TODO : Not sure about passing the roll,pitch. Maybe we can just pass zero.
+  // TODO : Not sure about passing the roll,pitch. Maybe we can
+  // just pass zero.
   tf2::Quaternion vehicle_quat;
   vehicle_quat.setRPY(gps_horizontal_data_.roll,
                       gps_horizontal_data_.pitch,

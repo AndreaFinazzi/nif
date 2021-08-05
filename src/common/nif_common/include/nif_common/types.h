@@ -15,6 +15,7 @@
 #include "std_msgs/msg/float32.hpp"
 #include "std_msgs/msg/int8.hpp"
 
+#include "deep_orange_msgs/msg/rc_to_ct.hpp"
 #include "nif_msgs/msg/autonomy_status.hpp"
 #include "nif_msgs/msg/control_command.hpp"
 #include "nif_msgs/msg/health.hpp"
@@ -28,6 +29,24 @@
 
 namespace nif {
 namespace common {
+
+enum NodeStatusCode : std::uint8_t {
+  OK = 0,
+  INITIALIZED = 1,
+  NOT_INITIALIZED = 200,
+  FATAL_ERROR = 254,
+  DEAD = 255
+};
+
+enum NodeType : std::int8_t {
+  PERCEPTION,
+  PLANNING,
+  PREDICTION,
+  CONTROL,
+  TOOL,
+  SYSTEM
+};
+
 namespace msgs {
 
 /**
@@ -53,7 +72,7 @@ using TerrainState = nif_msgs::msg::TerrainStatus;
  * This message contains the race flag information from the race control.
  * TODO: should be changed based on the bag file
  */
-using RaceControlState = autoware_auto_msgs::msg::VehicleKinematicState;
+using RaceControlState = deep_orange_msgs::msg::RcToCt;
 
 /**
  * This message contains the autonomy status information which should updated
@@ -122,6 +141,8 @@ using Trajectory = autoware_auto_msgs::msg::Trajectory;
 } // namespace msgs
 
 namespace types {
+
+using t_node_id = uint16_t;
 
 template <typename T>
 using t_oppo_collection =
