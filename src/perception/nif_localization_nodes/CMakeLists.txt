@@ -42,6 +42,7 @@ if(GTSAM_FOUND)
         # add_executable(StateEstimator StateEstimator.cpp)
         ament_auto_add_executable(state_estimator_node
                 src/StateEstimator/StateEstimator.cpp)
+        # ament_target_dependencies(state_estimator_node novatel_oem7_msgs)
         target_link_libraries(state_estimator_node ${catkin_LIBRARIES} ${ROS_LIBRARIES} gtsam ${GeographicLib_LIBRARIES} ${TBB_LIBRARIES}  ${Boost_LIBRARIES})
         # add_dependencies(StateEstimator autorally_msgs_gencpp ${PROJECT_NAME}_gencfg)
 
@@ -68,4 +69,5 @@ endif()
 ament_auto_package(
   INSTALL_TO_SHARE
     launch
+    config
 )

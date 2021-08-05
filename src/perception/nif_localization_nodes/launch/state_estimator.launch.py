@@ -6,16 +6,16 @@ from launch.substitutions import ThisLaunchFileDir
 from launch_ros.actions import Node
 
 def generate_launch_description():
-    # config = (
-        # os.path.join(
-        #     get_package_share_directory("nif_localization_nodes"),
-        #     "config",
-        #     "state_estimator.yaml",
-        # ),
-        # )
-    config = LaunchConfiguration(
-        'params',
-        default=[ThisLaunchFileDir(), '/../config/state_estimator.yaml'])
+    config = (
+        os.path.join(
+            get_package_share_directory("nif_localization_nodes"),
+            "config",
+            "state_estimator.yaml",
+        ),
+        )
+    # config = LaunchConfiguration(
+    #     'params',
+    #     default=[ThisLaunchFileDir(), '/../config/state_estimator.yaml'])
 
     ns = ""
     return LaunchDescription(
@@ -29,9 +29,10 @@ def generate_launch_description():
                 namespace=ns,
                 parameters=[config],
                 remappings=[
-                    # ("gps", "novatel_bottom/fix"),
-                    ("gps", "novatel_bottom/inspva"),
-                    ("imu", "novatel_bottom/imu"),
+                    ("ins", "novatel_bottom/inspva"),
+                    ("gps", "novatel_bottom/fix"),
+                    ("imu_novatel", "novatel_bottom/raw_imu"),
+                    ("imu", "novatel_bottom/imu/data"),
                 ]
             ),
         ]

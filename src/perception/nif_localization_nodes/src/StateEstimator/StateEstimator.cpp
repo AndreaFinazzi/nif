@@ -77,7 +77,7 @@ namespace autorally_core
 {
 
   StateEstimator::StateEstimator() :
-    Node("state_estimator"),
+    Node("state_estimator_node"),
     lastImuT_(0.0),
     lastImuTgps_(0.0),
     maxQSize_(0),
@@ -85,7 +85,11 @@ namespace autorally_core
     imuOptQ_(400),
     odomOptQ_(100),
     gotFirstFix_(false),
-    received_imu_(false)
+    received_imu_(false),
+    use_msg_time_(false),
+    imu_lpf_dt_(0.0083),
+    imu_lpf_cut_f_(40)
+
   {
     // temporary variables to retrieve parameters
     double accSigma, gyroSigma, initialVelNoise, initialBiasNoiseAcc, initialBiasNoiseGyro, initialRotationNoise,
@@ -141,7 +145,7 @@ namespace autorally_core
 
     double gpsx, gpsy, gpsz;
     this->declare_parameter<double>("GPSX",  -0.37);
-    this->declare_parameter<double>("GPSY",  0);
+    this->declare_parameter<double>("GPSY",  0.0);
     this->declare_parameter<double>("GPSZ",  -0.06);
     this->get_parameter("GPSX", gpsx);
     this->get_parameter("GPSY", gpsy);
@@ -183,8 +187,16 @@ namespace autorally_core
 
     this->declare_parameter<std::string>("map_frame",  "odom");
     this->declare_parameter<std::string>("body_frame",  "base_link");
+    this->declare_parameter<bool>("use_msg_time", false);
+    this->declare_parameter<double>("imu_lpf_dt",  0.0083);
+    this->declare_parameter<double>("imu_lpf_cut_f",  40.0);
+    this->declare_parameter<bool>("use_imu_lpf", false);
     this->get_parameter("map_frame", map_frame_);
     this->get_parameter("body_frame", body_frame_);
+    this->get_parameter("use_msg_time", use_msg_time_);
+    this->get_parameter("imu_lpf_dt", imu_lpf_dt_);
+    this->get_parameter("imu_lpf_cut_f", imu_lpf_cut_f_);
+    this->get_parameter("use_imu_lpf", use_imu_lpf_);
 
 
     if (fixedOrigin_)
@@ -262,6 +274,8 @@ namespace autorally_core
 
     posePub_ = this->create_publisher<nav_msgs::msg::Odometry>("pose", rclcpp::QoS(1));
     insPub_ = this->create_publisher<nav_msgs::msg::Odometry>("pose/ins", rclcpp::QoS(1));
+    gpsPub_ = this->create_publisher<nav_msgs::msg::Odometry>("pose/gps_point", rclcpp::QoS(1));
+    imuPub_ = this->create_publisher<sensor_msgs::msg::Imu>("imu/lpf", rclcpp::QoS(1));
     biasAccPub_ = this->create_publisher<geometry_msgs::msg::Point>("bias_acc", rclcpp::QoS(1));
     biasGyroPub_ = this->create_publisher<geometry_msgs::msg::Point>("bias_gyro", rclcpp::QoS(1));
     timePub_ = this->create_publisher<geometry_msgs::msg::Point>("time_delays", rclcpp::QoS(1));
@@ -295,9 +309,16 @@ namespace autorally_core
     sigma_acc_bias_c << accelBiasSigma_,  accelBiasSigma_,  accelBiasSigma_;
     sigma_gyro_bias_c << gyroBiasSigma_, gyroBiasSigma_, gyroBiasSigma_;
     noiseModelBetweenBias_sigma_ = (Vector(6) << sigma_acc_bias_c, sigma_gyro_bias_c).finished();
+    
+    double imu_lpf_cut_f_radps = imu_lpf_cut_f_ * 180.0 / PI;
+    imu_lpf_weight_ = 2.0 * imu_lpf_cut_f_radps / (3.0*imu_lpf_cut_f_radps + 2.0 / imu_lpf_dt_);
 
-    gpsSub_ = this->create_subscription<novatel_gps_msgs::msg::Inspva>(
+    insSub_ = this->create_subscription<novatel_oem7_msgs::msg::INSPVA>(
+      "ins", rclcpp::QoS(300), std::bind(&StateEstimator::InsCallback, this, std::placeholders::_1));
+    gpsSub_ = this->create_subscription<sensor_msgs::msg::NavSatFix>(
       "gps", rclcpp::QoS(300), std::bind(&StateEstimator::GpsCallback, this, std::placeholders::_1));
+    imuNovatelSub_ = this->create_subscription<novatel_gps_msgs::msg::NovatelRawImu>(
+      "imu_novatel", rclcpp::QoS(600), std::bind(&StateEstimator::ImuNovatelCallback, this, std::placeholders::_1));
     imuSub_ = this->create_subscription<sensor_msgs::msg::Imu>(
       "imu", rclcpp::QoS(600), std::bind(&StateEstimator::ImuCallback, this, std::placeholders::_1));
     odomSub_ = this->create_subscription<nav_msgs::msg::Odometry>(
@@ -311,20 +332,48 @@ namespace autorally_core
   StateEstimator::~StateEstimator()
   {}
 
-  void StateEstimator::GpsCallback(novatel_gps_msgs::msg::Inspva::SharedPtr fix)
+  void StateEstimator::GpsCallback(sensor_msgs::msg::NavSatFix::SharedPtr fix)
   {
-    fix->header.stamp = this->get_clock()->now(); // comment this line for exact calculation. (1/3)
-    // fix->header.stamp = rclcpp::Time::now(); // comment this line for exact calculation. (1/3)
+    if(!use_msg_time_)
+    {
+      fix->header.stamp = this->get_clock()->now(); // comment this line for exact calculation. (1/3)
+    }
+    if(!gotFirstFix_)
+    {
+      first_fix_ = fix;
+    }
+    else
+    {
+      fix->altitude = first_fix_->altitude;
+    }
     if (!gpsOptQ_.pushNonBlocking(fix))
       RCLCPP_WARN(rclcpp::get_logger("state_estimator"), "Dropping a GPS measurement due to full queue!!");
-    InsCallback(fix);
+
+    double E, N, U;
+    enu_.Forward(fix->latitude, fix->longitude, fix->altitude, E, N, U);
+
+    nav_msgs::msg::Odometry odom;
+    odom.header.stamp = fix->header.stamp;
+    odom.header.frame_id = map_frame_.c_str();
+    odom.child_frame_id = body_frame_.c_str();
+    odom.pose.pose.position.x = E;
+    odom.pose.pose.position.y = N;
+    odom.pose.pose.position.z = U;
+
+    gpsPub_->publish(odom);
+    tfBroadcast(odom, "/gps");
   }
 
-  void StateEstimator::InsCallback(novatel_gps_msgs::msg::Inspva::SharedPtr ins)
+  void StateEstimator::InsCallback(novatel_oem7_msgs::msg::INSPVA::SharedPtr ins)
   {
+    if(gotFirstFix_)
+    {
+      ins->height = first_fix_->altitude;
+    }
+
     double E, N, U;
     enu_.Forward(ins->latitude, ins->longitude, ins->height, E, N, U);
-    // https://docs.novatel.com/OEM7/Content/SPAN_Logs/INSATT.htm
+    // https://docs.novatel.com/OEM7/Content/SPAN_Logs/INSATT.html
     // Left-handed rotation around z-axis in degrees clockwise from North.
     double heading = 90 - ins->azimuth;
     heading = heading * PI / 180.0;
@@ -398,7 +447,7 @@ namespace autorally_core
 
       if (!gotFirstFix)
       {
-        novatel_gps_msgs::msg::Inspva::SharedPtr fix = gpsOptQ_.popBlocking();
+        sensor_msgs::msg::NavSatFix::SharedPtr fix = gpsOptQ_.popBlocking();
         startTime = TIME(fix);
         if(usingOdom_) {
           lastOdom_ = odomOptQ_.popBlocking();
@@ -407,19 +456,20 @@ namespace autorally_core
         NonlinearFactorGraph newFactors;
         Values newVariables;
         gotFirstFix = true;
+        gotFirstFix_ = gotFirstFix;
 
         double E, N, U;
         if (!fixedOrigin_)
         {
-          enu_.Reset(fix->latitude, fix->longitude, fix->height);
-          // enu_.Reset(fix->latitude, fix->longitude, fix->altitude);
+          // enu_.Reset(fix->latitude, fix->longitude, fix->height);
+          enu_.Reset(fix->latitude, fix->longitude, fix->altitude);
           E = 0; N = 0; U = 0; // we're choosing this as the origin
         }
         else
         {
           // we are given an origin
-          enu_.Forward(fix->latitude, fix->longitude, fix->height, E, N, U);
-          // enu_.Forward(fix->latitude, fix->longitude, fix->altitude, E, N, U);
+          // enu_.Forward(fix->latitude, fix->longitude, fix->height, E, N, U);
+          enu_.Forward(fix->latitude, fix->longitude, fix->altitude, E, N, U);
         }
         E_ = E;
         N_ = N;
@@ -511,16 +561,15 @@ namespace autorally_core
         // add GPS measurements that are not ahead of the imu messages
         while (optimize && gpsOptQ_.size() > 0 && TIME(gpsOptQ_.front()) < (startTime + (imuKey-1)*0.1 + 1e-2))
         {
-          novatel_gps_msgs::msg::Inspva::SharedPtr fix = gpsOptQ_.popBlocking();
+          sensor_msgs::msg::NavSatFix::SharedPtr fix = gpsOptQ_.popBlocking();
           double timeDiff = (TIME(fix) - startTime) / 0.1;
           int key = round(timeDiff);
           if (std::abs(timeDiff - key) < 1e-1)
           {
             // this is a gps message for a factor
             latestGPSKey = key;
-            double E,N,U;
-            enu_.Forward(fix->latitude, fix->longitude, fix->height, E, N, U);
-            // enu_.Forward(fix->latitude, fix->longitude, fix->altitude, E, N, U);
+            double E,N,U,U0;
+            enu_.Forward(fix->latitude, fix->longitude, fix->altitude, E, N, U);
 
             // check if the GPS message is close to our expected position
             Pose3 expectedState;
@@ -631,12 +680,42 @@ namespace autorally_core
     }
   }
 
+  void StateEstimator::ImuNovatelCallback(novatel_gps_msgs::msg::NovatelRawImu::SharedPtr msg)
+  {
+    sensor_msgs::msg::Imu imu;
+    imu.header.stamp = msg->header.stamp;
+    imu.linear_acceleration.x = msg->linear_acceleration.x;
+    imu.linear_acceleration.y = msg->linear_acceleration.y;
+    imu.linear_acceleration.z = msg->linear_acceleration.z;
+    imu.angular_velocity.x = msg->angular_velocity.x;
+    imu.angular_velocity.y = msg->angular_velocity.y;
+    imu.angular_velocity.z = msg->angular_velocity.z;
+    auto imu_ptr = std::make_shared<sensor_msgs::msg::Imu>(imu);
+    ImuCallback(imu_ptr);
+  }
+
 
   void StateEstimator::ImuCallback(sensor_msgs::msg::Imu::SharedPtr imu)
   {
     received_imu_ = true;
-    imu->header.stamp = this->get_clock()->now(); // comment this line for exact calculation. (2/3)
-    // imu->header.stamp = rclcpp::Time::now(); // comment this line for exact calculation. (2/3)
+    if(!use_msg_time_)
+    {
+      imu->header.stamp = this->get_clock()->now(); // comment this line for exact calculation. (2/3)
+    }
+    if(use_imu_lpf_)
+    {
+      imu->angular_velocity.x = imu->angular_velocity.x * imu_lpf_weight_ + imu_last_angular_velocity_x_ * (1-imu_lpf_weight_);
+      imu->angular_velocity.y = imu->angular_velocity.y * imu_lpf_weight_ + imu_last_angular_velocity_y_ * (1-imu_lpf_weight_);
+      // imu->angular_velocity.z = imu->angular_velocity.z * imu_lpf_weight_ + imu_last_angular_velocity_z_ * (1-imu_lpf_weight_);
+      imu->linear_acceleration.x = imu->linear_acceleration.x * imu_lpf_weight_ + imu_last_linear_acceleration_x_ * (1-imu_lpf_weight_);
+      imu->linear_acceleration.y = imu->linear_acceleration.y * imu_lpf_weight_ + imu_last_linear_acceleration_y_ * (1-imu_lpf_weight_);
+      imu->linear_acceleration.z = imu->linear_acceleration.z * imu_lpf_weight_ + imu_last_linear_acceleration_z_ * (1-imu_lpf_weight_);
+      sensor_msgs::msg::Imu imu_msg;
+      imu_msg.header = imu->header;
+      imu_msg.angular_velocity = imu->angular_velocity;
+      imu_msg.linear_acceleration = imu->linear_acceleration;
+      imuPub_->publish(imu_msg);
+    }
     double dt;
     if (lastImuT_ == 0) dt = 0.005;
     else dt = TIME(imu) - lastImuT_;
@@ -716,7 +795,7 @@ namespace autorally_core
 
     poseNew.pose.pose.position.x = currentPose.position().x() + correction_x_;
     poseNew.pose.pose.position.y = currentPose.position().y() + correction_y_;
-    poseNew.pose.pose.position.z = 0.1;//currentPose.position().z();
+    poseNew.pose.pose.position.z = currentPose.position().z();
 
     poseNew.twist.twist.linear.x = currentPose.velocity().x();
     poseNew.twist.twist.linear.y = currentPose.velocity().y();
@@ -734,8 +813,9 @@ namespace autorally_core
 
     //ros::Time after = ros::Time::now();
     geometry_msgs::msg::Point delays;
+    auto current_time = this->get_clock()->now();
     delays.x = TIME(imu);
-    // delays.y = (rclcpp::Time::now() - imu->header.stamp).toSec();
+    delays.y = (this->get_clock()->now() - imu->header.stamp).nanoseconds() * 10e-9;//current_time.nanoseconds() * 10e-9 - TIME(imu);
     delays.z = TIME(imu) - optimizedTime;
     timePub_->publish(delays);
 
@@ -750,8 +830,10 @@ namespace autorally_core
 
   void StateEstimator::WheelOdomCallback(nav_msgs::msg::Odometry::SharedPtr odom)
   {
-    odom->header.stamp = this->get_clock()->now(); // comment this line for exact calculation. (3/3)
-    // odom->header.stamp = rclcpp::Time::now(); // comment this line for exact calculation. (3/3)
+    if(!use_msg_time_)
+    {
+      odom->header.stamp = this->get_clock()->now(); // comment this line for exact calculation. (3/3)
+    }
       if (!odomOptQ_.pushNonBlocking(odom))
         RCLCPP_WARN(rclcpp::get_logger("state_estimator"), "Dropping an wheel odometry measurement due to full queue!!");
   }
@@ -797,7 +879,7 @@ namespace autorally_core
   {
     geometry_msgs::msg::TransformStamped transformStamped;
     
-    transformStamped.header.stamp = this->get_clock()->now();
+    transformStamped.header.stamp = msg.header.stamp;
     transformStamped.header.frame_id = map_frame_.c_str();
     std::string body_frame;
     body_frame.append(body_frame_);
