@@ -1,9 +1,7 @@
 // Add PATH to build
 export CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH:/home/sw/external/gtsam/build/gtsam/3rdparty/GeographicLib/:/home/sw/external/gtsam/build/
 
+// At StateEstimator.h line 33:
 // Temporarily replaced by copy & paste
 // #include <imu_3dm_gx4/msg/filter_output.hpp>
-
-ros2 run nif_localization_nodes state_estimator_node --ros-args -r gps:=/novatel_bottom/inspva -r imu:=/novatel_bottom/imu
-
-launch install?
+#include <nif_msgs/msg/filter_out.hpp> 

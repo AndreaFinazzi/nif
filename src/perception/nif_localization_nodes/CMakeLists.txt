@@ -39,17 +39,9 @@ if(GTSAM_FOUND)
         include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIR} "/usr/local/include" "/home/sw/external/gtsam/build/")
         include_directories(${GTSAM_INCLUDE_DIR})
 
-        # add_executable(StateEstimator StateEstimator.cpp)
         ament_auto_add_executable(state_estimator_node
                 src/StateEstimator/StateEstimator.cpp)
-        # ament_target_dependencies(state_estimator_node novatel_oem7_msgs)
         target_link_libraries(state_estimator_node ${catkin_LIBRARIES} ${ROS_LIBRARIES} gtsam ${GeographicLib_LIBRARIES} ${TBB_LIBRARIES}  ${Boost_LIBRARIES})
-        # add_dependencies(StateEstimator autorally_msgs_gencpp ${PROJECT_NAME}_gencfg)
-
-#   install(TARGETS StateEstimator
-#           ARCHIVE DESTINATION ${lib}
-#           LIBRARY DESTINATION ${lib}
-#           RUNTIME DESTINATION ${bin})
 endif()
         
 if(BUILD_TESTING)

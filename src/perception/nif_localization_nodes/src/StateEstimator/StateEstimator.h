@@ -32,6 +32,15 @@
  *
  ***********************************************/
 
+/**********************************************
+ * @file StateEstimator.h
+ * @author Seungwook Lee <seungwook@gmail.com>
+ * @date Aug 1, 2021
+ * @copyright 2021 KAIST
+ * @brief ROS2 implementation of StateEstimator class for NIF project
+ *
+ ***********************************************/
+
 #ifndef StateEstimator_H_
 #define StateEstimator_H_
 
@@ -89,129 +98,127 @@
 #define IMULPFCF 40.0
 
 
-namespace autorally_core
+// struct lpf_xyz
+// {
+//   // low_pass_filter(IMULPFDT, IMULPFCF, 0.0) x;
+//   // low_pass_filter(IMULPFDT, IMULPFCF, 0.0) y;
+//   // low_pass_filter(IMULPFDT, IMULPFCF, 0.0) z;
+//   low_pass_filter x;
+//   low_pass_filter y;
+//   low_pass_filter z;
+
+// };
+// struct imu_lpf
+// {
+//   lpf_xyz angular_velocity;
+//   lpf_xyz linear_acceleration;
+// };
+class StateEstimator : public rclcpp::Node
 {
-  // struct lpf_xyz
-  // {
-  //   // low_pass_filter(IMULPFDT, IMULPFCF, 0.0) x;
-  //   // low_pass_filter(IMULPFDT, IMULPFCF, 0.0) y;
-  //   // low_pass_filter(IMULPFDT, IMULPFCF, 0.0) z;
-  //   low_pass_filter x;
-  //   low_pass_filter y;
-  //   low_pass_filter z;
-
-  // };
-  // struct imu_lpf
-  // {
-  //   lpf_xyz angular_velocity;
-  //   lpf_xyz linear_acceleration;
-  // };
-  class StateEstimator : public rclcpp::Node
-  {
-  private:
+private:
 
 
-    rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr posePub_;
-    rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr insPub_;
-    rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr gpsPub_;
-    rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr imuPub_;
-    rclcpp::Publisher<geometry_msgs::msg::Point>::SharedPtr biasAccPub_;
-    rclcpp::Publisher<geometry_msgs::msg::Point>::SharedPtr biasGyroPub_;
-    rclcpp::Publisher<geometry_msgs::msg::Point>::SharedPtr timePub_;
-    rclcpp::Publisher<std_msgs::msg::Int16>::SharedPtr statusPub_;
-    rclcpp::Subscription<novatel_oem7_msgs::msg::INSPVA>::SharedPtr insSub_;
-    rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr gpsSub_;
-    rclcpp::Subscription<novatel_gps_msgs::msg::NovatelRawImu>::SharedPtr imuNovatelSub_;
-    rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imuSub_;
-    rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odomSub_;
-    std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
+  rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr posePub_;
+  rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr insPub_;
+  rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr gpsPub_;
+  rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr imuPub_;
+  rclcpp::Publisher<geometry_msgs::msg::Point>::SharedPtr biasAccPub_;
+  rclcpp::Publisher<geometry_msgs::msg::Point>::SharedPtr biasGyroPub_;
+  rclcpp::Publisher<geometry_msgs::msg::Point>::SharedPtr timePub_;
+  rclcpp::Publisher<std_msgs::msg::Int16>::SharedPtr statusPub_;
+  rclcpp::Subscription<novatel_oem7_msgs::msg::INSPVA>::SharedPtr insSub_;
+  rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr gpsSub_;
+  rclcpp::Subscription<novatel_gps_msgs::msg::NovatelRawImu>::SharedPtr imuNovatelSub_;
+  rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imuSub_;
+  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odomSub_;
+  std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 
-    double lastImuT_, lastImuTgps_;
-    /**
-     * # possible statuses
-     * byte OK=0     # standard operation
-     * byte WARN=1   # state estimator is not currently trustworthy
-     * byte ERROR=2  # state estimator has encountered an unrecoverable error
-     */
-    int status_;
-    double accelBiasSigma_, gyroBiasSigma_;
-    double gpsSigma_;
-    int maxQSize_;
+  double lastImuT_, lastImuTgps_;
+  /**
+   * # possible statuses
+   * byte OK=0     # standard operation
+   * byte WARN=1   # state estimator is not currently trustworthy
+   * byte ERROR=2  # state estimator has encountered an unrecoverable error
+   */
+  int status_;
+  double accelBiasSigma_, gyroBiasSigma_;
+  double gpsSigma_;
+  int maxQSize_;
 
-    BlockingQueue<sensor_msgs::msg::NavSatFix::SharedPtr> gpsOptQ_;
-    BlockingQueue<sensor_msgs::msg::Imu::SharedPtr> imuOptQ_;
-    BlockingQueue<nav_msgs::msg::Odometry::SharedPtr> odomOptQ_;
+  BlockingQueue<sensor_msgs::msg::NavSatFix::SharedPtr> gpsOptQ_;
+  BlockingQueue<sensor_msgs::msg::Imu::SharedPtr> imuOptQ_;
+  BlockingQueue<nav_msgs::msg::Odometry::SharedPtr> odomOptQ_;
 
-    boost::mutex optimizedStateMutex_;
-    gtsam::NavState optimizedState_;
-    double optimizedTime_;
-    boost::shared_ptr<gtsam::PreintegratedImuMeasurements> imuPredictor_;
-    double imuDt_;
-    gtsam::imuBias::ConstantBias optimizedBias_, previousBias_;
-    sensor_msgs::msg::Imu::SharedPtr lastIMU_;
-    boost::shared_ptr<gtsam::PreintegrationParams> preintegrationParams_;
+  boost::mutex optimizedStateMutex_;
+  gtsam::NavState optimizedState_;
+  double optimizedTime_;
+  boost::shared_ptr<gtsam::PreintegratedImuMeasurements> imuPredictor_;
+  double imuDt_;
+  gtsam::imuBias::ConstantBias optimizedBias_, previousBias_;
+  sensor_msgs::msg::Imu::SharedPtr lastIMU_;
+  boost::shared_ptr<gtsam::PreintegrationParams> preintegrationParams_;
 
-    std::list<sensor_msgs::msg::Imu::SharedPtr> imuMeasurements_, imuGrav_;
-    nif_msgs::msg::FilterOut initialPose_;
-    gtsam::Pose3 bodyPSensor_, carENUPcarNED_;
-    gtsam::Pose3 imuPgps_;
+  std::list<sensor_msgs::msg::Imu::SharedPtr> imuMeasurements_, imuGrav_;
+  nif_msgs::msg::FilterOut initialPose_;
+  gtsam::Pose3 bodyPSensor_, carENUPcarNED_;
+  gtsam::Pose3 imuPgps_;
 
-    bool fixedOrigin_;
-    GeographicLib::LocalCartesian enu_;   /// Object to put lat/lon coordinates into local cartesian
-    double E_, N_, U_, U0_;
-    std::vector<double> ego_v_;
-    bool gotFirstFix_;
-    sensor_msgs::msg::NavSatFix::SharedPtr first_fix_;
-    bool invertx_, inverty_, invertz_;
-    bool usingOdom_;
-    double maxGPSError_;
+  bool fixedOrigin_;
+  GeographicLib::LocalCartesian enu_;   /// Object to put lat/lon coordinates into local cartesian
+  double E_, N_, U_, U0_;
+  std::vector<double> ego_v_;
+  bool gotFirstFix_;
+  sensor_msgs::msg::NavSatFix::SharedPtr first_fix_;
+  bool invertx_, inverty_, invertz_;
+  bool usingOdom_;
+  double maxGPSError_;
 
-    bool received_imu_;
+  bool received_imu_;
 
-    bool hasNewDynamicParams_;
-    double correction_x_;
-    double correction_y_;
+  bool hasNewDynamicParams_;
+  double correction_x_;
+  double correction_y_;
 
-    std::string map_frame_;
-    std::string body_frame_;
-    bool use_msg_time_;
-    bool use_imu_lpf_;
-    // imu_lpf imu_lpf_;
-    double imu_lpf_dt_;
-    double imu_lpf_cut_f_;
-    double imu_lpf_weight_;
+  std::string map_frame_;
+  std::string body_frame_;
+  bool use_msg_time_;
+  bool use_imu_lpf_;
+  // imu_lpf imu_lpf_;
+  double imu_lpf_dt_;
+  double imu_lpf_cut_f_;
+  double imu_lpf_weight_;
 
-    double imu_last_angular_velocity_x_;
-    double imu_last_angular_velocity_y_;
-    double imu_last_angular_velocity_z_;
-    double imu_last_linear_acceleration_x_;
-    double imu_last_linear_acceleration_y_;
-    double imu_last_linear_acceleration_z_;
+  double imu_last_angular_velocity_x_;
+  double imu_last_angular_velocity_y_;
+  double imu_last_angular_velocity_z_;
+  double imu_last_linear_acceleration_x_;
+  double imu_last_linear_acceleration_y_;
+  double imu_last_linear_acceleration_z_;
 
-    gtsam::SharedDiagonal priorNoisePose_;
-    gtsam::SharedDiagonal priorNoiseVel_;
-    gtsam::SharedDiagonal priorNoiseBias_;
-    gtsam::Vector noiseModelBetweenBias_sigma_;
-    gtsam::ISAM2 *isam_;
+  gtsam::SharedDiagonal priorNoisePose_;
+  gtsam::SharedDiagonal priorNoiseVel_;
+  gtsam::SharedDiagonal priorNoiseBias_;
+  gtsam::Vector noiseModelBetweenBias_sigma_;
+  gtsam::ISAM2 *isam_;
 
-    nav_msgs::msg::Odometry::SharedPtr lastOdom_;
+  nav_msgs::msg::Odometry::SharedPtr lastOdom_;
 
-  public:
-    StateEstimator();
-    ~StateEstimator();
-    void InsCallback(novatel_oem7_msgs::msg::INSPVA::SharedPtr ins); // TODO: check if it has to be changed into novatel_gps_msgs::msg::Inspva
-    // void InsCallback(novatel_gps_msgs::msg::Inspva::SharedPtr ins); // TODO: check if it has to be changed into novatel_gps_msgs::msg::Inspva
-    void GpsCallback(sensor_msgs::msg::NavSatFix::SharedPtr fix); // TODO: check if it has to be changed into novatel_gps_msgs::msg::Inspva
-    void ImuNovatelCallback(novatel_gps_msgs::msg::NovatelRawImu::SharedPtr msg);
-    void ImuCallback(sensor_msgs::msg::Imu::SharedPtr imu);
-    void WheelOdomCallback(nav_msgs::msg::Odometry::SharedPtr odom);
-    void GpsHelper();
-    void GpsHelper_1();
-    void tfBroadcast(nav_msgs::msg::Odometry &msg, std::string str = "");
-    gtsam::BetweenFactor<gtsam::Pose3> integrateWheelOdom(double prevTime, double stopTime, int curFactor);
-    void GetAccGyro(novatel_gps_msgs::msg::NovatelRawImu::SharedPtr imu, gtsam::Vector3 &acc, gtsam::Vector3 &gyro);
-    void GetAccGyro(sensor_msgs::msg::Imu::SharedPtr imu, gtsam::Vector3 &acc, gtsam::Vector3 &gyro);
-  };
-}
+public:
+  StateEstimator();
+  ~StateEstimator();
+  void InsCallback(novatel_oem7_msgs::msg::INSPVA::SharedPtr ins); // TODO: check if it has to be changed into novatel_gps_msgs::msg::Inspva
+  // void InsCallback(novatel_gps_msgs::msg::Inspva::SharedPtr ins); // TODO: check if it has to be changed into novatel_gps_msgs::msg::Inspva
+  void GpsCallback(sensor_msgs::msg::NavSatFix::SharedPtr fix); // TODO: check if it has to be changed into novatel_gps_msgs::msg::Inspva
+  void ImuNovatelCallback(novatel_gps_msgs::msg::NovatelRawImu::SharedPtr msg);
+  void ImuCallback(sensor_msgs::msg::Imu::SharedPtr imu);
+  void WheelOdomCallback(nav_msgs::msg::Odometry::SharedPtr odom);
+  void GpsHelper();
+  void GpsHelper_1();
+  void tfBroadcast(nav_msgs::msg::Odometry &msg, std::string str = "");
+  gtsam::BetweenFactor<gtsam::Pose3> integrateWheelOdom(double prevTime, double stopTime, int curFactor);
+  void GetAccGyro(novatel_gps_msgs::msg::NovatelRawImu::SharedPtr imu, gtsam::Vector3 &acc, gtsam::Vector3 &gyro);
+  void GetAccGyro(sensor_msgs::msg::Imu::SharedPtr imu, gtsam::Vector3 &acc, gtsam::Vector3 &gyro);
+
+};
 
 #endif /* StateEstimator_H_ */
