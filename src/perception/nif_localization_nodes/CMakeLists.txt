@@ -28,15 +28,17 @@ ament_auto_add_executable(localization_node_exe
 ###################
 find_package(Boost REQUIRED)
 find_package(Eigen3 REQUIRED)
+# set(GeographicLib_DIR "/home/sw/external/gtsam/build/gtsam/3rdparty/GeographicLib/")
 find_package (GeographicLib REQUIRED)
 
 include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIR})
 include_directories(SYSTEM ${EIGEN3_INCLUDE_DIR})
 
+# set(GTSAM_DIR "/home/sw/external/gtsam/build/")
 find_package(GTSAM)
 if(GTSAM_FOUND)
         find_package(TBB)
-        include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIR} "/usr/local/include" "/home/sw/external/gtsam/build/")
+        include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIR} "/usr/local/include")
         include_directories(${GTSAM_INCLUDE_DIR})
 
         # ament_auto_add_executable(state_estimator_node
