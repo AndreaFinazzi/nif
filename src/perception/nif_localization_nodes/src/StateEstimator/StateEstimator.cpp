@@ -73,8 +73,8 @@ using symbol_shorthand::G; // GPS pose
 // #define TIME(msg) ( (msg)->header.stamp.toSec() )
 #define TIME(msg) ( (msg)->header.stamp.sec + (msg)->header.stamp.nanosec * 1e-9 )
 
-StateEstimator::StateEstimator() :
-  Node("state_estimator_node"),
+StateEstimator::StateEstimator(const std::string& node_name) :
+  Node(node_name.c_str()),
   lastImuT_(0.0),
   lastImuTgps_(0.0),
   maxQSize_(0),
@@ -188,12 +188,14 @@ StateEstimator::StateEstimator() :
   this->declare_parameter<double>("imu_lpf_dt",  0.0083);
   this->declare_parameter<double>("imu_lpf_cut_f",  40.0);
   this->declare_parameter<bool>("use_imu_lpf", false);
+  this->declare_parameter<bool>("use_novatel_oem7_msg",  true);
   this->get_parameter("map_frame", map_frame_);
   this->get_parameter("body_frame", body_frame_);
   this->get_parameter("use_msg_time", use_msg_time_);
   this->get_parameter("imu_lpf_dt", imu_lpf_dt_);
   this->get_parameter("imu_lpf_cut_f", imu_lpf_cut_f_);
   this->get_parameter("use_imu_lpf", use_imu_lpf_);
+  this->get_parameter("use_novatel_oem7_msg", use_novatel_oem7_msg_);
 
 
   if (fixedOrigin_)
@@ -271,6 +273,7 @@ StateEstimator::StateEstimator() :
 
   posePub_ = this->create_publisher<nav_msgs::msg::Odometry>("pose", rclcpp::QoS(1));
   insPub_ = this->create_publisher<nav_msgs::msg::Odometry>("pose/ins", rclcpp::QoS(1));
+  bestposPub_ = this->create_publisher<nav_msgs::msg::Odometry>("pose/bestpos", rclcpp::QoS(1));
   gpsPub_ = this->create_publisher<nav_msgs::msg::Odometry>("pose/gps_point", rclcpp::QoS(1));
   imuPub_ = this->create_publisher<sensor_msgs::msg::Imu>("imu/lpf", rclcpp::QoS(1));
   biasAccPub_ = this->create_publisher<geometry_msgs::msg::Point>("bias_acc", rclcpp::QoS(1));
@@ -310,8 +313,14 @@ StateEstimator::StateEstimator() :
   double imu_lpf_cut_f_radps = imu_lpf_cut_f_ * 180.0 / PI;
   imu_lpf_weight_ = 2.0 * imu_lpf_cut_f_radps / (3.0*imu_lpf_cut_f_radps + 2.0 / imu_lpf_dt_);
 
-  insSub_ = this->create_subscription<novatel_oem7_msgs::msg::INSPVA>(
-    "ins", rclcpp::QoS(300), std::bind(&StateEstimator::InsCallback, this, std::placeholders::_1));
+  insOemSub_ = this->create_subscription<novatel_oem7_msgs::msg::INSPVA>(
+    "ins_oem", rclcpp::QoS(300), std::bind(&StateEstimator::InsOemCallback, this, std::placeholders::_1));
+  bestposOemSub_ = this->create_subscription<novatel_oem7_msgs::msg::BESTPOS>(
+    "bestpos_oem", rclcpp::QoS(300), std::bind(&StateEstimator::BestposOemCallback, this, std::placeholders::_1));
+  insGpsSub_ = this->create_subscription<novatel_gps_msgs::msg::Inspva>(
+    "ins_gps", rclcpp::QoS(300), std::bind(&StateEstimator::InsGpsCallback, this, std::placeholders::_1));
+  bestposGpsSub_ = this->create_subscription<novatel_gps_msgs::msg::NovatelPosition>(
+    "bestpos_gps", rclcpp::QoS(300), std::bind(&StateEstimator::BestposGpsCallback, this, std::placeholders::_1));
   gpsSub_ = this->create_subscription<sensor_msgs::msg::NavSatFix>(
     "gps", rclcpp::QoS(300), std::bind(&StateEstimator::GpsCallback, this, std::placeholders::_1));
   imuNovatelSub_ = this->create_subscription<novatel_gps_msgs::msg::NovatelRawImu>(
@@ -361,7 +370,7 @@ void StateEstimator::GpsCallback(sensor_msgs::msg::NavSatFix::SharedPtr fix)
   tfBroadcast(odom, "/gps");
 }
 
-void StateEstimator::InsCallback(novatel_oem7_msgs::msg::INSPVA::SharedPtr ins)
+void StateEstimator::InsOemCallback(novatel_oem7_msgs::msg::INSPVA::SharedPtr ins)
 {
   if(gotFirstFix_)
   {
@@ -400,6 +409,91 @@ void StateEstimator::InsCallback(novatel_oem7_msgs::msg::INSPVA::SharedPtr ins)
   tfBroadcast(odom, "/ins");
 
 }
+
+void StateEstimator::InsGpsCallback(novatel_gps_msgs::msg::Inspva::SharedPtr ins)
+{
+  if(gotFirstFix_)
+  {
+    ins->height = first_fix_->altitude;
+  }
+
+  double E, N, U;
+  enu_.Forward(ins->latitude, ins->longitude, ins->height, E, N, U);
+  // https://docs.novatel.com/OEM7/Content/SPAN_Logs/INSATT.html
+  // Left-handed rotation around z-axis in degrees clockwise from North.
+  double heading = 90 - ins->azimuth;
+  heading = heading * PI / 180.0;
+  tf2::Quaternion q;
+  q.setRPY(0, 0, heading);
+
+  double ego_vx = ins->east_velocity * cos(heading) + ins->north_velocity * sin(heading);
+  double ego_vy = -ins->east_velocity * sin(heading) + ins->north_velocity * cos(heading);
+  double ego_vz = ins->up_velocity;
+
+  nav_msgs::msg::Odometry odom;
+  odom.header.stamp = this->get_clock()->now();
+  odom.header.frame_id = map_frame_.c_str();
+  odom.child_frame_id = body_frame_.c_str();
+  odom.pose.pose.position.x = E;
+  odom.pose.pose.position.y = N;
+  odom.pose.pose.position.z = U;
+  odom.pose.pose.orientation.x = q.x();
+  odom.pose.pose.orientation.y = q.y();
+  odom.pose.pose.orientation.z = q.z();
+  odom.pose.pose.orientation.w = q.w();
+  odom.twist.twist.linear.x = ego_vx;
+  odom.twist.twist.linear.y = ego_vy;
+  odom.twist.twist.linear.z = ego_vz;
+
+  insPub_->publish(odom);
+  tfBroadcast(odom, "/ins");
+
+}
+
+void StateEstimator::BestposOemCallback(novatel_oem7_msgs::msg::BESTPOS::SharedPtr bestpos)
+{
+  if(gotFirstFix_)
+  {
+    bestpos->hgt = first_fix_->altitude;
+  }
+
+  double E, N, U;
+  enu_.Forward(bestpos->lat, bestpos->lon, bestpos->hgt, E, N, U);
+
+  nav_msgs::msg::Odometry odom;
+  odom.header.stamp = this->get_clock()->now();
+  odom.header.frame_id = map_frame_.c_str();
+  odom.child_frame_id = body_frame_.c_str();
+  odom.pose.pose.position.x = E;
+  odom.pose.pose.position.y = N;
+  odom.pose.pose.position.z = U;
+
+  bestposPub_->publish(odom);
+  tfBroadcast(odom, "/bestpos");
+}
+
+void StateEstimator::BestposGpsCallback(novatel_gps_msgs::msg::NovatelPosition::SharedPtr bestpos)
+{
+  if(gotFirstFix_)
+  {
+    bestpos->height = first_fix_->altitude;
+  }
+
+  double E, N, U;
+  enu_.Forward(bestpos->lat, bestpos->lon, bestpos->height, E, N, U);
+
+  nav_msgs::msg::Odometry odom;
+  odom.header.stamp = this->get_clock()->now();
+  odom.header.frame_id = map_frame_.c_str();
+  odom.child_frame_id = body_frame_.c_str();
+  odom.pose.pose.position.x = E;
+  odom.pose.pose.position.y = N;
+  odom.pose.pose.position.z = U;
+
+  bestposPub_->publish(odom);
+  tfBroadcast(odom, "/bestpos");
+}
+
 
 void StateEstimator::GetAccGyro(sensor_msgs::msg::Imu::SharedPtr imu, Vector3 &acc, Vector3 &gyro)
 {
@@ -892,17 +986,17 @@ void StateEstimator::tfBroadcast(nav_msgs::msg::Odometry &msg, std::string str)
 }
 
 
-int main (int argc, char** argv)
-{
-  // ros::init(argc, argv, "StateEstimator");
-  // //ros::NodeHandle n;
-  // autorally_core::StateEstimator wpt;
-  // ros::spin();
+// int main (int argc, char** argv)
+// {
+//   // ros::init(argc, argv, "StateEstimator");
+//   // //ros::NodeHandle n;
+//   // autorally_core::StateEstimator wpt;
+//   // ros::spin();
 
-  rclcpp::init(argc, argv);
-  auto node = std::make_shared<StateEstimator>();
-  rclcpp::spin(node);
-  rclcpp::shutdown();
+//   rclcpp::init(argc, argv);
+//   auto node = std::make_shared<autorally_core::StateEstimator>();
+//   rclcpp::spin(node);
+//   rclcpp::shutdown();
 
-  return 0;
-}
+//   return 0;
+// }

@@ -64,23 +64,19 @@ private:
   nav_msgs::msg::Odometry m_veh_odom;
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr m_veh_odom_publisher;
 
-     message_filters::Subscriber<novatel_gps_msgs::msg::Inspva>
-         m_gps_horizontal_subscriber;
-     message_filters::Subscriber<novatel_gps_msgs::msg::Inspva>
-         m_gps_vertical_subscriber;
-
-     std::shared_ptr<
-         message_filters::TimeSynchronizer<novatel_gps_msgs::msg::Inspva,
-                                           novatel_gps_msgs::msg::Inspva>>
-         m_gps_sync_ptr;
-
-  rclcpp::Subscription<novatel_gps_msgs::msg::Inspva>::SharedPtr
-            m_gps_horizontal_sub;
+  message_filters::Subscriber<novatel_gps_msgs::msg::Inspva>
+      m_gps_horizontal_subscriber;
+  message_filters::Subscriber<novatel_gps_msgs::msg::Inspva>
+      m_gps_vertical_subscriber;
 
   std::shared_ptr<
       message_filters::TimeSynchronizer<novatel_gps_msgs::msg::Inspva,
                                         novatel_gps_msgs::msg::Inspva>>
       m_gps_sync_ptr;
+
+  rclcpp::Subscription<novatel_gps_msgs::msg::Inspva>::SharedPtr
+            m_gps_horizontal_sub;
+
 
   rclcpp::TimerBase::SharedPtr m_timer;
 };

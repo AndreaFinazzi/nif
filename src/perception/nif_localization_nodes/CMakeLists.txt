@@ -39,10 +39,18 @@ if(GTSAM_FOUND)
         include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIR} "/usr/local/include" "/home/sw/external/gtsam/build/")
         include_directories(${GTSAM_INCLUDE_DIR})
 
-        ament_auto_add_executable(state_estimator_node
+        # ament_auto_add_executable(state_estimator_node
+        #         src/StateEstimator/StateEstimator.cpp)
+        ament_auto_add_library(state_estimator SHARED
                 src/StateEstimator/StateEstimator.cpp)
-        target_link_libraries(state_estimator_node ${catkin_LIBRARIES} ${ROS_LIBRARIES} gtsam ${GeographicLib_LIBRARIES} ${TBB_LIBRARIES}  ${Boost_LIBRARIES})
+
+        target_link_libraries(state_estimator ${catkin_LIBRARIES} ${ROS_LIBRARIES} gtsam ${GeographicLib_LIBRARIES} ${TBB_LIBRARIES}  ${Boost_LIBRARIES})
 endif()
+
+ament_auto_add_executable(localization_node_gtsam_state_estimator
+        src/localization_main.cpp)
+target_link_libraries(localization_node_gtsam_state_estimator
+        state_estimator)
         
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

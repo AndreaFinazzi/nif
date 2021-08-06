@@ -71,9 +71,11 @@
 
 // NIF dependencies
 // #include <gps_msgs/msg/gps_fix.hpp>
-// #include <novatel_gps_msgs/msg/inspva.hpp>
+#include <novatel_gps_msgs/msg/inspva.hpp>
+#include <novatel_gps_msgs/msg/novatel_position.hpp>
 #include <novatel_gps_msgs/msg/novatel_raw_imu.hpp>
 #include <novatel_oem7_msgs/msg/inspva.hpp>
+#include <novatel_oem7_msgs/msg/bestpos.hpp>
 
 #include "BlockingQueue.h"
 
@@ -120,13 +122,18 @@ private:
 
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr posePub_;
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr insPub_;
+  rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr bestposPub_;
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr gpsPub_;
   rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr imuPub_;
   rclcpp::Publisher<geometry_msgs::msg::Point>::SharedPtr biasAccPub_;
   rclcpp::Publisher<geometry_msgs::msg::Point>::SharedPtr biasGyroPub_;
   rclcpp::Publisher<geometry_msgs::msg::Point>::SharedPtr timePub_;
   rclcpp::Publisher<std_msgs::msg::Int16>::SharedPtr statusPub_;
-  rclcpp::Subscription<novatel_oem7_msgs::msg::INSPVA>::SharedPtr insSub_;
+  rclcpp::Subscription<novatel_oem7_msgs::msg::INSPVA>::SharedPtr insOemSub_;
+  rclcpp::Subscription<novatel_oem7_msgs::msg::BESTPOS>::SharedPtr bestposOemSub_;
+  rclcpp::Subscription<novatel_gps_msgs::msg::Inspva>::SharedPtr insGpsSub_;
+  rclcpp::Subscription<novatel_gps_msgs::msg::NovatelPosition>::SharedPtr bestposGpsSub_;
+
   rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr gpsSub_;
   rclcpp::Subscription<novatel_gps_msgs::msg::NovatelRawImu>::SharedPtr imuNovatelSub_;
   rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imuSub_;
@@ -203,12 +210,17 @@ private:
 
   nav_msgs::msg::Odometry::SharedPtr lastOdom_;
 
+  bool use_novatel_oem7_msg_;
+
 public:
-  StateEstimator();
+  StateEstimator(const std::string& node_name);
   ~StateEstimator();
-  void InsCallback(novatel_oem7_msgs::msg::INSPVA::SharedPtr ins); // TODO: check if it has to be changed into novatel_gps_msgs::msg::Inspva
-  // void InsCallback(novatel_gps_msgs::msg::Inspva::SharedPtr ins); // TODO: check if it has to be changed into novatel_gps_msgs::msg::Inspva
-  void GpsCallback(sensor_msgs::msg::NavSatFix::SharedPtr fix); // TODO: check if it has to be changed into novatel_gps_msgs::msg::Inspva
+  void InsOemCallback(novatel_oem7_msgs::msg::INSPVA::SharedPtr ins);
+  // void InsCallback(novatel_gps_msgs::msg::Inspva::SharedPtr ins);
+  void InsGpsCallback(novatel_gps_msgs::msg::Inspva::SharedPtr ins);
+  void BestposOemCallback(novatel_oem7_msgs::msg::BESTPOS::SharedPtr msg);
+  void BestposGpsCallback(novatel_gps_msgs::msg::NovatelPosition::SharedPtr msg);
+  void GpsCallback(sensor_msgs::msg::NavSatFix::SharedPtr fix);
   void ImuNovatelCallback(novatel_gps_msgs::msg::NovatelRawImu::SharedPtr msg);
   void ImuCallback(sensor_msgs::msg::Imu::SharedPtr imu);
   void WheelOdomCallback(nav_msgs::msg::Odometry::SharedPtr odom);
