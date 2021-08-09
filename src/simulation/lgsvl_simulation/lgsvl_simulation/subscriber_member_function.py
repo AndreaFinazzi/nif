@@ -5,6 +5,7 @@ from rclpy.node import Node
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import CompressedImage, Imu, PointCloud2, NavSatFix
 from lgsvl_msgs.msg import VehicleOdometry, Detection2DArray
+from novatel_gps_msgs.msg import Inspva
 
 class Drive(Node):
     def __init__(self):
@@ -49,96 +50,102 @@ class Drive(Node):
         self.sub_gps_top= self.create_subscription(NavSatFix, self.namespace + '/novatel_top/fix', self.callback_gps_top, 10)
         self.sub_gps_bottom= self.create_subscription(NavSatFix, self.namespace + '/novatel_bottom/fix', self.callback_gps_bottom, 10)
 
+        # Convert to Novatel specific topics
+        self.pub_gps_inspva_top = self.create_publisher(Inspva, self.namespace + '/novatel_top/inspva', 1)
+        self.pub_gps_inspva_bottom = self.create_publisher(Inspva, self.namespace + '/novatel_bottom/inspva', 1)
+
     # def callback(self, msg):
-    #     self.get_logger().info('Subscribed GPS ODOM: {}'.format(msg.pose.pose.position.x))
+        # self.get_logger().info('Subscribed GPS ODOM: {}'.format(msg.pose.pose.position.x))
     
     def callback_camera_front_left(self, msg):
         pass
-        self.get_logger().info('Subscribed camera_front_left')
+        # self.get_logger().info('Subscribed camera_front_left')
 
     def callback_camera_front_right(self, msg):
         pass
-        self.get_logger().info('Subscribed camera_front_right')
+        # self.get_logger().info('Subscribed camera_front_right')
     
     def callback_camera_rear_left(self, msg):
         pass
-        self.get_logger().info('Subscribed camera_rear_left')
+        # self.get_logger().info('Subscribed camera_rear_left')
 
     def callback_camera_rear_right(self, msg):
         pass
-        self.get_logger().info('Subscribed camera_rear_right')
+        # self.get_logger().info('Subscribed camera_rear_right')
     
     def callback_camera_front_1(self, msg):
         pass
-        self.get_logger().info('Subscribed camera_front_1')
+        # self.get_logger().info('Subscribed camera_front_1')
 
     def callback_camera_front_2(self, msg):
         pass
-        self.get_logger().info('Subscribed camera_front_2')
+        # self.get_logger().info('Subscribed camera_front_2')
 
 
 
 
     def callback_2D_front_left(self, msg):
         pass
-        self.get_logger().info('Subscribed 2D_front_left ' + str(msg))
+        # self.get_logger().info('Subscribed 2D_front_left ' + str(msg))
 
     def callback_2D_front_right(self, msg):
         pass
-        self.get_logger().info('Subscribed 2D_front_right ' + str(msg))
+        # self.get_logger().info('Subscribed 2D_front_right ' + str(msg))
     
     def callback_2D_rear_left(self, msg):
         pass
-        self.get_logger().info('Subscribed 2D_rear_left '+ str(msg))
+        # self.get_logger().info('Subscribed 2D_rear_left '+ str(msg))
 
     def callback_2D_rear_right(self, msg):
         pass
-        self.get_logger().info('Subscribed 2D_rear_right '+ str(msg))
+        # self.get_logger().info('Subscribed 2D_rear_right '+ str(msg))
     
     def callback_2D_front_1(self, msg):
         pass
-        self.get_logger().info('Subscribed 2D_front_1 '+ str(msg))
+        # self.get_logger().info('Subscribed 2D_front_1 '+ str(msg))
 
     def callback_2D_front_2(self, msg):
         pass
-        self.get_logger().info('Subscribed 2D_front_2 '+ str(msg))
+        # self.get_logger().info('Subscribed 2D_front_2 '+ str(msg))
 
     def callback_laser_meter_flash_a(self, msg):
         pass
-        self.get_logger().info('Subscribed laser_meter_flash_a')
+        # self.get_logger().info('Subscribed laser_meter_flash_a')
     
     def callback_laser_meter_flash_b(self, msg):
         pass
-        self.get_logger().info('Subscribed laser_meter_flash_b')
+        # self.get_logger().info('Subscribed laser_meter_flash_b')
     
     def callback_laser_meter_flash_c(self, msg):
         pass
-        self.get_logger().info('Subscribed laser_meter_flash_c')
+        # self.get_logger().info('Subscribed laser_meter_flash_c')
 
 
 
     def callback_imu_top(self, msg):
         pass
-        self.get_logger().info('Subscribed imu_top')
+        # self.get_logger().info('Subscribed imu_top')
 
     def callback_imu_bottom(self, msg):
         pass
-        self.get_logger().info('Subscribed imu_bottom')
+        # self.get_logger().info('Subscribed imu_bottom')
 
 
 
     def callback_vehicleodometry(self, msg):
         pass
-        self.get_logger().info('Subscribed vehicleodometry')
+        # self.get_logger().info('Subscribed vehicleodometry')
 
 
     def callback_gps_top(self, msg):
-        pass
-        self.get_logger().info('Subscribed gps_top')
+        inspva_msg = self.convert_fix_to_inspva(msg)
+        self.pub_gps_inspva_top.publish(inspva_msg)
 
     def callback_gps_bottom(self, msg):
-        pass
-        self.get_logger().info('Subscribed gps_bottom latitude: ' + str(msg.latitude) + ' altitude: '+ str(msg.altitude))
+        inspva_msg = self.convert_fix_to_inspva(msg)
+        self.pub_gps_inspva_bottom.publish(inspva_msg)
+
+        # self.get_logger().info('Subscribed gps_bottom latitude: ' + str(msg.latitude) + ' altitude: '+ str(msg.altitude))
         # WPT_CSV_PATH = "./src/subtest/wpt_data/wpt_from_GPS2.csv"
         # csv_data = pd.read_csv(WPT_CSV_PATH, sep=',', header=None)
         # wpts_x = csv_data.values[:,0]
@@ -147,6 +154,14 @@ class Drive(Node):
         # wr = csv.writer(f)
         # wr.writerow([str(msg.longitude),str(msg.latitude)])
         # f.close
+    
+    def convert_fix_to_inspva(self, fix):
+        inspva_msg = Inspva()
+        inspva_msg.header = fix.header
+        inspva_msg.latitude = fix.latitude
+        inspva_msg.longitude = fix.longitude
+        inspva_msg.height = fix.altitude
+        return inspva_msg
 
 
 def main(args=None):
