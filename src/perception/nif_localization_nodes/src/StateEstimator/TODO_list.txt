@@ -1,5 +1,5 @@
 // Add PATH to build
-export CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH:/$HOME/external/gtsam/build/gtsam/3rdparty/GeographicLib/:/$HOME/external/gtsam/build/
+export CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH:/home/sw/external/gtsam/build/gtsam/3rdparty/GeographicLib/:/home/sw/external/gtsam/build/
 
 // At StateEstimator.h line 33:
 // Temporarily replaced by copy & paste

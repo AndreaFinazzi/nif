@@ -985,16 +985,14 @@ void StateEstimator::tfBroadcast(nav_msgs::msg::Odometry &msg, std::string str)
   tf_broadcaster_->sendTransform(transformStampedConst);
 }
 
-
-// int main (int argc, char** argv)
-// {
+// int main(int argc, char **argv) {
 //   // ros::init(argc, argv, "StateEstimator");
 //   // //ros::NodeHandle n;
 //   // autorally_core::StateEstimator wpt;
 //   // ros::spin();
 
 //   rclcpp::init(argc, argv);
-//   auto node = std::make_shared<autorally_core::StateEstimator>();
+//   auto node = std::make_shared<StateEstimator>("state_estimator");
 //   rclcpp::spin(node);
 //   rclcpp::shutdown();
 

@@ -12,16 +12,20 @@ endif()
 
 # find dependencies
 find_package(ament_cmake_auto REQUIRED)
+# set(novatel_gps_msgs_DIR "/home/sw/install/novatel_gps_msgs/share/novatel_gps_msgs/cmake")
+# set(novatel_oem7_msgs_DIR "/home/sw/install/novatel_oem7_msgs/share/novatel_oem7_msgs/cmake")
+find_package(novatel_gps_msgs REQUIRED)
+find_package(novatel_oem7_msgs REQUIRED)
 ament_auto_find_build_dependencies()
 
 # add_subdirectory(src/StateEstimator)
 
 # Library
 ament_auto_add_library(${PROJECT_NAME} SHARED
-        src/localization_node_v2.cpp)
+        src/localization_node.cpp)
 
 ament_auto_add_executable(localization_node_exe
-        src/localization_node_v2.cpp)
+        src/localization_main.cpp)
 
 ###################
 # State estimator #
@@ -38,7 +42,7 @@ include_directories(SYSTEM ${EIGEN3_INCLUDE_DIR})
 find_package(GTSAM)
 if(GTSAM_FOUND)
         find_package(TBB)
-        include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIR} "/usr/local/include")
+        include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIR} "/usr/local/include" "/home/sw/external/gtsam/build/")
         include_directories(${GTSAM_INCLUDE_DIR})
 
         # ament_auto_add_executable(state_estimator_node
@@ -50,7 +54,7 @@ if(GTSAM_FOUND)
 endif()
 
 ament_auto_add_executable(localization_node_gtsam_state_estimator
-        src/localization_main.cpp)
+        src/localization_main_gtsam_se.cpp)
 target_link_libraries(localization_node_gtsam_state_estimator
         state_estimator)
         
