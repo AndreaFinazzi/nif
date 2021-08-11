@@ -35,16 +35,6 @@ namespace control {
  */
 class ControlSafetyLayerNode : public nif::common::IBaseSynchronizedNode {
 public:
-  /**
-   * Initialize ControlSafetyNodeLayer with default period (defined by
-   * IBaseSynchronizedNode)
-   * @param node_name
-   * @param options
-   */
-  ControlSafetyLayerNode(const std::string &node_name,
-                         const rclcpp::NodeOptions &options)
-      : ControlSafetyLayerNode(node_name, options,
-                               nif::common::constants::SYNC_PERIOD_DEFAULT) {}
 
   /**
    * Initialize ControlSafetyNodeLayer with custom period.
@@ -54,10 +44,14 @@ public:
    * IBaseSynchronizedNode and determines the frequency run() is called at.
    */template <class DurationRepT, class DurationT>
   ControlSafetyLayerNode(
-      const std::string &node_name, const rclcpp::NodeOptions &options,
-      const std::chrono::duration<DurationRepT, DurationT> period)
-      : IBaseSynchronizedNode(node_name, options, period),
-        control_buffer(){
+      const std::string &node_name,
+      const std::chrono::duration<DurationRepT, DurationT> period = common::constants::SYNC_PERIOD_DEFAULT,
+      const rclcpp::NodeOptions &options = rclcpp::NodeOptions{})
+
+      : IBaseSynchronizedNode(node_name, common::NodeType::CONTROL, period, options),
+         control_buffer()
+
+  {
     this->control_sub =
         this->create_subscription<nif::common::msgs::ControlCmd>(
             "in_control_cmd", nif::common::constants::QOS_DEFAULT,

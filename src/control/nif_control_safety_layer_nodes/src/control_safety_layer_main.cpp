@@ -34,7 +34,6 @@ int32_t main(int32_t argc, char **argv)
 
     nd = std::make_shared<ControlSafetyLayerNode>(
         node_name,
-        options,
         nif::common::utils::numeric::clip(SYNC_PERIOD_MIN, SYNC_PERIOD_MAX, sync_period));
 
   } catch (std::range_error & e) {
@@ -45,7 +44,6 @@ int32_t main(int32_t argc, char **argv)
 //  TODO should we abort in these circumstances?
     nd = std::make_shared<ControlSafetyLayerNode>(
         node_name,
-        rclcpp::NodeOptions{},
         SYNC_PERIOD_DEFAULT);
 
   } catch (std::exception & e) {

@@ -12,7 +12,7 @@
 
 nif::managers::WaypointManagerNode::WaypointManagerNode(
     const std::string& node_name_)
-  : IBaseNode(node_name_) {
+  : IBaseNode(node_name_, common::NodeType::PLANNING) {
   std::string package_share_directory;
 
   try {
