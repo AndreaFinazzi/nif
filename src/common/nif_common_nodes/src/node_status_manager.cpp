@@ -25,11 +25,16 @@ NodeStatusManager::NodeStatusManager(
 NodeStatusManager::~NodeStatusManager() {
   RCLCPP_INFO(rclcpp::get_logger(nif::common::constants::LOG_MAIN_LOGGER_NAME),
               "Destroying NodeStatusManager for node %s", this->node_status.getNode().get_name());
-  this->node_status.setStatusCode(NodeStatusCode::DEAD);
+  this->node_status.setStatusCode(NodeStatusCode::NODE_DEAD);
 }
 
 void NodeStatusManager::update(NodeStatusCode status_code) {
   this->node_status.setStatusCode(status_code);
+}
+const std::unordered_map<nif::common::types::t_node_id,
+                         nif::common::NodeStatus &> &
+nif::common::NodeStatusManager::getNodeStatusesMap() {
+  return node_statuses_map;
 }
 
 // NOT A SINGLETON ANYMORE!

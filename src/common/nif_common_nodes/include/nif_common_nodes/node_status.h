@@ -48,7 +48,7 @@ private:
 
   rclcpp::Time time_last_update;
 
-  NodeStatusCode status_code = NOT_INITIALIZED;
+  NodeStatusCode status_code = NODE_NOT_INITIALIZED;
 
 };
 

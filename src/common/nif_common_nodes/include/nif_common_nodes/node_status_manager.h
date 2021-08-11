@@ -25,6 +25,11 @@ public:
   
   ~NodeStatusManager();
 
+//  STATIC
+
+  static const std::unordered_map<nif::common::types::t_node_id,
+                                  nif::common::NodeStatus &> &
+  getNodeStatusesMap();
   //  NOT A SINGLETON ANYMORE
 //  static const NodeStatusManager* getInstance();
 
@@ -33,10 +38,10 @@ private:
 
   nif::common::NodeStatus node_status;
 
-/**
- * Static list of node statuses, it's the common register for all node statuses.
- */
-static std::unordered_map<nif::common::types::t_node_id, nif::common::NodeStatus&> node_statuses_map;
+  /**
+   * Static list of node statuses, it's the common register for all node statuses.
+   */
+  static std::unordered_map<nif::common::types::t_node_id, nif::common::NodeStatus&> node_statuses_map;
 
 //  NOT A SINGLETON ANYMORE
 //  static const NodeStatusManager* instance;

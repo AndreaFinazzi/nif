@@ -30,16 +30,25 @@
 namespace nif {
 namespace common {
 
+enum SystemStatusCode : std::uint8_t {
+  NIF_OK = 0,
+  NIF_INITIALIZED = 1,
+  NIF_NOT_INITIALIZED = 200,
+  NIF_FATAL_ERROR = 254,
+  NIF_DEAD = 255
+};
+
 enum NodeStatusCode : std::uint8_t {
-  OK = 0,
-  INITIALIZED = 1,
-  NOT_INITIALIZED = 200,
-  FATAL_ERROR = 254,
-  DEAD = 255
+  NODE_OK = 0,
+  NODE_INITIALIZED = 1,
+  NODE_NOT_INITIALIZED = 200,
+  NODE_FATAL_ERROR = 254,
+  NODE_DEAD = 255
 };
 
 enum NodeType : std::int8_t {
   PERCEPTION,
+  LOCALIZATION,
   PLANNING,
   PREDICTION,
   CONTROL,
@@ -85,7 +94,7 @@ using AutonomyState = nif_msgs::msg::AutonomyStatus;
  * the system status monitor node. It contains the Autonomy status and Health
  * status of the every node.
  */
-using SystemState = nif_msgs::msg::SystemStatus;
+using SystemStatus = nif_msgs::msg::SystemStatus;
 
 /**
  * This message contains the health status of the node which should updated in
