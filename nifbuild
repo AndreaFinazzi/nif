@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 
 # Import external repos
-vcs import < nif.foxy.repos --workers=1
+GL_TOKEN=$(cat .glsecret) bash -c 'cat nif.foxy.repos | envsubst > nif.foxy.repos.tmp'
+vcs import < nif.foxy.repos.tmp --workers=1
+rm nif.foxy.repos.tmp
 
 . /opt/ros/foxy/setup.bash
 #sudo apt update

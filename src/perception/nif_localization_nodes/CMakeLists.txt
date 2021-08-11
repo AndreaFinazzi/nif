@@ -12,10 +12,7 @@ endif()
 
 # find dependencies
 find_package(ament_cmake_auto REQUIRED)
-# set(novatel_gps_msgs_DIR "/home/sw/install/novatel_gps_msgs/share/novatel_gps_msgs/cmake")
-# set(novatel_oem7_msgs_DIR "/home/sw/install/novatel_oem7_msgs/share/novatel_oem7_msgs/cmake")
-find_package(novatel_gps_msgs REQUIRED)
-find_package(novatel_oem7_msgs REQUIRED)
+
 ament_auto_find_build_dependencies()
 
 # add_subdirectory(src/StateEstimator)

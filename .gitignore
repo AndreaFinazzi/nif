@@ -77,3 +77,4 @@ target_fs/
 *.ipynb_checkpoints/
 
 /tmp
+.glsecret
