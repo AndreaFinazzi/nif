@@ -45,7 +45,9 @@ void PurePursuit::calcLookAheadDist(double cur_vel_) {
   // TODO: do something algorithmic
   // Case 1. speed proportional lookahead distance settup
   //         + delay compensation w.r.t. time constant and delay
-  lookahead_dist = cur_vel_ * m_lookahead_speed_ratio;
+  // lookahead_dist = cur_vel_ * m_lookahead_speed_ratio;
+  
+  lookahead_dist = m_min_lookahead_dist;
   m_lookahead_dist = delayCompensation(lookahead_dist, cur_vel_);
 
   std::clamp(m_lookahead_dist, m_min_lookahead_dist, m_max_lookahead_dist);
