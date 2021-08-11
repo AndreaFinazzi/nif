@@ -15,7 +15,7 @@ NodeStatus::NodeStatus(
         node_id(std::rand()),
         node_type(node_type),
         time_last_update(time_init),
-        status_code(INITIALIZED)
+        status_code(NODE_INITIALIZED)
   {}
 
   void NodeStatus::setStatusCode(NodeStatusCode status_code_) {

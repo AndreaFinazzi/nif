@@ -12,18 +12,19 @@ using nif::common::NodeStatusCode;
 
 IBaseNode::IBaseNode() : Node("no_name_node"), node_status_manager(*this, nif::common::NodeType::SYSTEM)
 {
-  this->node_status_manager.update(NodeStatusCode::FATAL_ERROR);
+  this->node_status_manager.update(NodeStatusCode::NODE_FATAL_ERROR);
   throw std::invalid_argument("Cannot construct IBaseNode without specifying "
                               "node_name. Creating empty node.");
 }
 
 IBaseNode::IBaseNode(const std::string &node_name)
-    : IBaseNode(node_name, rclcpp::NodeOptions{}) {}
+    : IBaseNode(node_name, NodeType::SYSTEM) {
+          RCLCPP_WARN(this->get_logger(), "CALL TO IBaseNode DEPRECATED CONSTRUCTOR, SPECIFY NODE TYPE.");
+}
 
-IBaseNode::IBaseNode(const std::string &node_name,
-                     const rclcpp::NodeOptions &options)
+IBaseNode::IBaseNode(const std::string &node_name, const NodeType node_type, const rclcpp::NodeOptions &options)
     : Node(node_name, options),
-      node_status_manager(*this, nif::common::NodeType::SYSTEM) {
+      node_status_manager(*this, node_type) {
   //  Initialize timers
   gclock_node_init = this->now();
 
@@ -42,7 +43,7 @@ IBaseNode::IBaseNode(const std::string &node_name,
                     std::placeholders::_1));
 
   this->system_state_sub =
-      this->create_subscription<nif::common::msgs::SystemState>(
+      this->create_subscription<nif::common::msgs::SystemStatus>(
           "topic_system_state", nif::common::constants::QOS_DEFAULT,
           std::bind(&IBaseNode::systemStateCallback, this,
                     std::placeholders::_1));
@@ -59,7 +60,7 @@ IBaseNode::IBaseNode(const std::string &node_name,
                     std::placeholders::_1));
 
 
-  this->node_status_manager.update(NodeStatusCode::INITIALIZED);
+  this->node_status_manager.update(NodeStatusCode::NODE_INITIALIZED);
   //  TODO Declare node_state_pub to notify the node state
   //
   //
@@ -89,7 +90,7 @@ void IBaseNode::egoOdometryCallback(
  * @param msg
  */
 void IBaseNode::systemStateCallback(
-    const nif::common::msgs::SystemState::SharedPtr msg) {
+    const nif::common::msgs::SystemStatus::SharedPtr msg) {
   this->system_state = *msg;
 }
 
@@ -116,7 +117,7 @@ const msgs::Odometry &IBaseNode::getEgoOdometry() const {
 const msgs::PowertrainState &IBaseNode::getEgoPowertrainState() const {
   return ego_powertrain_state;
 }
-const msgs::SystemState &IBaseNode::getSystemState() const {
+const msgs::SystemStatus &IBaseNode::getSystemState() const {
   return system_state;
 }
 const msgs::RaceControlState &IBaseNode::getRaceControlState() const {

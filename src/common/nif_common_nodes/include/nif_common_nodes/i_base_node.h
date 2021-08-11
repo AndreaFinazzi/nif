@@ -25,14 +25,31 @@ namespace common {
 
 class IBaseNode : public rclcpp::Node {
 public:
+
 protected:
-  IBaseNode(const std::string& node_name, const rclcpp::NodeOptions& options);
-  explicit IBaseNode(const std::string& node_name);
+// DEPRECATED, will be removed!
+  explicit IBaseNode(const std::string &);
 
-virtual ~IBaseNode() {
-  this->node_status_manager.update(NodeStatusCode::DEAD);
+  IBaseNode(const std::string &, const NodeType, const rclcpp::NodeOptions & = rclcpp::NodeOptions{});
 
-}
+  virtual ~IBaseNode() {
+    this->node_status_manager.update(NodeStatusCode::NODE_DEAD);
+
+  }
+
+  virtual void initParameters() {};
+  virtual void getParameters() {};
+
+  const std::string &getBodyFrameId() const;
+  const std::string &getGlobalFrameId() const;
+  const rclcpp::Time &getGclockNodeInit() const;
+  const msgs::Odometry &getEgoOdometry() const;
+  const msgs::PowertrainState &getEgoPowertrainState() const;
+  const msgs::SystemStatus &getSystemState() const;
+  const msgs::RaceControlState &getRaceControlState() const;
+
+  nif::common::NodeStatusManager node_status_manager;
+
 private:
   /**
    * The default constructor is hidden from the outside to prevent unnamed
@@ -47,27 +64,16 @@ private:
 
 /**
  * Initialization time
- **/ 
+ **/
   rclcpp::Time gclock_node_init;
 
-public:
-  const std::string &getBodyFrameId() const;
-  const std::string &getGlobalFrameId() const;
-  const rclcpp::Time &getGclockNodeInit() const;
-  const msgs::Odometry &getEgoOdometry() const;
-  const msgs::PowertrainState &getEgoPowertrainState() const;
-  const msgs::SystemState &getSystemState() const;
-  const msgs::RaceControlState &getRaceControlState() const;
-
-private:
-  nif::common::NodeStatusManager node_status_manager;
 
   nif::common::msgs::Odometry ego_odometry;
 
   nif::common::msgs::PowertrainState ego_powertrain_state;
 
   // TODO : finalize SystemState class
-  nif::common::msgs::SystemState system_state;
+  nif::common::msgs::SystemStatus system_state;
 
   // TODO : finalize RaceControlState class
   nif::common::msgs::RaceControlState race_control_state;
@@ -77,21 +83,18 @@ private:
   rclcpp::Subscription<nif::common::msgs::PowertrainState>::SharedPtr
       ego_powertrain_state_sub;
 
-  rclcpp::Subscription<nif::common::msgs::SystemState>::SharedPtr
+  rclcpp::Subscription<nif::common::msgs::SystemStatus>::SharedPtr
       system_state_sub;
 
   rclcpp::Subscription<nif::common::msgs::RaceControlState>::SharedPtr
       race_control_state_sub;
-
-  virtual void initParameters() = 0;
-  virtual void getParameters() = 0;
 
   void egoOdometryCallback(const nif::common::msgs::Odometry::SharedPtr msg);
 
   void egoPowertrainCallback(
       const nif::common::msgs::PowertrainState::SharedPtr msg);
 
-  void systemStateCallback(const nif::common::msgs::SystemState::SharedPtr msg);
+  void systemStateCallback(const nif::common::msgs::SystemStatus::SharedPtr msg);
 
   void raceControlStateCallback(
       const nif::common::msgs::RaceControlState::SharedPtr msg);

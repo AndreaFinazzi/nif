@@ -18,16 +18,14 @@ typedef sync_policies::ApproximateTime<novatel_gps_msgs::msg::Inspva,
                                        novatel_gps_msgs::msg::Inspva>
     MySyncPolicy;
 
-LocalizationNode::LocalizationNode(const std::string& node_name_)
-  : LocalizationNode(node_name_, std::make_shared<LocalizationMinimal>()) {}
-
 LocalizationNode::LocalizationNode(
     const std::string& node_name_,
-    const std::shared_ptr<LocalizationMinimal> localization_algorithm_ptr)
-  : IBaseNode(node_name_),
-    m_localization_algorithm_ptr(std::move(localization_algorithm_ptr))
-    {
+    const std::shared_ptr<LocalizationMinimal> localization_algorithm_ptr = std::make_shared<LocalizationMinimal>())
 
+  : IBaseNode(node_name_, common::NodeType::LOCALIZATION),
+    m_localization_algorithm_ptr(std::move(localization_algorithm_ptr))
+
+{
     this->m_veh_odom.header.frame_id = this->getBodyFrameId();
     this->m_veh_odom.child_frame_id  = this->getGlobalFrameId();
 
