@@ -1,3 +1,10 @@
+'''
+@file   subscriber_member_function.py
+@auther USRG UGS, Seungwook Lee
+@date   2021-08-11
+@brief  subscriber node for lgsvl simulation with topic names matched to the real car
+'''
+
 import rclpy
 import csv
 import pandas as pd

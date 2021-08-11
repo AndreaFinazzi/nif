@@ -1,3 +1,10 @@
+'''
+@file   publisher_member_function.py
+@auther USRG UGS
+@date   2021-08-11
+@brief  publisher node for lgsvl simulation with topic names matched to the real car
+'''
+
 import rclpy
 import math
 from rclpy.node import Node

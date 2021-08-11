@@ -1,4 +1,11 @@
 #!/usr/bin/env python
+
+'''
+@file   controller.py
+@auther USRG UGS
+@date   2021-08-11
+@brief  controller node for lgsvl simulation
+'''
 import numpy as np
 import os
 import pandas as pd
