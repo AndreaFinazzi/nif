@@ -1,0 +1,3 @@
+[submodule "GraphBasedLocalTrajectoryPlanner"]
+	path = src/planning/nif_multilayer_planning_nodes/lib/GraphBasedLocalTrajectoryPlanner
+	url = https://github.com/TUMFTM/GraphBasedLocalTrajectoryPlanner.git
