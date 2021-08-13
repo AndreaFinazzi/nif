@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: CI
+name: DevEnvironment
 
 # Controls when the workflow will run
 on:
@@ -29,12 +29,6 @@ jobs:
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-#       - run:
-#       - uses: AutoModality/action-ros-clang-format@v1.0.1        
-#         env:
-#           GITHUB_TOKEN: ${{ secrets.GHCR_TOKEN }}
-#         with:
-#           author-email: usrgiac@gmail.com
       - name: Checkout repository
         uses: actions/checkout@v2
         with:
@@ -45,12 +39,6 @@ jobs:
           required-ros-distributions: foxy
       - run: |
           ./nifupdate && ./nifbuild
-#       - uses: ros-tooling/action-ros-ci@v0.2
-#         with:
-#           target-ros2-distro: foxy
-#           colcon-extra-args: --base-paths $(colcon list --paths-only)/src/*
-#           vcs-repo-file-url: nif.foxy.repos
-#           import-token: ${{ secrets.IMPORT_TOKEN }}
 
   ade:
     if: success()
