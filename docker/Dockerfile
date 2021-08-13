@@ -1,6 +1,6 @@
 # FROM ros:foxy AS stage-deps
 FROM  registry.gitlab.com/iacbasesoftware/autowareauto/amd64/ade-foxy:iac-dev
-ARG GH_TOKEN
+ARG GH_TOKEN=$GH_TOKEN
 
 RUN apt-get update \
   && apt-get upgrade -y \
