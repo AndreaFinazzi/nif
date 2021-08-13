@@ -26,7 +26,7 @@ RUN apt-get update \
 # Clone and install dependencies
 RUN apt update && apt install -y python3-vcstool
 RUN cd /opt && \
-    git clone https://${GH_TOKEN}@github.com/AndreaFinazzi/nif.git && \
+    git clone --recurse-submodules https://${GH_TOKEN}@github.com/AndreaFinazzi/nif.git && \
     cd nif && \
     vcs import < nif.$ROS_DISTRO.repos && \
     rosdep update && \

@@ -35,7 +35,11 @@ jobs:
 #           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 #         with:
 #           author-email: usrgiac@gmail.com
-
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+          
       - uses: ros-tooling/setup-ros@v0.2
         with:
           required-ros-distributions: foxy
@@ -44,7 +48,7 @@ jobs:
         with:
           target-ros2-distro: foxy
           colcon-extra-args: --base-paths $(colcon list --paths-only)/src/*
-#           extra-cmake-args:
+          vcs-repo-file-url: nif.foxy.repos
           import-token: ${{ secrets.IMPORT_TOKEN }}
           colcon-defaults: |
             {
@@ -69,6 +73,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
 
       # Login against a Docker registry except on PR
       # https://github.com/docker/login-action
