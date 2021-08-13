@@ -44,7 +44,8 @@ jobs:
         with:
           required-ros-distributions: foxy
       - run: |
-          cd $GITHUB_WORKSPACE/nif && ./nifupdate && ./nifbuild
+          pwd && ls -la
+          cd nif && ./nifupdate && ./nifbuild
 #       - uses: ros-tooling/action-ros-ci@v0.2
 #         with:
 #           target-ros2-distro: foxy
