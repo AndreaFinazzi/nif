@@ -52,14 +52,14 @@ else
     NVIDIA_OPTIONS=""
 fi
 
-if [[ $SIMULATOR ]];
+if $SIMULATOR ;
 then
   ADERC=".aderc-lgsvl"
 else
   ADERC=".aderc"
 fi
 
-ade  --rc $ADERC \
+ade --rc $ADERC \
     start -f --update -- \
     -v /tmp/.X11-unix:/tmp/.X11-unix \
     -v /etc/localtime:/etc/localtime:ro \
