@@ -37,7 +37,7 @@ jobs:
           
       - uses: ros-tooling/setup-ros@v0.2
         with:
-          required-ros-distributions: foxy
+          required-ros-distributions: ${{ env.ROS_DISTRO }}
       - run: |
           ./nifupdate && ./nifbuild
 
