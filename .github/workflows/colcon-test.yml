@@ -43,25 +43,14 @@ jobs:
       - uses: ros-tooling/setup-ros@v0.2
         with:
           required-ros-distributions: foxy
-#       - run: export PACKAGE_PATHS=
-      - uses: ros-tooling/action-ros-ci@v0.2
-        with:
-          target-ros2-distro: foxy
-          colcon-extra-args: --base-paths $(colcon list --paths-only)/src/*
-          vcs-repo-file-url: nif.foxy.repos
-          import-token: ${{ secrets.IMPORT_TOKEN }}
-          colcon-defaults: |
-            {
-              "build": {
-                "mixin": ["asan-gcc"]
-              }
-            }
-          colcon-mixin-repository: https://raw.githubusercontent.com/colcon/colcon-mixin-repository/3e627e0fa30db85aea05a50e2c61a9832664d236/index.yaml
-      # - name: Publish Unit Test Results
-      #   uses: EnricoMi/publish-unit-test-result-action@v1
-      #   if: always()
-      #   with:
-      #     files: /home/runner/work/nif/nif/ros_ws/build/**/test_results/**/*.xml
+      - run: |
+          cd ${ GITHUB_WORKSPACE }/nif && ./nifupdate && ./nifbuild
+#       - uses: ros-tooling/action-ros-ci@v0.2
+#         with:
+#           target-ros2-distro: foxy
+#           colcon-extra-args: --base-paths $(colcon list --paths-only)/src/*
+#           vcs-repo-file-url: nif.foxy.repos
+#           import-token: ${{ secrets.IMPORT_TOKEN }}
 
   ade:
     if: success()
