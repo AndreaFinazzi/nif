@@ -1,23 +1,4 @@
 #!/usr/bin/env bash
-
-# Import external repos
-GL_TOKEN=$(cat .secret.gitlab) bash -c 'cat nif.foxy.repos | envsubst > nif.foxy.repos.tmp'
-vcs import < nif.foxy.repos.tmp --workers=1
-rm nif.foxy.repos.tmp
-
-. /opt/ros/foxy/setup.bash
-#sudo apt update
-#rosdep update
-rosdep install -ir -y --from-path src/ --rosdistro $ROS_DISTRO
-
-pip install -r central-requirements.txt
+. /opt/ros/$ROS_DISTRO/setup.bash
 
 colcon build --base-paths src/* "$@" --cmake-args -DCMAKE_INSTALL_PREFIX=/home/$USER/nif/install
-. install/setup.bash
-
-ros_env="AMENT_PREFIX_PATH CMAKE_PREFIX_PATH COLCON_PREFIX_PATH PKG_CONFIG_PATH PYTHONPATH LD_LIBRARY_PATH PATH ROS_DISTRO ROS_PYTHON_VERSION ROS_LOCALHOST_ONLY ROS_VERSION"
-env_string=""
-for e in ${ros_env}; do
-    env_string+="$e=${!e};"
-done
-echo "$env_string"

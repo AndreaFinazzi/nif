@@ -16,7 +16,7 @@ This guide is an adaptation of https://www.allaban.me/posts/2020/08/ros2-setup-i
    $ mkdir -p ~/adehome
    $ cd ~/adehome
    $ touch .adehome
-   $ git clone git@github.com:AndreaFinazzi/nif.git
+   $ git clone --recurse-submodules git@github.com:AndreaFinazzi/nif.git
    ```
    A good reference is: https://autowarefoundation.gitlab.io/autoware.auto/AutowareAuto/installation-ade.html
    

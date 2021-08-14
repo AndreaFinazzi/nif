@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: CI
+name: DevEnvironment
 
 # Controls when the workflow will run
 on:
@@ -16,10 +16,10 @@ on:
 env:
   # Use docker.io for Docker Hub if empty
   REGISTRY: ghcr.io
+  ROS_DISTRO: foxy
   # github.repository as <account>/<repo>
   IMAGE_NAME: ${{ github.repository }}
-
-
+  GH_TOKEN: ${{ secrets.GHCR_TOKEN }}
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -30,37 +30,18 @@ jobs:
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      - run:
-#       - uses: AutoModality/action-ros-clang-format@v1.0.1        
-#         env:
-#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#         with:
-#           author-email: usrgiac@gmail.com
-
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+          
       - uses: ros-tooling/setup-ros@v0.2
         with:
-          required-ros-distributions: foxy
-#       - run: export PACKAGE_PATHS=
-      - uses: ros-tooling/action-ros-ci@v0.2
-        with:
-          target-ros2-distro: foxy
-          colcon-extra-args: --base-paths $(colcon list --paths-only)/src/*
-#           extra-cmake-args:
-          import-token: ${{ secrets.IMPORT_TOKEN }}
-          colcon-defaults: |
-            {
-              "build": {
-                "mixin": ["asan-gcc"]
-              }
-            }
-          colcon-mixin-repository: https://raw.githubusercontent.com/colcon/colcon-mixin-repository/3e627e0fa30db85aea05a50e2c61a9832664d236/index.yaml
-      - name: Publish Unit Test Results
-        uses: EnricoMi/publish-unit-test-result-action@v1
-        if: always()
-        with:
-          files: /home/runner/work/nif/nif/ros_ws/build/**/test_results/**/*.xml
+          required-ros-distributions: ${{ env.ROS_DISTRO }}
+      - run: |
+          ./nifupdate && ./nifbuild
 
-  docker-deploy:
+  ade:
     if: success()
     runs-on: ubuntu-20.04
     permissions:
@@ -70,16 +51,18 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
 
       # Login against a Docker registry except on PR
       # https://github.com/docker/login-action
       - name: Log into registry ${{ env.REGISTRY }}
-        if: github.event_name != 'pull_request'
+        # if: github.event_name != 'pull_request'
         uses: docker/login-action@28218f9b04b4f3f62068d7b6ce6ca5b26e35336c
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ env.GH_TOKEN }}
 
       # Extract metadata (tags, labels) for Docker
       # https://github.com/docker/metadata-action
@@ -94,7 +77,9 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
         with:
-          context: ./docker/deploy
-          push: ${{ github.event_name != 'pull_request' }}
+          context: ./docker
+          push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            GH_TOKEN=${{ env.GH_TOKEN }}

@@ -2,6 +2,47 @@
 
 DOCKER_RUNTIMES=$(docker -D info | grep Runtimes)
 
+# Arg parsing
+POSITIONAL=()
+SIMULATOR=false
+
+while [[ $# -gt 0 ]]; do
+  key="$1"
+
+  case $key in
+    -s|--with-simulator)
+      SIMULATOR=true
+      shift # past argument
+      shift # past value
+      ;;
+#    -s|--searchpath)
+#      SEARCHPATH="$2"
+#      shift # past argument
+#      shift # past value
+#      ;;
+#    -l|--lib)
+#      LIBPATH="$2"
+#      shift # past argument
+#      shift # past value
+#      ;;
+#    --default)
+#      DEFAULT=YES
+#      shift # past argument
+#      ;;
+    *)    # unknown option
+      POSITIONAL+=("$1") # save it in an array for later
+      shift # past argument
+      ;;
+  esac
+done
+
+set -- "${POSITIONAL[@]}" # restore positional parameters
+
+if [[ -n $1 ]]; then
+    echo "Last line of file specified as non-opt/last argument:"
+    tail -1 "$1"
+fi
+
 if [[ "$DOCKER_RUNTIMES" == *"nvidia"* ]];
 then
     NVIDIA_OPTIONS="--env="NVIDIA_VISIBLE_DEVICES"=all \
@@ -11,7 +52,15 @@ else
     NVIDIA_OPTIONS=""
 fi
 
-ade start -f --update -- \
+if $SIMULATOR ;
+then
+  ADERC=".aderc-lgsvl"
+else
+  ADERC=".aderc"
+fi
+
+ade --rc $ADERC \
+    start -f --update -- \
     -v /tmp/.X11-unix:/tmp/.X11-unix \
     -v /etc/localtime:/etc/localtime:ro \
     -v /home/$USER/.config/JetBrains:/home/$USER/.config/JetBrains \
