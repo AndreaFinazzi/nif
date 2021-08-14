@@ -83,5 +83,5 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             GH_TOKEN=${{ env.GH_TOKEN }}
-          cache-from: type=registry,ref=${{ steps.meta.outputs.tags }}-buildcache
-          cache-to: type=registry,ref=${{ steps.meta.outputs.tags }}-buildcache,mode=max
+          cache-from: type=registry,ref=${{ steps.meta.outputs.tags }}
+          cache-to: type=inline
