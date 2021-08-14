@@ -81,26 +81,26 @@ jobs:
           cache-from: type=registry,ref=${{ steps.meta.outputs.tags }}
           cache-to: type=inline
 
-  validate:
-    needs: [ ade ]
-    runs-on: ubuntu-20.04
-    container: 
-#       Must specify it statically... https://github.community/t/how-to-use-env-with-container-image/17252/17
-      image: ${{ secrets.GHCR_TOKEN }}@ghcr.io/andreafinazzi/nif:master 
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - 
-        name: Checkout repository
-        uses: actions/checkout@v2
-        with:
-          submodules: 'recursive'
-      - 
-        uses: ros-tooling/setup-ros@v0.2
-        with:
-          required-ros-distributions: ${{ env.ROS_DISTRO }}
-      - 
-        name: Build
-        run: |
-          ./nifbuild
+#   validate:
+#     needs: [ ade ]
+#     runs-on: ubuntu-20.04
+#     container: 
+# #       Must specify it statically... https://github.community/t/how-to-use-env-with-container-image/17252/17
+#       image: ${{ secrets.GHCR_TOKEN }}@ghcr.io/andreafinazzi/nif:master 
+#     permissions:
+#       contents: read
+#       packages: write
+#     steps:
+#       - 
+#         name: Checkout repository
+#         uses: actions/checkout@v2
+#         with:
+#           submodules: 'recursive'
+#       - 
+#         uses: ros-tooling/setup-ros@v0.2
+#         with:
+#           required-ros-distributions: ${{ env.ROS_DISTRO }}
+#       - 
+#         name: Build
+#         run: |
+#           ./nifbuild
