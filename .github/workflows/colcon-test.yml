@@ -86,7 +86,7 @@ jobs:
     runs-on: ubuntu-20.04
     container: 
 #       Must specify it statically... https://github.community/t/how-to-use-env-with-container-image/17252/17
-      image: ghcr.io/andreafinazzi/nif:master 
+      image: ${{ secrets.GHCR_TOKEN }}@ghcr.io/andreafinazzi/nif:master 
     permissions:
       contents: read
       packages: write
