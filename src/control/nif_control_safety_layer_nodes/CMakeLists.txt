@@ -46,4 +46,6 @@ ament_auto_add_executable(control_safety_layer_node_exe
 #            "rclcpp")
 #endif()
 
-ament_auto_package()
+ament_auto_package(INSTALL_TO_SHARE
+    launch
+    config)
