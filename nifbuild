@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Import external repos
-GL_TOKEN=$(cat .glsecret) bash -c 'cat nif.foxy.repos | envsubst > nif.foxy.repos.tmp'
+GL_TOKEN=$(cat .secret.gitlab) bash -c 'cat nif.foxy.repos | envsubst > nif.foxy.repos.tmp'
 vcs import < nif.foxy.repos.tmp --workers=1
 rm nif.foxy.repos.tmp
 

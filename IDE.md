@@ -56,7 +56,7 @@ This guide is an adaptation of https://www.allaban.me/posts/2020/08/ros2-setup-i
 7. Open up your CLion settings/preferences and add a new remote toolchain. Call it whatever, but I’m calling it Docker. Use the credentials we used in the Dockerfile to setup SSH. Make sure to set it as the default.
 ![clion toolchain](clion-toolchain-settings.png)
 
-8. Create a file called `.glsecret` and paste the **GitLab Access Token** in it (single line, no spaces).
+8. Create a file called `.secret.gitlab` and paste the **GitLab Access Token** in it (single line, no spaces).
 
 9. Almost done. Run the last command (`ssh $USER@localhost -p2222`) or `ade enter` to open a shell into the container, and run:
    ```shell
