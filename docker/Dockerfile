@@ -39,7 +39,7 @@ RUN cd /opt && git clone https://github.com/borglab/gtsam.git && \
     cd /opt/gtsam && \
     mkdir build && \
     cd build && \
-    cmake .. && \
+    cmake -DGTSAM_INSTALL_GEOGRAPHICLIB=ON -DGTSAM_WITH_EIGEN_MKL=OFF .. && \
     make install
 
 RUN rm -rf /opt/nif
