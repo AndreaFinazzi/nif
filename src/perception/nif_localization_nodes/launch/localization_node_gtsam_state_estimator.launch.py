@@ -22,7 +22,7 @@ def generate_launch_description():
         [
             Node(
                 package="nif_localization_nodes",
-                executable="localization_node_gtsam_state_estimator",
+                executable="localization_node_gtsam_state_estimator_exe",
                 name="localization_node",
                 output="screen",
                 emulate_tty=True,
