@@ -60,6 +60,7 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 
+#include "nif_common/constants.h"
 
 using namespace gtsam;
 // Convenience for named keys
@@ -68,6 +69,7 @@ using symbol_shorthand::V;
 using symbol_shorthand::B;
 using symbol_shorthand::G; // GPS pose
 
+using nif::common::constants::numeric::PI;
 
 // macro for getting the time stamp of a ros message
 // #define TIME(msg) ( (msg)->header.stamp.toSec() )
@@ -323,8 +325,8 @@ StateEstimator::StateEstimator(const std::string& node_name) :
     "bestpos_gps", rclcpp::QoS(300), std::bind(&StateEstimator::BestposGpsCallback, this, std::placeholders::_1));
   gpsSub_ = this->create_subscription<sensor_msgs::msg::NavSatFix>(
     "gps", rclcpp::QoS(300), std::bind(&StateEstimator::GpsCallback, this, std::placeholders::_1));
-  imuNovatelSub_ = this->create_subscription<novatel_gps_msgs::msg::NovatelRawImu>(
-    "imu_novatel", rclcpp::QoS(600), std::bind(&StateEstimator::ImuNovatelCallback, this, std::placeholders::_1));
+//  imuNovatelSub_ = this->create_subscription<novatel_gps_msgs::msg::NovatelRawImu>(
+//    "imu_novatel", rclcpp::QoS(600), std::bind(&StateEstimator::ImuNovatelCallback, this, std::placeholders::_1));
   imuSub_ = this->create_subscription<sensor_msgs::msg::Imu>(
     "imu", rclcpp::QoS(600), std::bind(&StateEstimator::ImuCallback, this, std::placeholders::_1));
   odomSub_ = this->create_subscription<nav_msgs::msg::Odometry>(
@@ -771,19 +773,19 @@ void StateEstimator::GpsHelper()
   }
 }
 
-void StateEstimator::ImuNovatelCallback(novatel_gps_msgs::msg::NovatelRawImu::SharedPtr msg)
-{
-  sensor_msgs::msg::Imu imu;
-  imu.header.stamp = msg->header.stamp;
-  imu.linear_acceleration.x = msg->linear_acceleration.x;
-  imu.linear_acceleration.y = msg->linear_acceleration.y;
-  imu.linear_acceleration.z = msg->linear_acceleration.z;
-  imu.angular_velocity.x = msg->angular_velocity.x;
-  imu.angular_velocity.y = msg->angular_velocity.y;
-  imu.angular_velocity.z = msg->angular_velocity.z;
-  auto imu_ptr = std::make_shared<sensor_msgs::msg::Imu>(imu);
-  ImuCallback(imu_ptr);
-}
+//void StateEstimator::ImuNovatelCallback(novatel_gps_msgs::msg::NovatelRawImu::SharedPtr msg)
+//{
+//  sensor_msgs::msg::Imu imu;
+//  imu.header.stamp = msg->header.stamp;
+//  imu.linear_acceleration.x = msg->linear_acceleration.x;
+//  imu.linear_acceleration.y = msg->linear_acceleration.y;
+//  imu.linear_acceleration.z = msg->linear_acceleration.z;
+//  imu.angular_velocity.x = msg->angular_velocity.x;
+//  imu.angular_velocity.y = msg->angular_velocity.y;
+//  imu.angular_velocity.z = msg->angular_velocity.z;
+//  auto imu_ptr = std::make_shared<sensor_msgs::msg::Imu>(imu);
+//  ImuCallback(imu_ptr);
+//}
 
 
 void StateEstimator::ImuCallback(sensor_msgs::msg::Imu::SharedPtr imu)

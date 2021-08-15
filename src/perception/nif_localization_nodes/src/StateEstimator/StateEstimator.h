@@ -73,7 +73,7 @@
 // #include <gps_msgs/msg/gps_fix.hpp>
 #include <novatel_gps_msgs/msg/inspva.hpp>
 #include <novatel_gps_msgs/msg/novatel_position.hpp>
-#include <novatel_gps_msgs/msg/novatel_raw_imu.hpp>
+//#include <novatel_gps_msgs/msg/novatel_raw_imu.hpp>
 #include <novatel_oem7_msgs/msg/inspva.hpp>
 #include <novatel_oem7_msgs/msg/bestpos.hpp>
 
@@ -94,8 +94,6 @@
 // low_pass_filter
 #include "nif_utils/low_pass_filter.h"
 
-
-#define PI 3.14159265358979323846264338
 #define IMULPFDT 0.0083
 #define IMULPFCF 40.0
 
@@ -135,7 +133,7 @@ private:
   rclcpp::Subscription<novatel_gps_msgs::msg::NovatelPosition>::SharedPtr bestposGpsSub_;
 
   rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr gpsSub_;
-  rclcpp::Subscription<novatel_gps_msgs::msg::NovatelRawImu>::SharedPtr imuNovatelSub_;
+//  rclcpp::Subscription<novatel_gps_msgs::msg::NovatelRawImu>::SharedPtr imuNovatelSub_;
   rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imuSub_;
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odomSub_;
   std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
@@ -221,14 +219,14 @@ public:
   void BestposOemCallback(novatel_oem7_msgs::msg::BESTPOS::SharedPtr msg);
   void BestposGpsCallback(novatel_gps_msgs::msg::NovatelPosition::SharedPtr msg);
   void GpsCallback(sensor_msgs::msg::NavSatFix::SharedPtr fix);
-  void ImuNovatelCallback(novatel_gps_msgs::msg::NovatelRawImu::SharedPtr msg);
+//  void ImuNovatelCallback(novatel_gps_msgs::msg::NovatelRawImu::SharedPtr msg);
   void ImuCallback(sensor_msgs::msg::Imu::SharedPtr imu);
   void WheelOdomCallback(nav_msgs::msg::Odometry::SharedPtr odom);
   void GpsHelper();
   void GpsHelper_1();
   void tfBroadcast(nav_msgs::msg::Odometry &msg, std::string str = "");
   gtsam::BetweenFactor<gtsam::Pose3> integrateWheelOdom(double prevTime, double stopTime, int curFactor);
-  void GetAccGyro(novatel_gps_msgs::msg::NovatelRawImu::SharedPtr imu, gtsam::Vector3 &acc, gtsam::Vector3 &gyro);
+//  void GetAccGyro(novatel_gps_msgs::msg::NovatelRawImu::SharedPtr imu, gtsam::Vector3 &acc, gtsam::Vector3 &gyro);
   void GetAccGyro(sensor_msgs::msg::Imu::SharedPtr imu, gtsam::Vector3 &acc, gtsam::Vector3 &gyro);
 
 };

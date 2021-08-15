@@ -20,7 +20,7 @@ typedef sync_policies::ApproximateTime<novatel_gps_msgs::msg::Inspva,
 
 LocalizationNode::LocalizationNode(
     const std::string& node_name_,
-    const std::shared_ptr<LocalizationMinimal> localization_algorithm_ptr = std::make_shared<LocalizationMinimal>())
+    const std::shared_ptr<LocalizationMinimal> localization_algorithm_ptr)
 
   : IBaseNode(node_name_, common::NodeType::LOCALIZATION),
     m_localization_algorithm_ptr(std::move(localization_algorithm_ptr))

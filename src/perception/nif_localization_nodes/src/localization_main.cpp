@@ -7,7 +7,6 @@
 
 #include "nif_common/constants.h"
 #include "nif_localization_nodes/localization_node.h"
-#include "StateEstimator/StateEstimator.h"
 #include "nif_utils/utils.h"
 #include "rcutils/error_handling.h"
 #include <cstdio>
@@ -29,16 +28,6 @@ int32_t main(int32_t argc, char** argv) {
     RCLCPP_INFO(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
                 "Instantiating LocalizationNode with name: %s",
                 &node_name);
-    nd = std::make_shared<LocalizationNode>(node_name);
-
-  } catch (std::range_error& e) {
-    RCLCPP_ERROR(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
-                 "Bad initialization of node: %s. Initializing with "
-                 "SYNC_PERIOD_DEFAULT...\n%s",
-                 e.what());
-
-    //  Initialize with default period.
-    //  TODO should we abort in these circumstances?
     nd = std::make_shared<LocalizationNode>(node_name);
 
   } catch (std::exception& e) {

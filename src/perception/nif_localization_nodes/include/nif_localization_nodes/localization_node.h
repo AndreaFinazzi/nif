@@ -32,10 +32,11 @@ using namespace std::chrono_literals;
 
 class LocalizationNode : public nif::common::IBaseNode {
 public:
-  explicit LocalizationNode(const std::string &node_name_);
+
   LocalizationNode(
-      const std::string &node_name_,
-      const std::shared_ptr<LocalizationMinimal> localization_algorithm_ptr);
+      const std::string& node_name_,
+      const std::shared_ptr<LocalizationMinimal> localization_algorithm_ptr = std::make_shared<LocalizationMinimal>());
+
   ~LocalizationNode() {}
 
 private:
