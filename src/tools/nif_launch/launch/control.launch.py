@@ -51,31 +51,9 @@ def generate_launch_description():
         parameters=[LaunchConfiguration('long_control_param_file')],
     )
 
-    control_safety_layer_node = Node(
-        package='nif_control_safety_layer_nodes',
-        executable='control_safety_layer_node_exe',
-        output='screen',
-        parameters=[LaunchConfiguration('nif_control_minimal_param_file')],
-        remappings=[
-            ('in_control_cmd', '/control_pool/control_cmd'),
-            ('out_control_cmd', '/control_safety_layer/out/control_cmd'),
-            ('out_steering_control_cmd', '/raptor_dbw_interface/steering_cmd'),
-            ('out_accelerator_control_cmd', '/raptor_dbw_interface/accelerator_pedal_cmd'),
-
-        ]
-    )
-
-    path_server_node = Node(
-        package='path_server',
-        executable='path_server',
-        output='screen',
-    )
-
     return LaunchDescription([
         nif_control_minimal_param,
         long_control_param,
         lat_control_node,
-        long_control_node,
-        control_safety_layer_node,
-        path_server_node
+        # long_control_node,
     ])
