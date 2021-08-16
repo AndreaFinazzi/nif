@@ -122,9 +122,9 @@ namespace naming {
 inline const std::string getGlobalParamName( const std::string & param_name )
 {
   return 
-    std::string(nif::common::constants::parameters::DELIMITER) + 
-    std::string(nif::common::constants::parameters::GLOBAL_PARAMETERS_NODE_NAME) + 
-    std::string(nif::common::constants::parameters::DELIMITER) + 
+    nif::common::constants::parameters::DELIMITER + 
+    nif::common::constants::parameters::GLOBAL_PARAMETERS_NODE_NAME + 
+    nif::common::constants::parameters::DELIMITER + 
     param_name;
 }
 

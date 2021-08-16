@@ -26,7 +26,7 @@ def generate_launch_description():
 
     global_param_node = Node(
         package='nif_common_nodes',
-        executable='global_parameters_node_exe',
+        executable='nif_global_parameters_node_exe',
         name='global_parameters_node',
         parameters=[
             LaunchConfiguration('nif_global_parameters_file')

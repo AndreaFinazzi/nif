@@ -33,61 +33,23 @@ IBaseNode::IBaseNode(const std::string &node_name, const NodeType node_type, con
   try {
 // Initialize client and wait for service
     this->global_parameters_client =
-            std::make_shared<rclcpp::SyncParametersClient>(this, strcat("/", constants::parameters::GLOBAL_PARAMETERS_NODE_NAME));
+            std::make_shared<rclcpp::SyncParametersClient>(this, constants::parameters::GLOBAL_PARAMETERS_NODE_NAME);
     this->global_parameters_client->wait_for_service(constants::parameters::GLOBAL_PARAMETERS_NODE_TIMEOUT);
 
-    if (this->global_parameters_client->has_parameter(constants::parameters::NAME_BODY_FRAME_ID)) {
-    // Try to get parameters
-        this->body_frame_id = this->global_parameters_client->get_parameter<std::string>(
-          std::string(constants::parameters::NAME_BODY_FRAME_ID));
-    
-    } else {
-      RCLCPP_INFO(this->get_logger(), "Declaring global parameter %s", constants::parameters::NAME_BODY_FRAME_ID);
-      this->global_parameters_client->set_parameters({
-          rclcpp::Parameter(
-            std::string(constants::parameters::NAME_BODY_FRAME_ID),
-            constants::parameters::VALUE_BODY_FRAME_ID)
-      });
+        this->body_frame_id = this->get_global_parameter<std::string>(
+          constants::parameters::NAME_BODY_FRAME_ID);
 
-      this->body_frame_id = this->global_parameters_client->get_parameter<std::string>(
-        std::string(constants::parameters::NAME_BODY_FRAME_ID));
-    }
-
-    if (this->global_parameters_client->has_parameter(constants::parameters::NAME_GLOBAL_FRAME_ID)) {
-    // Try to get parameters
-        this->global_frame_id = this->global_parameters_client->get_parameter<std::string>(
-          std::string(constants::parameters::NAME_GLOBAL_FRAME_ID));
-    
-    } else {
-      RCLCPP_INFO(this->get_logger(), "Declaring global parameter %s", constants::parameters::NAME_GLOBAL_FRAME_ID);
-      this->global_parameters_client->set_parameters({
-        rclcpp::Parameter(
-          std::string(constants::parameters::NAME_GLOBAL_FRAME_ID),
-          constants::parameters::VALUE_GLOBAL_FRAME_ID)
-      });
-      
-      this->global_frame_id = this->global_parameters_client->get_parameter<std::string>(
-          std::string(constants::parameters::NAME_GLOBAL_FRAME_ID));
-    }
-
-  // } catch (rclcpp::exceptions::ParameterNotDeclaredException & e) {
-  //   // If global params are not available, declares its own params with default values.
-  //   RCLCPP_WARN(this->get_logger(), "Couldn't get_parameter() from GlobalParameterNode. Falling back to defaults.");
-  //   RCLCPP_WARN(this->get_logger(), e.what());
-    
-  //   this->declare_parameter(constants::parameters::NAME_BODY_FRAME_ID, constants::parameters::VALUE_BODY_FRAME_ID);
-  //   this->declare_parameter(constants::parameters::NAME_BODY_FRAME_ID, constants::parameters::VALUE_GLOBAL_FRAME_ID);
-
-  //   this->body_frame_id = this->get_parameter(constants::parameters::NAME_BODY_FRAME_ID).as_string();
-  //   this->global_frame_id = this->get_parameter(constants::parameters::NAME_BODY_FRAME_ID).as_string();
+        this->global_frame_id = this->get_global_parameter<std::string>(
+          constants::parameters::NAME_GLOBAL_FRAME_ID);
 
   } catch (std::exception & e) {
     // Something else happened, fall back to default values.
     RCLCPP_ERROR(this->get_logger(), "SEVERE PARAMETERS ERROR. Falling back to default values, proceding may be unsafe.");
-    RCLCPP_ERROR(this->get_logger(), e.what());
+    RCLCPP_ERROR(this->get_logger(), "What: %s", e.what());
 
     this->node_status_manager.update(NodeStatusCode::NODE_ERROR);
 
+//  Check if available as local parameters:
     this->body_frame_id = this->get_parameter(constants::parameters::NAME_BODY_FRAME_ID).as_string();
     this->global_frame_id = this->get_parameter(constants::parameters::NAME_BODY_FRAME_ID).as_string();
 

@@ -24,7 +24,7 @@ int32_t main(int32_t argc, char** argv) {
 
   using namespace nif::common::constants;
 
-  const char* node_name = nif::common::constants::parameters::GLOBAL_PARAMETERS_NODE_NAME;
+  const std::string & node_name = nif::common::constants::parameters::GLOBAL_PARAMETERS_NODE_NAME;
 
   rclcpp::Node::SharedPtr nd;
 

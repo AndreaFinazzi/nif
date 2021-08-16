@@ -1,3 +1,4 @@
 /**:
   ros__parameters:
-    body_frame_id: "Test"
+    body_frame_id: "base_link"
+    global_frame_id: "map"

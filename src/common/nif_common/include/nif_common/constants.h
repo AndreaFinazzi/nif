@@ -62,12 +62,12 @@ namespace parameters
 /**
  * Name for the GlobalParametersNode
  */
-const char* const DELIMITER = "/";
+const std::string DELIMITER("/");
 
 /**
  * Name for the GlobalParametersNode
  */
-const char* const GLOBAL_PARAMETERS_NODE_NAME = "global_parameters_node";
+const std::string GLOBAL_PARAMETERS_NODE_NAME("global_parameters_node");
 
 /**
  * Default global parameter server-connection timeout.
@@ -78,23 +78,23 @@ const std::chrono::seconds GLOBAL_PARAMETERS_NODE_TIMEOUT(1);
 /**
  * Name for the body frame id parameter.
  */
-const char* const NAME_BODY_FRAME_ID = "body_frame_id";
+const std::string NAME_BODY_FRAME_ID("body_frame_id");
 
 /**
  * Default value for the body frame id parameter.
  */
-const char* const VALUE_BODY_FRAME_ID = "base_link";
+const std::string VALUE_BODY_FRAME_ID("base_link");
 
 
 /**
  * Name for the global frame id parameter.
  */
-const char* const NAME_GLOBAL_FRAME_ID = "global_frame_id";
+const std::string NAME_GLOBAL_FRAME_ID("global_frame_id");
 
 /**
  * Default value for the global frame id parameter.
  */
-const char* const VALUE_GLOBAL_FRAME_ID = "odom";
+const std::string VALUE_GLOBAL_FRAME_ID("odom");
 
 } // namespace parameters
 
