@@ -22,7 +22,7 @@ ament_auto_add_library(${PROJECT_NAME} SHARED
         src/node_status.cpp)
 
 # GlobalParametersNode
-ament_auto_add_executable(global_parameters_node_exe
+ament_auto_add_executable(nif_global_parameters_node_exe
   src/global_parameters_main.cpp
   )
 

@@ -65,7 +65,7 @@ if $CLION ;
 then
   if [[ $CLION_PATH ]] ; 
   then
-    OPTIONS_CLION="-v /opt/clion-$CLION_VERSION:/opt/clion \
+    OPTIONS_CLION="-v $CLION_PATH:/opt/clion \
       -v /home/$USER/.config/JetBrains:/home/$USER/.config/JetBrains \
       -v /home/$USER/.local/share/JetBrains:/home/$USER/.local/share/JetBrains "
   else
@@ -75,6 +75,8 @@ then
     echo "To specify a CLION_PATH, run \`export CLION_PATH=</path/to/clion>\` (default to /opt/clion-<version>)."
     echo "!!!"
     echo ""
+    OPTIONS_CLION="-v /home/$USER/.config/JetBrains:/home/$USER/.config/JetBrains \
+      -v /home/$USER/.local/share/JetBrains:/home/$USER/.local/share/JetBrains "
     sleep 2
   fi
 
