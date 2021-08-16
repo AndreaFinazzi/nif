@@ -5,6 +5,7 @@ DOCKER_RUNTIMES=$(docker -D info | grep Runtimes)
 # Arg parsing
 POSITIONAL=()
 SIMULATOR=false
+CLION=false
 
 while [[ $# -gt 0 ]]; do
   key="$1"
@@ -15,11 +16,11 @@ while [[ $# -gt 0 ]]; do
       shift # past argument
       shift # past value
       ;;
-#    -s|--searchpath)
-#      SEARCHPATH="$2"
-#      shift # past argument
-#      shift # past value
-#      ;;
+   -c|--clion)
+     CLION=true
+     shift # past argument
+     shift # past value
+     ;;
 #    -l|--lib)
 #      LIBPATH="$2"
 #      shift # past argument
@@ -45,11 +46,11 @@ fi
 
 if [[ "$DOCKER_RUNTIMES" == *"nvidia"* ]];
 then
-    NVIDIA_OPTIONS="--env="NVIDIA_VISIBLE_DEVICES"=all \
+    OPTIONS_NVIDIA="--env="NVIDIA_VISIBLE_DEVICES"=all \
     --env="NVIDIA_DRIVER_CAPABILITIES"=all \
     --runtime=nvidia"
 else
-    NVIDIA_OPTIONS=""
+    OPTIONS_NVIDIA=""
 fi
 
 if $SIMULATOR ;
@@ -59,10 +60,29 @@ else
   ADERC=".aderc"
 fi
 
+OPTIONS_CLION=""
+if $CLION ;
+then
+  if [[ $CLION_PATH ]] ; 
+  then
+    OPTIONS_CLION="-v /opt/clion-$CLION_VERSION:/opt/clion \
+      -v /home/$USER/.config/JetBrains:/home/$USER/.config/JetBrains \
+      -v /home/$USER/.local/share/JetBrains:/home/$USER/.local/share/JetBrains "
+  else
+    echo ""
+    echo "!!!"
+    echo "CLION_PATH not specified, starting without clion volume."
+    echo "To specify a CLION_PATH, run \`export CLION_PATH=</path/to/clion>\` (default to /opt/clion-<version>)."
+    echo "!!!"
+    echo ""
+    sleep 2
+  fi
+
+fi  
+
 ade --rc $ADERC \
     start -f --update -- \
     -v /tmp/.X11-unix:/tmp/.X11-unix \
     -v /etc/localtime:/etc/localtime:ro \
-    -v /home/$USER/.config/JetBrains:/home/$USER/.config/JetBrains \
-    -v /home/$USER/.local/share/JetBrains:/home/$USER/.local/share/JetBrains \
-    $NVIDIA_OPTIONS
+    $OPTIONS_CLION \
+    $OPTIONS_NVIDIA
