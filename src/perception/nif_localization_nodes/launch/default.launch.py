@@ -24,8 +24,10 @@ def generate_launch_description():
                 output='screen',
                 namespace='nif',
                 parameters=[
-                    {"body_frame_id": "/rear_axis_middle",
-                     "global_frame_id": "/map"}
+                    {
+                        "body_frame_id": "/rear_axis_middle",
+                        "global_frame_id": "/map"
+                     }
                 ],
                 remappings=[
                     ('gnss_01', '/novatel_top/inspva'),

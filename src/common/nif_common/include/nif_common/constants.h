@@ -57,6 +57,47 @@ const rclcpp::QoS QOS_DEFAULT(5);
  */
 const char* const LOG_MAIN_LOGGER_NAME = "MAIN_LOGGER";
 
+namespace parameters
+{
+/**
+ * Name for the GlobalParametersNode
+ */
+const char* const DELIMITER = "/";
+
+/**
+ * Name for the GlobalParametersNode
+ */
+const char* const GLOBAL_PARAMETERS_NODE_NAME = "global_parameters_node";
+
+/**
+ * Default global parameter server-connection timeout.
+ */
+const std::chrono::seconds GLOBAL_PARAMETERS_NODE_TIMEOUT(1);
+
+
+/**
+ * Name for the body frame id parameter.
+ */
+const char* const NAME_BODY_FRAME_ID = "body_frame_id";
+
+/**
+ * Default value for the body frame id parameter.
+ */
+const char* const VALUE_BODY_FRAME_ID = "base_link";
+
+
+/**
+ * Name for the global frame id parameter.
+ */
+const char* const NAME_GLOBAL_FRAME_ID = "global_frame_id";
+
+/**
+ * Default value for the global frame id parameter.
+ */
+const char* const VALUE_GLOBAL_FRAME_ID = "odom";
+
+} // namespace parameters
+
 namespace numeric {
 /**
  * pi is pi

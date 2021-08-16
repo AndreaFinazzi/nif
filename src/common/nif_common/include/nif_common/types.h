@@ -31,17 +31,19 @@ namespace nif {
 namespace common {
 
 enum SystemStatusCode : std::uint8_t {
-  NIF_OK = 0,
+  NIF_NOT_INITIALIZED = 0,
   NIF_INITIALIZED = 1,
-  NIF_NOT_INITIALIZED = 200,
+  NIF_OK = 127,
+  NIF_ERROR = 253,
   NIF_FATAL_ERROR = 254,
   NIF_DEAD = 255
 };
 
 enum NodeStatusCode : std::uint8_t {
-  NODE_OK = 0,
+  NODE_NOT_INITIALIZED = 0,
   NODE_INITIALIZED = 1,
-  NODE_NOT_INITIALIZED = 200,
+  NODE_OK = 127,
+  NODE_ERROR = 253,
   NODE_FATAL_ERROR = 254,
   NODE_DEAD = 255
 };

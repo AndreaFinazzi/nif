@@ -50,6 +50,8 @@ protected:
 
   nif::common::NodeStatusManager node_status_manager;
 
+  rclcpp::SyncParametersClient::SharedPtr global_parameters_client;
+
 private:
   /**
    * The default constructor is hidden from the outside to prevent unnamed

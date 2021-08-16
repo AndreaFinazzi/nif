@@ -15,6 +15,16 @@ def get_share_file(package_name, file_name):
 
 def generate_launch_description():
     
+    nif_control_minimal_param_file = get_share_file(
+        package_name='nif_control_minimal_nodes', file_name='config/params.yaml'
+    )
+
+    nif_control_minimal_param = DeclareLaunchArgument(
+        'nif_control_minimal_param_file',
+        default_value=nif_control_minimal_param_file,
+        description='Path to config file for kin_control'
+    )
+
     control_safety_layer_node = Node(
         package='nif_control_safety_layer_nodes',
         executable='control_safety_layer_node_exe',
@@ -30,5 +40,6 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
+        nif_control_minimal_param,
         control_safety_layer_node
     ])
