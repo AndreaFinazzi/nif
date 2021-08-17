@@ -5,6 +5,12 @@ NodeParametersNode handles the global parameters available to all nodes (through
 
 The global parameters configuration file can be pass at launch time as LaunchArgument (see `nif_common_nodes/launch/parameters.launch.py`).
 
+An instance of the server with default parameters can be launched with:
+
+```shell 
+ros2 launch nif_common_nodes parameters.launch.py
+```
+
 ## Global parameters interface
 A copy of a global parameter can be retrieved calling  
 `T IBaseNode::get_global_parameter<T>(const std::string &)`  
