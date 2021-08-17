@@ -25,8 +25,7 @@ private:
   WaypointManagerMinimal() {}
 
   string m_wpt_yaml_path;
-  string m_body_frame_id_;
-  string m_global_frame_id_;
+
 };
 
 #endif // NIF_WAYPOINT_MANAGER_MINIMAL_H

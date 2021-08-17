@@ -28,11 +28,32 @@ IBaseNode::IBaseNode(const std::string &node_name, const NodeType node_type, con
   //  Initialize timers
   gclock_node_init = this->now();
 
-  this->declare_parameter("body_frame_id", "base_link");
-  this->declare_parameter("global_frame_id", "odom");
+// Get global parameters
+// TODO improve readability
+  try {
+// Initialize client and wait for service
+    this->global_parameters_client =
+            std::make_shared<rclcpp::SyncParametersClient>(this, constants::parameters::GLOBAL_PARAMETERS_NODE_NAME);
+    this->global_parameters_client->wait_for_service(constants::parameters::GLOBAL_PARAMETERS_NODE_TIMEOUT);
 
-  this->body_frame_id = this->get_parameter("body_frame_id").as_string();
-  this->global_frame_id = this->get_parameter("global_frame_id").as_string();
+        this->body_frame_id = this->get_global_parameter<std::string>(
+          constants::parameters::names::FRAME_ID_BODY);
+
+        this->global_frame_id = this->get_global_parameter<std::string>(
+          constants::parameters::names::FRAME_ID_GLOBAL);
+
+  } catch (std::exception & e) {
+    // Something else happened, fall back to default values.
+    RCLCPP_ERROR(this->get_logger(), "SEVERE PARAMETERS ERROR. Falling back to default values, proceding may be unsafe.");
+    RCLCPP_ERROR(this->get_logger(), "What: %s", e.what());
+
+    this->node_status_manager.update(NodeStatusCode::NODE_ERROR);
+
+//  Check if available as local parameters:
+    this->body_frame_id = this->get_parameter(constants::parameters::names::FRAME_ID_BODY).as_string();
+    this->global_frame_id = this->get_parameter(constants::parameters::names::FRAME_ID_GLOBAL).as_string();
+
+  }
 
   //  Declare subscriptions
   //                TODO : Define QoS macros
