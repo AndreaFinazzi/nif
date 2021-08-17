@@ -6,5 +6,5 @@ ade update-cli
 ade --version
 
 # Setup GitHub Container Registry credentials
-export CR_PAT=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
-echo $CR_PAT | docker login ghcr.io -u AndreaFinazzi --password-stdin
+export GH_TOKEN=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
+echo $GH_TOKEN | docker login ghcr.io -u AndreaFinazzi --password-stdin

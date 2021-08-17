@@ -1,0 +1,4 @@
+/**:
+  ros__parameters:
+    body_frame_id: "rear_axle_middle"
+    global_frame_id: "map"

@@ -29,6 +29,35 @@
 
 namespace nif {
 namespace common {
+
+enum SystemStatusCode : std::uint8_t {
+  NIF_NOT_INITIALIZED = 0,
+  NIF_INITIALIZED = 1,
+  NIF_OK = 127,
+  NIF_ERROR = 253,
+  NIF_FATAL_ERROR = 254,
+  NIF_DEAD = 255
+};
+
+enum NodeStatusCode : std::uint8_t {
+  NODE_NOT_INITIALIZED = 0,
+  NODE_INITIALIZED = 1,
+  NODE_OK = 127,
+  NODE_ERROR = 253,
+  NODE_FATAL_ERROR = 254,
+  NODE_DEAD = 255
+};
+
+enum NodeType : std::int8_t {
+  PERCEPTION,
+  LOCALIZATION,
+  PLANNING,
+  PREDICTION,
+  CONTROL,
+  TOOL,
+  SYSTEM
+};
+
 namespace msgs {
 
 /**
@@ -67,7 +96,7 @@ using AutonomyState = nif_msgs::msg::AutonomyStatus;
  * the system status monitor node. It contains the Autonomy status and Health
  * status of the every node.
  */
-using SystemState = nif_msgs::msg::SystemStatus;
+using SystemStatus = nif_msgs::msg::SystemStatus;
 
 /**
  * This message contains the health status of the node which should updated in
@@ -123,6 +152,8 @@ using Trajectory = autoware_auto_msgs::msg::Trajectory;
 } // namespace msgs
 
 namespace types {
+
+using t_node_id = uint16_t;
 
 template <typename T>
 using t_oppo_collection =

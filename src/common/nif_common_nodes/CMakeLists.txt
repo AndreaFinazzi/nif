@@ -17,7 +17,14 @@ ament_auto_find_build_dependencies()
 # Library
 ament_auto_add_library(${PROJECT_NAME} SHARED
         src/i_base_node.cpp
-        src/i_base_synchronized_node.cpp)
+        src/i_base_synchronized_node.cpp
+        src/node_status_manager.cpp
+        src/node_status.cpp)
+
+# GlobalParametersNode
+ament_auto_add_executable(nif_global_parameters_node_exe
+  src/global_parameters_main.cpp
+  )
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -34,4 +41,7 @@ if(BUILD_TESTING)
           "rclcpp")
 endif()
 
-ament_auto_package()
+ament_auto_package(INSTALL_TO_SHARE
+        launch
+        config)
+

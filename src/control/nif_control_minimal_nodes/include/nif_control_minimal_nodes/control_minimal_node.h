@@ -27,7 +27,7 @@ namespace control {
 
 class ControlMinimalNode : public nif::control::IControllerNode {
 public:
-  ControlMinimalNode(const std::string &node_name);
+  explicit ControlMinimalNode(const std::string &node_name);
 
   nif::common::msgs::ControlCmd::SharedPtr control_cmd;
   std_msgs::msg::Float32 steering_cmd;

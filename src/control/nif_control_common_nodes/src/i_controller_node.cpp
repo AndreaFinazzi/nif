@@ -4,7 +4,7 @@
 #include "nif_control_common_nodes/i_controller_node.h"
 
 nif::control::IControllerNode::IControllerNode(const std::string &node_name)
-    : nif::common::IBaseSynchronizedNode(node_name) {
+    : nif::common::IBaseSynchronizedNode(node_name, common::NodeType::CONTROL, common::constants::SYNC_PERIOD_DEFAULT) {
 
   //  ==== DECLARE PARAMETERS ====
 

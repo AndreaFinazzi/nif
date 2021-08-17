@@ -66,6 +66,7 @@ private:
 
   std::shared_ptr<PurePursuit> m_pure_pursuit_handler_ptr;
   nif::common::msgs::ControlCmd::SharedPtr steer_control_cmd_msg;
+
 };
 
 } // namespace control

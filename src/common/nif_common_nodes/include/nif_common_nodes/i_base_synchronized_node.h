@@ -8,7 +8,7 @@
 #ifndef NIF_COMMON_NODES_BASESYNCHRONIZEDNODE_H
 #define NIF_COMMON_NODES_BASESYNCHRONIZEDNODE_H
 
-#include "i_base_node.h"
+#include "nif_common_nodes/i_base_node.h"
 #include "rclcpp/rclcpp.hpp"
 
 namespace nif {
@@ -16,25 +16,20 @@ namespace common {
 
 class IBaseSynchronizedNode : public IBaseNode {
 public:
-
-  explicit IBaseSynchronizedNode(const std::string &node_name)
-      : IBaseSynchronizedNode(node_name, rclcpp::NodeOptions{}) {}
-
 protected:
-  IBaseSynchronizedNode(const std::string &node_name,
-                        const rclcpp::NodeOptions &options)
-      : IBaseSynchronizedNode(node_name, options, constants::SYNC_PERIOD_DEFAULT) {}
-
 
   template <typename DurationRepT, typename DurationT>
   IBaseSynchronizedNode(
       const std::string &node_name,
-      const rclcpp::NodeOptions &options,
-      const std::chrono::duration<DurationRepT, DurationT> period)
-      : IBaseNode(node_name, options),
-        gclock_period(
-            std::chrono::duration_cast<decltype(gclock_period)>(period)) {
+      const NodeType node_type,
+      const std::chrono::duration<DurationRepT, DurationT> period = constants::SYNC_PERIOD_DEFAULT,
+      const rclcpp::NodeOptions &options = rclcpp::NodeOptions{})
 
+      : IBaseNode(node_name, node_type, options),
+        gclock_period(
+            std::chrono::duration_cast<decltype(gclock_period)>(period))
+
+  {
     if (this->gclock_period >= nif::common::constants::SYNC_PERIOD_MIN &&
         this->gclock_period <= nif::common::constants::SYNC_PERIOD_MAX) {
 
@@ -47,9 +42,6 @@ protected:
       throw std::range_error("Sync Period out of range.");
     }
   }
-
-  void initParameters() override = 0;
-  void getParameters() override = 0;
 
   const std::chrono::nanoseconds &getGclockPeriod() const;
 

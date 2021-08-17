@@ -8,26 +8,52 @@
 #include "nif_common_nodes/i_base_node.h"
 
 using namespace nif::common;
+using nif::common::NodeStatusCode;
 
-IBaseNode::IBaseNode() : Node("no_name_node") {
+IBaseNode::IBaseNode() : Node("no_name_node"), node_status_manager(*this, nif::common::NodeType::SYSTEM)
+{
+  this->node_status_manager.update(NodeStatusCode::NODE_FATAL_ERROR);
   throw std::invalid_argument("Cannot construct IBaseNode without specifying "
                               "node_name. Creating empty node.");
 }
 
 IBaseNode::IBaseNode(const std::string &node_name)
-    : IBaseNode(node_name, rclcpp::NodeOptions{}) {}
+    : IBaseNode(node_name, NodeType::SYSTEM) {
+          RCLCPP_WARN(this->get_logger(), "CALL TO IBaseNode DEPRECATED CONSTRUCTOR, SPECIFY NODE TYPE.");
+}
 
-IBaseNode::IBaseNode(const std::string &node_name,
-                     const rclcpp::NodeOptions &options)
-    : Node(node_name, options) {
+IBaseNode::IBaseNode(const std::string &node_name, const NodeType node_type, const rclcpp::NodeOptions &options)
+    : Node(node_name, options),
+      node_status_manager(*this, node_type) {
   //  Initialize timers
   gclock_node_init = this->now();
 
-  this->declare_parameter("body_frame_id", "base_link");
-  this->declare_parameter("global_frame_id", "odom");
+// Get global parameters
+// TODO improve readability
+  try {
+// Initialize client and wait for service
+    this->global_parameters_client =
+            std::make_shared<rclcpp::SyncParametersClient>(this, constants::parameters::GLOBAL_PARAMETERS_NODE_NAME);
+    this->global_parameters_client->wait_for_service(constants::parameters::GLOBAL_PARAMETERS_NODE_TIMEOUT);
 
-  this->body_frame_id = this->get_parameter("body_frame_id").as_string();
-  this->global_frame_id = this->get_parameter("global_frame_id").as_string();
+        this->body_frame_id = this->get_global_parameter<std::string>(
+          constants::parameters::names::FRAME_ID_BODY);
+
+        this->global_frame_id = this->get_global_parameter<std::string>(
+          constants::parameters::names::FRAME_ID_GLOBAL);
+
+  } catch (std::exception & e) {
+    // Something else happened, fall back to default values.
+    RCLCPP_ERROR(this->get_logger(), "SEVERE PARAMETERS ERROR. Falling back to default values, proceding may be unsafe.");
+    RCLCPP_ERROR(this->get_logger(), "What: %s", e.what());
+
+    this->node_status_manager.update(NodeStatusCode::NODE_ERROR);
+
+//  Check if available as local parameters:
+    this->body_frame_id = this->get_parameter(constants::parameters::names::FRAME_ID_BODY).as_string();
+    this->global_frame_id = this->get_parameter(constants::parameters::names::FRAME_ID_GLOBAL).as_string();
+
+  }
 
   //  Declare subscriptions
   //                TODO : Define QoS macros
@@ -38,7 +64,7 @@ IBaseNode::IBaseNode(const std::string &node_name,
                     std::placeholders::_1));
 
   this->system_state_sub =
-      this->create_subscription<nif::common::msgs::SystemState>(
+      this->create_subscription<nif::common::msgs::SystemStatus>(
           "topic_system_state", nif::common::constants::QOS_DEFAULT,
           std::bind(&IBaseNode::systemStateCallback, this,
                     std::placeholders::_1));
@@ -54,6 +80,8 @@ IBaseNode::IBaseNode(const std::string &node_name,
           std::bind(&IBaseNode::egoPowertrainCallback, this,
                     std::placeholders::_1));
 
+
+  this->node_status_manager.update(NodeStatusCode::NODE_INITIALIZED);
   //  TODO Declare node_state_pub to notify the node state
   //
   //
@@ -83,7 +111,7 @@ void IBaseNode::egoOdometryCallback(
  * @param msg
  */
 void IBaseNode::systemStateCallback(
-    const nif::common::msgs::SystemState::SharedPtr msg) {
+    const nif::common::msgs::SystemStatus::SharedPtr msg) {
   this->system_state = *msg;
 }
 
@@ -110,7 +138,7 @@ const msgs::Odometry &IBaseNode::getEgoOdometry() const {
 const msgs::PowertrainState &IBaseNode::getEgoPowertrainState() const {
   return ego_powertrain_state;
 }
-const msgs::SystemState &IBaseNode::getSystemState() const {
+const msgs::SystemStatus &IBaseNode::getSystemState() const {
   return system_state;
 }
 const msgs::RaceControlState &IBaseNode::getRaceControlState() const {
