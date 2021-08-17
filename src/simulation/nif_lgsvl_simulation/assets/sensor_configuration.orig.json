@@ -2,7 +2,8 @@
   {
     "params": {
       "Topic": "/sensor/laser_meter_flash_c",
-      "Frame": "luminar_right"
+      "Frame": "rear_axle_middle",
+      "ChildFrame": "luminar_right"
     },
     "transform": {
       "x": 0.267,
@@ -98,7 +99,8 @@
   {
     "params": {
       "Topic": "/novatel_bottom/imu",
-      "Frame": "gps_bottom"
+      "Frame": "rear_axle_middle",
+      "ChildFrame": "gps_bottom"
     },
     "transform": {
       "x": 0,
@@ -153,7 +155,8 @@
     "params": {
       "Topic": "/novatel_bottom/fix",
       "Frequency": 12.5,
-      "Frame": "gps_bottom"
+      "Frame": "rear_axle_middle",
+      "ChildFrame": "gps_bottom"
     },
     "transform": {
       "x": 0,
@@ -207,7 +210,8 @@
   {
     "params": {
       "Topic": "/sensor/a2D_rear_right",
-      "Frame": "camera_rear_right"
+      "Frame": "rear_axle_middle",
+      "ChildFrame": "camera_rear_right"
     },
     "transform": {
       "x": 0.14,
@@ -261,7 +265,8 @@
   {
     "params": {
       "Topic": "/sensor/a2D_front_right",
-      "Frame": "camera_front_right"
+      "Frame": "rear_axle_middle",
+      "ChildFrame": "camera_front_right"
     },
     "transform": {
       "x": 0.171,
@@ -315,7 +320,8 @@
   {
     "params": {
       "Topic": "/sensor/a2D_front_1",
-      "Frame": "camera_front_1"
+      "Frame": "rear_axle_middle",
+      "ChildFrame": "camera_front_1"
     },
     "transform": {
       "x": -0.121,
@@ -369,7 +375,8 @@
   {
     "params": {
       "Topic": "/sensor/camera_rear_right",
-      "Frame": "camera_rear_right"
+      "Frame": "rear_axle_middle",
+      "ChildFrame": "camera_rear_right"
     },
     "transform": {
       "x": 0.14,
@@ -423,7 +430,8 @@
   {
     "params": {
       "Topic": "/sensor/laser_meter_flash_b",
-      "Frame": "luminar_left"
+      "Frame": "rear_axle_middle",
+      "ChildFrame": "luminar_left"
     },
     "transform": {
       "x": -0.267,
@@ -477,7 +485,8 @@
   {
     "params": {
       "Topic": "/sensor/camera_front_right",
-      "Frame": "camera_front_right"
+      "Frame": "rear_axle_middle",
+      "ChildFrame": "camera_front_right"
     },
     "transform": {
       "x": 0.171,
@@ -531,7 +540,8 @@
   {
     "params": {
       "Topic": "/sensor/camera_front_2",
-      "Frame": "camera_front_2"
+      "Frame": "rear_axle_middle",
+      "ChildFrame": "camera_front_2"
     },
     "transform": {
       "x": 0.121,
@@ -585,7 +595,8 @@
   {
     "params": {
       "Topic": "/sensor/camera_front_left",
-      "Frame": "camera_front_left"
+      "Frame": "rear_axle_middle",
+      "ChildFrame": "camera_front_left"
     },
     "transform": {
       "x": -0.171,
@@ -639,7 +650,8 @@
   {
     "params": {
       "Topic": "/sensor/a2D_front_left",
-      "Frame": "camera_front_left"
+      "Frame": "rear_axle_middle",
+      "ChildFrame": "camera_front_left"
     },
     "transform": {
       "x": -0.171,
@@ -693,7 +705,8 @@
   {
     "params": {
       "Topic": "/sensor/camera_rear_left",
-      "Frame": "camera_rear_left"
+      "Frame": "rear_axle_middle",
+      "ChildFrame": "camera_rear_left"
     },
     "transform": {
       "x": -0.14,
@@ -747,7 +760,8 @@
   {
     "params": {
       "Topic": "/novatel_top/imu",
-      "Frame": "gps_top"
+      "Frame": "rear_axle_middle",
+      "ChildFrame": "gps_top"
     },
     "transform": {
       "x": 0,
@@ -801,7 +815,8 @@
   {
     "params": {
       "Topic": "/sensor/a2D_rear_left",
-      "Frame": "camera_rear_left"
+      "Frame": "rear_axle_middle",
+      "ChildFrame": "camera_rear_left"
     },
     "transform": {
       "x": -0.14,
@@ -855,7 +870,8 @@
   {
     "params": {
       "Topic": "/sensor/camera_front_1",
-      "Frame": "camera_front_1"
+      "Frame": "rear_axle_middle",
+      "ChildFrame": "camera_front_1"
     },
     "transform": {
       "x": -0.121,
@@ -1001,7 +1017,8 @@
   {
     "params": {
       "Topic": "/novatel_top/fix",
-      "Frame": "gps_top"
+      "Frame": "rear_axle_middle",
+      "ChildFrame": "gps_top"
     },
     "transform": {
       "x": 0,
@@ -1055,7 +1072,8 @@
   {
     "params": {
       "Topic": "/sensor/a2D_front_2",
-      "Frame": "camera_front_2"
+      "Frame": "rear_axle_middle",
+      "ChildFrame": "camera_front_2"
     },
     "transform": {
       "x": 0.121,
@@ -1154,7 +1172,8 @@
   {
     "params": {
       "Topic": "/sensor/laser_meter_flash_a",
-      "Frame": "luminar_front"
+      "Frame": "rear_axle_middle",
+      "ChildFrame": "luminar_front"
     },
     "transform": {
       "x": 0,

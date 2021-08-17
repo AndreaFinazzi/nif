@@ -55,7 +55,7 @@ nif::common::msgs::ControlCmd &ControlPurePursuitNode::solve() {
   if (!this->getReferenceTrajectory()->points.empty())
   {
     auto pure_pursuit_steer_cmd = m_pure_pursuit_handler_ptr->getSteerCmd();
-    steer_control_cmd_msg->steering_control_cmd = pure_pursuit_steer_cmd;
+    steer_control_cmd_msg->steering_control_cmd.data = pure_pursuit_steer_cmd;
 
     return *steer_control_cmd_msg;
   }
@@ -66,7 +66,7 @@ nif::common::msgs::ControlCmd &ControlPurePursuitNode::solve() {
                  "Send ZERO "
                  "steering command.");
 
-    steer_control_cmd_msg->steering_control_cmd = 0.0;
+    steer_control_cmd_msg->steering_control_cmd.data = 0.0;
     return *steer_control_cmd_msg;
 
   }

@@ -42,8 +42,8 @@ private:
   nif::common::msgs::ControlCmd &solve() override {
     this->control_command->header.stamp = this->now();
     this->control_command->header.frame_id = this->getBodyFrameId();
-    this->control_command->steering_control_cmd = this->now().nanoseconds() % 10000000;
-    this->control_command->gear_control_cmd = 1;
+    this->control_command->steering_control_cmd.data = this->now().nanoseconds() % 10000000;
+    this->control_command->gear_control_cmd.data = 1;
     return *(this->control_command);
   }
 

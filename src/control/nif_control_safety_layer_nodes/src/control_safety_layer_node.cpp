@@ -19,8 +19,8 @@ void nif::control::ControlSafetyLayerNode::controlCallback(
 
 void nif::control::ControlSafetyLayerNode::run() {
 
-  nif::common::msgs::ControlCmd::SharedPtr msg;
   if (!this->control_buffer.empty()) {
+  nif::common::msgs::ControlCmd::SharedPtr msg;
 
     msg = (this->control_buffer.top());
 
@@ -29,6 +29,9 @@ void nif::control::ControlSafetyLayerNode::run() {
     msg->header.frame_id = this->getBodyFrameId();
     try {
       this->control_pub->publish(*msg);
+
+      this->publishSteeringCmd(msg->steering_control_cmd);
+      this->publishAcceleratorCmd(msg->accelerator_control_cmd);
 
     } catch (std::exception &e) {
       RCLCPP_ERROR(this->get_logger(), e.what());

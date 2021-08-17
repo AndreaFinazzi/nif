@@ -34,16 +34,17 @@ def generate_launch_description():
         description='Path to config file for kin_control'
     )
 
-    # lat_control_node = Node(
-    #     package='nif_control_minimal_nodes',
-    #     executable='nif_control_minimal_nodes_exe',
-    #     output='screen',
-    #     parameters=[LaunchConfiguration('nif_control_minimal_param_file')],
-    #     remappings={
-    #         ('out_control_cmd', '/control_pool/control_cmd')
-    #     }
-    # )
-    #
+    lat_control_node = Node(
+        package='nif_control_minimal_nodes',
+        executable='nif_control_minimal_nodes_exe',
+        output='screen',
+        parameters=[LaunchConfiguration('nif_control_minimal_param_file')],
+        remappings={
+            ('in_control_cmd_prev', '/control_safety_layer/out/control_cmd'),
+            ('out_control_cmd', '/control_pool/control_cmd')
+        }
+    )
+    
     # long_control_node = Node(
     #     package='long_control',
     #     executable='long_control',
@@ -54,6 +55,6 @@ def generate_launch_description():
     return LaunchDescription([
         nif_control_minimal_param,
         # long_control_param,
-        # lat_control_node,
+        lat_control_node,
         # long_control_node,
     ])

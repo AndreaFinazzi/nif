@@ -2,14 +2,15 @@
   {
     "params": {
       "Topic": "/novatel_bottom/fix",
-      "Frequency": 12.5
+      "Frequency": 12.5,
+      "Frame": "gps_bottom"
     },
     "transform": {
       "x": 0,
       "y": -0.1428,
       "z": 1.606,
       "pitch": 0,
-      "yaw": 0,b
+      "yaw": 0,
       "roll": 0
     },
     "name": "gps_bottom",
@@ -55,7 +56,8 @@
   },
   {
     "params": {
-      "Topic": "/novatel_top/fix"
+      "Topic": "/novatel_top/fix",
+      "Frame": "gps_top"
     },
     "transform": {
       "x": 0,
@@ -108,7 +110,8 @@
   },
   {
     "params": {
-      "Topic": "/sensor/a2D_front_left"
+      "Topic": "/sensor/a2D_front_left",
+      "Frame": "camera_front_left"
     },
     "transform": {
       "x": -0.171,
@@ -162,8 +165,7 @@
   {
     "params": {
       "Topic": "/ground_truth/state_raw",
-      "ChildFrame": "base_link",
-      "Frame": "map",
+      "Frame": "cog",
       "IgnoreMapOrigin": true,
       "Frequency": 100
     },
@@ -210,7 +212,8 @@
   },
   {
     "params": {
-      "Topic": "/novatel_bottom/imu"
+      "Topic": "/novatel_bottom/imu",
+      "Frame": "gps_bottom"
     },
     "transform": {
       "x": 0,
@@ -350,7 +353,8 @@
   },
   {
     "params": {
-      "Topic": "/novatel_top/imu"
+      "Topic": "/novatel_top/imu",
+      "Frame": "gps_top"
     },
     "transform": {
       "x": 0,

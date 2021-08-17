@@ -44,8 +44,7 @@ ControlMinimalNode::ControlMinimalNode(const std::string& node_name)
   this->declare_parameter("lookahead_speed_ratio", 0.75);
   this->declare_parameter("proportional_gain", 0.2);
   this->declare_parameter("vehicle.wheelbase", 2.97);
-  this->declare_parameter("max_steer_angle",
-                          30.0); // 15 deg * 2 because ratio is wrong
+  this->declare_parameter("max_steer_angle", 30.0); // 15 deg * 2 because ratio is wrong
   this->declare_parameter("steering_override_threshold", 4.0);
 
   lookahead_error.data = 0.0;
@@ -53,6 +52,7 @@ ControlMinimalNode::ControlMinimalNode(const std::string& node_name)
   steering_cmd.data = 0.0;
   control_cmd = std::make_shared<nif::common::msgs::ControlCmd>();
 }
+
 void nif::control::ControlMinimalNode::initParameters() {}
 void nif::control::ControlMinimalNode::getParameters() {}
 
@@ -74,7 +74,7 @@ nif::common::msgs::ControlCmd& ControlMinimalNode::solve() {
 
   publishSteering();
   publishDebugSignals();
-  this->control_cmd->steering_control_cmd = this->steering_cmd.data;
+  this->control_cmd->steering_control_cmd.data = this->steering_cmd.data;
 
   return *(this->control_cmd);
 }

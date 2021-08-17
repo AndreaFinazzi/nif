@@ -47,8 +47,8 @@ class Drive(Node):
         message.target_wheel_angular_rate= self.target_wheel_angular_rate
         message.target_gear = self.gear
         self.control_pub.publish(message)
-        self.get_logger().info('Publishing: Throttle {}'.format(message.acceleration_pct))
-        self.get_logger().info('Publishing: Steer {}'.format(message.target_wheel_angle))
+        self.get_logger().debug('Publishing: Throttle {}'.format(message.acceleration_pct))
+        self.get_logger().debug('Publishing: Steer {}'.format(message.target_wheel_angle))
 
         steer_report_msg = SteeringReport()
         steer_report_msg.header.stamp = self.get_clock().now().to_msg()
@@ -71,7 +71,7 @@ class Drive(Node):
         self.rolling_counter = self.rolling_counter + 1
 
     def callback_accel(self, msg):
-	    self.acceleration_pct = msg.data/100
+	    self.acceleration_pct = msg.data
     
     def callback_steer(self, msg):
 	    self.target_wheel_angle = msg.data*math.pi/180

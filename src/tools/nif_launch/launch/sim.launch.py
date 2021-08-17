@@ -20,7 +20,7 @@ def generate_launch_description():
 
     nif_global_parameters_file = os.path.join(
         get_package_share_directory('nif_launch'),
-        'config',
+        'param',
         'params.global.yaml'
     )
 
@@ -60,7 +60,7 @@ def generate_launch_description():
 
     localization_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            get_package_share_directory('nif_localization_nodes') + '/launch/localization_node_gtsam_sim.launch.py'
+            get_package_share_directory('nif_localization_nodes') + '/launch/default.launch.py'
         )
     )
 
