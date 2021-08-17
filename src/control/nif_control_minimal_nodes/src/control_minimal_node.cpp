@@ -57,7 +57,7 @@ void nif::control::ControlMinimalNode::initParameters() {}
 void nif::control::ControlMinimalNode::getParameters() {}
 
 nif::common::msgs::ControlCmd& ControlMinimalNode::solve() {
-  rclcpp::Time control_time = rclcpp::Clock().now();
+  rclcpp::Time control_time = this->now();
   rclcpp::Duration time_diff = control_time - this->recv_time_;
   double dt = static_cast<double>(time_diff.seconds()) +
       static_cast<double>(time_diff.nanoseconds()) * 1e-9;
