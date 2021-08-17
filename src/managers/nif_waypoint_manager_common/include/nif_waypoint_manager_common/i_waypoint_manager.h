@@ -43,7 +43,8 @@ public:
   nav_msgs::msg::Path getPathBodytoGlobal(nav_msgs::msg::Path& path_in_body_);
 
   geometry_msgs::msg::PoseStamped
-  getPtGlobaltoBody(geometry_msgs::msg::PoseStamped& point_in_global_);
+  getPtGlobaltoBody(
+      const geometry_msgs::msg::PoseStamped &point_in_global_) const ;
 
   nav_msgs::msg::Path getPathGlobaltoBody(nav_msgs::msg::Path& path_in_global_);
 
@@ -58,14 +59,14 @@ public:
   void setCurrentIdx(const nav_msgs::msg::Path &reference_path,
                      const nav_msgs::msg::Odometry &ego_vehicle_odom);
 
-  int getCurrentIdx(const nav_msgs::msg::Path &reference_path,
+  unsigned int getCurrentIdx(const nav_msgs::msg::Path &reference_path,
                     const nav_msgs::msg::Odometry &ego_vehicle_odom);
 
   int getWPTIdx(nav_msgs::msg::Path& reference_path,
                 geometry_msgs::msg::PoseStamped& target_pose);
 
   nav_msgs::msg::Path calcMapTrackInGlobal(nav_msgs::msg::Path& reference_path_,
-                                           int current_idx_);
+                                           unsigned int current_idx_) const;
 
   nav_msgs::msg::Path calcMapTrackInBody(nav_msgs::msg::Path& reference_path_);
 
@@ -100,8 +101,8 @@ private:
       m_current_pose; // current vehicle pose, this should be updated as fast as
                       // possible in the node subscriber
 
-  int m_current_idx = 0; // current idx with repective to the desired wpt
-  int m_size_of_map_track =
+  unsigned int m_current_idx = 0; // current idx with repective to the desired wpt
+  unsigned int m_size_of_map_track =
       100; // size of map track which is set by the user
            // (yaml or set?), currently set as a default 100
 

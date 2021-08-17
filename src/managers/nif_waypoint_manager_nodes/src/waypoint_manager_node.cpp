@@ -26,13 +26,9 @@ nif::managers::WaypointManagerNode::WaypointManagerNode(
   std::vector<std::string> file_path_list_defualt = {package_share_directory +
                                                      "/maps/map.csv"};
   this->declare_parameter("file_path_list", file_path_list_defualt);
-  this->declare_parameter("body_frame_id", "base_link");
-  this->declare_parameter("global_frame_id", "odom");
 
   this->file_path_list =
       this->get_parameter("file_path_list").as_string_array();
-//  this->body_frame_id = this->get_parameter("body_frame_id").as_string();
-//  this->global_frame_id = this->get_parameter("global_frame_id").as_string();
 
   // Could also inherit from IBaseSynchronizedNode
   m_timer = this->create_wall_timer(

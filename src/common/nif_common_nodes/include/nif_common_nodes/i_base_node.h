@@ -51,6 +51,13 @@ protected:
 
   rclcpp::SyncParametersClient::SharedPtr global_parameters_client;
 
+  /**
+   * Gets a global parameter through the global parameter client.
+   * Note that the getter mentioned above throws `rclcpp::exceptions::ParameterNotDeclaredException` if the global parameter is not defined, and `std::runtime_exception` if the server is unavailable, thus the caller should define a proper strategy to handle miscalls.
+   * @tparam T Parameter type.
+   * @param param_name Parameter name.
+   * @return Parameter value, if defined.
+   */
   template <class T>
   T get_global_parameter(const std::string &param_name) {
     if (this->global_parameters_client->service_is_ready()) {
@@ -69,6 +76,13 @@ protected:
     }
   }
 
+  /**
+   * Sets a global parameter through the global parameter client.
+   * Note that the getter mentioned above throws `rclcpp::exceptions::ParameterNotDeclaredException` if the global parameter is not defined, and `std::runtime_exception` if the server is unavailable, thus the caller should define a proper strategy to handle miscalls.
+   * @tparam T Parameter's value type.
+   * @param param_name Parameter's name.
+   * @param value Parameter's value.
+   */
   template <class T>
   void set_global_parameter(
       const std::string & param_name, const T & value) {

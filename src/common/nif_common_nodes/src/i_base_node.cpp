@@ -37,10 +37,10 @@ IBaseNode::IBaseNode(const std::string &node_name, const NodeType node_type, con
     this->global_parameters_client->wait_for_service(constants::parameters::GLOBAL_PARAMETERS_NODE_TIMEOUT);
 
         this->body_frame_id = this->get_global_parameter<std::string>(
-          constants::parameters::NAME_BODY_FRAME_ID);
+          constants::parameters::names::FRAME_ID_BODY);
 
         this->global_frame_id = this->get_global_parameter<std::string>(
-          constants::parameters::NAME_GLOBAL_FRAME_ID);
+          constants::parameters::names::FRAME_ID_GLOBAL);
 
   } catch (std::exception & e) {
     // Something else happened, fall back to default values.
@@ -50,8 +50,8 @@ IBaseNode::IBaseNode(const std::string &node_name, const NodeType node_type, con
     this->node_status_manager.update(NodeStatusCode::NODE_ERROR);
 
 //  Check if available as local parameters:
-    this->body_frame_id = this->get_parameter(constants::parameters::NAME_BODY_FRAME_ID).as_string();
-    this->global_frame_id = this->get_parameter(constants::parameters::NAME_BODY_FRAME_ID).as_string();
+    this->body_frame_id = this->get_parameter(constants::parameters::names::FRAME_ID_BODY).as_string();
+    this->global_frame_id = this->get_parameter(constants::parameters::names::FRAME_ID_GLOBAL).as_string();
 
   }
 

@@ -24,7 +24,7 @@ def generate_launch_description():
         'params.global.yaml'
     )
 
-    global_parameters_node = IncludeLaunchDescription(
+    global_parameters_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             get_package_share_directory('nif_common_nodes') + '/launch/parameters.launch.py'
         ),
@@ -65,7 +65,7 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
-        global_parameters_node,
+        global_parameters_launch,
         robot_description_launch,
         csl_launch,
         control_launch,

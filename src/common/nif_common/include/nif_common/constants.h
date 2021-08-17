@@ -74,27 +74,31 @@ const std::string GLOBAL_PARAMETERS_NODE_NAME("global_parameters_node");
  */
 const std::chrono::seconds GLOBAL_PARAMETERS_NODE_TIMEOUT(1);
 
+namespace names {
 
 /**
  * Name for the body frame id parameter.
  */
-const std::string NAME_BODY_FRAME_ID("body_frame_id");
-
-/**
- * Default value for the body frame id parameter.
- */
-const std::string VALUE_BODY_FRAME_ID("base_link");
-
+constexpr const char* FRAME_ID_BODY = "frames.body";
 
 /**
  * Name for the global frame id parameter.
  */
-const std::string NAME_GLOBAL_FRAME_ID("global_frame_id");
+constexpr const char* FRAME_ID_GLOBAL = "frames.global";
+
+} // namespace names
+
+/**
+ * Default value for the body frame id parameter.
+ */
+ __attribute_deprecated__
+constexpr const char* VALUE_BODY_FRAME_ID = "base_link";
 
 /**
  * Default value for the global frame id parameter.
  */
-const std::string VALUE_GLOBAL_FRAME_ID("odom");
+ __attribute_deprecated__
+ constexpr const char* VALUE_GLOBAL_FRAME_ID = "odom";
 
 } // namespace parameters
 
@@ -102,7 +106,7 @@ namespace numeric {
 /**
  * pi is pi
  */
-const float PI = 3.141592653589793;
+const double PI = 3.141592653589793;
 
 /**
  * Infinite value (float)
