@@ -22,12 +22,6 @@ def generate_launch_description():
                 executable='localization_node_exe',
                 output='screen',
                 namespace='nif',
-                parameters=[
-                    {
-                        "body_frame_id": "/rear_axis_middle",
-                        "global_frame_id": "/map"
-                    }
-                ],
                 remappings=[
                     ('gnss_01', '/novatel_top/inspva'),
                     ('gnss_02', '/novatel_bottom/inspva'),

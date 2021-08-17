@@ -1,14 +1,15 @@
 [
   {
     "params": {
-      "Topic": "/sensor/laser_meter_flash_c"
+      "Topic": "/sensor/laser_meter_flash_c",
+      "Frame": "luminar_right"
     },
     "transform": {
       "x": 0.267,
       "y": 0.543,
       "z": 1.549,
       "pitch": 0,
-      "yaw": -2.0943951024,
+      "yaw": 120,
       "roll": 0
     },
     "name": "Lidar Sensor_c",
@@ -31,7 +32,7 @@
         "2021.1",
         "2021.1.1",
         "2021.2",
-        "dev"
+        "2021.2.1"
       ],
       "id": "b30d0478-8c7b-4687-bfc2-b3cdb3f5faff",
       "name": "Lidar Sensor",
@@ -49,13 +50,15 @@
         "lastName": "Content"
       },
       "shareRequests": []
-    },
-    "type": "LidarSensor"
+    }
   },
   {
-    "name": "Keyboard Control Sensor",
+    "params": {
+      "Topic": "/sensor/control"
+    },
+    "name": "LGSVL Control Sensor",
     "parent": null,
-    "pluginId": "a2ff904a-ff06-4f06-9e45-cb58217a7142",
+    "pluginId": "a5696615-d3e2-45e9-afa3-9b5ae7359e02",
     "plugin": {
       "assetGuid": null,
       "isFavored": true,
@@ -73,15 +76,15 @@
         "2021.1",
         "2021.1.1",
         "2021.2",
-        "dev"
+        "2021.2.1"
       ],
-      "id": "a2ff904a-ff06-4f06-9e45-cb58217a7142",
-      "name": "Keyboard Control Sensor",
-      "type": "KeyboardControlSensor",
+      "id": "a5696615-d3e2-45e9-afa3-9b5ae7359e02",
+      "name": "LGSVL Control Sensor",
+      "type": "LGSVLControlSensor",
       "category": "sensor",
       "ownerId": "0d888b00-fa53-47c1-882a-b68391268a11",
       "accessType": "public",
-      "description": "This sensor is required for a vehicle to accept keyboard control commands. Parameters are not required.\nSee https://www.svlsimulator.com/docs/simulation-content/sensors-list/#keyboard-control for more details.",
+      "description": "Example template of a sensor for vehicle Control information.",
       "copyright": "LG Electronics Inc.",
       "licenseName": "LG Content",
       "status": "active",
@@ -91,12 +94,118 @@
         "lastName": "Content"
       },
       "shareRequests": []
-    },
-    "type": "KeyboardControlSensor"
+    }
   },
   {
     "params": {
-      "Topic": "/novatel_bottom/imu"
+      "Topic": "/sensor/laser_meter_flash_b",
+      "Frame": "luminar_left"
+    },
+    "transform": {
+      "x": -0.267,
+      "y": 0.543,
+      "z": 1.549,
+      "pitch": 0,
+      "yaw": -120,
+      "roll": 0
+    },
+    "name": "Lidar Sensor_b",
+    "parent": null,
+    "pluginId": "b30d0478-8c7b-4687-bfc2-b3cdb3f5faff",
+    "plugin": {
+      "assetGuid": null,
+      "isFavored": true,
+      "isShared": false,
+      "isOwned": false,
+      "accessInfo": {
+        "userAccessType": "favored",
+        "owner": {
+          "id": "0d888b00-fa53-47c1-882a-b68391268a11",
+          "firstName": "SVL",
+          "lastName": "Content"
+        }
+      },
+      "supportedSimulatorVersions": [
+        "2021.1",
+        "2021.1.1",
+        "2021.2",
+        "2021.2.1"
+      ],
+      "id": "b30d0478-8c7b-4687-bfc2-b3cdb3f5faff",
+      "name": "Lidar Sensor",
+      "type": "LidarSensor",
+      "category": "sensor",
+      "ownerId": "0d888b00-fa53-47c1-882a-b68391268a11",
+      "accessType": "public",
+      "description": "This sensor returns a point cloud after 1 revolution.\nSee https://www.svlsimulator.com/docs/simulation-content/sensors-list/#lidar for more details.",
+      "copyright": "LG Electronics Inc.",
+      "licenseName": "LG Content",
+      "status": "active",
+      "owner": {
+        "id": "0d888b00-fa53-47c1-882a-b68391268a11",
+        "firstName": "SVL",
+        "lastName": "Content"
+      },
+      "shareRequests": []
+    }
+  },
+  {
+    "params": {
+      "Topic": "/sensor/camera_front_right",
+      "Frame": "camera_front_right"
+    },
+    "transform": {
+      "x": 0.171,
+      "y": 0.422,
+      "z": 2.184,
+      "pitch": 0,
+      "yaw": 55,
+      "roll": 0
+    },
+    "name": "camera_front_right",
+    "parent": null,
+    "pluginId": "3d4f1e08-4c62-4e9f-b859-b26d4910b85e",
+    "plugin": {
+      "assetGuid": null,
+      "isFavored": true,
+      "isShared": false,
+      "isOwned": false,
+      "accessInfo": {
+        "userAccessType": "favored",
+        "owner": {
+          "id": "0d888b00-fa53-47c1-882a-b68391268a11",
+          "firstName": "SVL",
+          "lastName": "Content"
+        }
+      },
+      "supportedSimulatorVersions": [
+        "2021.1",
+        "2021.1.1",
+        "2021.2",
+        "2021.2.1"
+      ],
+      "id": "3d4f1e08-4c62-4e9f-b859-b26d4910b85e",
+      "name": "Color Camera Sensor",
+      "type": "ColorCameraSensor",
+      "category": "sensor",
+      "ownerId": "0d888b00-fa53-47c1-882a-b68391268a11",
+      "accessType": "public",
+      "description": "This is the type of sensor that would be used for the Main Camera in Apollo.\nColor Camera also has multiple post processing sensor effects that can be added to the Postprocessing field in params. Effects can be combined with an array of Postprocessing fields but order is hard coded.\nSee https://www.svlsimulator.com/docs/simulation-content/sensors-list/#color-camera for more details.",
+      "copyright": "LG Electronics Inc.",
+      "licenseName": "LG Content",
+      "status": "active",
+      "owner": {
+        "id": "0d888b00-fa53-47c1-882a-b68391268a11",
+        "firstName": "SVL",
+        "lastName": "Content"
+      },
+      "shareRequests": []
+    }
+  },
+  {
+    "params": {
+      "Topic": "/novatel_bottom/imu",
+      "Frame": "gps_bottom"
     },
     "transform": {
       "x": 0,
@@ -126,7 +235,7 @@
         "2021.1",
         "2021.1.1",
         "2021.2",
-        "dev"
+        "2021.2.1"
       ],
       "id": "9c34ec28-627d-4e73-9bb0-9c2aa7e978f5",
       "name": "IMU Sensor",
@@ -144,384 +253,12 @@
         "lastName": "Content"
       },
       "shareRequests": []
-    },
-    "type": "ImuSensor"
+    }
   },
   {
     "params": {
-      "Topic": "/novatel_bottom/fix",
-      "Frequency": 12.5
-    },
-    "transform": {
-      "x": 0,
-      "y": -0.1428,
-      "z": 1.606,
-      "pitch": 0,
-      "yaw": 0,
-      "roll": 0
-    },
-    "name": "gps_bottom",
-    "parent": null,
-    "pluginId": "75bbcbfa-fdca-4703-8e82-abf8078f7991",
-    "plugin": {
-      "assetGuid": null,
-      "isFavored": true,
-      "isShared": false,
-      "isOwned": false,
-      "accessInfo": {
-        "userAccessType": "favored",
-        "owner": {
-          "id": "0d888b00-fa53-47c1-882a-b68391268a11",
-          "firstName": "SVL",
-          "lastName": "Content"
-        }
-      },
-      "supportedSimulatorVersions": [
-        "2021.1",
-        "2021.1.1",
-        "2021.2",
-        "dev"
-      ],
-      "id": "75bbcbfa-fdca-4703-8e82-abf8078f7991",
-      "name": "GPS Device Sensor",
-      "type": "GpsSensor",
-      "category": "sensor",
-      "ownerId": "0d888b00-fa53-47c1-882a-b68391268a11",
-      "accessType": "public",
-      "description": "This sensor outputs the GPS location of the vehicle in Longitude/Latitude and Northing/Easting coordintates.\nSee https://www.svlsimulator.com/docs/simulation-content/sensors-list/#gps-device for more details.",
-      "copyright": "LG Electronics Inc.",
-      "licenseName": "LG Content",
-      "status": "active",
-      "owner": {
-        "id": "0d888b00-fa53-47c1-882a-b68391268a11",
-        "firstName": "SVL",
-        "lastName": "Content"
-      },
-      "shareRequests": []
-    },
-    "type": "GpsSensor"
-  },
-  {
-    "params": {
-      "Topic": "/sensor/a2D_rear_right"
-    },
-    "transform": {
-      "x": 0.14,
-      "y": 0.543,
-      "z": 1.473,
-      "pitch": 0,
-      "yaw": 2.2689280276,
-      "roll": 0
-    },
-    "name": "2D_rear_right",
-    "parent": null,
-    "pluginId": "e0bfb6cc-a8f0-425e-9b6c-a643ca1e255a",
-    "plugin": {
-      "assetGuid": null,
-      "isFavored": true,
-      "isShared": false,
-      "isOwned": false,
-      "accessInfo": {
-        "userAccessType": "favored",
-        "owner": {
-          "id": "0d888b00-fa53-47c1-882a-b68391268a11",
-          "firstName": "SVL",
-          "lastName": "Content"
-        }
-      },
-      "supportedSimulatorVersions": [
-        "2021.1",
-        "2021.1.1",
-        "2021.2",
-        "dev"
-      ],
-      "id": "e0bfb6cc-a8f0-425e-9b6c-a643ca1e255a",
-      "name": "2D Ground Truth Sensor",
-      "type": "PerceptionSensor2D",
-      "category": "sensor",
-      "ownerId": "0d888b00-fa53-47c1-882a-b68391268a11",
-      "accessType": "public",
-      "description": "This sensor outputs an image where objects are encased in a box. The color of the box depends on the type of object.\n\t[\n\t\t\"Car\": \"Green\"\n\t\t\"Pedestrian\": \"Yellow\"\n\t\t\"Bicycle\": \"Cyan\"\n\t\t\"Unknown\":  \"Magenta\"\n\t]\nSee https://www.svlsimulator.com/docs/simulation-content/sensors-list/#2d-ground-truth for more details.",
-      "copyright": "LG Electronics Inc.",
-      "licenseName": "LG Content",
-      "status": "active",
-      "owner": {
-        "id": "0d888b00-fa53-47c1-882a-b68391268a11",
-        "firstName": "SVL",
-        "lastName": "Content"
-      },
-      "shareRequests": []
-    },
-    "type": "PerceptionSensor2D"
-  },
-  {
-    "params": {
-      "Topic": "/sensor/a2D_front_right"
-    },
-    "transform": {
-      "x": 0.171,
-      "y": 0.422,
-      "z": 2.184,
-      "pitch": 0,
-      "yaw": -0.9599310886,
-      "roll": 0
-    },
-    "name": "2D_front_right",
-    "parent": null,
-    "pluginId": "e0bfb6cc-a8f0-425e-9b6c-a643ca1e255a",
-    "plugin": {
-      "assetGuid": null,
-      "isFavored": true,
-      "isShared": false,
-      "isOwned": false,
-      "accessInfo": {
-        "userAccessType": "favored",
-        "owner": {
-          "id": "0d888b00-fa53-47c1-882a-b68391268a11",
-          "firstName": "SVL",
-          "lastName": "Content"
-        }
-      },
-      "supportedSimulatorVersions": [
-        "2021.1",
-        "2021.1.1",
-        "2021.2",
-        "dev"
-      ],
-      "id": "e0bfb6cc-a8f0-425e-9b6c-a643ca1e255a",
-      "name": "2D Ground Truth Sensor",
-      "type": "PerceptionSensor2D",
-      "category": "sensor",
-      "ownerId": "0d888b00-fa53-47c1-882a-b68391268a11",
-      "accessType": "public",
-      "description": "This sensor outputs an image where objects are encased in a box. The color of the box depends on the type of object.\n\t[\n\t\t\"Car\": \"Green\"\n\t\t\"Pedestrian\": \"Yellow\"\n\t\t\"Bicycle\": \"Cyan\"\n\t\t\"Unknown\":  \"Magenta\"\n\t]\nSee https://www.svlsimulator.com/docs/simulation-content/sensors-list/#2d-ground-truth for more details.",
-      "copyright": "LG Electronics Inc.",
-      "licenseName": "LG Content",
-      "status": "active",
-      "owner": {
-        "id": "0d888b00-fa53-47c1-882a-b68391268a11",
-        "firstName": "SVL",
-        "lastName": "Content"
-      },
-      "shareRequests": []
-    },
-    "type": "PerceptionSensor2D"
-  },
-  {
-    "params": {
-      "Topic": "/sensor/a2D_front_1"
-    },
-    "transform": {
-      "x": -0.121,
-      "y": 0.422,
-      "z": 2.235,
-      "pitch": 0,
-      "yaw": 0,
-      "roll": 0
-    },
-    "name": "2D_front_1",
-    "parent": null,
-    "pluginId": "e0bfb6cc-a8f0-425e-9b6c-a643ca1e255a",
-    "plugin": {
-      "assetGuid": null,
-      "isFavored": true,
-      "isShared": false,
-      "isOwned": false,
-      "accessInfo": {
-        "userAccessType": "favored",
-        "owner": {
-          "id": "0d888b00-fa53-47c1-882a-b68391268a11",
-          "firstName": "SVL",
-          "lastName": "Content"
-        }
-      },
-      "supportedSimulatorVersions": [
-        "2021.1",
-        "2021.1.1",
-        "2021.2",
-        "dev"
-      ],
-      "id": "e0bfb6cc-a8f0-425e-9b6c-a643ca1e255a",
-      "name": "2D Ground Truth Sensor",
-      "type": "PerceptionSensor2D",
-      "category": "sensor",
-      "ownerId": "0d888b00-fa53-47c1-882a-b68391268a11",
-      "accessType": "public",
-      "description": "This sensor outputs an image where objects are encased in a box. The color of the box depends on the type of object.\n\t[\n\t\t\"Car\": \"Green\"\n\t\t\"Pedestrian\": \"Yellow\"\n\t\t\"Bicycle\": \"Cyan\"\n\t\t\"Unknown\":  \"Magenta\"\n\t]\nSee https://www.svlsimulator.com/docs/simulation-content/sensors-list/#2d-ground-truth for more details.",
-      "copyright": "LG Electronics Inc.",
-      "licenseName": "LG Content",
-      "status": "active",
-      "owner": {
-        "id": "0d888b00-fa53-47c1-882a-b68391268a11",
-        "firstName": "SVL",
-        "lastName": "Content"
-      },
-      "shareRequests": []
-    },
-    "type": "PerceptionSensor2D"
-  },
-  {
-    "params": {
-      "Topic": "/sensor/camera_rear_right"
-    },
-    "transform": {
-      "x": 0.14,
-      "y": 0.543,
-      "z": 1.473,
-      "pitch": 0,
-      "yaw": 2.2689280276,
-      "roll": 0
-    },
-    "name": "camera_rear_right",
-    "parent": null,
-    "pluginId": "3d4f1e08-4c62-4e9f-b859-b26d4910b85e",
-    "plugin": {
-      "assetGuid": null,
-      "isFavored": true,
-      "isShared": false,
-      "isOwned": false,
-      "accessInfo": {
-        "userAccessType": "favored",
-        "owner": {
-          "id": "0d888b00-fa53-47c1-882a-b68391268a11",
-          "firstName": "SVL",
-          "lastName": "Content"
-        }
-      },
-      "supportedSimulatorVersions": [
-        "2021.1",
-        "2021.1.1",
-        "2021.2",
-        "dev"
-      ],
-      "id": "3d4f1e08-4c62-4e9f-b859-b26d4910b85e",
-      "name": "Color Camera Sensor",
-      "type": "ColorCameraSensor",
-      "category": "sensor",
-      "ownerId": "0d888b00-fa53-47c1-882a-b68391268a11",
-      "accessType": "public",
-      "description": "This is the type of sensor that would be used for the Main Camera in Apollo.\nColor Camera also has multiple post processing sensor effects that can be added to the Postprocessing field in params. Effects can be combined with an array of Postprocessing fields but order is hard coded.\nSee https://www.svlsimulator.com/docs/simulation-content/sensors-list/#color-camera for more details.",
-      "copyright": "LG Electronics Inc.",
-      "licenseName": "LG Content",
-      "status": "active",
-      "owner": {
-        "id": "0d888b00-fa53-47c1-882a-b68391268a11",
-        "firstName": "SVL",
-        "lastName": "Content"
-      },
-      "shareRequests": []
-    },
-    "type": "ColorCameraSensor"
-  },
-  {
-    "params": {
-      "Topic": "/sensor/laser_meter_flash_b"
-    },
-    "transform": {
-      "x": -0.267,
-      "y": 0.543,
-      "z": 1.549,
-      "pitch": 0,
-      "yaw": 2.0943951024,
-      "roll": 0
-    },
-    "name": "Lidar Sensor_b",
-    "parent": null,
-    "pluginId": "b30d0478-8c7b-4687-bfc2-b3cdb3f5faff",
-    "plugin": {
-      "assetGuid": null,
-      "isFavored": true,
-      "isShared": false,
-      "isOwned": false,
-      "accessInfo": {
-        "userAccessType": "favored",
-        "owner": {
-          "id": "0d888b00-fa53-47c1-882a-b68391268a11",
-          "firstName": "SVL",
-          "lastName": "Content"
-        }
-      },
-      "supportedSimulatorVersions": [
-        "2021.1",
-        "2021.1.1",
-        "2021.2",
-        "dev"
-      ],
-      "id": "b30d0478-8c7b-4687-bfc2-b3cdb3f5faff",
-      "name": "Lidar Sensor",
-      "type": "LidarSensor",
-      "category": "sensor",
-      "ownerId": "0d888b00-fa53-47c1-882a-b68391268a11",
-      "accessType": "public",
-      "description": "This sensor returns a point cloud after 1 revolution.\nSee https://www.svlsimulator.com/docs/simulation-content/sensors-list/#lidar for more details.",
-      "copyright": "LG Electronics Inc.",
-      "licenseName": "LG Content",
-      "status": "active",
-      "owner": {
-        "id": "0d888b00-fa53-47c1-882a-b68391268a11",
-        "firstName": "SVL",
-        "lastName": "Content"
-      },
-      "shareRequests": []
-    },
-    "type": "LidarSensor"
-  },
-  {
-    "params": {
-      "Topic": "/sensor/camera_front_right"
-    },
-    "transform": {
-      "x": 0.171,
-      "y": 0.422,
-      "z": 2.184,
-      "pitch": 0,
-      "yaw": 0.9599310886,
-      "roll": 0
-    },
-    "name": "camera_front_right",
-    "parent": null,
-    "pluginId": "3d4f1e08-4c62-4e9f-b859-b26d4910b85e",
-    "plugin": {
-      "assetGuid": null,
-      "isFavored": true,
-      "isShared": false,
-      "isOwned": false,
-      "accessInfo": {
-        "userAccessType": "favored",
-        "owner": {
-          "id": "0d888b00-fa53-47c1-882a-b68391268a11",
-          "firstName": "SVL",
-          "lastName": "Content"
-        }
-      },
-      "supportedSimulatorVersions": [
-        "2021.1",
-        "2021.1.1",
-        "2021.2",
-        "dev"
-      ],
-      "id": "3d4f1e08-4c62-4e9f-b859-b26d4910b85e",
-      "name": "Color Camera Sensor",
-      "type": "ColorCameraSensor",
-      "category": "sensor",
-      "ownerId": "0d888b00-fa53-47c1-882a-b68391268a11",
-      "accessType": "public",
-      "description": "This is the type of sensor that would be used for the Main Camera in Apollo.\nColor Camera also has multiple post processing sensor effects that can be added to the Postprocessing field in params. Effects can be combined with an array of Postprocessing fields but order is hard coded.\nSee https://www.svlsimulator.com/docs/simulation-content/sensors-list/#color-camera for more details.",
-      "copyright": "LG Electronics Inc.",
-      "licenseName": "LG Content",
-      "status": "active",
-      "owner": {
-        "id": "0d888b00-fa53-47c1-882a-b68391268a11",
-        "firstName": "SVL",
-        "lastName": "Content"
-      },
-      "shareRequests": []
-    },
-    "type": "ColorCameraSensor"
-  },
-  {
-    "params": {
-      "Topic": "/sensor/camera_front_2"
+      "Topic": "/sensor/camera_front_2",
+      "Frame": "camera_front_2"
     },
     "transform": {
       "x": 0.121,
@@ -551,7 +288,7 @@
         "2021.1",
         "2021.1.1",
         "2021.2",
-        "dev"
+        "2021.2.1"
       ],
       "id": "3d4f1e08-4c62-4e9f-b859-b26d4910b85e",
       "name": "Color Camera Sensor",
@@ -569,470 +306,12 @@
         "lastName": "Content"
       },
       "shareRequests": []
-    },
-    "type": "ColorCameraSensor"
+    }
   },
   {
     "params": {
-      "Topic": "/sensor/camera_front_left"
-    },
-    "transform": {
-      "x": -0.171,
-      "y": 0.422,
-      "z": 2.184,
-      "pitch": 0,
-      "yaw": 0.9599310886,
-      "roll": 0
-    },
-    "name": "camera_front_left",
-    "parent": null,
-    "pluginId": "3d4f1e08-4c62-4e9f-b859-b26d4910b85e",
-    "plugin": {
-      "assetGuid": null,
-      "isFavored": true,
-      "isShared": false,
-      "isOwned": false,
-      "accessInfo": {
-        "userAccessType": "favored",
-        "owner": {
-          "id": "0d888b00-fa53-47c1-882a-b68391268a11",
-          "firstName": "SVL",
-          "lastName": "Content"
-        }
-      },
-      "supportedSimulatorVersions": [
-        "2021.1",
-        "2021.1.1",
-        "2021.2",
-        "dev"
-      ],
-      "id": "3d4f1e08-4c62-4e9f-b859-b26d4910b85e",
-      "name": "Color Camera Sensor",
-      "type": "ColorCameraSensor",
-      "category": "sensor",
-      "ownerId": "0d888b00-fa53-47c1-882a-b68391268a11",
-      "accessType": "public",
-      "description": "This is the type of sensor that would be used for the Main Camera in Apollo.\nColor Camera also has multiple post processing sensor effects that can be added to the Postprocessing field in params. Effects can be combined with an array of Postprocessing fields but order is hard coded.\nSee https://www.svlsimulator.com/docs/simulation-content/sensors-list/#color-camera for more details.",
-      "copyright": "LG Electronics Inc.",
-      "licenseName": "LG Content",
-      "status": "active",
-      "owner": {
-        "id": "0d888b00-fa53-47c1-882a-b68391268a11",
-        "firstName": "SVL",
-        "lastName": "Content"
-      },
-      "shareRequests": []
-    },
-    "type": "ColorCameraSensor"
-  },
-  {
-    "params": {
-      "Topic": "/sensor/a2D_front_left"
-    },
-    "transform": {
-      "x": -0.171,
-      "y": 0.422,
-      "z": 2.184,
-      "pitch": 0,
-      "yaw": 0.9599310886,
-      "roll": 0
-    },
-    "name": "2D_front_left",
-    "parent": null,
-    "pluginId": "e0bfb6cc-a8f0-425e-9b6c-a643ca1e255a",
-    "plugin": {
-      "assetGuid": null,
-      "isFavored": true,
-      "isShared": false,
-      "isOwned": false,
-      "accessInfo": {
-        "userAccessType": "favored",
-        "owner": {
-          "id": "0d888b00-fa53-47c1-882a-b68391268a11",
-          "firstName": "SVL",
-          "lastName": "Content"
-        }
-      },
-      "supportedSimulatorVersions": [
-        "2021.1",
-        "2021.1.1",
-        "2021.2",
-        "dev"
-      ],
-      "id": "e0bfb6cc-a8f0-425e-9b6c-a643ca1e255a",
-      "name": "2D Ground Truth Sensor",
-      "type": "PerceptionSensor2D",
-      "category": "sensor",
-      "ownerId": "0d888b00-fa53-47c1-882a-b68391268a11",
-      "accessType": "public",
-      "description": "This sensor outputs an image where objects are encased in a box. The color of the box depends on the type of object.\n\t[\n\t\t\"Car\": \"Green\"\n\t\t\"Pedestrian\": \"Yellow\"\n\t\t\"Bicycle\": \"Cyan\"\n\t\t\"Unknown\":  \"Magenta\"\n\t]\nSee https://www.svlsimulator.com/docs/simulation-content/sensors-list/#2d-ground-truth for more details.",
-      "copyright": "LG Electronics Inc.",
-      "licenseName": "LG Content",
-      "status": "active",
-      "owner": {
-        "id": "0d888b00-fa53-47c1-882a-b68391268a11",
-        "firstName": "SVL",
-        "lastName": "Content"
-      },
-      "shareRequests": []
-    },
-    "type": "PerceptionSensor2D"
-  },
-  {
-    "params": {
-      "Topic": "/sensor/camera_rear_left"
-    },
-    "transform": {
-      "x": -0.14,
-      "y": 0.543,
-      "z": 1.473,
-      "pitch": 0,
-      "yaw": 2.2689280276,
-      "roll": 0
-    },
-    "name": "camera_rear_left",
-    "parent": null,
-    "pluginId": "3d4f1e08-4c62-4e9f-b859-b26d4910b85e",
-    "plugin": {
-      "assetGuid": null,
-      "isFavored": true,
-      "isShared": false,
-      "isOwned": false,
-      "accessInfo": {
-        "userAccessType": "favored",
-        "owner": {
-          "id": "0d888b00-fa53-47c1-882a-b68391268a11",
-          "firstName": "SVL",
-          "lastName": "Content"
-        }
-      },
-      "supportedSimulatorVersions": [
-        "2021.1",
-        "2021.1.1",
-        "2021.2",
-        "dev"
-      ],
-      "id": "3d4f1e08-4c62-4e9f-b859-b26d4910b85e",
-      "name": "Color Camera Sensor",
-      "type": "ColorCameraSensor",
-      "category": "sensor",
-      "ownerId": "0d888b00-fa53-47c1-882a-b68391268a11",
-      "accessType": "public",
-      "description": "This is the type of sensor that would be used for the Main Camera in Apollo.\nColor Camera also has multiple post processing sensor effects that can be added to the Postprocessing field in params. Effects can be combined with an array of Postprocessing fields but order is hard coded.\nSee https://www.svlsimulator.com/docs/simulation-content/sensors-list/#color-camera for more details.",
-      "copyright": "LG Electronics Inc.",
-      "licenseName": "LG Content",
-      "status": "active",
-      "owner": {
-        "id": "0d888b00-fa53-47c1-882a-b68391268a11",
-        "firstName": "SVL",
-        "lastName": "Content"
-      },
-      "shareRequests": []
-    },
-    "type": "ColorCameraSensor"
-  },
-  {
-    "params": {
-      "Topic": "/novatel_top/imu"
-    },
-    "transform": {
-      "x": 0,
-      "y": -0.0703,
-      "z": 1.606,
-      "pitch": 0,
-      "yaw": 0,
-      "roll": 0
-    },
-    "name": "imu_top",
-    "parent": null,
-    "pluginId": "9c34ec28-627d-4e73-9bb0-9c2aa7e978f5",
-    "plugin": {
-      "assetGuid": null,
-      "isFavored": true,
-      "isShared": false,
-      "isOwned": false,
-      "accessInfo": {
-        "userAccessType": "favored",
-        "owner": {
-          "id": "0d888b00-fa53-47c1-882a-b68391268a11",
-          "firstName": "SVL",
-          "lastName": "Content"
-        }
-      },
-      "supportedSimulatorVersions": [
-        "2021.1",
-        "2021.1.1",
-        "2021.2",
-        "dev"
-      ],
-      "id": "9c34ec28-627d-4e73-9bb0-9c2aa7e978f5",
-      "name": "IMU Sensor",
-      "type": "ImuSensor",
-      "category": "sensor",
-      "ownerId": "0d888b00-fa53-47c1-882a-b68391268a11",
-      "accessType": "public",
-      "description": "This sensor output at a fixed rate of 100 Hz. IMU publishes data on topics where the 2nd topic has corrected IMU data.\nSee https://www.svlsimulator.com/docs/simulation-content/sensors-list/#imu for more details.",
-      "copyright": "LG Electronics Inc.",
-      "licenseName": "LG Content",
-      "status": "active",
-      "owner": {
-        "id": "0d888b00-fa53-47c1-882a-b68391268a11",
-        "firstName": "SVL",
-        "lastName": "Content"
-      },
-      "shareRequests": []
-    },
-    "type": "ImuSensor"
-  },
-  {
-    "params": {
-      "Topic": "/sensor/a2D_rear_left"
-    },
-    "transform": {
-      "x": -0.14,
-      "y": 0.543,
-      "z": 1.473,
-      "pitch": 0,
-      "yaw": 2.2689280276,
-      "roll": 0
-    },
-    "name": "2D_rear_left",
-    "parent": null,
-    "pluginId": "e0bfb6cc-a8f0-425e-9b6c-a643ca1e255a",
-    "plugin": {
-      "assetGuid": null,
-      "isFavored": true,
-      "isShared": false,
-      "isOwned": false,
-      "accessInfo": {
-        "userAccessType": "favored",
-        "owner": {
-          "id": "0d888b00-fa53-47c1-882a-b68391268a11",
-          "firstName": "SVL",
-          "lastName": "Content"
-        }
-      },
-      "supportedSimulatorVersions": [
-        "2021.1",
-        "2021.1.1",
-        "2021.2",
-        "dev"
-      ],
-      "id": "e0bfb6cc-a8f0-425e-9b6c-a643ca1e255a",
-      "name": "2D Ground Truth Sensor",
-      "type": "PerceptionSensor2D",
-      "category": "sensor",
-      "ownerId": "0d888b00-fa53-47c1-882a-b68391268a11",
-      "accessType": "public",
-      "description": "This sensor outputs an image where objects are encased in a box. The color of the box depends on the type of object.\n\t[\n\t\t\"Car\": \"Green\"\n\t\t\"Pedestrian\": \"Yellow\"\n\t\t\"Bicycle\": \"Cyan\"\n\t\t\"Unknown\":  \"Magenta\"\n\t]\nSee https://www.svlsimulator.com/docs/simulation-content/sensors-list/#2d-ground-truth for more details.",
-      "copyright": "LG Electronics Inc.",
-      "licenseName": "LG Content",
-      "status": "active",
-      "owner": {
-        "id": "0d888b00-fa53-47c1-882a-b68391268a11",
-        "firstName": "SVL",
-        "lastName": "Content"
-      },
-      "shareRequests": []
-    },
-    "type": "PerceptionSensor2D"
-  },
-  {
-    "params": {
-      "Topic": "/sensor/camera_front_1"
-    },
-    "transform": {
-      "x": -0.121,
-      "y": 0.422,
-      "z": 2.235,
-      "pitch": 0,
-      "yaw": 0,
-      "roll": 0
-    },
-    "name": "camera_front_1",
-    "parent": null,
-    "pluginId": "3d4f1e08-4c62-4e9f-b859-b26d4910b85e",
-    "plugin": {
-      "assetGuid": null,
-      "isFavored": true,
-      "isShared": false,
-      "isOwned": false,
-      "accessInfo": {
-        "userAccessType": "favored",
-        "owner": {
-          "id": "0d888b00-fa53-47c1-882a-b68391268a11",
-          "firstName": "SVL",
-          "lastName": "Content"
-        }
-      },
-      "supportedSimulatorVersions": [
-        "2021.1",
-        "2021.1.1",
-        "2021.2",
-        "dev"
-      ],
-      "id": "3d4f1e08-4c62-4e9f-b859-b26d4910b85e",
-      "name": "Color Camera Sensor",
-      "type": "ColorCameraSensor",
-      "category": "sensor",
-      "ownerId": "0d888b00-fa53-47c1-882a-b68391268a11",
-      "accessType": "public",
-      "description": "This is the type of sensor that would be used for the Main Camera in Apollo.\nColor Camera also has multiple post processing sensor effects that can be added to the Postprocessing field in params. Effects can be combined with an array of Postprocessing fields but order is hard coded.\nSee https://www.svlsimulator.com/docs/simulation-content/sensors-list/#color-camera for more details.",
-      "copyright": "LG Electronics Inc.",
-      "licenseName": "LG Content",
-      "status": "active",
-      "owner": {
-        "id": "0d888b00-fa53-47c1-882a-b68391268a11",
-        "firstName": "SVL",
-        "lastName": "Content"
-      },
-      "shareRequests": []
-    },
-    "type": "ColorCameraSensor"
-  },
-  {
-    "params": {
-      "Topic": "/vehicle/odometry"
-    },
-    "name": "Vehicle Odometry Sensor",
-    "parent": null,
-    "pluginId": "662072f8-8123-4e18-9b45-ee801e0bc020",
-    "plugin": {
-      "assetGuid": null,
-      "isFavored": true,
-      "isShared": false,
-      "isOwned": false,
-      "accessInfo": {
-        "userAccessType": "favored",
-        "owner": {
-          "id": "0d888b00-fa53-47c1-882a-b68391268a11",
-          "firstName": "SVL",
-          "lastName": "Content"
-        }
-      },
-      "supportedSimulatorVersions": [
-        "2021.1",
-        "2021.1.1",
-        "2021.2",
-        "dev"
-      ],
-      "id": "662072f8-8123-4e18-9b45-ee801e0bc020",
-      "name": "Vehicle Odometry Sensor",
-      "type": "VehicleOdometrySensor",
-      "category": "sensor",
-      "ownerId": "0d888b00-fa53-47c1-882a-b68391268a11",
-      "accessType": "public",
-      "description": "Example sensor for vehicle odometry information.",
-      "copyright": "LG Electronics Inc.",
-      "licenseName": "LG Content",
-      "status": "active",
-      "owner": {
-        "id": "0d888b00-fa53-47c1-882a-b68391268a11",
-        "firstName": "SVL",
-        "lastName": "Content"
-      },
-      "shareRequests": []
-    },
-    "type": "VehicleOdometrySensor"
-  },
-  {
-    "name": "3D Ground Truth Sensor",
-    "parent": null,
-    "pluginId": "e3fef197-9724-48ec-b98e-c5a0892d09c4",
-    "plugin": {
-      "assetGuid": null,
-      "isFavored": true,
-      "isShared": false,
-      "isOwned": false,
-      "accessInfo": {
-        "userAccessType": "favored",
-        "owner": {
-          "id": "0d888b00-fa53-47c1-882a-b68391268a11",
-          "firstName": "SVL",
-          "lastName": "Content"
-        }
-      },
-      "supportedSimulatorVersions": [
-        "2021.1",
-        "2021.1.1",
-        "2021.2",
-        "dev"
-      ],
-      "id": "e3fef197-9724-48ec-b98e-c5a0892d09c4",
-      "name": "3D Ground Truth Sensor",
-      "type": "PerceptionSensor3D",
-      "category": "sensor",
-      "ownerId": "0d888b00-fa53-47c1-882a-b68391268a11",
-      "accessType": "public",
-      "description": "This sensor returns 3D ground truth data for training and creates bounding boxes around the detected objects. The color of the object corresponds to the object's type:\n\t[\n\t\t\"Car\": \"Green\"\n\t\t\"Pedestrian\": \"Yellow\"\n\t\t\"Bicycle\": \"Cyan\"\n\t\t\"Unknown\":  \"Magenta\"\n\t]\nSee https://www.svlsimulator.com/docs/simulation-content/sensors-list/#3d-ground-truth for more details.",
-      "copyright": "LG Electronics Inc.",
-      "licenseName": "LG Content",
-      "status": "active",
-      "owner": {
-        "id": "0d888b00-fa53-47c1-882a-b68391268a11",
-        "firstName": "SVL",
-        "lastName": "Content"
-      },
-      "shareRequests": []
-    },
-    "type": "PerceptionSensor3D"
-  },
-  {
-    "params": {
-      "Topic": "/novatel_top/fix"
-    },
-    "transform": {
-      "x": 0,
-      "y": -0.0703,
-      "z": 1.606,
-      "pitch": 0,
-      "yaw": 0,
-      "roll": 0
-    },
-    "name": "gps_top",
-    "parent": null,
-    "pluginId": "75bbcbfa-fdca-4703-8e82-abf8078f7991",
-    "plugin": {
-      "assetGuid": null,
-      "isFavored": true,
-      "isShared": false,
-      "isOwned": false,
-      "accessInfo": {
-        "userAccessType": "favored",
-        "owner": {
-          "id": "0d888b00-fa53-47c1-882a-b68391268a11",
-          "firstName": "SVL",
-          "lastName": "Content"
-        }
-      },
-      "supportedSimulatorVersions": [
-        "2021.1",
-        "2021.1.1",
-        "2021.2",
-        "dev"
-      ],
-      "id": "75bbcbfa-fdca-4703-8e82-abf8078f7991",
-      "name": "GPS Device Sensor",
-      "type": "GpsSensor",
-      "category": "sensor",
-      "ownerId": "0d888b00-fa53-47c1-882a-b68391268a11",
-      "accessType": "public",
-      "description": "This sensor outputs the GPS location of the vehicle in Longitude/Latitude and Northing/Easting coordintates.\nSee https://www.svlsimulator.com/docs/simulation-content/sensors-list/#gps-device for more details.",
-      "copyright": "LG Electronics Inc.",
-      "licenseName": "LG Content",
-      "status": "active",
-      "owner": {
-        "id": "0d888b00-fa53-47c1-882a-b68391268a11",
-        "firstName": "SVL",
-        "lastName": "Content"
-      },
-      "shareRequests": []
-    },
-    "type": "GpsSensor"
-  },
-  {
-    "params": {
-      "Topic": "/sensor/a2D_front_2"
+      "Topic": "/sensor/a2D_front_2",
+      "Frame": "camera_front_2"
     },
     "transform": {
       "x": 0.121,
@@ -1062,7 +341,7 @@
         "2021.1",
         "2021.1.1",
         "2021.2",
-        "dev"
+        "2021.2.1"
       ],
       "id": "e0bfb6cc-a8f0-425e-9b6c-a643ca1e255a",
       "name": "2D Ground Truth Sensor",
@@ -1080,16 +359,12 @@
         "lastName": "Content"
       },
       "shareRequests": []
-    },
-    "type": "PerceptionSensor2D"
+    }
   },
   {
-    "params": {
-      "Topic": "/sensor/control"
-    },
-    "name": "LGSVL Control Sensor",
+    "name": "Keyboard Control Sensor",
     "parent": null,
-    "pluginId": "a5696615-d3e2-45e9-afa3-9b5ae7359e02",
+    "pluginId": "a2ff904a-ff06-4f06-9e45-cb58217a7142",
     "plugin": {
       "assetGuid": null,
       "isFavored": true,
@@ -1107,15 +382,15 @@
         "2021.1",
         "2021.1.1",
         "2021.2",
-        "dev"
+        "2021.2.1"
       ],
-      "id": "a5696615-d3e2-45e9-afa3-9b5ae7359e02",
-      "name": "LGSVL Control Sensor",
-      "type": "LGSVLControlSensor",
+      "id": "a2ff904a-ff06-4f06-9e45-cb58217a7142",
+      "name": "Keyboard Control Sensor",
+      "type": "KeyboardControlSensor",
       "category": "sensor",
       "ownerId": "0d888b00-fa53-47c1-882a-b68391268a11",
       "accessType": "public",
-      "description": "Example template of a sensor for vehicle Control information.",
+      "description": "This sensor is required for a vehicle to accept keyboard control commands. Parameters are not required.\nSee https://www.svlsimulator.com/docs/simulation-content/sensors-list/#keyboard-control for more details.",
       "copyright": "LG Electronics Inc.",
       "licenseName": "LG Content",
       "status": "active",
@@ -1125,12 +400,420 @@
         "lastName": "Content"
       },
       "shareRequests": []
-    },
-    "type": "LGSVLControlSensor"
+    }
   },
   {
     "params": {
-      "Topic": "/sensor/laser_meter_flash_a"
+      "Topic": "/novatel_top/imu",
+      "Frame": "gps_top"
+    },
+    "transform": {
+      "x": 0,
+      "y": -0.0703,
+      "z": 1.606,
+      "pitch": 0,
+      "yaw": 0,
+      "roll": 0
+    },
+    "name": "imu_top",
+    "parent": null,
+    "pluginId": "9c34ec28-627d-4e73-9bb0-9c2aa7e978f5",
+    "plugin": {
+      "assetGuid": null,
+      "isFavored": true,
+      "isShared": false,
+      "isOwned": false,
+      "accessInfo": {
+        "userAccessType": "favored",
+        "owner": {
+          "id": "0d888b00-fa53-47c1-882a-b68391268a11",
+          "firstName": "SVL",
+          "lastName": "Content"
+        }
+      },
+      "supportedSimulatorVersions": [
+        "2021.1",
+        "2021.1.1",
+        "2021.2",
+        "2021.2.1"
+      ],
+      "id": "9c34ec28-627d-4e73-9bb0-9c2aa7e978f5",
+      "name": "IMU Sensor",
+      "type": "ImuSensor",
+      "category": "sensor",
+      "ownerId": "0d888b00-fa53-47c1-882a-b68391268a11",
+      "accessType": "public",
+      "description": "This sensor output at a fixed rate of 100 Hz. IMU publishes data on topics where the 2nd topic has corrected IMU data.\nSee https://www.svlsimulator.com/docs/simulation-content/sensors-list/#imu for more details.",
+      "copyright": "LG Electronics Inc.",
+      "licenseName": "LG Content",
+      "status": "active",
+      "owner": {
+        "id": "0d888b00-fa53-47c1-882a-b68391268a11",
+        "firstName": "SVL",
+        "lastName": "Content"
+      },
+      "shareRequests": []
+    }
+  },
+  {
+    "params": {
+      "Topic": "/vehicle/odometry",
+      "Frame": "rear_axle_middle"
+    },
+    "name": "Vehicle Odometry Sensor",
+    "parent": null,
+    "pluginId": "662072f8-8123-4e18-9b45-ee801e0bc020",
+    "plugin": {
+      "assetGuid": null,
+      "isFavored": true,
+      "isShared": false,
+      "isOwned": false,
+      "accessInfo": {
+        "userAccessType": "favored",
+        "owner": {
+          "id": "0d888b00-fa53-47c1-882a-b68391268a11",
+          "firstName": "SVL",
+          "lastName": "Content"
+        }
+      },
+      "supportedSimulatorVersions": [
+        "2021.1",
+        "2021.1.1",
+        "2021.2",
+        "2021.2.1"
+      ],
+      "id": "662072f8-8123-4e18-9b45-ee801e0bc020",
+      "name": "Vehicle Odometry Sensor",
+      "type": "VehicleOdometrySensor",
+      "category": "sensor",
+      "ownerId": "0d888b00-fa53-47c1-882a-b68391268a11",
+      "accessType": "public",
+      "description": "Example sensor for vehicle odometry information.",
+      "copyright": "LG Electronics Inc.",
+      "licenseName": "LG Content",
+      "status": "active",
+      "owner": {
+        "id": "0d888b00-fa53-47c1-882a-b68391268a11",
+        "firstName": "SVL",
+        "lastName": "Content"
+      },
+      "shareRequests": []
+    }
+  },
+  {
+    "params": {
+      "Topic": "/sensor/camera_front_1",
+      "Frame": "camera_front_1"
+    },
+    "transform": {
+      "x": -0.121,
+      "y": 0.422,
+      "z": 2.235,
+      "pitch": 0,
+      "yaw": 0,
+      "roll": 0
+    },
+    "name": "camera_front_1",
+    "parent": null,
+    "pluginId": "3d4f1e08-4c62-4e9f-b859-b26d4910b85e",
+    "plugin": {
+      "assetGuid": null,
+      "isFavored": true,
+      "isShared": false,
+      "isOwned": false,
+      "accessInfo": {
+        "userAccessType": "favored",
+        "owner": {
+          "id": "0d888b00-fa53-47c1-882a-b68391268a11",
+          "firstName": "SVL",
+          "lastName": "Content"
+        }
+      },
+      "supportedSimulatorVersions": [
+        "2021.1",
+        "2021.1.1",
+        "2021.2",
+        "2021.2.1"
+      ],
+      "id": "3d4f1e08-4c62-4e9f-b859-b26d4910b85e",
+      "name": "Color Camera Sensor",
+      "type": "ColorCameraSensor",
+      "category": "sensor",
+      "ownerId": "0d888b00-fa53-47c1-882a-b68391268a11",
+      "accessType": "public",
+      "description": "This is the type of sensor that would be used for the Main Camera in Apollo.\nColor Camera also has multiple post processing sensor effects that can be added to the Postprocessing field in params. Effects can be combined with an array of Postprocessing fields but order is hard coded.\nSee https://www.svlsimulator.com/docs/simulation-content/sensors-list/#color-camera for more details.",
+      "copyright": "LG Electronics Inc.",
+      "licenseName": "LG Content",
+      "status": "active",
+      "owner": {
+        "id": "0d888b00-fa53-47c1-882a-b68391268a11",
+        "firstName": "SVL",
+        "lastName": "Content"
+      },
+      "shareRequests": []
+    }
+  },
+  {
+    "params": {
+      "Topic": "/sensor/a2D_front_left",
+      "Frame": "camera_front_left"
+    },
+    "transform": {
+      "x": -0.171,
+      "y": 0.422,
+      "z": 2.184,
+      "pitch": 0,
+      "yaw": -55,
+      "roll": 0
+    },
+    "name": "2D_front_left",
+    "parent": null,
+    "pluginId": "e0bfb6cc-a8f0-425e-9b6c-a643ca1e255a",
+    "plugin": {
+      "assetGuid": null,
+      "isFavored": true,
+      "isShared": false,
+      "isOwned": false,
+      "accessInfo": {
+        "userAccessType": "favored",
+        "owner": {
+          "id": "0d888b00-fa53-47c1-882a-b68391268a11",
+          "firstName": "SVL",
+          "lastName": "Content"
+        }
+      },
+      "supportedSimulatorVersions": [
+        "2021.1",
+        "2021.1.1",
+        "2021.2",
+        "2021.2.1"
+      ],
+      "id": "e0bfb6cc-a8f0-425e-9b6c-a643ca1e255a",
+      "name": "2D Ground Truth Sensor",
+      "type": "PerceptionSensor2D",
+      "category": "sensor",
+      "ownerId": "0d888b00-fa53-47c1-882a-b68391268a11",
+      "accessType": "public",
+      "description": "This sensor outputs an image where objects are encased in a box. The color of the box depends on the type of object.\n\t[\n\t\t\"Car\": \"Green\"\n\t\t\"Pedestrian\": \"Yellow\"\n\t\t\"Bicycle\": \"Cyan\"\n\t\t\"Unknown\":  \"Magenta\"\n\t]\nSee https://www.svlsimulator.com/docs/simulation-content/sensors-list/#2d-ground-truth for more details.",
+      "copyright": "LG Electronics Inc.",
+      "licenseName": "LG Content",
+      "status": "active",
+      "owner": {
+        "id": "0d888b00-fa53-47c1-882a-b68391268a11",
+        "firstName": "SVL",
+        "lastName": "Content"
+      },
+      "shareRequests": []
+    }
+  },
+  {
+    "params": {
+      "Topic": "/sensor/camera_rear_right",
+      "Frame": "camera_rear_right"
+    },
+    "transform": {
+      "x": 0.14,
+      "y": 0.543,
+      "z": 1.473,
+      "pitch": 0,
+      "yaw": 130,
+      "roll": 0
+    },
+    "name": "camera_rear_right",
+    "parent": null,
+    "pluginId": "3d4f1e08-4c62-4e9f-b859-b26d4910b85e",
+    "plugin": {
+      "assetGuid": null,
+      "isFavored": true,
+      "isShared": false,
+      "isOwned": false,
+      "accessInfo": {
+        "userAccessType": "favored",
+        "owner": {
+          "id": "0d888b00-fa53-47c1-882a-b68391268a11",
+          "firstName": "SVL",
+          "lastName": "Content"
+        }
+      },
+      "supportedSimulatorVersions": [
+        "2021.1",
+        "2021.1.1",
+        "2021.2",
+        "2021.2.1"
+      ],
+      "id": "3d4f1e08-4c62-4e9f-b859-b26d4910b85e",
+      "name": "Color Camera Sensor",
+      "type": "ColorCameraSensor",
+      "category": "sensor",
+      "ownerId": "0d888b00-fa53-47c1-882a-b68391268a11",
+      "accessType": "public",
+      "description": "This is the type of sensor that would be used for the Main Camera in Apollo.\nColor Camera also has multiple post processing sensor effects that can be added to the Postprocessing field in params. Effects can be combined with an array of Postprocessing fields but order is hard coded.\nSee https://www.svlsimulator.com/docs/simulation-content/sensors-list/#color-camera for more details.",
+      "copyright": "LG Electronics Inc.",
+      "licenseName": "LG Content",
+      "status": "active",
+      "owner": {
+        "id": "0d888b00-fa53-47c1-882a-b68391268a11",
+        "firstName": "SVL",
+        "lastName": "Content"
+      },
+      "shareRequests": []
+    }
+  },
+  {
+    "params": {
+      "Topic": "/sensor/ground_truth",
+      "Frame": "rear_axle_middle"
+    },
+    "name": "3D Ground Truth Sensor",
+    "parent": null,
+    "pluginId": "e3fef197-9724-48ec-b98e-c5a0892d09c4",
+    "plugin": {
+      "assetGuid": null,
+      "isFavored": true,
+      "isShared": false,
+      "isOwned": false,
+      "accessInfo": {
+        "userAccessType": "favored",
+        "owner": {
+          "id": "0d888b00-fa53-47c1-882a-b68391268a11",
+          "firstName": "SVL",
+          "lastName": "Content"
+        }
+      },
+      "supportedSimulatorVersions": [
+        "2021.1",
+        "2021.1.1",
+        "2021.2",
+        "2021.2.1"
+      ],
+      "id": "e3fef197-9724-48ec-b98e-c5a0892d09c4",
+      "name": "3D Ground Truth Sensor",
+      "type": "PerceptionSensor3D",
+      "category": "sensor",
+      "ownerId": "0d888b00-fa53-47c1-882a-b68391268a11",
+      "accessType": "public",
+      "description": "This sensor returns 3D ground truth data for training and creates bounding boxes around the detected objects. The color of the object corresponds to the object's type:\n\t[\n\t\t\"Car\": \"Green\"\n\t\t\"Pedestrian\": \"Yellow\"\n\t\t\"Bicycle\": \"Cyan\"\n\t\t\"Unknown\":  \"Magenta\"\n\t]\nSee https://www.svlsimulator.com/docs/simulation-content/sensors-list/#3d-ground-truth for more details.",
+      "copyright": "LG Electronics Inc.",
+      "licenseName": "LG Content",
+      "status": "active",
+      "owner": {
+        "id": "0d888b00-fa53-47c1-882a-b68391268a11",
+        "firstName": "SVL",
+        "lastName": "Content"
+      },
+      "shareRequests": []
+    }
+  },
+  {
+    "params": {
+      "Topic": "/sensor/camera_front_left",
+      "Frame": "camera_front_left"
+    },
+    "transform": {
+      "x": -0.171,
+      "y": 0.422,
+      "z": 2.184,
+      "pitch": 0,
+      "yaw": -55,
+      "roll": 0
+    },
+    "name": "camera_front_left",
+    "parent": null,
+    "pluginId": "3d4f1e08-4c62-4e9f-b859-b26d4910b85e",
+    "plugin": {
+      "assetGuid": null,
+      "isFavored": true,
+      "isShared": false,
+      "isOwned": false,
+      "accessInfo": {
+        "userAccessType": "favored",
+        "owner": {
+          "id": "0d888b00-fa53-47c1-882a-b68391268a11",
+          "firstName": "SVL",
+          "lastName": "Content"
+        }
+      },
+      "supportedSimulatorVersions": [
+        "2021.1",
+        "2021.1.1",
+        "2021.2",
+        "2021.2.1"
+      ],
+      "id": "3d4f1e08-4c62-4e9f-b859-b26d4910b85e",
+      "name": "Color Camera Sensor",
+      "type": "ColorCameraSensor",
+      "category": "sensor",
+      "ownerId": "0d888b00-fa53-47c1-882a-b68391268a11",
+      "accessType": "public",
+      "description": "This is the type of sensor that would be used for the Main Camera in Apollo.\nColor Camera also has multiple post processing sensor effects that can be added to the Postprocessing field in params. Effects can be combined with an array of Postprocessing fields but order is hard coded.\nSee https://www.svlsimulator.com/docs/simulation-content/sensors-list/#color-camera for more details.",
+      "copyright": "LG Electronics Inc.",
+      "licenseName": "LG Content",
+      "status": "active",
+      "owner": {
+        "id": "0d888b00-fa53-47c1-882a-b68391268a11",
+        "firstName": "SVL",
+        "lastName": "Content"
+      },
+      "shareRequests": []
+    }
+  },
+  {
+    "params": {
+      "Topic": "/sensor/a2D_front_right",
+      "Frame": "camera_front_right"
+    },
+    "transform": {
+      "x": 0.171,
+      "y": 0.422,
+      "z": 2.184,
+      "pitch": 0,
+      "yaw": 55,
+      "roll": 0
+    },
+    "name": "2D_front_right",
+    "parent": null,
+    "pluginId": "e0bfb6cc-a8f0-425e-9b6c-a643ca1e255a",
+    "plugin": {
+      "assetGuid": null,
+      "isFavored": true,
+      "isShared": false,
+      "isOwned": false,
+      "accessInfo": {
+        "userAccessType": "favored",
+        "owner": {
+          "id": "0d888b00-fa53-47c1-882a-b68391268a11",
+          "firstName": "SVL",
+          "lastName": "Content"
+        }
+      },
+      "supportedSimulatorVersions": [
+        "2021.1",
+        "2021.1.1",
+        "2021.2",
+        "2021.2.1"
+      ],
+      "id": "e0bfb6cc-a8f0-425e-9b6c-a643ca1e255a",
+      "name": "2D Ground Truth Sensor",
+      "type": "PerceptionSensor2D",
+      "category": "sensor",
+      "ownerId": "0d888b00-fa53-47c1-882a-b68391268a11",
+      "accessType": "public",
+      "description": "This sensor outputs an image where objects are encased in a box. The color of the box depends on the type of object.\n\t[\n\t\t\"Car\": \"Green\"\n\t\t\"Pedestrian\": \"Yellow\"\n\t\t\"Bicycle\": \"Cyan\"\n\t\t\"Unknown\":  \"Magenta\"\n\t]\nSee https://www.svlsimulator.com/docs/simulation-content/sensors-list/#2d-ground-truth for more details.",
+      "copyright": "LG Electronics Inc.",
+      "licenseName": "LG Content",
+      "status": "active",
+      "owner": {
+        "id": "0d888b00-fa53-47c1-882a-b68391268a11",
+        "firstName": "SVL",
+        "lastName": "Content"
+      },
+      "shareRequests": []
+    }
+  },
+  {
+    "params": {
+      "Topic": "/sensor/laser_meter_flash_a",
+      "Frame": "luminar_front"
     },
     "transform": {
       "x": 0,
@@ -1160,7 +843,7 @@
         "2021.1",
         "2021.1.1",
         "2021.2",
-        "dev"
+        "2021.2.1"
       ],
       "id": "b30d0478-8c7b-4687-bfc2-b3cdb3f5faff",
       "name": "Lidar Sensor",
@@ -1178,7 +861,325 @@
         "lastName": "Content"
       },
       "shareRequests": []
+    }
+  },
+  {
+    "params": {
+      "Topic": "/sensor/camera_rear_left",
+      "Frame": "camera_rear_left"
     },
-    "type": "LidarSensor"
+    "transform": {
+      "x": -0.14,
+      "y": 0.543,
+      "z": 1.473,
+      "pitch": 0,
+      "yaw": -130,
+      "roll": 0
+    },
+    "name": "camera_rear_left",
+    "parent": null,
+    "pluginId": "3d4f1e08-4c62-4e9f-b859-b26d4910b85e",
+    "plugin": {
+      "assetGuid": null,
+      "isFavored": true,
+      "isShared": false,
+      "isOwned": false,
+      "accessInfo": {
+        "userAccessType": "favored",
+        "owner": {
+          "id": "0d888b00-fa53-47c1-882a-b68391268a11",
+          "firstName": "SVL",
+          "lastName": "Content"
+        }
+      },
+      "supportedSimulatorVersions": [
+        "2021.1",
+        "2021.1.1",
+        "2021.2",
+        "2021.2.1"
+      ],
+      "id": "3d4f1e08-4c62-4e9f-b859-b26d4910b85e",
+      "name": "Color Camera Sensor",
+      "type": "ColorCameraSensor",
+      "category": "sensor",
+      "ownerId": "0d888b00-fa53-47c1-882a-b68391268a11",
+      "accessType": "public",
+      "description": "This is the type of sensor that would be used for the Main Camera in Apollo.\nColor Camera also has multiple post processing sensor effects that can be added to the Postprocessing field in params. Effects can be combined with an array of Postprocessing fields but order is hard coded.\nSee https://www.svlsimulator.com/docs/simulation-content/sensors-list/#color-camera for more details.",
+      "copyright": "LG Electronics Inc.",
+      "licenseName": "LG Content",
+      "status": "active",
+      "owner": {
+        "id": "0d888b00-fa53-47c1-882a-b68391268a11",
+        "firstName": "SVL",
+        "lastName": "Content"
+      },
+      "shareRequests": []
+    }
+  },
+  {
+    "params": {
+      "Topic": "/sensor/a2D_rear_left",
+      "Frame": "camera_rear_left"
+    },
+    "transform": {
+      "x": -0.14,
+      "y": 0.543,
+      "z": 1.473,
+      "pitch": 0,
+      "yaw": -130,
+      "roll": 0
+    },
+    "name": "2D_rear_left",
+    "parent": null,
+    "pluginId": "e0bfb6cc-a8f0-425e-9b6c-a643ca1e255a",
+    "plugin": {
+      "assetGuid": null,
+      "isFavored": true,
+      "isShared": false,
+      "isOwned": false,
+      "accessInfo": {
+        "userAccessType": "favored",
+        "owner": {
+          "id": "0d888b00-fa53-47c1-882a-b68391268a11",
+          "firstName": "SVL",
+          "lastName": "Content"
+        }
+      },
+      "supportedSimulatorVersions": [
+        "2021.1",
+        "2021.1.1",
+        "2021.2",
+        "2021.2.1"
+      ],
+      "id": "e0bfb6cc-a8f0-425e-9b6c-a643ca1e255a",
+      "name": "2D Ground Truth Sensor",
+      "type": "PerceptionSensor2D",
+      "category": "sensor",
+      "ownerId": "0d888b00-fa53-47c1-882a-b68391268a11",
+      "accessType": "public",
+      "description": "This sensor outputs an image where objects are encased in a box. The color of the box depends on the type of object.\n\t[\n\t\t\"Car\": \"Green\"\n\t\t\"Pedestrian\": \"Yellow\"\n\t\t\"Bicycle\": \"Cyan\"\n\t\t\"Unknown\":  \"Magenta\"\n\t]\nSee https://www.svlsimulator.com/docs/simulation-content/sensors-list/#2d-ground-truth for more details.",
+      "copyright": "LG Electronics Inc.",
+      "licenseName": "LG Content",
+      "status": "active",
+      "owner": {
+        "id": "0d888b00-fa53-47c1-882a-b68391268a11",
+        "firstName": "SVL",
+        "lastName": "Content"
+      },
+      "shareRequests": []
+    }
+  },
+  {
+    "params": {
+      "Topic": "/sensor/a2D_rear_right",
+      "Frame": "camera_rear_right"
+    },
+    "transform": {
+      "x": 0.14,
+      "y": 0.543,
+      "z": 1.473,
+      "pitch": 0,
+      "yaw": 130,
+      "roll": 0
+    },
+    "name": "2D_rear_right",
+    "parent": null,
+    "pluginId": "e0bfb6cc-a8f0-425e-9b6c-a643ca1e255a",
+    "plugin": {
+      "assetGuid": null,
+      "isFavored": true,
+      "isShared": false,
+      "isOwned": false,
+      "accessInfo": {
+        "userAccessType": "favored",
+        "owner": {
+          "id": "0d888b00-fa53-47c1-882a-b68391268a11",
+          "firstName": "SVL",
+          "lastName": "Content"
+        }
+      },
+      "supportedSimulatorVersions": [
+        "2021.1",
+        "2021.1.1",
+        "2021.2",
+        "2021.2.1"
+      ],
+      "id": "e0bfb6cc-a8f0-425e-9b6c-a643ca1e255a",
+      "name": "2D Ground Truth Sensor",
+      "type": "PerceptionSensor2D",
+      "category": "sensor",
+      "ownerId": "0d888b00-fa53-47c1-882a-b68391268a11",
+      "accessType": "public",
+      "description": "This sensor outputs an image where objects are encased in a box. The color of the box depends on the type of object.\n\t[\n\t\t\"Car\": \"Green\"\n\t\t\"Pedestrian\": \"Yellow\"\n\t\t\"Bicycle\": \"Cyan\"\n\t\t\"Unknown\":  \"Magenta\"\n\t]\nSee https://www.svlsimulator.com/docs/simulation-content/sensors-list/#2d-ground-truth for more details.",
+      "copyright": "LG Electronics Inc.",
+      "licenseName": "LG Content",
+      "status": "active",
+      "owner": {
+        "id": "0d888b00-fa53-47c1-882a-b68391268a11",
+        "firstName": "SVL",
+        "lastName": "Content"
+      },
+      "shareRequests": []
+    }
+  },
+  {
+    "params": {
+      "Topic": "/novatel_top/fix",
+      "Frame": "gps_top"
+    },
+    "transform": {
+      "x": 0,
+      "y": -0.0703,
+      "z": 1.606,
+      "pitch": 0,
+      "yaw": 0,
+      "roll": 0
+    },
+    "name": "gps_top",
+    "parent": null,
+    "pluginId": "75bbcbfa-fdca-4703-8e82-abf8078f7991",
+    "plugin": {
+      "assetGuid": null,
+      "isFavored": true,
+      "isShared": false,
+      "isOwned": false,
+      "accessInfo": {
+        "userAccessType": "favored",
+        "owner": {
+          "id": "0d888b00-fa53-47c1-882a-b68391268a11",
+          "firstName": "SVL",
+          "lastName": "Content"
+        }
+      },
+      "supportedSimulatorVersions": [
+        "2021.1",
+        "2021.1.1",
+        "2021.2",
+        "2021.2.1"
+      ],
+      "id": "75bbcbfa-fdca-4703-8e82-abf8078f7991",
+      "name": "GPS Device Sensor",
+      "type": "GpsSensor",
+      "category": "sensor",
+      "ownerId": "0d888b00-fa53-47c1-882a-b68391268a11",
+      "accessType": "public",
+      "description": "This sensor outputs the GPS location of the vehicle in Longitude/Latitude and Northing/Easting coordintates.\nSee https://www.svlsimulator.com/docs/simulation-content/sensors-list/#gps-device for more details.",
+      "copyright": "LG Electronics Inc.",
+      "licenseName": "LG Content",
+      "status": "active",
+      "owner": {
+        "id": "0d888b00-fa53-47c1-882a-b68391268a11",
+        "firstName": "SVL",
+        "lastName": "Content"
+      },
+      "shareRequests": []
+    }
+  },
+  {
+    "params": {
+      "Topic": "/sensor/a2D_front_1",
+      "Frame": "camera_front_1"
+    },
+    "transform": {
+      "x": -0.121,
+      "y": 0.422,
+      "z": 2.235,
+      "pitch": 0,
+      "yaw": 0,
+      "roll": 0
+    },
+    "name": "2D_front_1",
+    "parent": null,
+    "pluginId": "e0bfb6cc-a8f0-425e-9b6c-a643ca1e255a",
+    "plugin": {
+      "assetGuid": null,
+      "isFavored": true,
+      "isShared": false,
+      "isOwned": false,
+      "accessInfo": {
+        "userAccessType": "favored",
+        "owner": {
+          "id": "0d888b00-fa53-47c1-882a-b68391268a11",
+          "firstName": "SVL",
+          "lastName": "Content"
+        }
+      },
+      "supportedSimulatorVersions": [
+        "2021.1",
+        "2021.1.1",
+        "2021.2",
+        "2021.2.1"
+      ],
+      "id": "e0bfb6cc-a8f0-425e-9b6c-a643ca1e255a",
+      "name": "2D Ground Truth Sensor",
+      "type": "PerceptionSensor2D",
+      "category": "sensor",
+      "ownerId": "0d888b00-fa53-47c1-882a-b68391268a11",
+      "accessType": "public",
+      "description": "This sensor outputs an image where objects are encased in a box. The color of the box depends on the type of object.\n\t[\n\t\t\"Car\": \"Green\"\n\t\t\"Pedestrian\": \"Yellow\"\n\t\t\"Bicycle\": \"Cyan\"\n\t\t\"Unknown\":  \"Magenta\"\n\t]\nSee https://www.svlsimulator.com/docs/simulation-content/sensors-list/#2d-ground-truth for more details.",
+      "copyright": "LG Electronics Inc.",
+      "licenseName": "LG Content",
+      "status": "active",
+      "owner": {
+        "id": "0d888b00-fa53-47c1-882a-b68391268a11",
+        "firstName": "SVL",
+        "lastName": "Content"
+      },
+      "shareRequests": []
+    }
+  },
+  {
+    "params": {
+      "Topic": "/novatel_bottom/fix",
+      "Frequency": 12.5,
+      "Frame": "gps_bottom"
+    },
+    "transform": {
+      "x": 0,
+      "y": -0.1428,
+      "z": 1.606,
+      "pitch": 0,
+      "yaw": 0,
+      "roll": 0
+    },
+    "name": "gps_bottom",
+    "parent": null,
+    "pluginId": "75bbcbfa-fdca-4703-8e82-abf8078f7991",
+    "plugin": {
+      "assetGuid": null,
+      "isFavored": true,
+      "isShared": false,
+      "isOwned": false,
+      "accessInfo": {
+        "userAccessType": "favored",
+        "owner": {
+          "id": "0d888b00-fa53-47c1-882a-b68391268a11",
+          "firstName": "SVL",
+          "lastName": "Content"
+        }
+      },
+      "supportedSimulatorVersions": [
+        "2021.1",
+        "2021.1.1",
+        "2021.2",
+        "2021.2.1"
+      ],
+      "id": "75bbcbfa-fdca-4703-8e82-abf8078f7991",
+      "name": "GPS Device Sensor",
+      "type": "GpsSensor",
+      "category": "sensor",
+      "ownerId": "0d888b00-fa53-47c1-882a-b68391268a11",
+      "accessType": "public",
+      "description": "This sensor outputs the GPS location of the vehicle in Longitude/Latitude and Northing/Easting coordintates.\nSee https://www.svlsimulator.com/docs/simulation-content/sensors-list/#gps-device for more details.",
+      "copyright": "LG Electronics Inc.",
+      "licenseName": "LG Content",
+      "status": "active",
+      "owner": {
+        "id": "0d888b00-fa53-47c1-882a-b68391268a11",
+        "firstName": "SVL",
+        "lastName": "Content"
+      },
+      "shareRequests": []
+    }
   }
 ]

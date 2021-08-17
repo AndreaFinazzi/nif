@@ -27,7 +27,7 @@ def generate_launch_description():
 
     control_safety_layer_node = Node(
         package='nif_control_safety_layer_nodes',
-        executable='control_safety_layer_node_exe',
+        executable='nif_control_safety_layer_nodes_exe',
         output='screen',
         parameters=[LaunchConfiguration('nif_control_minimal_param_file')],
         remappings=[

@@ -9,17 +9,18 @@ void nif::control::ControlSafetyLayerNode::getParameters() {}
 
 void nif::control::ControlSafetyLayerNode::controlCallback(
     const nif::common::msgs::ControlCmd::SharedPtr msg) {
-//  TODO consider not to accept commands from the future!
+  //  TODO consider not to accept commands from the future!
   //  Store control command if it's not too old
   if ((this->now().nanoseconds() - msg->header.stamp.nanosec) <
-      this->getGclockPeriod().count() || true) // TODO REMOVE THIS!!!
+          this->getGclockPeriod().count() ||
+      true) // TODO REMOVE THIS!!!
     this->bufferStore(msg);
 }
 
 void nif::control::ControlSafetyLayerNode::run() {
 
-  nif::common::msgs::ControlCmd::SharedPtr msg;
   if (!this->control_buffer.empty()) {
+  nif::common::msgs::ControlCmd::SharedPtr msg;
 
     msg = (this->control_buffer.top());
 
@@ -29,11 +30,14 @@ void nif::control::ControlSafetyLayerNode::run() {
     try {
       this->control_pub->publish(*msg);
 
+      this->publishSteeringCmd(msg->steering_control_cmd);
+      this->publishAcceleratorCmd(msg->accelerator_control_cmd);
+
     } catch (std::exception &e) {
       RCLCPP_ERROR(this->get_logger(), e.what());
     }
 
-//    this->flush
+    this->bufferFlush();
   }
 }
 
@@ -90,5 +94,6 @@ void nif::control::ControlSafetyLayerNode::bufferStore(
 }
 
 void nif::control::ControlSafetyLayerNode::bufferFlush() {
-//  this->control_buffer.
+  while (!this->control_buffer.empty())
+    this->control_buffer.pop();
 }
