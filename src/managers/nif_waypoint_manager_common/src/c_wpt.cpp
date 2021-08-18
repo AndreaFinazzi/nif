@@ -2,7 +2,7 @@
 
 c_wpt::c_wpt(string wpt_file_path_,
              string wpt_alias_ = "",
-             string global_frame_id_ = "odom",
+             string global_frame_id_ = "map",
              bool wpt_3d_file_flg_ = true,
              bool spline_flg_ = true,
              double spline_interval_ = 0.5) {

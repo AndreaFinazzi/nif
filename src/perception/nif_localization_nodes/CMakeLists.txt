@@ -16,10 +16,10 @@ ament_auto_find_build_dependencies()
 
 # Library
 ament_auto_add_library(${PROJECT_NAME} SHARED
-        src/localization_node_v2.cpp)
+        src/localization_node.cpp)
 
-ament_auto_add_executable(localization_node_exe
-        src/localization_node_v2.cpp)
+ament_auto_add_executable(${PROJECT_NAME}_exe
+        src/localization_main.cpp)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -41,4 +41,5 @@ if(BUILD_TESTING)
 endif()
 
 ament_auto_package(INSTALL_TO_SHARE
-        launch)
+        launch
+        config)

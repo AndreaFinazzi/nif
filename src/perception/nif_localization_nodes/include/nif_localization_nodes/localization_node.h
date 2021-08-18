@@ -15,6 +15,7 @@
 #include "nav_msgs/msg/odometry.hpp"
 #include "novatel_gps_msgs/msg/inspva.hpp"
 #include "rclcpp/rclcpp.hpp"
+#include "tf2/LinearMath/Quaternion.h"
 
 // #include "boost/bind/bind.hpp"
 #include "rcutils/error_handling.h"
@@ -32,21 +33,26 @@ using namespace std::chrono_literals;
 
 class LocalizationNode : public nif::common::IBaseNode {
 public:
-  explicit LocalizationNode(const std::string& node_name_);
   LocalizationNode(
       const std::string& node_name_,
-      const std::shared_ptr<LocalizationMinimal> localization_algorithm_ptr);
+      const std::shared_ptr<LocalizationMinimal> localization_algorithm_ptr =
+          std::make_shared<LocalizationMinimal>());
+
   ~LocalizationNode() {}
 
 private:
   LocalizationNode();
-  void timer_callback();
+
+  void timerCallback();
   void syncGPSCallback(
       const novatel_gps_msgs::msg::Inspva::ConstSharedPtr& gps_horizontal_,
       const novatel_gps_msgs::msg::Inspva::ConstSharedPtr& gps_vertical_);
 
     void gpsHorizontalCallback(
             const novatel_gps_msgs::msg::Inspva::SharedPtr gps_horizontal_ptr_);
+
+    void getENUfromNED(nav_msgs::msg::Odometry &ned_odom,
+                       const double &ned_yaw_ra);
 
     void publishTransformStamped();
 
@@ -77,12 +83,9 @@ private:
   rclcpp::Subscription<novatel_gps_msgs::msg::Inspva>::SharedPtr
             m_gps_horizontal_sub;
 
-  std::shared_ptr<
-      message_filters::TimeSynchronizer<novatel_gps_msgs::msg::Inspva,
-                                        novatel_gps_msgs::msg::Inspva>>
-      m_gps_sync_ptr;
-
   rclcpp::TimerBase::SharedPtr m_timer;
+
+  bool m_use_enu;
 };
 
 } // namespace perception

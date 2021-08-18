@@ -119,6 +119,14 @@ public:
     return m_lookahead_lateral_error;
   }
 
+  geometry_msgs::msg::PoseStamped getLookaheadPointInGlobal() {
+    return m_lookahead_pt_in_global;
+  }
+
+  geometry_msgs::msg::PoseStamped getControlPointInBody() {
+    return m_control_pt_in_body;
+  }
+
   void setLookAheadSpeedRatio(double lookahead_speed_ratio_) {
     m_lookahead_speed_ratio = lookahead_speed_ratio_;
   }

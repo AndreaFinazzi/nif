@@ -20,7 +20,7 @@ def generate_launch_description():
 
     nif_global_parameters_file = os.path.join(
         get_package_share_directory('nif_launch'),
-        'param',
+        'config',
         'params.global.yaml'
     )
 

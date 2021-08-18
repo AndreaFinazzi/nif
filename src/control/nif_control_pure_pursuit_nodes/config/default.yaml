@@ -1,0 +1,4 @@
+nif/control_pure_pursuit_node:
+  ros__parameters:
+    invert_steer_direction: false
+    use_sim_time: false

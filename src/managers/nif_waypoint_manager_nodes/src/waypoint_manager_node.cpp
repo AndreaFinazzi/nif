@@ -23,19 +23,22 @@ nif::managers::WaypointManagerNode::WaypointManagerNode(
   } catch (std::exception e) {
     RCLCPP_FATAL(this->get_logger(), "Can't get package_share_directory");
   }
-  std::vector<std::string> file_path_list_defualt = {package_share_directory +
-                                                     "/maps/map.csv"};
-  this->declare_parameter("file_path_list", file_path_list_defualt);
+
+  std::vector<std::string> file_path_list_default = {package_share_directory + "/maps/map.csv"};
+  this->declare_parameter("file_path_list", file_path_list_default);
 
   this->file_path_list =
       this->get_parameter("file_path_list").as_string_array();
 
   // Could also inherit from IBaseSynchronizedNode
   m_timer = this->create_wall_timer(
-      10ms, std::bind(&WaypointManagerNode::timer_callback, this));
+      10ms, std::bind(&WaypointManagerNode::timerCallback, this));
 
-  m_map_track_publisher = this->create_publisher<nav_msgs::msg::Path>(
-      "nif/wpt_manager/maptrack_path", 10);
+  m_map_track_global_publisher = this->create_publisher<nav_msgs::msg::Path>(
+      "wpt_manager/maptrack_path/global", 10);
+
+  m_map_track_body_publisher = this->create_publisher<nav_msgs::msg::Path>(
+      "wpt_manager/maptrack_path/body", 10);
 
   this->setWaypointManager(std::make_shared<WaypointManagerMinimal>(
       file_path_list, this->getBodyFrameId(), this->getGlobalFrameId()));
@@ -50,14 +53,19 @@ nif::managers::WaypointManagerNode::WaypointManagerNode(
   this->setWaypointManager(wpt_manager_ptr);
 }
 
-void nif::managers::WaypointManagerNode::timer_callback() {
+void nif::managers::WaypointManagerNode::timerCallback() {
   RCLCPP_DEBUG(this->get_logger(), "WaypointManagerNode timer callback");
-  nav_msgs::msg::Path maptrack;
+  const nav_msgs::msg::Path &path_in_global =
+      this->wpt_manager->getDesiredMapTrackInGlobal();
+  const nav_msgs::msg::Path &path_in_body =
+      this->wpt_manager->getDesiredMapTrackInBody();
 
   this->wpt_manager->setCurrentOdometry(this->getEgoOdometry());
-  maptrack = this->wpt_manager->getDesiredMapTrackInGlobal();
-  m_map_track_publisher->publish(maptrack);
+
+  m_map_track_global_publisher->publish(path_in_global);
+  m_map_track_body_publisher->publish(path_in_body);
 }
+
 
 void nif::managers::WaypointManagerNode::initParameters() {}
 void nif::managers::WaypointManagerNode::getParameters() {}

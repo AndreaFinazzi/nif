@@ -18,6 +18,9 @@
   <exec_depend>lgsvl_bridge</exec_depend>
   <exec_depend>novatel_gps_msgs</exec_depend>
 
+  <depend>tf2</depend>
+  <depend>tf2_ros</depend>
+
   <export>
     <build_type>ament_python</build_type>
   </export>

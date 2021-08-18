@@ -211,7 +211,7 @@ IWaypointManager::getPathGlobaltoBody(nav_msgs::msg::Path& path_in_global_) {
   path_in_body.header.frame_id = m_body_frame_id;
   for (auto & pose : path_in_global_.poses) {
     path_in_body.poses.push_back(
-        getPtBodytoGlobal(pose));
+        getPtGlobaltoBody(pose));
   }
   return path_in_body;
 }

@@ -31,7 +31,7 @@ def generate_launch_description():
     nif_control_minimal_param = DeclareLaunchArgument(
         'nif_control_minimal_param_file',
         default_value=nif_control_minimal_param_file,
-        description='Path to config file for kin_control'
+        description='Path to config file for nif_control_minimal'
     )
 
     lat_control_node = Node(

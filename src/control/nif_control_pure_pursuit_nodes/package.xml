@@ -18,6 +18,7 @@
   <depend>geometry_msgs</depend>
   <depend>nav_msgs</depend>
   <depend>novatel_gps_msgs</depend>
+  <depend>visualization_msgs</depend>
   <depend>nif_common</depend>
   <depend>nif_common_nodes</depend>
   <depend>nif_control_common_nodes</depend>
