@@ -68,6 +68,7 @@ private:
   double feedback_ = 0.0;
   double steering_override_ = 0.0;
 
+  bool path_ready = false;
 };
 
 } // namespace control

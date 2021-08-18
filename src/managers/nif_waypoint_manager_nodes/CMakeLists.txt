@@ -19,7 +19,7 @@ ament_auto_add_library(${PROJECT_NAME} SHARED
         src/waypoint_manager_node.cpp
         )
 
-ament_auto_add_executable(waypoint_manager_node_exe
+ament_auto_add_executable(${PROJECT_NAME}_exe
   src/waypoint_manager_main.cpp)
 
 

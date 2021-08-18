@@ -51,7 +51,7 @@ c_wpt::c_wpt(string wpt_file_path_,
       m_wpt_inglobal.poses.clear();
 
       if (point_s_end < nif::common::constants::planner::WPT_MINIMUM_LEN) {
-        throw std::domain_error("Lenth of the waypoint is abnormally short.");
+        throw std::domain_error("Length of the waypoint is abnormally short.");
         return;
       }
 

@@ -1,3 +1,4 @@
+import os
 from ament_index_python import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
@@ -14,6 +15,21 @@ def generate_launch_description():
     pkg_dir_waypoint_manager = get_package_share_directory('nif_waypoint_manager_nodes')
     pgk_dir_control_pure_pursuit = get_package_share_directory('nif_control_pure_pursuit_nodes')
     pgk_dir_lgsvl_simulation = get_package_share_directory('nif_lgsvl_simulation')
+
+    nif_global_parameters_file = os.path.join(
+        get_package_share_directory('nif_launch'),
+        'config',
+        'params.global.yaml'
+    )
+
+    global_parameters_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            get_package_share_directory('nif_common_nodes') + '/launch/parameters.launch.py'
+        ),
+        launch_arguments={
+            'nif_global_parameters_file': nif_global_parameters_file
+        }.items()
+    )
 
     robot_description_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -41,7 +57,7 @@ def generate_launch_description():
 
     lgsvl_simulation_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            pgk_dir_lgsvl_simulation + '/default.launch.py'
+            pgk_dir_lgsvl_simulation + '/launch/default.launch.py'
         )
     )
 
@@ -52,6 +68,7 @@ def generate_launch_description():
     # )
 
     launch_description = [
+        global_parameters_launch,
         robot_description_launch,
         localization_launch,
         waypoint_manager_launch,
@@ -60,4 +77,4 @@ def generate_launch_description():
         # control_launch
     ]
 
-    return LaunchDescription(launch_description)  # , param_declarations])
+    return LaunchDescription(launch_description)

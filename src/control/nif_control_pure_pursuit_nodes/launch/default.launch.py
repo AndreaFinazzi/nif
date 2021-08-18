@@ -9,13 +9,12 @@ import os
 
 
 def generate_launch_description():
-    params_file = (
-        os.path.join(
+
+    params_file = os.path.join(
             get_package_share_directory("nif_control_pure_pursuit_nodes"),
             "config",
-            "default.yaml",
-        ),
-    )
+            "default.yaml"
+        )
     # make sure the dbc file gets installed with the launch file
     # some_file = get_package_share_directory('nif_localization_nodes') + \
     #                 ""
@@ -29,17 +28,18 @@ def generate_launch_description():
         package='nif_control_pure_pursuit_nodes',
         executable='nif_control_pure_pursuit_nodes_exe',
         output='screen',
-        namespace='nif',
-        parameters=[LaunchConfiguration('nif_control_pure_pursuit_param_file')],
+        # namespace='nif',
+        parameters=[
+            LaunchConfiguration('nif_control_pure_pursuit_param_file')
+        ],
         remappings=[
             ('topic_ego_odometry', 'localization/ego_odom'),
             ('target_path', 'wpt_manager/maptrack_path/global'),
             ('/joystick/steering_cmd', 'raptor_dbw_interface/steering_cmd')
         ],
-    ),
+    )
 
-    return LaunchDescription(
-        [
+    return LaunchDescription([
             param_file_launch_arg,
             control_node
         ])

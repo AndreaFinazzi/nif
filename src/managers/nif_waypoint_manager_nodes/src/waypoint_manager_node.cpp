@@ -23,12 +23,16 @@ nif::managers::WaypointManagerNode::WaypointManagerNode(
   } catch (std::exception e) {
     RCLCPP_FATAL(this->get_logger(), "Can't get package_share_directory");
   }
-
-  std::vector<std::string> file_path_list_default = {package_share_directory + "/maps/map.csv"};
+  package_share_directory = package_share_directory.append("/");
+  std::vector<std::string> file_path_list_default = {"maps/map.csv"};
   this->declare_parameter("file_path_list", file_path_list_default);
 
   this->file_path_list =
       this->get_parameter("file_path_list").as_string_array();
+
+  for (auto & path : file_path_list) {
+    path.insert(0, package_share_directory);
+  }
 
   // Could also inherit from IBaseSynchronizedNode
   m_timer = this->create_wall_timer(

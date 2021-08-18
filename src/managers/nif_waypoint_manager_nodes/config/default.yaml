@@ -1,6 +1,5 @@
-waypoint_manager_node:
+/**:
   ros__parameters:
-
-#    file_path_list:
+    file_path_list:
 #      - 'maps/LOR_inside_line.csv'
-      - '/home/sw/adehome/nif/src/managers/nif_waypoint_manager_nodes/maps/2021-08-06_LOR/LOR_earth_rl.csv'
+      - 'maps/2021-08-06_LOR/LOR_earth_rl.csv'

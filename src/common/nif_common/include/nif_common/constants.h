@@ -72,7 +72,7 @@ const std::string GLOBAL_PARAMETERS_NODE_NAME("global_parameters_node");
 /**
  * Default global parameter server-connection timeout.
  */
-const std::chrono::seconds GLOBAL_PARAMETERS_NODE_TIMEOUT(1);
+const std::chrono::seconds GLOBAL_PARAMETERS_NODE_TIMEOUT(3);
 
 namespace names {
 

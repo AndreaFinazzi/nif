@@ -24,9 +24,9 @@ def generate_launch_description():
 
     localization_node = Node(
         package='nif_localization_nodes',
-        executable='localization_node_exe',
+        executable='nif_localization_nodes_exe',
         output='screen',
-        namespace='nif',
+        # namespace='nif',
         parameters=[LaunchConfiguration('nif_localization_nodes_param_file')],
         remappings=[
             ('gnss_01', '/novatel_top/inspva'),

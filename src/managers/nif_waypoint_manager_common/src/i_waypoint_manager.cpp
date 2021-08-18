@@ -23,9 +23,8 @@ IWaypointManager::IWaypointManager(const vector<string>& wpt_file_path_list_,
   bool wpt_3d_flg = false;
   bool spline_flg = true;
 
-  for (int wpt_file_idx = 0; wpt_file_idx < wpt_file_path_list_.size();
-       wpt_file_idx++) {
-    c_wpt obj(wpt_file_path_list_[wpt_file_idx],
+  for (const auto & wpt_file_idx : wpt_file_path_list_) {
+    c_wpt obj(wpt_file_idx,
               "",
               m_global_frame_id,
               wpt_3d_flg,
@@ -39,7 +38,6 @@ IWaypointManager::IWaypointManager(const vector<string>& wpt_file_path_list_,
     c_desired_wpt = c_default_wpt;
   } else {
     throw std::out_of_range("Waypoint is not properly loaded.");
-    return;
   }
 
   // defualt desired wpt is set to the wpt which is firstly loaded.

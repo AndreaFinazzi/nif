@@ -11,6 +11,7 @@ from launch_ros.actions import Node
 def get_share_file(package_name, file_name):
     return os.path.join(get_package_share_directory(package_name), file_name)
 
+
 def generate_launch_description():
     # params_file = LaunchConfiguration(
     #     'params',
@@ -19,7 +20,7 @@ def generate_launch_description():
     # make sure the dbc file gets installed with the launch file
     # some_file = get_package_share_directory('nif_localization_nodes') + \
     #                 ""
-    config = (
+    config_file = (
         os.path.join(
             get_package_share_directory("nif_waypoint_manager_nodes"),
             "config",
@@ -27,25 +28,27 @@ def generate_launch_description():
         ),
     )
 
-    return LaunchDescription(
-        [
-            Node(
-                package='nif_waypoint_manager_nodes',
-                executable='waypoint_manager_node_exe',
-                output='screen',
-                # namespace='nif',
-                # parameters=[config],
-                parameters=[
-                    {
-                        'file_path_list': [
-                            '/home/sw/src/managers/nif_waypoint_manager_nodes/maps/lgsvl_sim/wpt_manual_points.csv',
-                            '/home/sw/src/managers/nif_waypoint_manager_nodes/maps/lgsvl_sim/wpt_manual_points.csv'
-                        ]
-                    },
-                ],
-                remappings=[
-                    ('topic_ego_odometry', 'localization/ego_odom')
-                ],
+    param_file_argument = DeclareLaunchArgument(
+        'nif_waypoint_manager_param_file',
+        default_value=config_file,
+        description='Path to config file for waypoint manager'
+    )
 
-            ),
-        ])
+    waypoint_manager_node = Node(
+        package='nif_waypoint_manager_nodes',
+        executable='nif_waypoint_manager_nodes_exe',
+        output='screen',
+        # namespace='nif',
+        # parameters=[config],
+        parameters=[
+            LaunchConfiguration('nif_waypoint_manager_param_file')
+        ],
+        remappings=[
+            ('topic_ego_odometry', 'localization/ego_odom')
+        ]
+    )
+
+    return LaunchDescription([
+        param_file_argument,
+        waypoint_manager_node
+    ])
