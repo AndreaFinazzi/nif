@@ -21,6 +21,7 @@
 
 class PurePursuit {
 public:
+  PurePursuit() = delete;
   PurePursuit(double min_look_ahead_dist_,
               double max_look_ahead_dist_,
               double lookahead_speed_ratio_,
@@ -67,9 +68,6 @@ private:
   bool m_use_lpf_flg;
 
   bool m_steer_sign_flip_flg;
-
-private:
-  PurePursuit() {}
 
 public:
   void calcLookAheadIndex(const nav_msgs::msg::Path& map_track_path_,

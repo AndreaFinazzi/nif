@@ -43,9 +43,9 @@ class GraphBasedPlanner(Node):
         super().__init__('graph_based_planner_node')
 
         # Subscribers and Publisher
-        self.local_maptrack_inglobal_pub = self.create_publisher(Path, 'topic_name_local_maptrack_inglobal', 10)
-        self.veh_odom_sub = self.create_subscription(Odometry, 'topic_name_veh_odom', self.veh_odom_callback, 10)
-        self.perception_result_sub = self.create_subscription(Perception3DArray, 'topic_name_perception_result', self.perception_result_callback, 10)
+        self.local_maptrack_inglobal_pub = self.create_publisher(Path, 'out_local_maptrack_inglobal', 10)
+        self.veh_odom_sub = self.create_subscription(Odometry, 'in_vehicle_odometry', self.veh_odom_callback, 10)
+        self.perception_result_sub = self.create_subscription(Perception3DArray, 'in_perception_result', self.perception_result_callback, 10)
 
         self.current_veh_odom = None
 
@@ -63,13 +63,15 @@ class GraphBasedPlanner(Node):
         track_specifier = json.loads(track_param.get('DRIVING_TASK', 'track'))
 
         # define all relevant paths
-        path_dict = {'globtraj_input_path': toppath + "/inputs/traj_ltpl_cl/traj_ltpl_cl_" + track_specifier + ".csv",
-                    'graph_store_path': toppath + "/inputs/stored_graph.pckl",
-                    'ltpl_offline_param_path': toppath + "/params/ltpl_config_offline.ini",
-                    'ltpl_online_param_path': toppath + "/params/ltpl_config_online.ini",
-                    'log_path': toppath + "/logs/graph_ltpl/",
-                    'graph_log_id': datetime.datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
-                    }
+        path_dict = {
+            # 'globtraj_input_path': toppath + "/inputs/traj_ltpl_cl/traj_ltpl_cl_" + track_specifier + ".csv",
+            'globtraj_input_path': get_share_file('nif_multilayer_planning_nodes', 'assets') + "/maps/traj_ltpl_cl_ims.csv",
+            'graph_store_path': toppath + "/inputs/stored_graph.pckl",
+            'ltpl_offline_param_path': toppath + "/params/ltpl_config_offline.ini",
+            'ltpl_online_param_path': toppath + "/params/ltpl_config_online.ini",
+            'log_path': toppath + "/logs/graph_ltpl/",
+            'graph_log_id': datetime.datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
+        }
 
         # ----------------------------------------------------------------------------------------------------------------------
         # INITIALIZATION AND OFFLINE PART --------------------------------------------------------------------------------------
@@ -112,8 +114,10 @@ class GraphBasedPlanner(Node):
     def veh_odom_callback(self, msg):
         # self.get_logger().info('I heard: "%s"' % msg.data)
         self.current_veh_odom = msg
+        
         self.pos_est = np.ndarray([self.current_veh_odom.pose.pose.position.x,
                                     self.current_veh_odom.pose.pose.position.y])
+
         self.vel_est = math.sqrt(pow(self.current_veh_odom.twist.twist.linear.x, 2)
                                 + pow(self.current_veh_odom.twist.twist.linear.y, 2)
                                 + pow(self.current_veh_odom.twist.twist.linear.z, 2))
