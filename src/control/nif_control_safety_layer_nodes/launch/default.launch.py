@@ -35,7 +35,8 @@ def generate_launch_description():
             ('out_control_cmd', '/control_safety_layer/out/control_cmd'),
             ('out_steering_control_cmd', '/raptor_dbw_interface/steering_cmd'),
             ('out_accelerator_control_cmd', '/raptor_dbw_interface/accelerator_pedal_cmd'),
-
+            ('out_braking_control_cmd', '/raptor_dbw_interface/brake_cmd'),
+            ('out_gear_control_cmd', '/raptor_dbw_interface/gear_cmd'),
         ]
     )
 

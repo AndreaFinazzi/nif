@@ -83,7 +83,7 @@ using TerrainState = nif_msgs::msg::TerrainStatus;
  * This message contains the race flag information from the race control.
  * TODO: should be changed based on the bag file
  */
-using RaceControlState = deep_orange_msgs::msg::RcToCt;
+using RaceControlStatus = deep_orange_msgs::msg::RcToCt;
 
 /**
  * This message contains the autonomy status information which should updated

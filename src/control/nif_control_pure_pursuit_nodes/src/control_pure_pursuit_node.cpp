@@ -14,7 +14,7 @@ ControlPurePursuitNode::ControlPurePursuitNode(const std::string &node_name)
 
   // Publishers
   m_lookahead_pt_in_global_pub = this->create_publisher<visualization_msgs::msg::Marker>(
-      "lookahead_point", 1);
+      "control_pure_pursuit/lookahead_point", 1);
 
   steer_control_cmd_msg = std::make_shared<nif::common::msgs::ControlCmd>();
 
@@ -51,8 +51,8 @@ ControlPurePursuitNode::ControlPurePursuitNode(const std::string &node_name)
 // TODO there's a storeTraj function that is called every time we receive a new plan
 void ControlPurePursuitNode::mapTrackCallback(
     const nav_msgs::msg::Path::SharedPtr msg) {
-  m_maptrack = *msg;
-  m_pure_pursuit_handler_ptr->setMapTrack(m_maptrack);
+  m_maptrack = msg;
+  m_pure_pursuit_handler_ptr->setMapTrack(*m_maptrack);
   this->maptrack_recv_time_ = this->now();
 }
 
@@ -69,7 +69,7 @@ void ControlPurePursuitNode::egoUpdateTimerCallback() const {
  */
 void ControlPurePursuitNode::publishLookAheadPointMarker() {
   visualization_msgs::msg::Marker look_ahead_marker;
-  look_ahead_marker.header.stamp = this->get_clock()->now();
+  look_ahead_marker.header.stamp = this->now();
   look_ahead_marker.header.frame_id = this->getBodyFrameId();
   look_ahead_marker.type = visualization_msgs::msg::Marker::SPHERE;
   look_ahead_marker.action = visualization_msgs::msg::Marker::ADD;
@@ -92,13 +92,19 @@ void ControlPurePursuitNode::publishLookAheadPointMarker() {
  */
 nif::common::msgs::ControlCmd &ControlPurePursuitNode::solve() {
 
-  if (!this->getReferenceTrajectory()->points.empty())
+  if  (
+          (this->getReferenceTrajectory() && !(this->getReferenceTrajectory()->points.empty()))
+          ||
+          (this->m_maptrack && !(this->m_maptrack->poses.empty()))
+      )
   {
     auto pure_pursuit_steer_cmd = m_pure_pursuit_handler_ptr->getSteerCmd();
     steer_control_cmd_msg->steering_control_cmd.data = pure_pursuit_steer_cmd;
 
     m_lookahead_pt_in_global = m_pure_pursuit_handler_ptr->getLookaheadPointInGlobal();
     m_control_pt_in_body = m_pure_pursuit_handler_ptr->getControlPointInBody();
+
+    this->publishLookAheadPointMarker();
 
     return *steer_control_cmd_msg;
   }

@@ -35,6 +35,21 @@ def generate_launch_description():
         description='Path to config file for nif_control_minimal'
     )
 
+    # Shouldn't be necessary, but speeds things up
+    ## tf2 - base_link to rear_axle_middle
+    base_link_tf_publisher = Node(
+        name='base_link_tf_publisher',
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        output='screen',
+        arguments=['0', '0', '0', '0.0', '0.0', '0.0', 'base_link', 'rear_axle_middle'],
+        parameters=[
+            {
+                'publish_frequency': 100.0
+            }
+        ]
+    )
+
     # Define robot_state_publisher node
     robot_state_publisher = Node(
         package='robot_state_publisher',
@@ -44,11 +59,12 @@ def generate_launch_description():
         parameters=[
             LaunchConfiguration('av21_description_param_file'),
             {
-                'robot_description': robot_desc
+                'robot_description': robot_desc,
             }
         ])
 
     return LaunchDescription([
+        base_link_tf_publisher,
         av21_description_param_file,
         robot_state_publisher
     ])

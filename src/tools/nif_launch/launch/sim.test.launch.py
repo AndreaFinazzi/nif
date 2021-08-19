@@ -43,16 +43,30 @@ def generate_launch_description():
         )
     )
 
-    waypoint_manager_launch = IncludeLaunchDescription(
+    # waypoint_manager_launch = IncludeLaunchDescription(
+    #     PythonLaunchDescriptionSource(
+    #         pkg_dir_waypoint_manager + '/launch/default.launch.py'
+    #     )
+    # )
+
+    multilayer_planning_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            pkg_dir_waypoint_manager + '/launch/default.launch.py'
-        )
+            get_package_share_directory('nif_multilayer_planning_nodes') + '/launch/default.launch.py'
+        ),
+
     )
 
     control_pure_pursuit_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             pgk_dir_control_pure_pursuit + '/launch/default.launch.py'
         )
+    )
+
+    csl_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            get_package_share_directory('nif_control_safety_layer_nodes') + '/launch/default.launch.py'
+        ),
+
     )
 
     lgsvl_simulation_launch = IncludeLaunchDescription(
@@ -71,8 +85,10 @@ def generate_launch_description():
         global_parameters_launch,
         robot_description_launch,
         localization_launch,
-        waypoint_manager_launch,
+        # waypoint_manager_launch,
+        multilayer_planning_launch,
         control_pure_pursuit_launch,
+        csl_launch,
         lgsvl_simulation_launch
         # control_launch
     ]

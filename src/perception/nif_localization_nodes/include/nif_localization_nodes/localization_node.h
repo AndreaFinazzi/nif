@@ -61,7 +61,6 @@ private:
   void initParameters() {}
   void getParameters() {}
 
-  geometry_msgs::msg::TransformStamped transform_stamped;
 
   void topGPSCallback(const novatel_gps_msgs::msg::Inspva::SharedPtr& gps_);
   void bottomGPSCallback(const novatel_gps_msgs::msg::Inspva::SharedPtr& gps_);
@@ -86,6 +85,13 @@ private:
   rclcpp::TimerBase::SharedPtr m_timer;
 
   bool m_use_enu;
+
+//Transform:
+  geometry_msgs::msg::TransformStamped transform_stamped;
+
+  rclcpp::TimerBase::SharedPtr m_tf_timer;
+
+  std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster;
 };
 
 } // namespace perception

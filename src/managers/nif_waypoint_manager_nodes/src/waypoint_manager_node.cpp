@@ -59,17 +59,18 @@ nif::managers::WaypointManagerNode::WaypointManagerNode(
 
 void nif::managers::WaypointManagerNode::timerCallback() {
   RCLCPP_DEBUG(this->get_logger(), "WaypointManagerNode timer callback");
-  const nav_msgs::msg::Path &path_in_global =
+  nav_msgs::msg::Path &path_in_global =
       this->wpt_manager->getDesiredMapTrackInGlobal();
-  const nav_msgs::msg::Path &path_in_body =
+  nav_msgs::msg::Path &path_in_body =
       this->wpt_manager->getDesiredMapTrackInBody();
 
-  this->wpt_manager->setCurrentOdometry(this->getEgoOdometry());
+  path_in_body.header.stamp = this->now();
+  path_in_global.header.stamp = this->now();
 
   m_map_track_global_publisher->publish(path_in_global);
   m_map_track_body_publisher->publish(path_in_body);
+  this->wpt_manager->setCurrentOdometry(this->getEgoOdometry());
 }
-
 
 void nif::managers::WaypointManagerNode::initParameters() {}
 void nif::managers::WaypointManagerNode::getParameters() {}

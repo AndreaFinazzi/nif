@@ -23,8 +23,9 @@ LocalizationNode::LocalizationNode(
     const std::shared_ptr<LocalizationMinimal> localization_algorithm_ptr)
 
   : IBaseNode(node_name_, common::NodeType::LOCALIZATION),
-    m_localization_algorithm_ptr(std::move(localization_algorithm_ptr)),
-    m_use_enu(false)
+    m_localization_algorithm_ptr(localization_algorithm_ptr),
+    m_use_enu(false),
+    tf_broadcaster(std::make_shared<tf2_ros::TransformBroadcaster>(this))
 
 {
 
@@ -54,11 +55,14 @@ LocalizationNode::LocalizationNode(
               ecef_ref_param.at(0), ecef_ref_param.at(1), ecef_ref_param.at(2));
   RCLCPP_INFO(this->get_logger(), m_use_enu ? "Using ENU" : "Using NED");
 
-  this->m_veh_odom.header.frame_id = this->getBodyFrameId();
-  this->m_veh_odom.child_frame_id  = this->getGlobalFrameId();
+  this->m_veh_odom.header.frame_id = this->getGlobalFrameId();
+  this->m_veh_odom.child_frame_id  = this->getBodyFrameId();
 
   m_timer = this->create_wall_timer(
       10ms, std::bind(&LocalizationNode::timerCallback, this));
+
+  m_tf_timer = this->create_wall_timer(
+      50ms, std::bind(&LocalizationNode::publishTransformStamped, this));
 
   m_veh_odom_publisher = this->create_publisher<nav_msgs::msg::Odometry>(
       "localization/ego_odom", 10);
@@ -107,14 +111,15 @@ void LocalizationNode::syncGPSCallback(
 //  TODO reuse message, here we're COPYING (wasting time)
   this->m_veh_odom = this->m_localization_algorithm_ptr->getVehOdomByFusion();
 
-  this->m_veh_odom.header.frame_id = this->getBodyFrameId();
-  this->m_veh_odom.child_frame_id  = this->getGlobalFrameId();
+  this->m_veh_odom.header.frame_id = this->getGlobalFrameId();
+  this->m_veh_odom.child_frame_id  = this->getBodyFrameId();
 }
 
 void LocalizationNode::timerCallback() {
   RCLCPP_DEBUG(this->get_logger(),
                "LocalizationNode odom update timer callback");
   m_veh_odom_publisher->publish(m_veh_odom);
+//  this->publishTransformStamped();
 }
 
 void LocalizationNode::gpsHorizontalCallback(
@@ -124,6 +129,7 @@ void LocalizationNode::gpsHorizontalCallback(
             *gps_horizontal_ptr_);
 
     this->m_veh_odom = this->m_localization_algorithm_ptr->getVehOdomByHorizontalGPS();
+    this->m_veh_odom.header.stamp = this->now();
 
     double yaw = (gps_horizontal_ptr_->azimuth) *
         nif::common::constants::DEG2RAD; // NED yaw
@@ -135,14 +141,12 @@ void LocalizationNode::gpsHorizontalCallback(
     this->m_veh_odom.pose.pose.orientation.z = q.z();
     this->m_veh_odom.pose.pose.orientation.w = q.w();
 
-    this->m_veh_odom.header.frame_id = this->getBodyFrameId();
-    this->m_veh_odom.child_frame_id  = this->getGlobalFrameId();
+    this->m_veh_odom.header.frame_id = this->getGlobalFrameId();
+    this->m_veh_odom.child_frame_id  = this->getBodyFrameId();
 
     if (m_use_enu) {
       getENUfromNED(this->m_veh_odom, yaw);
     }
-
-    publishTransformStamped();
 }
 
 void LocalizationNode::getENUfromNED(nav_msgs::msg::Odometry &ned_odom,
@@ -162,9 +166,9 @@ void LocalizationNode::getENUfromNED(nav_msgs::msg::Odometry &ned_odom,
 }
 
 void LocalizationNode::publishTransformStamped() {
-    static tf2_ros::TransformBroadcaster br(this);
+    static tf2_ros::TransformBroadcaster transform_broadcaster(this);
 
-    transform_stamped.header.stamp = this->now();
+    transform_stamped.header.stamp = m_veh_odom.header.stamp;
     transform_stamped.header.frame_id = this->getGlobalFrameId();
     transform_stamped.child_frame_id = this->getBodyFrameId();
     transform_stamped.transform.translation.x = m_veh_odom.pose.pose.position.x;
@@ -177,5 +181,6 @@ void LocalizationNode::publishTransformStamped() {
     transform_stamped.transform.rotation.z = m_veh_odom.pose.pose.orientation.z;
     transform_stamped.transform.rotation.w = m_veh_odom.pose.pose.orientation.w;
 
-    br.sendTransform(this->transform_stamped);
+//    this->tf_broadcaster->sendTransform(this->transform_stamped);
+    transform_broadcaster.sendTransform(this->transform_stamped);
 }

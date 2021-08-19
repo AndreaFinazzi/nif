@@ -31,7 +31,7 @@ int32_t main(int32_t argc, char** argv) {
   try {
     RCLCPP_INFO(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
                 "Instantiating GlobalParameterNode with name: %s",
-                node_name);
+                node_name.c_str());
     nd = std::make_shared<GlobalParameterNode>(node_name);
 
   } catch (std::exception& e) {
@@ -46,7 +46,7 @@ int32_t main(int32_t argc, char** argv) {
 
   RCLCPP_INFO(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
               "Shutting down %s [GlobalParameterNode]",
-              node_name);
+              node_name.c_str());
 
   return 0;
 }

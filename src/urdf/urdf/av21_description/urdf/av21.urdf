@@ -93,7 +93,7 @@
   </joint>
 
   <joint name="camera_front_right_joint" type="fixed">
-    <parent link="rear_axle_middle_ground" />
+    <parent link="rear_axle_middle" />
     <child link="camera_front_right" />
     <origin xyz="2.184 -0.171 0.422" rpy="0 0 -0.9599310886" />
   </joint>

@@ -56,7 +56,7 @@ private:
   rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr m_map_track_sub;
 
   rclcpp::Time maptrack_recv_time_;
-  nav_msgs::msg::Path m_maptrack;
+  nav_msgs::msg::Path::SharedPtr m_maptrack;
 
   double m_param_min_lookahead_dist;
   double m_param_max_lookahead_dist;
