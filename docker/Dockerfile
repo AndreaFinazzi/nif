@@ -43,10 +43,12 @@ RUN ( \
   ) > /etc/ssh/sshd_config_test_clion \
   && mkdir /run/sshd
 
-# Shouldn't be needed, libboost-all-dev is installed by rosdep
-# ADD --chown=$USER:$GROUP ./boost_1_76_0 /opt/boost_1_76_0
-# RUN cd /opt/boost_1_76_0 && \
-#     ./bootstrap.sh && \
-#     ./b2 install
+
+RUN apt-get update \
+  && apt-get install -y \
+      ros-foxy-rqt \
+      ros-foxy-rqt-* \
+      ros-foxy-tf2-tools \
+  && apt-get clean
 
 COPY ./entrypoint /ade_entrypoint

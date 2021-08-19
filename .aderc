@@ -1,4 +1,4 @@
-export ADE_DOCKER_RUN_ARGS="--cap-add=SYS_PTRACE --net=default -e RMW_IMPLEMENTATION=rmw_cyclonedds_cpp -p127.0.0.1:2222:22"
+export ADE_DOCKER_RUN_ARGS="--cap-add=SYS_PTRACE --security-opt seccomp=unconfined --security-opt apparmor=unconfined --privileged --net=default -e RMW_IMPLEMENTATION=rmw_cyclonedds_cpp -p127.0.0.1:2222:22"
 export ADE_GITLAB=gitlab.com
 export ADE_REGISTRY=registry.gitlab.com
 export ADE_DISABLE_NVIDIA_DOCKER=true
