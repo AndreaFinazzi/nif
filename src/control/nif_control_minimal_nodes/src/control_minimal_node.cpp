@@ -7,7 +7,8 @@
 using nif::control::ControlMinimalNode;
 
 ControlMinimalNode::ControlMinimalNode(const std::string& node_name)
-  : IControllerNode(node_name) {
+  : IControllerNode(node_name),
+      recv_time_(this->now()){
   // Publishers
   pubSteeringCmd_ = this->create_publisher<std_msgs::msg::Float32>(
       "/joystick/steering_cmd", 1);
@@ -57,6 +58,9 @@ void nif::control::ControlMinimalNode::initParameters() {}
 void nif::control::ControlMinimalNode::getParameters() {}
 
 nif::common::msgs::ControlCmd& ControlMinimalNode::solve() {
+  if (this->path_ready)
+  {
+
   rclcpp::Time control_time = this->now();
   rclcpp::Duration time_diff = control_time - this->recv_time_;
   double dt = static_cast<double>(time_diff.seconds()) +
@@ -76,6 +80,7 @@ nif::common::msgs::ControlCmd& ControlMinimalNode::solve() {
   publishDebugSignals();
   this->control_cmd->steering_control_cmd.data = this->steering_cmd.data;
 
+  }
   return *(this->control_cmd);
 }
 
@@ -158,7 +163,8 @@ void ControlMinimalNode::receivePath(const nav_msgs::msg::Path::SharedPtr msg) {
     this->lookahead_error.data = 0.0;
   }
 
-  this->recv_time_ = rclcpp::Clock().now();
+  this->recv_time_ = this->now();
+  this->path_ready = true;
 }
 
 int ControlMinimalNode::findLookaheadIndex(

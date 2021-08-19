@@ -33,6 +33,7 @@ void nif::control::IControllerNode::controlCmdPrevCallback(
 
 void nif::control::IControllerNode::referenceTrajectoryCallback(
     const nif::common::msgs::Trajectory::SharedPtr msg) {
+//  TODO clean things out
   this->reference_trajectory = msg;
   this->storeReferenceTrajectory(msg);
 }
@@ -54,5 +55,6 @@ nif::control::IControllerNode::getControlCmdPrev() const {
 void nif::control::IControllerNode::run() {
   auto msg = this->solve();
 
+  msg.header.stamp = this->now();
   this->control_cmd_pub->publish(msg);
 }

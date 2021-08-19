@@ -15,12 +15,11 @@ def get_share_file(package_name, file_name):
 
 def generate_launch_description():
     pkg_dir = get_package_share_directory('nif_launch')
-    pkg_dir_iac_launch = get_package_share_directory('iac_launch')
     pkg_dir_localization = get_package_share_directory('nif_localization_nodes')
 
     nif_global_parameters_file = os.path.join(
         get_package_share_directory('nif_launch'),
-        'param',
+        'config',
         'params.global.yaml'
     )
 
@@ -35,7 +34,7 @@ def generate_launch_description():
 
     robot_description_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            get_package_share_directory('iac_launch') + '/launch/robot_description.launch.py'
+            get_package_share_directory('av21_description') + '/launch/default.launch.py'
         )
     )
 

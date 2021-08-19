@@ -42,7 +42,7 @@
   },
   {
     "params": {
-      "Topic": "/ground_truth/state_raw",
+      "Topic": "/sensor/ground_truth",
       "Frame": "cog",
       "IgnoreMapOrigin": true,
       "Frequency": 100

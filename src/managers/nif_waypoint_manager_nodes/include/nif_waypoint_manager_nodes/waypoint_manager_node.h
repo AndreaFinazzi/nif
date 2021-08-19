@@ -33,7 +33,7 @@ namespace nif
 
     private:
       WaypointManagerNode();
-      void timer_callback();
+      void timerCallback();
 
       // TODO: not used function. @Andrea told that these functions should be fixed
       // or removed
@@ -50,9 +50,11 @@ namespace nif
       std::shared_ptr<WaypointManagerMinimal> wpt_manager;
 
       rclcpp::TimerBase::SharedPtr m_timer;
-      rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr m_map_track_publisher;
+
+      rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr m_map_track_global_publisher;
+      rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr m_map_track_body_publisher;
     };
 
-  }
-}
+} // namespace managers
+} // namespace nif
 #endif // ROS2MASTER_WAYPOINT_MANAGER_NODE_H

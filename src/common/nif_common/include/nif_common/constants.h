@@ -72,7 +72,7 @@ const std::string GLOBAL_PARAMETERS_NODE_NAME("global_parameters_node");
 /**
  * Default global parameter server-connection timeout.
  */
-const std::chrono::seconds GLOBAL_PARAMETERS_NODE_TIMEOUT(1);
+const std::chrono::seconds GLOBAL_PARAMETERS_NODE_TIMEOUT(3);
 
 namespace names {
 
@@ -85,6 +85,28 @@ constexpr const char* FRAME_ID_BODY = "frames.body";
  * Name for the global frame id parameter.
  */
 constexpr const char* FRAME_ID_GLOBAL = "frames.global";
+
+
+/**
+ * Name for the ego odometry topic_name parameter.
+ */
+constexpr const char* TOPIC_ID_EGO_ODOMETRY = "topics.ego_odometry";
+
+/**
+ * Name for the system status topic_name parameter.
+ */
+constexpr const char* TOPIC_ID_SYSTEM_STATUS = "topics.system_status";
+
+/**
+ * Name for the race control status topic_name parameter.
+ */
+constexpr const char* TOPIC_ID_RACE_CONTROL_STATUS = "topics.race_control_status";
+
+/**
+ * Name for the ego power-train status topic_name parameter.
+ */
+constexpr const char* TOPIC_ID_EGO_POWERTRAIN_STATUS = "topics.ego_powertrain_status";
+
 
 } // namespace names
 

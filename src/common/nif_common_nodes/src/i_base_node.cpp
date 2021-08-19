@@ -6,6 +6,7 @@
 //
 
 #include "nif_common_nodes/i_base_node.h"
+#include "nif_common/constants.h"
 
 using namespace nif::common;
 using nif::common::NodeStatusCode;
@@ -31,7 +32,7 @@ IBaseNode::IBaseNode(const std::string &node_name, const NodeType node_type, con
 // Get global parameters
 // TODO improve readability
   try {
-// Initialize client and wait for service
+    // Initialize client and wait for service
     this->global_parameters_client =
             std::make_shared<rclcpp::SyncParametersClient>(this, constants::parameters::GLOBAL_PARAMETERS_NODE_NAME);
     this->global_parameters_client->wait_for_service(constants::parameters::GLOBAL_PARAMETERS_NODE_TIMEOUT);
@@ -57,26 +58,44 @@ IBaseNode::IBaseNode(const std::string &node_name, const NodeType node_type, con
 
   //  Declare subscriptions
   //                TODO : Define QoS macros
+
+  const std::string& topic_ego_odometry =
+      this->get_global_parameter<std::string>(
+          constants::parameters::names::TOPIC_ID_EGO_ODOMETRY);
+
+  const std::string& topic_system_status =
+      this->get_global_parameter<std::string>(
+          constants::parameters::names::TOPIC_ID_SYSTEM_STATUS);
+
+  const std::string& topic_race_control_status =
+      this->get_global_parameter<std::string>(
+          constants::parameters::names::TOPIC_ID_RACE_CONTROL_STATUS);
+
+  const std::string& topic_ego_powertrain_status =
+      this->get_global_parameter<std::string>(
+          constants::parameters::names::TOPIC_ID_EGO_POWERTRAIN_STATUS);
+
   this->ego_odometry_sub =
       this->create_subscription<nif::common::msgs::Odometry>(
-          "topic_ego_odometry", nif::common::constants::QOS_DEFAULT,
+          topic_ego_odometry, nif::common::constants::QOS_DEFAULT,
           std::bind(&IBaseNode::egoOdometryCallback, this,
                     std::placeholders::_1));
 
-  this->system_state_sub =
+  this->system_status_sub =
       this->create_subscription<nif::common::msgs::SystemStatus>(
-          "topic_system_state", nif::common::constants::QOS_DEFAULT,
-          std::bind(&IBaseNode::systemStateCallback, this,
+          topic_system_status, nif::common::constants::QOS_DEFAULT,
+          std::bind(&IBaseNode::systemStatusCallback, this,
                     std::placeholders::_1));
 
-  this->race_control_state_sub =
-      this->create_subscription<nif::common::msgs::RaceControlState>(
-          "topic_race_control_state", nif::common::constants::QOS_DEFAULT,
-          std::bind(&IBaseNode::raceControlStateCallback, this,
+  this->race_control_status_sub =
+      this->create_subscription<nif::common::msgs::RaceControlStatus>(
+          topic_race_control_status, nif::common::constants::QOS_DEFAULT,
+          std::bind(&IBaseNode::raceControlStatusCallback, this,
                     std::placeholders::_1));
+
   this->ego_powertrain_state_sub =
       this->create_subscription<nif::common::msgs::PowertrainState>(
-          "topic_powertrain_state", nif::common::constants::QOS_DEFAULT,
+          topic_ego_powertrain_status, nif::common::constants::QOS_DEFAULT,
           std::bind(&IBaseNode::egoPowertrainCallback, this,
                     std::placeholders::_1));
 
@@ -110,7 +129,7 @@ void IBaseNode::egoOdometryCallback(
  * TODO implement callback
  * @param msg
  */
-void IBaseNode::systemStateCallback(
+void IBaseNode::systemStatusCallback(
     const nif::common::msgs::SystemStatus::SharedPtr msg) {
   this->system_state = *msg;
 }
@@ -119,8 +138,8 @@ void IBaseNode::systemStateCallback(
  * TODO implement callback
  * @param msg
  */
-void IBaseNode::raceControlStateCallback(
-    const nif::common::msgs::RaceControlState::SharedPtr msg) {
+void IBaseNode::raceControlStatusCallback(
+    const nif::common::msgs::RaceControlStatus::SharedPtr msg) {
   this->race_control_state = *msg;
 }
 const std::string &IBaseNode::getBodyFrameId() const {
@@ -141,6 +160,6 @@ const msgs::PowertrainState &IBaseNode::getEgoPowertrainState() const {
 const msgs::SystemStatus &IBaseNode::getSystemState() const {
   return system_state;
 }
-const msgs::RaceControlState &IBaseNode::getRaceControlState() const {
+const msgs::RaceControlStatus &IBaseNode::getRaceControlState() const {
   return race_control_state;
 }

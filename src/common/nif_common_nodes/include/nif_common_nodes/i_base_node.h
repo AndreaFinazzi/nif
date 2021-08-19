@@ -45,7 +45,7 @@ protected:
   const msgs::Odometry &getEgoOdometry() const;
   const msgs::PowertrainState &getEgoPowertrainState() const;
   const msgs::SystemStatus &getSystemState() const;
-  const msgs::RaceControlState &getRaceControlState() const;
+  const msgs::RaceControlStatus &getRaceControlState() const;
 
   nif::common::NodeStatusManager node_status_manager;
 
@@ -126,7 +126,7 @@ private:
   nif::common::msgs::SystemStatus system_state;
 
   // TODO : finalize RaceControlState class
-  nif::common::msgs::RaceControlState race_control_state;
+  nif::common::msgs::RaceControlStatus race_control_state;
 
   rclcpp::Subscription<nif::common::msgs::Odometry>::SharedPtr ego_odometry_sub;
 
@@ -134,10 +134,10 @@ private:
       ego_powertrain_state_sub;
 
   rclcpp::Subscription<nif::common::msgs::SystemStatus>::SharedPtr
-      system_state_sub;
+      system_status_sub;
 
-  rclcpp::Subscription<nif::common::msgs::RaceControlState>::SharedPtr
-      race_control_state_sub;
+  rclcpp::Subscription<nif::common::msgs::RaceControlStatus>::SharedPtr
+      race_control_status_sub;
 
   void egoOdometryCallback(const nif::common::msgs::Odometry::SharedPtr msg);
 
@@ -145,10 +145,10 @@ private:
       const nif::common::msgs::PowertrainState::SharedPtr msg);
 
   void
-  systemStateCallback(const nif::common::msgs::SystemStatus::SharedPtr msg);
+  systemStatusCallback(const nif::common::msgs::SystemStatus::SharedPtr msg);
 
-  void raceControlStateCallback(
-      const nif::common::msgs::RaceControlState::SharedPtr msg);
+  void raceControlStatusCallback(
+      const nif::common::msgs::RaceControlStatus::SharedPtr msg);
 };
 
 } // namespace common

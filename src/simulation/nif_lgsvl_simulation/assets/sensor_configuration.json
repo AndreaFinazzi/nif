@@ -457,7 +457,7 @@
   },
   {
     "params": {
-      "Topic": "/vehicle/odometry",
+      "Topic": "/sensor/odometry",
       "Frame": "rear_axle_middle"
     },
     "name": "Vehicle Odometry Sensor",
