@@ -1,3 +1,4 @@
 /**:
   ros__parameters:
-    publish_frequency: 100.0
+#    publish_frequency: 25.0
+    use_sim_time: false
