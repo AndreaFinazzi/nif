@@ -69,10 +69,10 @@ void PurePursuit::setVehicleStatus(nif::common::msgs::Odometry ego_odom_) {
 
 void PurePursuit::calcLookAheadIndex(
     const nav_msgs::msg::Path& map_track_path_in_global_,
-    const double& lookahead_dist_) {
+    const double& lookahead_dist_ = 15.0) {
+
   // TODO: Search API similar to scipy (finding closest point)
-//  m_lookahead_pt_in_body.pose.position.x = lookahead_dist_;
-  m_lookahead_pt_in_body.pose.position.x = 15.0;
+  m_lookahead_pt_in_body.pose.position.x = lookahead_dist_;
   m_lookahead_pt_in_body.pose.position.y = 0.0;
   m_lookahead_pt_in_body.pose.position.z = 0.0;
   m_lookahead_pt_in_body.pose.orientation.x = 0.0;
@@ -137,7 +137,7 @@ void PurePursuit::calcSteerCmd() {
             2 * m_control_pt_curvature_magnitude -
                 nif::common::vehicle_param::VEH_WHEEL_BASE);
 
-  if (m_use_lpf_flg == true) {
+  if (m_use_lpf_flg) {
     m_veh_cmd_steer_rad = (1.0 - m_lpf_gain) * m_veh_cmd_steer_rad +
         m_lpf_gain * m_veh_cmd_prev_steer_rad;
   }

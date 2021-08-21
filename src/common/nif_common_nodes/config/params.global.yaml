@@ -1,7 +1,7 @@
 /**:
   ros__parameters:
     frames:
-      body: "rear_axle_middle"
+      body: "base_link"
       global: "map"
 
       gps_top: "gps_top"

@@ -62,6 +62,12 @@ def generate_launch_description():
         )
     )
 
+    control_minimal_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            get_package_share_directory('nif_control_minimal_nodes') + '/launch/default.launch.py'
+        )
+    )
+
     csl_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             get_package_share_directory('nif_control_safety_layer_nodes') + '/launch/default.launch.py'
@@ -87,7 +93,7 @@ def generate_launch_description():
         localization_launch,
         # waypoint_manager_launch,
         multilayer_planning_launch,
-        control_pure_pursuit_launch,
+        control_minimal_launch,
         csl_launch,
         lgsvl_simulation_launch
         # control_launch
