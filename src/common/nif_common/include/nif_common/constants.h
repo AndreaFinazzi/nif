@@ -32,6 +32,12 @@ const double DEG2RAD = 0.0174533;
 const double RAD2DEG = 57.2958;
 
 /**
+ * Converstion factor from k/h to m/s.
+ */
+const double KPH2MS = 0.277778;
+
+
+/**
  * Default period for synchronized node.
  */
 const std::chrono::microseconds SYNC_PERIOD_DEFAULT(10000);

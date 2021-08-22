@@ -107,41 +107,40 @@ IBaseNode::IBaseNode(const std::string &node_name, const NodeType node_type, con
   //
 }
 
-/**
- * TODO implement callback
- * @param msg
- */
+
 void IBaseNode::egoPowertrainCallback(
     const nif::common::msgs::PowertrainState::SharedPtr msg) {
+  has_ego_powertrain_state = true;
+  this->ego_powertrain_state_update_time = this->now();
   this->ego_powertrain_state = *msg;
+  this->afterEgoPowertrainCallback();
 }
 
-/**
- *
- * @param msg
- */
 void IBaseNode::egoOdometryCallback(
     const nif::common::msgs::Odometry::SharedPtr msg) {
+  has_ego_odometry = true;
+  this->ego_odometry_update_time = this->now();
   this->ego_odometry = *msg;
+  this->afterEgoOdometryCallback();
 }
 
-/**
- * TODO implement callback
- * @param msg
- */
 void IBaseNode::systemStatusCallback(
     const nif::common::msgs::SystemStatus::SharedPtr msg) {
-  this->system_state = *msg;
+  has_system_status = true;
+  this->system_status_update_time = this->now();
+  this->system_status = *msg;
+  this->afterSystemStatusCallback();
 }
 
-/**
- * TODO implement callback
- * @param msg
- */
 void IBaseNode::raceControlStatusCallback(
     const nif::common::msgs::RaceControlStatus::SharedPtr msg) {
-  this->race_control_state = *msg;
+  has_race_control_status   = true;
+  this->race_control_status_update_time = this->now();
+  this->race_control_status = *msg;
+  this->afterRaceControlStatusCallback();
 }
+
+
 const std::string &IBaseNode::getBodyFrameId() const {
   return body_frame_id;
 }
@@ -158,8 +157,30 @@ const msgs::PowertrainState &IBaseNode::getEgoPowertrainState() const {
   return ego_powertrain_state;
 }
 const msgs::SystemStatus &IBaseNode::getSystemState() const {
-  return system_state;
+  return system_status;
 }
 const msgs::RaceControlStatus &IBaseNode::getRaceControlState() const {
-  return race_control_state;
+  return race_control_status;
 }
+const msgs::SystemStatus &IBaseNode::getSystemStatus() const {
+  return system_status;
+}
+const msgs::RaceControlStatus &IBaseNode::getRaceControlStatus() const {
+  return race_control_status;
+}
+const rclcpp::Time &IBaseNode::getEgoOdometryUpdateTime() const {
+  return ego_odometry_update_time;
+}
+const rclcpp::Time &IBaseNode::getEgoPowertrainStateUpdateTime() const {
+  return ego_powertrain_state_update_time;
+}
+const rclcpp::Time &IBaseNode::getSystemStatusUpdateTime() const {
+  return system_status_update_time;
+}
+const rclcpp::Time &IBaseNode::getRaceControlStatusUpdateTime() const {
+  return race_control_status_update_time;
+}
+bool IBaseNode::hasEgoOdometry() const { return has_ego_odometry; }
+bool IBaseNode::hasEgoPowertrainState() const { return has_ego_powertrain_state; }
+bool IBaseNode::hasSystemStatus() const { return has_system_status; }
+bool IBaseNode::hasRaceControlStatus() const { return has_race_control_status; }

@@ -24,7 +24,7 @@ public:
     RCLCPP_INFO(this->get_logger(),
                 "race_control_state: %s",
                 (this->getRaceControlState().track_cond));
-    RCLCPP_INFO(this->get_logger(), "system_state: %s", this->getSystemState().health_status.is_system_healthy);
+    RCLCPP_INFO(this->get_logger(), "system_state: %s", this->getSystemStatus().health_status.is_system_healthy);
   }
 
   std::shared_ptr<rclcpp::Subscription<nif::common::msgs::ControlCmd>> csl_cmd_sub;

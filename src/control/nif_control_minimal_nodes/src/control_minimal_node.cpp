@@ -8,7 +8,7 @@ using nif::control::ControlMinimalNode;
 
 ControlMinimalNode::ControlMinimalNode(const std::string& node_name)
   : IControllerNode(node_name),
-      recv_time_(this->now()){
+      recv_time_(this->now()) {
   // Publishers
   pubSteeringCmd_ = this->create_publisher<std_msgs::msg::Float32>(
       "/joystick/steering_cmd", 1);

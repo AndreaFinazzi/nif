@@ -146,7 +146,16 @@ using ControlBrakingCmd = std_msgs::msg::Float32;
 using ControlGearCmd = std_msgs::msg::Int8;
 using ControlSteeringCmd = std_msgs::msg::Float32;
 
+/**
+ * Message produced by a Motion Planner
+ */
 using Trajectory = autoware_auto_msgs::msg::Trajectory;
+
+/**
+ * Message produced by a Path Planner
+ */
+using Path = nav_msgs::msg::Path;
+
 // using VehicleKinematicState =
 // autoware_auto_msgs::msg::VehicleKinematicState;
 } // namespace msgs
