@@ -49,6 +49,7 @@ RUN apt-get update \
       ros-foxy-rqt \
       ros-foxy-rqt-* \
       ros-foxy-tf2-tools \
+      tmux tmuxp terminator nano \
   && apt-get clean
 
 COPY ./entrypoint /ade_entrypoint

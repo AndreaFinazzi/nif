@@ -16,7 +16,7 @@ ControlPurePursuitNode::ControlPurePursuitNode(const std::string &node_name)
   m_lookahead_pt_in_global_pub = this->create_publisher<visualization_msgs::msg::Marker>(
       "control_pure_pursuit/lookahead_point", 1);
 
-  steer_control_cmd_msg = std::make_shared<nif::common::msgs::ControlCmd>();
+  control_command = std::make_shared<nif::common::msgs::ControlCmd>();
 
   // Create Timer
 //  TODO period here SHOULD (really) be parametric
@@ -90,23 +90,24 @@ void ControlPurePursuitNode::publishLookAheadPointMarker() {
  *
  * @return reference to ControlCmd
  */
-nif::common::msgs::ControlCmd &ControlPurePursuitNode::solve() {
-
+nif::common::msgs::ControlCmd::SharedPtr ControlPurePursuitNode::solve() {
+//TODO update to comply with IControllerNode last version (embedded path subscriber and has...() methods)
   if  (
           (this->getReferenceTrajectory() && !(this->getReferenceTrajectory()->points.empty()))
           ||
           (this->m_maptrack && !(this->m_maptrack->poses.empty()))
       )
   {
-    auto pure_pursuit_steer_cmd = m_pure_pursuit_handler_ptr->getSteerCmd();
-    steer_control_cmd_msg->steering_control_cmd.data = pure_pursuit_steer_cmd;
+    auto pure_pursuit_steer_cmd_rad = m_pure_pursuit_handler_ptr->getSteerCmd() * nif::common::vehicle_param::STEERING_RATIO;
+    control_command->steering_control_cmd.data =
+        pure_pursuit_steer_cmd_rad * nif::common::constants::RAD2DEG;
 
     m_lookahead_pt_in_global = m_pure_pursuit_handler_ptr->getLookaheadPointInGlobal();
     m_control_pt_in_body = m_pure_pursuit_handler_ptr->getControlPointInBody();
 
     this->publishLookAheadPointMarker();
 
-    return *steer_control_cmd_msg;
+    return control_command;
   }
   else
   {
@@ -115,8 +116,8 @@ nif::common::msgs::ControlCmd &ControlPurePursuitNode::solve() {
                  "Send ZERO "
                  "steering command.");
 
-    steer_control_cmd_msg->steering_control_cmd.data = 0.0;
-    return *steer_control_cmd_msg;
+    control_command->steering_control_cmd.data = 0.0;
+    return control_command;
 
   }
 }

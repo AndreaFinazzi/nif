@@ -39,9 +39,8 @@ double pursuit_dist(
  * @note the path must be starting somewhere around
  **/
 template <typename PathT, typename PointT>
-void track(const PathT &path, const PointT &position,
-           const double pursuit_distance, unsigned int &target_idx,
-           double &target_distance, bool &reached_end) {
+void track(const PathT &path, const PointT &position, const double pursuit_distance,
+           unsigned int &target_idx, double &target_distance, bool &reached_end) {
   reached_end = false;
   // Make sure we start within bounds
   if (target_idx < 0) {

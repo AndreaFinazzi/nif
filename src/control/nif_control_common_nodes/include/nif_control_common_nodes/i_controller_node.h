@@ -119,7 +119,7 @@ private:
    *
    * @return the control_command to be published.
    */
-  virtual nif::common::msgs::ControlCmd &solve() = 0;
+  virtual nif::common::msgs::ControlCmd::SharedPtr solve() = 0;
 };
 
 } // namespace control

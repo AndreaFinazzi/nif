@@ -37,10 +37,12 @@ nif::control::IControllerNode::IControllerNode(const std::string &node_name)
  * Call solve() and publish the control message.
  */
 void nif::control::IControllerNode::run() {
-  auto msg = this->solve();
+  nif_msgs::msg::ControlCommand::SharedPtr msg = this->solve();
+  if (msg) {
+    msg->header.stamp = this->now();
+    this->control_cmd_pub->publish(*msg);
 
-  msg.header.stamp = this->now();
-  this->control_cmd_pub->publish(msg);
+  }
 }
 
 

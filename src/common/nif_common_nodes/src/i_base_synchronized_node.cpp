@@ -17,6 +17,7 @@ void IBaseSynchronizedNode::gClockCallback() {
   this->run();
 }
 
-const std::chrono::nanoseconds &IBaseSynchronizedNode::getGclockPeriod() const {
+//TODO make it a template function returning duration<>
+const std::chrono::nanoseconds &IBaseSynchronizedNode::getGclockPeriodNs() const {
   return gclock_period;
 }

@@ -12,7 +12,7 @@ void nif::control::ControlSafetyLayerNode::controlCallback(
   //  TODO consider not to accept commands from the future!
   //  Store control command if it's not too old
   if ((this->now().nanoseconds() - msg->header.stamp.nanosec) <
-          this->getGclockPeriod().count() ||
+          this->getGclockPeriodNs().count() ||
       true) // TODO REMOVE THIS!!!
     this->bufferStore(msg);
 }
@@ -28,6 +28,7 @@ void nif::control::ControlSafetyLayerNode::run() {
     msg->header.stamp = this->now();
     msg->header.frame_id = this->getBodyFrameId();
     try {
+//      TODO implement safety checks
       this->control_pub->publish(*msg);
 
       this->publishSteeringCmd(msg->steering_control_cmd);
@@ -36,6 +37,7 @@ void nif::control::ControlSafetyLayerNode::run() {
       this->publishGearCmd(msg->gear_control_cmd);
 
     } catch (std::exception &e) {
+//      TODO handle critical error in the safest way
       RCLCPP_ERROR(this->get_logger(), e.what());
     }
 

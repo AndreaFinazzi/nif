@@ -39,7 +39,8 @@ def generate_launch_description():
         executable='nif_control_lqr_nodes_exe',
         parameters=[
             {
-                'lqr_config_file': lqr_config_file
+                'lqr_config_file': lqr_config_file,
+                'use_tire_velocity': False
             }
         ],
         output={

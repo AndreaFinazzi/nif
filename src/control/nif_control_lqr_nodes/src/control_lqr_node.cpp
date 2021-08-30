@@ -1,4 +1,5 @@
 #include "nif_control_lqr_nodes/control_lqr_node.h"
+#include <nif_common/vehicle_model.h>
 
 using nif::control::ControlLQRNode;
 
@@ -88,6 +89,9 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
   // Limit the max change in the steering signal over time
   this->declare_parameter("steering_max_ddeg_dt", 5.0);
 
+//  Invert steering command for simulation
+  this->declare_parameter("invert_steering", false);
+
   // Create Lateral LQR Controller from yaml file
   std::string lqr_config_file =
       this->get_parameter("lqr_config_file").as_string();
@@ -117,6 +121,11 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
   path_timeout_sec_ = this->get_parameter("path_timeout_sec").as_double();
   steering_max_ddeg_dt_ =
       this->get_parameter("steering_max_ddeg_dt").as_double();
+
+  if (  (odometry_timeout_sec_) < 0. ||
+        (path_timeout_sec_) < 0.) {
+    throw rclcpp::exceptions::InvalidParametersException("odometry_timeout_sec_ or path_timeout_sec_ parameter is negative.");
+  }
 }
 
 void
@@ -140,11 +149,14 @@ ControlLQRNode::publishSteeringDiagnostics(bool lqr_command_valid,
   lqr_error_pub_->publish(bvs_control::utils::ROSError(lqr_err));
 }
 
-nif::common::msgs::ControlCmd& ControlLQRNode::solve() {
+nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
   auto now = this->now();
 
   bool lateral_tracking_enabled =
       this->get_parameter("lateral_tracking_enabled").as_bool();
+
+  bool invert_steering =
+      this->get_parameter("invert_steering").as_bool();
 //  Check whether we have updated data
   bool valid_path = this->hasReferencePath() &&
                     this->getReferencePath()->poses.size() > 0 &&
@@ -155,7 +167,7 @@ nif::common::msgs::ControlCmd& ControlLQRNode::solve() {
                     odometry_timeout_sec_ < 0.0;
   bool valid_tracking_result = false;
 
-  double steering_angle = 0.0;
+  double steering_angle_deg = 0.0;
   // Perform Tracking if path is good
   if (valid_path && valid_odom) {
     valid_tracking_result = true;
@@ -175,39 +187,49 @@ nif::common::msgs::ControlCmd& ControlLQRNode::solve() {
     // Track on the trajectory
     double target_distance = 0.0;
     bool target_reached_end = false;
-    bvs_control::utils::track(this->getReferencePath()->poses, this->getEgoOdometry(), track_distance,
-                 lqr_tracking_idx_, target_distance, target_reached_end);
+    bvs_control::utils::track(
+        this->getReferencePath()->poses, this->getEgoOdometry(), track_distance, // inputs
+        lqr_tracking_idx_, target_distance, target_reached_end); // outputs
 
     // Run LQR :)
     auto goal = bvs_control::utils::LQRGoal(this->getReferencePath()->poses[lqr_tracking_idx_]);
     auto error = lateral_lqr_->computeError(state, goal);
-    steering_angle = lateral_lqr_->process(state, goal) * nif::common::constants::RAD2DEG;
+    steering_angle_deg = lateral_lqr_->process(state, goal); // * nif::common::constants::RAD2DEG;
 
     // Make sure steering angle is within range
-    if (steering_angle > max_steering_angle_deg_)
-      steering_angle = max_steering_angle_deg_;
-    if (steering_angle < -max_steering_angle_deg_)
-      steering_angle = -max_steering_angle_deg_;
+    if (steering_angle_deg > max_steering_angle_deg_)
+      steering_angle_deg = max_steering_angle_deg_;
+    if (steering_angle_deg < -max_steering_angle_deg_)
+      steering_angle_deg = -max_steering_angle_deg_;
+
+//    Adapt to steering ratio (ControlCommand sends steering wheel's angle)
+    steering_angle_deg *= nif::common::vehicle_param::STEERING_RATIO;
 
     // Smooth and publish diagnostics
-    RCLCPP_DEBUG(this->get_logger(), "Smoothing with dt: [s] %f", std::chrono::duration_cast<std::chrono::seconds>(this->getGclockPeriod()));
-    bvs_control::utils::smoothSignal(steering_angle, last_steering_command_,
-                        steering_max_ddeg_dt_, std::chrono::duration_cast<std::chrono::seconds>(this->getGclockPeriod()).count() );
-    publishSteeringDiagnostics(true, steering_angle, track_distance,
+    std::chrono::milliseconds period_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+            this->getGclockPeriodNs());
+    double period_double_s = period_ms.count() / 1000. ;
+    RCLCPP_DEBUG(this->get_logger(), "Smoothing with dt: [s] %f", period_double_s );
+    bvs_control::utils::smoothSignal(steering_angle_deg, last_steering_command_,
+                                     steering_max_ddeg_dt_, period_double_s );
+    publishSteeringDiagnostics(true, steering_angle_deg, track_distance,
                                this->getReferencePath()->poses[lqr_tracking_idx_], error);
   }
 
   // Check / Process Overrides
+  bool override_sig = false;
   if (std::abs(override_steering_target_) >
           std::abs(steering_auto_override_deg_) ||
       !lateral_tracking_enabled) {
-    steering_angle = override_steering_target_;
-  } else if (!valid_tracking_result) {
-    steering_angle = 0.;
+      steering_angle_deg = override_steering_target_;
+      override_sig = true;
   }
 
-  last_steering_command_ = steering_angle;
-  this->control_cmd->steering_control_cmd.data = last_steering_command_;
+  if ( !(valid_path && valid_odom) && !override_sig)
+    return nullptr;
 
-  return *(this->control_cmd);
+  last_steering_command_ = steering_angle_deg;
+  this->control_cmd->steering_control_cmd.data = invert_steering ? -last_steering_command_ : last_steering_command_;
+
+  return this->control_cmd;
 }

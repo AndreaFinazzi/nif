@@ -85,15 +85,15 @@ LateralLQR::computeError(LateralLQR::StateMatrix state, LateralLQR::GoalMatrix g
 
 double
 LateralLQR::process(
-    LateralLQR::ErrorMatrix error,
+    const LateralLQR::ErrorMatrix error,
     double x_vel_body
 ) {
     LateralLQR::KMatrix matrix;
     // Find the tier where the upper limit is higher than the current velocity
     // If no tier contains this velocity it will use the last tier
-    for(auto it = matrices_.begin(); it != matrices_.end(); ++it) {
-        matrix = it->second;
-        if(it->first > x_vel_body) {
+    for(const auto & matrice : matrices_) {
+        matrix = matrice.second;
+        if(matrice.first > x_vel_body) {
             break;
         }
     }

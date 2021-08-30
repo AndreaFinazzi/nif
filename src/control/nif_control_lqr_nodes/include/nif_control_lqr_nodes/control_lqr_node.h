@@ -133,7 +133,7 @@ private:
     static_cast<double>(t.nanoseconds()) * 1e-9;
   }
 
-  nif::common::msgs::ControlCmd &solve() override;
+  nif::common::msgs::ControlCmd::SharedPtr solve() override;
 
 }; /* class PathFollowerNode */
 
