@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(nif_control_common)
+project(nif_tire_dynamics_manager)
 
 # Default to C++14
 if(NOT CMAKE_CXX_STANDARD)
@@ -12,14 +12,15 @@ endif()
 
 # find dependencies
 find_package(ament_cmake_auto REQUIRED)
+find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 ament_auto_find_build_dependencies()
 
 # Library
 ament_auto_add_library(${PROJECT_NAME} SHARED
-        src/control_command_compare.cpp
+        src/tire_manager.cpp
 )
 
-if(BUILD_TESTING)
+if (BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
 
@@ -31,6 +32,6 @@ if(BUILD_TESTING)
   target_link_libraries(${PROJECT_NAME}_test ${PROJECT_NAME})
 #  ament_target_dependencies(${PROJECT_NAME}_test
 #          "rclcpp")
-endif()
+endif ()
 
 ament_auto_package()

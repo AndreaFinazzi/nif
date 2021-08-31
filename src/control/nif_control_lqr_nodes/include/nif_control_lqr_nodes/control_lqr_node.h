@@ -10,18 +10,17 @@
  **/
 #include "nif_control_common_nodes/i_controller_node.h"
 
+#include "deep_orange_msgs/msg/pt_report.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 #include "nav_msgs/msg/path.hpp"
+#include "raptor_dbw_msgs/msg/wheel_speed_report.hpp"
+#include "std_msgs/msg/bool.hpp"
 #include "std_msgs/msg/float32.hpp"
 #include "std_msgs/msg/u_int8.hpp"
-#include "std_msgs/msg/bool.hpp"
-#include "raptor_dbw_msgs/msg/wheel_speed_report.hpp"
-#include "deep_orange_msgs/msg/pt_report.hpp"
 
 #include "nif_control_lqr_nodes/lqr/lateral_lqr.h"
 #include "nif_control_lqr_nodes/utils/lateral_lqr_ros.h"
 #include "nif_control_lqr_nodes/utils/pure_pursuit_tracker.h"
-
 
 namespace nif {
 namespace control {
@@ -43,7 +42,8 @@ public:
 
   void velocityCallback(
       const raptor_dbw_msgs::msg::WheelSpeedReport::SharedPtr msg) {
-    current_speed_ms_ = (msg->rear_left + msg->rear_right) * 0.5 * nif::common::constants::KPH2MS;
+    current_speed_ms_ = (msg->rear_left + msg->rear_right) * 0.5 *
+                        nif::common::constants::KPH2MS;
   }
 
   void steeringCallback(const std_msgs::msg::Float32::SharedPtr msg) {
@@ -72,10 +72,10 @@ private:
   //! Debug Interface
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr lqr_command_valid_pub_;
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr
-  lqr_steering_command_pub_;
+      lqr_steering_command_pub_;
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr track_distance_pub_;
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr
-  lqr_tracking_point_pub_;
+      lqr_tracking_point_pub_;
   rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr lqr_error_pub_;
   //! Command Publishers
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr steering_command_pub_;
@@ -83,12 +83,14 @@ private:
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr brake_command_pub_;
   rclcpp::Publisher<std_msgs::msg::UInt8>::SharedPtr gear_command_pub_;
   //! Input Data
-  rclcpp::Subscription<raptor_dbw_msgs::msg::WheelSpeedReport>::SharedPtr velocity_sub_;
+  rclcpp::Subscription<raptor_dbw_msgs::msg::WheelSpeedReport>::SharedPtr
+      velocity_sub_;
   rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr steering_sub_;
   rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr throttle_sub_;
   rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr brake_sub_;
   rclcpp::Subscription<std_msgs::msg::UInt8>::SharedPtr gear_sub_;
-  rclcpp::Subscription<deep_orange_msgs::msg::PtReport>::SharedPtr pt_report_sub_;
+  rclcpp::Subscription<deep_orange_msgs::msg::PtReport>::SharedPtr
+      pt_report_sub_;
 
   //! Lateral LQR Controller
   bvs_control::lqr::LateralLQR::Ptr lateral_lqr_;
@@ -126,19 +128,18 @@ private:
 
   double secs(rclcpp::Time t) {
     return static_cast<double>(t.seconds()) +
-    static_cast<double>(t.nanoseconds()) * 1e-9;
+           static_cast<double>(t.nanoseconds()) * 1e-9;
   }
   double secs(rclcpp::Duration t) {
     return static_cast<double>(t.seconds()) +
-    static_cast<double>(t.nanoseconds()) * 1e-9;
+           static_cast<double>(t.nanoseconds()) * 1e-9;
   }
 
   nif::common::msgs::ControlCmd::SharedPtr solve() override;
 
 }; /* class PathFollowerNode */
 
-} // namespace nif
 } // namespace control
-
+} // namespace nif
 
 #endif // ROS2MASTER_CONTROL_LQR_NODE_H

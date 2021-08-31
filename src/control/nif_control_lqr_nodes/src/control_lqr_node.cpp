@@ -4,7 +4,7 @@
 using nif::control::ControlLQRNode;
 
 ControlLQRNode::ControlLQRNode(const std::string &node_name)
-: IControllerNode(node_name) {
+    : IControllerNode(node_name) {
 
   control_cmd = std::make_shared<nif::common::msgs::ControlCmd>();
 
@@ -26,8 +26,8 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
       "/joystick/steering_cmd", 1);
   throttle_command_pub_ = this->create_publisher<std_msgs::msg::Float32>(
       "/joystick/accelerator_cmd", 1);
-  brake_command_pub_ = this->create_publisher<std_msgs::msg::Float32>(
-      "/joystick/brake_cmd", 1);
+  brake_command_pub_ =
+      this->create_publisher<std_msgs::msg::Float32>("/joystick/brake_cmd", 1);
   gear_command_pub_ =
       this->create_publisher<std_msgs::msg::UInt8>("/joystick/gear_cmd", 1);
 
@@ -47,12 +47,10 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
                 std::placeholders::_1));
   brake_sub_ = this->create_subscription<std_msgs::msg::Float32>(
       "/joystick/brake_cmd_override", 1,
-      std::bind(&ControlLQRNode::brakeCallback, this,
-                std::placeholders::_1));
+      std::bind(&ControlLQRNode::brakeCallback, this, std::placeholders::_1));
   gear_sub_ = this->create_subscription<std_msgs::msg::UInt8>(
       "/joystick/gear_cmd_not_used", 1,
-      std::bind(&ControlLQRNode::gearCallback, this,
-                std::placeholders::_1));
+      std::bind(&ControlLQRNode::gearCallback, this, std::placeholders::_1));
 
   // Gives memory exceptions with my test rosbag :(
   // pt_report_sub_ =
@@ -61,9 +59,9 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
   //     std::placeholders::_1));
 
   //! Timer to execute control at 25Hz
-//  control_timer_ = this->create_wall_timer(
-//      std::chrono::milliseconds(static_cast<int>(1000. / update_rate_hz)),
-//      std::bind(&PathFollowerNode::executeControl, this));
+  //  control_timer_ = this->create_wall_timer(
+  //      std::chrono::milliseconds(static_cast<int>(1000. / update_rate_hz)),
+  //      std::bind(&PathFollowerNode::executeControl, this));
 
   this->declare_parameter("lqr_config_file", "");
   // Automatically boot with lateral_tracking_enabled
@@ -89,14 +87,15 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
   // Limit the max change in the steering signal over time
   this->declare_parameter("steering_max_ddeg_dt", 5.0);
 
-//  Invert steering command for simulation
+  //  Invert steering command for simulation
   this->declare_parameter("invert_steering", false);
 
   // Create Lateral LQR Controller from yaml file
   std::string lqr_config_file =
       this->get_parameter("lqr_config_file").as_string();
   if (lqr_config_file.empty())
-    throw std::runtime_error("Parameter lqr_config_file not declared, or empty.");
+    throw std::runtime_error(
+        "Parameter lqr_config_file not declared, or empty.");
 
   RCLCPP_INFO(get_logger(), "Loading control params: %s",
               lqr_config_file.c_str());
@@ -122,17 +121,16 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
   steering_max_ddeg_dt_ =
       this->get_parameter("steering_max_ddeg_dt").as_double();
 
-  if (  (odometry_timeout_sec_) < 0. ||
-        (path_timeout_sec_) < 0.) {
-    throw rclcpp::exceptions::InvalidParametersException("odometry_timeout_sec_ or path_timeout_sec_ parameter is negative.");
+  if ((odometry_timeout_sec_) < 0. || (path_timeout_sec_) < 0.) {
+    throw rclcpp::exceptions::InvalidParametersException(
+        "odometry_timeout_sec_ or path_timeout_sec_ parameter is negative.");
   }
 }
 
-void
-ControlLQRNode::publishSteeringDiagnostics(bool lqr_command_valid,
-                           double lqr_steering_command, double track_distance,
-                           geometry_msgs::msg::PoseStamped lqr_track_point,
-                           bvs_control::lqr::LateralLQR::ErrorMatrix lqr_err) {
+void ControlLQRNode::publishSteeringDiagnostics(
+    bool lqr_command_valid, double lqr_steering_command, double track_distance,
+    geometry_msgs::msg::PoseStamped lqr_track_point,
+    bvs_control::lqr::LateralLQR::ErrorMatrix lqr_err) {
   std_msgs::msg::Bool command_valid_msg;
   command_valid_msg.data = lqr_command_valid;
   lqr_command_valid_pub_->publish(command_valid_msg);
@@ -155,16 +153,16 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
   bool lateral_tracking_enabled =
       this->get_parameter("lateral_tracking_enabled").as_bool();
 
-  bool invert_steering =
-      this->get_parameter("invert_steering").as_bool();
-//  Check whether we have updated data
-  bool valid_path = this->hasReferencePath() &&
-                    this->getReferencePath()->poses.size() > 0 &&
-                    (secs(now - this->getReferencePathUpdateTime()) < path_timeout_sec_ ||
-                     path_timeout_sec_ < 0.0);
-  bool valid_odom = this->hasEgoOdometry() &&
-                    secs(now - this->getEgoOdometryUpdateTime()) < odometry_timeout_sec_ ||
-                    odometry_timeout_sec_ < 0.0;
+  bool invert_steering = this->get_parameter("invert_steering").as_bool();
+  //  Check whether we have updated data
+  bool valid_path =
+      this->hasReferencePath() && this->getReferencePath()->poses.size() > 0 &&
+      (secs(now - this->getReferencePathUpdateTime()) < path_timeout_sec_ ||
+       path_timeout_sec_ < 0.0);
+  bool valid_odom =
+      this->hasEgoOdometry() && secs(now - this->getEgoOdometryUpdateTime()) <
+                                    odometry_timeout_sec_ ||
+      odometry_timeout_sec_ < 0.0;
   bool valid_tracking_result = false;
 
   double steering_angle_deg = 0.0;
@@ -187,14 +185,17 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
     // Track on the trajectory
     double target_distance = 0.0;
     bool target_reached_end = false;
-    bvs_control::utils::track(
-        this->getReferencePath()->poses, this->getEgoOdometry(), track_distance, // inputs
-        lqr_tracking_idx_, target_distance, target_reached_end); // outputs
+    bvs_control::utils::track(this->getReferencePath()->poses,
+                              this->getEgoOdometry(), track_distance, // inputs
+                              lqr_tracking_idx_, target_distance,
+                              target_reached_end); // outputs
 
     // Run LQR :)
-    auto goal = bvs_control::utils::LQRGoal(this->getReferencePath()->poses[lqr_tracking_idx_]);
+    auto goal = bvs_control::utils::LQRGoal(
+        this->getReferencePath()->poses[lqr_tracking_idx_]);
     auto error = lateral_lqr_->computeError(state, goal);
-    steering_angle_deg = lateral_lqr_->process(state, goal); // * nif::common::constants::RAD2DEG;
+    steering_angle_deg = lateral_lqr_->process(
+        state, goal); // * nif::common::constants::RAD2DEG;
 
     // Make sure steering angle is within range
     if (steering_angle_deg > max_steering_angle_deg_)
@@ -202,18 +203,22 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
     if (steering_angle_deg < -max_steering_angle_deg_)
       steering_angle_deg = -max_steering_angle_deg_;
 
-//    Adapt to steering ratio (ControlCommand sends steering wheel's angle)
+    //    Adapt to steering ratio (ControlCommand sends steering wheel's angle)
+
     steering_angle_deg *= nif::common::vehicle_param::STEERING_RATIO;
 
     // Smooth and publish diagnostics
-    std::chrono::milliseconds period_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+    std::chrono::milliseconds period_ms =
+        std::chrono::duration_cast<std::chrono::milliseconds>(
             this->getGclockPeriodNs());
-    double period_double_s = period_ms.count() / 1000. ;
-    RCLCPP_DEBUG(this->get_logger(), "Smoothing with dt: [s] %f", period_double_s );
+    double period_double_s = period_ms.count() / 1000.;
+    RCLCPP_DEBUG(this->get_logger(), "Smoothing with dt: [s] %f",
+                 period_double_s);
     bvs_control::utils::smoothSignal(steering_angle_deg, last_steering_command_,
-                                     steering_max_ddeg_dt_, period_double_s );
-    publishSteeringDiagnostics(true, steering_angle_deg, track_distance,
-                               this->getReferencePath()->poses[lqr_tracking_idx_], error);
+                                     steering_max_ddeg_dt_, period_double_s);
+    publishSteeringDiagnostics(
+        true, steering_angle_deg, track_distance,
+        this->getReferencePath()->poses[lqr_tracking_idx_], error);
   }
 
   // Check / Process Overrides
@@ -221,15 +226,16 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
   if (std::abs(override_steering_target_) >
           std::abs(steering_auto_override_deg_) ||
       !lateral_tracking_enabled) {
-      steering_angle_deg = override_steering_target_;
-      override_sig = true;
+    steering_angle_deg = override_steering_target_;
+    override_sig = true;
   }
 
-  if ( !(valid_path && valid_odom) && !override_sig)
+  if (!(valid_path && valid_odom) && !override_sig)
     return nullptr;
 
   last_steering_command_ = steering_angle_deg;
-  this->control_cmd->steering_control_cmd.data = invert_steering ? -last_steering_command_ : last_steering_command_;
+  this->control_cmd->steering_control_cmd.data =
+      invert_steering ? -last_steering_command_ : last_steering_command_;
 
   return this->control_cmd;
 }
