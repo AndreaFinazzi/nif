@@ -36,8 +36,11 @@ protected:
     this->node_status_manager.update(NodeStatusCode::NODE_DEAD);
   }
 
-  virtual void initParameters(){};
-  virtual void getParameters(){};
+  __attribute_deprecated__
+  virtual void initParameters() {};
+
+  __attribute_deprecated__
+  virtual void getParameters() {};
 
   const std::string &getBodyFrameId() const;
   const std::string &getGlobalFrameId() const;
@@ -118,37 +121,129 @@ private:
    **/
   rclcpp::Time gclock_node_init;
 
+  /**
+   * Ego odometry from the localization layer.
+   * It's automatically stored by its callback along with ego_odometry_update_time.
+   */
   nif::common::msgs::Odometry ego_odometry;
 
+  bool has_ego_odometry = false;
+
+  /**
+  * Ego powertrain status from the vehicle interface.
+  * It's automatically stored by its callback along with ego_powertrain_state_update_time.
+  */
   nif::common::msgs::PowertrainState ego_powertrain_state;
 
+  bool has_ego_powertrain_state = false;
+
   // TODO : finalize SystemState class
-  nif::common::msgs::SystemStatus system_state;
+  /**
+  * System status from the system status manager.
+  * It's automatically stored by its callback along with system_status_update_time.
+  */
+  nif::common::msgs::SystemStatus system_status;
+
+  bool has_system_status = false;
 
   // TODO : finalize RaceControlState class
-  nif::common::msgs::RaceControlStatus race_control_state;
+  /**
+  * Race Control input from the race control interface.
+  * It's automatically stored by its callback along with race_control_status_update_time.
+  */
+  nif::common::msgs::RaceControlStatus race_control_status;
 
-  rclcpp::Subscription<nif::common::msgs::Odometry>::SharedPtr ego_odometry_sub;
+  bool has_race_control_status = false;
 
+public:
+  bool hasEgoOdometry() const;
+  bool hasEgoPowertrainState() const;
+  bool hasSystemStatus() const;
+  bool hasRaceControlStatus() const;
+
+private:
+  /**
+ * Ego odometry last update time.
+ */
+  rclcpp::Time ego_odometry_update_time;
+
+  /**
+  * Ego powertrain last update time.
+  */
+  rclcpp::Time ego_powertrain_state_update_time;
+
+  // TODO : finalize SystemState class
+  /**
+  * System status last update time.
+  */
+  rclcpp::Time system_status_update_time;
+
+  // TODO : finalize RaceControlState class
+  /**
+  * Race Control input last update time.
+  */
+  rclcpp::Time race_control_status_update_time;
+
+
+  rclcpp::Subscription<nif::common::msgs::Odometry>::SharedPtr
+      ego_odometry_sub;
   rclcpp::Subscription<nif::common::msgs::PowertrainState>::SharedPtr
       ego_powertrain_state_sub;
 
+public:
+  const msgs::SystemStatus &getSystemStatus() const;
+  const msgs::RaceControlStatus &getRaceControlStatus() const;
+  const rclcpp::Time &getEgoOdometryUpdateTime() const;
+  const rclcpp::Time &getEgoPowertrainStateUpdateTime() const;
+  const rclcpp::Time &getSystemStatusUpdateTime() const;
+  const rclcpp::Time &getRaceControlStatusUpdateTime() const;
+
+private:
   rclcpp::Subscription<nif::common::msgs::SystemStatus>::SharedPtr
       system_status_sub;
-
   rclcpp::Subscription<nif::common::msgs::RaceControlStatus>::SharedPtr
       race_control_status_sub;
 
-  void egoOdometryCallback(const nif::common::msgs::Odometry::SharedPtr msg);
+  void egoOdometryCallback(
+      const nif::common::msgs::Odometry::SharedPtr msg);
 
   void egoPowertrainCallback(
       const nif::common::msgs::PowertrainState::SharedPtr msg);
 
-  void
-  systemStatusCallback(const nif::common::msgs::SystemStatus::SharedPtr msg);
+  void systemStatusCallback(
+      const nif::common::msgs::SystemStatus::SharedPtr msg);
 
   void raceControlStatusCallback(
       const nif::common::msgs::RaceControlStatus::SharedPtr msg);
+
+  /**
+  * It's called at the end of egoOdometryCallback(...)
+  * and it can be customized.
+  */
+  virtual
+      void afterEgoOdometryCallback() {}
+
+  /**
+  * It's called at the end of egoPowertrainCallback(...)
+  * and it can be customized.
+  */
+  virtual
+      void afterEgoPowertrainCallback() {}
+
+  /**
+  * It's called at the end of systemStatusCallback(...)
+  * and it can be customized.
+  */
+  virtual
+      void afterSystemStatusCallback() {}
+
+  /**
+  * It's called at the end of raceControlStatusCallback(...)
+  * and it can be customized.
+  */
+  virtual
+      void afterRaceControlStatusCallback() {}
+
 };
 
 } // namespace common

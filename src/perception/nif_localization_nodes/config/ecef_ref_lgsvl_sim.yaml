@@ -1,6 +1,3 @@
 /**:
   ros__parameters:
-    ecef_ref_lat: 39.79312996
-    ecef_ref_lon: -86.23524024
-    ecef_ref_hgt: -0.170035537
-    use_enu: true
+

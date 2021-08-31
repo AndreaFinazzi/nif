@@ -9,6 +9,8 @@ import rclpy
 import csv
 import pandas as pd
 from rclpy.node import Node
+from rcl_interfaces.srv import GetParameters
+
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import CompressedImage, Imu, PointCloud2, NavSatFix
 from lgsvl_msgs.msg import VehicleOdometry, Detection2DArray
@@ -30,6 +32,21 @@ class Drive(Node):
         # self.sub_gps_odometry = self.create_subscription(Odometry, '/simulator/car1/sensor/gps/odometry', self.callback, 10)
         # self.sub_imu = self.create_subscription(Imu, '/simulator/car1/sensor/imu', self.callback2, 10)
         # self.sub_radar= self.create_subscription(Odometry, '/simulator/car1/sensor/radar', self.callback, 10)
+        self.client = self.create_client(GetParameters,
+                                         '/global_parameters_node/get_parameters')
+
+        self.client.wait_for_service(3)
+        if self.client.service_is_ready():
+            # Define references in global params file
+            self.use_enu   = bool(self.get_global_parameter('coordinates.use_enu'))
+            self.sim_ref_x = float(self.get_global_parameter('coordinates.sim_ref_x'))
+            self.sim_ref_y = float(self.get_global_parameter('coordinates.sim_ref_y'))
+            self.sim_ref_z = float(self.get_global_parameter('coordinates.sim_ref_z'))
+            self.loc_ref_x = float(self.get_global_parameter('coordinates.loc_ref_x'))
+            self.loc_ref_y = float(self.get_global_parameter('coordinates.loc_ref_y'))
+            self.loc_ref_z = float(self.get_global_parameter('coordinates.loc_ref_z'))
+        else:
+            raise RuntimeError("Can't connect to global_parameters_node.")
 
         # Camera subscriptions
         self.sub_camera_front_left = self.create_subscription(CompressedImage, self.namespace + '/sensor/camera_front_left', self.callback_camera_front_left, 10)
@@ -68,7 +85,7 @@ class Drive(Node):
         self.pub_gps_inspva_bottom = self.create_publisher(Inspva, self.namespace + '/novatel_bottom/inspva', 1)
 
         # Vehicle ground truth state
-        self.sub_ground_truth_state = self.create_subscription(Odometry, '/sensor/ground_truth', self.callback_ground_truth_state, 10)
+        self.sub_ground_truth_state = self.create_subscription(Odometry, '/sensor/odom_ground_truth', self.callback_ground_truth_state, 10)
         self.pub_ground_truth_state = self.create_publisher(Odometry, '/sensor/odometry', 1)
         self._tf_publisher = TransformBroadcaster(self)
 
@@ -189,32 +206,30 @@ class Drive(Node):
         @todo Find conversion from (0,0,-0.7071,0.7071) to (0,0,0.7071,0.7071)
         @param convert_seu_to either to "enu" or "ned"
         '''
-        sim_ref_x = -1.727
-        sim_ref_y = 21.37
-        sim_ref_z = 0.119
-        loc_ref_x = -314.766
-        loc_ref_y = 24.387
-        loc_ref_z = -0.0817
+
         rear_axis_middle = Odometry()
         rear_axis_middle.header = msg.header
         rear_axis_middle.child_frame_id = msg.child_frame_id
         rear_axis_middle.pose.pose = msg.pose.pose
 
-        convert_seu_to = "enu" ## options: "enu", "ned"
-        if (convert_seu_to == "enu"):
-            ## From SEU to ENU
+        # options: "enu", "ned"
+        convert_seu_to = "enu" if self.use_enu else "ned"
+
+        if convert_seu_to == "enu":
+            # From SEU to ENU
             temp_x = rear_axis_middle.pose.pose.position.y
             temp_y = -rear_axis_middle.pose.pose.position.x
             temp_z = rear_axis_middle.pose.pose.position.z
             rear_axis_middle.pose.pose.position.x = temp_x
             rear_axis_middle.pose.pose.position.y = temp_y
             rear_axis_middle.pose.pose.position.z = temp_z
-            ## Calibrate position
-            rear_axis_middle.pose.pose.position.x += loc_ref_x - sim_ref_y
-            rear_axis_middle.pose.pose.position.y += loc_ref_y + sim_ref_x
-            rear_axis_middle.pose.pose.position.z += loc_ref_z - sim_ref_z
 
-            ## Quaternion manipulation
+            # Calibrate position
+            rear_axis_middle.pose.pose.position.x += self.loc_ref_x - self.sim_ref_y
+            rear_axis_middle.pose.pose.position.y += self.loc_ref_y + self.sim_ref_x
+            rear_axis_middle.pose.pose.position.z += self.loc_ref_z - self.sim_ref_z
+
+            # Quaternion manipulation
             qe = Quaternion_Euler(msg.pose.pose.orientation, None)
             e = qe.ToEuler()
             e_new = Vector3()
@@ -224,20 +239,22 @@ class Drive(Node):
             # e_new.z = e.z + math.pi / 2.0
             qe = Quaternion_Euler(None, e_new)
             rear_axis_middle.pose.pose.orientation = qe.ToQuaternion()
-        elif (convert_seu_to == "ned"):
-            ## From SEU to NED
+
+        elif convert_seu_to == "ned":
+            # From SEU to NED
             temp_x = -rear_axis_middle.pose.pose.position.x
             temp_y = rear_axis_middle.pose.pose.position.y
             temp_z = -rear_axis_middle.pose.pose.position.z
             rear_axis_middle.pose.pose.position.x = temp_x
             rear_axis_middle.pose.pose.position.y = temp_y
             rear_axis_middle.pose.pose.position.z = temp_z
-            ## Calibrate position
-            rear_axis_middle.pose.pose.position.x += loc_ref_x + sim_ref_x
-            rear_axis_middle.pose.pose.position.y += loc_ref_y - sim_ref_y
-            rear_axis_middle.pose.pose.position.z += loc_ref_z + sim_ref_z
 
-            ## Quaternion manipulation
+            # Calibrate position
+            rear_axis_middle.pose.pose.position.x += self.loc_ref_x + self.sim_ref_x
+            rear_axis_middle.pose.pose.position.y += self.loc_ref_y - self.sim_ref_y
+            rear_axis_middle.pose.pose.position.z += self.loc_ref_z + self.sim_ref_z
+
+            # Quaternion manipulation
             qe = Quaternion_Euler(msg.pose.pose.orientation, None)
             e = qe.ToEuler()
             e_new = Vector3()
@@ -247,11 +264,12 @@ class Drive(Node):
             # e_new.z = e.z + math.pi / 2.0
             qe = Quaternion_Euler(None, e_new)
             rear_axis_middle.pose.pose.orientation = qe.ToQuaternion()
+
         else:
-            ## Calibrate position
-            rear_axis_middle.pose.pose.position.x += loc_ref_x - sim_ref_x
-            rear_axis_middle.pose.pose.position.y += loc_ref_y - sim_ref_y
-            rear_axis_middle.pose.pose.position.z += loc_ref_z - sim_ref_z
+            # Calibrate position
+            rear_axis_middle.pose.pose.position.x += self.loc_ref_x - self.sim_ref_x
+            rear_axis_middle.pose.pose.position.y += self.loc_ref_y - self.sim_ref_y
+            rear_axis_middle.pose.pose.position.z += self.loc_ref_z - self.sim_ref_z
 
         self.pub_ground_truth_state.publish(rear_axis_middle)
         self.tf_broadcast(rear_axis_middle)
@@ -268,6 +286,25 @@ class Drive(Node):
         tfs.transform.rotation.y = msg.pose.pose.orientation.y
         tfs.transform.rotation.z = msg.pose.pose.orientation.z
         self._tf_publisher.sendTransform(tfs)
+
+    def get_global_parameter(self, name):
+        try:
+            request = GetParameters.Request()
+            request.names = [name]
+            self.client.wait_for_service()
+            result = self.client.call(request)
+
+        except Exception as e:
+            self.get_logger().error("service call failed %r" % (e,))
+            raise RuntimeError("Failed to get global parameters.")
+
+        else:
+            param = result.values[0]
+            self.get_logger().info("Got global param: %s" % (param.string_value,))
+
+        return param.string_value
+
+
 
 def main(args=None):
     rclpy.init(args=args)

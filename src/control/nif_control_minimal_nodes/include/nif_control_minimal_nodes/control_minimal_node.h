@@ -46,7 +46,7 @@ private:
   static int findLookaheadIndex(std::vector<geometry_msgs::msg::PoseStamped> refPath, double desLookaheadValue);
   void receiveVelocity(const novatel_gps_msgs::msg::NovatelVelocity::SharedPtr msg);
   void receiveJoySteer(const std_msgs::msg::Float32::SharedPtr msg);
-  nif::common::msgs::ControlCmd &solve() override;
+  nif::common::msgs::ControlCmd::SharedPtr solve() override;
 
 protected:
   void initParameters() override;

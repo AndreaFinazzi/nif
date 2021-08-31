@@ -33,7 +33,7 @@ For instance, to the following `.yaml` structure:
 /**:
   ros__parameters:
     frames:
-      body: "rear_axle_middle"
+      body: "base_link"
       global: "map"
 ```
 

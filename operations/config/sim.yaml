@@ -1,0 +1,35 @@
+session_name: nif_launch_sim
+windows:
+  - window_name: Launch Tab
+    layout: tiled
+    shell_command_before:
+      - cd ~/nif && source install/setup.bash
+    panes:
+      - shell_command:
+          - lgsvl_bridge
+      - shell_command:
+          - ros2 launch nif_launch sim.lqr.launch.py
+# Consider launching safety-critical layers in separate processes
+#      - shell_command:
+#          - ros2 launch nif_control_safety_layer_nodes nif.launch.py
+  - window_name: Topics Monitor
+    focus: true
+    layout: even-horizontal
+    shell_command_before:
+      - cd ~/nif && source install/setup.bash
+    panes:
+      - shell_command:
+          - sleep 3
+          - ros2 topic list --show-types
+      - shell_command:
+          - sleep 3
+          - ros2 node list
+      - shell_command:
+          - sleep 3
+          - ros2 param list
+
+  - window_name: User Input
+    layout: tiled
+    panes:
+      - shell_command:
+          - terminator -g ~/nif/operations/config/input.terminator.conf

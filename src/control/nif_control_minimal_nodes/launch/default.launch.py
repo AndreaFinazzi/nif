@@ -40,6 +40,7 @@ def generate_launch_description():
         remappings=[
             # ('in_control_cmd_prev', 'out_control_cmd'),
             # ('out_control_cmd', 'in_control_cmd'),
+            ('target_path', '/planning/path_global'),
             ('in_control_cmd_prev', '/control_safety_layer/out/control_cmd'),
             ('out_control_cmd', '/control_pool/control_cmd'),
         ]

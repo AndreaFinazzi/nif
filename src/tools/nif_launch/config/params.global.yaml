@@ -1,7 +1,7 @@
 /**:
   ros__parameters:
     frames:
-      body: "rear_axle_middle"
+      body: "base_link"
       global: "map"
 
       gps_top: "gps_top"
@@ -24,7 +24,23 @@
       radar_rear: "radar_rear"
 
     topics:
-      ego_odometry: localization/ego_odom
+      ego_odometry: /sensor/odom_ground_truth
+#     localization/ego_odom
       system_status: system/status
       race_control_status: /raptor_dbw_interface/rc_to_ct
       ego_powertrain_status: /raptor_dbw_interface/pt_report
+
+    coordinates:
+      use_enu: false
+
+      sim_ref_x: -1.727
+      sim_ref_y: 21.37
+      sim_ref_z: 0.119
+
+      loc_ref_x: -314.766
+      loc_ref_y: 24.387
+      loc_ref_z: -0.0817
+
+      ecef_ref_lat: 39.79312996
+      ecef_ref_lon: -86.23524024
+      ecef_ref_hgt: -0.170035537

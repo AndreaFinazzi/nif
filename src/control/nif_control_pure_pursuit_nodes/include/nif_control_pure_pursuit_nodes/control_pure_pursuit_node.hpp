@@ -40,7 +40,7 @@ public:
 
 private:
   void mapTrackCallback(const nav_msgs::msg::Path::SharedPtr msg);
-  nif::common::msgs::ControlCmd &solve() override;
+  nif::common::msgs::ControlCmd::SharedPtr solve() override;
 
 protected:
   void initParameters() override;
@@ -73,7 +73,7 @@ private:
   geometry_msgs::msg::PoseStamped m_control_pt_in_body;
 
   std::shared_ptr<PurePursuit> m_pure_pursuit_handler_ptr;
-  nif::common::msgs::ControlCmd::SharedPtr steer_control_cmd_msg;
+  nif::common::msgs::ControlCmd::SharedPtr control_command;
 
 };
 

@@ -29,22 +29,29 @@ LocalizationNode::LocalizationNode(
 
 {
 
-  this->declare_parameter("ecef_ref_lat", 0.0 );
-  this->declare_parameter("ecef_ref_lon", 0.0 );
-  this->declare_parameter("ecef_ref_hgt", 0.0 );
-  this->declare_parameter("use_enu", true);
+//  this->declare_parameter("ecef_ref_lat", 0.0 );
+//  this->declare_parameter("ecef_ref_lon", 0.0 );
+//  this->declare_parameter("ecef_ref_hgt", 0.0 );
+//  this->declare_parameter("use_enu", true);
 
-  double ecef_ref_lat, ecef_ref_lon, ecef_ref_hgt;
-//  If cannot get parameters, throw exception
-  if (!(this->get_parameter("ecef_ref_lat", ecef_ref_lat) &&
-        this->get_parameter("ecef_ref_lon", ecef_ref_lon) &&
-        this->get_parameter("ecef_ref_hgt", ecef_ref_hgt) &&
-        this->get_parameter("use_enu", m_use_enu)
-        ))
-  {
-    RCLCPP_ERROR(this->get_logger(), "Can't get parameters during initialization, cannot proceed.");
-    throw rclcpp::exceptions::InvalidParametersException("LocalizationNode: get_parameter returned false.");
-  }
+//  double ecef_ref_lat, ecef_ref_lon, ecef_ref_hgt;
+////  If cannot get parameters, throw exception
+//  if (!(this->get_parameter("ecef_ref_lat", ecef_ref_lat) &&
+//        this->get_parameter("ecef_ref_lon", ecef_ref_lon) &&
+//        this->get_parameter("ecef_ref_hgt", ecef_ref_hgt) &&
+//        this->get_parameter("use_enu", m_use_enu)
+//        ))
+//  {
+//    RCLCPP_ERROR(this->get_logger(), "Can't get parameters during initialization, cannot proceed.");
+//    throw rclcpp::exceptions::InvalidParametersException("LocalizationNode: get_parameter returned false.");
+//  }
+
+//TODO this mechanism should be moved to the interface
+//Not catching on purpose, we want the node to fail initialization if he can't get the parameters
+  auto ecef_ref_lat = this->get_global_parameter<double>("coordinates.ecef_ref_lat");
+  auto ecef_ref_lon = this->get_global_parameter<double>("coordinates.ecef_ref_lon");
+  auto ecef_ref_hgt = this->get_global_parameter<double>("coordinates.ecef_ref_hgt");
+  m_use_enu = this->get_global_parameter<bool>("coordinates.use_enu");
 
   std::vector<double> ecef_ref_param = {ecef_ref_lat, ecef_ref_lon, ecef_ref_hgt};
 
@@ -62,7 +69,7 @@ LocalizationNode::LocalizationNode(
       10ms, std::bind(&LocalizationNode::timerCallback, this));
 
   m_tf_timer = this->create_wall_timer(
-      50ms, std::bind(&LocalizationNode::publishTransformStamped, this));
+      10ms, std::bind(&LocalizationNode::publishTransformStamped, this));
 
   m_veh_odom_publisher = this->create_publisher<nav_msgs::msg::Odometry>(
       "localization/ego_odom", 10);
@@ -171,6 +178,7 @@ void LocalizationNode::publishTransformStamped() {
     transform_stamped.header.stamp = m_veh_odom.header.stamp;
     transform_stamped.header.frame_id = this->getGlobalFrameId();
     transform_stamped.child_frame_id = this->getBodyFrameId();
+//    transform_stamped.child_frame_id = "debug_frame";
     transform_stamped.transform.translation.x = m_veh_odom.pose.pose.position.x;
     transform_stamped.transform.translation.y = m_veh_odom.pose.pose.position.y;
     transform_stamped.transform.translation.z = m_veh_odom.pose.pose.position.z;

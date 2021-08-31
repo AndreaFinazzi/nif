@@ -3,12 +3,13 @@
 //
 
 #include "nif_control_minimal_nodes/control_minimal_node.h"
+#include <nif_common/vehicle_model.h>
 
 using nif::control::ControlMinimalNode;
 
 ControlMinimalNode::ControlMinimalNode(const std::string& node_name)
   : IControllerNode(node_name),
-      recv_time_(this->now()){
+      recv_time_(this->now()) {
   // Publishers
   pubSteeringCmd_ = this->create_publisher<std_msgs::msg::Float32>(
       "/joystick/steering_cmd", 1);
@@ -57,7 +58,7 @@ ControlMinimalNode::ControlMinimalNode(const std::string& node_name)
 void nif::control::ControlMinimalNode::initParameters() {}
 void nif::control::ControlMinimalNode::getParameters() {}
 
-nif::common::msgs::ControlCmd& ControlMinimalNode::solve() {
+nif::common::msgs::ControlCmd::SharedPtr ControlMinimalNode::solve() {
   if (this->path_ready)
   {
 
@@ -78,10 +79,11 @@ nif::common::msgs::ControlCmd& ControlMinimalNode::solve() {
 
   publishSteering();
   publishDebugSignals();
-  this->control_cmd->steering_control_cmd.data = this->steering_cmd.data;
+  int8_t invert_steering = true; // true
+  this->control_cmd->steering_control_cmd.data = invert_steering ? -this->steering_cmd.data : this->steering_cmd.data;
 
   }
-  return *(this->control_cmd);
+  return this->control_cmd;
 }
 
 void ControlMinimalNode::calculateFFW() {
@@ -102,8 +104,10 @@ void ControlMinimalNode::calculateSteeringCmd() {
   this->steering_cmd.data = (this->speed_ > 1.0) ?
       L * (this->feedback_ + this->feedforward_) / this->speed_ :
       L * (this->feedback_ + this->feedforward_);
-  this->steering_cmd.data = this->steering_cmd.data * 57.296 * 19.0 /
-      9.0; // times 19.0/9 because ratio is wrong
+
+//  TODO define steering ratio modifier as a paramter
+  double steering_multiplier = nif::common::vehicle_param::STEERING_RATIO; // 57.296 * 19.0 / 9.0
+  this->steering_cmd.data = this->steering_cmd.data * steering_multiplier; // times 19.0/9 because ratio is wrong
 }
 
 void ControlMinimalNode::setCmdsToZeros() {

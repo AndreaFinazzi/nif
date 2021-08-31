@@ -19,7 +19,7 @@ This guide is an adaptation of https://www.allaban.me/posts/2020/08/ros2-setup-i
    $ git clone --recurse-submodules git@github.com:AndreaFinazzi/nif.git
    ```
    A good reference is: https://autowarefoundation.gitlab.io/autoware.auto/AutowareAuto/installation-ade.html
-   
+
 1. Run: 
    ```shell
    $ export ADE_NAME=nif
@@ -41,7 +41,7 @@ This guide is an adaptation of https://www.allaban.me/posts/2020/08/ros2-setup-i
 1. Start the `ade` environment:
    ```shell
    $ cd nif
-   $ ade start --update
+   $ ./nifstart
    ```
    
 1. Setup the ssh access (CLion's toolchain needs this). The login password is the same as host's username (`echo $USER`):
@@ -58,7 +58,8 @@ This guide is an adaptation of https://www.allaban.me/posts/2020/08/ros2-setup-i
 
 1. Almost done. Run the last command (`ssh $USER@localhost -p2222`) or `ade enter` to open a shell into the container, and run:
    ```shell
-   ~/nif/nifbuild
+   cd  nif
+   ./nifbuild
    ```
    and copy the output you get from the command. You need it in the next step.
 

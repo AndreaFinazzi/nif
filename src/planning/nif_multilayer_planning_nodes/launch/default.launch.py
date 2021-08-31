@@ -21,7 +21,8 @@ def generate_launch_description():
         parameters=[],
         remappings={
             ('out_local_maptrack_inglobal', '/planning/path_global'),
-            ('in_vehicle_odometry', '/localization/ego_odom'),
+            # ('in_vehicle_odometry', '/localization/ego_odom'),
+            ('in_vehicle_odometry', '/sensor/odom_ground_truth'),
             # ('in_perception_result', '/perception/result'),
         }
     )

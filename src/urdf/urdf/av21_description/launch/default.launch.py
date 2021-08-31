@@ -36,18 +36,13 @@ def generate_launch_description():
     )
 
     # Shouldn't be necessary, but speeds things up
-    ## tf2 - base_link to rear_axle_middle
+    ## tf2 - base_link to center_of_gravity
     base_link_tf_publisher = Node(
         name='base_link_tf_publisher',
         package='tf2_ros',
         executable='static_transform_publisher',
         output='screen',
-        arguments=['0', '0', '0', '0.0', '0.0', '0.0', 'base_link', 'rear_axle_middle'],
-        parameters=[
-            {
-                'publish_frequency': 100.0
-            }
-        ]
+        arguments=['0', '0', '0', '0.0', '0.0', '0.0', 'base_link', 'center_of_gravity']
     )
 
     # Define robot_state_publisher node
@@ -60,6 +55,7 @@ def generate_launch_description():
             LaunchConfiguration('av21_description_param_file'),
             {
                 'robot_description': robot_desc,
+                'use_sim_time': 'falsamente_falso'
             }
         ])
 

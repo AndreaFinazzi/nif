@@ -42,8 +42,9 @@
   },
   {
     "params": {
-      "Topic": "/sensor/ground_truth",
-      "Frame": "cog",
+      "Topic": "/sensor/odom_ground_truth",
+      "Frame": "map",
+      "ChildFrame": "base_link",
       "IgnoreMapOrigin": true,
       "Frequency": 100
     },

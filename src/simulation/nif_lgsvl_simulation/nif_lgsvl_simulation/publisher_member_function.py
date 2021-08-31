@@ -17,10 +17,19 @@ class Drive(Node):
     def __init__(self):
         super().__init__('lgsvl_publisher')
         self.namespace = ''
-        # self.namespace = self.get_namespace
+        self.steering_wheel_ratio = 1 / 5 # degrees of wheels rotation per degrees of steering
+        # self.namespace = self.get_namespace()
+
+        # Subscribe accelerator pedal % -> publish accelerator pedal %
         self.sub_accel = self.create_subscription(Float32, self.namespace + '/raptor_dbw_interface/accelerator_pedal_cmd', self.callback_accel, 1)
+
+        # Subscribe steering wheel angle in degrees [-600, 600] -> publish wheels' angle in radians
         self.sub_steer = self.create_subscription(Float32, self.namespace + '/raptor_dbw_interface/steering_cmd', self.callback_steer, 1)
+
+        # Subscribe brake pressure in pascal -> publish braking pedal %
         self.sub_brake = self.create_subscription(Float32, self.namespace + '/raptor_dbw_interface/brake_cmd', self.callback_brake, 1)
+
+        # Subscribe desired gear -> publish desired gear
         self.sub_gear = self.create_subscription(Int8, self.namespace + '/raptor_dbw_interface/gear_cmd', self.callback_gear, 1)
 
         self.control_pub = self.create_publisher(VehicleControlData, self.namespace + '/sensor/control', 1)
@@ -33,7 +42,7 @@ class Drive(Node):
         self.timer = self.create_timer(self.timer_period, self.callback)
         self.acceleration_pct = 0.0  # 0 to 1
         self.braking_pct = 0.0  # 0 to 1
-        self.target_wheel_angle = 0.0  # radians
+        self.target_wheel_angle_rad = 0.0  # radians
         self.target_wheel_angular_rate = 1.0  # radians / second
         self.gear = 1
         self.rolling_counter = 0
@@ -42,7 +51,7 @@ class Drive(Node):
         message = VehicleControlData()
         message.acceleration_pct = self.acceleration_pct
         message.braking_pct = self.braking_pct
-        message.target_wheel_angle = self.target_wheel_angle
+        message.target_wheel_angle = self.target_wheel_angle_rad
         message.target_wheel_angular_rate = self.target_wheel_angular_rate
         message.target_gear = self.gear
         self.control_pub.publish(message)
@@ -52,7 +61,7 @@ class Drive(Node):
         steer_report_msg = SteeringReport()
         steer_report_msg.header.stamp = self.get_clock().now().to_msg()
         steer_report_msg.rolling_counter = self.rolling_counter % 256
-        steer_report_msg.steering_wheel_angle = (int(self.target_wheel_angle * 360 / math.pi)) / 2
+        steer_report_msg.steering_wheel_angle = (int(self.target_wheel_angle_rad * 360 / math.pi)) / (2 * self.steering_wheel_ratio)
         self.steering_report_pub.publish(steer_report_msg)
 
         accel_pedal_report_msg = AcceleratorPedalReport()
@@ -69,15 +78,20 @@ class Drive(Node):
 
         self.rolling_counter = self.rolling_counter + 1
 
+    # Subscribe accelerator pedal % -> publish accelerator pedal %
     def callback_accel(self, msg):
         self.acceleration_pct = msg.data
 
+    # Subscribe steering wheel angle in degrees [-600, 600] -> publish wheels' angle in radians
     def callback_steer(self, msg):
-        self.target_wheel_angle = -msg.data * math.pi / 180
+        wheels_angle_deg = msg.data * self.steering_wheel_ratio
+        self.target_wheel_angle_rad = wheels_angle_deg * math.pi / 180
 
+    # Subscribe brake pressure in pascal -> publish braking pedal %
     def callback_brake(self, msg):
-        self.braking_pct = msg.data / 3447379
+        self.braking_pct = 100 * msg.data / 3447379
 
+    # Subscribe desired gear -> publish desired gear
     # uint8 GEAR_NEUTRAL = 0
     # uint8 GEAR_DRIVE = 1
     # uint8 GEAR_REVERSE = 2
