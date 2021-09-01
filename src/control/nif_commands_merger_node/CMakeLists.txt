@@ -36,6 +36,4 @@ if(BUILD_TESTING)
           "rclcpp")
 endif()
 
-ament_auto_package(INSTALL_TO_SHARE
-        config
-        launch)
+ament_auto_package()

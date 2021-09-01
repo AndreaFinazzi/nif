@@ -19,6 +19,8 @@
   <depend>nav_msgs</depend>
   <depend>nif_msgs</depend>
   <depend>novatel_gps_msgs</depend>
+  <depend>nif_common</depend>
+  <depend>nif_utils</depend>
 
   <export>
     <build_type>ament_cmake</build_type>

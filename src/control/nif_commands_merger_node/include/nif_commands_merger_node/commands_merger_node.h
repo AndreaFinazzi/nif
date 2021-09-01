@@ -18,11 +18,12 @@
 #include "nif_msgs/msg/control_command.hpp"
 #include "novatel_gps_msgs/msg/novatel_velocity.hpp"
 #include "rclcpp/rclcpp.hpp"
+#include "std_msgs/msg/bool.hpp"
 #include "std_msgs/msg/float32.hpp"
 #include "std_msgs/msg/float64.hpp"
 #include "std_msgs/msg/u_int8.hpp"
-
-#include "std_msgs/msg/bool.hpp"
+#include <map>
+#include <rclcpp/rclcpp.hpp>
 
 using namespace std;
 
@@ -58,16 +59,19 @@ private:
   vector<rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr>
       subcribers_vec_longitudinal_cmd;
 
-  vector<rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr>
+  vector<rclcpp::Publisher<nif_msgs::msg::ControlCommand>::SharedPtr>
       publishers_vec_command_cmd;
 
   // To control safety layer <data>
   uint control_priority_order;
-  double velocity_control_cmd;
-  double steering_control_cmd;
+  //   _Float32 velocity_control_cmd;
+  //   _Float32 steering_control_cmd;
 
   // To control safety layer <msg>
-  nif_msgs::msg::ControlCommand::SharedPtr last_control_cmd;
+  nif_msgs::msg::ControlCommand last_control_cmd;
+
+  std::function<void(const std_msgs::msg::Float32::SharedPtr msg)> fcn_lat;
+  std::function<void(const std_msgs::msg::Float32::SharedPtr msg)> fcn_long;
 };
 
 } // namespace control
