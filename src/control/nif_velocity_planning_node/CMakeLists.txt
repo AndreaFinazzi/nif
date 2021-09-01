@@ -24,7 +24,7 @@ ament_auto_add_library(${PROJECT_NAME} SHARED
         src/nif_velocity_planning_node.cpp)
 
 ament_auto_add_executable (${PROJECT_NAME}_exe
-        src/nif_velocity_planning_node.cpp)
+        src/nif_velocity_planning_main.cpp)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

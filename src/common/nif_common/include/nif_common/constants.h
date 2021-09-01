@@ -36,6 +36,10 @@ const double RAD2DEG = 57.2958;
  */
 const double KPH2MS = 0.277778;
 
+/**
+ * Default period for general node. (50 Hz)
+ */
+const std::chrono::milliseconds PERIOD_DEFAULT(20);
 
 /**
  * Default period for synchronized node.
