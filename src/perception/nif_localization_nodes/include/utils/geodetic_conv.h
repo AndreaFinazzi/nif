@@ -16,7 +16,8 @@
 
 #include <eigen3/Eigen/Core>
 
-namespace bvs_localization {
+namespace nif {
+namespace localization {
 namespace utils {
 
 // Geodetic system parameters (uses wgs-84)
@@ -128,8 +129,8 @@ private:
   Eigen::Matrix3d ned_to_ecef_matrix_;
 
 }; // class GeodeticConverter
-
-} /* namespace utils */
-} /* namespace bvs_localization */
+} // namespace utils
+} // namespace localization
+} // namespace nif
 
 #endif // BVS_LOCALIZATION_UTILS_GEODETIC_CONV_H_

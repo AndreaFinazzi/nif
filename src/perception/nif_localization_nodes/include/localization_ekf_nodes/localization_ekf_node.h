@@ -14,61 +14,50 @@
 
 // inlcude ROS library
 #include "rclcpp/clock.hpp"
+#include "utils/geodetic_conv.h"
 #include <chrono>
+#include <cmath>
 #include <geometry_msgs/msg/pose2_d.hpp>
+#include <geometry_msgs/msg/pose_stamped.hpp>
+#include <geometry_msgs/msg/quaternion.hpp>
+#include <geometry_msgs/msg/twist.hpp>
+#include <iostream>
 #include <message_filters/subscriber.h>
 #include <message_filters/sync_policies/approximate_time.h>
 #include <message_filters/synchronizer.h>
 #include <message_filters/time_synchronizer.h>
 #include <nav_msgs/msg/odometry.hpp>
+#include <novatel_oem7_msgs/msg/bestpos.hpp>
+#include <novatel_oem7_msgs/msg/inspva.hpp>
 #include <opencv2/opencv.hpp>
+#include <raptor_dbw_msgs/msg/wheel_speed_report.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/imu.hpp>
 #include <sensor_msgs/msg/nav_sat_fix.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
+#include <sstream>
 #include <std_msgs/msg/bool.hpp>
 #include <std_msgs/msg/float64.h>
 #include <std_msgs/msg/float64_multi_array.hpp>
 #include <std_msgs/msg/header.hpp>
 #include <std_msgs/msg/string.hpp>
+#include <stdio.h>
 #include <tf2/LinearMath/Quaternion.h>
-// #include <tf2_eigen/tf2_eigen.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/static_transform_broadcaster.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
-
-// #include "navi/test.h"
-
-#include <geometry_msgs/msg/pose_stamped.hpp>
-#include <geometry_msgs/msg/quaternion.hpp>
-#include <geometry_msgs/msg/twist.hpp>
-#include <iostream>
-#include <sstream>
-#include <stdio.h>
 #include <time.h>
 
-#include "ekf_localizer/c_ekf.h"
-#include "ekf_localizer/common_def.h"
+#include "localization_ekf_nodes/c_ekf.h"
 
-#include <cmath>
-#include <novatel_oem7_msgs/msg/bestpos.hpp>
-#include <novatel_oem7_msgs/msg/inspva.hpp>
-
-#include <raptor_dbw_msgs/msg/wheel_speed_report.hpp>
-#include <tf2_ros/transform_broadcaster.h>
-
-#include "geodetic_conv.h"
-#include "utm_utils.h"
-
-using namespace std;
-using namespace cv;
-using namespace bvs_localization::utils;
-
-class EKF_Localizer : public rclcpp::Node {
+namespace nif {
+namespace localization {
+namespace ekf {
+class EKFLocalizer : public rclcpp::Node {
 public:
-  EKF_Localizer();
-  ~EKF_Localizer();
+  EKFLocalizer(const std::string &node_name);
+  ~EKFLocalizer();
 
   // void ImuCallback(const sensor_msgs::msg::Imu::SharedPtr msg);
   // void
@@ -111,7 +100,7 @@ private:
   std::shared_ptr<message_filters::Synchronizer<SyncPolicyT>> m_sync;
 
   c_ekf m_ekf;
-  bvs_localization::utils::GeodeticConverter conv_;
+  nif::localization::utils::GeodeticConverter conv_;
 
   double m_origin_lat;
   double m_origin_lon;
@@ -156,5 +145,8 @@ private:
   double hcount = 0.0;
   double hbias = 0.0;
 };
+} // namespace ekf
+} // namespace localization
+} // namespace nif
 
 #endif // EKF_LOCALIZER_NODE_H3

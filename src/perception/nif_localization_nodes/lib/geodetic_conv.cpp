@@ -1,10 +1,9 @@
-#include "geodetic_conv.h"
+#include "utils/geodetic_conv.h"
 
 #include <cmath>
 #include <iostream>
 
-namespace bvs_localization {
-namespace utils {
+using namespace nif::localization::utils;
 
 GeodeticConverter::GeodeticConverter() : have_reference_(false) {}
 
@@ -143,6 +142,3 @@ double GeodeticConverter::rad2Deg(const double radians) {
 double GeodeticConverter::deg2Rad(const double degrees) {
   return (degrees / 180.0) * M_PI;
 }
-
-} /* namespace utils */
-} /* namespace bvs_localization */

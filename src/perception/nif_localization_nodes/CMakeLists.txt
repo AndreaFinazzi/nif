@@ -29,29 +29,32 @@ add_definitions(${GeographicLib_DEFINITIONS})
 # find dependencies
 find_package(ament_cmake_auto REQUIRED)
 # find_package(Eigen3 3.3 REQUIRED NO_MODULE)
-
 ament_auto_find_build_dependencies()
 
 # Library
-ament_auto_add_library(${PROJECT_NAME} SHARED
-        src/localization_node.cpp)
-ament_auto_add_library(ekf_localizer SHARED
-        src/ekf_localizer.cpp)
-ament_auto_add_library(navi_utm_utils SHARED
-        lib/utm_utils.cpp)
 ament_auto_add_library(geodetic_conv SHARED
         lib/geodetic_conv.cpp)
-# target_link_libraries(geodetic_conv Eigen3::Eigen)
 
 ament_auto_add_library(ekf_localizer_lib SHARED
         lib/c_ekf.cpp)
-        
+
+ament_auto_add_library(${PROJECT_NAME} SHARED
+        src/localization_node.cpp)
+
+ament_auto_add_library(ekf_localizer SHARED
+        src/localization_ekf_node.cpp)
+
+target_link_libraries(${PROJECT_NAME}
+        ekf_localizer_lib
+        geodetic_conv
+        )
+
 ament_auto_add_executable(${PROJECT_NAME}_exe
         src/localization_main.cpp)
-target_link_libraries(${PROJECT_NAME}_exe 
-  navi_utm_utils
-  geodetic_conv
+target_link_libraries(${PROJECT_NAME}_exe
+        ekf_localizer
 )
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
@@ -60,7 +63,6 @@ if(BUILD_TESTING)
           test/localization_test.launch.py
           TIMEOUT "30"
   )
-
   ament_add_gtest(${PROJECT_NAME}_test
           test/gtest_main.cpp
           )
