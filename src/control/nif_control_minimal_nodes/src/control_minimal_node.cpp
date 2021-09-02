@@ -105,9 +105,7 @@ void ControlMinimalNode::calculateSteeringCmd() {
       L * (this->feedback_ + this->feedforward_) / this->speed_ :
       L * (this->feedback_ + this->feedforward_);
 
-//  TODO define steering ratio modifier as a paramter
-  double steering_multiplier = nif::common::vehicle_param::STEERING_RATIO; // 57.296 * 19.0 / 9.0
-  this->steering_cmd.data = this->steering_cmd.data * steering_multiplier; // times 19.0/9 because ratio is wrong
+  this->steering_cmd.data = this->steering_cmd.data;
 }
 
 void ControlMinimalNode::setCmdsToZeros() {

@@ -28,7 +28,7 @@ namespace control {
  * subclass of IBaseSynchronizedNode, its run() function is called with a fixed
  * frequency.
  *
- * Its inputl is of type ControlCommand, which contains the set of controls that
+ * Its input is of type ControlCommand, which contains the set of controls that
  * the car interface can accept, but as an output each control value is also
  * sent separately.
  *
@@ -58,8 +58,14 @@ public:
             std::bind(&ControlSafetyLayerNode::controlCallback, this,
                       std::placeholders::_1));
 
+    this->control_override_sub =
+        this->template create_subscription<nif::common::msgs::ControlCmd>(
+            "in_override_control_cmd", nif::common::constants::QOS_DEFAULT,
+            std::bind(&ControlSafetyLayerNode::controlOverrideCallback, this,
+                      std::placeholders::_1));
+
     this->control_pub = this->create_publisher<nif::common::msgs::ControlCmd>(
-        "out_control_cmd", rclcpp::QoS{1});
+            "out_control_cmd", rclcpp::QoS{1});
 
     this->steering_control_pub =
         this->create_publisher<nif::common::msgs::ControlSteeringCmd>(
@@ -112,6 +118,13 @@ private:
   rclcpp::Subscription<nif::common::msgs::ControlCmd>::SharedPtr control_sub;
 
   /**
+ * Subscriber to the 'privileged' topic of override control commands.
+ * If over a certain threshold, this control command is used instead of the ones in the control buffer.
+ */
+  rclcpp::Subscription<nif::common::msgs::ControlCmd>::SharedPtr control_override_sub;
+
+
+  /**
    * Control publisher. Publishes the effective command to the vehicle interface
    * topic.
    */
@@ -146,6 +159,7 @@ private:
       gear_control_pub;
 
   void controlCallback(const nif::common::msgs::ControlCmd::SharedPtr msg);
+  void controlOverrideCallback(const nif::common::msgs::ControlCmd::SharedPtr msg);
 
   void run() override;
 

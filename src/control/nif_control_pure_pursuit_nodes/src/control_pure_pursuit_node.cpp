@@ -1,16 +1,10 @@
 #include "nif_control_pure_pursuit_nodes/control_pure_pursuit_node.hpp"
+#include "std_srvs/srv/set_bool.hpp"
 
 using nif::control::ControlPurePursuitNode;
 
 ControlPurePursuitNode::ControlPurePursuitNode(const std::string &node_name)
     : IControllerNode(node_name) {
-
-  // Subscribers
-  m_map_track_sub = this->create_subscription<nav_msgs::msg::Path>(
-      "target_path", 1,
-      std::bind(&ControlPurePursuitNode::mapTrackCallback,
-                this,
-                std::placeholders::_1));
 
   // Publishers
   m_lookahead_pt_in_global_pub = this->create_publisher<visualization_msgs::msg::Marker>(
@@ -18,15 +12,9 @@ ControlPurePursuitNode::ControlPurePursuitNode(const std::string &node_name)
 
   control_command = std::make_shared<nif::common::msgs::ControlCmd>();
 
-  // Create Timer
-//  TODO period here SHOULD (really) be parametric
-  m_ego_update_timer = this->create_wall_timer(
-      std::chrono::milliseconds(10),
-      std::bind(&ControlPurePursuitNode::egoUpdateTimerCallback, this));
-
   try {
     // Assign parameter to the member variable
-    this->declare_parameter("invert_steer_direction", true);
+    this->declare_parameter("invert_steer_direction", false);
     this->get_parameter("invert_steer_direction", m_param_is_steer_sign_inver);
 
   } catch (const std::exception & e ) {
@@ -46,22 +34,6 @@ ControlPurePursuitNode::ControlPurePursuitNode(const std::string &node_name)
       m_param_use_lpf_flg,
       m_param_lfp_gain,
       m_param_is_steer_sign_inver);
-}
-
-// TODO there's a storeTraj function that is called every time we receive a new plan
-void ControlPurePursuitNode::mapTrackCallback(
-    const nav_msgs::msg::Path::SharedPtr msg) {
-  m_maptrack = msg;
-  m_pure_pursuit_handler_ptr->setMapTrack(*m_maptrack);
-  this->maptrack_recv_time_ = this->now();
-}
-
-void ControlPurePursuitNode::initParameters() {}
-void ControlPurePursuitNode::getParameters() {}
-
-void ControlPurePursuitNode::egoUpdateTimerCallback() const {
-  m_pure_pursuit_handler_ptr->setVehicleStatus(this->getEgoOdometry());
-//  m_ego_status_first_run = true;
 }
 
 /**
@@ -95,10 +67,10 @@ nif::common::msgs::ControlCmd::SharedPtr ControlPurePursuitNode::solve() {
   if  (
           (this->getReferenceTrajectory() && !(this->getReferenceTrajectory()->points.empty()))
           ||
-          (this->m_maptrack && !(this->m_maptrack->poses.empty()))
+          (this->hasReferencePath() && !(this->getReferencePath()->poses.empty()))
       )
   {
-    auto pure_pursuit_steer_cmd_rad = m_pure_pursuit_handler_ptr->getSteerCmd() * nif::common::vehicle_param::STEERING_RATIO;
+    auto pure_pursuit_steer_cmd_rad = m_pure_pursuit_handler_ptr->getSteerCmd();
     control_command->steering_control_cmd.data =
         pure_pursuit_steer_cmd_rad * nif::common::constants::RAD2DEG;
 
@@ -120,4 +92,10 @@ nif::common::msgs::ControlCmd::SharedPtr ControlPurePursuitNode::solve() {
     return control_command;
 
   }
+}
+void nif::control::ControlPurePursuitNode::afterReferencePathCallback() {
+  m_pure_pursuit_handler_ptr->setMapTrack(*(this->getReferencePath()));
+}
+void nif::control::ControlPurePursuitNode::afterEgoOdometryCallback() {
+  m_pure_pursuit_handler_ptr->setVehicleStatus(this->getEgoOdometry());
 }

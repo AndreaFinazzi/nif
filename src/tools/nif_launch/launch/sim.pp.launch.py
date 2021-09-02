@@ -24,7 +24,11 @@ def generate_launch_description():
 
     global_parameters_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            get_package_share_directory('nif_common_nodes') + '/launch/parameters.launch.py'
+            os.path.join(
+                get_package_share_directory('nif_launch'),
+                'config',
+                'params.global.yaml'
+            )
         ),
         launch_arguments={
             'nif_global_parameters_file': nif_global_parameters_file
@@ -84,7 +88,7 @@ def generate_launch_description():
     launch_description = [
         global_parameters_launch,
         robot_description_launch,
-        localization_launch,
+        # localization_launch,
         # waypoint_manager_launch,
         multilayer_planning_launch,
         control_pure_pursuit_launch,
