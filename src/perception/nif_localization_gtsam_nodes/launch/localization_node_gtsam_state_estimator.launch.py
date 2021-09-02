@@ -8,7 +8,7 @@ from launch_ros.actions import Node
 def generate_launch_description():
     config = (
         os.path.join(
-            get_package_share_directory("nif_localization_nodes"),
+            get_package_share_directory("nif_localization_gtsam_nodes"),
             "config",
             "localization_node_gtsam_state_estimator.yaml",
         ),
@@ -21,7 +21,7 @@ def generate_launch_description():
     return LaunchDescription(
         [
             Node(
-                package="nif_localization_nodes",
+                package="nif_localization_gtsam_nodes",
                 executable="localization_node_gtsam_state_estimator_exe",
                 name="localization_node",
                 output="screen",

@@ -5,7 +5,7 @@
 // Created by usrg on 6/23/21.
 //
 
-#include "nif_localization_nodes/localization_node.h"
+#include "nif_localization_gtsam_nodes/localization_node.h"
 
 #include "rcutils/error_handling.h"
 #include <cstdio>

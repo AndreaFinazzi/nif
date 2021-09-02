@@ -10,10 +10,10 @@ from ament_index_python import get_package_share_directory
 
 def generate_launch_description():
     # make sure the dbc file gets installed with the launch file
-    # some_file = get_package_share_directory('nif_localization_nodes') + \
+    # some_file = get_package_share_directory('nif_localization_gtsam_nodes') + \
     #                 ""
     params_file_default = os.path.join(
-        get_package_share_directory("nif_localization_nodes"),
+        get_package_share_directory("nif_localization_gtsam_nodes"),
         "config",
         "ecef_ref_lgsvl_sim.yaml",
     )
@@ -23,8 +23,8 @@ def generate_launch_description():
         default_value=params_file_default)
 
     localization_node = Node(
-        package='nif_localization_nodes',
-        executable='nif_localization_nodes_exe',
+        package='nif_localization_gtsam_nodes',
+        executable='nif_localization_gtsam_nodes_exe',
         output='screen',
         # namespace='nif',
         # parameters=[LaunchConfiguration('nif_localization_nodes_param_file')],

@@ -7,7 +7,7 @@
 
 #include "StateEstimator/StateEstimator.h"
 #include "nif_common/constants.h"
-#include "nif_localization_nodes/localization_node.h"
+#include "nif_localization_gtsam_nodes/localization_node.h"
 #include "nif_utils/utils.h"
 #include "rcutils/error_handling.h"
 #include <cstdio>

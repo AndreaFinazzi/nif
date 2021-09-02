@@ -8,9 +8,9 @@ from launch_ros.actions import Node
 def generate_launch_description():
     config = (
         os.path.join(
-            get_package_share_directory("nif_localization_nodes"),
+            get_package_share_directory("nif_localization_gtsam_nodes"),
             "config",
-            "localization_node_gtsam_state_estimator.yaml",
+            "state_estimator.yaml",
         ),
         )
     # config = LaunchConfiguration(
@@ -21,22 +21,18 @@ def generate_launch_description():
     return LaunchDescription(
         [
             Node(
-                package="nif_localization_nodes",
-                executable="localization_node_gtsam_state_estimator_exe",
-                name="localization_node",
+                package="nif_localization_gtsam_nodes",
+                executable="state_estimator_node",
+                name="state_estimator_node",
                 output="screen",
                 emulate_tty=True,
                 namespace=ns,
                 parameters=[config],
                 remappings=[
-                    ("ins_gps", "novatel_bottom/inspva_"),
-                    ("bestpos_gps", "novatel_bottom/bestpos_"),
-                    ("ins_oem", "novatel_bottom/inspva"),
-                    ("bestpos_oem", "novatel_bottom/bestpos"),
+                    ("ins", "novatel_bottom/inspva"),
                     ("gps", "novatel_bottom/fix"),
                     ("imu_novatel", "novatel_bottom/raw_imu"),
                     ("imu", "novatel_bottom/imu/data"),
-                    ("pose/ins", "localization/odometry"),
                 ]
             ),
         ]

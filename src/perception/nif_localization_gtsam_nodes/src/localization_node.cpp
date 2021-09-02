@@ -5,7 +5,7 @@
 // Created by usrg on 6/23/21.
 //
 
-#include "nif_localization_nodes/localization_node.h"
+#include "nif_localization_gtsam_nodes/localization_node.h"
 #include "geometry_msgs/msg/transform_stamped.hpp"
 #include "tf2_ros/transform_broadcaster.h"
 #include <utility>
@@ -129,15 +129,15 @@ void LocalizationNode::timerCallback() {
 }
 
 void LocalizationNode::gpsHorizontalCallback(
-        const novatel_gps_msgs::msg::Inspva::SharedPtr gps_horizontal_ptr_)
-{
-    this->m_localization_algorithm_ptr->setGPSHorizontalData(
-            *gps_horizontal_ptr_);
+        const novatel_gps_msgs::msg::Inspva::SharedPtr gps_horizontal_ptr_) {
+  this->m_localization_algorithm_ptr->setGPSHorizontalData(
+      *gps_horizontal_ptr_);
 
-    this->m_veh_odom = this->m_localization_algorithm_ptr->getVehOdomByHorizontalGPS();
-    this->m_veh_odom.header.frame_id = this->getGlobalFrameId();
-    this->m_veh_odom.child_frame_id = this->getBodyFrameId();
-
+  this->m_veh_odom =
+      this->m_localization_algorithm_ptr->getVehOdomByHorizontalGPS();
+  this->m_veh_odom.header.frame_id = this->getGlobalFrameId();
+  this->m_veh_odom.child_frame_id = this->getBodyFrameId();
+}
 
 void LocalizationNode::getENUfromNED(nav_msgs::msg::Odometry &ned_odom,
                                      const double &ned_yaw_rad) {

@@ -15,7 +15,7 @@ def get_share_file(package_name, file_name):
 
 def generate_launch_description():
     pkg_dir = get_package_share_directory('nif_launch')
-    pkg_dir_localization = get_package_share_directory('nif_localization_nodes')
+    pkg_dir_localization = get_package_share_directory('nif_localization_gtsam_nodes')
 
     nif_global_parameters_file = os.path.join(
         get_package_share_directory('nif_launch'),
@@ -59,7 +59,7 @@ def generate_launch_description():
 
     localization_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            get_package_share_directory('nif_localization_nodes') + '/launch/default.launch.py'
+            get_package_share_directory('nif_localization_gtsam_nodes') + '/launch/default.launch.py'
         )
     )
 

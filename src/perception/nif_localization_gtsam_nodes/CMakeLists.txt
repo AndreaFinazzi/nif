@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(nif_localization_nodes)
+project(nif_localization_gtsam_nodes)
 
 # Default to C++14
 if(NOT CMAKE_CXX_STANDARD)
@@ -12,17 +12,9 @@ endif()
 
 # find dependencies
 find_package(ament_cmake_auto REQUIRED)
-
 ament_auto_find_build_dependencies()
 
 # add_subdirectory(src/StateEstimator)
-
-# Library
-ament_auto_add_library(${PROJECT_NAME} SHARED
-        src/localization_node.cpp)
-
-ament_auto_add_executable(localization_node_exe
-        src/localization_main.cpp)
 
 ###################
 # State estimator #
@@ -50,12 +42,14 @@ if(GTSAM_FOUND)
         target_link_libraries(state_estimator ${catkin_LIBRARIES} ${ROS_LIBRARIES} gtsam ${GeographicLib_LIBRARIES} ${TBB_LIBRARIES}  ${Boost_LIBRARIES})
 endif()
 
-ament_auto_add_executable(localization_node_gtsam_state_estimator_exe
-        src/localization_main_gtsam_se.cpp)
-target_link_libraries(
-        localization_node_gtsam_state_estimator_exe
-        state_estimator)
-        
+# Library
+ament_auto_add_library(${PROJECT_NAME} SHARED
+        src/localization_node.cpp)
+
+ament_auto_add_executable(${PROJECT_NAME}_exe
+        src/localization_main.cpp)
+
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
