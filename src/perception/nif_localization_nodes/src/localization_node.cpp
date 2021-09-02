@@ -23,15 +23,53 @@ LocalizationNode::LocalizationNode(
     const std::shared_ptr<LocalizationMinimal> localization_algorithm_ptr)
 
   : IBaseNode(node_name_, common::NodeType::LOCALIZATION),
-    m_localization_algorithm_ptr(std::move(localization_algorithm_ptr))
+    m_localization_algorithm_ptr(localization_algorithm_ptr),
+    m_use_enu(false),
+    tf_broadcaster(std::make_shared<tf2_ros::TransformBroadcaster>(this))
 
 {
-    this->m_veh_odom.header.frame_id = this->getBodyFrameId();
-    this->m_veh_odom.child_frame_id  = this->getGlobalFrameId();
 
+//  this->declare_parameter("ecef_ref_lat", 0.0 );
+//  this->declare_parameter("ecef_ref_lon", 0.0 );
+//  this->declare_parameter("ecef_ref_hgt", 0.0 );
+//  this->declare_parameter("use_enu", true);
+
+//  double ecef_ref_lat, ecef_ref_lon, ecef_ref_hgt;
+////  If cannot get parameters, throw exception
+//  if (!(this->get_parameter("ecef_ref_lat", ecef_ref_lat) &&
+//        this->get_parameter("ecef_ref_lon", ecef_ref_lon) &&
+//        this->get_parameter("ecef_ref_hgt", ecef_ref_hgt) &&
+//        this->get_parameter("use_enu", m_use_enu)
+//        ))
+//  {
+//    RCLCPP_ERROR(this->get_logger(), "Can't get parameters during initialization, cannot proceed.");
+//    throw rclcpp::exceptions::InvalidParametersException("LocalizationNode: get_parameter returned false.");
+//  }
+
+//TODO this mechanism should be moved to the interface
+//Not catching on purpose, we want the node to fail initialization if he can't get the parameters
+  auto ecef_ref_lat = this->get_global_parameter<double>("coordinates.ecef_ref_lat");
+  auto ecef_ref_lon = this->get_global_parameter<double>("coordinates.ecef_ref_lon");
+  auto ecef_ref_hgt = this->get_global_parameter<double>("coordinates.ecef_ref_hgt");
+  m_use_enu = this->get_global_parameter<bool>("coordinates.use_enu");
+
+  std::vector<double> ecef_ref_param = {ecef_ref_lat, ecef_ref_lon, ecef_ref_hgt};
+
+  localization_algorithm_ptr->setENUReference(
+      ecef_ref_param.at(0), ecef_ref_param.at(1), ecef_ref_param.at(2));
+
+  RCLCPP_INFO(this->get_logger(), "ECEF reference set to lat: %f, lon: %f, height: %f",
+              ecef_ref_param.at(0), ecef_ref_param.at(1), ecef_ref_param.at(2));
+  RCLCPP_INFO(this->get_logger(), m_use_enu ? "Using ENU" : "Using NED");
+
+  this->m_veh_odom.header.frame_id = this->getGlobalFrameId();
+  this->m_veh_odom.child_frame_id  = this->getBodyFrameId();
 
   m_timer = this->create_wall_timer(
-      10ms, std::bind(&LocalizationNode::timer_callback, this));
+      10ms, std::bind(&LocalizationNode::timerCallback, this));
+
+  m_tf_timer = this->create_wall_timer(
+      10ms, std::bind(&LocalizationNode::publishTransformStamped, this));
 
   m_veh_odom_publisher = this->create_publisher<nav_msgs::msg::Odometry>(
       "localization/ego_odom", 10);
@@ -50,7 +88,7 @@ LocalizationNode::LocalizationNode(
       m_gps_sync(m_gps_horizontal_subscriber, m_gps_vertical_subscriber, 10);
 
 //  TODO REMEMBER that we may publish the same odom result in case we don't get data from the sensor
-  m_gps_sync_ptr->registerCallback(std::bind(&LocalizationNode::syncGPSCallback,
+  m_gps_sync.registerCallback(std::bind(&LocalizationNode::syncGPSCallback,
                                              this,
                                              std::placeholders::_1,
                                              std::placeholders::_2));
@@ -62,35 +100,16 @@ LocalizationNode::LocalizationNode(
               std::bind(&LocalizationNode::gpsHorizontalCallback,
                         this,
                         std::placeholders::_1));
-  // m_gps_sync_ptr =
-  //     message_filters::TimeSynchronizer<novatel_gps_msgs::msg::Inspva,
-  //                                       novatel_gps_msgs::msg::Inspva>(
-  //         m_gps_horizontal_subscriber, m_gps_vertical_subscriber, 10);
 
-  m_gps_sync.registerCallback(std::bind(&LocalizationNode::syncGPSCallback,
-                                        this,
-                                        std::placeholders::_1,
-                                        std::placeholders::_2));
-
-  // typedef message_filters::sync_policies::ApproximateTime<
-  //     novatel_gps_msgs::msg::Inspva,
-  //     novatel_gps_msgs::msg::Inspva>
-  //     MySyncPolicy;
-  // message_filters::Synchronizer<MySyncPolicy> img_sync(
-  //     MySyncPolicy(10),
-  //     *m_gps_horizontal_subscriber,
-  //     *m_gps_vertical_subscriber);
-  // // img_sync.setMaxIntervalDuration(rclcpp::Duration(3.0));
-  // img_sync.registerCallback(&LocalizationNode::syncGPSCallback, this);
 }
 
 void LocalizationNode::syncGPSCallback(
     const novatel_gps_msgs::msg::Inspva::ConstSharedPtr& gps_horizontal_ptr_,
     const novatel_gps_msgs::msg::Inspva::ConstSharedPtr& gps_vertical_ptr_) {
   RCLCPP_DEBUG(this->get_logger(),
-              "Synchronized the following gps timestamps: %u, %u",
-              gps_horizontal_ptr_->header.stamp.sec,
-              gps_vertical_ptr_->header.stamp.sec);
+               "Synchronized the following gps timestamps: %u, %u",
+               gps_horizontal_ptr_->header.stamp.sec,
+               gps_vertical_ptr_->header.stamp.sec);
 
   this->m_localization_algorithm_ptr->setGPSHorizontalData(
       *gps_horizontal_ptr_);
@@ -102,14 +121,16 @@ void LocalizationNode::syncGPSCallback(
   this->m_veh_odom.child_frame_id = this->getBodyFrameId();
 }
 
-void LocalizationNode::timer_callback() {
+void LocalizationNode::timerCallback() {
   RCLCPP_DEBUG(this->get_logger(),
-              "LocalizationNode odom update timer callback");
+               "LocalizationNode odom update timer callback");
   m_veh_odom_publisher->publish(m_veh_odom);
+//  this->publishTransformStamped();
 }
 
 void LocalizationNode::gpsHorizontalCallback(
-        const novatel_gps_msgs::msg::Inspva::SharedPtr gps_horizontal_ptr_) {
+        const novatel_gps_msgs::msg::Inspva::SharedPtr gps_horizontal_ptr_)
+{
     this->m_localization_algorithm_ptr->setGPSHorizontalData(
             *gps_horizontal_ptr_);
 
@@ -117,11 +138,25 @@ void LocalizationNode::gpsHorizontalCallback(
     this->m_veh_odom.header.frame_id = this->getGlobalFrameId();
     this->m_veh_odom.child_frame_id = this->getBodyFrameId();
 
-    publishTransformStamped();
+
+void LocalizationNode::getENUfromNED(nav_msgs::msg::Odometry &ned_odom,
+                                     const double &ned_yaw_rad) {
+  double temp;
+  temp = ned_odom.pose.pose.position.x;
+  ned_odom.pose.pose.position.x = ned_odom.pose.pose.position.y;
+  ned_odom.pose.pose.position.y = temp;
+  double yaw = (nif::common::constants::numeric::PI / 2.0 - ned_yaw_rad);
+  tf2::Quaternion vehicle_quat;
+  vehicle_quat.setRPY(0.0, 0.0, yaw);
+  vehicle_quat = vehicle_quat.normalize();
+  ned_odom.pose.pose.orientation.x = vehicle_quat.x();
+  ned_odom.pose.pose.orientation.y = vehicle_quat.y();
+  ned_odom.pose.pose.orientation.z = vehicle_quat.z();
+  ned_odom.pose.pose.orientation.w = vehicle_quat.w();
 }
 
 void LocalizationNode::publishTransformStamped() {
-    static tf2_ros::TransformBroadcaster br(this);
+    static tf2_ros::TransformBroadcaster transform_broadcaster(this);
 
     transform_stamped.header.stamp = this->now();
     transform_stamped.header.frame_id = this->getGlobalFrameId();
@@ -136,5 +171,6 @@ void LocalizationNode::publishTransformStamped() {
     transform_stamped.transform.rotation.z = m_veh_odom.pose.pose.orientation.z;
     transform_stamped.transform.rotation.w = m_veh_odom.pose.pose.orientation.w;
 
-    br.sendTransform(this->transform_stamped);
-};
+//    this->tf_broadcaster->sendTransform(this->transform_stamped);
+    transform_broadcaster.sendTransform(this->transform_stamped);
+}

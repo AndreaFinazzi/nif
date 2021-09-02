@@ -117,6 +117,19 @@ getPtGlobaltoBody(nav_msgs::msg::Odometry& current_pose_,
 
 } // namespace coordination
 
+namespace naming {
+
+inline const std::string getGlobalParamName( const std::string & param_name )
+{
+  return 
+    nif::common::constants::parameters::DELIMITER + 
+    nif::common::constants::parameters::GLOBAL_PARAMETERS_NODE_NAME + 
+    nif::common::constants::parameters::DELIMITER + 
+    param_name;
+}
+
+} // namespace naming
+
 } // namespace utils
 } // namespace common
 } // namespace nif

@@ -15,9 +15,19 @@ def get_share_file(package_name, file_name):
 
 def generate_launch_description():
     
+    nif_control_minimal_param_file = get_share_file(
+        package_name='nif_control_minimal_nodes', file_name='config/params.yaml'
+    )
+
+    nif_control_minimal_param = DeclareLaunchArgument(
+        'nif_control_minimal_param_file',
+        default_value=nif_control_minimal_param_file,
+        description='Path to config file for kin_control'
+    )
+
     control_safety_layer_node = Node(
         package='nif_control_safety_layer_nodes',
-        executable='control_safety_layer_node_exe',
+        executable='nif_control_safety_layer_nodes_exe',
         output='screen',
         parameters=[LaunchConfiguration('nif_control_minimal_param_file')],
         remappings=[
@@ -25,10 +35,12 @@ def generate_launch_description():
             ('out_control_cmd', '/control_safety_layer/out/control_cmd'),
             ('out_steering_control_cmd', '/raptor_dbw_interface/steering_cmd'),
             ('out_accelerator_control_cmd', '/raptor_dbw_interface/accelerator_pedal_cmd'),
-
+            ('out_braking_control_cmd', '/raptor_dbw_interface/brake_cmd'),
+            ('out_gear_control_cmd', '/raptor_dbw_interface/gear_cmd'),
         ]
     )
 
     return LaunchDescription([
+        nif_control_minimal_param,
         control_safety_layer_node
     ])

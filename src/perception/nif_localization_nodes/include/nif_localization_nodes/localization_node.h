@@ -15,6 +15,7 @@
 #include "nav_msgs/msg/odometry.hpp"
 #include "novatel_gps_msgs/msg/inspva.hpp"
 #include "rclcpp/rclcpp.hpp"
+#include "tf2/LinearMath/Quaternion.h"
 
 // #include "boost/bind/bind.hpp"
 #include "rcutils/error_handling.h"
@@ -35,13 +36,15 @@ public:
 
   LocalizationNode(
       const std::string& node_name_,
-      const std::shared_ptr<LocalizationMinimal> localization_algorithm_ptr = std::make_shared<LocalizationMinimal>());
+      const std::shared_ptr<LocalizationMinimal> localization_algorithm_ptr =
+          std::make_shared<LocalizationMinimal>());
 
   ~LocalizationNode() {}
 
 private:
   LocalizationNode();
-  void timer_callback();
+
+  void timerCallback();
   void syncGPSCallback(
       const novatel_gps_msgs::msg::Inspva::ConstSharedPtr &gps_horizontal_,
       const novatel_gps_msgs::msg::Inspva::ConstSharedPtr &gps_vertical_);
@@ -49,14 +52,16 @@ private:
   void gpsHorizontalCallback(
       const novatel_gps_msgs::msg::Inspva::SharedPtr gps_horizontal_ptr_);
 
-  void publishTransformStamped();
+    void getENUfromNED(nav_msgs::msg::Odometry &ned_odom,
+                       const double &ned_yaw_ra);
+
+    void publishTransformStamped();
 
   // TODO: not used function. @Andrea told that these functions should be
   // fixed or removed
   void initParameters() {}
   void getParameters() {}
 
-  geometry_msgs::msg::TransformStamped transform_stamped;
 
   void topGPSCallback(const novatel_gps_msgs::msg::Inspva::SharedPtr &gps_);
   void bottomGPSCallback(const novatel_gps_msgs::msg::Inspva::SharedPtr &gps_);
@@ -78,6 +83,15 @@ private:
       m_gps_horizontal_sub;
 
   rclcpp::TimerBase::SharedPtr m_timer;
+
+  bool m_use_enu;
+
+//Transform:
+  geometry_msgs::msg::TransformStamped transform_stamped;
+
+  rclcpp::TimerBase::SharedPtr m_tf_timer;
+
+  std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster;
 };
 
 } // namespace perception

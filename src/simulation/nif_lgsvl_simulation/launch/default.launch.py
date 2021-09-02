@@ -29,21 +29,21 @@ def generate_launch_description():
                 package='nif_lgsvl_simulation',
                 executable='subscriber_member_function.py',
                 output='screen',
-                namespace='nif',
+                # namespace='nif',
                 # parameters=[config]
     )
     lgsvl_sim_publisher_node = Node(
                 package='nif_lgsvl_simulation',
                 executable='publisher_member_function.py',
                 output='screen',
-                namespace='nif',
+                # namespace='nif',
                 # parameters=[config]
     )
     lgsvl_sim_controller_node = Node(
                 package='nif_lgsvl_simulation',
                 executable='controller.py',
                 output='screen',
-                namespace='nif',
+                # namespace='nif',
                 # parameters=[config]
     )
     return LaunchDescription(

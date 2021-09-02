@@ -1,9 +1,9 @@
-export ADE_DOCKER_RUN_ARGS="--cap-add=SYS_PTRACE --net=default -e RMW_IMPLEMENTATION=rmw_cyclonedds_cpp -p127.0.0.1:2222:22"
+export ADE_DOCKER_RUN_ARGS="--cap-add=SYS_PTRACE --privileged --net=host -e RMW_IMPLEMENTATION=rmw_cyclonedds_cpp -p127.0.0.1:2222:22"
 export ADE_GITLAB=gitlab.com
 export ADE_REGISTRY=registry.gitlab.com
 export ADE_DISABLE_NVIDIA_DOCKER=true
 export ADE_IMAGES="
-  ghcr.io/andreafinazzi/ade:master
+  ghcr.io/andreafinazzi/nif:master
   ghcr.io/andreafinazzi/clion
   registry.gitlab.com/autowarefoundation/autoware.auto/autowareauto/amd64/binary-foxy:master
 "

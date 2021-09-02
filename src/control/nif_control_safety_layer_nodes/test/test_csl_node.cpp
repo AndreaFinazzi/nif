@@ -9,6 +9,7 @@
 #include "nif_control_safety_layer_nodes/control_safety_layer_node.h"
 #include "gtest/gtest.h"
 #include <rclcpp/rclcpp.hpp>
+#include <memory>
 
 class sanity_check : public ::testing::Test
 {
@@ -38,10 +39,9 @@ TEST_F(sanity_check, testone) {
         rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
         "Instantiating MockControlNode with name: %s;",
         "control_test_node");
-    rclcpp::NodeOptions options;
 
     nd_t = std::make_shared<MockControlNode>("control_test_node");
-    nd_csl = std::make_shared<ControlSafetyLayerNode>("control_safety_layer_node", options);
+    nd_csl = std::make_shared<ControlSafetyLayerNode>("control_safety_layer_node", nif::common::constants::SYNC_PERIOD_DEFAULT);
 
   } catch (std::exception &e) {
     RCLCPP_FATAL(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),

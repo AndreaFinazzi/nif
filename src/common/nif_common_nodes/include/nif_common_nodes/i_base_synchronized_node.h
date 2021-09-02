@@ -43,7 +43,7 @@ protected:
     }
   }
 
-  const std::chrono::nanoseconds &getGclockPeriod() const;
+  const std::chrono::nanoseconds &getGclockPeriodNs() const;
 
 protected:
   /**

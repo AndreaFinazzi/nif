@@ -31,17 +31,19 @@ namespace nif {
 namespace common {
 
 enum SystemStatusCode : std::uint8_t {
-  NIF_OK = 0,
+  NIF_NOT_INITIALIZED = 0,
   NIF_INITIALIZED = 1,
-  NIF_NOT_INITIALIZED = 200,
+  NIF_OK = 127,
+  NIF_ERROR = 253,
   NIF_FATAL_ERROR = 254,
   NIF_DEAD = 255
 };
 
 enum NodeStatusCode : std::uint8_t {
-  NODE_OK = 0,
+  NODE_NOT_INITIALIZED = 0,
   NODE_INITIALIZED = 1,
-  NODE_NOT_INITIALIZED = 200,
+  NODE_OK = 127,
+  NODE_ERROR = 253,
   NODE_FATAL_ERROR = 254,
   NODE_DEAD = 255
 };
@@ -81,7 +83,7 @@ using TerrainState = nif_msgs::msg::TerrainStatus;
  * This message contains the race flag information from the race control.
  * TODO: should be changed based on the bag file
  */
-using RaceControlState = deep_orange_msgs::msg::RcToCt;
+using RaceControlStatus = deep_orange_msgs::msg::RcToCt;
 
 /**
  * This message contains the autonomy status information which should updated
@@ -144,7 +146,16 @@ using ControlBrakingCmd = std_msgs::msg::Float32;
 using ControlGearCmd = std_msgs::msg::Int8;
 using ControlSteeringCmd = std_msgs::msg::Float32;
 
+/**
+ * Message produced by a Motion Planner
+ */
 using Trajectory = autoware_auto_msgs::msg::Trajectory;
+
+/**
+ * Message produced by a Path Planner
+ */
+using Path = nav_msgs::msg::Path;
+
 // using VehicleKinematicState =
 // autoware_auto_msgs::msg::VehicleKinematicState;
 } // namespace msgs

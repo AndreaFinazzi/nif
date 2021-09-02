@@ -27,7 +27,7 @@ namespace control {
 
 class ControlMinimalNode : public nif::control::IControllerNode {
 public:
-  ControlMinimalNode(const std::string &node_name);
+  explicit ControlMinimalNode(const std::string &node_name);
 
   nif::common::msgs::ControlCmd::SharedPtr control_cmd;
   std_msgs::msg::Float32 steering_cmd;
@@ -46,7 +46,7 @@ private:
   static int findLookaheadIndex(std::vector<geometry_msgs::msg::PoseStamped> refPath, double desLookaheadValue);
   void receiveVelocity(const novatel_gps_msgs::msg::NovatelVelocity::SharedPtr msg);
   void receiveJoySteer(const std_msgs::msg::Float32::SharedPtr msg);
-  nif::common::msgs::ControlCmd &solve() override;
+  nif::common::msgs::ControlCmd::SharedPtr solve() override;
 
 protected:
   void initParameters() override;
@@ -68,6 +68,7 @@ private:
   double feedback_ = 0.0;
   double steering_override_ = 0.0;
 
+  bool path_ready = false;
 };
 
 } // namespace control

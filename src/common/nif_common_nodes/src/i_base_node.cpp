@@ -6,6 +6,7 @@
 //
 
 #include "nif_common_nodes/i_base_node.h"
+#include "nif_common/constants.h"
 
 using namespace nif::common;
 using nif::common::NodeStatusCode;
@@ -28,34 +29,73 @@ IBaseNode::IBaseNode(const std::string &node_name, const NodeType node_type, con
   //  Initialize timers
   gclock_node_init = this->now();
 
-  this->declare_parameter("body_frame_id", "base_link");
-  this->declare_parameter("global_frame_id", "odom");
+// Get global parameters
+// TODO improve readability
+  try {
+    // Initialize client and wait for service
+    this->global_parameters_client =
+            std::make_shared<rclcpp::SyncParametersClient>(this, constants::parameters::GLOBAL_PARAMETERS_NODE_NAME);
+    this->global_parameters_client->wait_for_service(constants::parameters::GLOBAL_PARAMETERS_NODE_TIMEOUT);
 
-  this->body_frame_id = this->get_parameter("body_frame_id").as_string();
-  this->global_frame_id = this->get_parameter("global_frame_id").as_string();
+        this->body_frame_id = this->get_global_parameter<std::string>(
+          constants::parameters::names::FRAME_ID_BODY);
+
+        this->global_frame_id = this->get_global_parameter<std::string>(
+          constants::parameters::names::FRAME_ID_GLOBAL);
+
+  } catch (std::exception & e) {
+    // Something else happened, fall back to default values.
+    RCLCPP_ERROR(this->get_logger(), "SEVERE PARAMETERS ERROR. Falling back to default values, proceding may be unsafe.");
+    RCLCPP_ERROR(this->get_logger(), "What: %s", e.what());
+
+    this->node_status_manager.update(NodeStatusCode::NODE_ERROR);
+
+//  Check if available as local parameters:
+    this->body_frame_id = this->get_parameter(constants::parameters::names::FRAME_ID_BODY).as_string();
+    this->global_frame_id = this->get_parameter(constants::parameters::names::FRAME_ID_GLOBAL).as_string();
+
+  }
 
   //  Declare subscriptions
   //                TODO : Define QoS macros
+
+  const std::string& topic_ego_odometry =
+      this->get_global_parameter<std::string>(
+          constants::parameters::names::TOPIC_ID_EGO_ODOMETRY);
+
+  const std::string& topic_system_status =
+      this->get_global_parameter<std::string>(
+          constants::parameters::names::TOPIC_ID_SYSTEM_STATUS);
+
+  const std::string& topic_race_control_status =
+      this->get_global_parameter<std::string>(
+          constants::parameters::names::TOPIC_ID_RACE_CONTROL_STATUS);
+
+  const std::string& topic_ego_powertrain_status =
+      this->get_global_parameter<std::string>(
+          constants::parameters::names::TOPIC_ID_EGO_POWERTRAIN_STATUS);
+
   this->ego_odometry_sub =
       this->create_subscription<nif::common::msgs::Odometry>(
-          "topic_ego_odometry", nif::common::constants::QOS_DEFAULT,
+          topic_ego_odometry, nif::common::constants::QOS_DEFAULT,
           std::bind(&IBaseNode::egoOdometryCallback, this,
                     std::placeholders::_1));
 
-  this->system_state_sub =
+  this->system_status_sub =
       this->create_subscription<nif::common::msgs::SystemStatus>(
-          "topic_system_state", nif::common::constants::QOS_DEFAULT,
-          std::bind(&IBaseNode::systemStateCallback, this,
+          topic_system_status, nif::common::constants::QOS_DEFAULT,
+          std::bind(&IBaseNode::systemStatusCallback, this,
                     std::placeholders::_1));
 
-  this->race_control_state_sub =
-      this->create_subscription<nif::common::msgs::RaceControlState>(
-          "topic_race_control_state", nif::common::constants::QOS_DEFAULT,
-          std::bind(&IBaseNode::raceControlStateCallback, this,
+  this->race_control_status_sub =
+      this->create_subscription<nif::common::msgs::RaceControlStatus>(
+          topic_race_control_status, nif::common::constants::QOS_DEFAULT,
+          std::bind(&IBaseNode::raceControlStatusCallback, this,
                     std::placeholders::_1));
+
   this->ego_powertrain_state_sub =
       this->create_subscription<nif::common::msgs::PowertrainState>(
-          "topic_powertrain_state", nif::common::constants::QOS_DEFAULT,
+          topic_ego_powertrain_status, nif::common::constants::QOS_DEFAULT,
           std::bind(&IBaseNode::egoPowertrainCallback, this,
                     std::placeholders::_1));
 
@@ -67,41 +107,40 @@ IBaseNode::IBaseNode(const std::string &node_name, const NodeType node_type, con
   //
 }
 
-/**
- * TODO implement callback
- * @param msg
- */
+
 void IBaseNode::egoPowertrainCallback(
     const nif::common::msgs::PowertrainState::SharedPtr msg) {
+  has_ego_powertrain_state = true;
+  this->ego_powertrain_state_update_time = this->now();
   this->ego_powertrain_state = *msg;
+  this->afterEgoPowertrainCallback();
 }
 
-/**
- *
- * @param msg
- */
 void IBaseNode::egoOdometryCallback(
     const nif::common::msgs::Odometry::SharedPtr msg) {
+  has_ego_odometry = true;
+  this->ego_odometry_update_time = this->now();
   this->ego_odometry = *msg;
+  this->afterEgoOdometryCallback();
 }
 
-/**
- * TODO implement callback
- * @param msg
- */
-void IBaseNode::systemStateCallback(
+void IBaseNode::systemStatusCallback(
     const nif::common::msgs::SystemStatus::SharedPtr msg) {
-  this->system_state = *msg;
+  has_system_status = true;
+  this->system_status_update_time = this->now();
+  this->system_status = *msg;
+  this->afterSystemStatusCallback();
 }
 
-/**
- * TODO implement callback
- * @param msg
- */
-void IBaseNode::raceControlStateCallback(
-    const nif::common::msgs::RaceControlState::SharedPtr msg) {
-  this->race_control_state = *msg;
+void IBaseNode::raceControlStatusCallback(
+    const nif::common::msgs::RaceControlStatus::SharedPtr msg) {
+  has_race_control_status   = true;
+  this->race_control_status_update_time = this->now();
+  this->race_control_status = *msg;
+  this->afterRaceControlStatusCallback();
 }
+
+
 const std::string &IBaseNode::getBodyFrameId() const {
   return body_frame_id;
 }
@@ -118,8 +157,30 @@ const msgs::PowertrainState &IBaseNode::getEgoPowertrainState() const {
   return ego_powertrain_state;
 }
 const msgs::SystemStatus &IBaseNode::getSystemState() const {
-  return system_state;
+  return system_status;
 }
-const msgs::RaceControlState &IBaseNode::getRaceControlState() const {
-  return race_control_state;
+const msgs::RaceControlStatus &IBaseNode::getRaceControlState() const {
+  return race_control_status;
 }
+const msgs::SystemStatus &IBaseNode::getSystemStatus() const {
+  return system_status;
+}
+const msgs::RaceControlStatus &IBaseNode::getRaceControlStatus() const {
+  return race_control_status;
+}
+const rclcpp::Time &IBaseNode::getEgoOdometryUpdateTime() const {
+  return ego_odometry_update_time;
+}
+const rclcpp::Time &IBaseNode::getEgoPowertrainStateUpdateTime() const {
+  return ego_powertrain_state_update_time;
+}
+const rclcpp::Time &IBaseNode::getSystemStatusUpdateTime() const {
+  return system_status_update_time;
+}
+const rclcpp::Time &IBaseNode::getRaceControlStatusUpdateTime() const {
+  return race_control_status_update_time;
+}
+bool IBaseNode::hasEgoOdometry() const { return has_ego_odometry; }
+bool IBaseNode::hasEgoPowertrainState() const { return has_ego_powertrain_state; }
+bool IBaseNode::hasSystemStatus() const { return has_system_status; }
+bool IBaseNode::hasRaceControlStatus() const { return has_race_control_status; }

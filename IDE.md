@@ -41,7 +41,7 @@ This guide is an adaptation of https://www.allaban.me/posts/2020/08/ros2-setup-i
 5. Start the `ade` environment:
    ```shell
    $ cd nif
-   $ ade start --update
+   $ ./nifstart
    ```
    
 6. Setup the ssh access (CLion's toolchain needs this). The login password is the same as host's username (`echo $USER`):

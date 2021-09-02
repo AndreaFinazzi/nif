@@ -9,17 +9,18 @@ void nif::control::ControlSafetyLayerNode::getParameters() {}
 
 void nif::control::ControlSafetyLayerNode::controlCallback(
     const nif::common::msgs::ControlCmd::SharedPtr msg) {
-//  TODO consider not to accept commands from the future!
+  //  TODO consider not to accept commands from the future!
   //  Store control command if it's not too old
   if ((this->now().nanoseconds() - msg->header.stamp.nanosec) <
-      this->getGclockPeriod().count() || true) // TODO REMOVE THIS!!!
+          this->getGclockPeriodNs().count() ||
+      true) // TODO REMOVE THIS!!!
     this->bufferStore(msg);
 }
 
 void nif::control::ControlSafetyLayerNode::run() {
 
-  nif::common::msgs::ControlCmd::SharedPtr msg;
   if (!this->control_buffer.empty()) {
+  nif::common::msgs::ControlCmd::SharedPtr msg;
 
     msg = (this->control_buffer.top());
 
@@ -27,20 +28,27 @@ void nif::control::ControlSafetyLayerNode::run() {
     msg->header.stamp = this->now();
     msg->header.frame_id = this->getBodyFrameId();
     try {
+//      TODO implement safety checks
       this->control_pub->publish(*msg);
 
+      this->publishSteeringCmd(msg->steering_control_cmd);
+      this->publishAcceleratorCmd(msg->accelerator_control_cmd);
+      this->publishBrakingCmd(msg->braking_control_cmd);
+      this->publishGearCmd(msg->gear_control_cmd);
+
     } catch (std::exception &e) {
+//      TODO handle critical error in the safest way
       RCLCPP_ERROR(this->get_logger(), e.what());
     }
 
-//    this->flush
+    this->bufferFlush();
   }
 }
 
 bool nif::control::ControlSafetyLayerNode::publishSteeringCmd(
     const nif::common::msgs::ControlSteeringCmd &msg) const {
   //  TODO implement safety checks
-  if (true) {
+  if (this->steering_control_pub) {
     this->steering_control_pub->publish(msg);
 
     return true; // OK
@@ -51,7 +59,7 @@ bool nif::control::ControlSafetyLayerNode::publishSteeringCmd(
 bool nif::control::ControlSafetyLayerNode::publishAcceleratorCmd(
     const nif::common::msgs::ControlAcceleratorCmd &msg) const {
   //  TODO implement safety checks
-  if (true) {
+  if (this->accelerator_control_pub) {
     this->accelerator_control_pub->publish(msg);
 
     return true; // OK
@@ -63,7 +71,7 @@ bool nif::control::ControlSafetyLayerNode::publishBrakingCmd(
     const nif::common::msgs::ControlBrakingCmd &msg) const {
 
   //  TODO implement safety checks
-  if (true) {
+  if (this->braking_control_pub) {
     this->braking_control_pub->publish(msg);
 
     return true; // OK
@@ -75,6 +83,7 @@ bool nif::control::ControlSafetyLayerNode::publishGearCmd(
     const nif::common::msgs::ControlGearCmd &msg) const {
 
   //  TODO implement safety checks
+  //  TODO use min/max as constants here
   if (msg.data >= 0 && msg.data < 6) {
     this->gear_control_pub->publish(msg);
 
@@ -90,5 +99,6 @@ void nif::control::ControlSafetyLayerNode::bufferStore(
 }
 
 void nif::control::ControlSafetyLayerNode::bufferFlush() {
-//  this->control_buffer.
+  while (!this->control_buffer.empty())
+    this->control_buffer.pop();
 }
