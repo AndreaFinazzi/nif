@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 . /opt/ros/$ROS_DISTRO/setup.bash
 
-colcon build --base-paths src/* "$@" --cmake-args -DCMAKE_INSTALL_PREFIX=/home/$USER/nif/install
+colcon build --symlink-install --base-paths src/* "$@" --cmake-args -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=/home/$USER/nif/install

@@ -22,7 +22,7 @@ def generate_launch_description():
                 package='nif_localization_nodes',
                 executable='localization_node_exe',
                 output='screen',
-                namespace='nif',
+                # namespace='nif',
                 parameters=[
                     {"body_frame_id": "/rear_axis_middle",
                      "global_frame_id": "/map"}

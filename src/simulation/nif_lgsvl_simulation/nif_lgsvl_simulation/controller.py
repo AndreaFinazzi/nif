@@ -257,7 +257,7 @@ def main(args=None):
         # Publish command
         wpt_control.publish_command(steer_cmd, throttle_cmd, gear_cmd, braking_cmd)
 
-        wpt_control.get_logger().info("Commands: (steer=%.3f, accel=%.3f). Errors: (CrossTrackError=%.3f, YawError=%.3f, SpeedError=%.3f)." %(steer_cmd, throttle_cmd, error_y, error_yaw, error_v))
+        wpt_control.get_logger().debug("Commands: (steer=%.3f, accel=%.3f). Errors: (CrossTrackError=%.3f, YawError=%.3f, SpeedError=%.3f)." %(steer_cmd, throttle_cmd, error_y, error_yaw, error_v))
         wpt_control.rate.sleep()
         # wpt_control.get_logger().info("Woke up!!")
     wpt_control.get_logger().info("rclpy not ok")

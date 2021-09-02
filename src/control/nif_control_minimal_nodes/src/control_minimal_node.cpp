@@ -3,11 +3,13 @@
 //
 
 #include "nif_control_minimal_nodes/control_minimal_node.h"
+#include <nif_common/vehicle_model.h>
 
 using nif::control::ControlMinimalNode;
 
 ControlMinimalNode::ControlMinimalNode(const std::string& node_name)
-  : IControllerNode(node_name) {
+  : IControllerNode(node_name),
+      recv_time_(this->now()) {
   // Publishers
   pubSteeringCmd_ = this->create_publisher<std_msgs::msg::Float32>(
       "/joystick/steering_cmd", 1);
@@ -44,8 +46,7 @@ ControlMinimalNode::ControlMinimalNode(const std::string& node_name)
   this->declare_parameter("lookahead_speed_ratio", 0.75);
   this->declare_parameter("proportional_gain", 0.2);
   this->declare_parameter("vehicle.wheelbase", 2.97);
-  this->declare_parameter("max_steer_angle",
-                          30.0); // 15 deg * 2 because ratio is wrong
+  this->declare_parameter("max_steer_angle", 30.0); // 15 deg * 2 because ratio is wrong
   this->declare_parameter("steering_override_threshold", 4.0);
 
   lookahead_error.data = 0.0;
@@ -53,11 +54,15 @@ ControlMinimalNode::ControlMinimalNode(const std::string& node_name)
   steering_cmd.data = 0.0;
   control_cmd = std::make_shared<nif::common::msgs::ControlCmd>();
 }
+
 void nif::control::ControlMinimalNode::initParameters() {}
 void nif::control::ControlMinimalNode::getParameters() {}
 
-nif::common::msgs::ControlCmd& ControlMinimalNode::solve() {
-  rclcpp::Time control_time = rclcpp::Clock().now();
+nif::common::msgs::ControlCmd::SharedPtr ControlMinimalNode::solve() {
+  if (this->path_ready)
+  {
+
+  rclcpp::Time control_time = this->now();
   rclcpp::Duration time_diff = control_time - this->recv_time_;
   double dt = static_cast<double>(time_diff.seconds()) +
       static_cast<double>(time_diff.nanoseconds()) * 1e-9;
@@ -74,9 +79,11 @@ nif::common::msgs::ControlCmd& ControlMinimalNode::solve() {
 
   publishSteering();
   publishDebugSignals();
-  this->control_cmd->steering_control_cmd = this->steering_cmd.data;
+  int8_t invert_steering = true; // true
+  this->control_cmd->steering_control_cmd.data = invert_steering ? -this->steering_cmd.data : this->steering_cmd.data;
 
-  return *(this->control_cmd);
+  }
+  return this->control_cmd;
 }
 
 void ControlMinimalNode::calculateFFW() {
@@ -97,8 +104,10 @@ void ControlMinimalNode::calculateSteeringCmd() {
   this->steering_cmd.data = (this->speed_ > 1.0) ?
       L * (this->feedback_ + this->feedforward_) / this->speed_ :
       L * (this->feedback_ + this->feedforward_);
-  this->steering_cmd.data = this->steering_cmd.data * 57.296 * 19.0 /
-      9.0; // times 19.0/9 because ratio is wrong
+
+//  TODO define steering ratio modifier as a paramter
+  double steering_multiplier = nif::common::vehicle_param::STEERING_RATIO; // 57.296 * 19.0 / 9.0
+  this->steering_cmd.data = this->steering_cmd.data * steering_multiplier; // times 19.0/9 because ratio is wrong
 }
 
 void ControlMinimalNode::setCmdsToZeros() {
@@ -158,7 +167,8 @@ void ControlMinimalNode::receivePath(const nav_msgs::msg::Path::SharedPtr msg) {
     this->lookahead_error.data = 0.0;
   }
 
-  this->recv_time_ = rclcpp::Clock().now();
+  this->recv_time_ = this->now();
+  this->path_ready = true;
 }
 
 int ControlMinimalNode::findLookaheadIndex(

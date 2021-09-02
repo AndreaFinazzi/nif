@@ -7,9 +7,13 @@
 
 #include "nif_localization_minimal/localization_minimal.h"
 
-LocalizationMinimal::LocalizationMinimal() {
-  m_geo_converter_ptr = std::make_shared<GeodeticConverter>(
-      39.8125900071711, -86.3418060783425, 0);
+LocalizationMinimal::LocalizationMinimal(const double lat,
+                                         const double lon,
+                                         const double height)
+: m_lat_ref(lat), m_lon_ref(lon), m_height_ref(height) {
+
+  m_geo_converter_ptr =
+      std::make_shared<GeodeticConverter>(m_lat_ref, m_lon_ref, m_height_ref);
 }
 
 LocalizationMinimal::~LocalizationMinimal() {}
@@ -149,4 +153,23 @@ void LocalizationMinimal::setGPSVerticalData(
   m_heading_deg_gps_vertical = gps_vertical_data_.azimuth;
   m_heading_rad_gps_vertical =
       m_heading_deg_gps_vertical * nif::common::constants::DEG2RAD;
+}
+
+void LocalizationMinimal::setENUReference(double &lat, double &lon,
+                                          double &height) {
+  m_lat_ref = lat;
+  m_lon_ref = lon;
+  m_height_ref = height;
+  m_geo_converter_ptr = std::make_shared<GeodeticConverter>(lat, lon, height);
+}
+
+void LocalizationMinimal::getENUfromLLH(const double &lat,
+                                        const double &lon,
+                                        const double &height,
+                                        double &x,
+                                        double &y,
+                                        double &z) {
+  // Outputs garbage for unkown reason. Use geodetic2Ned, then manually convert
+  // to Enu
+  m_geo_converter_ptr->geodetic2Enu(lat, lon, 0.0, &x, &y, &z);
 }

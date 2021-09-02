@@ -2,7 +2,7 @@
 
 c_wpt::c_wpt(string wpt_file_path_,
              string wpt_alias_ = "",
-             string global_frame_id_ = "odom",
+             string global_frame_id_ = "map",
              bool wpt_3d_file_flg_ = true,
              bool spline_flg_ = true,
              double spline_interval_ = 0.5) {
@@ -51,7 +51,7 @@ c_wpt::c_wpt(string wpt_file_path_,
       m_wpt_inglobal.poses.clear();
 
       if (point_s_end < nif::common::constants::planner::WPT_MINIMUM_LEN) {
-        throw std::domain_error("Lenth of the waypoint is abnormally short.");
+        throw std::domain_error("Length of the waypoint is abnormally short.");
         return;
       }
 

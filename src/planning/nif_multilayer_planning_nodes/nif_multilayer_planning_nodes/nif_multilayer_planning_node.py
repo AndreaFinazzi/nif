@@ -23,11 +23,9 @@ for dir_name in os.listdir(lib_path_default):
         sys.path.insert(0, dir_path)
 os.environ['OPENBLAS_NUM_THREADS'] = str(1)
 
-
 # TODO : I don't know why but currently, we have to import the graph library in this order
 from Graph_LTPL import Graph_LTPL
 from imp_global_traj.src import *
-
 
 from nif_msgs.msg import Perception3DArray
 from nav_msgs.msg import Path, Odometry
@@ -42,34 +40,39 @@ class GraphBasedPlanner(Node):
     def __init__(self):
         super().__init__('graph_based_planner_node')
 
-        # Subscribers and Publisher
-        self.local_maptrack_inglobal_pub = self.create_publisher(Path, 'topic_name_local_maptrack_inglobal', 10)
-        self.veh_odom_sub = self.create_subscription(Odometry, 'topic_name_veh_odom', self.veh_odom_callback, 10)
-        self.perception_result_sub = self.create_subscription(Perception3DArray, 'topic_name_perception_result', self.perception_result_callback, 10)
-
-        self.current_veh_odom = None
-
-        timer_period = 0.1  # seconds
-        self.timer = self.create_timer(timer_period, self.timer_callback)
-
         # top level path (module directory)
-        toppath = "external/GraphBasedLocalTrajectoryPlanner"
-        sys.path.append(toppath)
+        path_assets = get_share_file('nif_multilayer_planning_nodes', 'assets')
+        path_params = get_share_file('nif_multilayer_planning_nodes', 'params')
+        path_inputs = get_share_file('nif_multilayer_planning_nodes', 'inputs')
+        path_logs = get_share_file('nif_multilayer_planning_nodes', 'logs')
+        # sys.path.append(toppath)
 
         track_param = configparser.ConfigParser()
-        if not track_param.read(toppath + "/params/driving_task.ini"):
+        if not track_param.read(os.path.join(path_params, "driving_task.ini")):
             raise ValueError('Specified online parameter config file does not exist or is empty!')
 
         track_specifier = json.loads(track_param.get('DRIVING_TASK', 'track'))
 
         # define all relevant paths
-        path_dict = {'globtraj_input_path': toppath + "/inputs/traj_ltpl_cl/traj_ltpl_cl_" + track_specifier + ".csv",
-                    'graph_store_path': toppath + "/inputs/stored_graph.pckl",
-                    'ltpl_offline_param_path': toppath + "/params/ltpl_config_offline.ini",
-                    'ltpl_online_param_path': toppath + "/params/ltpl_config_online.ini",
-                    'log_path': toppath + "/logs/graph_ltpl/",
-                    'graph_log_id': datetime.datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
-                    }
+        path_dict = {
+            # 'globtraj_input_path': toppath + "/inputs/traj_ltpl_cl/traj_ltpl_cl_" + track_specifier + ".csv",
+            'globtraj_input_path': os.path.join(path_inputs, "traj_ltpl_cl", "traj_ltpl_cl_lgsim_ims.csv"),
+            'graph_store_path': os.path.join(path_inputs, "stored_graph.pckl"),
+            'ltpl_offline_param_path': os.path.join(path_params, "ltpl_config_offline.ini"),
+            'ltpl_online_param_path': os.path.join(path_params, "ltpl_config_online.ini"),
+            'log_path': os.path.join(path_logs, "graph_ltpl"),
+            'graph_log_id': datetime.datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
+        }
+
+        # Subscribers and Publisher
+        self.local_maptrack_inglobal_pub = self.create_publisher(Path, 'out_local_maptrack_inglobal', 10)
+        self.veh_odom_sub = self.create_subscription(Odometry, 'in_vehicle_odometry', self.veh_odom_callback, 10)
+        self.perception_result_sub = self.create_subscription(Perception3DArray, 'in_perception_result', self.perception_result_callback, 10)
+
+        self.current_veh_odom = None
+
+        timer_period = 0.05  # seconds
+        self.timer = self.create_timer(timer_period, self.timer_callback)
 
         # ----------------------------------------------------------------------------------------------------------------------
         # INITIALIZATION AND OFFLINE PART --------------------------------------------------------------------------------------
@@ -79,7 +82,7 @@ class GraphBasedPlanner(Node):
         # calculate offline graph
         self.ltpl_obj.graph_init()
         # set start pose based on first point in provided reference-line
-        self.refline = graph_ltpl.imp_global_traj.src.\
+        self.refline = graph_ltpl.imp_global_traj.src. \
             import_globtraj_csv.import_globtraj_csv(import_path=path_dict['globtraj_input_path'])[0]
 
         self.pos_est = self.refline[0, :]
@@ -88,7 +91,7 @@ class GraphBasedPlanner(Node):
 
         # set start pos
         self.ltpl_obj.set_startpos(pos_est=self.pos_est,
-                            heading_est=self.heading_est)
+                                   heading_est=self.heading_est)
 
         # ----------------------------------------------------------------------------------------------------------------------
         # ONLINE LOOP ----------------------------------------------------------------------------------------------------------
@@ -107,16 +110,20 @@ class GraphBasedPlanner(Node):
         t0 = +2.0 * (quat.w * quat.x + quat.y * quat.z)
         t1 = +1.0 - 2.0 * (quat.x * quat.x + quat.y * quat.y)
         roll_x = math.atan2(t0, t1)
-        return roll_x # in radians
+        return roll_x  # in radians
 
     def veh_odom_callback(self, msg):
         # self.get_logger().info('I heard: "%s"' % msg.data)
         self.current_veh_odom = msg
-        self.pos_est = np.ndarray([self.current_veh_odom.pose.pose.position.x,
-                                    self.current_veh_odom.pose.pose.position.y])
+
+        self.pos_est = np.array([
+            self.current_veh_odom.pose.pose.position.x,
+            self.current_veh_odom.pose.pose.position.y
+        ])
+
         self.vel_est = math.sqrt(pow(self.current_veh_odom.twist.twist.linear.x, 2)
-                                + pow(self.current_veh_odom.twist.twist.linear.y, 2)
-                                + pow(self.current_veh_odom.twist.twist.linear.z, 2))
+                                 + pow(self.current_veh_odom.twist.twist.linear.y, 2)
+                                 + pow(self.current_veh_odom.twist.twist.linear.z, 2))
 
     def perception_result_callback(self, msg):
 
@@ -143,10 +150,10 @@ class GraphBasedPlanner(Node):
 
         # -- CALCULATE PATHS FOR NEXT TIMESTAMP ----------------------------------------------------------------------------
         self.ltpl_obj.calc_paths(prev_action_id=sel_action_prev,
-                            object_list=self.obj_list)
+                                 object_list=self.obj_list)
 
         self.traj_set = self.ltpl_obj.calc_vel_profile(pos_est=self.pos_est,
-                                                        vel_est=self.vel_est)[0]
+                                                       vel_est=self.vel_est)[0]
 
         for sel_action_current in ["right", "left", "straight", "follow"]:  # try to force 'right', else try next in list
             if sel_action_current in self.traj_set.keys():
@@ -157,19 +164,19 @@ class GraphBasedPlanner(Node):
         msg = Path()
         msg.header.frame_id = "map"
         msg.header.stamp = self.get_clock().now().to_msg()
-        
+
         for idx in range(len(maptrack_inglobal[0])):
             pose = PoseStamped()
             pose.header.frame_id = "map"
             pose.header.stamp = self.get_clock().now().to_msg()
-            pose.pose.position.x = maptrack_inglobal[0][idx][1] # for x
-            pose.pose.position.y = maptrack_inglobal[0][idx][2] # for x
-            print(pose.pose.position.x,pose.pose.position.y)
+            pose.pose.position.x = maptrack_inglobal[0][idx][1]  # for x
+            pose.pose.position.y = maptrack_inglobal[0][idx][2]  # for x
+            self.get_logger().debug("%f, %f" % (pose.pose.position.x, pose.pose.position.y))
             msg.poses.append(pose)
 
         self.local_maptrack_inglobal_pub.publish(msg)
 
-                                    
+
 def main(args=None):
     rclpy.init(args=args)
     graph_based_planner_node = GraphBasedPlanner()

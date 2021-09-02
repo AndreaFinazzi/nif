@@ -23,13 +23,15 @@
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/float32.hpp"
 #include "std_msgs/msg/float64.hpp"
+#include "visualization_msgs/msg/marker.hpp"
+
 
 namespace nif {
 namespace control {
 
 class ControlPurePursuitNode : public nif::control::IControllerNode {
 public:
-  ControlPurePursuitNode(const std::string &node_name);
+  explicit ControlPurePursuitNode(const std::string &node_name);
 
   nif::common::msgs::ControlCmd::SharedPtr control_cmd;
   std_msgs::msg::Float32 steering_cmd;
@@ -38,21 +40,23 @@ public:
 
 private:
   void mapTrackCallback(const nav_msgs::msg::Path::SharedPtr msg);
-  nif::common::msgs::ControlCmd &solve() override;
+  nif::common::msgs::ControlCmd::SharedPtr solve() override;
 
 protected:
   void initParameters() override;
   void getParameters() override;
 
 private:
-  void egoUpdateTimerCallback();
+  void egoUpdateTimerCallback() const;
+  void publishLookAheadPointMarker();
 
   rclcpp::TimerBase::SharedPtr m_ego_update_timer;
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr m_steer_cmd_pub;
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr  m_lookahead_pt_in_global_pub;
   rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr m_map_track_sub;
 
   rclcpp::Time maptrack_recv_time_;
-  nav_msgs::msg::Path m_maptrack;
+  nav_msgs::msg::Path::SharedPtr m_maptrack;
 
   double m_param_min_lookahead_dist;
   double m_param_max_lookahead_dist;
@@ -64,8 +68,12 @@ private:
   bool m_ego_status_first_run = false;
   bool m_maptrack_first_run = false;
 
+  double m_pure_pursuit_steer_cmd = 0.0;
+  geometry_msgs::msg::PoseStamped m_lookahead_pt_in_global;
+  geometry_msgs::msg::PoseStamped m_control_pt_in_body;
+
   std::shared_ptr<PurePursuit> m_pure_pursuit_handler_ptr;
-  nif::common::msgs::ControlCmd::SharedPtr steer_control_cmd_msg;
+  nif::common::msgs::ControlCmd::SharedPtr control_command;
 
 };
 

@@ -1,0 +1,401 @@
+[
+  {
+    "name": "Keyboard Control Sensor",
+    "parent": null,
+    "pluginId": "a2ff904a-ff06-4f06-9e45-cb58217a7142",
+    "plugin": {
+      "assetGuid": null,
+      "isFavored": true,
+      "isShared": false,
+      "isOwned": false,
+      "accessInfo": {
+        "userAccessType": "favored",
+        "owner": {
+          "id": "0d888b00-fa53-47c1-882a-b68391268a11",
+          "firstName": "SVL",
+          "lastName": "Content"
+        }
+      },
+      "supportedSimulatorVersions": [
+        "2021.1",
+        "2021.1.1",
+        "2021.2",
+        "2021.2.1"
+      ],
+      "id": "a2ff904a-ff06-4f06-9e45-cb58217a7142",
+      "name": "Keyboard Control Sensor",
+      "type": "KeyboardControlSensor",
+      "category": "sensor",
+      "ownerId": "0d888b00-fa53-47c1-882a-b68391268a11",
+      "accessType": "public",
+      "description": "This sensor is required for a vehicle to accept keyboard control commands. Parameters are not required.\nSee https://www.svlsimulator.com/docs/simulation-content/sensors-list/#keyboard-control for more details.",
+      "copyright": "LG Electronics Inc.",
+      "licenseName": "LG Content",
+      "status": "active",
+      "owner": {
+        "id": "0d888b00-fa53-47c1-882a-b68391268a11",
+        "firstName": "SVL",
+        "lastName": "Content"
+      },
+      "shareRequests": []
+    }
+  },
+  {
+    "params": {
+      "Topic": "/sensor/odom_ground_truth",
+      "Frame": "map",
+      "ChildFrame": "base_link",
+      "IgnoreMapOrigin": true,
+      "Frequency": 100
+    },
+    "name": "GPS Odometry Sensor",
+    "parent": null,
+    "pluginId": "483f7b90-2f76-42ee-82c1-22f02f25f924",
+    "plugin": {
+      "assetGuid": null,
+      "isFavored": true,
+      "isShared": false,
+      "isOwned": false,
+      "accessInfo": {
+        "userAccessType": "favored",
+        "owner": {
+          "id": "0d888b00-fa53-47c1-882a-b68391268a11",
+          "firstName": "SVL",
+          "lastName": "Content"
+        }
+      },
+      "supportedSimulatorVersions": [
+        "2021.1",
+        "2021.1.1",
+        "2021.2",
+        "2021.2.1"
+      ],
+      "id": "483f7b90-2f76-42ee-82c1-22f02f25f924",
+      "name": "GPS Odometry Sensor",
+      "type": "GpsOdometrySensor",
+      "category": "sensor",
+      "ownerId": "0d888b00-fa53-47c1-882a-b68391268a11",
+      "accessType": "public",
+      "description": "This sensor outputs the GPS location of the vehicle in Longitude/Latitude and Northing/Easting coordintates and the vehicle velocity.\nSee https://www.svlsimulator.com/docs/simulation-content/sensors-list/#gps-odometry for more details.",
+      "copyright": "LG Electronics Inc.",
+      "licenseName": "LG Content",
+      "status": "active",
+      "owner": {
+        "id": "0d888b00-fa53-47c1-882a-b68391268a11",
+        "firstName": "SVL",
+        "lastName": "Content"
+      },
+      "shareRequests": []
+    }
+  },
+  {
+    "params": {
+      "Topic": "/sensor/control"
+    },
+    "name": "LGSVL Control Sensor",
+    "parent": null,
+    "pluginId": "a5696615-d3e2-45e9-afa3-9b5ae7359e02",
+    "plugin": {
+      "assetGuid": null,
+      "isFavored": true,
+      "isShared": false,
+      "isOwned": false,
+      "accessInfo": {
+        "userAccessType": "favored",
+        "owner": {
+          "id": "0d888b00-fa53-47c1-882a-b68391268a11",
+          "firstName": "SVL",
+          "lastName": "Content"
+        }
+      },
+      "supportedSimulatorVersions": [
+        "2021.1",
+        "2021.1.1",
+        "2021.2",
+        "2021.2.1"
+      ],
+      "id": "a5696615-d3e2-45e9-afa3-9b5ae7359e02",
+      "name": "LGSVL Control Sensor",
+      "type": "LGSVLControlSensor",
+      "category": "sensor",
+      "ownerId": "0d888b00-fa53-47c1-882a-b68391268a11",
+      "accessType": "public",
+      "description": "Example template of a sensor for vehicle Control information.",
+      "copyright": "LG Electronics Inc.",
+      "licenseName": "LG Content",
+      "status": "active",
+      "owner": {
+        "id": "0d888b00-fa53-47c1-882a-b68391268a11",
+        "firstName": "SVL",
+        "lastName": "Content"
+      },
+      "shareRequests": []
+    }
+  },
+  {
+    "params": {
+      "Topic": "/sensor/a2D_front_left",
+      "Frame": "camera_front_left"
+    },
+    "transform": {
+      "x": -0.171,
+      "y": 0.422,
+      "z": 2.184,
+      "pitch": 0,
+      "yaw": -55,
+      "roll": 0
+    },
+    "name": "2D_front_left",
+    "parent": null,
+    "pluginId": "e0bfb6cc-a8f0-425e-9b6c-a643ca1e255a",
+    "plugin": {
+      "assetGuid": null,
+      "isFavored": true,
+      "isShared": false,
+      "isOwned": false,
+      "accessInfo": {
+        "userAccessType": "favored",
+        "owner": {
+          "id": "0d888b00-fa53-47c1-882a-b68391268a11",
+          "firstName": "SVL",
+          "lastName": "Content"
+        }
+      },
+      "supportedSimulatorVersions": [
+        "2021.1",
+        "2021.1.1",
+        "2021.2",
+        "2021.2.1"
+      ],
+      "id": "e0bfb6cc-a8f0-425e-9b6c-a643ca1e255a",
+      "name": "2D Ground Truth Sensor",
+      "type": "PerceptionSensor2D",
+      "category": "sensor",
+      "ownerId": "0d888b00-fa53-47c1-882a-b68391268a11",
+      "accessType": "public",
+      "description": "This sensor outputs an image where objects are encased in a box. The color of the box depends on the type of object.\n\t[\n\t\t\"Car\": \"Green\"\n\t\t\"Pedestrian\": \"Yellow\"\n\t\t\"Bicycle\": \"Cyan\"\n\t\t\"Unknown\":  \"Magenta\"\n\t]\nSee https://www.svlsimulator.com/docs/simulation-content/sensors-list/#2d-ground-truth for more details.",
+      "copyright": "LG Electronics Inc.",
+      "licenseName": "LG Content",
+      "status": "active",
+      "owner": {
+        "id": "0d888b00-fa53-47c1-882a-b68391268a11",
+        "firstName": "SVL",
+        "lastName": "Content"
+      },
+      "shareRequests": []
+    }
+  },
+  {
+    "params": {
+      "Topic": "/novatel_bottom/fix",
+      "Frequency": 12.5,
+      "Frame": "gps_bottom"
+    },
+    "transform": {
+      "x": 0,
+      "y": -0.1428,
+      "z": 1.606,
+      "pitch": 0,
+      "yaw": 0,
+      "roll": 0
+    },
+    "name": "gps_bottom",
+    "parent": null,
+    "pluginId": "75bbcbfa-fdca-4703-8e82-abf8078f7991",
+    "plugin": {
+      "assetGuid": null,
+      "isFavored": true,
+      "isShared": false,
+      "isOwned": false,
+      "accessInfo": {
+        "userAccessType": "favored",
+        "owner": {
+          "id": "0d888b00-fa53-47c1-882a-b68391268a11",
+          "firstName": "SVL",
+          "lastName": "Content"
+        }
+      },
+      "supportedSimulatorVersions": [
+        "2021.1",
+        "2021.1.1",
+        "2021.2",
+        "2021.2.1"
+      ],
+      "id": "75bbcbfa-fdca-4703-8e82-abf8078f7991",
+      "name": "GPS Device Sensor",
+      "type": "GpsSensor",
+      "category": "sensor",
+      "ownerId": "0d888b00-fa53-47c1-882a-b68391268a11",
+      "accessType": "public",
+      "description": "This sensor outputs the GPS location of the vehicle in Longitude/Latitude and Northing/Easting coordintates.\nSee https://www.svlsimulator.com/docs/simulation-content/sensors-list/#gps-device for more details.",
+      "copyright": "LG Electronics Inc.",
+      "licenseName": "LG Content",
+      "status": "active",
+      "owner": {
+        "id": "0d888b00-fa53-47c1-882a-b68391268a11",
+        "firstName": "SVL",
+        "lastName": "Content"
+      },
+      "shareRequests": []
+    }
+  },
+  {
+    "params": {
+      "Topic": "/novatel_top/fix",
+      "Frame": "gps_top"
+    },
+    "transform": {
+      "x": 0,
+      "y": -0.0703,
+      "z": 1.606,
+      "pitch": 0,
+      "yaw": 0,
+      "roll": 0
+    },
+    "name": "gps_top",
+    "parent": null,
+    "pluginId": "75bbcbfa-fdca-4703-8e82-abf8078f7991",
+    "plugin": {
+      "assetGuid": null,
+      "isFavored": true,
+      "isShared": false,
+      "isOwned": false,
+      "accessInfo": {
+        "userAccessType": "favored",
+        "owner": {
+          "id": "0d888b00-fa53-47c1-882a-b68391268a11",
+          "firstName": "SVL",
+          "lastName": "Content"
+        }
+      },
+      "supportedSimulatorVersions": [
+        "2021.1",
+        "2021.1.1",
+        "2021.2",
+        "2021.2.1"
+      ],
+      "id": "75bbcbfa-fdca-4703-8e82-abf8078f7991",
+      "name": "GPS Device Sensor",
+      "type": "GpsSensor",
+      "category": "sensor",
+      "ownerId": "0d888b00-fa53-47c1-882a-b68391268a11",
+      "accessType": "public",
+      "description": "This sensor outputs the GPS location of the vehicle in Longitude/Latitude and Northing/Easting coordintates.\nSee https://www.svlsimulator.com/docs/simulation-content/sensors-list/#gps-device for more details.",
+      "copyright": "LG Electronics Inc.",
+      "licenseName": "LG Content",
+      "status": "active",
+      "owner": {
+        "id": "0d888b00-fa53-47c1-882a-b68391268a11",
+        "firstName": "SVL",
+        "lastName": "Content"
+      },
+      "shareRequests": []
+    }
+  },
+  {
+    "params": {
+      "Topic": "/novatel_bottom/imu",
+      "Frame": "gps_bottom"
+    },
+    "transform": {
+      "x": 0,
+      "y": -0.1428,
+      "z": 1.606,
+      "pitch": 0,
+      "yaw": 0,
+      "roll": 0
+    },
+    "name": "imu_bottom",
+    "parent": null,
+    "pluginId": "9c34ec28-627d-4e73-9bb0-9c2aa7e978f5",
+    "plugin": {
+      "assetGuid": null,
+      "isFavored": true,
+      "isShared": false,
+      "isOwned": false,
+      "accessInfo": {
+        "userAccessType": "favored",
+        "owner": {
+          "id": "0d888b00-fa53-47c1-882a-b68391268a11",
+          "firstName": "SVL",
+          "lastName": "Content"
+        }
+      },
+      "supportedSimulatorVersions": [
+        "2021.1",
+        "2021.1.1",
+        "2021.2",
+        "2021.2.1"
+      ],
+      "id": "9c34ec28-627d-4e73-9bb0-9c2aa7e978f5",
+      "name": "IMU Sensor",
+      "type": "ImuSensor",
+      "category": "sensor",
+      "ownerId": "0d888b00-fa53-47c1-882a-b68391268a11",
+      "accessType": "public",
+      "description": "This sensor output at a fixed rate of 100 Hz. IMU publishes data on topics where the 2nd topic has corrected IMU data.\nSee https://www.svlsimulator.com/docs/simulation-content/sensors-list/#imu for more details.",
+      "copyright": "LG Electronics Inc.",
+      "licenseName": "LG Content",
+      "status": "active",
+      "owner": {
+        "id": "0d888b00-fa53-47c1-882a-b68391268a11",
+        "firstName": "SVL",
+        "lastName": "Content"
+      },
+      "shareRequests": []
+    }
+  },
+  {
+    "params": {
+      "Topic": "/novatel_top/imu",
+      "Frame": "gps_top"
+    },
+    "transform": {
+      "x": 0,
+      "y": -0.0703,
+      "z": 1.606,
+      "pitch": 0,
+      "yaw": 0,
+      "roll": 0
+    },
+    "name": "imu_top",
+    "parent": null,
+    "pluginId": "9c34ec28-627d-4e73-9bb0-9c2aa7e978f5",
+    "plugin": {
+      "assetGuid": null,
+      "isFavored": true,
+      "isShared": false,
+      "isOwned": false,
+      "accessInfo": {
+        "userAccessType": "favored",
+        "owner": {
+          "id": "0d888b00-fa53-47c1-882a-b68391268a11",
+          "firstName": "SVL",
+          "lastName": "Content"
+        }
+      },
+      "supportedSimulatorVersions": [
+        "2021.1",
+        "2021.1.1",
+        "2021.2",
+        "2021.2.1"
+      ],
+      "id": "9c34ec28-627d-4e73-9bb0-9c2aa7e978f5",
+      "name": "IMU Sensor",
+      "type": "ImuSensor",
+      "category": "sensor",
+      "ownerId": "0d888b00-fa53-47c1-882a-b68391268a11",
+      "accessType": "public",
+      "description": "This sensor output at a fixed rate of 100 Hz. IMU publishes data on topics where the 2nd topic has corrected IMU data.\nSee https://www.svlsimulator.com/docs/simulation-content/sensors-list/#imu for more details.",
+      "copyright": "LG Electronics Inc.",
+      "licenseName": "LG Content",
+      "status": "active",
+      "owner": {
+        "id": "0d888b00-fa53-47c1-882a-b68391268a11",
+        "firstName": "SVL",
+        "lastName": "Content"
+      },
+      "shareRequests": []
+    }
+  }
+]

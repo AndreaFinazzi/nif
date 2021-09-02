@@ -63,7 +63,7 @@ fi
 
 /usr/sbin/sshd -e -f /etc/ssh/sshd_config_test_clion
 
-cd /home/$USER/nif && ./nifupdate
+cd /home/$USER/nif && sudo -u $USER ./nifupdate
 
 echo 'ADE startup completed.'
 exec "$@"

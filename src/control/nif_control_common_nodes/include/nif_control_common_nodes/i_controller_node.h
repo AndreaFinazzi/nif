@@ -28,43 +28,98 @@ protected:
 
   const nif::common::msgs::Trajectory::SharedPtr &getReferenceTrajectory() const;
   const nif::common::msgs::ControlCmd::SharedPtr &getControlCmdPrev() const;
+  const nif::common::msgs::Path::SharedPtr &getReferencePath() const;
+  const rclcpp::Time &getReferenceTrajectoryUpdateTime() const;
+  const rclcpp::Time &getControlCmdPrevUpdateTime() const;
+  const rclcpp::Time &getReferencePathUpdateTime() const;
 
 private:
   IControllerNode();
 
-
   /**
-   * Received by subscribed planner
+   * Trajectory received by the subscribed motion planner
    */
   nif::common::msgs::Trajectory::SharedPtr reference_trajectory;
+  bool has_reference_trajectory = false;
+  /**
+   * reference_trajectory last update-time.
+   */
+  rclcpp::Time reference_trajectory_update_time;
+
+  /**
+  * Path received by subscribed path planner
+  */
+  nif::common::msgs::Path::SharedPtr reference_path;
+  bool has_reference_path = false;
+
+  /**
+  * reference_path last update-time.
+  */
+  rclcpp::Time reference_path_update_time;
+
 
   /**
    * Actual cmd fed to the vehicle at the last iteration.
    */
   nif::common::msgs::ControlCmd::SharedPtr control_cmd_prev;
+  bool has_control_cmd_prev = false;
 
+public:
+  bool hasReferenceTrajectory() const;
+  bool hasReferencePath() const;
+  bool hasControlCmdPrev() const;
+
+private:
+  /**
+   * control_cmd_prev last update-time.
+   */
+  rclcpp::Time control_cmd_prev_update_time;
 
   rclcpp::Subscription<nif::common::msgs::Trajectory>::SharedPtr
       reference_trajectory_sub;
-
+  rclcpp::Subscription<nif::common::msgs::Path>::SharedPtr
+    reference_path_sub;
   rclcpp::Subscription<nif::common::msgs::ControlCmd>::SharedPtr
       control_cmd_prev_sub;
 
   rclcpp::Publisher<nif::common::msgs::ControlCmd>::SharedPtr control_cmd_pub;
 
   void controlCmdPrevCallback(nif::common::msgs::ControlCmd::SharedPtr msg);
-
   void referenceTrajectoryCallback(nif::common::msgs::Trajectory::SharedPtr msg);
+  void referencePathCallback(nif::common::msgs::Path::SharedPtr msg);
 
   /**
-   * Store the last trajectory computed by the subscribed planner. It's called
-   * by the subscription callback, and it can be customized.
+   * It's called at the end of referenceTrajectoryCallback(...)
+   * and it can be customized.
    * @param trajectory
    */
-  virtual void
-  storeReferenceTrajectory(nif::common::msgs::Trajectory::SharedPtr msg) {};
+  virtual void afterReferenceTrajectoryCallback() {}
 
-  virtual nif::common::msgs::ControlCmd &solve() = 0;
+  /**
+  * It's called at the end of referencePathCallback(...)
+  * and it can be customized.
+  * @param path
+  */
+  virtual void afterReferencePathCallback() {}
+
+
+private:
+
+  /**
+  * It's called at the end of controlCmdPrevCallback(...)
+  * and it can be customized.
+  * @param path
+  */
+  virtual void afterControlCmdPrevCallback() {}
+
+
+  /**
+   * slove() is called at each time-step and expects the next control command to be returned.
+   * The returned message is automatically stamped by IControllerNode, to avoid empty stamp errors.
+   *
+   * @return the control_command to be published.
+   */
+  virtual nif::common::msgs::ControlCmd::SharedPtr solve() = 0;
 };
 
 } // namespace control

@@ -1,11 +1,11 @@
 #include "nif_control_pure_pursuit_nodes/pure_pursuit.h"
 
-PurePursuit::PurePursuit(double min_lookahead_dist_ = 5.0,
+PurePursuit::PurePursuit(double min_lookahead_dist_ = 10.0,
                          double max_lookahead_dist_ = 50.0,
                          double lookahead_speed_ratio_ = 1.0,
                          bool use_lpf_flg_ = false,
                          double lfp_gain_ = 0.5,
-                         bool is_steer_sign_invert = false)
+                         bool is_steer_sign_invert = true)
   : m_min_lookahead_dist(min_lookahead_dist_),
     m_max_lookahead_dist(max_lookahead_dist_),
     m_lookahead_speed_ratio(lookahead_speed_ratio_),
@@ -14,11 +14,9 @@ PurePursuit::PurePursuit(double min_lookahead_dist_ = 5.0,
     m_steer_sign_flip_flg(is_steer_sign_invert) {}
 
 void PurePursuit::calcLookAheadDist(double cur_vel_) {
-  double lookahead_dist;
   // TODO: do something algorithmic
   // Case 1. speed proportional lookahead distance settup
-  lookahead_dist = cur_vel_ * m_lookahead_speed_ratio;
-  m_lookahead_dist = lookahead_dist;
+  m_lookahead_dist = cur_vel_ * m_lookahead_speed_ratio;
 
   std::clamp(m_lookahead_dist, m_min_lookahead_dist, m_max_lookahead_dist);
 }
@@ -44,14 +42,16 @@ void PurePursuit::calcCurvature() {
   double dist_to_control_pt =
       nif::common::utils::geometry::calEuclideanDistance(ego_pose_in_body,
                                                          m_control_pt_in_body);
-  if (m_control_pt_in_body.pose.position.x != 0) {
-    alpha = atan2(m_control_pt_in_body.pose.position.y,
-                  m_control_pt_in_body.pose.position.x);
-  } else {
-    // TODO : Something is wrong... very sharp u-turn case? We need backup plan,
-    // not just tun off the controller (Maybe we can cope with this kind of
-    // issues in control safety layer?)
-  }
+
+  double eps = m_control_pt_in_body.pose.position.x > 0 ? 0.001 : -0.001;
+
+  // TODO : Something is wrong... very sharp u-turn case? We need backup plan,
+  // not just tun off the controller (Maybe we can cope with this kind of
+  // issues in control safety layer?)
+
+  alpha = atan2(m_control_pt_in_body.pose.position.y,
+                m_control_pt_in_body.pose.position.x + eps);
+
   curvature = 1.0 /
       (fabs(dist_to_control_pt / (2 * sin(alpha))) +
        nif::common::constants::numeric::EPSILON);
@@ -69,7 +69,8 @@ void PurePursuit::setVehicleStatus(nif::common::msgs::Odometry ego_odom_) {
 
 void PurePursuit::calcLookAheadIndex(
     const nav_msgs::msg::Path& map_track_path_in_global_,
-    const double& lookahead_dist_) {
+    const double& lookahead_dist_ = 15.0) {
+
   // TODO: Search API similar to scipy (finding closest point)
   m_lookahead_pt_in_body.pose.position.x = lookahead_dist_;
   m_lookahead_pt_in_body.pose.position.y = 0.0;
@@ -136,12 +137,16 @@ void PurePursuit::calcSteerCmd() {
             2 * m_control_pt_curvature_magnitude -
                 nif::common::vehicle_param::VEH_WHEEL_BASE);
 
-  if (m_use_lpf_flg == true) {
+  if (m_use_lpf_flg) {
     m_veh_cmd_steer_rad = (1.0 - m_lpf_gain) * m_veh_cmd_steer_rad +
         m_lpf_gain * m_veh_cmd_prev_steer_rad;
   }
   m_veh_cmd_steerwheel_rad =
       m_veh_cmd_steer_rad * nif::common::vehicle_param::STEERING_RATIO;
+
+  if (m_steer_sign_flip_flg) {
+    m_veh_cmd_steerwheel_rad = -m_veh_cmd_steerwheel_rad;
+  }
 
   // store previous control command
   m_veh_cmd_prev_steer_rad = m_veh_cmd_steer_rad;
