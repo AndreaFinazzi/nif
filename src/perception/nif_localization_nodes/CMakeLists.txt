@@ -38,13 +38,10 @@ ament_auto_add_library(geodetic_conv SHARED
 ament_auto_add_library(ekf_localizer_lib SHARED
         lib/c_ekf.cpp)
 
-ament_auto_add_library(${PROJECT_NAME} SHARED
-        src/localization_node.cpp)
-
 ament_auto_add_library(ekf_localizer SHARED
         src/localization_ekf_node.cpp)
 
-target_link_libraries(${PROJECT_NAME}
+target_link_libraries(ekf_localizer
         ekf_localizer_lib
         geodetic_conv
         )
@@ -68,7 +65,7 @@ if(BUILD_TESTING)
           )
 
   target_include_directories(${PROJECT_NAME}_test PRIVATE "include")
-  target_link_libraries(${PROJECT_NAME}_test ${PROJECT_NAME})
+  target_link_libraries(${PROJECT_NAME}_test ekf_localizer_lib)
   ament_target_dependencies(${PROJECT_NAME}_test
           "rclcpp")
 endif()
