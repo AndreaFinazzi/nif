@@ -34,7 +34,7 @@ ControlPurePursuitNode::ControlPurePursuitNode(const std::string &node_name)
     RCLCPP_ERROR(this->get_logger(), "Failed to declare or get parameters. Setting defaults values.");
     RCLCPP_ERROR(this->get_logger(), "What: %s", e.what());
 
-    this->node_status_manager.update(common::NodeStatusCode::NODE_FATAL_ERROR);
+    this->setNodeStatus(common::NodeStatusCode::NODE_FATAL_ERROR);
 
     throw std::runtime_error("Critical error during initialization. ABORT.");
   }

@@ -22,19 +22,19 @@ protected:
   IBaseSynchronizedNode(
       const std::string &node_name,
       const NodeType node_type,
-      const std::chrono::duration<DurationRepT, DurationT> period = constants::SYNC_PERIOD_DEFAULT,
+      const std::chrono::duration<DurationRepT, DurationT> period = constants::SYNC_PERIOD_DEFAULT_US,
       const rclcpp::NodeOptions &options = rclcpp::NodeOptions{})
 
       : IBaseNode(node_name, node_type, options),
-        gclock_period(
-            std::chrono::duration_cast<decltype(gclock_period)>(period))
+        gclock_period_ns(
+            std::chrono::duration_cast<decltype(gclock_period_ns)>(period))
 
   {
-    if (this->gclock_period >= nif::common::constants::SYNC_PERIOD_MIN &&
-        this->gclock_period <= nif::common::constants::SYNC_PERIOD_MAX) {
+    if (this->gclock_period_ns >= nif::common::constants::SYNC_PERIOD_MIN &&
+        this->gclock_period_ns <= nif::common::constants::SYNC_PERIOD_MAX) {
 
       gclock_timer = this->create_wall_timer(
-          this->gclock_period,
+          this->gclock_period_ns,
           std::bind(&IBaseSynchronizedNode::gClockCallback, this));
 
     } else {
@@ -56,7 +56,7 @@ private:
   rclcpp::TimerBase::SharedPtr gclock_timer;
 
   //  Not const to keep a door open (changing period at runtime)
-  std::chrono::nanoseconds gclock_period;
+  nif::common::types::t_clock_period_ns gclock_period_ns;
 
   void gClockCallback();
 };

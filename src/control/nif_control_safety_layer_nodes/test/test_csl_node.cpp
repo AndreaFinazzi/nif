@@ -41,7 +41,7 @@ TEST_F(sanity_check, testone) {
         "control_test_node");
 
     nd_t = std::make_shared<MockControlNode>("control_test_node");
-    nd_csl = std::make_shared<ControlSafetyLayerNode>("control_safety_layer_node", nif::common::constants::SYNC_PERIOD_DEFAULT);
+    nd_csl = std::make_shared<ControlSafetyLayerNode>("control_safety_layer_node", nif::common::constants::SYNC_PERIOD_DEFAULT_US);
 
   } catch (std::exception &e) {
     RCLCPP_FATAL(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
