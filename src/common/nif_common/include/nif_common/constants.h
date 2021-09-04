@@ -44,7 +44,7 @@ const std::chrono::milliseconds PERIOD_DEFAULT(20);
 /**
  * Default period for synchronized node.
  */
-const std::chrono::microseconds SYNC_PERIOD_DEFAULT(10000);
+const std::chrono::microseconds SYNC_PERIOD_DEFAULT_US(10000);
 
 /**
  * Min period for synchronized node.
@@ -54,7 +54,7 @@ const std::chrono::microseconds SYNC_PERIOD_MIN(10000);
 /**
  * Max period for synchronized node.
  */
-const std::chrono::microseconds SYNC_PERIOD_MAX(10000);
+const std::chrono::microseconds SYNC_PERIOD_MAX(50000);
 
 /**
  * Default QoS parameter.
@@ -117,6 +117,15 @@ constexpr const char* TOPIC_ID_RACE_CONTROL_STATUS = "topics.race_control_status
  */
 constexpr const char* TOPIC_ID_EGO_POWERTRAIN_STATUS = "topics.ego_powertrain_status";
 
+/**
+ * Prefix for node statuses topics.
+ */
+constexpr const char* TOPIC_ID_PREFIX_NODE_STATUS = "topics.node_status_prefix";
+
+/**
+ * Prefix for node statuses topics.
+ */
+constexpr const char* PERIOD_NODE_STATUS_CLOCK_US = "time.period_node_status_us";
 
 } // namespace names
 

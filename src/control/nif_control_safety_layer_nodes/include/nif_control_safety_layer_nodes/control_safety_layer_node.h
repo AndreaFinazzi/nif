@@ -45,7 +45,7 @@ public:
    */template <class DurationRepT, class DurationT>
   ControlSafetyLayerNode(
       const std::string &node_name,
-      const std::chrono::duration<DurationRepT, DurationT> period = common::constants::SYNC_PERIOD_DEFAULT,
+      const std::chrono::duration<DurationRepT, DurationT> period = common::constants::SYNC_PERIOD_DEFAULT_US,
       const rclcpp::NodeOptions &options = rclcpp::NodeOptions{})
 
       : IBaseSynchronizedNode(node_name, common::NodeType::CONTROL, period, options),
