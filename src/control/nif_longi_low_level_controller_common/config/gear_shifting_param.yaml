@@ -1,0 +1,26 @@
+Maximum_gear_usage: 3
+
+# Gear shifting lookup table
+First_gear_params:
+  downshifting_vel_mps: -255
+  upshifting_vel_mps: 11
+
+Second_gear_params:
+  downshifting_vel_mps: 9.5
+  upshifting_vel_mps: 16
+
+Third_gear_params:
+  downshifting_vel_mps: 14
+  upshifting_vel_mps: 22
+
+Fourth_gear_params:
+  downshifting_vel_mps: 17
+  upshifting_vel_mps: 30
+
+Fifth_gear_params:
+  downshifting_vel_mps: 22
+  upshifting_vel_mps: 35
+
+Sixth_gear_params:
+  downshifting_vel_mps: 30
+  upshifting_vel_mps: 255

@@ -41,9 +41,13 @@ public:
   NodeStatusCode getStatusCode() const { return status_code; }
   const rclcpp::Time& getTimeLastUpdate() const { return time_last_update; }
 
+
+
 private:
   const nif::common::IBaseNode& node;
+
   const nif::common::types::t_node_id node_id;
+  
   const NodeType node_type;
 
   rclcpp::Time time_last_update;
