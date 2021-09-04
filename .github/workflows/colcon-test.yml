@@ -98,6 +98,14 @@ jobs:
           cache-from: type=registry,ref=${{ steps.meta.outputs.tags }}
           cache-to: type=inline
 
+      # build repository in created image.
+      -
+        name: nif build
+        run:
+          docker run --rm -e RMW_IMPLEMENTATION=rmw_cyclonedds_cpp -e ROS_DISTRO=foxy ${{ steps.meta.outputs.tags }} bash -c "cd ~/nif && ./nifupdate && ./nifbuild"
+#          docker run --rm -it $(docker build -q .)
+
+
 #   validate:
 #     needs: [ ade ]
 #     runs-on: ubuntu-20.04
