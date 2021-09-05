@@ -1,5 +1,0 @@
-nif/localization_node:
-  ros__parameters:
-    ecef_ref_lat: 39.810197
-    ecef_ref_lon: -86.34254
-    use_enu: false
