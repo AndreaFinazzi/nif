@@ -97,11 +97,14 @@ jobs:
             GH_TOKEN=${{ env.GH_TOKEN }}
           cache-from: type=registry,ref=${{ steps.meta.outputs.tags }}
           cache-to: type=inline
+          outputs: type=docker,dest=/tmp/nif_image.tar
 
       # build repository in created image.
       -
         name: nif build
-        run:
+        run: |
+          docker load --input /tmp/nif_image.tar
+          docker image ls -a
           docker run --rm -e RMW_IMPLEMENTATION=rmw_cyclonedds_cpp -e ROS_DISTRO=foxy ${{ steps.meta.outputs.tags }} bash -c "cd ~/nif && ./nifupdate && ./nifbuild"
 #          docker run --rm -it $(docker build -q .)
 
