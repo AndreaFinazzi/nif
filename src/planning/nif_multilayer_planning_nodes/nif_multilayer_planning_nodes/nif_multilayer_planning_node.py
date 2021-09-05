@@ -120,13 +120,12 @@ class GraphBasedPlanner(Node):
             self.current_veh_odom.pose.pose.position.x,
             self.current_veh_odom.pose.pose.position.y
         ])
-
+        # TODO : could use perception instead of this, we gain both accuracy and performance
         self.vel_est = math.sqrt(pow(self.current_veh_odom.twist.twist.linear.x, 2)
                                  + pow(self.current_veh_odom.twist.twist.linear.y, 2)
                                  + pow(self.current_veh_odom.twist.twist.linear.z, 2))
 
     def perception_result_callback(self, msg):
-
         self.obj_list.clear()
 
         # TODO : From perception result, heading and velocity information should be added or extracted.
@@ -141,7 +140,6 @@ class GraphBasedPlanner(Node):
             self.obj_list.append(template_dict)
 
     def timer_callback(self):
-
         # -- SELECT ONE OF THE PROVIDED TRAJECTORIES -----------------------------------------------------------------------
         # (here: brute-force, replace by sophisticated behavior planner)
         for sel_action_prev in ["right", "left", "straight", "follow"]:  # try to force 'right', else try next in list

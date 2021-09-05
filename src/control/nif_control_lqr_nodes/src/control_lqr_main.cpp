@@ -24,7 +24,7 @@ int32_t main(int32_t argc, char **argv)
 
   try {
     RCLCPP_INFO(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
-                "Instantiating ControlLQRNode with name: %s; sync_period: %d", node_name);
+                "Instantiating ControlLQRNode with name: %s", node_name);
     rclcpp::NodeOptions options;
 
     nd = std::make_shared<ControlLQRNode>(

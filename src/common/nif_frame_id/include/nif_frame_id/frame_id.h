@@ -112,6 +112,24 @@ std::string GPS_HORIZONTAL = "gps_horizontal";
 std::string GPS_VERTICAL = "gps_vertical";
 } // namespace gps
 
+namespace localization{
+/**
+ * Global coordinates : "odom"
+ * Body coordinates : "base_link" , "base_link" is indentical to "center_of_gravity"
+ */
+std::string ODOM = "odom";
+
+/**
+ * Body coordinates : "base_link"
+ */
+std::string BASE_LINK = "base_link";
+
+/**
+ * Currently, "base_link" is indentical to "center_of_gravity"
+ */
+std::string CENTER_OF_GRAVITY = BASE_LINK;
+}
+
 } // namespace frame_id
 } // namespace common
 } // namespace nif

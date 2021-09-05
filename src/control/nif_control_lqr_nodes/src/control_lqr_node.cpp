@@ -203,7 +203,7 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
       steering_angle_deg = -max_steering_angle_deg_;
 
 //    Adapt to steering ratio (ControlCommand sends steering wheel's angle)
-    steering_angle_deg *= nif::common::vehicle_param::STEERING_RATIO;
+//    steering_angle_deg *= nif::common::vehicle_param::STEERING_RATIO;
 
     // Smooth and publish diagnostics
     std::chrono::milliseconds period_ms = std::chrono::duration_cast<std::chrono::milliseconds>(

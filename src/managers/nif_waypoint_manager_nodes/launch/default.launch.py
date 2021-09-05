@@ -45,8 +45,8 @@ def generate_launch_description():
         ],
         remappings=[
             ('topic_ego_odometry', 'localization/ego_odom'),
-            ('wpt_manager/maptrack_path/global', 'planning/global')
-            ('wpt_manager/maptrack_path/body', 'planning/body')
+            ('wpt_manager/maptrack_path/global', '/planning/path_global'),
+            ('wpt_manager/maptrack_path/body', '/planning/path_body')
         ]
     )
 
