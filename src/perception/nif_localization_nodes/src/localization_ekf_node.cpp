@@ -19,7 +19,7 @@ EKFLocalizer::EKFLocalizer(const std::string &node_name) : Node(node_name) {
 
   // setup QOS to be best effort
   auto qos = rclcpp::QoS(
-      rclcpp::QoSInitialization(RMW_QOS_POLICY_HISTORY_KEEP_LAST, 1));
+      rclcpp::QoSInitialization(RMW_QOS_POLICY_HISTORY_KEEP_LAST, 10));
   qos.best_effort();
 
   sub_gpslatlon = this->create_subscription<novatel_oem7_msgs::msg::BESTPOS>(
