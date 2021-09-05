@@ -65,7 +65,9 @@ void nif::managers::WaypointManagerNode::timerCallback() {
       this->wpt_manager->getDesiredMapTrackInBody();
 
   path_in_body.header.stamp = this->now();
+  path_in_body.header.frame_id = "base_link";
   path_in_global.header.stamp = this->now();
+  path_in_global.header.frame_id = "map";
 
   m_map_track_global_publisher->publish(path_in_global);
   m_map_track_body_publisher->publish(path_in_body);

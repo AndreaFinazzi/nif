@@ -1,4 +1,5 @@
-/**:
+
+global_parameters_node:
   ros__parameters:
     frames:
       body: "base_link"
@@ -24,13 +25,13 @@
       radar_rear: "radar_rear"
 
     topics:
-      ego_odometry: /sensor/odom_ground_truth
-      #     localization/ego_odom
-      system_status: system/status
-      race_control_status: /raptor_dbw_interface/rc_to_ct
-      ego_powertrain_status: /raptor_dbw_interface/pt_report
+      ego_odometry: "/sensor/odom_ground_truth"
 
-      node_status_prefix: /node_status/
+      system_status: "system/status"
+      race_control_status: "/raptor_dbw_interface/rc_to_ct"
+      ego_powertrain_status: "/raptor_dbw_interface/pt_report"
+
+      node_status_prefix: "/node_status/"
 
     time:
       period_node_status_us: 40000

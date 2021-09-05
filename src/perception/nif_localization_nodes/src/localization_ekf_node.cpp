@@ -12,10 +12,15 @@ using namespace nif::localization::ekf;
 using namespace nif::localization::utils;
 using namespace nif::common::frame_id::localization;
 
-EKFLocalizer::EKFLocalizer(const std::string &node_name) : Node(node_name) {
+EKFLocalizer::EKFLocalizer(const std::string &node_name) : IBaseNode(node_name) {
   this->declare_parameter<double>("origin_lat", double(39.809786));
   this->declare_parameter<double>("origin_lon", double(-86.235148));
-  respond();
+
+  m_origin_lat = this->get_global_parameter<double>("coordinates.ecef_ref_lat");
+  m_origin_lon = this->get_global_parameter<double>("coordinates.ecef_ref_lon");
+  const std::string& topic_ego_odometry =
+      this->get_global_parameter<std::string>(
+          nif::common::constants::parameters::names::TOPIC_ID_EGO_ODOMETRY);
 
   // setup QOS to be best effort
   auto qos = rclcpp::QoS(
@@ -23,16 +28,17 @@ EKFLocalizer::EKFLocalizer(const std::string &node_name) : Node(node_name) {
   qos.best_effort();
 
   sub_gpslatlon = this->create_subscription<novatel_oem7_msgs::msg::BESTPOS>(
-      "/novatel_bottom/bestpos", qos,
+      "in_bestpos", qos,
       std::bind(&EKFLocalizer::GPSLATLONCallback, this, std::placeholders::_1));
   subINSPVA = this->create_subscription<novatel_oem7_msgs::msg::INSPVA>(
-      "/novatel_bottom/inspva", qos,
+      "in_inspva", qos,
       std::bind(&EKFLocalizer::GPSINSPVACallback, this, std::placeholders::_1));
 
   auto rmw_qos_profile = qos.get_rmw_qos_profile();
 
-  sub_filtered_IMU.subscribe(this, "/novatel_bottom/imu/data", rmw_qos_profile);
-  sub_filtered_Wheel.subscribe(this, "/raptor_dbw_interface/wheel_speed_report",
+  sub_filtered_IMU.subscribe(this,
+                             "in_imu", rmw_qos_profile);
+  sub_filtered_Wheel.subscribe(this, "in_wheel_speed_report",
                                rmw_qos_profile);
 
   m_sync = std::make_shared<message_filters::Synchronizer<SyncPolicyT>>(
@@ -42,10 +48,12 @@ EKFLocalizer::EKFLocalizer(const std::string &node_name) : Node(node_name) {
                                      this, std::placeholders::_1,
                                      std::placeholders::_2));
 
-  pub_EKF_odometry = this->create_publisher<nav_msgs::msg::Odometry>(
-      "/Odometry/ekf_estimated", qos);
+  pub_EKF_odometry =
+      this->create_publisher<nav_msgs::msg::Odometry>(
+          "out_odometry_ekf_estimated", qos);
   pub_bestpos_odometry =
-      this->create_publisher<nav_msgs::msg::Odometry>("/Odometry/bestpos", qos);
+      this->create_publisher<nav_msgs::msg::Odometry>(
+          "out_odometry_bestpos", qos);
 
   broadcaster_ = std::make_unique<tf2_ros::StaticTransformBroadcaster>(this);
 
@@ -62,6 +70,7 @@ EKFLocalizer::EKFLocalizer(const std::string &node_name) : Node(node_name) {
 
   RCLCPP_INFO(this->get_logger(), "START EKF NODE");
 }
+
 EKFLocalizer ::~EKFLocalizer(){};
 
 void EKFLocalizer::respond() {
@@ -69,7 +78,9 @@ void EKFLocalizer::respond() {
   this->get_parameter("origin_lon", m_origin_lon);
 }
 
-void EKFLocalizer::timer_callback() { run(); }
+void EKFLocalizer::timer_callback() {
+  run();
+}
 
 void EKFLocalizer::run() {
 
@@ -139,10 +150,10 @@ void EKFLocalizer::run() {
     }
 
   } else {
-    RCLCPP_INFO(this->get_logger(), "Waiting for -[/novatel_bottom/bestpos]");
-    RCLCPP_INFO(this->get_logger(), "            -[/novatel_bottom/inspva]");
-    RCLCPP_INFO(this->get_logger(), "            -[/novatel_bottom/imu/data]");
-    RCLCPP_INFO(this->get_logger(),
+    RCLCPP_DEBUG(this->get_logger(), "Waiting for -[/novatel_bottom/bestpos]");
+    RCLCPP_DEBUG(this->get_logger(), "            -[/novatel_bottom/inspva]");
+    RCLCPP_DEBUG(this->get_logger(), "            -[/novatel_bottom/imu/data]");
+    RCLCPP_DEBUG(this->get_logger(),
                 "            -[/raptor_dbw_interface/wheel_speed_report]");
   }
 }
