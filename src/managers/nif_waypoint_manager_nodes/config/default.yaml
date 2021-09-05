@@ -8,3 +8,7 @@
       - 'maps/lgsvl_sim/wpt_manual_points.csv'
 #      - 'maps/lgsvl_sim/wpt_right.csv'
 #      - 'maps/lgsvl_sim/wpt_right_filtered.csv'
+    spline_interval:
+      - 1.0 # in [m]
+    maptrack_size:
+      - 200 # in index level
