@@ -105,7 +105,7 @@ jobs:
         run: |
           docker load --input /tmp/nif_image.tar
           docker image ls -a
-          docker run --rm -e RMW_IMPLEMENTATION=rmw_cyclonedds_cpp -e ROS_DISTRO=foxy ${{ steps.meta.outputs.tags }} bash -c "cd ~/nif && ./nifupdate && ./nifbuild"
+          docker run --rm -e RMW_IMPLEMENTATION=rmw_cyclonedds_cpp -e ROS_DISTRO=foxy ${{ steps.meta.outputs.tags }} -e GROUP=gh -e GROUP_ID=1000 -e USER=gh -e USER_ID=1000 bash -c "cd ~/nif && ./nifupdate && ./nifbuild"
 #          docker run --rm -it $(docker build -q .)
 
 
