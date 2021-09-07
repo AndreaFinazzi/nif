@@ -23,6 +23,7 @@
   <depend>sensor_msgs</depend>
   <depend>message_filters</depend>
   <depend>novatel_oem7_msgs</depend>
+  <depend>pcl_ros</depend>
 
 
   <export>

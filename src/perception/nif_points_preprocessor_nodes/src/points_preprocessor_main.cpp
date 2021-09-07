@@ -21,9 +21,8 @@ int32_t main(int32_t argc, char **argv) {
   const char *node_name_1 = "point_concat_filter";
   const char *node_name_2 = "ego_shape_filter";
 
-  auto PC_FILTER =
-      std::make_shared<PointsConcatFilterNode>("point_concat_filter");
-  auto EGO_FILTER = std::make_shared<EgoShapeFilterNode>("ego_shape_filter");
+  auto PC_FILTER = std::make_shared<PointsConcatFilterNode>(node_name_1);
+  auto EGO_FILTER = std::make_shared<EgoShapeFilterNode>(node_name_2);
   // Use 2 threads
   rclcpp::executors::MultiThreadedExecutor executor(
       rclcpp::executor::create_default_executor_arguments(), 2);

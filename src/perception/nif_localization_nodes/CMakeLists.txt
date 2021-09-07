@@ -10,6 +10,8 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+find_package(PCL REQUIRED)
+
 find_path(
   GeographicLib_INCLUDE_DIR GeographicLib/Config.h
   PATH_SUFFIXES GeographicLib
@@ -23,6 +25,7 @@ find_library(GeographicLib_LIBRARIES
 include_directories(
   include
   ${GeographicLib_INCLUDE_DIRS}
+  ${PCL_INCLUDE_DIRS}
 )
 add_definitions(${GeographicLib_DEFINITIONS})
 
@@ -41,6 +44,13 @@ ament_auto_add_library(ekf_localizer_lib SHARED
 ament_auto_add_library(ekf_localizer SHARED
         src/localization_ekf_node.cpp)
 
+ament_auto_add_library(load_geofence SHARED
+        src/load_geofence_node.cpp)
+
+target_link_libraries(load_geofence
+        ${PCL_LIBRARIES}
+)
+
 target_link_libraries(ekf_localizer
         ekf_localizer_lib
         geodetic_conv
@@ -50,6 +60,7 @@ ament_auto_add_executable(${PROJECT_NAME}_exe
         src/localization_main.cpp)
 target_link_libraries(${PROJECT_NAME}_exe
         ekf_localizer
+        load_geofence
 )
 
 if(BUILD_TESTING)
