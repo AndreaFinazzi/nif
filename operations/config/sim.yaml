@@ -1,22 +1,21 @@
 session_name: nif_launch_sim
+shell_command_before:
+- " [ ! -d $SESSION_DIR ] && mkdir -p $SESSION_DIR "
+- cd ~/nif && source install/setup.bash
 windows:
   - window_name: Launch Tab
     layout: tiled
-    shell_command_before:
-      - cd ~/nif && source install/setup.bash
     panes:
       - shell_command:
           - lgsvl_bridge
       - shell_command:
-          - ros2 launch nif_launch sim.lqr.launch.py
+          - ros2 launch nif_launch sim.lqr.launch.py &> $SESSION_DIR/nif.out
 # Consider launching safety-critical layers in separate processes
 #      - shell_command:
 #          - ros2 launch nif_control_safety_layer_nodes nif.launch.py
   - window_name: Topics Monitor
     focus: true
     layout: even-horizontal
-    shell_command_before:
-      - cd ~/nif && source install/setup.bash
     panes:
       - shell_command:
           - sleep 3

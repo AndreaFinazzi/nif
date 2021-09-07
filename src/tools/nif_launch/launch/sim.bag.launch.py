@@ -17,7 +17,7 @@ def generate_launch_description():
     nif_global_parameters_file = os.path.join(
         get_package_share_directory('nif_launch'),
         'config',
-        'params.global.yaml'
+        'params.global.bag.yaml'
     )
 
     global_parameters_launch = IncludeLaunchDescription(
@@ -62,7 +62,7 @@ def generate_launch_description():
 
     control_lqr_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            get_package_share_directory('nif_control_lqr_nodes') + '/launch/sim.launch.py'
+            get_package_share_directory('nif_control_lqr_nodes') + '/launch/bag.launch.py'
         )
     )
 
@@ -90,8 +90,8 @@ def generate_launch_description():
         system_status_manager_launch,
         robot_description_launch,
         localization_launch,
-        # waypoint_manager_launch,
-        multilayer_planning_launch,
+        waypoint_manager_launch,
+        # multilayer_planning_launch,
         control_lqr_launch,
         csl_launch,
         lgsvl_simulation_launch

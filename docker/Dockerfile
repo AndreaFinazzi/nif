@@ -50,6 +50,8 @@ RUN apt-get update \
       ros-foxy-rqt-* \
       ros-foxy-tf2-tools \
       tmux tmuxp terminator nano \
+      ros-${ROS_DISTRO}-plotjuggler \
+      ros-${ROS_DISTRO}-plotjuggler-ros \
   && apt-get clean
 
 COPY ./entrypoint /ade_entrypoint
