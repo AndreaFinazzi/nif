@@ -104,7 +104,7 @@ class GraphBasedPlanner(Node):
         self.heading_est = np.arctan2(np.diff(self.refline[0:2, 1]), np.diff(self.refline[0:2, 0])) - np.pi / 2
         self.vel_est = 0.0
 
-        self.odom_first_run = False
+        self.out_of_track = True
 
         # set start pos
         # self.ltpl_obj.set_startpos(pos_est=self.pos_est,
@@ -146,11 +146,10 @@ class GraphBasedPlanner(Node):
                                  + pow(self.current_veh_odom.twist.twist.linear.y, 2)
                                  + pow(self.current_veh_odom.twist.twist.linear.z, 2))
 
-        if self.odom_first_run == False:
+        if self.out_of_track == True:
             # set start pos
-            self.ltpl_obj.set_startpos(pos_est=self.pos_est,
+            self.out_of_track = self.ltpl_obj.set_startpos(pos_est=self.pos_est,
                                     heading_est=self.heading_est)
-            self.odom_first_run = True
 
     def perception_result_callback(self, msg):
         self.obj_list.clear()
@@ -167,7 +166,7 @@ class GraphBasedPlanner(Node):
             self.obj_list.append(template_dict)
 
     def timer_callback(self):
-        if self.odom_first_run == False:
+        if self.out_of_track == True:
             return
         # -- SELECT ONE OF THE PROVIDED TRAJECTORIES -----------------------------------------------------------------------
         # (here: brute-force, replace by sophisticated behavior planner)
