@@ -13,4 +13,4 @@ model_params:
 velocity_brackets:
 - velocity: 30
   q_trace: [1.0, 1.0, 0.1, 0.0]
-  r_trace: [350.]
+  r_trace: [250.]

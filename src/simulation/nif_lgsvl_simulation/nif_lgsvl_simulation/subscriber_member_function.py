@@ -8,22 +8,21 @@
 import rclpy
 import csv
 import pandas as pd
-from rclpy.node import Node
-from rcl_interfaces.srv import GetParameters
 
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import CompressedImage, Imu, PointCloud2, NavSatFix
 from lgsvl_msgs.msg import VehicleOdometry, Detection2DArray
 from novatel_gps_msgs.msg import Inspva
-
 from geometry_msgs.msg import PoseStamped, TransformStamped, Vector3, Quaternion
 import math
 import tf2_ros
 from tf2_ros.transform_broadcaster import TransformBroadcaster
+
+from nifpy_common_nodes.base_node import BaseNode
 from nif_lgsvl_simulation.quaternion_euler import Quaternion_Euler
 
 
-class Drive(Node):
+class Drive(BaseNode):
     def __init__(self):
         super().__init__('drive')
         self.msgtype = []
@@ -32,8 +31,6 @@ class Drive(Node):
         # self.sub_gps_odometry = self.create_subscription(Odometry, '/simulator/car1/sensor/gps/odometry', self.callback, 10)
         # self.sub_imu = self.create_subscription(Imu, '/simulator/car1/sensor/imu', self.callback2, 10)
         # self.sub_radar= self.create_subscription(Odometry, '/simulator/car1/sensor/radar', self.callback, 10)
-        self.client = self.create_client(GetParameters,
-                                         '/global_parameters_node/get_parameters')
 
         self.client.wait_for_service(3)
         if self.client.service_is_ready():
@@ -286,25 +283,6 @@ class Drive(Node):
         tfs.transform.rotation.y = msg.pose.pose.orientation.y
         tfs.transform.rotation.z = msg.pose.pose.orientation.z
         self._tf_publisher.sendTransform(tfs)
-
-    def get_global_parameter(self, name):
-        try:
-            request = GetParameters.Request()
-            request.names = [name]
-            self.client.wait_for_service()
-            result = self.client.call(request)
-
-        except Exception as e:
-            self.get_logger().error("service call failed %r" % (e,))
-            raise RuntimeError("Failed to get global parameters.")
-
-        else:
-            param = result.values[0]
-            self.get_logger().info("Got global param: %s" % (param.string_value,))
-
-        return param.string_value
-
-
 
 def main(args=None):
     rclpy.init(args=args)

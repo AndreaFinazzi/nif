@@ -36,6 +36,7 @@ c_wpt::c_wpt(string wpt_file_path_,
       wpt_pt.pose.position.x = m_wpt_raw_x[-1];
       wpt_pt.pose.position.y = m_wpt_raw_y[-1];
       wpt_pt.pose.position.z = m_wpt_raw_z[-1];
+
       m_wpt_inglobal.poses.push_back(wpt_pt);
     }
     if (m_spline_flg) {
@@ -83,6 +84,12 @@ c_wpt::c_wpt(string wpt_file_path_,
         wpt_pt.pose.position.x = point_x;
         wpt_pt.pose.position.y = point_y;
         wpt_pt.pose.position.z = point_z;
+
+        wpt_pt.pose.orientation.x = 0.;
+        wpt_pt.pose.orientation.y = 0.;
+        wpt_pt.pose.orientation.z = std::sin(yaw / 2.);
+        wpt_pt.pose.orientation.w = std::cos(yaw / 2.);
+
         m_wpt_inglobal.poses.push_back(wpt_pt);
 
         point_s += abs(m_spline_interval);
@@ -100,6 +107,7 @@ c_wpt::c_wpt(string wpt_file_path_,
       wpt_pt.pose.position.x = m_wpt_raw_x[-1];
       wpt_pt.pose.position.y = m_wpt_raw_y[-1];
       wpt_pt.pose.position.z = 0.0;
+
       m_wpt_inglobal.poses.push_back(wpt_pt);
     }
     if (m_spline_flg) {
@@ -141,6 +149,11 @@ c_wpt::c_wpt(string wpt_file_path_,
         wpt_pt.pose.position.x = point_x;
         wpt_pt.pose.position.y = point_y;
         wpt_pt.pose.position.z = 0.0;
+
+        wpt_pt.pose.orientation.x = 0.;
+        wpt_pt.pose.orientation.y = 0.;
+        wpt_pt.pose.orientation.z = std::sin(yaw / 2.);
+        wpt_pt.pose.orientation.w = std::cos(yaw / 2.);
         m_wpt_inglobal.poses.push_back(wpt_pt);
 
         point_s += abs(m_spline_interval);

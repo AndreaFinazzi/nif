@@ -96,7 +96,6 @@ constexpr const char* FRAME_ID_BODY = "frames.body";
  */
 constexpr const char* FRAME_ID_GLOBAL = "frames.global";
 
-
 /**
  * Name for the ego odometry topic_name parameter.
  */

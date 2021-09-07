@@ -1,0 +1,13 @@
+package.xml
+setup.cfg
+setup.py
+nifpy_common_nodes/nifpy_common_nodes/__init__.py
+nifpy_common_nodes/nifpy_common_nodes/base_node.py
+nifpy_common_nodes/nifpy_common_nodes.egg-info/PKG-INFO
+nifpy_common_nodes/nifpy_common_nodes.egg-info/SOURCES.txt
+nifpy_common_nodes/nifpy_common_nodes.egg-info/dependency_links.txt
+nifpy_common_nodes/nifpy_common_nodes.egg-info/entry_points.txt
+nifpy_common_nodes/nifpy_common_nodes.egg-info/requires.txt
+nifpy_common_nodes/nifpy_common_nodes.egg-info/top_level.txt
+nifpy_common_nodes/nifpy_common_nodes.egg-info/zip-safe
+resource/nifpy_common_nodes

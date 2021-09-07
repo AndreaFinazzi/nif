@@ -17,6 +17,12 @@ void nif::control::ControlSafetyLayerNode::controlCallback(
     this->bufferStore(msg);
 }
 
+void nif::control::ControlSafetyLayerNode::controlOverrideCallback(
+    const nif::common::msgs::ControlCmd::SharedPtr msg) {
+  // TODO Declare thresholds params and implement override mechanism.
+}
+
+
 void nif::control::ControlSafetyLayerNode::run() {
 
   if (!this->control_buffer.empty()) {
