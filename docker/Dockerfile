@@ -1,6 +1,7 @@
 # FROM ros:foxy AS stage-deps
 FROM  registry.gitlab.com/iacbasesoftware/autowareauto/amd64/ade-foxy:iac-dev
 ARG GH_TOKEN=${GH_TOKEN}
+ARG GL_TOKEN=${GL_TOKEN}
 
 RUN apt-get update \
   && apt-get upgrade -y \
@@ -27,7 +28,7 @@ RUN apt-get update \
 RUN apt update && apt install -y python3-vcstool
 RUN cd /opt && \
     git clone --recurse-submodules https://${GH_TOKEN}@github.com/AndreaFinazzi/nif.git && \
-    cd nif && \
+    cd nif && echo $GL_TOKEN > .secret.gitlab && echo $GH_TOKEN > .secret.github && \
     vcs import < nif.$ROS_DISTRO.repos && \
     rosdep update && \
     pip install -r central-requirements.txt && \
