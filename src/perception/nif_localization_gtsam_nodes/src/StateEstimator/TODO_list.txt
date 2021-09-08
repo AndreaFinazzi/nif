@@ -1,0 +1,7 @@
+// Add PATH to build
+export CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH:/home/sw/external/gtsam/build/gtsam/3rdparty/GeographicLib/:/home/sw/external/gtsam/build/
+
+// At StateEstimator.h line 33:
+// Temporarily replaced by copy & paste
+// #include <imu_3dm_gx4/msg/filter_output.hpp>
+#include <nif_msgs/msg/filter_out.hpp> 

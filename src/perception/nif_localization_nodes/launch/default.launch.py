@@ -6,11 +6,6 @@ from launch.substitutions import ThisLaunchFileDir
 from launch_ros.actions import Node
 
 def generate_launch_description():
-    config = os.path.join(
-            get_package_share_directory("nif_localization_nodes"),
-            "config",
-            "localization_node_gtsam_state_estimator.yaml",
-        )
     outer_geofence_map = os.path.join(
             get_package_share_directory("nif_localization_nodes"),
             "map",
@@ -49,3 +44,4 @@ def generate_launch_description():
             
         ]
     )
+

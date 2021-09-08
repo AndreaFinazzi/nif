@@ -11,9 +11,10 @@
 using namespace nif::common;
 using nif::common::NodeStatusCode;
 
-IBaseNode::IBaseNode() : Node("no_name_node"), node_status_manager(*this, nif::common::NodeType::SYSTEM)
+IBaseNode::IBaseNode() : Node("no_name_node"),
+                         node_status_manager(*this, nif::common::NodeType::SYSTEM)
 {
-  this->node_status_manager.update(NodeStatusCode::NODE_FATAL_ERROR);
+  this->setNodeStatus(NodeStatusCode::NODE_FATAL_ERROR);
   throw std::invalid_argument("Cannot construct IBaseNode without specifying "
                               "node_name. Creating empty node.");
 }
@@ -43,12 +44,16 @@ IBaseNode::IBaseNode(const std::string &node_name, const NodeType node_type, con
         this->global_frame_id = this->get_global_parameter<std::string>(
           constants::parameters::names::FRAME_ID_GLOBAL);
 
+        this->node_status_timer_period_us = nif::common::types::t_clock_period_us(
+            this->get_global_parameter<int>(
+              constants::parameters::names::PERIOD_NODE_STATUS_CLOCK_US));
+
   } catch (std::exception & e) {
     // Something else happened, fall back to default values.
     RCLCPP_ERROR(this->get_logger(), "SEVERE PARAMETERS ERROR. Falling back to default values, proceding may be unsafe.");
     RCLCPP_ERROR(this->get_logger(), "What: %s", e.what());
 
-    this->node_status_manager.update(NodeStatusCode::NODE_ERROR);
+    this->setNodeStatus(NodeStatusCode::NODE_ERROR);
 
 //  Check if available as local parameters:
     this->body_frame_id = this->get_parameter(constants::parameters::names::FRAME_ID_BODY).as_string();
@@ -100,11 +105,48 @@ IBaseNode::IBaseNode(const std::string &node_name, const NodeType node_type, con
                     std::placeholders::_1));
 
 
-  this->node_status_manager.update(NodeStatusCode::NODE_INITIALIZED);
-  //  TODO Declare node_state_pub to notify the node state
-  //
-  //
-  //
+  if (this->node_status_timer_period_us >= nif::common::constants::SYNC_PERIOD_MIN &&
+  this->node_status_timer_period_us <= nif::common::constants::SYNC_PERIOD_MAX) {
+
+    this->node_status_timer = this->create_wall_timer(
+        this->node_status_timer_period_us,
+        std::bind(&IBaseNode::nodeStatusTimerCallback, this));
+
+  } else {
+    //    Not allowed to instantiate with this period
+    throw std::range_error("Sync Period out of range.");
+  }
+
+  this->node_status_pub = this->create_publisher<nif::common::msgs::NodeStatus>(
+                                  this->getNodeStatusTopicName(), rclcpp::QoS{1});
+
+  // TODO make global parameter
+  this->register_node_service_client =
+      this->create_client<nif_msgs::srv::RegisterNodeStatus>("/system_status_manager/register");
+
+  auto request = std::make_shared<nif_msgs::srv::RegisterNodeStatus::Request>();
+  request->node_name = this->get_name();
+  request->status_topic_name = getNodeStatusTopicName();
+  request->node_type = this->node_status_manager.getNodeType();
+
+  using ServiceResponseFuture =
+      rclcpp::Client<nif_msgs::srv::RegisterNodeStatus>::SharedFuture;
+  auto response_received_callback = [this](ServiceResponseFuture future) {
+    const auto& response = future.get();
+    RCLCPP_INFO(this->get_logger(), "Response from system_status_manager/register service. Success: %s", response->success ? "true" : "false");
+    if (!response->success)
+    {
+      RCLCPP_ERROR(this->get_logger(), "Couldn't register to System Status Manager.");
+      throw std::runtime_error("Couldn't register to System Status Manager. Not safe to proceed.");
+    }
+  };
+  this->register_node_service_client->wait_for_service(std::chrono::seconds(2));
+  if (this->register_node_service_client->service_is_ready())
+    auto future_result = this->register_node_service_client->async_send_request(request, response_received_callback);
+  else
+    throw std::runtime_error("System Status Manager not ready, proceeding is not safe.");
+
+  this->setNodeStatus(NodeStatusCode::NODE_INITIALIZED);
 }
 
 
@@ -139,6 +181,19 @@ void IBaseNode::raceControlStatusCallback(
   this->race_control_status = *msg;
   this->afterRaceControlStatusCallback();
 }
+
+void IBaseNode::nodeStatusTimerCallback() {
+  auto msg = this->node_status_manager.getNodeStatus();
+  msg.stamp = this->now();
+
+  this->node_status_pub->publish(msg);
+}
+
+//  ### NODE STATUS COMPONENTS
+void IBaseNode::setNodeStatus(NodeStatusCode status_code) {
+  this->node_status_manager.update(status_code);
+}
+
 
 
 const std::string &IBaseNode::getBodyFrameId() const {

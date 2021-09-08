@@ -20,7 +20,8 @@ public:
   IWaypointManager() {}
   IWaypointManager(const vector<string>& wpt_file_path_list_,
                    const string& body_frame_id_,
-                   const string& global_frame_id_);
+                   const string& global_frame_id_,
+                   const int& spline_interval_);
 
   vector<c_wpt>& getListOfWPT() {
     return m_wpt_list;
@@ -42,9 +43,8 @@ public:
 
   nav_msgs::msg::Path getPathBodytoGlobal(nav_msgs::msg::Path& path_in_body_);
 
-  geometry_msgs::msg::PoseStamped
-  getPtGlobaltoBody(
-      const geometry_msgs::msg::PoseStamped &point_in_global_) const ;
+  geometry_msgs::msg::PoseStamped getPtGlobaltoBody(
+      const geometry_msgs::msg::PoseStamped& point_in_global_) const;
 
   nav_msgs::msg::Path getPathGlobaltoBody(nav_msgs::msg::Path& path_in_global_);
 
@@ -56,11 +56,11 @@ public:
 
   void resetDesiredWPT();
 
-  void setCurrentIdx(const nav_msgs::msg::Path &reference_path,
-                     const nav_msgs::msg::Odometry &ego_vehicle_odom);
+  void setCurrentIdx(const nav_msgs::msg::Path& reference_path,
+                     const nav_msgs::msg::Odometry& ego_vehicle_odom);
 
-  unsigned int getCurrentIdx(const nav_msgs::msg::Path &reference_path,
-                    const nav_msgs::msg::Odometry &ego_vehicle_odom);
+  unsigned int getCurrentIdx(const nav_msgs::msg::Path& reference_path,
+                             const nav_msgs::msg::Odometry& ego_vehicle_odom);
 
   int getWPTIdx(nav_msgs::msg::Path& reference_path,
                 geometry_msgs::msg::PoseStamped& target_pose);
@@ -101,7 +101,8 @@ private:
       m_current_pose; // current vehicle pose, this should be updated as fast as
                       // possible in the node subscriber
 
-  unsigned int m_current_idx = 0; // current idx with repective to the desired wpt
+  unsigned int m_current_idx =
+      0; // current idx with repective to the desired wpt
   unsigned int m_size_of_map_track =
       100; // size of map track which is set by the user
            // (yaml or set?), currently set as a default 100
@@ -112,6 +113,7 @@ private:
   double m_current_pitch_rad = 0.0; // current pose (quartonion to eular)
   double m_current_yaw_deg = 0.0;   // current pose (quartonion to eular)
   double m_current_yaw_rad = 0.0;   // current pose (quartonion to eular)
+  double m_spline_interval = 0.0;
 };
 
 #endif // NIF_WAYPOINT_MANAGER_COMMON_I_WAYPOINT_MANAGER_H

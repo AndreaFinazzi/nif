@@ -10,26 +10,16 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
 
   // Debug Publishers
   lqr_command_valid_pub_ = this->create_publisher<std_msgs::msg::Bool>(
-      "bvs_controller/tracking_valid", 1);
+      "control_lqr/tracking_valid", 1);
   lqr_steering_command_pub_ = this->create_publisher<std_msgs::msg::Float32>(
-      "bvs_controller/lqr_command", 1);
+      "control_lqr/lqr_command", 1);
   track_distance_pub_ = this->create_publisher<std_msgs::msg::Float32>(
-      "bvs_controller/track_distance", 1);
+      "control_lqr/track_distance", 1);
   lqr_tracking_point_pub_ =
       this->create_publisher<geometry_msgs::msg::PoseStamped>(
-          "bvs_controller/track_point", 1);
+        "control_lqr/track_point", 1);
   lqr_error_pub_ = this->create_publisher<std_msgs::msg::Float32MultiArray>(
-      "bvs_controller/lqr_error", 1);
-
-  // Command Publishers
-  steering_command_pub_ = this->create_publisher<std_msgs::msg::Float32>(
-      "/joystick/steering_cmd", 1);
-  throttle_command_pub_ = this->create_publisher<std_msgs::msg::Float32>(
-      "/joystick/accelerator_cmd", 1);
-  brake_command_pub_ = this->create_publisher<std_msgs::msg::Float32>(
-      "/joystick/brake_cmd", 1);
-  gear_command_pub_ =
-      this->create_publisher<std_msgs::msg::UInt8>("/joystick/gear_cmd", 1);
+      "control_lqr/lqr_error", 1);
 
   // Subscribers
   velocity_sub_ =
@@ -37,22 +27,23 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
           "/raptor_dbw_interface/wheel_speed_report", 1,
           std::bind(&ControlLQRNode::velocityCallback, this,
                     std::placeholders::_1));
-  steering_sub_ = this->create_subscription<std_msgs::msg::Float32>(
-      "/joystick/steering_cmd_not_used", 1,
-      std::bind(&ControlLQRNode::steeringCallback, this,
-                std::placeholders::_1));
-  throttle_sub_ = this->create_subscription<std_msgs::msg::Float32>(
-      "/joystick/accelerator_cmd_max", 1,
-      std::bind(&ControlLQRNode::throttleCallback, this,
-                std::placeholders::_1));
-  brake_sub_ = this->create_subscription<std_msgs::msg::Float32>(
-      "/joystick/brake_cmd_override", 1,
-      std::bind(&ControlLQRNode::brakeCallback, this,
-                std::placeholders::_1));
-  gear_sub_ = this->create_subscription<std_msgs::msg::UInt8>(
-      "/joystick/gear_cmd_not_used", 1,
-      std::bind(&ControlLQRNode::gearCallback, this,
-                std::placeholders::_1));
+//   TODO update to the single-topic joystick comms
+//   steering_sub_ = this->create_subscription<std_msgs::msg::Float32>(
+//       "/joystick/steering_cmd_not_used", 1,
+//       std::bind(&ControlLQRNode::steeringCallback, this,
+//                 std::placeholders::_1));
+//   throttle_sub_ = this->create_subscription<std_msgs::msg::Float32>(
+//       "/joystick/accelerator_cmd_max", 1,
+//       std::bind(&ControlLQRNode::throttleCallback, this,
+//                 std::placeholders::_1));
+//   brake_sub_ = this->create_subscription<std_msgs::msg::Float32>(
+//       "/joystick/brake_cmd_override", 1,
+//       std::bind(&ControlLQRNode::brakeCallback, this,
+//                 std::placeholders::_1));
+//   gear_sub_ = this->create_subscription<std_msgs::msg::UInt8>(
+//       "/joystick/gear_cmd_not_used", 1,
+//       std::bind(&ControlLQRNode::gearCallback, this,
+//                 std::placeholders::_1));
 
   // Gives memory exceptions with my test rosbag :(
   // pt_report_sub_ =
@@ -194,7 +185,7 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
     // Run LQR :)
     auto goal = bvs_control::utils::LQRGoal(this->getReferencePath()->poses[lqr_tracking_idx_]);
     auto error = lateral_lqr_->computeError(state, goal);
-    steering_angle_deg = lateral_lqr_->process(state, goal); // * nif::common::constants::RAD2DEG;
+    steering_angle_deg = lateral_lqr_->process(state, goal) * nif::common::constants::RAD2DEG;
 
     // Make sure steering angle is within range
     if (steering_angle_deg > max_steering_angle_deg_)
@@ -203,7 +194,7 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
       steering_angle_deg = -max_steering_angle_deg_;
 
 //    Adapt to steering ratio (ControlCommand sends steering wheel's angle)
-    steering_angle_deg *= nif::common::vehicle_param::STEERING_RATIO;
+//    steering_angle_deg *= nif::common::vehicle_param::STEERING_RATIO;
 
     // Smooth and publish diagnostics
     std::chrono::milliseconds period_ms = std::chrono::duration_cast<std::chrono::milliseconds>(

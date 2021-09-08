@@ -44,7 +44,7 @@ const std::chrono::milliseconds PERIOD_DEFAULT(20);
 /**
  * Default period for synchronized node.
  */
-const std::chrono::microseconds SYNC_PERIOD_DEFAULT(10000);
+const std::chrono::microseconds SYNC_PERIOD_DEFAULT_US(10000);
 
 /**
  * Min period for synchronized node.
@@ -54,7 +54,7 @@ const std::chrono::microseconds SYNC_PERIOD_MIN(10000);
 /**
  * Max period for synchronized node.
  */
-const std::chrono::microseconds SYNC_PERIOD_MAX(10000);
+const std::chrono::microseconds SYNC_PERIOD_MAX(50000);
 
 /**
  * Default QoS parameter.
@@ -65,9 +65,10 @@ const rclcpp::QoS QOS_DEFAULT(5);
 /**
  * Name for the main logger.
  */
-const char *const LOG_MAIN_LOGGER_NAME = "MAIN_LOGGER";
+const char* const LOG_MAIN_LOGGER_NAME = "MAIN_LOGGER";
 
-namespace parameters {
+namespace parameters
+{
 /**
  * Name for the GlobalParametersNode
  */
@@ -88,47 +89,56 @@ namespace names {
 /**
  * Name for the body frame id parameter.
  */
-constexpr const char *FRAME_ID_BODY = "frames.body";
+constexpr const char* FRAME_ID_BODY = "frames.body";
 
 /**
  * Name for the global frame id parameter.
  */
-constexpr const char *FRAME_ID_GLOBAL = "frames.global";
+constexpr const char* FRAME_ID_GLOBAL = "frames.global";
 
 /**
  * Name for the ego odometry topic_name parameter.
  */
-constexpr const char *TOPIC_ID_EGO_ODOMETRY = "topics.ego_odometry";
+constexpr const char* TOPIC_ID_EGO_ODOMETRY = "topics.ego_odometry";
 
 /**
  * Name for the system status topic_name parameter.
  */
-constexpr const char *TOPIC_ID_SYSTEM_STATUS = "topics.system_status";
+constexpr const char* TOPIC_ID_SYSTEM_STATUS = "topics.system_status";
 
 /**
  * Name for the race control status topic_name parameter.
  */
-constexpr const char *TOPIC_ID_RACE_CONTROL_STATUS =
-    "topics.race_control_status";
+constexpr const char* TOPIC_ID_RACE_CONTROL_STATUS = "topics.race_control_status";
 
 /**
  * Name for the ego power-train status topic_name parameter.
  */
-constexpr const char *TOPIC_ID_EGO_POWERTRAIN_STATUS =
-    "topics.ego_powertrain_status";
+constexpr const char* TOPIC_ID_EGO_POWERTRAIN_STATUS = "topics.ego_powertrain_status";
+
+/**
+ * Prefix for node statuses topics.
+ */
+constexpr const char* TOPIC_ID_PREFIX_NODE_STATUS = "topics.node_status_prefix";
+
+/**
+ * Prefix for node statuses topics.
+ */
+constexpr const char* PERIOD_NODE_STATUS_CLOCK_US = "time.period_node_status_us";
 
 } // namespace names
 
 /**
  * Default value for the body frame id parameter.
  */
-__attribute_deprecated__ constexpr const char *VALUE_BODY_FRAME_ID =
-    "base_link";
+ __attribute_deprecated__
+constexpr const char* VALUE_BODY_FRAME_ID = "base_link";
 
 /**
  * Default value for the global frame id parameter.
  */
-__attribute_deprecated__ constexpr const char *VALUE_GLOBAL_FRAME_ID = "odom";
+ __attribute_deprecated__
+ constexpr const char* VALUE_GLOBAL_FRAME_ID = "odom";
 
 } // namespace parameters
 

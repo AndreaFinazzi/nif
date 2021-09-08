@@ -10,7 +10,7 @@
 
 #include "nif_common/types.h"
 #include "nif_common_nodes/i_base_synchronized_node.h"
-#include <nav_msgs/msg/detail/odometry__struct.hpp>
+#include <nav_msgs/msg/odometry.hpp>
 
 #include "rclcpp/rclcpp.hpp"
 

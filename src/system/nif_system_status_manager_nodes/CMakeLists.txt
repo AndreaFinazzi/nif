@@ -46,4 +46,5 @@ ament_auto_add_executable(${PROJECT_NAME}_exe
 #            "rclcpp")
 #endif()
 
-ament_auto_package()
+ament_auto_package(INSTALL_TO_SHARE
+        launch)

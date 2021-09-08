@@ -8,6 +8,7 @@ import sys, os
 
 from ament_index_python import get_package_share_directory
 
+from geometry_msgs.msg import Quaternion
 
 def get_share_file(package_name, file_name):
     return os.path.join(get_package_share_directory(package_name), file_name)
@@ -40,6 +41,20 @@ class GraphBasedPlanner(Node):
     def __init__(self):
         super().__init__('graph_based_planner_node')
 
+        self.pose_resolution = 2.5
+        self.maptrack_len = 100
+#       Pre-initialize memory
+#       TODO pre-load all these info
+        self.msg = Path()
+        self.msg.header.frame_id = "map"
+        for idx in range(self.maptrack_len):
+            pose = PoseStamped()
+            pose.header.frame_id = "map"
+            
+            self.msg.poses.append(pose)
+        
+
+
         # top level path (module directory)
         path_assets = get_share_file('nif_multilayer_planning_nodes', 'assets')
         path_params = get_share_file('nif_multilayer_planning_nodes', 'params')
@@ -65,13 +80,13 @@ class GraphBasedPlanner(Node):
         }
 
         # Subscribers and Publisher
-        self.local_maptrack_inglobal_pub = self.create_publisher(Path, 'out_local_maptrack_inglobal', 10)
-        self.veh_odom_sub = self.create_subscription(Odometry, 'in_vehicle_odometry', self.veh_odom_callback, 10)
+        self.local_maptrack_inglobal_pub = self.create_publisher(Path, '/planning/path_global', 10)
+        self.veh_odom_sub = self.create_subscription(Odometry, '/sensor/odom_ground_truth', self.veh_odom_callback, 10)
         self.perception_result_sub = self.create_subscription(Perception3DArray, 'in_perception_result', self.perception_result_callback, 10)
 
         self.current_veh_odom = None
 
-        timer_period = 0.05  # seconds
+        timer_period = 0.02  # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback)
 
         # ----------------------------------------------------------------------------------------------------------------------
@@ -89,9 +104,15 @@ class GraphBasedPlanner(Node):
         self.heading_est = np.arctan2(np.diff(self.refline[0:2, 1]), np.diff(self.refline[0:2, 0])) - np.pi / 2
         self.vel_est = 0.0
 
+        self.out_of_track = True
+
         # set start pos
-        self.ltpl_obj.set_startpos(pos_est=self.pos_est,
-                                   heading_est=self.heading_est)
+        # self.ltpl_obj.set_startpos(pos_est=self.pos_est,
+        #                            heading_est=self.heading_est)
+        self.last_pose = PoseStamped()
+        self.last_pose.pose.position.x = 0.
+        self.last_pose.pose.position.y = 0.
+        self.last_pose.pose.position.z = 0.
 
         # ----------------------------------------------------------------------------------------------------------------------
         # ONLINE LOOP ----------------------------------------------------------------------------------------------------------
@@ -120,13 +141,17 @@ class GraphBasedPlanner(Node):
             self.current_veh_odom.pose.pose.position.x,
             self.current_veh_odom.pose.pose.position.y
         ])
-
+        # TODO : could use perception instead of this, we gain both accuracy and performance
         self.vel_est = math.sqrt(pow(self.current_veh_odom.twist.twist.linear.x, 2)
                                  + pow(self.current_veh_odom.twist.twist.linear.y, 2)
                                  + pow(self.current_veh_odom.twist.twist.linear.z, 2))
 
-    def perception_result_callback(self, msg):
+        if self.out_of_track == True:
+            # set start pos
+            self.out_of_track = self.ltpl_obj.set_startpos(pos_est=self.pos_est,
+                                    heading_est=self.heading_est)
 
+    def perception_result_callback(self, msg):
         self.obj_list.clear()
 
         # TODO : From perception result, heading and velocity information should be added or extracted.
@@ -141,7 +166,8 @@ class GraphBasedPlanner(Node):
             self.obj_list.append(template_dict)
 
     def timer_callback(self):
-
+        if self.out_of_track == True:
+            return
         # -- SELECT ONE OF THE PROVIDED TRAJECTORIES -----------------------------------------------------------------------
         # (here: brute-force, replace by sophisticated behavior planner)
         for sel_action_prev in ["right", "left", "straight", "follow"]:  # try to force 'right', else try next in list
@@ -160,28 +186,52 @@ class GraphBasedPlanner(Node):
                 break
 
         maptrack_inglobal = self.traj_set.get(sel_action_current)
+        if len(maptrack_inglobal[0]) < self.maptrack_len:
+            mp_len = len(maptrack_inglobal[0])
+        else:
+            mp_len = self.maptrack_len
 
-        msg = Path()
-        msg.header.frame_id = "map"
-        msg.header.stamp = self.get_clock().now().to_msg()
+        self.msg.header.stamp = self.get_clock().now().to_msg()
 
-        for idx in range(len(maptrack_inglobal[0])):
-            pose = PoseStamped()
-            pose.header.frame_id = "map"
+#       TODO pre-load all these info
+        for idx in range(mp_len):
+            pose = self.msg.poses[idx]
             pose.header.stamp = self.get_clock().now().to_msg()
             pose.pose.position.x = maptrack_inglobal[0][idx][1]  # for x
             pose.pose.position.y = maptrack_inglobal[0][idx][2]  # for x
-            self.get_logger().debug("%f, %f" % (pose.pose.position.x, pose.pose.position.y))
-            msg.poses.append(pose)
+            
+            # TODO implement orientation comp in offline part
+            y_dot = (pose.pose.position.y - self.last_pose.pose.position.y) / self.pose_resolution
+            x_dot = (pose.pose.position.x - self.last_pose.pose.position.x) / self.pose_resolution
+            yaw = math.atan2(y_dot, x_dot)
+            pose.pose.orientation.x = 0.
+            pose.pose.orientation.z = math.sin(yaw / 2.)
+            pose.pose.orientation.y = 0. 
+            pose.pose.orientation.w = math.cos(yaw / 2.)
 
-        self.local_maptrack_inglobal_pub.publish(msg)
+            # self.get_logger().debug("%f, %f" % (pose.pose.position.x, pose.pose.position.y))
+            self.last_pose = pose
+                    
+        self.msg.poses[0].pose.orientation = self.msg.poses[1].pose.orientation
+        self.local_maptrack_inglobal_pub.publish(self.msg)
 
 
 def main(args=None):
+    import cProfile, pstats
+    profiler = cProfile.Profile()
+    
     rclpy.init(args=args)
     graph_based_planner_node = GraphBasedPlanner()
+
+    profiler.enable()
     rclpy.spin(graph_based_planner_node)
+    profiler.disable()
+    
     graph_based_planner_node.destroy_node()
+    
+    stats = pstats.Stats(profiler).sort_stats('tottime')
+    stats.dump_stats('multilayer_planner.prof')
+    
     rclpy.shutdown()
 
 

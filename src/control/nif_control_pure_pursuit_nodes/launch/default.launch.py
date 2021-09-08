@@ -16,7 +16,7 @@ def generate_launch_description():
             "default.yaml"
         )
     # make sure the dbc file gets installed with the launch file
-    # some_file = get_package_share_directory('nif_localization_nodes') + \
+    # some_file = get_package_share_directory('nif_localization_gtsam_nodes') + \
     #                 ""
     param_file_launch_arg = DeclareLaunchArgument(
         'nif_control_pure_pursuit_param_file',
@@ -33,9 +33,8 @@ def generate_launch_description():
             LaunchConfiguration('nif_control_pure_pursuit_param_file')
         ],
         remappings=[
-            ('topic_ego_odometry', 'localization/ego_odom'),
             # ('target_path', 'wpt_manager/maptrack_path/global'),
-            ('target_path', 'planning/path_global'),
+            ('in_reference_path', 'planning/path_global'),
             ('out_control_cmd', 'control_pool/control_cmd'),
         ],
     )

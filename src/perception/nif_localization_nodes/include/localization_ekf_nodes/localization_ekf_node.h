@@ -54,7 +54,7 @@
 namespace nif {
 namespace localization {
 namespace ekf {
-class EKFLocalizer : public rclcpp::Node {
+class EKFLocalizer : public nif::common::IBaseNode {
 public:
   EKFLocalizer(const std::string &node_name);
   ~EKFLocalizer();
