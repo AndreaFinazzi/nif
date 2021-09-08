@@ -78,7 +78,6 @@ public:
 
   void EKFOdometryCallback(const nav_msgs::msg::Odometry::SharedPtr msg);
 
-  void respond();
   pcl::PointCloud<pcl::PointXYZI>::Ptr
   downsample(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, double resolution);
 

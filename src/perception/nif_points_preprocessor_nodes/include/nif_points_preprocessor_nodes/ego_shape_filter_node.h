@@ -26,6 +26,7 @@
 #include <nav_msgs/msg/occupancy_grid.hpp>
 #include <nav_msgs/msg/path.hpp>
 #include <sensor_msgs/msg/laser_scan.hpp>
+#include <std_msgs/msg/float32.hpp>
 #include <std_msgs/msg/header.hpp>
 #include <tf2_ros/transform_listener.h>
 
@@ -84,20 +85,6 @@ const unsigned long MAP_WIDTH =
 const unsigned long MAP_HEIGHT =
     160; // (right_upper_distance + left_upper_distance) / resolution
 
-// struct LuminarPointXYZIRT {
-//   PCL_ADD_POINT4D;
-//   PCL_ADD_INTENSITY;
-//   double ring;
-//   double time;
-//   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-// } EIGEN_ALIGN16;
-
-// POINT_CLOUD_REGISTER_POINT_STRUCT(LuminarPointXYZIRT,
-//                                   (double, x, x)(double, y, y)(double, z, z)(
-//                                       double, intensity,
-//                                       intensity)(double, ring,
-//                                                  ring)(double, time, time));
-
 namespace nif {
 namespace perception {
 
@@ -130,6 +117,9 @@ private:
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_left_wall_line;
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_right_wall_line;
 
+  rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pub_inner_wall_distance;
+  rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pub_outer_wall_distance;
+
   double left_lower_distance_;
   double right_lower_distance_;
   double rear_lower_distance_;
@@ -143,6 +133,9 @@ private:
   double height_lower_distance_;
   double resolution_;
   double count_threshold_;
+
+  double inner_bound_distance;
+  double outer_bound_distance;
 
   std::array<std::array<float, (size_t)(MAP_WIDTH + 1)>,
              (size_t)(MAP_HEIGHT + 1)>

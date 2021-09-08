@@ -11,45 +11,54 @@ using namespace nif::localization::geofence;
 using namespace nif::common::frame_id::localization;
 
 // Constructor
-GeoFenceLoader::GeoFenceLoader(const std::string &node_name_) : Node(node_name_) {
+GeoFenceLoader::GeoFenceLoader(const std::string &node_name_)
+    : Node(node_name_) {
   this->declare_parameter<std::string>(
-      "outer_geofence_filename",
-      std::string(
-          "/home/usrg/dev_ws/src/navigation/ekf_localizer/map/wall.pcd"));
+      "outer_geofence_filename", "");
   this->declare_parameter<std::string>(
-      "inner_geofence_filename",
-      std::string(
-          "/home/usrg/dev_ws/src/navigation/ekf_localizer/map/inner.pcd"));
+      "inner_geofence_filename", "");
+
+  this->m_OuterGeoFenceFileName = this->get_parameter("outer_geofence_filename").as_string();     
+  this->m_InnerGeoFenceFileName = this->get_parameter("inner_geofence_filename").as_string();          
+
+  if (this->m_OuterGeoFenceFileName.length() <= 0 || 
+      this->m_InnerGeoFenceFileName.length() <= 0) {
+        throw std::runtime_error("Invalid pointcloud paths.");
+      }
+
+  // setup QOS to be best effort
+  auto qos = rclcpp::QoS(
+      rclcpp::QoSInitialization(RMW_QOS_POLICY_HISTORY_KEEP_LAST, 10));
+  qos.best_effort();
 
   pubOuterGeofence = this->create_publisher<sensor_msgs::msg::PointCloud2>(
-      "/geofence_outer", 10);
+      "/geofence_outer", qos);
   pubInnerGeofence = this->create_publisher<sensor_msgs::msg::PointCloud2>(
-      "/geofence_inner", 10);
+      "/geofence_inner", qos);
 
   pubInnerGeofencePath =
-      this->create_publisher<nav_msgs::msg::Path>("/geofence_path_inner", 10);
+      this->create_publisher<nav_msgs::msg::Path>("/geofence_path_inner", qos);
   pubOuterGeofencePath =
-      this->create_publisher<nav_msgs::msg::Path>("/geofence_path_outer", 10);
+      this->create_publisher<nav_msgs::msg::Path>("/geofence_path_outer", qos);
   pubInnerSegmentPath =
-      this->create_publisher<nav_msgs::msg::Path>("/segment_path_inner", 10);
+      this->create_publisher<nav_msgs::msg::Path>("/segment_path_inner", qos);
   pubOuterSegmentPath =
-      this->create_publisher<nav_msgs::msg::Path>("/segment_path_outer", 10);
+      this->create_publisher<nav_msgs::msg::Path>("/segment_path_outer", qos);
 
   pubInnerDistance = this->create_publisher<std_msgs::msg::Float32>(
-      "/geofence_inner_distance", 10);
+      "/geofence_inner_distance", qos);
   pubOuterDistance = this->create_publisher<std_msgs::msg::Float32>(
-      "/geofence_outer_distance", 10);
+      "/geofence_outer_distance", qos);
 
   // TODO : use this "ON_THE_TRACK" flag in the system state manager
   pubOnTheTrack =
-      this->create_publisher<std_msgs::msg::Bool>("/bool/on_the_track", 10);
+      this->create_publisher<std_msgs::msg::Bool>("/bool/on_the_track", qos);
 
   subOdometry = this->create_subscription<nav_msgs::msg::Odometry>(
-      "/Odometry/ekf_estimated", 10,
+      "/Odometry/ekf_estimated", qos,
       std::bind(&GeoFenceLoader::EKFOdometryCallback, this,
                 std::placeholders::_1));
 
-  respond();
 
   std::cout << "outer_geofence_filename: " << m_OuterGeoFenceFileName
             << std::endl;
@@ -75,14 +84,14 @@ GeoFenceLoader::GeoFenceLoader(const std::string &node_name_) : Node(node_name_)
     nav_msgs::msg::Path SegmentInnerMsg;
     nav_msgs::msg::Path SegmentOuterMsg;
 
-    GeofenceInnerMsg.header.frame_id = "center_of_gravity";
+    GeofenceInnerMsg.header.frame_id = BASE_LINK;
     GeofenceInnerMsg.header.stamp = this->now();
-    GeofenceOuterMsg.header.frame_id = "center_of_gravity";
+    GeofenceOuterMsg.header.frame_id = BASE_LINK;
     GeofenceOuterMsg.header.stamp = this->now();
 
-    SegmentInnerMsg.header.frame_id = "ltp";
+    SegmentInnerMsg.header.frame_id = ODOM;
     SegmentInnerMsg.header.stamp = this->now();
-    SegmentOuterMsg.header.frame_id = "ltp";
+    SegmentOuterMsg.header.frame_id = ODOM;
     SegmentOuterMsg.header.stamp = this->now();
     std_msgs::msg::Bool OnTheTrackMsg;
     OnTheTrackMsg.data = false;
@@ -104,7 +113,7 @@ GeoFenceLoader::GeoFenceLoader(const std::string &node_name_) : Node(node_name_)
 
       sensor_msgs::msg::PointCloud2 InnerGeoFenceCloudMsg;
       pcl::toROSMsg(*m_InnerFenceCloud, InnerGeoFenceCloudMsg);
-      InnerGeoFenceCloudMsg.header.frame_id = "ltp";
+      InnerGeoFenceCloudMsg.header.frame_id = ODOM;
       InnerGeoFenceCloudMsg.header.stamp = this->now();
       pubInnerGeofence->publish(InnerGeoFenceCloudMsg);
     }
@@ -125,7 +134,7 @@ GeoFenceLoader::GeoFenceLoader(const std::string &node_name_) : Node(node_name_)
 
       sensor_msgs::msg::PointCloud2 OuterGeoFenceCloudMsg;
       pcl::toROSMsg(*m_OuterFenceCloud, OuterGeoFenceCloudMsg);
-      OuterGeoFenceCloudMsg.header.frame_id = "ltp";
+      OuterGeoFenceCloudMsg.header.frame_id = ODOM;
       OuterGeoFenceCloudMsg.header.stamp = this->now();
       pubOuterGeofence->publish(OuterGeoFenceCloudMsg);
     }
@@ -137,11 +146,6 @@ GeoFenceLoader::GeoFenceLoader(const std::string &node_name_) : Node(node_name_)
 }
 
 GeoFenceLoader::~GeoFenceLoader() {}
-
-void GeoFenceLoader::respond() {
-  this->get_parameter("outer_geofence_filename", m_OuterGeoFenceFileName);
-  this->get_parameter("inner_geofence_filename", m_InnerGeoFenceFileName);
-}
 
 void GeoFenceLoader::OuterFencePCDFileIO() {
   m_OuterFenceCloud.reset(new pcl::PointCloud<pcl::PointXYZI>());
@@ -172,7 +176,7 @@ void GeoFenceLoader::OuterFencePCDFileIO() {
   }
   *m_OuterFenceCloud = *CloudIn;
 
-  m_OuterFenceCloud->header.frame_id = "ltp";
+  m_OuterFenceCloud->header.frame_id = ODOM;
   bOuterLoaded = true;
 }
 
@@ -202,7 +206,7 @@ void GeoFenceLoader::InnerFencePCDFileIO() {
   }
   *m_InnerFenceCloud = *CloudIn;
 
-  m_InnerFenceCloud->header.frame_id = "ltp";
+  m_InnerFenceCloud->header.frame_id = ODOM;
   bInnerLoaded = true;
 }
 

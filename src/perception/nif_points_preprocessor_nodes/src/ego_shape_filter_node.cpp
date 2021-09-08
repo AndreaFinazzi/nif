@@ -7,7 +7,10 @@
  */
 
 #include <nif_points_preprocessor_nodes/ego_shape_filter_node.h>
+#include "nif_frame_id/frame_id.h"
+
 using namespace nif::perception;
+using namespace nif::common::frame_id::localization;
 
 EgoShapeFilterNode::EgoShapeFilterNode(const std::string &node_name_)
     : Node(node_name_) {
@@ -77,6 +80,11 @@ EgoShapeFilterNode::EgoShapeFilterNode(const std::string &node_name_)
       this->create_publisher<nav_msgs::msg::Path>("/wall_left", qos);
   pub_right_wall_line =
       this->create_publisher<nav_msgs::msg::Path>("/wall_right", qos);
+
+  pub_inner_wall_distance = this->create_publisher<std_msgs::msg::Float32>(
+      "/detected_inner_distance", qos);
+  pub_outer_wall_distance = this->create_publisher<std_msgs::msg::Float32>(
+      "/detected_outer_distance", qos);
 }
 
 EgoShapeFilterNode::~EgoShapeFilterNode() {}
@@ -177,7 +185,7 @@ void EgoShapeFilterNode::mergedPointsCallback(
   sensor_msgs::msg::PointCloud2 cloud_msg;
   pcl::toROSMsg(*CloudShapeFiltered, cloud_msg);
   cloud_msg.header = msg->header;
-  cloud_msg.header.frame_id = "center_of_gravity";
+  cloud_msg.header.frame_id = BASE_LINK;
   pub_filtered_points->publish(cloud_msg);
 
   float min_x = -(front_upper_distance_ + rear_upper_distance_) / 2;
@@ -196,7 +204,7 @@ void EgoShapeFilterNode::mergedPointsCallback(
 
   sensor_msgs::msg::PointCloud2 cloud_inverse_msg;
   pcl::toROSMsg(*CloudInverseBoth, cloud_inverse_msg);
-  cloud_inverse_msg.header.frame_id = "center_of_gravity";
+  cloud_inverse_msg.header.frame_id = BASE_LINK;
   cloud_inverse_msg.header.stamp = this->now();
   pub_inverse_points->publish(cloud_inverse_msg);
 
@@ -206,17 +214,23 @@ void EgoShapeFilterNode::mergedPointsCallback(
   boost::optional<Eigen::Vector4f> left_wall =
       wall_detect(CloudInverseLeft, CloudRANSACLeft);
 
+  inner_bound_distance = 0;
+  outer_bound_distance = 0;
   // detected left_wall coefficients
   if (left_wall) {
     for (int i = 0; i < 4; i++) {
       std::cout << "left wall" << (*left_wall)[i] << std::endl;
     }
+    inner_bound_distance = (*left_wall)[3];
   }
   sensor_msgs::msg::PointCloud2 cloud_left_ransac_filtered_msg;
   pcl::toROSMsg(*CloudRANSACLeft, cloud_left_ransac_filtered_msg);
-  cloud_left_ransac_filtered_msg.header.frame_id = "center_of_gravity";
+  cloud_left_ransac_filtered_msg.header.frame_id = BASE_LINK;
   cloud_left_ransac_filtered_msg.header.stamp = this->now();
   pub_left_ransac_filtered_points->publish(cloud_left_ransac_filtered_msg);
+  std_msgs::msg::Float32 inner_bound_distance_msg;
+  inner_bound_distance_msg.data = inner_bound_distance;
+  pub_inner_wall_distance->publish(inner_bound_distance_msg);
 
   pcl::PointCloud<pcl::PointXYZI>::Ptr CloudRANSACRight(
       new pcl::PointCloud<pcl::PointXYZI>);
@@ -229,12 +243,17 @@ void EgoShapeFilterNode::mergedPointsCallback(
     for (int i = 0; i < 4; i++) {
       std::cout << "right wall" << (*right_wall)[i] << std::endl;
     }
+    outer_bound_distance = (*right_wall)[3];
   }
   sensor_msgs::msg::PointCloud2 cloud_right_ransac_filtered_msg;
   pcl::toROSMsg(*CloudRANSACRight, cloud_right_ransac_filtered_msg);
-  cloud_right_ransac_filtered_msg.header.frame_id = "center_of_gravity";
+  cloud_right_ransac_filtered_msg.header.frame_id = BASE_LINK;
   cloud_right_ransac_filtered_msg.header.stamp = this->now();
   pub_right_ransac_filtered_points->publish(cloud_right_ransac_filtered_msg);
+
+  std_msgs::msg::Float32 outer_bound_distance_msg;
+  outer_bound_distance_msg.data = outer_bound_distance;
+  pub_outer_wall_distance->publish(outer_bound_distance_msg);
 
   pcl::PointCloud<pcl::PointXYZI>::Ptr CloudRANSACBoth(
       new pcl::PointCloud<pcl::PointXYZI>);
@@ -243,7 +262,7 @@ void EgoShapeFilterNode::mergedPointsCallback(
 
   sensor_msgs::msg::PointCloud2 cloud_both_ransac_filtered_msg;
   pcl::toROSMsg(*CloudRANSACBoth, cloud_both_ransac_filtered_msg);
-  cloud_both_ransac_filtered_msg.header.frame_id = "center_of_gravity";
+  cloud_both_ransac_filtered_msg.header.frame_id = BASE_LINK;
   cloud_both_ransac_filtered_msg.header.stamp = this->now();
   pub_both_ransac_filtered_points->publish(cloud_both_ransac_filtered_msg);
 
@@ -260,7 +279,7 @@ void EgoShapeFilterNode::RegisterPointToGrid(
     pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud_ptr, double in_resolution,
     float min_x, float min_y) {
   nav_msgs::msg::OccupancyGrid oc_grid_msg;
-  oc_grid_msg.header.frame_id = "center_of_gravity";
+  oc_grid_msg.header.frame_id = BASE_LINK;
   oc_grid_msg.header.stamp = this->now();
   oc_grid_msg.info.origin.position.x = min_x;
   oc_grid_msg.info.origin.position.y = min_y;
@@ -421,7 +440,7 @@ EgoShapeFilterNode::LineVisualizer(pcl::PointCloud<pcl::PointXYZI>::Ptr cloudIn,
   cv::Mat PolyCoefficient = polyfit(ToBeFit, poly_order);
 
   nav_msgs::msg::Path path_msg;
-  path_msg.header.frame_id = "center_of_gravity";
+  path_msg.header.frame_id = BASE_LINK;
   path_msg.header.stamp = this->now();
 
   if (!coeff) {

@@ -44,23 +44,29 @@ ament_auto_add_library(ekf_localizer_lib SHARED
 ament_auto_add_library(ekf_localizer SHARED
         src/localization_ekf_node.cpp)
 
+target_link_libraries(ekf_localizer
+        ekf_localizer_lib
+        geodetic_conv
+)
+
 ament_auto_add_library(load_geofence SHARED
         src/load_geofence_node.cpp)
-
 target_link_libraries(load_geofence
         ${PCL_LIBRARIES}
 )
 
-target_link_libraries(ekf_localizer
-        ekf_localizer_lib
-        geodetic_conv
-        )
+ament_auto_add_library(resilient_localize SHARED
+        src/resilient_localization_node.cpp)
+target_link_libraries(resilient_localize
+        ${PCL_LIBRARIES}
+)
 
 ament_auto_add_executable(${PROJECT_NAME}_exe
         src/localization_main.cpp)
 target_link_libraries(${PROJECT_NAME}_exe
         ekf_localizer
         load_geofence
+        resilient_localize
 )
 
 if(BUILD_TESTING)
@@ -83,4 +89,5 @@ endif()
 
 ament_auto_package(INSTALL_TO_SHARE
         launch
-        config)
+        config
+        map)

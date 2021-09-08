@@ -6,8 +6,10 @@
  */
 
 #include "nif_points_preprocessor_nodes/points_concat_node.h"
+#include "nif_frame_id/frame_id.h"
 
 using namespace nif::perception;
+using namespace nif::common::frame_id::localization;
 
 PointsConcatFilterNode::PointsConcatFilterNode(const std::string &node_name_)
     : Node(node_name_) {
@@ -18,7 +20,7 @@ PointsConcatFilterNode::PointsConcatFilterNode(const std::string &node_name_)
   this->declare_parameter<std::string>("output_topic",
                                        std::string("/merged/lidar"));
   this->declare_parameter<std::string>("output_frame_id",
-                                       std::string("center_of_gravity"));
+                                       std::string(BASE_LINK));
   // setup QOS to be best effort
   auto qos = rclcpp::QoS(
       rclcpp::QoSInitialization(RMW_QOS_POLICY_HISTORY_KEEP_LAST, 1));
