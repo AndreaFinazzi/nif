@@ -16,7 +16,7 @@ def generate_launch_description():
             "default.yaml"
         )
     # make sure the dbc file gets installed with the launch file
-    # some_file = get_package_share_directory('nif_localization_nodes') + \
+    # some_file = get_package_share_directory('nif_localization_gtsam_nodes') + \
     #                 ""
     param_file_launch_arg = DeclareLaunchArgument(
         'nif_control_pure_pursuit_param_file',
