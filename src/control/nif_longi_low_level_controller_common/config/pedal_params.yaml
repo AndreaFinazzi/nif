@@ -1,0 +1,21 @@
+# PID time step size
+time_step: 0.01
+
+# PID gains for throttle pedal controller
+throttle_params:
+  P_gain: 4.0
+  I_gain: 0.0
+  D_gain: 0.0
+  max_integrator_error: 10.0
+  cmd_max: 25.0
+  cmd_min: 0.0
+
+# PID gains for brake pedal controller
+brake_params:
+  P_gain: 4.0
+  I_gain: 0.0
+  D_gain: 0.0
+  max_integrator_error: 10.0
+  vel_error_deadband: 0.5
+  cmd_max: 25.0
+  cmd_min: 0.0

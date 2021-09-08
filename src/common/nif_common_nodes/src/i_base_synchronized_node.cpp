@@ -9,7 +9,7 @@
 #include "nif_common/constants.h"
 #include "std_msgs/msg/string.hpp"
 
-using namespace nif::common;
+using nif::common::IBaseSynchronizedNode;
 
 void IBaseSynchronizedNode::gClockCallback() {
   /// Update clock value
@@ -18,6 +18,6 @@ void IBaseSynchronizedNode::gClockCallback() {
 }
 
 //TODO make it a template function returning duration<>
-const std::chrono::nanoseconds &IBaseSynchronizedNode::getGclockPeriodNs() const {
-  return gclock_period;
+const nif::common::types::t_clock_period_ns &IBaseSynchronizedNode::getGclockPeriodNs() const {
+  return gclock_period_ns;
 }

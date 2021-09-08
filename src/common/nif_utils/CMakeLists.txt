@@ -18,6 +18,7 @@ ament_auto_find_build_dependencies()
 # Library
 ament_auto_add_library(${PROJECT_NAME} SHARED
         src/utils.cpp
+        src/PID.cpp
         src/quartic_polynomial.cpp
         src/quintic_polynomial.cpp
         src/cubic_spliner.cpp
