@@ -67,7 +67,7 @@ jobs:
       # https://github.com/docker/login-action
       - 
         name: Log into registry ${{ env.REGISTRY }}
-        if: github.event_name != 'pull_request'
+        if: true # github.event_name != 'pull_request'
         uses: docker/login-action@v1
         with:
           registry: ${{ env.REGISTRY }}
@@ -97,18 +97,17 @@ jobs:
             GH_TOKEN=${{ env.GH_TOKEN }}
           cache-from: type=registry,ref=${{ steps.meta.outputs.tags }}
           cache-to: type=inline
-          outputs: type=docker,dest=/tmp/nif_image.tar
 
       # build repository in created image.
       -
         name: nif build
         run: |
           ./getade.sh
-          ade load /tmp/nif_image.tar
           docker image ls -a
           touch .adehome && export ADE_IMAGES="${{ steps.meta.outputs.tags }}" && export ADE_NAME=nif
           ade --rc .aderc-ci start
           docker exec -it nif bash -c "cd /home/$USER/nif && ./nifbuild --continue-on-error"
+#          ade load /tmp/nif_image.tar
 #          docker run --rm -e RMW_IMPLEMENTATION=rmw_cyclonedds_cpp -e ROS_DISTRO=foxy -e GROUP=gh -e GROUP_ID=1000 -e USER=gh -e USER_ID=1000 --entrypoint="bash -c 'cd /tmp/nif && ./nifupdate && ./nifbuild'" -v $(pwd):/tmp/nif ${{ steps.meta.outputs.tags }}
 #          docker run --rm -it $(docker build -q .)
 
