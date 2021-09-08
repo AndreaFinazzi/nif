@@ -39,24 +39,14 @@ public:
   std_msgs::msg::Float64 lat_error;
 
 private:
-  void mapTrackCallback(const nav_msgs::msg::Path::SharedPtr msg);
   nif::common::msgs::ControlCmd::SharedPtr solve() override;
 
-protected:
-  void initParameters() override;
-  void getParameters() override;
-
 private:
-  void egoUpdateTimerCallback() const;
   void publishLookAheadPointMarker();
+  void afterReferencePathCallback() override;
+  void afterEgoOdometryCallback() override;
 
-  rclcpp::TimerBase::SharedPtr m_ego_update_timer;
-  rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr m_steer_cmd_pub;
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr  m_lookahead_pt_in_global_pub;
-  rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr m_map_track_sub;
-
-  rclcpp::Time maptrack_recv_time_;
-  nav_msgs::msg::Path::SharedPtr m_maptrack;
 
   double m_param_min_lookahead_dist;
   double m_param_max_lookahead_dist;

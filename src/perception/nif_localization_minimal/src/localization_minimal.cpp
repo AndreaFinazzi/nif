@@ -7,10 +7,9 @@
 
 #include "nif_localization_minimal/localization_minimal.h"
 
-LocalizationMinimal::LocalizationMinimal(const double lat,
-                                         const double lon,
+LocalizationMinimal::LocalizationMinimal(const double lat, const double lon,
                                          const double height)
-: m_lat_ref(lat), m_lon_ref(lon), m_height_ref(height) {
+    : m_lat_ref(lat), m_lon_ref(lon), m_height_ref(height) {
 
   m_geo_converter_ptr =
       std::make_shared<GeodeticConverter>(m_lat_ref, m_lon_ref, m_height_ref);
@@ -75,10 +74,7 @@ void LocalizationMinimal::testGPSHorizontalData() {
   double azimuth = 178.12580144670395;
 
   m_geo_converter_ptr->geodetic2Ned(
-      latitude,
-      longitude,
-      0.0,
-      &m_veh_odom_horizontal.pose.pose.position.x,
+      latitude, longitude, 0.0, &m_veh_odom_horizontal.pose.pose.position.x,
       &m_veh_odom_horizontal.pose.pose.position.y,
       &m_veh_odom_horizontal.pose.pose.position.z);
 
@@ -104,11 +100,9 @@ void LocalizationMinimal::testGPSHorizontalData() {
 }
 
 void LocalizationMinimal::setGPSHorizontalData(
-    const novatel_gps_msgs::msg::Inspva& gps_horizontal_data_) {
+    const novatel_gps_msgs::msg::Inspva &gps_horizontal_data_) {
   m_geo_converter_ptr->geodetic2Ned(
-      gps_horizontal_data_.latitude,
-      gps_horizontal_data_.longitude,
-      0.0,
+      gps_horizontal_data_.latitude, gps_horizontal_data_.longitude, 0.0,
       &m_veh_odom_horizontal.pose.pose.position.x,
       &m_veh_odom_horizontal.pose.pose.position.y,
       &m_veh_odom_horizontal.pose.pose.position.z);
@@ -116,8 +110,7 @@ void LocalizationMinimal::setGPSHorizontalData(
   // TODO : Not sure about passing the roll,pitch. Maybe we can
   // just pass zero.
   tf2::Quaternion vehicle_quat;
-  vehicle_quat.setRPY(gps_horizontal_data_.roll,
-                      gps_horizontal_data_.pitch,
+  vehicle_quat.setRPY(gps_horizontal_data_.roll, gps_horizontal_data_.pitch,
                       gps_horizontal_data_.azimuth);
   vehicle_quat = vehicle_quat.normalize();
   m_veh_odom_horizontal.pose.pose.orientation.x = vehicle_quat.x();
@@ -131,18 +124,16 @@ void LocalizationMinimal::setGPSHorizontalData(
 }
 
 void LocalizationMinimal::setGPSVerticalData(
-    const novatel_gps_msgs::msg::Inspva& gps_vertical_data_) {
+    const novatel_gps_msgs::msg::Inspva &gps_vertical_data_) {
   m_geo_converter_ptr->geodetic2Ned(gps_vertical_data_.latitude,
-                                    gps_vertical_data_.longitude,
-                                    0.0,
+                                    gps_vertical_data_.longitude, 0.0,
                                     &m_veh_odom_vertical.pose.pose.position.x,
                                     &m_veh_odom_vertical.pose.pose.position.y,
                                     &m_veh_odom_vertical.pose.pose.position.z);
 
   // TODO : Not sure about passing the roll,pitch. Maybe we can just pass zero.
   tf2::Quaternion vehicle_quat;
-  vehicle_quat.setRPY(gps_vertical_data_.roll,
-                      gps_vertical_data_.pitch,
+  vehicle_quat.setRPY(gps_vertical_data_.roll, gps_vertical_data_.pitch,
                       gps_vertical_data_.azimuth);
   vehicle_quat = vehicle_quat.normalize();
   m_veh_odom_vertical.pose.pose.orientation.x = vehicle_quat.x();
@@ -163,12 +154,9 @@ void LocalizationMinimal::setENUReference(double &lat, double &lon,
   m_geo_converter_ptr = std::make_shared<GeodeticConverter>(lat, lon, height);
 }
 
-void LocalizationMinimal::getENUfromLLH(const double &lat,
-                                        const double &lon,
-                                        const double &height,
-                                        double &x,
-                                        double &y,
-                                        double &z) {
+void LocalizationMinimal::getENUfromLLH(const double &lat, const double &lon,
+                                        const double &height, double &x,
+                                        double &y, double &z) {
   // Outputs garbage for unkown reason. Use geodetic2Ned, then manually convert
   // to Enu
   m_geo_converter_ptr->geodetic2Enu(lat, lon, 0.0, &x, &y, &z);

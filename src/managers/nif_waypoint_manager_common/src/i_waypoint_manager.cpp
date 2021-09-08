@@ -10,12 +10,14 @@
 
 IWaypointManager::IWaypointManager(const vector<string>& wpt_file_path_list_,
                                    const string& body_frame_id_,
-                                   const string& global_frame_id_)
-    : m_body_frame_id(body_frame_id_),
-      m_global_frame_id(global_frame_id_) {
-
+                                   const string& global_frame_id_,
+                                   const int& spline_interval_)
+  : m_body_frame_id(body_frame_id_),
+    m_global_frame_id(global_frame_id_),
+    m_spline_interval(spline_interval_) {
   if (wpt_file_path_list_.empty()) {
-    throw std::runtime_error("wpt_file_path_list_ is empty. WaypointManager cannot be initialized.");
+    throw std::runtime_error(
+        "wpt_file_path_list_ is empty. WaypointManager cannot be initialized.");
   }
 
   m_wpt_list.clear();
@@ -23,13 +25,13 @@ IWaypointManager::IWaypointManager(const vector<string>& wpt_file_path_list_,
   bool wpt_3d_flg = false;
   bool spline_flg = true;
 
-  for (const auto & wpt_file_idx : wpt_file_path_list_) {
+  for (const auto& wpt_file_idx : wpt_file_path_list_) {
     c_wpt obj(wpt_file_idx,
               "",
               m_global_frame_id,
               wpt_3d_flg,
               spline_flg,
-              0.5);
+              m_spline_interval);
     m_wpt_list.push_back(obj);
   }
 
@@ -65,9 +67,8 @@ void IWaypointManager::setCurrentOdometry(
 }
 
 void IWaypointManager::setCurrentIdx(
-    const nav_msgs::msg::Path &reference_path,
-    const nav_msgs::msg::Odometry &ego_vehicle_odom)
-{
+    const nav_msgs::msg::Path& reference_path,
+    const nav_msgs::msg::Odometry& ego_vehicle_odom) {
   unsigned int current_idx = 0;
   double min_dist = INFINITY;
   for (int pt_idx = 0; pt_idx < reference_path.poses.size(); pt_idx++) {
@@ -90,8 +91,8 @@ void IWaypointManager::setCurrentIdx(
 }
 
 unsigned int IWaypointManager::getCurrentIdx(
-    const nav_msgs::msg::Path &reference_path,
-    const nav_msgs::msg::Odometry &ego_vehicle_odom) {
+    const nav_msgs::msg::Path& reference_path,
+    const nav_msgs::msg::Odometry& ego_vehicle_odom) {
   setCurrentIdx(reference_path, ego_vehicle_odom);
   return m_current_idx;
 }
@@ -116,7 +117,8 @@ int IWaypointManager::getWPTIdx(nav_msgs::msg::Path& reference_path,
 }
 
 nav_msgs::msg::Path IWaypointManager::calcMapTrackInGlobal(
-    nav_msgs::msg::Path& reference_full_path_, unsigned int current_idx_) const {
+    nav_msgs::msg::Path& reference_full_path_,
+    unsigned int current_idx_) const {
   //   If the vehicle is on the end of the wpt, current idx is going to
   //   zero again. Make sure that there is no memory overflow when you access
   //   based on this current idx
@@ -172,7 +174,7 @@ geometry_msgs::msg::PoseStamped IWaypointManager::getPtBodytoGlobal(
 }
 
 geometry_msgs::msg::PoseStamped IWaypointManager::getPtGlobaltoBody(
-    const geometry_msgs::msg::PoseStamped &point_in_global_) const {
+    const geometry_msgs::msg::PoseStamped& point_in_global_) const {
   geometry_msgs::msg::PoseStamped point_in_body;
   point_in_body.header.frame_id = m_body_frame_id;
   point_in_body.pose.position.x = cos(-1 * m_current_yaw_rad) *
@@ -196,9 +198,8 @@ nav_msgs::msg::Path
 IWaypointManager::getPathBodytoGlobal(nav_msgs::msg::Path& path_in_body_) {
   nav_msgs::msg::Path path_in_global;
   path_in_global.header.frame_id = m_global_frame_id;
-  for (auto & pose : path_in_body_.poses) {
-    path_in_global.poses.push_back(
-        getPtBodytoGlobal(pose));
+  for (auto& pose : path_in_body_.poses) {
+    path_in_global.poses.push_back(getPtBodytoGlobal(pose));
   }
   return path_in_global;
 }
@@ -207,9 +208,8 @@ nav_msgs::msg::Path
 IWaypointManager::getPathGlobaltoBody(nav_msgs::msg::Path& path_in_global_) {
   nav_msgs::msg::Path path_in_body;
   path_in_body.header.frame_id = m_body_frame_id;
-  for (auto & pose : path_in_global_.poses) {
-    path_in_body.poses.push_back(
-        getPtGlobaltoBody(pose));
+  for (auto& pose : path_in_global_.poses) {
+    path_in_body.poses.push_back(getPtGlobaltoBody(pose));
   }
   return path_in_body;
 }

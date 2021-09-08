@@ -25,12 +25,18 @@ nif::managers::WaypointManagerNode::WaypointManagerNode(
   }
   package_share_directory = package_share_directory.append("/");
   std::vector<std::string> file_path_list_default = {"maps/map.csv"};
+  double spline_interval = 1.0;
+  int maptrack_size = 100;
   this->declare_parameter("file_path_list", file_path_list_default);
+  this->declare_parameter("spline_interval", spline_interval);
+  this->declare_parameter("maptrack_size", maptrack_size);
 
   this->file_path_list =
       this->get_parameter("file_path_list").as_string_array();
+  spline_interval = this->get_parameter("spline_interval").as_double();
+  maptrack_size = this->get_parameter("maptrack_size").as_int();
 
-  for (auto & path : file_path_list) {
+  for (auto& path : file_path_list) {
     path.insert(0, package_share_directory);
   }
 
@@ -43,9 +49,13 @@ nif::managers::WaypointManagerNode::WaypointManagerNode(
 
   m_map_track_body_publisher = this->create_publisher<nav_msgs::msg::Path>(
       "wpt_manager/maptrack_path/body", 10);
+  this->setWaypointManager(
+      std::make_shared<WaypointManagerMinimal>(file_path_list,
+                                               this->getBodyFrameId(),
+                                               this->getGlobalFrameId(),
+                                               spline_interval));
 
-  this->setWaypointManager(std::make_shared<WaypointManagerMinimal>(
-      file_path_list, this->getBodyFrameId(), this->getGlobalFrameId()));
+  this->wpt_manager->setSizeOfMapTrack(maptrack_size); // index level
 }
 
 // TODO should pass node_name_ as a reference here
@@ -59,13 +69,15 @@ nif::managers::WaypointManagerNode::WaypointManagerNode(
 
 void nif::managers::WaypointManagerNode::timerCallback() {
   RCLCPP_DEBUG(this->get_logger(), "WaypointManagerNode timer callback");
-  nav_msgs::msg::Path &path_in_global =
+  nav_msgs::msg::Path& path_in_global =
       this->wpt_manager->getDesiredMapTrackInGlobal();
-  nav_msgs::msg::Path &path_in_body =
+  nav_msgs::msg::Path& path_in_body =
       this->wpt_manager->getDesiredMapTrackInBody();
 
   path_in_body.header.stamp = this->now();
+  path_in_body.header.frame_id = "base_link";
   path_in_global.header.stamp = this->now();
+  path_in_global.header.frame_id = "map";
 
   m_map_track_global_publisher->publish(path_in_global);
   m_map_track_body_publisher->publish(path_in_body);
