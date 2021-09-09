@@ -1,0 +1,18 @@
+session_name: nif_launch_sim
+windows:
+  - window_name: Launch Tab
+    layout: tiled
+    shell_command_before:
+      - source /home/usrg/dev_ws/install/setup.bash && cd /media/usrg/T7/IAC/rosbag/21.08.18_LOR/VEH4_LOR_RUN-1_2021-08-18
+    panes:
+      - shell_command:
+          - ros2 bag play lidar_2021-08-18_13-44-10/
+      - shell_command:
+          - ros2 bag play autonomy_2021-08-18_13-44-10/
+  - window_name: record Tab
+    layout: tiled
+    shell_command_before:
+      - source /home/usrg/dev_ws/install/setup.bash && cd /home/usrg/dev_ws/src/bag
+    panes:
+      - shell_command:
+          - ros2 bag record /luminar_front_points /luminar_left_points /novatel_bottom/bestpos /novatel_bottom/inspva

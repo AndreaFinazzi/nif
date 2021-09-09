@@ -18,8 +18,11 @@ GeoFenceLoader::GeoFenceLoader(const std::string &node_name_)
   this->declare_parameter<std::string>(
       "inner_geofence_filename", "");
 
+  this->declare_parameter<bool>("outer_geofence_filename", "");
+  this->declare_parameter<bool>("outer_geofence_filename", "");
+
   this->m_OuterGeoFenceFileName = this->get_parameter("outer_geofence_filename").as_string();     
-  this->m_InnerGeoFenceFileName = this->get_parameter("inner_geofence_filename").as_string();          
+  this->m_InnerGeoFenceFileName = this->get_parameter("inner_geofence_filename").as_string();    
 
   if (this->m_OuterGeoFenceFileName.length() <= 0 || 
       this->m_InnerGeoFenceFileName.length() <= 0) {
