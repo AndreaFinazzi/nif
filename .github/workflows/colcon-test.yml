@@ -105,7 +105,7 @@ jobs:
       -
         name: nif build
         run: |
-          ./getade.sh
+          ./nif/getade.sh
           docker image ls -a
           touch .adehome && export ADE_IMAGES="${{ steps.meta.outputs.tags }}" && export ADE_NAME=nif
           cd nif && ade --rc .aderc-ci start
