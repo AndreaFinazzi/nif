@@ -9,9 +9,9 @@ This guide is an adaptation of https://www.allaban.me/posts/2020/08/ros2-setup-i
    
    For a list of well-maintined themes: https://www.dunebook.com/best-clion-themes/
 
-1. Install `ade` running `./getade.sh` or following [these steps](https://ade-cli.readthedocs.io/en/latest/install.html).
+2. Install `ade` running `./getade.sh` or following [these steps](https://ade-cli.readthedocs.io/en/latest/install.html).
 
-1. Run the folowing commands to configure the `ade` home directory, which is mounted by default as home directory in the `ade` containers.
+3. Run the folowing commands to configure the `ade` home directory, which is mounted by default as home directory in the `ade` containers.
    ```shell
    $ mkdir -p ~/adehome
    $ cd ~/adehome
@@ -19,8 +19,8 @@ This guide is an adaptation of https://www.allaban.me/posts/2020/08/ros2-setup-i
    $ git clone --recurse-submodules git@github.com:AndreaFinazzi/nif.git
    ```
    A good reference is: https://autowarefoundation.gitlab.io/autoware.auto/AutowareAuto/installation-ade.html
-
-1. Run: 
+   
+4. Run: 
    ```shell
    $ export ADE_NAME=nif
    ```
@@ -38,13 +38,13 @@ This guide is an adaptation of https://www.allaban.me/posts/2020/08/ros2-setup-i
    ```
    to your `.bashrc` file.
 
-1. Start the `ade` environment:
+5. Start the `ade` environment:
    ```shell
    $ cd nif
    $ ./nifstart
    ```
    
-1. Setup the ssh access (CLion's toolchain needs this). The login password is the same as host's username (`echo $USER`):
+6. Setup the ssh access (CLion's toolchain needs this). The login password is the same as host's username (`echo $USER`):
    ```shell
    $ ./adessh.sh
    ````
@@ -53,16 +53,18 @@ This guide is an adaptation of https://www.allaban.me/posts/2020/08/ros2-setup-i
    $ ssh $USER@localhost -p2222
    ```
    
-1. Open up your CLion settings/preferences and add a new remote toolchain. Call it whatever, but I’m calling it Docker. Use the credentials we used in the Dockerfile to setup SSH. Make sure to set it as the default.
+7. Open up your CLion settings/preferences and add a new remote toolchain. Call it whatever, but I’m calling it Docker. Use the credentials we used in the Dockerfile to setup SSH. Make sure to set it as the default.
 ![clion toolchain](clion-toolchain-settings.png)
 
-1. Almost done. Run the last command (`ssh $USER@localhost -p2222`) or `ade enter` to open a shell into the container, and run:
+8. Create a file called `.secret.gitlab` and paste the **GitLab Access Token** in it (single line, no spaces).
+
+9. Almost done. Run the last command (`ssh $USER@localhost -p2222`) or `ade enter` to open a shell into the container, and run:
    ```shell
-   cd  nif
+   cd nif
    ./nifbuild
    ```
    and copy the output you get from the command. You need it in the next step.
 
-1. Copy and paste the output into CLion’s CMake environment setting. ![clion cmake env](clion-env-settings.png)
+10. Copy and paste the output into CLion’s CMake environment setting. ![clion cmake env](clion-env-settings.png)
    
-1. Finally, close and reopen CLion and run `Tools > Resync with remote host` (`Ctrl + Shift + A` for action searching). At the end of the process, check that autocompletion is working properly.
+11. Finally, close and reopen CLion and run `Tools > Resync with remote host` (`Ctrl + Shift + A` for action searching). At the end of the process, check that autocompletion is working properly.

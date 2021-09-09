@@ -15,10 +15,11 @@
 #include "std_msgs/msg/float32.hpp"
 #include "std_msgs/msg/int8.hpp"
 
+#include "nif_msgs/msg/system_health.hpp"
 #include "deep_orange_msgs/msg/rc_to_ct.hpp"
 #include "nif_msgs/msg/autonomy_status.hpp"
 #include "nif_msgs/msg/control_command.hpp"
-#include "nif_msgs/msg/health.hpp"
+#include "nif_msgs/msg/node_status.hpp"
 #include "nif_msgs/msg/perception3_d.hpp"
 #include "nif_msgs/msg/perception3_d_array.hpp"
 #include "nif_msgs/msg/powertrain_status.hpp"
@@ -30,22 +31,24 @@
 namespace nif {
 namespace common {
 
+
 enum SystemStatusCode : std::uint8_t {
-  NIF_NOT_INITIALIZED = 0,
-  NIF_INITIALIZED = 1,
-  NIF_OK = 127,
-  NIF_ERROR = 253,
-  NIF_FATAL_ERROR = 254,
-  NIF_DEAD = 255
+  SYSTEM_NOT_INITIALIZED = nif_msgs::msg::SystemHealth::SYSTEM_NOT_INITIALIZED,
+  SYSTEM_INITIALIZED = nif_msgs::msg::SystemHealth::SYSTEM_INITIALIZED,
+  SYSTEM_OK = nif_msgs::msg::SystemHealth::SYSTEM_OK,
+  SYSTEM_ERROR = nif_msgs::msg::SystemHealth::SYSTEM_ERROR,
+  SYSTEM_FATAL_ERROR = nif_msgs::msg::SystemHealth::SYSTEM_FATAL_ERROR,
+  SYSTEM_DEAD = nif_msgs::msg::SystemHealth::SYSTEM_DEAD
 };
 
 enum NodeStatusCode : std::uint8_t {
-  NODE_NOT_INITIALIZED = 0,
-  NODE_INITIALIZED = 1,
-  NODE_OK = 127,
-  NODE_ERROR = 253,
-  NODE_FATAL_ERROR = 254,
-  NODE_DEAD = 255
+  NODE_NOT_INITIALIZED = nif_msgs::msg::NodeStatus::NODE_NOT_INITIALIZED,
+  NODE_INITIALIZED = nif_msgs::msg::NodeStatus::NODE_INITIALIZED,
+  NODE_OK = nif_msgs::msg::NodeStatus::NODE_OK,
+  NODE_INACTIVE = nif_msgs::msg::NodeStatus::NODE_INACTIVE,
+  NODE_ERROR = nif_msgs::msg::NodeStatus::NODE_ERROR,
+  NODE_FATAL_ERROR = nif_msgs::msg::NodeStatus::NODE_FATAL_ERROR,
+  NODE_DEAD = nif_msgs::msg::NodeStatus::NODE_DEAD
 };
 
 enum NodeType : std::int8_t {
@@ -102,7 +105,7 @@ using SystemStatus = nif_msgs::msg::SystemStatus;
  * This message contains the health status of the node which should updated in
  * the system status monitor node.
  */
-using Health = nif_msgs::msg::Health;
+using SystemHealth = nif_msgs::msg::SystemHealth;
 
 /**
  * This message contains the perception result which should updated
@@ -135,6 +138,11 @@ using WaypointState = nif_msgs::msg::Waypoints;
  * waypoint mananger.
  */
 using WaypointStateList = nif_msgs::msg::WaypointsArray;
+
+/**
+ * NodeStatus report message
+ */
+using NodeStatus = nif_msgs::msg::NodeStatus;
 
 // TODO: replace with real polynomial!
 using Polynomial = nav_msgs::msg::Odometry;
@@ -170,6 +178,11 @@ using t_oppo_collection =
 
 using t_oppo_collection_states =
     t_oppo_collection<nif::common::msgs::PerceptionResult>;
+
+using t_clock_period_ns = std::chrono::nanoseconds;
+using t_clock_period_us = std::chrono::microseconds;
+using t_clock_period_ms = std::chrono::milliseconds;
+
 
 } // namespace types
 } // namespace common

@@ -1,6 +1,7 @@
 # FROM ros:foxy AS stage-deps
 FROM  registry.gitlab.com/iacbasesoftware/autowareauto/amd64/ade-foxy:iac-dev
 ARG GH_TOKEN=${GH_TOKEN}
+ARG GL_TOKEN=${GL_TOKEN}
 
 RUN apt-get update \
   && apt-get upgrade -y \
@@ -27,12 +28,22 @@ RUN apt-get update \
 RUN apt update && apt install -y python3-vcstool
 RUN cd /opt && \
     git clone --recurse-submodules https://${GH_TOKEN}@github.com/AndreaFinazzi/nif.git && \
-    cd nif && \
-    vcs import < nif.$ROS_DISTRO.repos && \
-    rosdep update && \
-    pip install -r central-requirements.txt && \
-    rosdep install -ir -y --from-path src/ --rosdistro $ROS_DISTRO
-    # rosdep install --as-root "apt:false pip:false" --simulate --reinstall --ignore-src -y --from-paths src | sort >> /opt/ros-deps
+    cd nif && echo $GL_TOKEN > .secret.gitlab && echo $GH_TOKEN > .secret.github && \
+    ./nifupdate
+#     vcs import < nif.$ROS_DISTRO.repos && \
+#     rosdep update && \
+#     pip install -r central-requirements.txt && \
+#     rosdep install -ir -y --from-path src/ --rosdistro $ROS_DISTRO
+#     rosdep install --as-root "apt:false pip:false" --simulate --reinstall --ignore-src -y --from-paths src | sort >> /opt/ros-deps
+
+# GTSAM lib install
+RUN cd /opt && git clone https://github.com/borglab/gtsam.git && \
+    cd /opt/gtsam && \
+    mkdir build && \
+    cd build && \
+    cmake -DGTSAM_INSTALL_GEOGRAPHICLIB=ON -DGTSAM_WITH_EIGEN_MKL=OFF .. && \
+    make install
+
 RUN rm -rf /opt/nif
   
 RUN ( \
@@ -50,6 +61,8 @@ RUN apt-get update \
       ros-foxy-rqt-* \
       ros-foxy-tf2-tools \
       tmux tmuxp terminator nano \
+      ros-${ROS_DISTRO}-plotjuggler \
+      ros-${ROS_DISTRO}-plotjuggler-ros \
   && apt-get clean
 
 COPY ./entrypoint /ade_entrypoint

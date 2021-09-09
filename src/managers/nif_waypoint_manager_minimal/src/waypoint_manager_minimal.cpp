@@ -10,5 +10,9 @@
 WaypointManagerMinimal::WaypointManagerMinimal(
     const vector<string>& wpt_file_path_list_,
     const string& body_frame_id_,
-    const string& global_frame_id_)
-  : IWaypointManager(wpt_file_path_list_, body_frame_id_, global_frame_id_) {}
+    const string& global_frame_id_,
+    const int& spline_interval_)
+  : IWaypointManager(wpt_file_path_list_,
+                     body_frame_id_,
+                     global_frame_id_,
+                     spline_interval_) {}

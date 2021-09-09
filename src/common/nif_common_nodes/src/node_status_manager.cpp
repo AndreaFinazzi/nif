@@ -6,35 +6,46 @@
 #include "nif_common_nodes/i_base_node.h"
 
 using nif::common::NodeStatusManager;
-using nif::common::NodeStatus;
+using nif::common::msgs::NodeStatus;
 
 // Initialize static member
 std::unordered_map<nif::common::types::t_node_id, NodeStatus&> NodeStatusManager::node_statuses_map;
 
 NodeStatusManager::NodeStatusManager(
-    const nif::common::IBaseNode &node,
+    const nif::common::IBaseNode & node,
     const NodeType node_type)
-  : node_status(node, node_type, node.now())
+  : managed_node(node), node_type(node_type)
 {
   NodeStatusManager::node_statuses_map.insert({
-      this->node_status.getNodeId(),
+      this->node_status.node_id,
       this->node_status
   });
 }
 
 NodeStatusManager::~NodeStatusManager() {
   RCLCPP_INFO(rclcpp::get_logger(nif::common::constants::LOG_MAIN_LOGGER_NAME),
-              "Destroying NodeStatusManager for node %s", this->node_status.getNode().get_name());
-  this->node_status.setStatusCode(NodeStatusCode::NODE_DEAD);
+              "Destroying NodeStatusManager for node %s", this->managed_node.get_name());
+  this->node_status.node_status_code = NodeStatusCode::NODE_DEAD;
 }
 
 void NodeStatusManager::update(NodeStatusCode status_code) {
-  this->node_status.setStatusCode(status_code);
+  this->node_status.stamp_last_update = this->managed_node.now();
+  this->node_status.node_status_code = status_code;
 }
 const std::unordered_map<nif::common::types::t_node_id,
-                         nif::common::NodeStatus &> &
+                         nif::common::msgs::NodeStatus &> &
 nif::common::NodeStatusManager::getNodeStatusesMap() {
   return node_statuses_map;
+}
+const rclcpp::Time &nif::common::NodeStatusManager::getTimeLastUpdate() const {
+  return this->node_status.stamp_last_update;
+}
+const nif::common::NodeType
+nif::common::NodeStatusManager::getNodeType() const {
+  return node_type;
+}
+const NodeStatus &nif::common::NodeStatusManager::getNodeStatus() const {
+  return node_status;
 }
 
 // NOT A SINGLETON ANYMORE!

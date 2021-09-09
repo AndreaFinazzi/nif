@@ -16,6 +16,7 @@
 #include "nif_common/types.h"
 #include "nif_common_nodes/node_status_manager.h"
 #include "nif_utils/utils.h"
+#include "nif_msgs/srv/register_node_status.hpp"
 
 #include "tf2_ros/transform_broadcaster.h"
 #include <rclcpp/rclcpp.hpp>
@@ -25,6 +26,12 @@ namespace common {
 
 class IBaseNode : public rclcpp::Node {
 public:
+  inline std::string getNodeStatusTopicName() {
+    return this->get_global_parameter<std::string>(
+           nif::common::constants::parameters::names::TOPIC_ID_PREFIX_NODE_STATUS) +
+           std::string(this->get_name());
+  }
+
 protected:
   // DEPRECATED, will be removed!
   explicit IBaseNode(const std::string &);
@@ -33,7 +40,7 @@ protected:
             const rclcpp::NodeOptions & = rclcpp::NodeOptions{});
 
   virtual ~IBaseNode() {
-    this->node_status_manager.update(NodeStatusCode::NODE_DEAD);
+    this->setNodeStatus(NodeStatusCode::NODE_DEAD);
   }
 
   __attribute_deprecated__
@@ -50,9 +57,22 @@ protected:
   const msgs::SystemStatus &getSystemState() const;
   const msgs::RaceControlStatus &getRaceControlState() const;
 
-  nif::common::NodeStatusManager node_status_manager;
+  bool hasEgoOdometry() const;
+  bool hasEgoPowertrainState() const;
+  bool hasSystemStatus() const;
+  bool hasRaceControlStatus() const;
+
+  const msgs::SystemStatus &getSystemStatus() const;
+  const msgs::RaceControlStatus &getRaceControlStatus() const;
+  const rclcpp::Time &getEgoOdometryUpdateTime() const;
+  const rclcpp::Time &getEgoPowertrainStateUpdateTime() const;
+  const rclcpp::Time &getSystemStatusUpdateTime() const;
+  const rclcpp::Time &getRaceControlStatusUpdateTime() const;
 
   rclcpp::SyncParametersClient::SharedPtr global_parameters_client;
+
+
+  void setNodeStatus(NodeStatusCode status_code);
 
   /**
    * Gets a global parameter through the global parameter client.
@@ -155,13 +175,6 @@ private:
 
   bool has_race_control_status = false;
 
-public:
-  bool hasEgoOdometry() const;
-  bool hasEgoPowertrainState() const;
-  bool hasSystemStatus() const;
-  bool hasRaceControlStatus() const;
-
-private:
   /**
  * Ego odometry last update time.
  */
@@ -190,15 +203,6 @@ private:
   rclcpp::Subscription<nif::common::msgs::PowertrainState>::SharedPtr
       ego_powertrain_state_sub;
 
-public:
-  const msgs::SystemStatus &getSystemStatus() const;
-  const msgs::RaceControlStatus &getRaceControlStatus() const;
-  const rclcpp::Time &getEgoOdometryUpdateTime() const;
-  const rclcpp::Time &getEgoPowertrainStateUpdateTime() const;
-  const rclcpp::Time &getSystemStatusUpdateTime() const;
-  const rclcpp::Time &getRaceControlStatusUpdateTime() const;
-
-private:
   rclcpp::Subscription<nif::common::msgs::SystemStatus>::SharedPtr
       system_status_sub;
   rclcpp::Subscription<nif::common::msgs::RaceControlStatus>::SharedPtr
@@ -243,6 +247,20 @@ private:
   */
   virtual
       void afterRaceControlStatusCallback() {}
+
+
+//  ### NODE STATUS COMPONENTS
+  rclcpp::TimerBase::SharedPtr node_status_timer;
+
+  nif::common::types::t_clock_period_us node_status_timer_period_us;
+
+  rclcpp::Publisher<nif_msgs::msg::NodeStatus>::SharedPtr node_status_pub;
+
+  nif::common::NodeStatusManager node_status_manager;
+
+  rclcpp::Client<nif_msgs::srv::RegisterNodeStatus>::SharedPtr register_node_service_client;
+
+  void nodeStatusTimerCallback();
 
 };
 

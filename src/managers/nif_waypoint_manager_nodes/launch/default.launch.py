@@ -18,7 +18,7 @@ def generate_launch_description():
     #     default=[ThisLaunchFileDir(), '/launch_params.yaml'])
 
     # make sure the dbc file gets installed with the launch file
-    # some_file = get_package_share_directory('nif_localization_nodes') + \
+    # some_file = get_package_share_directory('nif_localization_gtsam_nodes') + \
     #                 ""
     config_file = (
         os.path.join(
@@ -44,7 +44,9 @@ def generate_launch_description():
             LaunchConfiguration('nif_waypoint_manager_param_file')
         ],
         remappings=[
-            ('topic_ego_odometry', 'localization/ego_odom')
+            ('topic_ego_odometry', 'localization/ego_odom'),
+            ('wpt_manager/maptrack_path/global', '/planning/path_global'),
+            ('wpt_manager/maptrack_path/body', '/planning/path_body')
         ]
     )
 

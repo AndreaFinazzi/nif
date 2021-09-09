@@ -11,7 +11,7 @@ def generate_launch_description():
 
     pkg_dir = get_package_share_directory('nif_launch')
     pkg_dir_iac_launch = get_package_share_directory('iac_launch')
-    pkg_dir_localization = get_package_share_directory('nif_localization_nodes')
+    pkg_dir_localization = get_package_share_directory('nif_localization_gtsam_nodes')
 
     robot_description_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(

@@ -12,25 +12,25 @@ from lgsvl_msgs.msg import VehicleControlData
 from std_msgs.msg import Float32, Int8
 from raptor_dbw_msgs.msg import SteeringReport, AcceleratorPedalReport, Brake2Report
 
+from nifpy_common_nodes.base_node import BaseNode
 
-class Drive(Node):
+class Drive(BaseNode):
     def __init__(self):
         super().__init__('lgsvl_publisher')
         self.namespace = ''
-        self.steering_wheel_ratio = 1 / 5 # degrees of wheels rotation per degrees of steering
         # self.namespace = self.get_namespace()
 
         # Subscribe accelerator pedal % -> publish accelerator pedal %
-        self.sub_accel = self.create_subscription(Float32, self.namespace + '/raptor_dbw_interface/accelerator_pedal_cmd', self.callback_accel, 1)
+        self.sub_accel = self.create_subscription(Float32, self.namespace + '/joystick/accelerator_cmd', self.callback_accel, 1)
 
-        # Subscribe steering wheel angle in degrees [-600, 600] -> publish wheels' angle in radians
-        self.sub_steer = self.create_subscription(Float32, self.namespace + '/raptor_dbw_interface/steering_cmd', self.callback_steer, 1)
+        # Subscribe wheels' angle in degrees [-24, 24] -> publish wheels' angle in radians
+        self.sub_steer = self.create_subscription(Float32, self.namespace + '/joystick/steering_cmd', self.callback_steer, 1)
 
         # Subscribe brake pressure in pascal -> publish braking pedal %
-        self.sub_brake = self.create_subscription(Float32, self.namespace + '/raptor_dbw_interface/brake_cmd', self.callback_brake, 1)
+        self.sub_brake = self.create_subscription(Float32, self.namespace + '/joystick/brake_cmd', self.callback_brake, 1)
 
         # Subscribe desired gear -> publish desired gear
-        self.sub_gear = self.create_subscription(Int8, self.namespace + '/raptor_dbw_interface/gear_cmd', self.callback_gear, 1)
+        self.sub_gear = self.create_subscription(Int8, self.namespace + '/joystick/gear_cmd', self.callback_gear, 1)
 
         self.control_pub = self.create_publisher(VehicleControlData, self.namespace + '/sensor/control', 1)
 
@@ -42,8 +42,14 @@ class Drive(Node):
         self.timer = self.create_timer(self.timer_period, self.callback)
         self.acceleration_pct = 0.0  # 0 to 1
         self.braking_pct = 0.0  # 0 to 1
+
+        self.invert_steering = True
+        self.max_steering_angle_deg = 23.3333
+        self.steering_wheel_ratio = 9.
+        self.max_steering_wheel_angle_deg = self.max_steering_angle_deg * self.steering_wheel_ratio
         self.target_wheel_angle_rad = 0.0  # radians
         self.target_wheel_angular_rate = 1.0  # radians / second
+
         self.gear = 1
         self.rolling_counter = 0
 
@@ -83,8 +89,16 @@ class Drive(Node):
         self.acceleration_pct = msg.data
 
     # Subscribe steering wheel angle in degrees [-600, 600] -> publish wheels' angle in radians
+    # IAC car specs:
+    # /raptor_dbw_interface/steering_cmd: steering wheel command [-210, 210] corresponds to desired steering angle [-23.333, 23.333] (ratio 9.0).
+    # /raptor_dbw_interface/steering_report: Actual actuators position in range ~[-206, 206]
+    # Positive angle: left steering
+    # LGSVL Simulator
     def callback_steer(self, msg):
-        wheels_angle_deg = msg.data * self.steering_wheel_ratio
+        wheels_angle_deg = msg.data if not self.invert_steering else -msg.data
+        if abs(wheels_angle_deg) > self.max_steering_angle_deg:
+            wheels_angle_deg = self.max_steering_angle_deg if wheels_angle_deg > 0 else -self.max_steering_angle_deg
+
         self.target_wheel_angle_rad = wheels_angle_deg * math.pi / 180
 
     # Subscribe brake pressure in pascal -> publish braking pedal %

@@ -13,5 +13,8 @@ repositories:
     type: git
     url: https://gitlab.com/IACBaseSoftware/raptor-dbw-ros2.git
     version: master
-    
-  
+
+  src/external/official-novatel-driver:
+    type: git
+    url: https://oauth2:$GL_TOKEN@gitlab.com/IACBaseSoftware/official-novatel-driver.git
+    version: main
