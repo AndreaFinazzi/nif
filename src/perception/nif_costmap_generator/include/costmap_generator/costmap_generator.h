@@ -109,13 +109,14 @@ private:
       const sensor_msgs::msg::PointCloud2::ConstSharedPtr &outer_msg);
 
   pcl::PointCloud<pcl::PointXYZI>::Ptr downsample(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, double resolution);
+  void TransformPointsToGlobal(const pcl::PointCloud<pcl::PointXYZI>::Ptr &CloudIn, pcl::PointCloud<pcl::PointXYZI>::Ptr &CloudOut);
 
-  //   bool has_subscribed_wayarea_;
+      //   bool has_subscribed_wayarea_;
 
-  //   bool loaded_lanelet_map_ = false;
-  //   bool use_all_road_lanelets_ = true;
+      //   bool loaded_lanelet_map_ = false;
+      //   bool use_all_road_lanelets_ = true;
 
-  std::string lidar_frame_;
+      std::string lidar_frame_;
   std::string map_frame_;
   std::string scan_topic_;
   std::string points_topic_name_;
