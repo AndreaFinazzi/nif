@@ -26,36 +26,31 @@ GeoFenceLoader::GeoFenceLoader(const std::string &node_name_)
         throw std::runtime_error("Invalid pointcloud paths.");
       }
 
-  // setup QOS to be best effort
-  auto qos = rclcpp::QoS(
-      rclcpp::QoSInitialization(RMW_QOS_POLICY_HISTORY_KEEP_LAST, 10));
-  qos.best_effort();
-
   pubOuterGeofence = this->create_publisher<sensor_msgs::msg::PointCloud2>(
-      "/geofence_outer", qos);
+      "/geofence_outer", nif::common::constants::QOS_SENSOR_DATA);
   pubInnerGeofence = this->create_publisher<sensor_msgs::msg::PointCloud2>(
-      "/geofence_inner", qos);
+      "/geofence_inner", nif::common::constants::QOS_SENSOR_DATA);
 
   pubInnerGeofencePath =
-      this->create_publisher<nav_msgs::msg::Path>("/geofence_path_inner", qos);
+      this->create_publisher<nav_msgs::msg::Path>("/geofence_path_inner", nif::common::constants::QOS_SENSOR_DATA);
   pubOuterGeofencePath =
-      this->create_publisher<nav_msgs::msg::Path>("/geofence_path_outer", qos);
+      this->create_publisher<nav_msgs::msg::Path>("/geofence_path_outer", nif::common::constants::QOS_SENSOR_DATA);
   pubInnerSegmentPath =
-      this->create_publisher<nav_msgs::msg::Path>("/segment_path_inner", qos);
+      this->create_publisher<nav_msgs::msg::Path>("/segment_path_inner", nif::common::constants::QOS_SENSOR_DATA);
   pubOuterSegmentPath =
-      this->create_publisher<nav_msgs::msg::Path>("/segment_path_outer", qos);
+      this->create_publisher<nav_msgs::msg::Path>("/segment_path_outer", nif::common::constants::QOS_SENSOR_DATA);
 
   pubInnerDistance = this->create_publisher<std_msgs::msg::Float32>(
-      "/geofence_inner_distance", qos);
+      "/geofence_inner_distance", nif::common::constants::QOS_SENSOR_DATA);
   pubOuterDistance = this->create_publisher<std_msgs::msg::Float32>(
-      "/geofence_outer_distance", qos);
+      "/geofence_outer_distance", nif::common::constants::QOS_SENSOR_DATA);
 
   // TODO : use this "ON_THE_TRACK" flag in the system state manager
   pubOnTheTrack =
-      this->create_publisher<std_msgs::msg::Bool>("/bool/on_the_track", qos);
+      this->create_publisher<std_msgs::msg::Bool>("/bool/on_the_track", nif::common::constants::QOS_SENSOR_DATA);
 
   subOdometry = this->create_subscription<nav_msgs::msg::Odometry>(
-      "/out_odometry_ekf_estimated", qos,
+      "/out_odometry_ekf_estimated", nif::common::constants::QOS_EGO_ODOMETRY,
       std::bind(&GeoFenceLoader::EKFOdometryCallback, this,
                 std::placeholders::_1));
 

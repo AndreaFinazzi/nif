@@ -34,7 +34,6 @@ def generate_launch_description():
     else:
         raise RuntimeError("ERROR: invalid track provided: {}".format(track))
 
-
     global_map = os.path.join(
             get_package_share_directory("nif_localization_nodes"),
             "map",
@@ -61,7 +60,6 @@ def generate_launch_description():
     localization_node = Node(
                 package="nif_localization_nodes",
                 executable="nif_localization_nodes_exe",
-                name="nif_localization_nodes",
                 output="screen",
                 emulate_tty=True,
                 namespace=ns,
@@ -78,6 +76,8 @@ def generate_launch_description():
                     ("in_bestpos", "novatel_bottom/bestpos"),
                     ("in_imu", "novatel_bottom/imu/data"),
                     ("in_wheel_speed_report", "raptor_dbw_interface/wheel_speed_report"),
+                    ("out_odometry_ekf_estimated", "/localization/ego_odom"),
+                    ("out_odometry_bestpos", "/localization/ego_odom_bestpos"),
                 ]
             )
 

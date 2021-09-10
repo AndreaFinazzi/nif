@@ -38,6 +38,8 @@ def generate_launch_description():
             {
                 "ltp_frame": "odom",
                 "base_link_frame": "base_link",
+                "ltp_latitude": 39.8125900071711,
+                "ltp_longitude": -86.3418060783425,
             },
             {"subscribe_novatel_oem7_msgs": True },
             {"subscribe_novatel_gps_msgs": False }

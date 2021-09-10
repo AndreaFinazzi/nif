@@ -21,7 +21,7 @@ from geometry_msgs.msg import Quaternion
 def get_share_file(package_name, file_name):
     return os.path.join(get_package_share_directory(package_name), file_name)
 
-
+# TODO clean this out
 lib_path_default = get_share_file('nif_multilayer_planning_nodes',
                                   "../../lib/GraphBasedLocalTrajectoryPlanner/graph_ltpl")
 
@@ -76,13 +76,20 @@ class GraphBasedPlanner(rclpy.node.Node):
         # define all relevant paths
         path_dict = {
             # 'globtraj_input_path': toppath + "/inputs/traj_ltpl_cl/traj_ltpl_cl_" + track_specifier + ".csv",
-            'globtraj_input_path': str(self.get_parameter("globtraj_input_path").get_parameter_value()),
-            'graph_store_path': str(self.get_parameter("graph_store_path").get_parameter_value()),
-            'ltpl_offline_param_path': str(self.get_parameter("ltpl_offline_param_path").get_parameter_value()),
-            'ltpl_online_param_path': str(self.get_parameter("ltpl_online_param_path").get_parameter_value()),
-            'log_path': str(self.get_parameter("log_path").get_parameter_value()),
-            'graph_log_id': str(self.get_parameter("graph_log_id").get_parameter_value()),
+            'globtraj_input_path': self.get_parameter("globtraj_input_path").get_parameter_value().string_value,
+            'graph_store_path': self.get_parameter("graph_store_path").get_parameter_value().string_value,
+            'ltpl_offline_param_path': self.get_parameter("ltpl_offline_param_path").get_parameter_value().string_value,
+            'ltpl_online_param_path': self.get_parameter("ltpl_online_param_path").get_parameter_value().string_value,
+            'log_path': self.get_parameter("log_path").get_parameter_value().string_value,
+            'graph_log_id': self.get_parameter("graph_log_id").get_parameter_value().string_value,
         }
+
+        self.get_logger().info(path_dict['globtraj_input_path'])
+        self.get_logger().info(path_dict['graph_store_path'])
+        self.get_logger().info(path_dict['ltpl_offline_param_path'])
+        self.get_logger().info(path_dict['ltpl_online_param_path'])
+        self.get_logger().info(path_dict['log_path'])
+        self.get_logger().info(path_dict['graph_log_id'])
 
         # Subscribers and Publisher
         self.local_maptrack_inglobal_pub = self.create_publisher(Path, 'out_local_maptrack_inglobal', rclpy.qos.qos_profile_sensor_data)

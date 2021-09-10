@@ -38,7 +38,6 @@ def generate_launch_description():
     localization_node = Node(
                 package="nif_localization_nodes",
                 executable="nif_localization_nodes_exe",
-                name="nif_localization_nodes",
                 output="screen",
                 emulate_tty=True,
                 namespace=ns,

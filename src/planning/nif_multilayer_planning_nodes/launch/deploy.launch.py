@@ -70,10 +70,8 @@ def generate_launch_description():
             }
         ],
         remappings={
-            ('out_local_maptrack_inglobal', '/planning/path_global'),
-            # ('in_vehicle_odometry', '/localization/ego_odom'),
-            ('in_ego_odometry', '/sensor/odom_converted'),
-            # ('in_perception_result', '/perception/result'),
+            ('out_local_maptrack_inglobal', '/planning/graph/path_global'),
+            ('in_ego_odometry', '/localization/ego_odom'),
         }
     )
 
