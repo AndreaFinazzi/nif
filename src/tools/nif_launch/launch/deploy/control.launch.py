@@ -62,7 +62,7 @@ def generate_launch_description():
 
     control_lqr_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            get_package_share_directory('nif_control_lqr_nodes') + '/launch/sim.launch.py'
+            get_package_share_directory('nif_control_lqr_nodes') + '/launch/deploy.launch.py'
         )
     )
 

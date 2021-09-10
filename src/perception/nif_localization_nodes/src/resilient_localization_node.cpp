@@ -14,37 +14,32 @@ using namespace nif::common::frame_id::localization;
 ResilientLocalization::ResilientLocalization(const std::string &node_name_)
     : Node(node_name_) {
   this->declare_parameter<double>("thres_for_distance_error_flag", double(2.0));
-     
-  // setup QOS to be best effort
-  auto qos = rclcpp::QoS(
-      rclcpp::QoSInitialization(RMW_QOS_POLICY_HISTORY_KEEP_LAST, 10));
-  qos.best_effort();
 
   pubOuterError = this->create_publisher<std_msgs::msg::Float32>(
-      "/error_outer_distance", 10);
+      "/error_outer_distance", nif::common::constants::QOS_SENSOR_DATA);
   pubOuterErrorFlag = this->create_publisher<std_msgs::msg::Bool>(
-      "/Bool/outer_distance_error_high", 10);
+      "/Bool/outer_distance_error_high", nif::common::constants::QOS_SENSOR_DATA);
 
   subOdometry = this->create_subscription<nav_msgs::msg::Odometry>(
-      "/Odometry/ekf_estimated", 10,
+      "/Odometry/ekf_estimated", nif::common::constants::QOS_EGO_ODOMETRY,
       std::bind(&ResilientLocalization::EKFOdometryCallback, this,
                 std::placeholders::_1));
 
   subInnerDistance = this->create_subscription<std_msgs::msg::Float32>(
-      "/geofence_inner_distance", 10,
+      "/geofence_inner_distance", nif::common::constants::QOS_SENSOR_DATA,
       std::bind(&ResilientLocalization::InnerGeofenceDistanceCallback, this,
                 std::placeholders::_1));
   subOuterDistance = this->create_subscription<std_msgs::msg::Float32>(
-      "/geofence_outer_distance", 10,
+      "/geofence_outer_distance", nif::common::constants::QOS_SENSOR_DATA,
       std::bind(&ResilientLocalization::OuterGeofenceDistanceCallback, this,
                 std::placeholders::_1));
 
   subInnerWallDetection = this->create_subscription<std_msgs::msg::Float32>(
-      "/detected_inner_distance", 10,
+      "/detected_inner_distance", nif::common::constants::QOS_SENSOR_DATA,
       std::bind(&ResilientLocalization::InnerDetectedDistanceCallback, this,
                 std::placeholders::_1));
   subOuterWallDetection = this->create_subscription<std_msgs::msg::Float32>(
-      "/detected_outer_distance", 10,
+      "/detected_outer_distance", nif::common::constants::QOS_SENSOR_DATA,
       std::bind(&ResilientLocalization::OuterDetectedDistanceCallback, this,
                 std::placeholders::_1));
 

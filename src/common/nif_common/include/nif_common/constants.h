@@ -96,27 +96,27 @@ const rclcpp::QoS QOS_PLANNING = rclcpp::SensorDataQoS();
 
 /**
  * Default QoS parameter for ControlCommand topics.
- * TODO verify and improve.
+ * TODO verify and improve. Should be best-effort? Rolled-back to favour IAC ssc_interface.
  */
-const rclcpp::QoS QOS_CONTROL_CMD = rclcpp::SensorDataQoS();
+const rclcpp::QoS QOS_CONTROL_CMD = rclcpp::QoS{1};
 
 /**
  * Default QoS parameter for ControlCommand override topics.
  * TODO verify and improve.
  */
-const rclcpp::QoS QOS_CONTROL_CMD_OVERRIDE = rclcpp::QoS(
-    rclcpp::QoSInitialization::from_rmw(
-    {
-    RMW_QOS_POLICY_HISTORY_KEEP_LAST,
-    1,
-    RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT,
-    RMW_QOS_POLICY_DURABILITY_VOLATILE,
-    RMW_QOS_DEADLINE_DEFAULT,
-    RMW_QOS_LIFESPAN_DEFAULT,
-    RMW_QOS_POLICY_LIVELINESS_SYSTEM_DEFAULT,
-    RMW_QOS_LIVELINESS_LEASE_DURATION_DEFAULT,
-    false
-    }));
+const rclcpp::QoS QOS_CONTROL_CMD_OVERRIDE = rclcpp::SensorDataQoS();
+    //    rclcpp::QoS(rclcpp::QoSInitialization::from_rmw(
+//    {
+//    RMW_QOS_POLICY_HISTORY_KEEP_LAST,
+//    1,
+//    RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT,
+//    RMW_QOS_POLICY_DURABILITY_VOLATILE,
+//    RMW_QOS_DEADLINE_DEFAULT,
+//    RMW_QOS_LIFESPAN_DEFAULT,
+//    RMW_QOS_POLICY_LIVELINESS_SYSTEM_DEFAULT,
+//    RMW_QOS_LIVELINESS_LEASE_DURATION_DEFAULT,
+//    false
+//    }));
 
 /**
  * Name for the main logger.
