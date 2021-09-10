@@ -34,14 +34,13 @@ ament_auto_add_library(nif_costmap_generator SHARED
     # src/bboxes_to_costmap.cpp
     # src/visual_to_costmap.cpp 
 )
-
 target_link_libraries(nif_costmap_generator ${PCL_LIBRARIES})
 
-add_executable(${PROJECT_NAME}_exe 
-  src/costmap_generator_main.cpp
-)
-target_link_libraries(${PROJECT_NAME}_exe 
+ament_auto_add_executable(${PROJECT_NAME}_exe
+  src/costmap_generator_main.cpp)
+target_link_libraries(${PROJECT_NAME}_exe
   nif_costmap_generator
+  ${PCL_LIBRARIES}
 )
 
 if(BUILD_TESTING)

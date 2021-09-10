@@ -15,6 +15,11 @@
 #include <chrono>
 #include <rclcpp/rclcpp.hpp>
 
+#include "nif_common/types.h"
+#include "nif_common_nodes/i_base_node.h"
+#include "nif_frame_id/frame_id.h"
+#include "nif_localization_minimal/localization_minimal.h"
+
 #include <grid_map_core/GridMap.hpp>
 #include <grid_map_core/TypeDefs.hpp>
 #include <grid_map_msgs/msg/grid_map.hpp>
@@ -99,8 +104,6 @@ private:
   bool use_laserscan_;
   bool use_dynamic_trajectories_;
 
-  bool bPoints, bBoundingBox, bRoadBoundary, bVisual;
-
   void timer_callback();
   void sensorPointsCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
   void OdometryCallback(const nav_msgs::msg::Odometry::SharedPtr msg);
@@ -109,19 +112,22 @@ private:
       const sensor_msgs::msg::PointCloud2::ConstSharedPtr &outer_msg);
 
   pcl::PointCloud<pcl::PointXYZI>::Ptr downsample(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, double resolution);
-  void TransformPointsToGlobal(const pcl::PointCloud<pcl::PointXYZI>::Ptr &CloudIn, pcl::PointCloud<pcl::PointXYZI>::Ptr &CloudOut);
+  void
+  TransformPointsToGlobal(const pcl::PointCloud<pcl::PointXYZI>::Ptr &CloudIn,
+                          pcl::PointCloud<pcl::PointXYZI>::Ptr &CloudOut,
+                          const double &veh_x_, const double &veh_y_,
+                          const double &veh_yaw_);
 
-      //   bool has_subscribed_wayarea_;
+  void SearchPointsOntrack(
+      const std::vector<std::pair<double, double>> &inner_array_in,
+      const std::vector<std::pair<double, double>> &outer_array_in,
+      pcl::PointCloud<pcl::PointXYZI>::Ptr &CloudIn,
+      pcl::PointCloud<pcl::PointXYZI>::Ptr &CloudOut);
 
-      //   bool loaded_lanelet_map_ = false;
-      //   bool use_all_road_lanelets_ = true;
-
-      std::string lidar_frame_;
+  std::string lidar_frame_;
   std::string map_frame_;
-  std::string scan_topic_;
   std::string points_topic_name_;
   std::string output_map_name_;
-  double visual_expand_size_;
   double grid_min_value_;
   double grid_max_value_;
   double grid_resolution_;
@@ -139,8 +145,14 @@ private:
   double m_veh_y;
   double m_veh_roll, m_veh_pitch, m_veh_yaw;
 
+  std::vector<std::pair<double, double>> m_OuterGeoFence;
+  std::vector<std::pair<double, double>> m_InnerGeoFence;
+  
   bool bGeoFence;
+  bool bOdometry;
+  bool bPoints;
 
+  pcl::PointCloud<pcl::PointXYZI>::Ptr m_in_sensor_points;
   pcl::PointCloud<pcl::PointXYZI>::Ptr m_inner_geofence_points;
   pcl::PointCloud<pcl::PointXYZI>::Ptr m_outer_geofence_points;
 
@@ -149,7 +161,12 @@ private:
 
   rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr pub_occupancy_grid_;
 
-  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_points_;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_points_on_global_;
+
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_points_on_track_;
+
+  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr
+          sub_points_;
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr sub_odometry_;
   rclcpp::TimerBase::SharedPtr sub_timer_;
 

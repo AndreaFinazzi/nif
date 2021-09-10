@@ -10,10 +10,11 @@
 using namespace message_filters;
 using namespace std::placeholders;
 using namespace nif::perception::costmap;
+using namespace nif::common::frame_id::localization;
 
 // Constructor
 CostmapGenerator::CostmapGenerator() 
-: Node("indy_costmap_generator"), bPoints(false), bBoundingBox(false), bRoadBoundary(false), bVisual(false),
+: Node("indy_costmap_generator"), 
   SENSOR_POINTS_COSTMAP_LAYER_("sensor_points"), COMBINED_COSTMAP_LAYER_("costmap")
 {
   //   : nh_(nh), private_nh_(private_nh), has_subscribed_wayarea_(false),
@@ -48,25 +49,21 @@ CostmapGenerator::CostmapGenerator()
       rclcpp::QoSInitialization(RMW_QOS_POLICY_HISTORY_KEEP_LAST, 10));
   qos.best_effort();
 
-  // pub_costmap_ = nh_.advertise<grid_map_msgs::GridMap>("semantics/costmap", 1);
-  pub_occupancy_grid_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(output_map_name_, 10);
-  // pub_road_occupancy_grid_ =
-  //     nh_.advertise<nav_msgs::OccupancyGrid>("/road_occupancy_grid", 1);
+  pub_occupancy_grid_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(output_map_name_, nif::common::constants::QOS_SENSOR_DATA);
+  pub_points_on_global_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(
+      "/points_on_global", nif::common::constants::QOS_SENSOR_DATA);
+  pub_points_on_track_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(
+      "/points_on_track", nif::common::constants::QOS_SENSOR_DATA);
 
-  // sub_points_ = nh_.subscribe(points_topic_name_, 10,
-  //                             &CostmapGenerator::sensorPointsCallback, this);
-  // // sub_lane_boundary_ =
-  // //     nh_.subscribe("/hdmap/lane_boundary", 10,
-  // //                   &CostmapGenerator::laneBoundaryCallback, this);
   using namespace std::chrono_literals; // NOLINT
   sub_timer_ = this->create_wall_timer(10ms, std::bind(&CostmapGenerator::timer_callback, this));
-  sub_points_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(points_topic_name_, 10,
-                          std::bind(&CostmapGenerator::sensorPointsCallback, this, std::placeholders::_1));
-  // sub_laserscan_ =
-  //     nh_.subscribe(scan_topic_, 1, &CostmapGenerator::LaserScanCallback, this);
+  sub_points_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
+      points_topic_name_, nif::common::constants::QOS_SENSOR_DATA,
+      std::bind(&CostmapGenerator::sensorPointsCallback, this,
+                std::placeholders::_1));
 
   sub_odometry_ = this->create_subscription<nav_msgs::msg::Odometry>(
-      "out_odometry_ekf_estimated", 10,
+      "/out_odometry_ekf_estimated", nif::common::constants::QOS_EGO_ODOMETRY,
       std::bind(&CostmapGenerator::OdometryCallback, this,
                 std::placeholders::_1));
 
@@ -111,8 +108,33 @@ void CostmapGenerator::respond()
 
 void CostmapGenerator::run() {
 
-  // if(bEnablePotential_)
-  //   MakeInflationWithPoints();
+  if (bGeoFence && bPoints && bOdometry)
+  {
+    pcl::PointCloud<pcl::PointXYZI>::Ptr PointsOnGlobal(
+        new pcl::PointCloud<pcl::PointXYZI>);
+    TransformPointsToGlobal(m_in_sensor_points, PointsOnGlobal, m_veh_x, m_veh_y, m_veh_yaw);
+
+    sensor_msgs::msg::PointCloud2 points_on_global_msg;
+    pcl::toROSMsg(*PointsOnGlobal, points_on_global_msg);
+    points_on_global_msg.header.stamp = this->now();
+    points_on_global_msg.header.frame_id = ODOM;
+    pub_points_on_global_->publish(points_on_global_msg);
+    std::cout << "points size : " << PointsOnGlobal->points.size() << std::endl;
+
+    pcl::PointCloud<pcl::PointXYZI>::Ptr PointsOnTrack(
+        new pcl::PointCloud<pcl::PointXYZI>);
+    SearchPointsOntrack(m_InnerGeoFence, m_OuterGeoFence, m_in_sensor_points,
+                        PointsOnTrack);
+
+    sensor_msgs::msg::PointCloud2 points_on_track_msg;
+    pcl::toROSMsg(*PointsOnTrack, points_on_track_msg);
+    points_on_track_msg.header.stamp = this->now();
+    points_on_track_msg.header.frame_id = ODOM;
+    pub_points_on_track_->publish(points_on_track_msg);
+  }
+
+    // if(bEnablePotential_)
+    //   MakeInflationWithPoints();
   generateCombinedCostmap();
   publishRosMsg(&costmap_);
   // publishRoadBoundaryMsg(&RoadBoundarycostmap_);
@@ -127,17 +149,16 @@ void CostmapGenerator::sensorPointsCallback(const sensor_msgs::msg::PointCloud2:
   if (!use_points_) {
     return;
   }
-  pcl::PointCloud<pcl::PointXYZI>::Ptr in_sensor_points(new pcl::PointCloud<pcl::PointXYZI>);
-  pcl::PointCloud<pcl::PointXYZI>::Ptr voxel_filtered_points(
-      new pcl::PointCloud<pcl::PointXYZI>);
-  pcl::fromROSMsg(*msg, *in_sensor_points);
+  m_in_sensor_points.reset(new pcl::PointCloud<pcl::PointXYZI>());
 
-  // voxel_filtered_points = downsample(in_sensor_points, grid_resolution_);
+  pcl::fromROSMsg(*msg, *m_in_sensor_points);
 
   costmap_[SENSOR_POINTS_COSTMAP_LAYER_] =
-      generateSensorPointsCostmap(in_sensor_points);
+      generateSensorPointsCostmap(m_in_sensor_points);
   m_in_header = msg->header;
   bPoints = true;
+
+  // std::cout << "points received" << std::endl;
 }
 
 void CostmapGenerator::OdometryCallback(
@@ -150,6 +171,9 @@ void CostmapGenerator::OdometryCallback(
   tf2::convert(msg->pose.pose.orientation, tf_quat);
   tf2::Matrix3x3 mat(tf_quat);
   mat.getRPY(m_veh_roll, m_veh_pitch, m_veh_yaw);
+  bOdometry = true;
+
+  // std::cout << "odometry received" << std::endl;
 }
 
 void CostmapGenerator::MessegefilteringCallback(
@@ -162,15 +186,54 @@ void CostmapGenerator::MessegefilteringCallback(
   pcl::fromROSMsg(*inner_msg, *m_inner_geofence_points);
   pcl::fromROSMsg(*outer_msg, *m_outer_geofence_points);
 
+  if (bGeoFence)
+    return;
+
+  for (auto point : m_inner_geofence_points->points) {
+      std::pair<double, double> xy_buf;
+      xy_buf.first = point.x;
+      xy_buf.second = point.y;
+      m_InnerGeoFence.push_back(xy_buf);
+  }
+  std::pair<double, double> first_point_inner;
+  first_point_inner.first = m_inner_geofence_points->points[0].x;
+  first_point_inner.second = m_inner_geofence_points->points[0].y;
+  m_InnerGeoFence.push_back(first_point_inner);
+
+  for (auto point : m_outer_geofence_points->points) {
+    std::pair<double, double> xy_buf;
+    xy_buf.first = point.x;
+    xy_buf.second = point.y;
+    m_OuterGeoFence.push_back(xy_buf);
+  }
+  std::pair<double, double> first_point_outer;
+  first_point_outer.first = m_outer_geofence_points->points[0].x;
+  first_point_outer.second = m_outer_geofence_points->points[0].y;
+  m_OuterGeoFence.push_back(first_point_outer);
+
   bGeoFence = true;
+
+  // std::cout << "geofence received" << std::endl;
 }
 
 void CostmapGenerator::TransformPointsToGlobal(
     const pcl::PointCloud<pcl::PointXYZI>::Ptr &CloudIn,
-    pcl::PointCloud<pcl::PointXYZI>::Ptr &CloudOut)
-    {
-      
-    }
+    pcl::PointCloud<pcl::PointXYZI>::Ptr &CloudOut, 
+    const double &veh_x_, const double &veh_y_, const double &veh_yaw_) {
+
+    for (auto point : CloudIn->points) {
+    pcl::PointXYZI pointOnGlobal;
+    pointOnGlobal.x = point.x * cos(veh_yaw_) - point.y * sin(veh_yaw_) + veh_x_;
+    pointOnGlobal.y = point.x * sin(veh_yaw_) + point.y * cos(veh_yaw_) + veh_y_;
+    pointOnGlobal.z = point.z;
+    double dist =
+        sqrt(pow(point.x, 2) + pow(point.y, 2));
+    pointOnGlobal.intensity = dist;
+    CloudOut->points.push_back(pointOnGlobal);
+  }
+}
+
+
 
     // void CostmapGenerator::MakeInflationWithPoints()
     // {
@@ -340,12 +403,6 @@ grid_map::Matrix CostmapGenerator::generateSensorPointsCostmap(
 //   return bboxes_costmap;
 // }
 
-// grid_map::Matrix CostmapGenerator::generateVisualCostmap(
-//     const detection_msgs::BoundingBoxArrayConstPtr &msg) {
-//   grid_map::Matrix visual_costmap = visual2costmap_.makeCostmapFromBBoxes(
-//       costmap_, visual_expand_size_, size_of_expansion_kernel_, msg);
-//   return visual_costmap;
-// }
 
 void CostmapGenerator::generateCombinedCostmap() {
   //   // assuming combined_costmap is calculated by element wise max operation
@@ -468,3 +525,73 @@ void CostmapGenerator::publishRosMsg(grid_map::GridMap *map) {
 //   // std::cout << max << std::endl;
 //   return data;
 // }
+
+void CostmapGenerator::SearchPointsOntrack(
+    const std::vector<std::pair<double, double>> &inner_array_in,
+    const std::vector<std::pair<double, double>> &outer_array_in,
+    pcl::PointCloud<pcl::PointXYZI>::Ptr &CloudIn,
+    pcl::PointCloud<pcl::PointXYZI>::Ptr &CloudOut) {
+
+  bool first_point_for_inner = true;
+  bool first_point_for_outer = true;
+
+  double prev_geofence_x, prev_geofence_y;
+  pcl::PointCloud<pcl::PointXYZI>::Ptr inner_boundary_filtered(
+      new pcl::PointCloud<pcl::PointXYZI>);
+
+  // Sequentially find the points located on the racing track
+  // Firstly, search the points from inner boundary condition
+  // INPUT : Origin points
+  // OUTPUT :  inner_boudnary filtered points
+  for (auto point_buf : CloudIn->points) {
+    for (auto geofence_xy : inner_array_in) {
+
+      if (first_point_for_inner) {
+        prev_geofence_x = geofence_xy.first;
+        prev_geofence_y = geofence_xy.second;
+        first_point_for_inner = false;
+        continue;
+      }
+
+      double cross_prod_z =
+          ((prev_geofence_x - point_buf.x) * (geofence_xy.second - point_buf.y) -
+           (prev_geofence_y - point_buf.y) * (geofence_xy.first - point_buf.x));
+
+      prev_geofence_x = geofence_xy.first;
+      prev_geofence_y = geofence_xy.second;
+
+      //put the points which are posed on the right from inner boundary
+      if (cross_prod_z < 0.)
+      {
+        inner_boundary_filtered->points.push_back(point_buf);
+      }
+    }
+  }
+  // Secondely, search the points from outer boundary condition
+  // INPUT : inner_boudnary filtered points
+  // OUTPUT : both boundary filtered points = CloudOut
+  for (auto point_buf : inner_boundary_filtered->points) {
+    for (auto geofence_xy : outer_array_in) {
+
+      if (first_point_for_outer) {
+        prev_geofence_x = geofence_xy.first;
+        prev_geofence_y = geofence_xy.second;
+        first_point_for_outer = false;
+        continue;
+      }
+
+      double cross_prod_z =
+          ((prev_geofence_x - point_buf.x) *
+               (geofence_xy.second - point_buf.y) -
+           (prev_geofence_y - point_buf.y) * (geofence_xy.first - point_buf.x));
+
+      prev_geofence_x = geofence_xy.first;
+      prev_geofence_y = geofence_xy.second;
+
+      // put the points which are posed on the right from inner boundary
+      if (cross_prod_z > 0.) {
+        CloudOut->points.push_back(point_buf);
+      }
+    }
+  }
+}
