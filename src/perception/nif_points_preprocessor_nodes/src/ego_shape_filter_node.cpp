@@ -28,6 +28,8 @@ EgoShapeFilterNode::EgoShapeFilterNode(const std::string &node_name_)
   this->declare_parameter<double>("height_upper_distance", double(1.0));
   this->declare_parameter<double>("resolution", double(0.25));
   this->declare_parameter<double>("count_threshold", double(3.));
+  this->declare_parameter<double>("normal_angle_thres", double(50.));
+  this->declare_parameter<int>("ransac_pts_thresh", int(200));
 
   respond();
 
@@ -44,6 +46,8 @@ EgoShapeFilterNode::EgoShapeFilterNode(const std::string &node_name_)
   std::cout << "height_lower_distance: " << height_lower_distance_ << std::endl;
   std::cout << "height_upper_distance: " << height_upper_distance_ << std::endl;
   std::cout << "resolution: " << resolution_ << std::endl;
+  std::cout << "normal_angle_thres: " << normal_angle_thres_ << std::endl;
+  std::cout << "ransac_pts_thresh: " << ransac_pts_thresh_ << std::endl;
 
   // setup QOS to be best effort
   auto qos = rclcpp::QoS(
@@ -105,6 +109,9 @@ void EgoShapeFilterNode::respond() {
 
   this->get_parameter("resolution", resolution_);
   this->get_parameter("count_threshold", count_threshold_);
+  this->get_parameter("normal_angle_thres", normal_angle_thres_);
+  this->get_parameter("ransac_pts_thresh", ransac_pts_thresh_);
+
 }
 
 void EgoShapeFilterNode::EgoShape(
@@ -174,8 +181,10 @@ void EgoShapeFilterNode::mergedPointsCallback(
   pcl::PointCloud<pcl::PointXYZI>::Ptr CloudShapeFiltered(
       new pcl::PointCloud<pcl::PointXYZI>);
 
+  RCLCPP_INFO(this->get_logger(), "-------------");
+
   pcl::fromROSMsg(*msg, *CloudIn);
-  CloudVoxelized = downsample(CloudIn, 0.25);
+  CloudVoxelized = downsample(CloudIn, resolution_);
 
   EgoShape(CloudVoxelized, CloudShapeFiltered, left_lower_distance_,
            right_lower_distance_, front_lower_distance_, rear_lower_distance_,
@@ -218,10 +227,11 @@ void EgoShapeFilterNode::mergedPointsCallback(
   outer_bound_distance = 0;
   // detected left_wall coefficients
   if (left_wall) {
-    for (int i = 0; i < 4; i++) {
-      std::cout << "left wall" << (*left_wall)[i] << std::endl;
-    }
+    // for (int i = 0; i < 4; i++) {
+    //   std::cout << "left wall" << (*left_wall)[i] << std::endl;
+    // }
     inner_bound_distance = (*left_wall)[3];
+    RCLCPP_INFO(this->get_logger(), "Left margin : %f", inner_bound_distance);
   }
   sensor_msgs::msg::PointCloud2 cloud_left_ransac_filtered_msg;
   pcl::toROSMsg(*CloudRANSACLeft, cloud_left_ransac_filtered_msg);
@@ -240,10 +250,11 @@ void EgoShapeFilterNode::mergedPointsCallback(
 
   // detected right_wall coefficients
   if (right_wall) {
-    for (int i = 0; i < 4; i++) {
-      std::cout << "right wall" << (*right_wall)[i] << std::endl;
-    }
+    // for (int i = 0; i < 4; i++) {
+    //   std::cout << "right wall" << (*right_wall)[i] << std::endl;
+    // }
     outer_bound_distance = (*right_wall)[3];
+    RCLCPP_INFO(this->get_logger(), "Right margin : %f", outer_bound_distance);
   }
   sensor_msgs::msg::PointCloud2 cloud_right_ransac_filtered_msg;
   pcl::toROSMsg(*CloudRANSACRight, cloud_right_ransac_filtered_msg);
@@ -272,7 +283,6 @@ void EgoShapeFilterNode::mergedPointsCallback(
                                               front_upper_distance_,
                                               rear_upper_distance_));
 
-  std::cout << "working" << std::endl;
 }
 
 void EgoShapeFilterNode::RegisterPointToGrid(
@@ -360,7 +370,7 @@ EgoShapeFilterNode::downsample(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud,
   pcl::PointCloud<pcl::PointXYZI>::Ptr filtered(
       new pcl::PointCloud<pcl::PointXYZI>);
   pcl::ApproximateVoxelGrid<pcl::PointXYZI> voxelgrid;
-  voxelgrid.setLeafSize(resolution, resolution, resolution);
+  voxelgrid.setLeafSize(resolution, resolution, 0.05);
   voxelgrid.setInputCloud(cloud);
   voxelgrid.filter(*filtered);
   return filtered;
@@ -374,6 +384,12 @@ EgoShapeFilterNode::downsample(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud,
 boost::optional<Eigen::Vector4f>
 EgoShapeFilterNode::wall_detect(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud,
                                 pcl::PointCloud<pcl::PointXYZI>::Ptr cloudOut) {
+
+  // too few points for RANSAC
+  if (cloud->size() < 50) {
+    return boost::none;
+  }
+
   // RANSAC
   pcl::SampleConsensusModelPlane<pcl::PointXYZI>::Ptr model_p(
       new pcl::SampleConsensusModelPlane<pcl::PointXYZI>(cloud));
@@ -385,7 +401,7 @@ EgoShapeFilterNode::wall_detect(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud,
   ransac.getInliers(inliers->indices);
 
   // too few inliers
-  if (inliers->indices.size() < 200) {
+  if (inliers->indices.size() < ransac_pts_thresh_) {
     return boost::none;
   }
 
@@ -397,10 +413,10 @@ EgoShapeFilterNode::wall_detect(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud,
 
   double dot = coeffs.head<3>().dot(reference.head<3>());
 
-  // if (std::abs(dot) < std::cos(floor_normal_thresh * M_PI / 180.0)) {
-  //   // the normal is not vertical
-  //   return boost::none;
-  // }
+  if (std::fabs(dot) < std::cos(normal_angle_thres_ * M_PI / 180.0)) {
+    // the normal is not vertical
+    return boost::none;
+  }
 
   // make the normal sideward
   if (coeffs.head<3>().dot(Eigen::Vector3f::UnitY()) < 0.0f) {

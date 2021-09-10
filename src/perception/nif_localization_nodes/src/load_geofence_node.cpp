@@ -18,9 +18,6 @@ GeoFenceLoader::GeoFenceLoader(const std::string &node_name_)
   this->declare_parameter<std::string>(
       "inner_geofence_filename", "");
 
-  this->declare_parameter<bool>("outer_geofence_filename", "");
-  this->declare_parameter<bool>("outer_geofence_filename", "");
-
   this->m_OuterGeoFenceFileName = this->get_parameter("outer_geofence_filename").as_string();     
   this->m_InnerGeoFenceFileName = this->get_parameter("inner_geofence_filename").as_string();    
 
@@ -58,7 +55,7 @@ GeoFenceLoader::GeoFenceLoader(const std::string &node_name_)
       this->create_publisher<std_msgs::msg::Bool>("/bool/on_the_track", qos);
 
   subOdometry = this->create_subscription<nav_msgs::msg::Odometry>(
-      "/Odometry/ekf_estimated", qos,
+      "/out_odometry_ekf_estimated", qos,
       std::bind(&GeoFenceLoader::EKFOdometryCallback, this,
                 std::placeholders::_1));
 
@@ -142,9 +139,9 @@ GeoFenceLoader::GeoFenceLoader(const std::string &node_name_)
       pubOuterGeofence->publish(OuterGeoFenceCloudMsg);
     }
 
-    std::cout << "minDistToInner: " << minDistToInner << std::endl;
-    std::cout << "minDistToOuter: " << minDistToOuter << std::endl;
-    std::cout << "------------" << std::endl;
+    // std::cout << "minDistToInner: " << minDistToInner << std::endl;
+    // std::cout << "minDistToOuter: " << minDistToOuter << std::endl;
+    // std::cout << "------------" << std::endl;
   });
 }
 

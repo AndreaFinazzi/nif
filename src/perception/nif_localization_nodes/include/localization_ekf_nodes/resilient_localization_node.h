@@ -1,5 +1,5 @@
 //  Copyright (c) 2021 Unmanned System Research Group @ KAIST
-//  Author: Daegty Lee
+//  Author: Daegyu Lee
 
 //
 // Created by usrg on 09/08/21.

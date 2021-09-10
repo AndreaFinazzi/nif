@@ -41,6 +41,12 @@ ament_auto_add_library(geodetic_conv SHARED
 ament_auto_add_library(ekf_localizer_lib SHARED
         lib/c_ekf.cpp)
 
+ament_auto_add_library(globalmap_loader SHARED
+        src/load_globalmap_node.cpp)
+target_link_libraries(globalmap_loader
+        ${PCL_LIBRARIES}
+)
+
 ament_auto_add_library(ekf_localizer SHARED
         src/localization_ekf_node.cpp)
 
@@ -67,6 +73,7 @@ target_link_libraries(${PROJECT_NAME}_exe
         ekf_localizer
         load_geofence
         resilient_localize
+        globalmap_loader
 )
 
 if(BUILD_TESTING)

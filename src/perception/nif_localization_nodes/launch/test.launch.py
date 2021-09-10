@@ -29,6 +29,12 @@ def generate_launch_description():
         )
     ns = ""
 
+    base_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            get_package_share_directory('nif_launch') + '/launch/base.launch.py'
+        )
+    )
+
     localization_node = Node(
                 package="nif_localization_nodes",
                 executable="nif_localization_nodes_exe",
@@ -54,6 +60,7 @@ def generate_launch_description():
 
     return LaunchDescription(
         [
+            base_launch,
             localization_node
         ]
     )

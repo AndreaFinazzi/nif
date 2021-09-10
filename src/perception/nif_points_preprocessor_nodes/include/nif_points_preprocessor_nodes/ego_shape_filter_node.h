@@ -133,6 +133,8 @@ private:
   double height_lower_distance_;
   double resolution_;
   double count_threshold_;
+  double normal_angle_thres_;
+  int ransac_pts_thresh_;
 
   double inner_bound_distance;
   double outer_bound_distance;

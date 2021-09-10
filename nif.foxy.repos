@@ -18,3 +18,8 @@ repositories:
     type: git
     url: https://oauth2:$GL_TOKEN@gitlab.com/IACBaseSoftware/official-novatel-driver.git
     version: main
+    
+   src/external/grid_map:
+    type: git
+    url: https://github.com/ANYbotics/grid_map/tree/ros2.git
+    version: ros2   

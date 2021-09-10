@@ -40,19 +40,21 @@ target_link_libraries(${PROJECT_NAME}_exe
         ego_shape_filter_node
 )
 
+if(BUILD_TESTING)
+  find_package(ament_lint_auto REQUIRED)
+  ament_lint_auto_find_test_dependencies()
 
-# if(BUILD_TESTING)
-#   find_package(ament_lint_auto REQUIRED)
-#   ament_lint_auto_find_test_dependencies()
+  ament_add_gtest(${PROJECT_NAME}_test
+          test/gtest_main.cpp
+          )
 
-#   ament_add_gtest(${PROJECT_NAME}_test
-#           test/gtest_main.cpp
-#         )
+  target_include_directories(${PROJECT_NAME}_test PRIVATE "include")
+  target_link_libraries(${PROJECT_NAME}_test 
+        points_concat_filter
+        ego_shape_filter_node)
+  ament_target_dependencies(${PROJECT_NAME}_test
+          "rclcpp")
+endif()
 
-#   target_include_directories(${PROJECT_NAME}_test PRIVATE "include")
-#   target_link_libraries(${PROJECT_NAME}_test ${PROJECT_NAME})
-#   ament_target_dependencies(${PROJECT_NAME}_test
-#           "rclcpp")
-# endif()
-
-ament_auto_package()
+ament_auto_package(INSTALL_TO_SHARE
+        launch)

@@ -1,18 +1,41 @@
-session_name: nif_launch_sim
+session_name: nif_bag_play
 windows:
-  - window_name: Launch Tab
+  - window_name: ROSBAG PLAY Tab
     layout: tiled
     shell_command_before:
-      - source /home/usrg/dev_ws/install/setup.bash && cd /media/usrg/T7/IAC/rosbag/21.08.18_LOR/VEH4_LOR_RUN-1_2021-08-18
+      - source /home/usrg/nif/install/setup.bash && cd /home/usrg/bag/VEH4_IMS_RUN-ontrack00_2021-09-03
     panes:
       - shell_command:
-          - ros2 bag play lidar_2021-08-18_13-44-10/
+          - ros2 bag play sensors_2021-09-03_10-59-19/ --topics /luminar_front_points /luminar_left_points /luminar_right_points  
       - shell_command:
-          - ros2 bag play autonomy_2021-08-18_13-44-10/
-  - window_name: record Tab
+          - ros2 bag play autonomy_2021-09-03_10-59-19/ --topics /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/imu/data /raptor_dbw_interface/wheel_speed_report
+      - shell_command:
+          - ros2 launch nif_launch base.launch.py
+
+  - window_name: Algorithm Tab
     layout: tiled
     shell_command_before:
-      - source /home/usrg/dev_ws/install/setup.bash && cd /home/usrg/dev_ws/src/bag
+      - source /home/usrg/nif/install/setup.bash && cd /home/usrg/nif
     panes:
       - shell_command:
-          - ros2 bag record /luminar_front_points /luminar_left_points /novatel_bottom/bestpos /novatel_bottom/inspva
+          - ros2 launch nif_localization_nodes test.launch.py
+      - shell_command:
+          - ros2 launch nif_points_preprocessor_nodes default.launch.py
+
+  - window_name: Monitoring Tab
+    layout: tiled
+    shell_command_before:
+      - source /home/usrg/nif/install/setup.bash && cd /home/usrg/nif/src/perception/nif_localization_nodes/launch
+    panes:
+      - shell_command:
+          - rviz2 -d navi.rviz
+
+          
+
+  # - window_name: record Tab
+  #   layout: tiled
+  #   shell_command_before:
+  #     - source /home/usrg/dev_ws/install/setup.bash && cd /home/usrg/dev_ws/src/bag
+  #   panes:
+  #     - shell_command:
+  #         - ros2 bag record /luminar_front_points /luminar_left_points /novatel_bottom/bestpos /novatel_bottom/inspva

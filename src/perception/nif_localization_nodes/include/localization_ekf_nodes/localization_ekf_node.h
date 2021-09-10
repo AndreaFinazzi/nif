@@ -1,9 +1,9 @@
 //  Copyright (c) 2021 Unmanned System Research Group @ KAIST
-//  Author: Daegty Lee
+//  Author: Daegyu Lee
 
 //
 // Created by usrg on 09/02/21.
-//
+// 
 
 #ifndef EKF_LOCALIZER_NODE_H
 #define EKF_LOCALIZER_NODE_H
@@ -149,4 +149,4 @@ private:
 } // namespace localization
 } // namespace nif
 
-#endif // EKF_LOCALIZER_NODE_H3
+#endif // EKF_LOCALIZER_NODE_H
