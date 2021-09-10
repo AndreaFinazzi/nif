@@ -8,6 +8,14 @@ import sys, os
 
 from ament_index_python import get_package_share_directory
 
+from nif_msgs.msg import Perception3DArray
+from nav_msgs.msg import Path, Odometry
+from nifpy_common_nodes.base_node import BaseNode
+from geometry_msgs.msg import PoseStamped
+from std_msgs.msg import String
+from rclpy.node import Node
+import rclpy
+
 from geometry_msgs.msg import Quaternion
 
 def get_share_file(package_name, file_name):
@@ -28,16 +36,9 @@ os.environ['OPENBLAS_NUM_THREADS'] = str(1)
 from Graph_LTPL import Graph_LTPL
 from imp_global_traj.src import *
 
-from nif_msgs.msg import Perception3DArray
-from nav_msgs.msg import Path, Odometry
-from geometry_msgs.msg import PoseStamped
-from std_msgs.msg import String
-from rclpy.node import Node
-import rclpy
 
-
-class GraphBasedPlanner(Node):
-
+class GraphBasedPlanner(rclpy.node.Node):
+    
     def __init__(self):
         super().__init__('graph_based_planner_node')
 
@@ -46,10 +47,10 @@ class GraphBasedPlanner(Node):
 #       Pre-initialize memory
 #       TODO pre-load all these info
         self.msg = Path()
-        self.msg.header.frame_id = "map"
+        self.msg.header.frame_id = "odom" #str(self.get_global_parameter('frames.global'))
         for idx in range(self.maptrack_len):
             pose = PoseStamped()
-            pose.header.frame_id = "map"
+            pose.header.frame_id = self.msg.header.frame_id
             
             self.msg.poses.append(pose)
         
@@ -80,9 +81,9 @@ class GraphBasedPlanner(Node):
         }
 
         # Subscribers and Publisher
-        self.local_maptrack_inglobal_pub = self.create_publisher(Path, '/planning/path_global', 10)
-        self.veh_odom_sub = self.create_subscription(Odometry, '/sensor/odom_ground_truth', self.veh_odom_callback, 10)
-        self.perception_result_sub = self.create_subscription(Perception3DArray, 'in_perception_result', self.perception_result_callback, 10)
+        self.local_maptrack_inglobal_pub = self.create_publisher(Path, 'out_local_maptrack_inglobal', rclpy.qos.qos_profile_sensor_data)
+        self.veh_odom_sub = self.create_subscription(Odometry, 'in_ego_odometry', self.veh_odom_callback, rclpy.qos.qos_profile_sensor_data)
+        self.perception_result_sub = self.create_subscription(Perception3DArray, 'in_perception_result', self.perception_result_callback, rclpy.qos.qos_profile_sensor_data)
 
         self.current_veh_odom = None
 
@@ -217,20 +218,20 @@ class GraphBasedPlanner(Node):
 
 
 def main(args=None):
-    import cProfile, pstats
-    profiler = cProfile.Profile()
+    # import cProfile, pstats
+    # profiler = cProfile.Profile()
     
     rclpy.init(args=args)
     graph_based_planner_node = GraphBasedPlanner()
 
-    profiler.enable()
+    # profiler.enable()
     rclpy.spin(graph_based_planner_node)
-    profiler.disable()
+    # profiler.disable()
     
     graph_based_planner_node.destroy_node()
     
-    stats = pstats.Stats(profiler).sort_stats('tottime')
-    stats.dump_stats('multilayer_planner.prof')
+    # stats = pstats.Stats(profiler).sort_stats('tottime')
+    # stats.dump_stats('multilayer_planner.prof')
     
     rclpy.shutdown()
 

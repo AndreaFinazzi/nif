@@ -11,7 +11,7 @@ nif::system::SystemStatusManagerNode::SystemStatusManagerNode(
 
   //  Publishers
   this->system_status_pub = this->create_publisher<nif::common::msgs::SystemStatus>(
-      "system_status", nif::common::constants::QOS_DEFAULT
+      "system_status", nif::common::constants::QOS_INTERNAL_STATUS
       );
 
   // Services
@@ -46,7 +46,8 @@ void nif::system::SystemStatusManagerNode::subscribeNodeStatus(
 {
 
   auto subscription = this->create_subscription<nif::common::msgs::NodeStatus>(
-      topic_name, rclcpp::QoS{1}, [&](const nif::common::msgs::NodeStatus::SharedPtr msg)
+      topic_name, nif::common::constants::QOS_INTERNAL_STATUS,
+      [&](const nif::common::msgs::NodeStatus::SharedPtr msg)
       {
         nodeStatusUpdate(msg);
       });

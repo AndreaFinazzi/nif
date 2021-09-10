@@ -14,29 +14,29 @@ from raptor_dbw_msgs.msg import SteeringReport, AcceleratorPedalReport, Brake2Re
 
 from nifpy_common_nodes.base_node import BaseNode
 
-class Drive(BaseNode):
+class LGSVLPublisherNode(BaseNode):
     def __init__(self):
         super().__init__('lgsvl_publisher')
         self.namespace = ''
         # self.namespace = self.get_namespace()
 
         # Subscribe accelerator pedal % -> publish accelerator pedal %
-        self.sub_accel = self.create_subscription(Float32, self.namespace + '/joystick/accelerator_cmd', self.callback_accel, 1)
+        self.sub_accel = self.create_subscription(Float32, self.namespace + '/joystick/accelerator_cmd', self.callback_accel, rclpy.qos.qos_profile_sensor_data)
 
         # Subscribe wheels' angle in degrees [-24, 24] -> publish wheels' angle in radians
-        self.sub_steer = self.create_subscription(Float32, self.namespace + '/joystick/steering_cmd', self.callback_steer, 1)
+        self.sub_steer = self.create_subscription(Float32, self.namespace + '/joystick/steering_cmd', self.callback_steer, rclpy.qos.qos_profile_sensor_data)
 
         # Subscribe brake pressure in pascal -> publish braking pedal %
-        self.sub_brake = self.create_subscription(Float32, self.namespace + '/joystick/brake_cmd', self.callback_brake, 1)
+        self.sub_brake = self.create_subscription(Float32, self.namespace + '/joystick/brake_cmd', self.callback_brake, rclpy.qos.qos_profile_sensor_data)
 
         # Subscribe desired gear -> publish desired gear
-        self.sub_gear = self.create_subscription(Int8, self.namespace + '/joystick/gear_cmd', self.callback_gear, 1)
+        self.sub_gear = self.create_subscription(Int8, self.namespace + '/joystick/gear_cmd', self.callback_gear, rclpy.qos.qos_profile_sensor_data)
 
         self.control_pub = self.create_publisher(VehicleControlData, self.namespace + '/sensor/control', 1)
 
-        self.steering_report_pub = self.create_publisher(SteeringReport, self.namespace + '/raptor_dbw_interface/steering_report', 10)
-        self.accel_pedal_report_pub = self.create_publisher(AcceleratorPedalReport, self.namespace + '/raptor_dbw_interface/accelerator_pedal_report', 10)
-        self.brake2_report_pub = self.create_publisher(Brake2Report, self.namespace + '/raptor_dbw_interface/brake_2_report', 10)
+        self.steering_report_pub = self.create_publisher(SteeringReport, self.namespace + '/raptor_dbw_interface/steering_report', rclpy.qos.qos_profile_sensor_data)
+        self.accel_pedal_report_pub = self.create_publisher(AcceleratorPedalReport, self.namespace + '/raptor_dbw_interface/accelerator_pedal_report', rclpy.qos.qos_profile_sensor_data)
+        self.brake2_report_pub = self.create_publisher(Brake2Report, self.namespace + '/raptor_dbw_interface/brake_2_report', rclpy.qos.qos_profile_sensor_data)
 
         self.timer_period = 0.02  # seconds
         self.timer = self.create_timer(self.timer_period, self.callback)
@@ -123,7 +123,7 @@ class Drive(BaseNode):
 
 def main(args=None):  # 0 to 1
     rclpy.init(args=args)
-    drive = Drive()
+    drive = LGSVLPublisherNode()
     rclpy.spin(drive)
 
 

@@ -20,7 +20,8 @@ ament_auto_find_build_dependencies()
 
 # Library
 ament_auto_add_library(${PROJECT_NAME} SHARED
-        src/control_safety_layer_node.cpp)
+        src/control_safety_layer_node.cpp
+        src/override_device_interface_node.cpp)
 
 ament_auto_add_executable(${PROJECT_NAME}_exe
         src/control_safety_layer_main.cpp)

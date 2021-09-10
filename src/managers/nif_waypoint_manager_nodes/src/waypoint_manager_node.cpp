@@ -41,14 +41,15 @@ nif::managers::WaypointManagerNode::WaypointManagerNode(
   }
 
   // Could also inherit from IBaseSynchronizedNode
+//  TODO convert to parameter
   m_timer = this->create_wall_timer(
       10ms, std::bind(&WaypointManagerNode::timerCallback, this));
 
   m_map_track_global_publisher = this->create_publisher<nav_msgs::msg::Path>(
-      "wpt_manager/maptrack_path/global", 10);
+      "wpt_manager/maptrack_path/global", nif::common::constants::QOS_PLANNING);
 
   m_map_track_body_publisher = this->create_publisher<nav_msgs::msg::Path>(
-      "wpt_manager/maptrack_path/body", 10);
+      "wpt_manager/maptrack_path/body", nif::common::constants::QOS_PLANNING);
   this->setWaypointManager(
       std::make_shared<WaypointManagerMinimal>(file_path_list,
                                                this->getBodyFrameId(),
@@ -75,9 +76,9 @@ void nif::managers::WaypointManagerNode::timerCallback() {
       this->wpt_manager->getDesiredMapTrackInBody();
 
   path_in_body.header.stamp = this->now();
-  path_in_body.header.frame_id = "base_link";
+  path_in_body.header.frame_id = this->getBodyFrameId();
   path_in_global.header.stamp = this->now();
-  path_in_global.header.frame_id = "map";
+  path_in_global.header.frame_id = this->getGlobalFrameId();
 
   m_map_track_global_publisher->publish(path_in_global);
   m_map_track_body_publisher->publish(path_in_body);

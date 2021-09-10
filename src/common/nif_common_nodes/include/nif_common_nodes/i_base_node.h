@@ -71,6 +71,7 @@ protected:
 
   rclcpp::SyncParametersClient::SharedPtr global_parameters_client;
 
+  OnSetParametersCallbackHandle::SharedPtr parameters_callback_handle;
 
   void setNodeStatus(NodeStatusCode status_code);
 
@@ -248,7 +249,12 @@ private:
   virtual
       void afterRaceControlStatusCallback() {}
 
-
+  virtual
+      rcl_interfaces::msg::SetParametersResult
+  parametersSetCallback(const std::vector<rclcpp::Parameter> &vector)
+  {
+    return rcl_interfaces::msg::SetParametersResult{};
+  }
 //  ### NODE STATUS COMPONENTS
   rclcpp::TimerBase::SharedPtr node_status_timer;
 

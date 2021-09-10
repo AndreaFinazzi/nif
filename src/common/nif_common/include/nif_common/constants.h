@@ -11,6 +11,7 @@
 #include <chrono>
 #include <limits>
 #include <rclcpp/qos.hpp>
+#include "rmw/qos_profiles.h"
 
 namespace nif {
 namespace common {
@@ -61,6 +62,61 @@ const std::chrono::microseconds SYNC_PERIOD_MAX(50000);
  * TODO look into details and take proper decision
  */
 const rclcpp::QoS QOS_DEFAULT(5);
+
+/**
+ * Default QoS parameter.
+ */
+const rclcpp::QoS QOS_INTERNAL_STATUS = rclcpp::SensorDataQoS();
+
+
+/**
+ * Default QoS parameter.
+ */
+const rclcpp::QoS QOS_SENSOR_DATA = rclcpp::SensorDataQoS();
+
+/**
+ * Default QoS parameter.
+ */
+const rclcpp::QoS QOS_SERVICES = rclcpp::ServicesQoS();
+
+/**
+ * Default QoS parameter.
+ */
+const rclcpp::QoS QOS_PARAMETERS = rclcpp::ServicesQoS();
+
+/**
+ * Default QoS parameter.
+ */
+const rclcpp::QoS QOS_EGO_ODOMETRY = rclcpp::SensorDataQoS();
+
+/**
+ * Default QoS parameter.
+ */
+const rclcpp::QoS QOS_PLANNING = rclcpp::SensorDataQoS();
+
+/**
+ * Default QoS parameter for ControlCommand topics.
+ * TODO verify and improve.
+ */
+const rclcpp::QoS QOS_CONTROL_CMD = rclcpp::SensorDataQoS();
+
+/**
+ * Default QoS parameter for ControlCommand override topics.
+ * TODO verify and improve.
+ */
+const rclcpp::QoS QOS_CONTROL_CMD_OVERRIDE = rclcpp::QoS(
+    rclcpp::QoSInitialization::from_rmw(
+    {
+    RMW_QOS_POLICY_HISTORY_KEEP_LAST,
+    1,
+    RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT,
+    RMW_QOS_POLICY_DURABILITY_VOLATILE,
+    RMW_QOS_DEADLINE_DEFAULT,
+    RMW_QOS_LIFESPAN_DEFAULT,
+    RMW_QOS_POLICY_LIVELINESS_SYSTEM_DEFAULT,
+    RMW_QOS_LIVELINESS_LEASE_DURATION_DEFAULT,
+    false
+    }));
 
 /**
  * Name for the main logger.

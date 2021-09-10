@@ -1,4 +1,5 @@
 <robot name="AV21">
+  <link name="base_link" />
   <link name="center_of_gravity" />
 
   <link name="rear_axle_middle" />
@@ -28,6 +29,12 @@
   <link name="radar_port" />
   <link name="radar_starboard" />
   <link name="radar_rear" />
+
+  <joint name="center_of_gravity_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="center_of_gravity" />
+    <origin xyz="0 0 0" />
+  </joint>
 
   <joint name="rear_axle_middle_joint" type="fixed">
     <parent link="center_of_gravity"/>

@@ -22,19 +22,14 @@ EKFLocalizer::EKFLocalizer(const std::string &node_name) : IBaseNode(node_name) 
       this->get_global_parameter<std::string>(
           nif::common::constants::parameters::names::TOPIC_ID_EGO_ODOMETRY);
 
-  // setup QOS to be best effort
-  auto qos = rclcpp::QoS(
-      rclcpp::QoSInitialization(RMW_QOS_POLICY_HISTORY_KEEP_LAST, 1));
-  qos.best_effort();
-
   sub_gpslatlon = this->create_subscription<novatel_oem7_msgs::msg::BESTPOS>(
-      "in_bestpos", qos,
+      "in_bestpos", nif::common::constants::QOS_SENSOR_DATA,
       std::bind(&EKFLocalizer::GPSLATLONCallback, this, std::placeholders::_1));
   subINSPVA = this->create_subscription<novatel_oem7_msgs::msg::INSPVA>(
-      "in_inspva", qos,
+      "in_inspva", nif::common::constants::QOS_SENSOR_DATA,
       std::bind(&EKFLocalizer::GPSINSPVACallback, this, std::placeholders::_1));
 
-  auto rmw_qos_profile = qos.get_rmw_qos_profile();
+  auto rmw_qos_profile = nif::common::constants::QOS_SENSOR_DATA.get_rmw_qos_profile();
 
   sub_filtered_IMU.subscribe(this,
                              "in_imu", rmw_qos_profile);
@@ -50,14 +45,15 @@ EKFLocalizer::EKFLocalizer(const std::string &node_name) : IBaseNode(node_name) 
 
   pub_EKF_odometry =
       this->create_publisher<nav_msgs::msg::Odometry>(
-          "out_odometry_ekf_estimated", qos);
+          "out_odometry_ekf_estimated", nif::common::constants::QOS_EGO_ODOMETRY);
   pub_bestpos_odometry =
       this->create_publisher<nav_msgs::msg::Odometry>(
-          "out_odometry_bestpos", qos);
+          "out_odometry_bestpos", nif::common::constants::QOS_EGO_ODOMETRY);
 
   broadcaster_ = std::make_unique<tf2_ros::StaticTransformBroadcaster>(this);
 
   using namespace std::chrono_literals; // NOLINT
+  // TODO convert period to paramter
   timer_ = this->create_wall_timer(
       10ms, std::bind(&EKFLocalizer::timer_callback, this));
 

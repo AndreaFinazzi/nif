@@ -35,16 +35,6 @@ def generate_launch_description():
         description='Path to config file for nif_control_minimal'
     )
 
-    # Shouldn't be necessary, but speeds things up
-    ## tf2 - base_link to center_of_gravity
-    base_link_tf_publisher = Node(
-        name='base_link_tf_publisher',
-        package='tf2_ros',
-        executable='static_transform_publisher',
-        output='screen',
-        arguments=['0', '0', '0', '0.0', '0.0', '0.0', 'base_link', 'center_of_gravity']
-    )
-
     # Define robot_state_publisher node
     robot_state_publisher = Node(
         package='robot_state_publisher',
@@ -60,7 +50,6 @@ def generate_launch_description():
         ])
 
     return LaunchDescription([
-        base_link_tf_publisher,
         av21_description_param_file,
         robot_state_publisher
     ])

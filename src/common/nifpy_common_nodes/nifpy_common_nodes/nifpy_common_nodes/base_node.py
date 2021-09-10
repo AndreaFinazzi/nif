@@ -3,7 +3,7 @@ from rclpy.node import Node
 from rcl_interfaces.srv import GetParameters
 
 class BaseNode(Node):
-    def __init__(self, node_name):
+    def __init__(self, node_name: str) -> None:
         super().__init__(node_name)
 
         self.client = self.create_client(GetParameters,

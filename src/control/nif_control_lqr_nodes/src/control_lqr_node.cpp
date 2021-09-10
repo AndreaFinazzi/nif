@@ -10,51 +10,35 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
 
   // Debug Publishers
   lqr_command_valid_pub_ = this->create_publisher<std_msgs::msg::Bool>(
-      "control_lqr/tracking_valid", 1);
+      "control_lqr/tracking_valid", nif::common::constants::QOS_DEFAULT);
   lqr_steering_command_pub_ = this->create_publisher<std_msgs::msg::Float32>(
-      "control_lqr/lqr_command", 1);
+      "control_lqr/lqr_command",  nif::common::constants::QOS_DEFAULT);
   track_distance_pub_ = this->create_publisher<std_msgs::msg::Float32>(
-      "control_lqr/track_distance", 1);
+      "control_lqr/track_distance",  nif::common::constants::QOS_DEFAULT);
   lqr_tracking_point_pub_ =
       this->create_publisher<geometry_msgs::msg::PoseStamped>(
-        "control_lqr/track_point", 1);
+        "control_lqr/track_point",  nif::common::constants::QOS_DEFAULT);
   lqr_error_pub_ = this->create_publisher<std_msgs::msg::Float32MultiArray>(
-      "control_lqr/lqr_error", 1);
+      "control_lqr/lqr_error", nif::common::constants::QOS_DEFAULT);
 
   // Subscribers
   velocity_sub_ =
       this->create_subscription<raptor_dbw_msgs::msg::WheelSpeedReport>(
-          "/raptor_dbw_interface/wheel_speed_report", 1,
+          "/raptor_dbw_interface/wheel_speed_report", nif::common::constants::QOS_SENSOR_DATA,
           std::bind(&ControlLQRNode::velocityCallback, this,
                     std::placeholders::_1));
 //   TODO update to the single-topic joystick comms
-//   steering_sub_ = this->create_subscription<std_msgs::msg::Float32>(
-//       "/joystick/steering_cmd_not_used", 1,
-//       std::bind(&ControlLQRNode::steeringCallback, this,
-//                 std::placeholders::_1));
-//   throttle_sub_ = this->create_subscription<std_msgs::msg::Float32>(
-//       "/joystick/accelerator_cmd_max", 1,
-//       std::bind(&ControlLQRNode::throttleCallback, this,
-//                 std::placeholders::_1));
-//   brake_sub_ = this->create_subscription<std_msgs::msg::Float32>(
-//       "/joystick/brake_cmd_override", 1,
-//       std::bind(&ControlLQRNode::brakeCallback, this,
-//                 std::placeholders::_1));
-//   gear_sub_ = this->create_subscription<std_msgs::msg::UInt8>(
-//       "/joystick/gear_cmd_not_used", 1,
-//       std::bind(&ControlLQRNode::gearCallback, this,
-//                 std::placeholders::_1));
+  joystick_sub_ =
+      this->create_subscription<deep_orange_msgs::msg::JoystickCommand>(
+          "/joystick/command_disabled", nif::common::constants::QOS_CONTROL_CMD_OVERRIDE,
+          std::bind(&ControlLQRNode::joystickCallback, this,
+                    std::placeholders::_1));
 
   // Gives memory exceptions with my test rosbag :(
   // pt_report_sub_ =
   // this->create_subscription<deep_orange_msgs::msg::PtReport>("/raptor_dbw_interface/pt_report",
-  //     1, std::bind(&PathFollowerNode::ptReportCallback, this,
+  //     nif::common::constants::QOS_SENSOR_DATA, std::bind(&PathFollowerNode::ptReportCallback, this,
   //     std::placeholders::_1));
-
-  //! Timer to execute control at 25Hz
-//  control_timer_ = this->create_wall_timer(
-//      std::chrono::milliseconds(static_cast<int>(1000. / update_rate_hz)),
-//      std::bind(&PathFollowerNode::executeControl, this));
 
   this->declare_parameter("lqr_config_file", "");
   // Automatically boot with lateral_tracking_enabled
@@ -138,6 +122,13 @@ ControlLQRNode::publishSteeringDiagnostics(bool lqr_command_valid,
 
   lqr_tracking_point_pub_->publish(lqr_track_point);
   lqr_error_pub_->publish(bvs_control::utils::ROSError(lqr_err));
+}
+
+void ControlLQRNode::joystickCallback(const deep_orange_msgs::msg::JoystickCommand::SharedPtr msg) {
+  override_steering_target_ = msg->steering_cmd;
+  override_throttle_target_ = msg->accelerator_cmd;
+  override_brake_target_ = msg->brake_cmd;
+  override_gear_target_ = msg->gear_cmd;
 }
 
 nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {

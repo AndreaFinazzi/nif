@@ -15,7 +15,7 @@ public:
     this->control_command = std::make_shared<nif::common::msgs::ControlCmd>();
 
     this->csl_cmd_sub = this->create_subscription<nif::common::msgs::ControlCmd>(
-        "csl_control_cmd", nif::common::constants::QOS_DEFAULT, std::bind(&MockControlNode::controlCallback, this, std::placeholders::_1)
+        "csl_control_cmd", nif::common::constants::QOS_CONTROL_CMD, std::bind(&MockControlNode::controlCallback, this, std::placeholders::_1)
         );
   }
 

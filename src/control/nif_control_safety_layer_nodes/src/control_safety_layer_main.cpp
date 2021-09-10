@@ -9,10 +9,11 @@
 // Created by usrg on 6/23/21.
 //
 #include <memory>
+#include <nif_control_safety_layer_nodes/override_device_interface_node.h>
 
 #include "nif_common/constants.h"
-#include "nif_utils/utils.h"
 #include "nif_control_safety_layer_nodes/control_safety_layer_node.h"
+#include "nif_utils/utils.h"
 #include "rcutils/error_handling.h"
 
 int32_t main(int32_t argc, char **argv) 
@@ -20,31 +21,36 @@ int32_t main(int32_t argc, char **argv)
   rclcpp::init(argc, argv);
 
   using nif::control::ControlSafetyLayerNode;
+  using nif::control::OverrideDeviceInterfaceNode;
   using namespace nif::common::constants;
 
-  const char* node_name = "control_safety_layer_node";
+  const char* node_name_csl = "control_safety_layer_node";
+  const char* node_name_override = "override_device_interface_node";
   const std::chrono::microseconds sync_period(10000); //  10ms
 
-  rclcpp::Node::SharedPtr nd;
+  rclcpp::Node::SharedPtr csl_node;
+  rclcpp::Node::SharedPtr override_node;
+
+  rclcpp::executors::SingleThreadedExecutor executor;
 
   try {
     RCLCPP_INFO(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
-                "Instantiating ControlSafetyLayerNode with name: %s; sync_period: %d", node_name, sync_period);
-    rclcpp::NodeOptions options;
+                "Instantiating ControlSafetyLayerNode with name: %s; sync_period: %d",
+        node_name_csl, sync_period);
+    RCLCPP_INFO(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
+                "Starting OverrideDeviceInterfaceNode in the same process.");
 
-    nd = std::make_shared<ControlSafetyLayerNode>(
-        node_name,
-        nif::common::utils::numeric::clip(SYNC_PERIOD_MIN, SYNC_PERIOD_MAX, sync_period));
+    csl_node = std::make_shared<ControlSafetyLayerNode>(
+        node_name_csl,
+        nif::common::utils::numeric::clip(SYNC_PERIOD_MIN, SYNC_PERIOD_MAX, sync_period),
+        rclcpp::NodeOptions().use_intra_process_comms(true));
 
-  } catch (std::range_error & e) {
-    RCLCPP_ERROR(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
-                 "Bad initialization of node: %s. Initializing with SYNC_PERIOD_DEFAULT...\n%s", e.what());
+    override_node = std::make_shared<OverrideDeviceInterfaceNode>(
+        node_name_override,
+        rclcpp::NodeOptions().use_intra_process_comms(true));
 
-//  Initialize with default period.
-//  TODO should we abort in these circumstances?
-    nd = std::make_shared<ControlSafetyLayerNode>(
-        node_name,
-                                                  SYNC_PERIOD_DEFAULT_US);
+    executor.add_node(csl_node);
+    executor.add_node(override_node);
 
   } catch (std::exception & e) {
     RCLCPP_FATAL(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
@@ -52,11 +58,15 @@ int32_t main(int32_t argc, char **argv)
     return -1;
   }
 
-  rclcpp::spin(nd);
+  executor.spin();
+
+  executor.remove_node(csl_node);
+  executor.remove_node(override_node);
+
   rclcpp::shutdown();
 
   RCLCPP_INFO(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
-              "Shutting down %s [ControlSafetyLayerNode]", node_name);
+              "Shutting down %s [ControlSafetyLayerNode]", node_name_csl);
 
   return 0;
 }

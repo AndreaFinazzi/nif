@@ -12,24 +12,24 @@ nif::control::IControllerNode::IControllerNode(const std::string &node_name)
 
   this->control_cmd_prev_sub =
       this->create_subscription<nif::common::msgs::ControlCmd>(
-          "in_control_cmd_prev", nif::common::constants::QOS_DEFAULT,
+          "in_control_cmd_prev", nif::common::constants::QOS_CONTROL_CMD,
           std::bind(&IControllerNode::controlCmdPrevCallback, this,
                     std::placeholders::_1));
 
   this->reference_trajectory_sub =
       this->create_subscription<nif::common::msgs::Trajectory>(
-        "in_reference_trajectory", nif::common::constants::QOS_DEFAULT,
+          "in_reference_trajectory", nif::common::constants::QOS_PLANNING,
         std::bind(&IControllerNode::referenceTrajectoryCallback, this,
                   std::placeholders::_1));
 
   this->reference_path_sub =
       this->create_subscription<nif::common::msgs::Path>(
-          "in_reference_path", nif::common::constants::QOS_DEFAULT,
+          "in_reference_path", nif::common::constants::QOS_PLANNING,
           std::bind(&IControllerNode::referencePathCallback, this,
                     std::placeholders::_1));
 
   this->control_cmd_pub = this->create_publisher<nif::common::msgs::ControlCmd>(
-      "out_control_cmd", rclcpp::QoS{1});
+      "out_control_cmd", nif::common::constants::QOS_CONTROL_CMD);
 }
 
 /**

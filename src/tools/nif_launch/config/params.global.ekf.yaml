@@ -1,9 +1,8 @@
-
 global_parameters_node:
   ros__parameters:
     frames:
       body: "base_link"
-      global: "map"
+      global: "odom"
 
       gps_top: "gps_top"
       gps_bottom: "gps_bottom"
@@ -25,7 +24,7 @@ global_parameters_node:
       radar_rear: "radar_rear"
 
     topics:
-      ego_odometry: "/sensor/odom_ground_truth"
+      ego_odometry: "/localization/odometry/ekf"
 
       system_status: "system/status"
       race_control_status: "/raptor_dbw_interface/rc_to_ct"
