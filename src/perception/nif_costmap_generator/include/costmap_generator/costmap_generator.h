@@ -35,6 +35,7 @@
 #include <nav_msgs/msg/path.hpp>
 #include <sensor_msgs/msg/laser_scan.hpp>
 #include <std_msgs/msg/header.hpp>
+#include <std_msgs/msg/int32.hpp>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/static_transform_broadcaster.h>
@@ -111,6 +112,7 @@ private:
       const sensor_msgs::msg::PointCloud2::ConstSharedPtr &inner_msg,
       const sensor_msgs::msg::PointCloud2::ConstSharedPtr &outer_msg);
 
+  void ClosestGeofenceIndexCallback(const std_msgs::msg::Int32::SharedPtr msg);
   pcl::PointCloud<pcl::PointXYZI>::Ptr downsample(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, double resolution);
   void
   TransformPointsToGlobal(const pcl::PointCloud<pcl::PointXYZI>::Ptr &CloudIn,
@@ -121,7 +123,7 @@ private:
   void SearchPointsOntrack(
       const std::vector<std::pair<double, double>> &inner_array_in,
       const std::vector<std::pair<double, double>> &outer_array_in,
-      pcl::PointCloud<pcl::PointXYZI>::Ptr &CloudIn,
+      const int &closest_idx, pcl::PointCloud<pcl::PointXYZI>::Ptr &CloudIn,
       pcl::PointCloud<pcl::PointXYZI>::Ptr &CloudOut);
 
   std::string lidar_frame_;
@@ -144,6 +146,8 @@ private:
   double m_veh_x;
   double m_veh_y;
   double m_veh_roll, m_veh_pitch, m_veh_yaw;
+
+  int m_closestGeofenceIndex;
 
   std::vector<std::pair<double, double>> m_OuterGeoFence;
   std::vector<std::pair<double, double>> m_InnerGeoFence;
@@ -168,6 +172,7 @@ private:
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr
           sub_points_;
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr sub_odometry_;
+  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr sub_closest_geofence_idx_;
   rclcpp::TimerBase::SharedPtr sub_timer_;
 
   using SyncPolicyT = message_filters::sync_policies::ApproximateTime<

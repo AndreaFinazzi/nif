@@ -21,6 +21,10 @@ windows:
           - ros2 launch nif_localization_nodes test.launch.py
       - shell_command:
           - ros2 launch nif_points_preprocessor_nodes default.launch.py
+      - shell_command:
+          - 
+      - shell_command:
+          - 
 
   - window_name: Monitoring Tab
     layout: tiled

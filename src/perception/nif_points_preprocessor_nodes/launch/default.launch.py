@@ -19,7 +19,6 @@ def generate_launch_description():
             Node(
                 package="nif_points_preprocessor_nodes",
                 executable="nif_points_preprocessor_nodes_exe",
-                name="nif_points_preprocessor_nodes",
                 output="screen",
                 emulate_tty=True,
                 parameters=[config],

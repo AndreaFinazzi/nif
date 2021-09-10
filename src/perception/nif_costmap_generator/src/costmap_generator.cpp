@@ -67,6 +67,11 @@ CostmapGenerator::CostmapGenerator()
       std::bind(&CostmapGenerator::OdometryCallback, this,
                 std::placeholders::_1));
 
+  sub_closest_geofence_idx_ = this->create_subscription<std_msgs::msg::Int32>(
+      "/int/closest_geofence_idx", nif::common::constants::QOS_EGO_ODOMETRY,
+      std::bind(&CostmapGenerator::ClosestGeofenceIndexCallback, this,
+                std::placeholders::_1));
+
   auto rmw_qos_profile = qos.get_rmw_qos_profile();
 
   sub_InnerGeofence.subscribe(this, "/geofence_inner", rmw_qos_profile);
@@ -75,9 +80,9 @@ CostmapGenerator::CostmapGenerator()
   m_sync = std::make_shared<message_filters::Synchronizer<SyncPolicyT>>(
       SyncPolicyT(10), sub_InnerGeofence, sub_OuterGeofence);
 
-  m_sync->registerCallback(
-      std::bind(&CostmapGenerator::MessegefilteringCallback, this,
-                std::placeholders::_1, std::placeholders::_2));
+  m_sync->registerCallback(std::bind(
+      &CostmapGenerator::MessegefilteringCallback, this, std::placeholders::_1,
+      std::placeholders::_2));
 
   costmap_ = initGridmap();
   // RoadBoundarycostmap_ = initBoundaryGridmap();
@@ -123,8 +128,12 @@ void CostmapGenerator::run() {
 
     pcl::PointCloud<pcl::PointXYZI>::Ptr PointsOnTrack(
         new pcl::PointCloud<pcl::PointXYZI>);
-    SearchPointsOntrack(m_InnerGeoFence, m_OuterGeoFence, m_in_sensor_points,
-                        PointsOnTrack);
+    SearchPointsOntrack(m_InnerGeoFence, m_OuterGeoFence,
+                        m_closestGeofenceIndex, PointsOnGlobal, PointsOnTrack);
+    std::cout << "tarck points size : " << PointsOnTrack->points.size() << std::endl;
+
+    std::cout << "m_InnerGeoFence: " << m_InnerGeoFence.size() << std::endl; 
+    std::cout << "m_OuterGeoFence: " << m_OuterGeoFence.size() << std::endl;
 
     sensor_msgs::msg::PointCloud2 points_on_track_msg;
     pcl::toROSMsg(*PointsOnTrack, points_on_track_msg);
@@ -189,11 +198,13 @@ void CostmapGenerator::MessegefilteringCallback(
   if (bGeoFence)
     return;
 
+  m_InnerGeoFence.clear();
+  m_OuterGeoFence.clear();
   for (auto point : m_inner_geofence_points->points) {
-      std::pair<double, double> xy_buf;
-      xy_buf.first = point.x;
-      xy_buf.second = point.y;
-      m_InnerGeoFence.push_back(xy_buf);
+    std::pair<double, double> xy_buf;
+    xy_buf.first = point.x;
+    xy_buf.second = point.y;
+    m_InnerGeoFence.push_back(xy_buf);
   }
   std::pair<double, double> first_point_inner;
   first_point_inner.first = m_inner_geofence_points->points[0].x;
@@ -210,12 +221,15 @@ void CostmapGenerator::MessegefilteringCallback(
   first_point_outer.first = m_outer_geofence_points->points[0].x;
   first_point_outer.second = m_outer_geofence_points->points[0].y;
   m_OuterGeoFence.push_back(first_point_outer);
-
   bGeoFence = true;
 
   // std::cout << "geofence received" << std::endl;
 }
 
+void CostmapGenerator::ClosestGeofenceIndexCallback(
+    const std_msgs::msg::Int32::SharedPtr msg) {
+  m_closestGeofenceIndex = msg->data;
+}
 void CostmapGenerator::TransformPointsToGlobal(
     const pcl::PointCloud<pcl::PointXYZI>::Ptr &CloudIn,
     pcl::PointCloud<pcl::PointXYZI>::Ptr &CloudOut, 
@@ -529,11 +543,17 @@ void CostmapGenerator::publishRosMsg(grid_map::GridMap *map) {
 void CostmapGenerator::SearchPointsOntrack(
     const std::vector<std::pair<double, double>> &inner_array_in,
     const std::vector<std::pair<double, double>> &outer_array_in,
+    const int& closest_idx,
     pcl::PointCloud<pcl::PointXYZI>::Ptr &CloudIn,
     pcl::PointCloud<pcl::PointXYZI>::Ptr &CloudOut) {
 
   bool first_point_for_inner = true;
   bool first_point_for_outer = true;
+
+  int size = inner_array_in.size();
+
+  std::cout << "inner_array_in: " << inner_array_in.size() << std::endl;
+  std::cout << "closest_idx: "<< closest_idx << std::endl;
 
   double prev_geofence_x, prev_geofence_y;
   pcl::PointCloud<pcl::PointXYZI>::Ptr inner_boundary_filtered(
@@ -543,8 +563,24 @@ void CostmapGenerator::SearchPointsOntrack(
   // Firstly, search the points from inner boundary condition
   // INPUT : Origin points
   // OUTPUT :  inner_boudnary filtered points
+  for (int i = -1; i < 2; i++) {
+    int idx = closest_idx + i + size;
+    idx = idx % size;
+    std::cout << idx << "  ";
+  }
+
   for (auto point_buf : CloudIn->points) {
-    for (auto geofence_xy : inner_array_in) {
+    if (point_buf.intensity > 50.0)
+    {
+      continue;
+    }
+    bool finish_loop = false;
+
+    for (int i = -1; i < 2; i++) {
+      int idx = closest_idx + i + size;
+      idx = idx % size;
+
+      auto geofence_xy = inner_array_in[idx];
 
       if (first_point_for_inner) {
         prev_geofence_x = geofence_xy.first;
@@ -553,25 +589,40 @@ void CostmapGenerator::SearchPointsOntrack(
         continue;
       }
 
-      double cross_prod_z =
-          ((prev_geofence_x - point_buf.x) * (geofence_xy.second - point_buf.y) -
-           (prev_geofence_y - point_buf.y) * (geofence_xy.first - point_buf.x));
+      double cross_prod_z = ((prev_geofence_x - point_buf.x) *
+                                  (geofence_xy.second - point_buf.y) -
+                              (prev_geofence_y - point_buf.y) *
+                                  (geofence_xy.first - point_buf.x));
 
       prev_geofence_x = geofence_xy.first;
       prev_geofence_y = geofence_xy.second;
 
-      //put the points which are posed on the right from inner boundary
-      if (cross_prod_z < 0.)
-      {
+      // put the points which are posed on the right from inner boundary
+      if (cross_prod_z < 0.) {
         inner_boundary_filtered->points.push_back(point_buf);
+        finish_loop = true;
+        continue;
       }
     }
+    if (finish_loop)
+      continue;
   }
+
   // Secondely, search the points from outer boundary condition
   // INPUT : inner_boudnary filtered points
   // OUTPUT : both boundary filtered points = CloudOut
   for (auto point_buf : inner_boundary_filtered->points) {
-    for (auto geofence_xy : outer_array_in) {
+
+    if (point_buf.intensity > 50.0)
+    {
+      continue;
+    }
+    bool finish_loop = false;
+
+    for (int i = -1; i < 2; i++) {
+      int idx = closest_idx + i + size;
+      idx = idx % size;
+      auto geofence_xy = outer_array_in[idx];
 
       if (first_point_for_outer) {
         prev_geofence_x = geofence_xy.first;
@@ -591,7 +642,17 @@ void CostmapGenerator::SearchPointsOntrack(
       // put the points which are posed on the right from inner boundary
       if (cross_prod_z > 0.) {
         CloudOut->points.push_back(point_buf);
+        finish_loop = true;
+        continue;
       }
     }
+    if (finish_loop)
+      continue;
   }
+  /* example
+  closest_idx : 0 , size : 32
+  [i = -2] idx = 0 + (-2) -1 + 32 = 29
+  [i = -1] idx = 0 + (-1) -1 + 32 = 30
+  [i = 0] idx = 0 + (0) -1 + 32 = 31
+*/
 }
