@@ -53,15 +53,19 @@ class GraphBasedPlanner(rclpy.node.Node):
             pose.header.frame_id = self.msg.header.frame_id
             
             self.msg.poses.append(pose)
-        
-
 
         # top level path (module directory)
         path_assets = get_share_file('nif_multilayer_planning_nodes', 'assets')
         path_params = get_share_file('nif_multilayer_planning_nodes', 'params')
         path_inputs = get_share_file('nif_multilayer_planning_nodes', 'inputs')
         path_logs = get_share_file('nif_multilayer_planning_nodes', 'logs')
-        # sys.path.append(toppath)
+
+        self.declare_parameter("globtraj_input_path", os.path.join(path_inputs, "traj_ltpl_cl", "traj_ltpl_cl_lgsim_ims.csv"))
+        self.declare_parameter("graph_store_path", os.path.join(path_inputs, "stored_graph.pckl"))
+        self.declare_parameter("ltpl_offline_param_path", os.path.join(path_params, "ltpl_config_offline.ini"))
+        self.declare_parameter("ltpl_online_param_path", os.path.join(path_params, "ltpl_config_online.ini"))
+        self.declare_parameter("log_path", os.path.join(path_logs, "graph_ltpl"))
+        self.declare_parameter("graph_log_id", datetime.datetime.now().strftime("%Y_%m_%d__%H_%M_%S"))
 
         track_param = configparser.ConfigParser()
         if not track_param.read(os.path.join(path_params, "driving_task.ini")):
@@ -72,12 +76,12 @@ class GraphBasedPlanner(rclpy.node.Node):
         # define all relevant paths
         path_dict = {
             # 'globtraj_input_path': toppath + "/inputs/traj_ltpl_cl/traj_ltpl_cl_" + track_specifier + ".csv",
-            'globtraj_input_path': os.path.join(path_inputs, "traj_ltpl_cl", "traj_ltpl_cl_lgsim_ims.csv"),
-            'graph_store_path': os.path.join(path_inputs, "stored_graph.pckl"),
-            'ltpl_offline_param_path': os.path.join(path_params, "ltpl_config_offline.ini"),
-            'ltpl_online_param_path': os.path.join(path_params, "ltpl_config_online.ini"),
-            'log_path': os.path.join(path_logs, "graph_ltpl"),
-            'graph_log_id': datetime.datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
+            'globtraj_input_path': str(self.get_parameter("globtraj_input_path").get_parameter_value()),
+            'graph_store_path': str(self.get_parameter("graph_store_path").get_parameter_value()),
+            'ltpl_offline_param_path': str(self.get_parameter("ltpl_offline_param_path").get_parameter_value()),
+            'ltpl_online_param_path': str(self.get_parameter("ltpl_online_param_path").get_parameter_value()),
+            'log_path': str(self.get_parameter("log_path").get_parameter_value()),
+            'graph_log_id': str(self.get_parameter("graph_log_id").get_parameter_value()),
         }
 
         # Subscribers and Publisher

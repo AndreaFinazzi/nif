@@ -13,17 +13,20 @@ def generate_launch_description():
     global_map = os.path.join(
             get_package_share_directory("nif_localization_nodes"),
             "map",
+            "ims",
             "indy_full.pcd", #IMS
         )    
     outer_geofence_map = os.path.join(
             get_package_share_directory("nif_localization_nodes"),
             "map",
+            "ims",
             "wall.pcd" # IMS
             # "LOR_wall.pcd", #LOR
         )
     inner_geofence_map = os.path.join(
             get_package_share_directory("nif_localization_nodes"),
             "map",
+            "ims",
             "inner.pcd", #IMS
             # "LOR_inner.pcd", #LOR
         )
