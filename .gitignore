@@ -78,3 +78,10 @@ target_fs/
 
 /tmp
 .secret.*
+
+## large_size map files in the navigation
+*.pcd
+*.osm
+src/perception/nif_localization_nodes/map/
+
+core

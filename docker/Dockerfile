@@ -29,11 +29,12 @@ RUN apt update && apt install -y python3-vcstool
 RUN cd /opt && \
     git clone --recurse-submodules https://${GH_TOKEN}@github.com/AndreaFinazzi/nif.git && \
     cd nif && echo $GL_TOKEN > .secret.gitlab && echo $GH_TOKEN > .secret.github && \
-    vcs import < nif.$ROS_DISTRO.repos && \
-    rosdep update && \
-    pip install -r central-requirements.txt && \
-    rosdep install -ir -y --from-path src/ --rosdistro $ROS_DISTRO
-    # rosdep install --as-root "apt:false pip:false" --simulate --reinstall --ignore-src -y --from-paths src | sort >> /opt/ros-deps
+    ./nifupdate
+#     vcs import < nif.$ROS_DISTRO.repos && \
+#     rosdep update && \
+#     pip install -r central-requirements.txt && \
+#     rosdep install -ir -y --from-path src/ --rosdistro $ROS_DISTRO
+#     rosdep install --as-root "apt:false pip:false" --simulate --reinstall --ignore-src -y --from-paths src | sort >> /opt/ros-deps
 
 # GTSAM lib install
 RUN cd /opt && git clone https://github.com/borglab/gtsam.git && \

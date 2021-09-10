@@ -54,6 +54,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           submodules: 'recursive'
+          path: nif
 
       - 
         uses: ros-tooling/setup-ros@v0.2
@@ -90,7 +91,7 @@ jobs:
         name: Build and push Docker image
         uses: docker/build-push-action@v2
         with:
-          context: ./docker
+          context: ./nif/docker
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -107,8 +108,8 @@ jobs:
           ./getade.sh
           docker image ls -a
           touch .adehome && export ADE_IMAGES="${{ steps.meta.outputs.tags }}" && export ADE_NAME=nif
-          ade --rc .aderc-ci start
-          docker exec -it nif bash -c "cd /home/$USER/nif && ./nifbuild --continue-on-error"
+          cd nif && ade --rc .aderc-ci start
+          docker exec -it nif bash -c "cd nif && ./nifbuild --continue-on-error"
 #          ade load /tmp/nif_image.tar
 #          docker run --rm -e RMW_IMPLEMENTATION=rmw_cyclonedds_cpp -e ROS_DISTRO=foxy -e GROUP=gh -e GROUP_ID=1000 -e USER=gh -e USER_ID=1000 --entrypoint="bash -c 'cd /tmp/nif && ./nifupdate && ./nifbuild'" -v $(pwd):/tmp/nif ${{ steps.meta.outputs.tags }}
 #          docker run --rm -it $(docker build -q .)

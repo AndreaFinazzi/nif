@@ -2,7 +2,7 @@
 //  Author: Daegyu Lee
 
 //
-// Created by usrg on 09/02/21.
+// Created by usrg on 09/09/21.
 //
 
 #include "localization_ekf_nodes/localization_ekf_node.h"
@@ -18,6 +18,13 @@ EKFLocalizer::EKFLocalizer(const std::string &node_name) : IBaseNode(node_name) 
 
   m_origin_lat = this->get_global_parameter<double>("coordinates.ecef_ref_lat");
   m_origin_lon = this->get_global_parameter<double>("coordinates.ecef_ref_lon");
+
+  // this->m_origin_lat = this->get_parameter("origin_lat").as_double();
+  // this->m_origin_lon = this->get_parameter("origin_lon").as_double();
+
+  RCLCPP_INFO(this->get_logger(), "ORIGIN LATITUDE : ", m_origin_lat);
+  RCLCPP_INFO(this->get_logger(), "ORIGIN LONGITUDE : ", m_origin_lon);
+
   const std::string& topic_ego_odometry =
       this->get_global_parameter<std::string>(
           nif::common::constants::parameters::names::TOPIC_ID_EGO_ODOMETRY);
@@ -69,10 +76,6 @@ EKFLocalizer::EKFLocalizer(const std::string &node_name) : IBaseNode(node_name) 
 
 EKFLocalizer ::~EKFLocalizer(){};
 
-void EKFLocalizer::respond() {
-  this->get_parameter("origin_lat", m_origin_lat);
-  this->get_parameter("origin_lon", m_origin_lon);
-}
 
 void EKFLocalizer::timer_callback() {
   run();
@@ -166,7 +169,7 @@ void EKFLocalizer::GPSLATLONCallback(
 
   nav_msgs::msg::Odometry ltp_odom;
 
-  ltp_odom.header.frame_id = "odom";
+  ltp_odom.header.frame_id = ODOM;
   ltp_odom.header.stamp = this->now();
   ltp_odom.child_frame_id = BASE_LINK;
 
@@ -178,7 +181,6 @@ void EKFLocalizer::GPSLATLONCallback(
   ltp_odom.pose.pose.position.y = m_dGPS_Y;
   ltp_odom.pose.pose.position.z = -ltp_pt.z;
 
-  ltp_odom.header = msg->header;
   ltp_odom.pose.pose.orientation.w = 1;
   ltp_odom.pose.pose.position.x = m_dGPS_X;
   ltp_odom.pose.pose.position.y = m_dGPS_Y;
