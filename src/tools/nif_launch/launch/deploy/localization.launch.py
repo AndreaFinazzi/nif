@@ -53,7 +53,6 @@ def generate_launch_description():
         PythonLaunchDescriptionSource(
             get_package_share_directory('nif_localization_nodes') + '/launch/deploy.launch.py'
         ),
-
     )
 
     return LaunchDescription([
