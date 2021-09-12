@@ -23,6 +23,7 @@
 #include <std_msgs/msg/bool.hpp>
 #include <std_msgs/msg/float32.hpp>
 #include <std_msgs/msg/header.hpp>
+#include <std_msgs/msg/int32.hpp>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/static_transform_broadcaster.h>
@@ -71,7 +72,8 @@ public:
   void InnerFencePCDFileIO();
   void Projector(const std::vector<std::pair<double, double>> &array_in,
                  const double &veh_x_, const double &veh_y_, double &distance,
-                 nav_msgs::msg::Path &SegmentOut);
+                 int &min_idx, nav_msgs::msg::Path &SegmentOut);
+
   void GeoFenceOnBody(const std::vector<std::pair<double, double>> &array_in,
                       const double &veh_x_, const double &veh_y_,
                       const double &veh_yaw_, nav_msgs::msg::Path &PathOut);
@@ -93,6 +95,7 @@ private:
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pubInnerDistance;
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pubOuterDistance;
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr pubOnTheTrack;
+  rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pubGeofeceClosestIdx;
 
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr subOdometry;
 

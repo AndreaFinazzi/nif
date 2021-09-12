@@ -8,32 +8,60 @@ from launch.substitutions import LaunchConfiguration
 from launch.conditions import IfCondition
 from launch_ros.actions import Node
 
+IMS = 0
+LOR = 1
+track = None
+
+# get which track we are at
+# track_id = os.environ.get('TRACK').strip()
+track_id = "IMS"
+
+if track_id == "IMS":
+    track = IMS
+elif track_id == "LOR":
+    track = LOR
+else:
+    raise RuntimeError("ERROR: Invalid track {}".format(track_id))
+
 
 def generate_launch_description():
+    ns = ""
+    track_subdir = ""
+
+    if track == LOR:
+        track_subdir = "lor"
+    elif track == IMS:
+        track_subdir = "ims"
+    else:
+        raise RuntimeError("ERROR: invalid track provided: {}".format(track))
+
     global_map = os.path.join(
             get_package_share_directory("nif_localization_nodes"),
             "map",
-            "indy_full.pcd", #IMS
+            track_subdir,
+            "full_map.pcd", #IMS
         )    
     outer_geofence_map = os.path.join(
             get_package_share_directory("nif_localization_nodes"),
             "map",
-            "wall.pcd" # IMS
+            track_subdir,
+            "outer_map.pcd" # IMS
             # "LOR_wall.pcd", #LOR
         )
     inner_geofence_map = os.path.join(
             get_package_share_directory("nif_localization_nodes"),
             "map",
-            "inner.pcd", #IMS
+            track_subdir,
+            "inner_map.pcd", #IMS
             # "LOR_inner.pcd", #LOR
         )
-    ns = ""
 
     base_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             get_package_share_directory('nif_launch') + '/launch/base.launch.py'
         )
     )
+
 
     localization_node = Node(
                 package="nif_localization_nodes",
@@ -54,6 +82,8 @@ def generate_launch_description():
                     ("in_bestpos", "novatel_bottom/bestpos"),
                     ("in_imu", "novatel_bottom/imu/data"),
                     ("in_wheel_speed_report", "raptor_dbw_interface/wheel_speed_report"),
+                    ("out_odometry_ekf_estimated", "/localization/ego_odom"),
+                    ("out_odometry_bestpos", "/localization/ego_odom_bestpos"),
                 ]
             )
 

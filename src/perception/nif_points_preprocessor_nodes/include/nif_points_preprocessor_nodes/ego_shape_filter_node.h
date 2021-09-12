@@ -105,7 +105,9 @@ private:
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr
       pub_inverse_points;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr
-      pub_left_ransac_filtered_points;
+      pub_weaker_thres_inverse_points;
+   rclcpp::Publisher<
+      sensor_msgs::msg::PointCloud2>::SharedPtr pub_left_ransac_filtered_points;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr
       pub_right_ransac_filtered_points;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr
@@ -162,6 +164,7 @@ private:
 
   void InverseMap(pcl::PointCloud<pcl::PointXYZI>::Ptr cloudIn,
                   pcl::PointCloud<pcl::PointXYZI>::Ptr cloudOut,
+                  pcl::PointCloud<pcl::PointXYZI>::Ptr WeakerThrescloudOut,
                   pcl::PointCloud<pcl::PointXYZI>::Ptr cloudLeftOut,
                   pcl::PointCloud<pcl::PointXYZI>::Ptr cloudRightOut,
                   float min_x, float min_y, float in_resolution);

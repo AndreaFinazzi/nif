@@ -80,8 +80,8 @@ target_fs/
 .secret.*
 
 ## large_size map files in the navigation
-*.pcd
-*.osm
-src/perception/nif_localization_nodes/map/
+#*.pcd
+#*.osm
+src/perception/nif_localization_nodes/map/ims/full_map.pcd
 
 core

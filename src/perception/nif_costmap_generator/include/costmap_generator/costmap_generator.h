@@ -128,7 +128,6 @@ private:
 
   std::string lidar_frame_;
   std::string map_frame_;
-  std::string points_topic_name_;
   std::string output_map_name_;
   double grid_min_value_;
   double grid_max_value_;

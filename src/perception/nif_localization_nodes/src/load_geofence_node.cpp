@@ -13,47 +13,54 @@ using namespace nif::common::frame_id::localization;
 // Constructor
 GeoFenceLoader::GeoFenceLoader(const std::string &node_name_)
     : Node(node_name_) {
-  this->declare_parameter<std::string>(
-      "outer_geofence_filename", "");
-  this->declare_parameter<std::string>(
-      "inner_geofence_filename", "");
+  this->declare_parameter<std::string>("outer_geofence_filename", "");
+  this->declare_parameter<std::string>("inner_geofence_filename", "");
 
-  this->m_OuterGeoFenceFileName = this->get_parameter("outer_geofence_filename").as_string();     
-  this->m_InnerGeoFenceFileName = this->get_parameter("inner_geofence_filename").as_string();    
+  this->m_OuterGeoFenceFileName =
+      this->get_parameter("outer_geofence_filename").as_string();
+  this->m_InnerGeoFenceFileName =
+      this->get_parameter("inner_geofence_filename").as_string();
 
-  if (this->m_OuterGeoFenceFileName.length() <= 0 || 
+  if (this->m_OuterGeoFenceFileName.length() <= 0 ||
       this->m_InnerGeoFenceFileName.length() <= 0) {
-        throw std::runtime_error("Invalid pointcloud paths.");
-      }
+    throw std::runtime_error("Invalid pointcloud paths.");
+  }
+
+  // setup QOS to be best effort
+  auto qos = rclcpp::QoS(
+      rclcpp::QoSInitialization(RMW_QOS_POLICY_HISTORY_KEEP_LAST, 10));
+  qos.best_effort();
 
   pubOuterGeofence = this->create_publisher<sensor_msgs::msg::PointCloud2>(
-      "/geofence_outer", nif::common::constants::QOS_SENSOR_DATA);
+      "/geofence_outer", qos);
   pubInnerGeofence = this->create_publisher<sensor_msgs::msg::PointCloud2>(
-      "/geofence_inner", nif::common::constants::QOS_SENSOR_DATA);
+      "/geofence_inner", qos);
 
   pubInnerGeofencePath =
-      this->create_publisher<nav_msgs::msg::Path>("/geofence_path_inner", nif::common::constants::QOS_SENSOR_DATA);
+      this->create_publisher<nav_msgs::msg::Path>("/geofence_path_inner", qos);
   pubOuterGeofencePath =
-      this->create_publisher<nav_msgs::msg::Path>("/geofence_path_outer", nif::common::constants::QOS_SENSOR_DATA);
+      this->create_publisher<nav_msgs::msg::Path>("/geofence_path_outer", qos);
   pubInnerSegmentPath =
-      this->create_publisher<nav_msgs::msg::Path>("/segment_path_inner", nif::common::constants::QOS_SENSOR_DATA);
+      this->create_publisher<nav_msgs::msg::Path>("/segment_path_inner", qos);
   pubOuterSegmentPath =
-      this->create_publisher<nav_msgs::msg::Path>("/segment_path_outer", nif::common::constants::QOS_SENSOR_DATA);
+      this->create_publisher<nav_msgs::msg::Path>("/segment_path_outer", qos);
 
   pubInnerDistance = this->create_publisher<std_msgs::msg::Float32>(
-      "/geofence_inner_distance", nif::common::constants::QOS_SENSOR_DATA);
+      "/geofence_inner_distance", qos);
   pubOuterDistance = this->create_publisher<std_msgs::msg::Float32>(
-      "/geofence_outer_distance", nif::common::constants::QOS_SENSOR_DATA);
+      "/geofence_outer_distance", qos);
 
   // TODO : use this "ON_THE_TRACK" flag in the system state manager
   pubOnTheTrack =
-      this->create_publisher<std_msgs::msg::Bool>("/bool/on_the_track", nif::common::constants::QOS_SENSOR_DATA);
+      this->create_publisher<std_msgs::msg::Bool>("/bool/on_the_track", qos);
+
+  pubGeofeceClosestIdx = this->create_publisher<std_msgs::msg::Int32>(
+      "/int/closest_geofence_idx", qos);
 
   subOdometry = this->create_subscription<nav_msgs::msg::Odometry>(
-      "/out_odometry_ekf_estimated", nif::common::constants::QOS_EGO_ODOMETRY,
+      "/out_odometry_ekf_estimated", qos,
       std::bind(&GeoFenceLoader::EKFOdometryCallback, this,
                 std::placeholders::_1));
-
 
   std::cout << "outer_geofence_filename: " << m_OuterGeoFenceFileName
             << std::endl;
@@ -91,9 +98,12 @@ GeoFenceLoader::GeoFenceLoader(const std::string &node_name_)
     std_msgs::msg::Bool OnTheTrackMsg;
     OnTheTrackMsg.data = false;
 
+    int closestIdxInner;
+    int closestIdxOuter;
+
     if (bInnerLoaded) {
       Projector(m_InnerGeoFence, m_veh_x, m_veh_y, minDistToInner,
-                SegmentInnerMsg);
+                closestIdxInner, SegmentInnerMsg);
       GeoFenceOnBody(m_InnerGeoFence, m_veh_x, m_veh_y, m_veh_yaw,
                      GeofenceInnerMsg);
       pubInnerGeofencePath->publish(GeofenceInnerMsg);
@@ -114,10 +124,9 @@ GeoFenceLoader::GeoFenceLoader(const std::string &node_name_)
     }
 
     pubOnTheTrack->publish(OnTheTrackMsg);
-
     if (bOuterLoaded) {
       Projector(m_OuterGeoFence, m_veh_x, m_veh_y, minDistToOuter,
-                SegmentOuterMsg);
+                closestIdxOuter, SegmentOuterMsg);
       GeoFenceOnBody(m_OuterGeoFence, m_veh_x, m_veh_y, m_veh_yaw,
                      GeofenceOuterMsg);
       pubOuterGeofencePath->publish(GeofenceOuterMsg);
@@ -132,6 +141,10 @@ GeoFenceLoader::GeoFenceLoader(const std::string &node_name_)
       OuterGeoFenceCloudMsg.header.frame_id = ODOM;
       OuterGeoFenceCloudMsg.header.stamp = this->now();
       pubOuterGeofence->publish(OuterGeoFenceCloudMsg);
+
+      std_msgs::msg::Int32 closestIdxOuterMsg;
+      closestIdxOuterMsg.data = closestIdxOuter;
+      pubGeofeceClosestIdx->publish(closestIdxOuterMsg);
     }
 
     // std::cout << "minDistToInner: " << minDistToInner << std::endl;
@@ -236,7 +249,7 @@ void GeoFenceLoader::GeoFenceOnBody(
 
 void GeoFenceLoader::Projector(
     const std::vector<std::pair<double, double>> &array_in,
-    const double &veh_x_, const double &veh_y_, double &distance,
+    const double &veh_x_, const double &veh_y_, double &distance, int &min_idx,
     nav_msgs::msg::Path &SegmentOut) {
   double bias, normal_distance;
   double min_distance = DBL_MAX;
@@ -309,6 +322,7 @@ void GeoFenceLoader::Projector(
       } else {
         sign = -1.0;
       }
+      min_idx = idx;
     }
     idx = idx + 1;
 

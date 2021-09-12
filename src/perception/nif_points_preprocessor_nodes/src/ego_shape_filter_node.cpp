@@ -70,6 +70,8 @@ EgoShapeFilterNode::EgoShapeFilterNode(const std::string &node_name_)
 
   pub_inverse_points = this->create_publisher<sensor_msgs::msg::PointCloud2>(
       "/inverse_mapped_points", qos);
+  pub_weaker_thres_inverse_points = this->create_publisher<sensor_msgs::msg::PointCloud2>(
+      "/weaker_thres_inverse_mapped_points", qos);
   pub_left_ransac_filtered_points =
       this->create_publisher<sensor_msgs::msg::PointCloud2>(
           "/ransac_filtered_points/left", qos);
@@ -208,14 +210,24 @@ void EgoShapeFilterNode::mergedPointsCallback(
       new pcl::PointCloud<pcl::PointXYZI>);
   pcl::PointCloud<pcl::PointXYZI>::Ptr CloudInverseRight(
       new pcl::PointCloud<pcl::PointXYZI>);
-  InverseMap(CloudShapeFiltered, CloudInverseBoth, CloudInverseLeft,
-             CloudInverseRight, min_x, min_y, resolution_);
+  pcl::PointCloud<pcl::PointXYZI>::Ptr CloudInverseWeakerThres(
+      new pcl::PointCloud<pcl::PointXYZI>);
+
+  InverseMap(CloudShapeFiltered, CloudInverseBoth,
+             CloudInverseWeakerThres, CloudInverseLeft, CloudInverseRight, min_x,
+             min_y, resolution_);
 
   sensor_msgs::msg::PointCloud2 cloud_inverse_msg;
   pcl::toROSMsg(*CloudInverseBoth, cloud_inverse_msg);
   cloud_inverse_msg.header.frame_id = BASE_LINK;
   cloud_inverse_msg.header.stamp = this->now();
   pub_inverse_points->publish(cloud_inverse_msg);
+
+  sensor_msgs::msg::PointCloud2 cloud_weaker_thres_inverse_msg;
+  pcl::toROSMsg(*CloudInverseWeakerThres, cloud_weaker_thres_inverse_msg);
+  cloud_weaker_thres_inverse_msg.header.frame_id = BASE_LINK;
+  cloud_weaker_thres_inverse_msg.header.stamp = this->now();
+  pub_weaker_thres_inverse_points->publish(cloud_weaker_thres_inverse_msg);
 
   pcl::PointCloud<pcl::PointXYZI>::Ptr CloudRANSACLeft(
       new pcl::PointCloud<pcl::PointXYZI>);
@@ -347,6 +359,7 @@ void EgoShapeFilterNode::RegisterPointToGrid(
 void EgoShapeFilterNode::InverseMap(
     pcl::PointCloud<pcl::PointXYZI>::Ptr cloudIn,
     pcl::PointCloud<pcl::PointXYZI>::Ptr cloudOut,
+    pcl::PointCloud<pcl::PointXYZI>::Ptr WeakerThrescloudOut,
     pcl::PointCloud<pcl::PointXYZI>::Ptr cloudLeftOut,
     pcl::PointCloud<pcl::PointXYZI>::Ptr cloudRightOut, float min_x,
     float min_y, float in_resolution) {
@@ -361,6 +374,9 @@ void EgoShapeFilterNode::InverseMap(
       } else {
         cloudRightOut->points.push_back(point_buf);
       }
+    }
+    if (map[y][x] > count_threshold_ - 1.) {
+      WeakerThrescloudOut->points.push_back(point_buf);
     }
   }
 }
