@@ -571,107 +571,113 @@ void CostmapGenerator::SearchPointsOntrack(
     std::cout << idx << "  ";
   }
   int cnt = 0;
+  
   for (auto point_buf : CloudIn->points) {
     bool finish_loop = false;
 
-    // for (int i = -1; i < 2; i++) {
-    //   int idx = closest_idx + i + size;
-    //   idx = idx % size;
+    for (int i = -1; i < 2; i++) {
+      int idx = (closest_idx + i + size) % size;
+      int idx_prev = ((closest_idx + i +size) - 1) % size;
 
-    int idx = closest_idx - 1;
+      // std::cout << idx << ", " << idx_prev << std::endl;
 
-    auto geofence_xy = inner_array_in[idx];
+      auto geofence_xy = inner_array_in[idx];
+      auto prev_geofence_xy = inner_array_in[idx_prev];
 
-    if (first_point_for_inner) {
-      prev_geofence_x = geofence_xy.first;
-      prev_geofence_y = geofence_xy.second;
-      first_point_for_inner = false;
-      continue;
+      double slope;
+      if (geofence_xy.first - prev_geofence_xy.first == 0) {
+        slope = 0;
+      } else {
+        slope = (geofence_xy.second - prev_geofence_xy.second) /
+                (geofence_xy.first - prev_geofence_xy.first);
       }
+      double bias = geofence_xy.second - slope * geofence_xy.first;
+      double normal_distance = fabs(slope * point_buf.x - point_buf.y + bias) / sqrt(pow(slope, 2) + 1);
 
-      double prod1 = (point_buf.x - prev_geofence_x) * (geofence_xy.first - prev_geofence_x) +
-                     (point_buf.y - prev_geofence_y) * (geofence_xy.second - prev_geofence_y);
-      double prod2 = (point_buf.x - geofence_xy.first) * (prev_geofence_x - geofence_xy.first) +
-                     (point_buf.y - geofence_xy.second) * (prev_geofence_y - geofence_xy.second);
+      double prod1 = (point_buf.x - prev_geofence_xy.first) * (geofence_xy.first - prev_geofence_xy.first) +
+                      (point_buf.y - prev_geofence_xy.second) * (geofence_xy.second - prev_geofence_xy.second);
+      double prod2 = (point_buf.x - geofence_xy.first) * (prev_geofence_xy.first - geofence_xy.first) +
+                      (point_buf.y - geofence_xy.second) * (prev_geofence_xy.second - geofence_xy.second);
 
-      double cross_prod_z = ((prev_geofence_x - point_buf.x) *
+      double cross_prod_z = ((prev_geofence_xy.first - point_buf.x) *
                                   (geofence_xy.second - point_buf.y) -
-                              (prev_geofence_y - point_buf.y) *
+                              (prev_geofence_xy.second - point_buf.y) *
                                   (geofence_xy.first - point_buf.x));
 
-      prev_geofence_x = geofence_xy.first;
-      prev_geofence_y = geofence_xy.second;
+      // std::cout << geofence_xy.first << ", "
+      //           << geofence_xy.second << ", "
+      //           << prev_geofence_xy.first << ", "
+      //           << prev_geofence_xy.second << std::endl;
 
       // put the points which are posed on the right from inner boundary
-      if (cross_prod_z < 0. && prod1 > 0 && prod2 > 0) {
+      if (cross_prod_z < 0. && prod1 > 0 && prod2 > 0 && fabs(normal_distance) > 1.5) {
         inner_boundary_filtered->points.push_back(point_buf);
-        // finish_loop = true;
-        // continue;
+        finish_loop = true;
+        continue;
       }
-    // }
-    
-    // if (finish_loop)
-    // {
-    //   cnt = cnt + 1;
-    //   continue;
-    // }
+      }
+      
+      if (finish_loop)
+      {
+        cnt = cnt + 1;
+        continue;
+      }
   }
   
-  std::cout << "cnt : " << cnt << ", not counted : "
-            << CloudIn->points.size() - cnt << std::endl;
+  // std::cout << "cnt : " << cnt << ", not counted : "
+  //           << CloudIn->points.size() - cnt << std::endl;
 
-                   // Secondely, search the points from outer boundary condition
-                   // INPUT : inner_boudnary filtered points
-                   // OUTPUT : both boundary filtered points = CloudOut
+  // Secondely, search the points from outer boundary condition
+  // INPUT : inner_boudnary filtered points
+  // OUTPUT : both boundary filtered points = CloudOut
   for (auto point_buf : inner_boundary_filtered->points) {
 
     bool finish_loop = false;
 
-    // for (int i = -1; i < 2; i++) {
-    //   int idx = closest_idx + i + size;
-    //   idx = idx % size;
+    for (int i = -1; i < 2; i++) {
+      int idx = (closest_idx + i + size) % size;
+      int idx_prev = ((closest_idx + i + size) - 1) % size;
 
-      int idx = closest_idx - 1;
+      // std::cout << idx << ", " << idx_prev << std::endl;
 
       auto geofence_xy = outer_array_in[idx];
+      auto prev_geofence_xy = outer_array_in[idx_prev];
 
-      if (first_point_for_outer) {
-        prev_geofence_x = geofence_xy.first;
-        prev_geofence_y = geofence_xy.second;
-        first_point_for_outer = false;
-        continue;
+      double slope;
+      if (geofence_xy.first - prev_geofence_xy.first == 0) {
+        slope = 0;
+      } else {
+        slope = (geofence_xy.second - prev_geofence_xy.second) /
+                (geofence_xy.first - prev_geofence_xy.first);
       }
-      double prod1 = (point_buf.x - prev_geofence_x) *
-                         (geofence_xy.first - prev_geofence_x) +
-                     (point_buf.y - prev_geofence_y) *
-                         (geofence_xy.second - prev_geofence_y);
+      double bias = geofence_xy.second - slope * geofence_xy.first;
+      double normal_distance = fabs(slope * point_buf.x - point_buf.y + bias) /
+                               sqrt(pow(slope, 2) + 1);
+
+      double prod1 = (point_buf.x - prev_geofence_xy.first) *
+                         (geofence_xy.first - prev_geofence_xy.first) +
+                     (point_buf.y - prev_geofence_xy.second) *
+                         (geofence_xy.second - prev_geofence_xy.second);
       double prod2 = (point_buf.x - geofence_xy.first) *
-                         (prev_geofence_x - geofence_xy.first) +
+                         (prev_geofence_xy.first - geofence_xy.first) +
                      (point_buf.y - geofence_xy.second) *
-                         (prev_geofence_y - geofence_xy.second);
+                         (prev_geofence_xy.second - geofence_xy.second);
 
-      double cross_prod_z =
-          ((prev_geofence_x - point_buf.x) *
-               (geofence_xy.second - point_buf.y) -
-           (prev_geofence_y - point_buf.y) * (geofence_xy.first - point_buf.x));
-
-      prev_geofence_x = geofence_xy.first;
-      prev_geofence_y = geofence_xy.second;
+      double cross_prod_z = ((prev_geofence_xy.first - point_buf.x) *
+                                 (geofence_xy.second - point_buf.y) -
+                             (prev_geofence_xy.second - point_buf.y) *
+                                 (geofence_xy.first - point_buf.x));
 
       // put the points which are posed on the right from inner boundary
-      if (cross_prod_z > 0. && prod1 > 0 && prod2 > 0) {
+      if (cross_prod_z > 0. && prod1 > 0 && prod2 > 0 &&
+          fabs(normal_distance) > 1.5) {
         CloudOut->points.push_back(point_buf);
-        // finish_loop = true;
-        // continue;
+        finish_loop = true;
+        continue;
       }
-    // }
-    // if (finish_loop)
-    //   continue;
-  }
-  /* example
-  closest_idx : 0 , size : 32
-  [i = -2] idx = 0 + (-2) -1 + 32 = 29
-  [i = -1] idx = 0 + (-1) -1 + 32 = 30
-  [i = 0] idx = 0 + (0) -1 + 32 = 31
-*/
+      }
+      if (finish_loop)
+        continue;
+    }
+ 
 }
