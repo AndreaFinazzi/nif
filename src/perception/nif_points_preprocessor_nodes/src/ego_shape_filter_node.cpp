@@ -181,7 +181,7 @@ void EgoShapeFilterNode::mergedPointsCallback(
   pcl::PointCloud<pcl::PointXYZI>::Ptr CloudShapeFiltered(
       new pcl::PointCloud<pcl::PointXYZI>);
 
-  RCLCPP_INFO(this->get_logger(), "-------------");
+  RCLCPP_DEBUG(this->get_logger(), "-------------");
 
   pcl::fromROSMsg(*msg, *CloudIn);
   CloudVoxelized = downsample(CloudIn, resolution_);
@@ -231,7 +231,7 @@ void EgoShapeFilterNode::mergedPointsCallback(
     //   std::cout << "left wall" << (*left_wall)[i] << std::endl;
     // }
     inner_bound_distance = (*left_wall)[3];
-    RCLCPP_INFO(this->get_logger(), "Left margin : %f", inner_bound_distance);
+    RCLCPP_DEBUG(this->get_logger(), "Left margin : %f", inner_bound_distance);
   }
   sensor_msgs::msg::PointCloud2 cloud_left_ransac_filtered_msg;
   pcl::toROSMsg(*CloudRANSACLeft, cloud_left_ransac_filtered_msg);
@@ -254,7 +254,7 @@ void EgoShapeFilterNode::mergedPointsCallback(
     //   std::cout << "right wall" << (*right_wall)[i] << std::endl;
     // }
     outer_bound_distance = (*right_wall)[3];
-    RCLCPP_INFO(this->get_logger(), "Right margin : %f", outer_bound_distance);
+    RCLCPP_DEBUG(this->get_logger(), "Right margin : %f", outer_bound_distance);
   }
   sensor_msgs::msg::PointCloud2 cloud_right_ransac_filtered_msg;
   pcl::toROSMsg(*CloudRANSACRight, cloud_right_ransac_filtered_msg);

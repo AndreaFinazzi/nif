@@ -68,7 +68,7 @@ def generate_launch_description():
 
     csl_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            get_package_share_directory('nif_control_safety_layer_nodes') + '/launch/default.launch.py'
+            get_package_share_directory('nif_control_safety_layer_nodes') + '/launch/deploy.launch.py'
         ),
 
     )

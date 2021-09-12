@@ -24,7 +24,7 @@
       radar_rear: "radar_rear"
 
     topics:
-      ego_odometry: /localization/ego_odom
+      ego_odometry: /bvs_localization/ltp_odom
         # bvs_localization/ltp_odom #
       #     localization/ego_odom
       system_status: system/status
@@ -49,7 +49,10 @@
 
       # ecef_ref_lat: 39.79312996
       # ecef_ref_lon: -86.23524024
-      
-      ecef_ref_lat: 39.809786 #IMS
-      ecef_ref_lon: -86.235148 #IMS
-      ecef_ref_hgt: -0.170035537
+
+    #ecef_ref_lat: 39.809786 #IMS
+    #ecef_ref_lon: -86.235148 #IMS
+      #ecef_ref_hgt: -0.170035537 ### check if 0.0 is needed
+      ecef_ref_lat: 39.8125900071711 #LOR
+      ecef_ref_lon: -86.3418060783425 #LOR
+      ecef_ref_hgt: 0.0

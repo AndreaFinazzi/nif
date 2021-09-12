@@ -45,14 +45,14 @@ def generate_launch_description():
             "map",
             track_subdir,
             "outer_map.pcd" # IMS
-            # "LOR_wall.pcd", #LOR
+            # "outer_map.pcd", #LOR
         )
     inner_geofence_map = os.path.join(
             get_package_share_directory("nif_localization_nodes"),
             "map",
             track_subdir,
             "inner_map.pcd", #IMS
-            # "LOR_inner.pcd", #LOR
+            # "inner_map.pcd", #LOR
         )
 
     # TOOO +++++ INCLUDE WALL DETECTION (UNWIRED) + TOPICS FOR ROSBAGS

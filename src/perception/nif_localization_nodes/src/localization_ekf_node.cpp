@@ -57,7 +57,7 @@ EKFLocalizer::EKFLocalizer(const std::string &node_name) : IBaseNode(node_name) 
       this->create_publisher<nav_msgs::msg::Odometry>(
           "out_odometry_bestpos", nif::common::constants::QOS_EGO_ODOMETRY);
 
-  broadcaster_ = std::make_unique<tf2_ros::StaticTransformBroadcaster>(this);
+  broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(this);
 
   using namespace std::chrono_literals; // NOLINT
   // TODO convert period to paramter

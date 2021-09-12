@@ -10,10 +10,6 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
-    pkg_dir = get_package_share_directory('nif_launch')
-    pkg_dir_robot_description = get_package_share_directory('av21_description')
-    # pkg_dir_localization = get_package_share_directory('nif_localization_nodes')
-    pgk_dir_lgsvl_simulation = get_package_share_directory('nif_lgsvl_simulation')
 
     nif_global_parameters_file = os.path.join(
         get_package_share_directory('nif_launch'),
@@ -33,7 +29,7 @@ def generate_launch_description():
 
     system_status_manager_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            get_package_share_directory('nif_system_status_manager_nodes') + '/launch/default.launch.py'
+            get_package_share_directory('nif_system_status_manager_nodes') + '/launch/deploy.launch.py'
         ),
     )
 
@@ -46,7 +42,7 @@ def generate_launch_description():
 
     robot_description_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            pkg_dir_robot_description + '/launch/default.launch.py'
+            get_package_share_directory('av21_description') + '/launch/deploy.launch.py'
         )
     )
 
