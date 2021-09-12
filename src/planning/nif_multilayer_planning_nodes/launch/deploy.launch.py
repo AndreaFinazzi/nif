@@ -41,7 +41,7 @@ def generate_launch_description():
     map_csv = None
 
     if track == LOR:
-        globtraj_input_path = get_share_file("nif_multilayer_planning_nodes", "inputs/traj_ltpl_cl/traj_ltpl_cl_lor.csv")
+        globtraj_input_path = get_share_file("nif_multilayer_planning_nodes", "inputs/traj_ltpl_cl/traj_ltpl_cl_lor_test.csv")
         graph_store_path = get_share_file("nif_multilayer_planning_nodes", "inputs/stored_graph.pckl")
         ltpl_offline_param_path = get_share_file("nif_multilayer_planning_nodes", "params/ltpl_config_offline.ini")
         ltpl_online_param_path = get_share_file("nif_multilayer_planning_nodes", "params/ltpl_config_online.ini")
