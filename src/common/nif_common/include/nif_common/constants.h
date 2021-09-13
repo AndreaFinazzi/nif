@@ -66,7 +66,7 @@ const rclcpp::QoS QOS_DEFAULT(5);
 /**
  * Default QoS parameter.
  */
-const rclcpp::QoS QOS_INTERNAL_STATUS = rclcpp::SensorDataQoS();
+const rclcpp::QoS QOS_INTERNAL_STATUS = rclcpp::QoS{10}; // IT MUST BE SYSTEMDEFAULT for Zenoh something 
 
 
 /**

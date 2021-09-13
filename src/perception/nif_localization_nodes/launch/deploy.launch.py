@@ -79,8 +79,8 @@ def generate_launch_description():
                     ("in_bestpos", "novatel_bottom/bestpos"),
                     ("in_imu", "novatel_bottom/imu/data"),
                     ("in_wheel_speed_report", "raptor_dbw_interface/wheel_speed_report"),
-                    ("out_odometry_ekf_estimated", "/localization/ekf/ego_odom"),
-                    ("out_odometry_bestpos", "/localization/ekf/ego_odom_bestpos"),
+                    ("out_odometry_ekf_estimated", "/localization/ekf/odom"),
+                    ("out_odometry_bestpos", "/localization/ekf/odom_bestpos"),
                 ]
             )
 
