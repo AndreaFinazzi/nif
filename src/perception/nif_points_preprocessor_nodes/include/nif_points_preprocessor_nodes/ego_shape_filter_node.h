@@ -60,6 +60,7 @@
 #include <pcl/registration/transformation_estimation_svd.h>
 
 #include <pcl/filters/approximate_voxel_grid.h>
+#include <pcl/filters/voxel_grid.h>
 
 // #include <pcl_ros/transforms.hpp>
 

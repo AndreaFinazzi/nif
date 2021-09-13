@@ -120,6 +120,12 @@ private:
                           const double &veh_x_, const double &veh_y_,
                           const double &veh_yaw_);
 
+  void
+  TransformPointsToBody(const pcl::PointCloud<pcl::PointXYZI>::Ptr &CloudIn,
+                        pcl::PointCloud<pcl::PointXYZI>::Ptr &CloudOut,
+                        const double &veh_x_, const double &veh_y_,
+                        const double &veh_yaw_);
+
   void SearchPointsOntrack(
       const std::vector<std::pair<double, double>> &inner_array_in,
       const std::vector<std::pair<double, double>> &outer_array_in,

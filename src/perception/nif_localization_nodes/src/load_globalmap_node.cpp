@@ -40,7 +40,7 @@ GlobalmapLoader::GlobalmapLoader(const std::string &node_name)
   // TrajectorypcdFileIO();
 
   using namespace std::chrono_literals; // NOLINT
-  timer_ = this->create_wall_timer(10000ms, [this]() {
+  timer_ = this->create_wall_timer(5000ms, [this]() {
     if (!bMapReady) {
       pcdFileIO();
       // TrajectorypcdFileIO();

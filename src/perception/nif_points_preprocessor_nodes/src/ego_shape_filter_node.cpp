@@ -385,7 +385,7 @@ EgoShapeFilterNode::downsample(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud,
                                double resolution) {
   pcl::PointCloud<pcl::PointXYZI>::Ptr filtered(
       new pcl::PointCloud<pcl::PointXYZI>);
-  pcl::ApproximateVoxelGrid<pcl::PointXYZI> voxelgrid;
+  pcl::VoxelGrid<pcl::PointXYZI> voxelgrid;
   voxelgrid.setLeafSize(resolution, resolution, 0.05);
   voxelgrid.setInputCloud(cloud);
   voxelgrid.filter(*filtered);

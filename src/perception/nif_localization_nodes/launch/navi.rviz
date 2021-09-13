@@ -7,17 +7,18 @@ Panels:
         - /Global Options1
         - /Status1
         - /Path1/Topic1
-        - /Odometry1
         - /Odometry1/Topic1
         - /Path3/Topic1
         - /Path4
-        - /PointCloud21
         - /PointCloud21/Topic1
+        - /PointCloud22
         - /PointCloud22/Topic1
         - /PointCloud22/Autocompute Value Bounds1
         - /Odometry2/Shape1
         - /PointCloud23
         - /PointCloud23/Topic1
+        - /PointCloud24
+        - /PointCloud24/Topic1
       Splitter Ratio: 0.4676470458507538
     Tree Height: 655
   - Class: rviz_common/Selection
@@ -334,7 +335,7 @@ Visualization Manager:
       Color: 255; 255; 255
       Color Transformer: AxisColor
       Decay Time: 0
-      Enabled: true
+      Enabled: false
       Invert Rainbow: false
       Max Color: 255; 255; 255
       Max Intensity: 3
@@ -354,7 +355,7 @@ Visualization Manager:
         Value: /globalmap
       Use Fixed Frame: true
       Use rainbow: true
-      Value: true
+      Value: false
     - Angle Tolerance: 0.10000000149011612
       Class: rviz_default_plugins/Odometry
       Covariance:
@@ -408,9 +409,9 @@ Visualization Manager:
       Enabled: true
       Invert Rainbow: false
       Max Color: 255; 255; 255
-      Max Intensity: 47.20914840698242
+      Max Intensity: 19.111156463623047
       Min Color: 0; 0; 0
-      Min Intensity: 3.2369699478149414
+      Min Intensity: 13.871148109436035
       Name: PointCloud2
       Position Transformer: XYZ
       Selectable: true
@@ -426,10 +427,43 @@ Visualization Manager:
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
+    - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 10
+        Min Value: -10
+        Value: true
+      Axis: Z
+      Channel Name: intensity
+      Class: rviz_default_plugins/PointCloud2
+      Color: 255; 255; 255
+      Color Transformer: Intensity
+      Decay Time: 0
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Max Intensity: 1.99951171875
+      Min Color: 0; 0; 0
+      Min Intensity: 0
+      Name: PointCloud2
+      Position Transformer: XYZ
+      Selectable: true
+      Size (Pixels): 3
+      Size (m): 0.20000000298023224
+      Style: Flat Squares
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+        Value: /merged/lidar
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
-    Fixed Frame: odom
+    Fixed Frame: base_link
     Frame Rate: 30
   Name: root
   Tools:
@@ -469,25 +503,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 47.84706497192383
+      Distance: 76.4537582397461
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0
-        Y: 0
-        Z: 0
+        X: 6.976655960083008
+        Y: -1.5930678844451904
+        Z: 2.4052181243896484
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.2697966694831848
+      Pitch: 0.4097963571548462
       Target Frame: base_link
       Value: Orbit (rviz)
-      Yaw: 0.12039860337972641
+      Yaw: 3.195394992828369
     Saved: ~
 Window Geometry:
   Displays:

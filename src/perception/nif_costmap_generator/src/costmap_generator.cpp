@@ -124,20 +124,25 @@ void CostmapGenerator::run() {
     pub_points_on_global_->publish(points_on_global_msg);
     std::cout << "points size : " << PointsOnGlobal->points.size() << std::endl;
 
-    pcl::PointCloud<pcl::PointXYZI>::Ptr PointsOnTrack(
+    pcl::PointCloud<pcl::PointXYZI>::Ptr PointsOnTrackGlobal(
         new pcl::PointCloud<pcl::PointXYZI>);
     SearchPointsOntrack(m_InnerGeoFence, m_OuterGeoFence,
-                        m_closestGeofenceIndex, PointsOnGlobal, PointsOnTrack);
-    std::cout << "tarck points size : " << PointsOnTrack->points.size() << std::endl;
+                        m_closestGeofenceIndex, PointsOnGlobal, PointsOnTrackGlobal);
+    std::cout << "tarck points size : " << PointsOnTrackGlobal->points.size() << std::endl;
 
     std::cout << "m_InnerGeoFence: " << m_InnerGeoFence.size() << std::endl; 
     std::cout << "m_OuterGeoFence: " << m_OuterGeoFence.size() << std::endl;
 
     sensor_msgs::msg::PointCloud2 points_on_track_msg;
-    pcl::toROSMsg(*PointsOnTrack, points_on_track_msg);
+    pcl::toROSMsg(*PointsOnTrackGlobal, points_on_track_msg);
     points_on_track_msg.header.stamp = this->now();
     points_on_track_msg.header.frame_id = ODOM;
     pub_points_on_track_->publish(points_on_track_msg);
+
+    pcl::PointCloud<pcl::PointXYZI>::Ptr PointsOnTrackBody(
+        new pcl::PointCloud<pcl::PointXYZI>);
+    TransformPointsToBody(PointsOnTrackGlobal, PointsOnTrackBody, 
+                          m_veh_x, m_veh_y, m_veh_yaw);
   }
 
     // if(bEnablePotential_)
@@ -228,6 +233,7 @@ void CostmapGenerator::ClosestGeofenceIndexCallback(
     const std_msgs::msg::Int32::SharedPtr msg) {
   m_closestGeofenceIndex = msg->data;
 }
+
 void CostmapGenerator::TransformPointsToGlobal(
     const pcl::PointCloud<pcl::PointXYZI>::Ptr &CloudIn,
     pcl::PointCloud<pcl::PointXYZI>::Ptr &CloudOut, 
@@ -249,7 +255,19 @@ void CostmapGenerator::TransformPointsToGlobal(
   }
 }
 
+void CostmapGenerator::TransformPointsToBody(
+    const pcl::PointCloud<pcl::PointXYZI>::Ptr &CloudIn,
+    pcl::PointCloud<pcl::PointXYZI>::Ptr &CloudOut, const double &veh_x_,
+    const double &veh_y_, const double &veh_yaw_) {
 
+  for (auto point : CloudIn->points) {
+    pcl::PointXYZI pointOnGlobal;
+    pointOnGlobal.x = (point.x - veh_x_) * cos(veh_yaw_) + (point.y -veh_y_) * sin(veh_yaw_);
+    pointOnGlobal.y = -(point.x - veh_x_) * sin(veh_yaw_) + (point.y -  veh_y_) * cos(veh_yaw_);
+    pointOnGlobal.z = point.z;
+    CloudOut->points.push_back(pointOnGlobal);
+  }
+}
 
     // void CostmapGenerator::MakeInflationWithPoints()
     // {

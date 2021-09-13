@@ -93,7 +93,7 @@ void EKFLocalizer::run() {
     GPS_data.ptr<double>(1)[0] = m_dGPS_Y;       // odom
     GPS_data.ptr<double>(2)[0] = m_dGPS_Heading; // odom
 
-    if (ImuTimeDouble != ImuPrevTimeDouble) {
+    // if (ImuTimeDouble != ImuPrevTimeDouble) {
 
       m_ekf.EKF_Predictionstep(m_ekf.m_xhat, m_ekf.m_Phat, vel_and_yawRate,
                                0.01);
@@ -143,10 +143,10 @@ void EKFLocalizer::run() {
 
       ImuPrevTimeDouble = ImuTimeDouble;
       VehVelocityPrevTimeDouble = VehVelocityTimeDouble;
-    } else {
-      // RCLCPP_WARN(this->get_logger(), "[Imu / Wheel speed] is not updated");
-      return;
-    }
+    // } else {
+    //   // RCLCPP_WARN(this->get_logger(), "[Imu / Wheel speed] is not updated");
+    //   return;
+    // }
 
   } else {
     RCLCPP_DEBUG(this->get_logger(), "Waiting for -[/novatel_bottom/bestpos]");
