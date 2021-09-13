@@ -9,10 +9,6 @@ from launch.conditions import IfCondition
 
 
 def generate_launch_description():
-    pkg_dir = get_package_share_directory('nif_launch')
-    pkg_dir_robot_description = get_package_share_directory('av21_description')
-    # pkg_dir_localization = get_package_share_directory('nif_localization_nodes')
-    pgk_dir_lgsvl_simulation = get_package_share_directory('nif_lgsvl_simulation')
 
     nif_base_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(

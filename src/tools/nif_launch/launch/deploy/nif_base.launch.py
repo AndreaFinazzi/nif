@@ -8,18 +8,36 @@ from launch.substitutions import LaunchConfiguration
 from launch.conditions import IfCondition
 from launch_ros.actions import Node
 
+IMS = 0
+LOR = 1
+track = None
+
+# get which track we are at
+track_id = os.environ.get('TRACK').strip()
+
+if track_id == "IMS":
+    track = IMS
+elif track_id == "LOR":
+    track = LOR
+else:
+    raise RuntimeError("ERROR: Invalid track {}".format(track_id))
 
 def generate_launch_description():
-    pkg_dir = get_package_share_directory('nif_launch')
-    pkg_dir_robot_description = get_package_share_directory('av21_description')
-    # pkg_dir_localization = get_package_share_directory('nif_localization_nodes')
-    pgk_dir_lgsvl_simulation = get_package_share_directory('nif_lgsvl_simulation')
+
+    global_params_file = None
+
+    if track == LOR:
+        global_params_file = 'params_LOR.global.0.yaml'
+    elif track == IMS:
+        global_params_file = 'params_IMS.global.0.yaml'
+    else:
+        raise RuntimeError("ERROR: invalid track provided: {}".format(track))
 
     nif_global_parameters_file = os.path.join(
         get_package_share_directory('nif_launch'),
         'config',
         'deploy',
-        'params.global.0.yaml'
+        global_params_file
     )
 
     global_parameters_launch = IncludeLaunchDescription(
@@ -33,7 +51,7 @@ def generate_launch_description():
 
     system_status_manager_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            get_package_share_directory('nif_system_status_manager_nodes') + '/launch/default.launch.py'
+            get_package_share_directory('nif_system_status_manager_nodes') + '/launch/deploy.launch.py'
         ),
     )
 
@@ -46,7 +64,7 @@ def generate_launch_description():
 
     robot_description_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            pkg_dir_robot_description + '/launch/default.launch.py'
+            get_package_share_directory('av21_description') + '/launch/deploy.launch.py'
         )
     )
 

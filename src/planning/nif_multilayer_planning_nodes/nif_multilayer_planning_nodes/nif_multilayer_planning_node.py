@@ -23,7 +23,7 @@ def get_share_file(package_name, file_name):
 
 # TODO clean this out
 lib_path_default = get_share_file('nif_multilayer_planning_nodes',
-                                  "../../lib/GraphBasedLocalTrajectoryPlanner/graph_ltpl")
+                                  "lib/GraphBasedLocalTrajectoryPlanner/graph_ltpl")
 
 sys.path.insert(0, lib_path_default)
 for dir_name in os.listdir(lib_path_default):

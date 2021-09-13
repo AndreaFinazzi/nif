@@ -58,7 +58,7 @@ def generate_launch_description():
     elif track == IMS:
         map_csv = ims_center_line_csv
     else:
-        print("ERROR: invalid track provided: {}".format(track))
+        raise RuntimeError("ERROR: invalid track provided: {}".format(track))
 
     path_publisher_node = Node(
         package='bvs_utils',
@@ -72,13 +72,21 @@ def generate_launch_description():
         }
     )
 
+    # TODO ########### ALERT!!! Needs to convert the csv to ltp coords first!
+    waypoint_manager_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            get_package_share_directory('nif_waypoint_manager_nodes') + '/launch/deploy.launch.py'
+        ),
+    )
+
     multilayer_planning_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            get_package_share_directory('nif_multilayer_planning_nodes') + '/launch/default.launch.py'
+            get_package_share_directory('nif_multilayer_planning_nodes') + '/launch/deploy.launch.py'
         ),
     )
 
     return LaunchDescription([
         path_publisher_node,
-        multilayer_planning_launch
+        # waypoint_manager_launch,
+        # multilayer_planning_launch
     ])

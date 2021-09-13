@@ -14,9 +14,11 @@
 #include "nav_msgs/msg/odometry.hpp"
 #include "std_msgs/msg/float32.hpp"
 #include "std_msgs/msg/int8.hpp"
+#include "std_msgs/msg/u_int8.hpp"
 
 #include "nif_msgs/msg/system_health.hpp"
 #include "deep_orange_msgs/msg/rc_to_ct.hpp"
+#include "deep_orange_msgs/msg/pt_report.hpp"
 #include "nif_msgs/msg/autonomy_status.hpp"
 #include "nif_msgs/msg/control_command.hpp"
 #include "nif_msgs/msg/node_status.hpp"
@@ -124,7 +126,7 @@ using PerceptionResultList = nif_msgs::msg::Perception3DArray;
  * This message contains the vehicle powertrain data which come from the
  * vehicle. It should be updated in the BaseNode using Raptor message.
  */
-using PowertrainState = nif_msgs::msg::PowertrainStatus;
+using PowertrainState = deep_orange_msgs::msg::PtReport; // nif_msgs::msg::PowertrainStatus;
 
 /**
  * This message contains the truncated waypoints and the current index. It
@@ -151,7 +153,7 @@ using ControlCmd = nif_msgs::msg::ControlCommand;
 
 using ControlAcceleratorCmd = std_msgs::msg::Float32;
 using ControlBrakingCmd = std_msgs::msg::Float32;
-using ControlGearCmd = std_msgs::msg::Int8;
+using ControlGearCmd = std_msgs::msg::UInt8;
 using ControlSteeringCmd = std_msgs::msg::Float32;
 
 /**

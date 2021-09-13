@@ -53,10 +53,16 @@ def generate_launch_description():
         PythonLaunchDescriptionSource(
             get_package_share_directory('nif_localization_nodes') + '/launch/deploy.launch.py'
         ),
+    )
 
+    wall_node_bg = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            get_package_share_directory('nif_points_preprocessor_nodes') + '/launch/deploy.launch.py'
+        ),
     )
 
     return LaunchDescription([
+        wall_node_bg,
         localization_node,
         localization_node_bg
     ])

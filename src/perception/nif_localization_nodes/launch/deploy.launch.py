@@ -45,17 +45,20 @@ def generate_launch_description():
             "map",
             track_subdir,
             "outer_map.pcd" # IMS
-            # "LOR_wall.pcd", #LOR
+            # "outer_map.pcd", #LOR
         )
     inner_geofence_map = os.path.join(
             get_package_share_directory("nif_localization_nodes"),
             "map",
             track_subdir,
             "inner_map.pcd", #IMS
-            # "LOR_inner.pcd", #LOR
+            # "inner_map.pcd", #LOR
         )
 
+    # TOOO +++++ INCLUDE WALL DETECTION (UNWIRED) + TOPICS FOR ROSBAGS
 
+
+    # TOOO +++++ INCLUDE WALL DETECTION (UNWIRED) + TOPICS FOR ROSBAGS
 
     localization_node = Node(
                 package="nif_localization_nodes",
@@ -76,8 +79,8 @@ def generate_launch_description():
                     ("in_bestpos", "novatel_bottom/bestpos"),
                     ("in_imu", "novatel_bottom/imu/data"),
                     ("in_wheel_speed_report", "raptor_dbw_interface/wheel_speed_report"),
-                    ("out_odometry_ekf_estimated", "/localization/ego_odom"),
-                    ("out_odometry_bestpos", "/localization/ego_odom_bestpos"),
+                    ("out_odometry_ekf_estimated", "/localization/ekf/odom"),
+                    ("out_odometry_bestpos", "/localization/ekf/odom_bestpos"),
                 ]
             )
 

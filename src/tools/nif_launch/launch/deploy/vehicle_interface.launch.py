@@ -104,7 +104,8 @@ def generate_launch_description():
                 file_name='launch/socket_can_receiver.launch.py'
             )
         ]),
-        launch_arguments={'interface': 'can1'}.items()
+        launch_arguments={'interface': 'can6'}.items()
+    # launch_arguments={'interface': 'can1'}.items()
     )
 
     socketcan_sender_launch = IncludeLaunchDescription(
@@ -114,7 +115,8 @@ def generate_launch_description():
                 file_name='launch/socket_can_sender.launch.py'
             )
         ]),
-        launch_arguments={'interface': 'can1'}.items()
+        launch_arguments={'interface': 'can6'}.items()
+    # launch_arguments={'interface': 'can1'}.items()
     )
 
     raptor_node = Node(
