@@ -127,7 +127,7 @@ private:
 
   bool heartbeatOk();
 
-  const rclcpp::Duration node_inactive_timeout_ms;
+  rclcpp::Duration node_inactive_timeout = rclcpp::Duration(1, 0);
 };
 
 } // namespace system

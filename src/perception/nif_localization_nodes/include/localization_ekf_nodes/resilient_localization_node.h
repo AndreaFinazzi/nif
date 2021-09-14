@@ -62,7 +62,7 @@ namespace nif {
 namespace localization {
 namespace resilient {
 
-class ResilientLocalization : public rclcpp::Node {
+class ResilientLocalization : public nif::common::IBaseNode {
 public:
   ResilientLocalization(const std::string &node_name_);
   ~ResilientLocalization();
@@ -97,6 +97,13 @@ private:
   rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr subOuterWallDetection;
 
   rclcpp::TimerBase::SharedPtr timer_;
+
+  rclcpp::Time m_geofence_inner_last_update_;
+  rclcpp::Time m_geofence_outer_last_update_;
+  rclcpp::Time m_detected_inner_last_update_;
+  rclcpp::Time m_detected_outer_last_update_;
+
+  rclcpp::Duration m_geofence_timeout_ = rclcpp::Duration(1, 0);
 
   double m_veh_x;
   double m_veh_y;

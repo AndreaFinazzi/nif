@@ -11,6 +11,10 @@ SystemStatusManagerNode::SystemStatusManagerNode(
 //    Initialize to false
     this->system_status_msg.health_status.system_failure = false;
 
+    this->declare_parameter("timeout_node_inactive_ms", 1000);
+
+    this->node_inactive_timeout = rclcpp::Duration(this->get_parameter("timeout_node_inactive_ms").as_int() * 1000000);
+
     // Subscribers
     this->joystick_sub = this->create_subscription<deep_orange_msgs::msg::JoystickCommand>(
             "in_joystick_cmd", nif::common::constants::QOS_CONTROL_CMD_OVERRIDE,
@@ -22,11 +26,11 @@ SystemStatusManagerNode::SystemStatusManagerNode(
     );
 
     this->joy_emergency_pub = this->create_publisher<std_msgs::msg::Bool>(
-            "/vehicle/emergency_joystick", 10);
+            "/ssm/emergency_joystick", 10);
     this->hb_emergency_pub = this->create_publisher<std_msgs::msg::Bool>(
-            "/vehicle/emergency_heartbeat", 10);
+            "/ssm/emergency_heartbeat", 10);
     this->diagnostic_hb_pub = this->create_publisher<std_msgs::msg::Int32>(
-            "/diagnostics/heartbeat", 10);
+            "/ssm/heartbeat", 10);
 
     // Services
     // TODO make global parameter
@@ -113,7 +117,6 @@ void SystemStatusManagerNode::registerNodeServiceHandler(
             response->message = "Node " + request->node_name + " hase been registered in SSM.";
             return;
         }
-
     }
 
     response->node_id = 0;
@@ -125,7 +128,7 @@ void SystemStatusManagerNode::registerNodeServiceHandler(
 void SystemStatusManagerNode::nodeStatusUpdate(
         const nif::common::msgs::NodeStatus::SharedPtr msg) {
     // TODO implement checks over msg.
-    if (this->now() - msg->stamp_last_update >= this->node_inactive_timeout_ms)
+    if (this->now() - msg->stamp_last_update >= this->node_inactive_timeout)
     {
     // TODO implement check on last_update_stamp to detect inactive nodes.
         msg->node_status_code = common::NODE_INACTIVE;
