@@ -190,6 +190,7 @@ nif::common::types::t_node_id SystemStatusManagerNode::newStatusRecord(
     {
         // Add the calling node to the registry of watched nodes
         auto node_status_record_ptr = std::make_unique<NodeStatusRecord>();
+        node_status_record_ptr->node_status->node_id = node_id;
         this->node_status_records.push_back(std::move(node_status_record_ptr));
     }
     auto node_index = this->node_status_records.size() - 1;
