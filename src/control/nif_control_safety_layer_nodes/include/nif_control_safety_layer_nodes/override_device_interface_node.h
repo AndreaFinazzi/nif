@@ -6,7 +6,6 @@
 #define ROS2MASTER_OVERRIDE_DEVICE_INTERFACE_H
 
 #include "rclcpp/rclcpp.hpp"
-#include <deep_orange_msgs/msg/joystick_command.hpp>
 
 #include "nif_common/types.h"
 
@@ -20,7 +19,7 @@ public:
       : Node(node_name, options) {
 
     this->override_msg_sub =
-        this->create_subscription<deep_orange_msgs::msg::JoystickCommand>(
+            this->create_subscription<nif::common::msgs::OverrideControlCmd>(
             "/joystick/command", nif::common::constants::QOS_CONTROL_CMD_OVERRIDE,
             std::bind(&OverrideDeviceInterfaceNode::joystickCallback, this,
                       std::placeholders::_1));
@@ -33,11 +32,11 @@ public:
 private:
   nif::common::msgs::ControlCmd control_cmd;
 
-  rclcpp::Subscription<deep_orange_msgs::msg::JoystickCommand>::SharedPtr override_msg_sub;
+  rclcpp::Subscription<nif::common::msgs::OverrideControlCmd>::SharedPtr override_msg_sub;
   rclcpp::Publisher<nif::common::msgs::ControlCmd>::SharedPtr nif_control_cmd_pub;
 
   void joystickCallback(
-      const deep_orange_msgs::msg::JoystickCommand::SharedPtr msg) {
+          const nif::common::msgs::OverrideControlCmd::SharedPtr msg) {
     this->control_cmd.header.stamp = msg->stamp;
     this->control_cmd.order = 0;
     this->control_cmd.steering_control_cmd.data = msg->steering_cmd;

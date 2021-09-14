@@ -53,6 +53,8 @@ namespace nif
 
       rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr m_map_track_global_publisher;
       rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr m_map_track_body_publisher;
+
+      unsigned short int maptrack_size_safety_threshold = 1;
     };
 
 } // namespace managers

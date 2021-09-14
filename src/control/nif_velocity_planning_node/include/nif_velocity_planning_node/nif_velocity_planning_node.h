@@ -44,7 +44,7 @@ namespace nif{
 
                 // Publishers
                 des_vel_pub_ = this->create_publisher<std_msgs::msg::Float32>(
-                    "/velocity_planner/des_vel", nif::common::constants::QOS_CONTROL_CMD);
+                    "velocity_planner/des_vel", nif::common::constants::QOS_CONTROL_CMD);
 
                 // Subscribers
                 path_sub_ = this->create_subscription<nav_msgs::msg::Path>(
@@ -57,20 +57,20 @@ namespace nif{
                                   std::placeholders::_1));
                 velocity_sub_ =
                         this->create_subscription<raptor_dbw_msgs::msg::WheelSpeedReport>(
-                            "/raptor_dbw_interface/wheel_speed_report", nif::common::constants::QOS_SENSOR_DATA,
+                            "raptor_dbw_interface/wheel_speed_report", nif::common::constants::QOS_SENSOR_DATA,
                                 std::bind(&VelocityPlannerNode::velocityCallback, this,
                                           std::placeholders::_1));
                 imu_sub_ = this->create_subscription<sensor_msgs::msg::Imu>(
-                    "/novatel_bottom/imu/data", nif::common::constants::QOS_SENSOR_DATA,
+                    "novatel_bottom/imu/data", nif::common::constants::QOS_SENSOR_DATA,
                         std::bind(&VelocityPlannerNode::imuCallback, this,
                                   std::placeholders::_1));
                 steering_sub_ =
                         this->create_subscription<raptor_dbw_msgs::msg::SteeringReport>(
-                            "/raptor_dbw_interface/steering_report", nif::common::constants::QOS_SENSOR_DATA,
+                            "raptor_dbw_interface/steering_report", nif::common::constants::QOS_SENSOR_DATA,
                                 std::bind(&VelocityPlannerNode::steerCallback, this,
                                           std::placeholders::_1));
                 error_sub_ = this->create_subscription<std_msgs::msg::Float32MultiArray>(
-                    "/bvs_controller/lqr_error", nif::common::constants::QOS_DEFAULT,
+                    "bvs_controller/lqr_error", nif::common::constants::QOS_DEFAULT,
                         std::bind(&VelocityPlannerNode::errorCallback, this,
                                   std::placeholders::_1));
 

@@ -7,6 +7,9 @@
 
 #include <rclcpp/rclcpp.hpp>
 #include "nif_common/types.h"
+#include <std_msgs/msg/bool.hpp>
+#include <std_msgs/msg/int32.hpp>
+#include <std_srvs/srv/trigger.hpp>
 #include "nif_msgs/srv/register_node_status.hpp"
 
 using nif::common::NodeStatusCode;
@@ -40,12 +43,31 @@ private:
 
   common::SystemStatusCode system_status_code = common::SYSTEM_NOT_INITIALIZED;
 
+  unsigned int mode = 255;
+//  TODO make parameter
+  const int max_counter_drop = 20;
+  int t = 0;
+  int counter_hb = 0;
+
+  const int default_counter = 502;
+  int counter_joy_prev = default_counter-1;
+  int counter_joy = default_counter;
+  bool joy_emergency_stop = false;
+  bool recovery_enabled = true;
+
+
   /**
    * SystemStatus publisher. Publishes the latest system_status message, after
    * checking each node status.
    */
   rclcpp::Publisher<nif::common::msgs::SystemStatus>::SharedPtr
       system_status_pub;
+
+  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr joy_emergency_pub;
+  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr hb_emergency_pub;
+  rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr diagnostic_hb_pub;
+
+  rclcpp::Subscription<nif::common::msgs::OverrideControlCmd>::SharedPtr joystick_sub;
 
   std::vector<
       rclcpp::Subscription<nif::common::msgs::NodeStatus>::SharedPtr>
@@ -55,6 +77,8 @@ private:
       register_node_service;
 
   rclcpp::TimerBase::SharedPtr system_status_timer;
+
+  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr recovery_service;
 
 //  Node statuses storage and indices
   std::vector<std::shared_ptr<NodeStatusRecord>> node_status_records{};
@@ -75,23 +99,18 @@ private:
       const nif_msgs::srv::RegisterNodeStatus::Request::SharedPtr request,
       nif_msgs::srv::RegisterNodeStatus::Response::SharedPtr response);
 
+
+  nif::common::types::t_node_id newStatusRecord(const nif_msgs::srv::RegisterNodeStatus::Request::SharedPtr request);
   void nodeStatusUpdate(const nif::common::msgs::NodeStatus::SharedPtr msg);
 
-  bool checkNodeStatusInRange(nif::common::NodeType type_id)
-  {
-    if (
-        type_id == common::NodeType::SYSTEM         ||
-        type_id == common::NodeType::TOOL           ||
-        type_id == common::NodeType::PERCEPTION     ||
-        type_id == common::NodeType::LOCALIZATION   ||
-        type_id == common::NodeType::PREDICTION     ||
-        type_id == common::NodeType::PLANNING       ||
-        type_id == common::NodeType::CONTROL
-        ) return true;
-    return false;
-  }
-
   void systemStatusTimerCallback();
+
+  void joystickCallback(const nif::common::msgs::OverrideControlCmd::SharedPtr msg);
+
+  void recoveryServiceHandler(
+          const std::shared_ptr<rmw_request_id_t> request_header,
+          const std_srvs::srv::Trigger::Request::SharedPtr request,
+          std_srvs::srv::Trigger::Response::SharedPtr response);
 
   /**
    * System Healthy state machine, with boolean output
@@ -105,6 +124,10 @@ private:
    */
   common::SystemStatusCode getSystemStatusCode();
   void nodeStatusesAgeCheck();
+
+  bool heartbeatOk();
+
+  const rclcpp::Duration node_inactive_timeout_ms;
 };
 
 } // namespace system

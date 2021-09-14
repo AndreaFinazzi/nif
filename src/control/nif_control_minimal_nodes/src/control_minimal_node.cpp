@@ -59,15 +59,14 @@ void nif::control::ControlMinimalNode::initParameters() {}
 void nif::control::ControlMinimalNode::getParameters() {}
 
 nif::common::msgs::ControlCmd::SharedPtr ControlMinimalNode::solve() {
-  if (this->path_ready)
-  {
 
   rclcpp::Time control_time = this->now();
   rclcpp::Duration time_diff = control_time - this->recv_time_;
   double dt = static_cast<double>(time_diff.seconds()) +
       static_cast<double>(time_diff.nanoseconds()) * 1e-9;
 
-  if (dt < 0.5) {
+  if (this->path_ready && dt < 0.5)
+  {
     calculateFFW();
     calculateFB();
     calculateSteeringCmd();
@@ -75,14 +74,17 @@ nif::common::msgs::ControlCmd::SharedPtr ControlMinimalNode::solve() {
     RCLCPP_DEBUG(
         this->get_logger(), "%s\n", "Have not received new path in > 0.5s !");
     setCmdsToZeros();
+    this->setNodeStatus(common::NODE_ERROR);
+      return nullptr;
   }
 
-  publishSteering();
+      checkSteeringCmd();
   publishDebugSignals();
   int8_t invert_steering = true; // true
+
   this->control_cmd->steering_control_cmd.data = invert_steering ? -this->steering_cmd.data : this->steering_cmd.data;
 
-  }
+  this->setNodeStatus(common::NODE_OK);
   return this->control_cmd;
 }
 
@@ -118,7 +120,7 @@ void ControlMinimalNode::setCmdsToZeros() {
   this->steering_cmd.data = 0.0;
 }
 
-void ControlMinimalNode::publishSteering() {
+void ControlMinimalNode::checkSteeringCmd() {
   double ms = this->get_parameter("max_steer_angle").as_double();
   if (this->steering_cmd.data > ms) {
     RCLCPP_DEBUG(this->get_logger(), "%s\n", "Saturation Limit Max");
@@ -136,7 +138,7 @@ void ControlMinimalNode::publishSteering() {
       this->steering_override_ :
       this->steering_cmd.data;
 
-  pubSteeringCmd_->publish(this->steering_cmd);
+//  pubSteeringCmd_->publish(this->steering_cmd);
 }
 
 void ControlMinimalNode::publishDebugSignals() {

@@ -195,7 +195,7 @@ void IBaseNode::nodeStatusTimerCallback() {
 }
 
 //  ### NODE STATUS COMPONENTS
-void IBaseNode::setNodeStatus(NodeStatusCode status_code) {
+void IBaseNode::setNodeStatus(NodeStatusCode status_code) noexcept {
   this->node_status_manager.update(status_code);
 }
 
@@ -215,9 +215,6 @@ const msgs::Odometry &IBaseNode::getEgoOdometry() const {
 }
 const msgs::PowertrainState &IBaseNode::getEgoPowertrainState() const {
   return ego_powertrain_state;
-}
-const msgs::SystemStatus &IBaseNode::getSystemState() const {
-  return system_status;
 }
 const msgs::RaceControlStatus &IBaseNode::getRaceControlState() const {
   return race_control_status;

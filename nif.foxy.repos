@@ -19,7 +19,7 @@ repositories:
     url: https://oauth2:$GL_TOKEN@gitlab.com/IACBaseSoftware/official-novatel-driver.git
     version: main
 
-  src/external/bvs-meta:
-    type: git
-    url: https://$GH_TOKEN@github.com/PITT-MIT-IAC/bvs-meta.git
-    version: dev
+#  src/external/bvs-meta:
+#    type: git
+#    url: https://$GH_TOKEN@github.com/PITT-MIT-IAC/bvs-meta.git
+#    version: dev

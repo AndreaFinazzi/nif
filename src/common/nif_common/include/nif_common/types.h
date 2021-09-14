@@ -10,6 +10,7 @@
 
 #include "autoware_auto_msgs/msg/trajectory.hpp"
 #include "autoware_auto_msgs/msg/vehicle_kinematic_state.hpp"
+#include "deep_orange_msgs/msg/joystick_command.hpp"
 #include "constants.h"
 #include "nav_msgs/msg/odometry.hpp"
 #include "std_msgs/msg/float32.hpp"
@@ -62,6 +63,21 @@ enum NodeType : std::int8_t {
   TOOL,
   SYSTEM
 };
+
+
+static bool isNodeTypeInRange(nif::common::NodeType type_id)
+{
+    if (
+            type_id == common::NodeType::SYSTEM         ||
+            type_id == common::NodeType::TOOL           ||
+            type_id == common::NodeType::PERCEPTION     ||
+            type_id == common::NodeType::LOCALIZATION   ||
+            type_id == common::NodeType::PREDICTION     ||
+            type_id == common::NodeType::PLANNING       ||
+            type_id == common::NodeType::CONTROL
+            ) return true;
+    return false;
+}
 
 namespace msgs {
 
@@ -149,6 +165,7 @@ using NodeStatus = nif_msgs::msg::NodeStatus;
 // TODO: replace with real polynomial!
 using Polynomial = nav_msgs::msg::Odometry;
 
+using OverrideControlCmd = deep_orange_msgs::msg::JoystickCommand;
 using ControlCmd = nif_msgs::msg::ControlCommand;
 
 using ControlAcceleratorCmd = std_msgs::msg::Float32;

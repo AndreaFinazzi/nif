@@ -54,7 +54,6 @@ protected:
   const rclcpp::Time &getGclockNodeInit() const;
   const msgs::Odometry &getEgoOdometry() const;
   const msgs::PowertrainState &getEgoPowertrainState() const;
-  const msgs::SystemStatus &getSystemState() const;
   const msgs::RaceControlStatus &getRaceControlState() const;
 
   bool hasEgoOdometry() const;
@@ -73,7 +72,7 @@ protected:
 
   OnSetParametersCallbackHandle::SharedPtr parameters_callback_handle;
 
-  void setNodeStatus(NodeStatusCode status_code);
+  void setNodeStatus(NodeStatusCode status_code) noexcept;
 
   /**
    * Gets a global parameter through the global parameter client.

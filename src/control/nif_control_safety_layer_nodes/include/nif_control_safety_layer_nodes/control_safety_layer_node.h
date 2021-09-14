@@ -126,9 +126,10 @@ public:
     this->parameters_callback_handle = this->add_on_set_parameters_callback(
         std::bind(&ControlSafetyLayerNode::parametersCallback, this, std::placeholders::_1));
 
+    this->setNodeStatus(common::NODE_INITIALIZED);
   }
 
-protected:
+private:
   /**
    * Check if msg is valid, then push it in the ControlCmd buffer.
    * @param msg
@@ -138,10 +139,11 @@ protected:
   uint8_t getCommandsCount() const {
     return control_buffer.size();
   }
-
-private:
   // Prevent default constructor to be called from the outside
   ControlSafetyLayerNode();
+
+  // emergency lane flag. Activated in case of emergency.
+  bool emergency_lane_enabled = false;
 
   // Automatically boot with lateral_tracking_enabled
   bool lateral_tracking_enabled;
@@ -239,7 +241,9 @@ private:
   bool publishBrakingCmd(const nif::common::msgs::ControlBrakingCmd &msg) const;
   bool publishGearCmd(const nif::common::msgs::ControlGearCmd &msg) const;
 
-  //  TODO define safety checks functions
+    void afterSystemStatusCallback() override;
+
+    //  TODO define safety checks functions
 
 };
 } // namespace control

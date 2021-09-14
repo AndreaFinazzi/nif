@@ -101,6 +101,8 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
         (path_timeout_sec_) < 0.) {
     throw rclcpp::exceptions::InvalidParametersException("odometry_timeout_sec_ or path_timeout_sec_ parameter is negative.");
   }
+
+  this->setNodeStatus(common::NODE_INITIALIZED);
 }
 
 void
@@ -196,19 +198,11 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
                                      steering_max_ddeg_dt_, period_double_s );
     publishSteeringDiagnostics(true, steering_angle_deg, track_distance,
                                this->getReferencePath()->poses[lqr_tracking_idx_], error);
+  } else {
+      this->setNodeStatus(common::NODE_ERROR);
+      return nullptr;
   }
-
-  // Check / Process Overrides
-  bool override_sig = false;
-  if (std::abs(override_steering_target_) >
-          std::abs(steering_auto_override_deg_) ||
-      !lateral_tracking_enabled) {
-      steering_angle_deg = override_steering_target_;
-      override_sig = true;
-  }
-
-  if ( !(valid_path && valid_odom) && !override_sig)
-    return nullptr;
+  this->setNodeStatus(common::NODE_OK);
 
   last_steering_command_ = steering_angle_deg;
   this->control_cmd->steering_control_cmd.data = invert_steering ? -last_steering_command_ : last_steering_command_;

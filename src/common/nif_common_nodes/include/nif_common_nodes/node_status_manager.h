@@ -22,7 +22,7 @@ public:
    */
   explicit NodeStatusManager(const nif::common::IBaseNode&, const nif::common::NodeType);
 
-  void update(nif::common::NodeStatusCode status_code);
+  void update(nif::common::NodeStatusCode status_code) noexcept;
   
   ~NodeStatusManager();
 
