@@ -71,6 +71,7 @@ EKFLocalizer::EKFLocalizer(const std::string &node_name) : IBaseNode(node_name) 
   ref.altitude = 0.;
   conv_.initializeReference(ref);
 
+  this->setNodeStatus(common::NODE_INITIALIZED);
   RCLCPP_INFO(this->get_logger(), "START EKF NODE");
 }
 
@@ -82,7 +83,6 @@ void EKFLocalizer::timer_callback() {
 }
 
 void EKFLocalizer::run() {
-
   if (bImuFirstCall && bGPS && bGPSHeading) {
     vel_and_yawRate = cv::Mat::zeros(3, 1, CV_64FC1);
     GPS_data = cv::Mat::zeros(3, 1, CV_64FC1);
@@ -93,7 +93,9 @@ void EKFLocalizer::run() {
     GPS_data.ptr<double>(1)[0] = m_dGPS_Y;       // odom
     GPS_data.ptr<double>(2)[0] = m_dGPS_Heading; // odom
 
-    // if (ImuTimeDouble != ImuPrevTimeDouble) {
+//
+//    if (ImuTimeDouble != ImuPrevTimeDouble && bImuFirstCall) {
+//    }
 
       m_ekf.EKF_Predictionstep(m_ekf.m_xhat, m_ekf.m_Phat, vel_and_yawRate,
                                0.01);
@@ -147,7 +149,7 @@ void EKFLocalizer::run() {
     //   // RCLCPP_WARN(this->get_logger(), "[Imu / Wheel speed] is not updated");
     //   return;
     // }
-
+    this->setNodeStatus(common::NODE_OK);
   } else {
     RCLCPP_DEBUG(this->get_logger(), "Waiting for -[/novatel_bottom/bestpos]");
     RCLCPP_DEBUG(this->get_logger(), "            -[/novatel_bottom/inspva]");

@@ -12,9 +12,10 @@ using namespace nif::common::frame_id::localization;
 
 // Constructor
 ResilientLocalization::ResilientLocalization(const std::string &node_name_)
-    : Node(node_name_) {
+    : IBaseNode(node_name_) {
   this->declare_parameter<double>("thres_for_distance_error_flag", double(2.0));
   this->declare_parameter<double>("thres_for_distance_to_wall", double(2.0));
+  this->declare_parameter<int>("geofence_timeout_ms", 1000);
 
   pubOuterError = this->create_publisher<std_msgs::msg::Float32>(
       "/error_outer_distance", nif::common::constants::QOS_EGO_ODOMETRY);
@@ -57,7 +58,12 @@ ResilientLocalization::ResilientLocalization(const std::string &node_name_)
 
   using namespace std::chrono_literals; // NOLINT
   timer_ = this->create_wall_timer(10ms, [this]() {
-    
+      // If the geofence data is too old, report error, but keep going.
+    if (m_geofence_outer_last_update_ - this->now() >= this->m_geofence_timeout_ ||
+        m_detected_outer_last_update_ - this->now() >= this->m_geofence_timeout_)
+    {
+        this->setNodeStatus(common::NODE_ERROR);
+    }
     double m_outer_error = m_geofence_outer_distance - m_detected_outer_distance;
     std_msgs::msg::Float32 OuterDistanceMsg;
     OuterDistanceMsg.data = m_outer_error;
@@ -79,16 +85,21 @@ ResilientLocalization::ResilientLocalization(const std::string &node_name_)
       TooCloseToWallMsg.data = true;
     }
     pubTooCloseToWallFlag->publish(TooCloseToWallMsg);
-
+    this->setNodeStatus(common::NODE_OK);
   });
+
+  this->setNodeStatus(common::NODE_INITIALIZED);
 }
 
 ResilientLocalization::~ResilientLocalization() {}
 
 void ResilientLocalization::respond() {
+    int geofence_timeout_ms = 1000;
   this->get_parameter("thres_for_distance_error_flag", m_ThresForDistanceErrorFlag);
   this->get_parameter("thres_for_distance_to_wall", m_ThresToWallDistance);
+  this->get_parameter("geofence_timeout_ms", geofence_timeout_ms);
 
+  m_geofence_timeout_ = rclcpp::Duration(geofence_timeout_ms * 1000000);
   // this->get_parameter("inner_geofence_filename", m_InnerGeoFenceFileName);
 }
 
@@ -106,18 +117,22 @@ void ResilientLocalization::EKFOdometryCallback(
 void ResilientLocalization::InnerGeofenceDistanceCallback(
     const std_msgs::msg::Float32::SharedPtr msg) {
   m_geofence_inner_distance = msg->data;
+  m_geofence_inner_last_update_ = this->now();
 }
 void ResilientLocalization::OuterGeofenceDistanceCallback(
     const std_msgs::msg::Float32::SharedPtr msg) {
   m_geofence_outer_distance = msg->data;
+  m_geofence_outer_last_update_ = this->now();
 }
 void ResilientLocalization::InnerDetectedDistanceCallback(
     const std_msgs::msg::Float32::SharedPtr msg) {
   m_detected_inner_distance = msg->data;
+  m_detected_inner_last_update_ = this->now();
 }
 void ResilientLocalization::OuterDetectedDistanceCallback(
     const std_msgs::msg::Float32::SharedPtr msg) {
   m_detected_outer_distance = msg->data;
+  m_detected_outer_last_update_ = this->now();
 }
 
 void ResilientLocalization::OnTheTrackCallback(const std_msgs::msg::Bool::SharedPtr msg)
