@@ -115,6 +115,12 @@ private:
   double m_veh_y;
   double m_veh_roll, m_veh_pitch, m_veh_yaw;
 
+  double m_OuterGeoFenceBias;
+  double m_InnerGeoFenceBias;
+  double m_DistanceLowPassFilter;
+  double m_PrevOuterGeoFenceDistance;
+  double m_PrevInnerGeoFenceDistance;
+
   std::vector<std::pair<double, double>> m_OuterGeoFence;
   std::vector<std::pair<double, double>> m_InnerGeoFence;
 };

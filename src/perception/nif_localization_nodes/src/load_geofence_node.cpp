@@ -16,49 +16,56 @@ GeoFenceLoader::GeoFenceLoader(const std::string &node_name_)
   this->declare_parameter<std::string>("outer_geofence_filename", "");
   this->declare_parameter<std::string>("inner_geofence_filename", "");
 
+  this->declare_parameter<double>("outer_geofence_bias", 0.0);
+  this->declare_parameter<double>("inner_geofence_bias", 0.0);
+
+  this->declare_parameter<double>("distance_low_pass_filter", 0.5);
+
   this->m_OuterGeoFenceFileName =
       this->get_parameter("outer_geofence_filename").as_string();
   this->m_InnerGeoFenceFileName =
       this->get_parameter("inner_geofence_filename").as_string();
+
+  this->m_OuterGeoFenceBias =
+      this->get_parameter("outer_geofence_bias").as_double();
+  this->m_InnerGeoFenceBias =
+      this->get_parameter("inner_geofence_bias").as_double();
+  this->m_DistanceLowPassFilter =
+      this->get_parameter("distance_low_pass_filter").as_double();
 
   if (this->m_OuterGeoFenceFileName.length() <= 0 ||
       this->m_InnerGeoFenceFileName.length() <= 0) {
     throw std::runtime_error("Invalid pointcloud paths.");
   }
 
-  // setup QOS to be best effort
-  auto qos = rclcpp::QoS(
-      rclcpp::QoSInitialization(RMW_QOS_POLICY_HISTORY_KEEP_LAST, 10));
-  qos.best_effort();
-
   pubOuterGeofence = this->create_publisher<sensor_msgs::msg::PointCloud2>(
-      "/geofence_outer", qos);
+      "/geofence_outer", nif::common::constants::QOS_EGO_ODOMETRY);
   pubInnerGeofence = this->create_publisher<sensor_msgs::msg::PointCloud2>(
-      "/geofence_inner", qos);
+      "/geofence_inner", nif::common::constants::QOS_EGO_ODOMETRY);
 
   pubInnerGeofencePath =
-      this->create_publisher<nav_msgs::msg::Path>("/geofence_path_inner", qos);
+      this->create_publisher<nav_msgs::msg::Path>("/geofence_path_inner", nif::common::constants::QOS_EGO_ODOMETRY);
   pubOuterGeofencePath =
-      this->create_publisher<nav_msgs::msg::Path>("/geofence_path_outer", qos);
+      this->create_publisher<nav_msgs::msg::Path>("/geofence_path_outer", nif::common::constants::QOS_EGO_ODOMETRY);
   pubInnerSegmentPath =
-      this->create_publisher<nav_msgs::msg::Path>("/segment_path_inner", qos);
+      this->create_publisher<nav_msgs::msg::Path>("/segment_path_inner", nif::common::constants::QOS_EGO_ODOMETRY);
   pubOuterSegmentPath =
-      this->create_publisher<nav_msgs::msg::Path>("/segment_path_outer", qos);
+      this->create_publisher<nav_msgs::msg::Path>("/segment_path_outer", nif::common::constants::QOS_EGO_ODOMETRY);
 
   pubInnerDistance = this->create_publisher<std_msgs::msg::Float32>(
-      "/geofence_inner_distance", qos);
+      "/geofence_inner_distance", nif::common::constants::QOS_EGO_ODOMETRY);
   pubOuterDistance = this->create_publisher<std_msgs::msg::Float32>(
-      "/geofence_outer_distance", qos);
+      "/geofence_outer_distance", nif::common::constants::QOS_EGO_ODOMETRY);
 
   // TODO : use this "ON_THE_TRACK" flag in the system state manager
   pubOnTheTrack =
-      this->create_publisher<std_msgs::msg::Bool>("/bool/on_the_track", qos);
+      this->create_publisher<std_msgs::msg::Bool>("/Bool/on_the_track", nif::common::constants::QOS_EGO_ODOMETRY);
 
   pubGeofeceClosestIdx = this->create_publisher<std_msgs::msg::Int32>(
-      "/int/closest_geofence_idx", qos);
+      "/int/closest_geofence_idx", nif::common::constants::QOS_EGO_ODOMETRY);
 
   subOdometry = this->create_subscription<nav_msgs::msg::Odometry>(
-      "/out_odometry_ekf_estimated", qos,
+      "/out_odometry_ekf_estimated", nif::common::constants::QOS_EGO_ODOMETRY,
       std::bind(&GeoFenceLoader::EKFOdometryCallback, this,
                 std::placeholders::_1));
 
@@ -109,11 +116,13 @@ GeoFenceLoader::GeoFenceLoader(const std::string &node_name_)
       pubInnerGeofencePath->publish(GeofenceInnerMsg);
       pubInnerSegmentPath->publish(SegmentInnerMsg);
       std_msgs::msg::Float32 minDistToInnerMsg;
-      minDistToInnerMsg.data = minDistToInner;
-      if (fabs(minDistToInner) < 50.0)
+      double minDistCurrent = minDistToInner + m_InnerGeoFenceBias;
+      minDistToInnerMsg.data = minDistCurrent;
+
+      if (fabs(minDistToInner) < 50.0 && fabs(minDistToInner) > 0.2)
         pubInnerDistance->publish(minDistToInnerMsg);
 
-      if (minDistToInner > 0.0)
+      if (minDistToInner < 0.0)
         OnTheTrackMsg.data = true;
 
       sensor_msgs::msg::PointCloud2 InnerGeoFenceCloudMsg;
@@ -121,9 +130,16 @@ GeoFenceLoader::GeoFenceLoader(const std::string &node_name_)
       InnerGeoFenceCloudMsg.header.frame_id = ODOM;
       InnerGeoFenceCloudMsg.header.stamp = this->now();
       pubInnerGeofence->publish(InnerGeoFenceCloudMsg);
+
+      m_PrevInnerGeoFenceDistance = minDistCurrent;
     }
 
-    pubOnTheTrack->publish(OnTheTrackMsg);
+    if (fabs(minDistToInner) > 0.2) // minDist become almost zero when segment is changing.
+    {
+      pubOnTheTrack->publish(OnTheTrackMsg);
+    }
+
+
     if (bOuterLoaded) {
       Projector(m_OuterGeoFence, m_veh_x, m_veh_y, minDistToOuter,
                 closestIdxOuter, SegmentOuterMsg);
@@ -132,8 +148,10 @@ GeoFenceLoader::GeoFenceLoader(const std::string &node_name_)
       pubOuterGeofencePath->publish(GeofenceOuterMsg);
       pubOuterSegmentPath->publish(SegmentOuterMsg);
       std_msgs::msg::Float32 minDistToOuterMsg;
-      minDistToOuterMsg.data = minDistToOuter;
-      if (fabs(minDistToOuter) < 50.0)
+
+      double minDistCurrent = minDistToOuter + m_OuterGeoFenceBias;
+      minDistToOuterMsg.data = (m_DistanceLowPassFilter) * minDistCurrent + (1 - m_DistanceLowPassFilter) * m_PrevOuterGeoFenceDistance;
+      if (fabs(minDistToOuter) < 50.0 && fabs(minDistToOuter) > 0.2)
         pubOuterDistance->publish(minDistToOuterMsg);
 
       sensor_msgs::msg::PointCloud2 OuterGeoFenceCloudMsg;
@@ -145,7 +163,10 @@ GeoFenceLoader::GeoFenceLoader(const std::string &node_name_)
       std_msgs::msg::Int32 closestIdxOuterMsg;
       closestIdxOuterMsg.data = closestIdxOuter;
       pubGeofeceClosestIdx->publish(closestIdxOuterMsg);
+
+      m_PrevOuterGeoFenceDistance = minDistCurrent;
     }
+
 
     // std::cout << "minDistToInner: " << minDistToInner << std::endl;
     // std::cout << "minDistToOuter: " << minDistToOuter << std::endl;

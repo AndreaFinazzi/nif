@@ -31,6 +31,10 @@ EgoShapeFilterNode::EgoShapeFilterNode(const std::string &node_name_)
   this->declare_parameter<double>("normal_angle_thres", double(50.));
   this->declare_parameter<int>("ransac_pts_thresh", int(200));
 
+  this->declare_parameter<double>("x_roi", double(0.));
+  this->declare_parameter<double>("distance_extract_thres", double(0.5));
+  this->declare_parameter<double>("distance_low_fass_filter", double(0.5));
+
   respond();
 
   std::cout << "left_lower_distance_: " << left_lower_distance_ << std::endl;
@@ -114,6 +118,9 @@ void EgoShapeFilterNode::respond() {
   this->get_parameter("normal_angle_thres", normal_angle_thres_);
   this->get_parameter("ransac_pts_thresh", ransac_pts_thresh_);
 
+  this->get_parameter("x_roi", extract_distance_x_roi);
+  this->get_parameter("distance_extract_thres", extract_distance_thres);
+  this->get_parameter("distance_low_fass_filter", distance_low_fass_filter);
 }
 
 void EgoShapeFilterNode::EgoShape(
@@ -238,21 +245,30 @@ void EgoShapeFilterNode::mergedPointsCallback(
   inner_bound_distance = 0;
   outer_bound_distance = 0;
   // detected left_wall coefficients
-  if (left_wall) {
+  if (left_wall && !CloudRANSACLeft->points.empty()) {
     // for (int i = 0; i < 4; i++) {
     //   std::cout << "left wall" << (*left_wall)[i] << std::endl;
     // }
-    inner_bound_distance = (*left_wall)[3];
+    // inner_bound_distance = (*left_wall)[3];
     RCLCPP_DEBUG(this->get_logger(), "Left margin : %f", inner_bound_distance);
+
+    ExtractDistanceInCloud(CloudRANSACLeft, extract_distance_x_roi,
+                           extract_distance_thres, inner_bound_distance);
   }
+
+
   sensor_msgs::msg::PointCloud2 cloud_left_ransac_filtered_msg;
   pcl::toROSMsg(*CloudRANSACLeft, cloud_left_ransac_filtered_msg);
   cloud_left_ransac_filtered_msg.header.frame_id = BASE_LINK;
   cloud_left_ransac_filtered_msg.header.stamp = this->now();
   pub_left_ransac_filtered_points->publish(cloud_left_ransac_filtered_msg);
   std_msgs::msg::Float32 inner_bound_distance_msg;
-  inner_bound_distance_msg.data = inner_bound_distance;
+  inner_bound_distance_msg.data =
+      -1 * ((distance_low_fass_filter)*inner_bound_distance +
+            (1 - distance_low_fass_filter) * prev_inner_bound_distance);
   pub_inner_wall_distance->publish(inner_bound_distance_msg);
+
+  prev_inner_bound_distance = inner_bound_distance;
 
   pcl::PointCloud<pcl::PointXYZI>::Ptr CloudRANSACRight(
       new pcl::PointCloud<pcl::PointXYZI>);
@@ -261,13 +277,17 @@ void EgoShapeFilterNode::mergedPointsCallback(
       wall_detect(CloudInverseRight, CloudRANSACRight);
 
   // detected right_wall coefficients
-  if (right_wall) {
+  if (right_wall && !CloudRANSACRight->points.empty()) {
     // for (int i = 0; i < 4; i++) {
     //   std::cout << "right wall" << (*right_wall)[i] << std::endl;
     // }
-    outer_bound_distance = (*right_wall)[3];
-    RCLCPP_DEBUG(this->get_logger(), "Right margin : %f", outer_bound_distance);
+    // outer_bound_distance = (*right_wall)[3];
+    RCLCPP_DEBUG(this->get_logger(), "Right margin : %f", -1 * outer_bound_distance);
+    ExtractDistanceInCloud(CloudRANSACRight, extract_distance_x_roi,
+                           extract_distance_thres, outer_bound_distance);
+
   }
+
   sensor_msgs::msg::PointCloud2 cloud_right_ransac_filtered_msg;
   pcl::toROSMsg(*CloudRANSACRight, cloud_right_ransac_filtered_msg);
   cloud_right_ransac_filtered_msg.header.frame_id = BASE_LINK;
@@ -275,8 +295,14 @@ void EgoShapeFilterNode::mergedPointsCallback(
   pub_right_ransac_filtered_points->publish(cloud_right_ransac_filtered_msg);
 
   std_msgs::msg::Float32 outer_bound_distance_msg;
-  outer_bound_distance_msg.data = outer_bound_distance;
+  // outer_bound_distance_msg.data =
+  //     -1 * ((distance_low_fass_filter)*outer_bound_distance +
+  //           (1 - distance_low_fass_filter) * prev_outer_bound_distance);
+  outer_bound_distance_msg.data = -1 *outer_bound_distance;
+
   pub_outer_wall_distance->publish(outer_bound_distance_msg);
+
+  prev_outer_bound_distance = outer_bound_distance;
 
   pcl::PointCloud<pcl::PointXYZI>::Ptr CloudRANSACBoth(
       new pcl::PointCloud<pcl::PointXYZI>);
@@ -451,11 +477,33 @@ EgoShapeFilterNode::wall_detect(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud,
   return Eigen::Vector4f(coeffs);
 }
 
-nav_msgs::msg::Path
-EgoShapeFilterNode::LineVisualizer(pcl::PointCloud<pcl::PointXYZI>::Ptr cloudIn,
-                                   const boost::optional<Eigen::Vector4f> coeff,
-                                   double in_front_upper_threshold,
-                                   double in_rear_upper_threshold) {
+void EgoShapeFilterNode::ExtractDistanceInCloud(
+    const pcl::PointCloud<pcl::PointXYZI>::Ptr &cloudIn, const double& x_roi_, const double& dist_thres_, double& distance_out)
+    {
+      double sum_y = 0;
+      double count = 0;
+      for(auto point : cloudIn->points)
+      {
+        if (fabs(point.x - x_roi_) < dist_thres_) {
+          sum_y += point.y;
+          count ++;
+        }
+      }
+      if(count != 0)
+      {
+        distance_out = sum_y / count;
+      }
+      else
+      {
+        distance_out = 0;
+      }
+
+    }
+
+    nav_msgs::msg::Path EgoShapeFilterNode::LineVisualizer(
+        pcl::PointCloud<pcl::PointXYZI>::Ptr cloudIn,
+        const boost::optional<Eigen::Vector4f> coeff,
+        double in_front_upper_threshold, double in_rear_upper_threshold) {
 
   std::vector<cv::Point2f> ToBeFit;
   ToBeFit.clear();

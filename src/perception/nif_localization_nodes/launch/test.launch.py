@@ -70,9 +70,21 @@ def generate_launch_description():
                 emulate_tty=True,
                 namespace=ns,
                 parameters=[{
+                    # global map loader
                     'globalmap_file_name' : global_map,
+
+                    # geofence node
                     'outer_geofence_filename': outer_geofence_map,
                     'inner_geofence_filename': inner_geofence_map,
+                    'outer_geofence_bias': -0.5,
+                    'inner_geofence_bias': 0.0,
+                    'distance_low_pass_filter': 0.5,
+                    
+                    # resilient localization node
+                    'thres_for_distance_error_flag' : 1.0,
+                    'thres_for_distance_to_wall' : 2.0,
+
+
                     # 'origin_lat' : 39.809786,
                     # 'origin_lon' : -86.235148,
                     }],

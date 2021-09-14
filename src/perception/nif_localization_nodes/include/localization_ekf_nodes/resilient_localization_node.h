@@ -76,6 +76,9 @@ public:
   InnerDetectedDistanceCallback(const std_msgs::msg::Float32::SharedPtr msg);
   void
   OuterDetectedDistanceCallback(const std_msgs::msg::Float32::SharedPtr msg);
+  void
+  OnTheTrackCallback(const std_msgs::msg::Bool::SharedPtr msg);
+
 
   void respond();
 
@@ -83,8 +86,11 @@ private:
   ResilientLocalization();
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pubOuterError;
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr pubOuterErrorFlag;
+  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr pubTooCloseToWallFlag;
 
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr subOdometry;
+  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr subOnTheTrack;
+
   rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr subInnerDistance;
   rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr subOuterDistance;
   rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr subInnerWallDetection;
@@ -104,7 +110,9 @@ private:
   double m_detected_outer_distance;
 
   double m_ThresForDistanceErrorFlag;
+  double m_ThresToWallDistance;
 
+  bool m_on_the_track;
 };
 } // namespace resilient
 } // namespace localization

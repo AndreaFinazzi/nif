@@ -30,9 +30,9 @@ GlobalmapLoader::GlobalmapLoader(const std::string &node_name)
   qos.best_effort();
 
   pubGlobalmap =
-      this->create_publisher<sensor_msgs::msg::PointCloud2>("/globalmap", nif::common::constants::QOS_PLANNING);
+      this->create_publisher<sensor_msgs::msg::PointCloud2>("/globalmap", nif::common::constants::QOS_EGO_ODOMETRY);
   pubTrajectory = this->create_publisher<sensor_msgs::msg::PointCloud2>(
-      "/pcd_trajectory", nif::common::constants::QOS_PLANNING);
+      "/pcd_trajectory", nif::common::constants::QOS_EGO_ODOMETRY);
 
   RCLCPP_INFO(this->get_logger(), "GLOBAL MAP FILE : ", m_glbalmap_file_name);
 

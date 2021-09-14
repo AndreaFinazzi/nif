@@ -20,3 +20,8 @@ nif_points_preprocessor_nodes:
     count_threshold : 3.,
     normal_angle_thres : 50.,
     ransac_pts_thresh : 200,
+
+    x_roi : 0.0,
+    distance_extract_thres : 0.5,
+    distance_low_fass_filter : 0.0,
+
