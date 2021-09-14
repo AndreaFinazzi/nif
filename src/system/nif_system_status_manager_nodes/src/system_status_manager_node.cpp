@@ -13,7 +13,7 @@ SystemStatusManagerNode::SystemStatusManagerNode(
 
     this->declare_parameter("timeout_node_inactive_ms", 1000);
 
-    this->node_inactive_timeout = rclcpp::Duration(this->get_parameter("timeout_node_inactive_ms").as_int() * 1000000);
+    this->node_inactive_timeout = rclcpp::Duration(1, 0);
 
     // Subscribers
     this->joystick_sub = this->create_subscription<deep_orange_msgs::msg::JoystickCommand>(
@@ -190,7 +190,9 @@ nif::common::types::t_node_id SystemStatusManagerNode::newStatusRecord(
     {
         // Add the calling node to the registry of watched nodes
         auto node_status_record_ptr = std::make_unique<NodeStatusRecord>();
+        node_status_record_ptr->node_status = std::make_shared<nif_msgs::msg::NodeStatus>();
         node_status_record_ptr->node_status->node_id = node_id;
+        node_status_record_ptr->node_status->node_status_code = common::NODE_NOT_INITIALIZED;
         this->node_status_records.push_back(std::move(node_status_record_ptr));
     }
     auto node_index = this->node_status_records.size() - 1;
