@@ -14,32 +14,42 @@ using namespace nif::common::frame_id::localization;
 ResilientLocalization::ResilientLocalization(const std::string &node_name_)
     : Node(node_name_) {
   this->declare_parameter<double>("thres_for_distance_error_flag", double(2.0));
+  this->declare_parameter<double>("thres_for_distance_to_wall", double(2.0));
 
   pubOuterError = this->create_publisher<std_msgs::msg::Float32>(
-      "/error_outer_distance", nif::common::constants::QOS_SENSOR_DATA);
+      "/error_outer_distance", nif::common::constants::QOS_EGO_ODOMETRY);
   pubOuterErrorFlag = this->create_publisher<std_msgs::msg::Bool>(
-      "/Bool/outer_distance_error_high", nif::common::constants::QOS_SENSOR_DATA);
+      "/Bool/outer_distance_error_high",
+      nif::common::constants::QOS_EGO_ODOMETRY);
+  pubTooCloseToWallFlag = this->create_publisher<std_msgs::msg::Bool>(
+      "/Bool/close_to_wall",
+      nif::common::constants::QOS_EGO_ODOMETRY);
 
   subOdometry = this->create_subscription<nav_msgs::msg::Odometry>(
-      "/Odometry/ekf_estimated", nif::common::constants::QOS_EGO_ODOMETRY,
+      "/out_odometry_ekf_estimated", nif::common::constants::QOS_EGO_ODOMETRY,
       std::bind(&ResilientLocalization::EKFOdometryCallback, this,
                 std::placeholders::_1));
 
+  subOnTheTrack = this->create_subscription<std_msgs::msg::Bool>(
+      "/Bool/on_the_track", nif::common::constants::QOS_EGO_ODOMETRY,
+      std::bind(&ResilientLocalization::OnTheTrackCallback, this,
+                std::placeholders::_1));
+
   subInnerDistance = this->create_subscription<std_msgs::msg::Float32>(
-      "/geofence_inner_distance", nif::common::constants::QOS_SENSOR_DATA,
+      "/geofence_inner_distance", nif::common::constants::QOS_EGO_ODOMETRY,
       std::bind(&ResilientLocalization::InnerGeofenceDistanceCallback, this,
                 std::placeholders::_1));
   subOuterDistance = this->create_subscription<std_msgs::msg::Float32>(
-      "/geofence_outer_distance", nif::common::constants::QOS_SENSOR_DATA,
+      "/geofence_outer_distance", nif::common::constants::QOS_EGO_ODOMETRY,
       std::bind(&ResilientLocalization::OuterGeofenceDistanceCallback, this,
                 std::placeholders::_1));
 
   subInnerWallDetection = this->create_subscription<std_msgs::msg::Float32>(
-      "/detected_inner_distance", nif::common::constants::QOS_SENSOR_DATA,
+      "/detected_inner_distance", nif::common::constants::QOS_EGO_ODOMETRY,
       std::bind(&ResilientLocalization::InnerDetectedDistanceCallback, this,
                 std::placeholders::_1));
   subOuterWallDetection = this->create_subscription<std_msgs::msg::Float32>(
-      "/detected_outer_distance", nif::common::constants::QOS_SENSOR_DATA,
+      "/detected_outer_distance", nif::common::constants::QOS_EGO_ODOMETRY,
       std::bind(&ResilientLocalization::OuterDetectedDistanceCallback, this,
                 std::placeholders::_1));
 
@@ -53,14 +63,23 @@ ResilientLocalization::ResilientLocalization(const std::string &node_name_)
     OuterDistanceMsg.data = m_outer_error;
 
     std_msgs::msg::Bool OuterDistanceHighErrorFlagMsg;
-    OuterDistanceHighErrorFlagMsg.data = false; 
+    OuterDistanceHighErrorFlagMsg.data = false;
 
-    if(fabs(m_outer_error) > m_ThresForDistanceErrorFlag && m_detected_outer_distance != 0.)
-    {
+    if (fabs(m_outer_error) > m_ThresForDistanceErrorFlag &&
+        m_detected_outer_distance != 0. && m_on_the_track) {
       OuterDistanceHighErrorFlagMsg.data =  true;
-    } 
+    }
     pubOuterError->publish(OuterDistanceMsg);
     pubOuterErrorFlag->publish(OuterDistanceHighErrorFlagMsg);
+
+    std_msgs::msg::Bool TooCloseToWallMsg;
+    TooCloseToWallMsg.data = false;
+    if (fabs(m_detected_outer_distance) < m_ThresToWallDistance &&
+        m_detected_outer_distance != 0. && m_on_the_track) {
+      TooCloseToWallMsg.data = true;
+    }
+    pubTooCloseToWallFlag->publish(TooCloseToWallMsg);
+
   });
 }
 
@@ -68,6 +87,8 @@ ResilientLocalization::~ResilientLocalization() {}
 
 void ResilientLocalization::respond() {
   this->get_parameter("thres_for_distance_error_flag", m_ThresForDistanceErrorFlag);
+  this->get_parameter("thres_for_distance_to_wall", m_ThresToWallDistance);
+
   // this->get_parameter("inner_geofence_filename", m_InnerGeoFenceFileName);
 }
 
@@ -97,4 +118,9 @@ void ResilientLocalization::InnerDetectedDistanceCallback(
 void ResilientLocalization::OuterDetectedDistanceCallback(
     const std_msgs::msg::Float32::SharedPtr msg) {
   m_detected_outer_distance = msg->data;
+}
+
+void ResilientLocalization::OnTheTrackCallback(const std_msgs::msg::Bool::SharedPtr msg)
+{
+  m_on_the_track = msg->data;
 }

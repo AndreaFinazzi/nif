@@ -24,6 +24,13 @@
   <depend>pcl_conversions</depend>
   <depend>grid_map_ros</depend>
 
+  <depend>nif_common</depend>
+  <depend>nif_utils</depend>
+  <depend>nif_common_nodes</depend>
+  <depend>nif_localization_minimal</depend>
+  <depend>nif_frame_id</depend>
+
+
   <export>
     <build_type>ament_cmake</build_type>
   </export>

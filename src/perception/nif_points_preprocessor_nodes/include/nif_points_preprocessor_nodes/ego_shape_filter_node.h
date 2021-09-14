@@ -60,6 +60,7 @@
 #include <pcl/registration/transformation_estimation_svd.h>
 
 #include <pcl/filters/approximate_voxel_grid.h>
+#include <pcl/filters/voxel_grid.h>
 
 // #include <pcl_ros/transforms.hpp>
 
@@ -105,7 +106,9 @@ private:
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr
       pub_inverse_points;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr
-      pub_left_ransac_filtered_points;
+      pub_weaker_thres_inverse_points;
+   rclcpp::Publisher<
+      sensor_msgs::msg::PointCloud2>::SharedPtr pub_left_ransac_filtered_points;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr
       pub_right_ransac_filtered_points;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr
@@ -138,10 +141,17 @@ private:
 
   double inner_bound_distance;
   double outer_bound_distance;
+  double prev_inner_bound_distance;
+  double prev_outer_bound_distance;
+  double distance_low_fass_filter;
 
-  std::array<std::array<float, (size_t)(MAP_WIDTH + 1)>,
-             (size_t)(MAP_HEIGHT + 1)>
-      map;
+
+  double extract_distance_x_roi; 
+  double extract_distance_thres;
+
+      std::array<std::array<float, (size_t)(MAP_WIDTH + 1)>,
+                 (size_t)(MAP_HEIGHT + 1)>
+          map;
 
   void EgoShape(pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud_ptr,
                 pcl::PointCloud<pcl::PointXYZI>::Ptr out_cloud_ptr,
@@ -162,18 +172,27 @@ private:
 
   void InverseMap(pcl::PointCloud<pcl::PointXYZI>::Ptr cloudIn,
                   pcl::PointCloud<pcl::PointXYZI>::Ptr cloudOut,
+                  pcl::PointCloud<pcl::PointXYZI>::Ptr WeakerThrescloudOut,
                   pcl::PointCloud<pcl::PointXYZI>::Ptr cloudLeftOut,
                   pcl::PointCloud<pcl::PointXYZI>::Ptr cloudRightOut,
                   float min_x, float min_y, float in_resolution);
   boost::optional<Eigen::Vector4f>
   wall_detect(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud,
               pcl::PointCloud<pcl::PointXYZI>::Ptr cloudOut);
+
+  void
+  ExtractDistanceInCloud(const pcl::PointCloud<pcl::PointXYZI>::Ptr &cloudIn,
+                         const double &x_roi_, const double &dist_thres_,
+                         double &distance_out);
+
   nav_msgs::msg::Path
   LineVisualizer(pcl::PointCloud<pcl::PointXYZI>::Ptr cloudIn,
                  const boost::optional<Eigen::Vector4f> coeff,
                  double in_front_upper_threshold,
                  double in_rear_upper_threshold);
   cv::Mat polyfit(std::vector<cv::Point2f> &in_point, int n);
+
+
 };
 } // namespace perception
 } // namespace nif

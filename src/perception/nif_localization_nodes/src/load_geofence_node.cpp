@@ -13,47 +13,61 @@ using namespace nif::common::frame_id::localization;
 // Constructor
 GeoFenceLoader::GeoFenceLoader(const std::string &node_name_)
     : Node(node_name_) {
-  this->declare_parameter<std::string>(
-      "outer_geofence_filename", "");
-  this->declare_parameter<std::string>(
-      "inner_geofence_filename", "");
+  this->declare_parameter<std::string>("outer_geofence_filename", "");
+  this->declare_parameter<std::string>("inner_geofence_filename", "");
 
-  this->m_OuterGeoFenceFileName = this->get_parameter("outer_geofence_filename").as_string();     
-  this->m_InnerGeoFenceFileName = this->get_parameter("inner_geofence_filename").as_string();    
+  this->declare_parameter<double>("outer_geofence_bias", 0.0);
+  this->declare_parameter<double>("inner_geofence_bias", 0.0);
 
-  if (this->m_OuterGeoFenceFileName.length() <= 0 || 
+  this->declare_parameter<double>("distance_low_pass_filter", 0.5);
+
+  this->m_OuterGeoFenceFileName =
+      this->get_parameter("outer_geofence_filename").as_string();
+  this->m_InnerGeoFenceFileName =
+      this->get_parameter("inner_geofence_filename").as_string();
+
+  this->m_OuterGeoFenceBias =
+      this->get_parameter("outer_geofence_bias").as_double();
+  this->m_InnerGeoFenceBias =
+      this->get_parameter("inner_geofence_bias").as_double();
+  this->m_DistanceLowPassFilter =
+      this->get_parameter("distance_low_pass_filter").as_double();
+
+  if (this->m_OuterGeoFenceFileName.length() <= 0 ||
       this->m_InnerGeoFenceFileName.length() <= 0) {
-        throw std::runtime_error("Invalid pointcloud paths.");
-      }
+    throw std::runtime_error("Invalid pointcloud paths.");
+  }
 
   pubOuterGeofence = this->create_publisher<sensor_msgs::msg::PointCloud2>(
-      "/geofence_outer", nif::common::constants::QOS_SENSOR_DATA);
+      "/geofence_outer", nif::common::constants::QOS_EGO_ODOMETRY);
   pubInnerGeofence = this->create_publisher<sensor_msgs::msg::PointCloud2>(
-      "/geofence_inner", nif::common::constants::QOS_SENSOR_DATA);
+      "/geofence_inner", nif::common::constants::QOS_EGO_ODOMETRY);
 
   pubInnerGeofencePath =
-      this->create_publisher<nav_msgs::msg::Path>("/geofence_path_inner", nif::common::constants::QOS_SENSOR_DATA);
+      this->create_publisher<nav_msgs::msg::Path>("/geofence_path_inner", nif::common::constants::QOS_EGO_ODOMETRY);
   pubOuterGeofencePath =
-      this->create_publisher<nav_msgs::msg::Path>("/geofence_path_outer", nif::common::constants::QOS_SENSOR_DATA);
+      this->create_publisher<nav_msgs::msg::Path>("/geofence_path_outer", nif::common::constants::QOS_EGO_ODOMETRY);
   pubInnerSegmentPath =
-      this->create_publisher<nav_msgs::msg::Path>("/segment_path_inner", nif::common::constants::QOS_SENSOR_DATA);
+      this->create_publisher<nav_msgs::msg::Path>("/segment_path_inner", nif::common::constants::QOS_EGO_ODOMETRY);
   pubOuterSegmentPath =
-      this->create_publisher<nav_msgs::msg::Path>("/segment_path_outer", nif::common::constants::QOS_SENSOR_DATA);
+      this->create_publisher<nav_msgs::msg::Path>("/segment_path_outer", nif::common::constants::QOS_EGO_ODOMETRY);
 
   pubInnerDistance = this->create_publisher<std_msgs::msg::Float32>(
-      "/geofence_inner_distance", nif::common::constants::QOS_SENSOR_DATA);
+      "/geofence_inner_distance", nif::common::constants::QOS_EGO_ODOMETRY);
   pubOuterDistance = this->create_publisher<std_msgs::msg::Float32>(
-      "/geofence_outer_distance", nif::common::constants::QOS_SENSOR_DATA);
+      "/geofence_outer_distance", nif::common::constants::QOS_EGO_ODOMETRY);
 
   // TODO : use this "ON_THE_TRACK" flag in the system state manager
   pubOnTheTrack =
-      this->create_publisher<std_msgs::msg::Bool>("/bool/on_the_track", nif::common::constants::QOS_SENSOR_DATA);
+      this->create_publisher<std_msgs::msg::Bool>("/Bool/on_the_track", nif::common::constants::QOS_EGO_ODOMETRY);
+
+  pubGeofeceClosestIdx = this->create_publisher<std_msgs::msg::Int32>(
+      "/int/closest_geofence_idx", nif::common::constants::QOS_EGO_ODOMETRY);
 
   subOdometry = this->create_subscription<nav_msgs::msg::Odometry>(
       "/out_odometry_ekf_estimated", nif::common::constants::QOS_EGO_ODOMETRY,
       std::bind(&GeoFenceLoader::EKFOdometryCallback, this,
                 std::placeholders::_1));
-
 
   std::cout << "outer_geofence_filename: " << m_OuterGeoFenceFileName
             << std::endl;
@@ -91,19 +105,24 @@ GeoFenceLoader::GeoFenceLoader(const std::string &node_name_)
     std_msgs::msg::Bool OnTheTrackMsg;
     OnTheTrackMsg.data = false;
 
+    int closestIdxInner;
+    int closestIdxOuter;
+
     if (bInnerLoaded) {
       Projector(m_InnerGeoFence, m_veh_x, m_veh_y, minDistToInner,
-                SegmentInnerMsg);
+                closestIdxInner, SegmentInnerMsg);
       GeoFenceOnBody(m_InnerGeoFence, m_veh_x, m_veh_y, m_veh_yaw,
                      GeofenceInnerMsg);
       pubInnerGeofencePath->publish(GeofenceInnerMsg);
       pubInnerSegmentPath->publish(SegmentInnerMsg);
       std_msgs::msg::Float32 minDistToInnerMsg;
-      minDistToInnerMsg.data = minDistToInner;
-      if (fabs(minDistToInner) < 50.0)
+      double minDistCurrent = minDistToInner + m_InnerGeoFenceBias;
+      minDistToInnerMsg.data = minDistCurrent;
+
+      if (fabs(minDistToInner) < 50.0 && fabs(minDistToInner) > 0.2)
         pubInnerDistance->publish(minDistToInnerMsg);
 
-      if (minDistToInner > 0.0)
+      if (minDistToInner < 0.0)
         OnTheTrackMsg.data = true;
 
       sensor_msgs::msg::PointCloud2 InnerGeoFenceCloudMsg;
@@ -111,20 +130,28 @@ GeoFenceLoader::GeoFenceLoader(const std::string &node_name_)
       InnerGeoFenceCloudMsg.header.frame_id = ODOM;
       InnerGeoFenceCloudMsg.header.stamp = this->now();
       pubInnerGeofence->publish(InnerGeoFenceCloudMsg);
+
+      m_PrevInnerGeoFenceDistance = minDistCurrent;
     }
 
-    pubOnTheTrack->publish(OnTheTrackMsg);
+    if (fabs(minDistToInner) > 0.2) // minDist become almost zero when segment is changing.
+    {
+      pubOnTheTrack->publish(OnTheTrackMsg);
+    }
+
 
     if (bOuterLoaded) {
       Projector(m_OuterGeoFence, m_veh_x, m_veh_y, minDistToOuter,
-                SegmentOuterMsg);
+                closestIdxOuter, SegmentOuterMsg);
       GeoFenceOnBody(m_OuterGeoFence, m_veh_x, m_veh_y, m_veh_yaw,
                      GeofenceOuterMsg);
       pubOuterGeofencePath->publish(GeofenceOuterMsg);
       pubOuterSegmentPath->publish(SegmentOuterMsg);
       std_msgs::msg::Float32 minDistToOuterMsg;
-      minDistToOuterMsg.data = minDistToOuter;
-      if (fabs(minDistToOuter) < 50.0)
+
+      double minDistCurrent = minDistToOuter + m_OuterGeoFenceBias;
+      minDistToOuterMsg.data = (m_DistanceLowPassFilter) * minDistCurrent + (1 - m_DistanceLowPassFilter) * m_PrevOuterGeoFenceDistance;
+      if (fabs(minDistToOuter) < 50.0 && fabs(minDistToOuter) > 0.2)
         pubOuterDistance->publish(minDistToOuterMsg);
 
       sensor_msgs::msg::PointCloud2 OuterGeoFenceCloudMsg;
@@ -132,7 +159,14 @@ GeoFenceLoader::GeoFenceLoader(const std::string &node_name_)
       OuterGeoFenceCloudMsg.header.frame_id = ODOM;
       OuterGeoFenceCloudMsg.header.stamp = this->now();
       pubOuterGeofence->publish(OuterGeoFenceCloudMsg);
+
+      std_msgs::msg::Int32 closestIdxOuterMsg;
+      closestIdxOuterMsg.data = closestIdxOuter;
+      pubGeofeceClosestIdx->publish(closestIdxOuterMsg);
+
+      m_PrevOuterGeoFenceDistance = minDistCurrent;
     }
+
 
     // std::cout << "minDistToInner: " << minDistToInner << std::endl;
     // std::cout << "minDistToOuter: " << minDistToOuter << std::endl;
@@ -236,7 +270,7 @@ void GeoFenceLoader::GeoFenceOnBody(
 
 void GeoFenceLoader::Projector(
     const std::vector<std::pair<double, double>> &array_in,
-    const double &veh_x_, const double &veh_y_, double &distance,
+    const double &veh_x_, const double &veh_y_, double &distance, int &min_idx,
     nav_msgs::msg::Path &SegmentOut) {
   double bias, normal_distance;
   double min_distance = DBL_MAX;
@@ -309,6 +343,7 @@ void GeoFenceLoader::Projector(
       } else {
         sign = -1.0;
       }
+      min_idx = idx;
     }
     idx = idx + 1;
 
