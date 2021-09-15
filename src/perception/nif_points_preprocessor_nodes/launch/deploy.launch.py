@@ -21,7 +21,7 @@ def generate_launch_description():
                 executable="nif_points_preprocessor_nodes_exe",
                 output="screen",
                 emulate_tty=True,
-                parameters=[config],
+                parameters=[],
                 remappings=[
                     # ("ins_gps", "novatel_bottom/inspva_"),
                 ]

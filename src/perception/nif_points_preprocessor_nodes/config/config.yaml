@@ -1,7 +1,7 @@
 nif_points_preprocessor_nodes:
   ros__parameters:
     # point concat filter
-    input_topics : '[/luminar_front_points, /luminar_left_points, /luminar_right_points]',
+#    input_topics : '[/luminar_front_points, /luminar_left_points, /luminar_right_points]',
     output_topic : '/merged/lidar',
     output_frame_id : 'center_of_gravity',                    
 
