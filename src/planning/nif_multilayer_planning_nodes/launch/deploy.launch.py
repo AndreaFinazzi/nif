@@ -58,7 +58,10 @@ def generate_launch_description():
     nif_multilayer_planning_node = Node(
         package='nif_multilayer_planning_nodes',
         executable='nif_multilayer_planning_nodes_exe',
-        output='screen',
+        output={
+            'stdout': 'log',
+            'stderr': 'log',
+        },
         parameters=[
             {
                 "globtraj_input_path": globtraj_input_path,

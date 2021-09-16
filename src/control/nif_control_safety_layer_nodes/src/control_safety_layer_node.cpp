@@ -31,6 +31,9 @@ void nif::control::ControlSafetyLayerNode::controlOverrideCallback(
 }
 
 void nif::control::ControlSafetyLayerNode::run() {
+  bool is_overriding_steering = false;
+  nif::common::NodeStatusCode node_status = common::NODE_OK;
+
   if (
           this->emergency_lane_enabled ||
           this->now().nanoseconds() - this->getSystemStatusUpdateTime().nanoseconds() > rclcpp::Duration::from_seconds(0.5).nanoseconds())
@@ -42,7 +45,6 @@ void nif::control::ControlSafetyLayerNode::run() {
   // TODO If override.brake is greater than 0.0, use it
   // TODO If autonomous_mode is disabled, override has full control
 
-  bool is_overriding_steering = false;
   if (std::abs(override_control_cmd.steering_control_cmd.data) >
           std::abs(steering_auto_override_deg) ||
       !lateral_tracking_enabled) {
@@ -55,8 +57,11 @@ void nif::control::ControlSafetyLayerNode::run() {
     if (!is_overriding_steering) {
         if (!this->control_buffer.empty()) {
             this->control_cmd = std::move(*this->control_buffer.top());
+            //      TODO implement safety checks
         } else {
-            this->setNodeStatus(common::NodeStatusCode::NODE_ERROR);
+            // Set error, but keep going
+            // TODO implement fallback policy
+            node_status = common::NODE_ERROR;
         }
     }
 
@@ -64,16 +69,15 @@ void nif::control::ControlSafetyLayerNode::run() {
     this->control_cmd.header.stamp = this->now();
     this->control_cmd.header.frame_id = this->getBodyFrameId();
 
-    //      TODO implement safety checks
     this->control_pub->publish(this->control_cmd);
 
     this->publishSteeringCmd(this->control_cmd.steering_control_cmd);
 
+    this->setNodeStatus(node_status);
     //      TODO long_control is in charge of these, at the moment
     //      this->publishAcceleratorCmd(msg->accelerator_control_cmd);
     //      this->publishBrakingCmd(msg->braking_control_cmd);
     //      this->publishGearCmd(msg->gear_control_cmd);
-    this->setNodeStatus(common::NodeStatusCode::NODE_OK);
 
   } catch (...) {
     //      TODO handle critical error in the safest way

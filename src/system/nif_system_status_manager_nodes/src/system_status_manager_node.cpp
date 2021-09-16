@@ -75,12 +75,12 @@ void SystemStatusManagerNode::systemStatusTimerCallback() {
     this->system_status_msg.health_status.system_failure = !isSystemHealthy();
     this->system_status_msg.health_status.system_status_code = getSystemStatusCode();
 
-    this->joy_emergency_pub->publish(this->system_status_msg.health_status.commanded_stop);
-    this->hb_emergency_pub->publish(this->system_status_msg.health_status.communication_failure);
+    this->joy_emergency_pub->publish({this->system_status_msg.health_status.commanded_stop});
+    this->hb_emergency_pub->publish({this->system_status_msg.health_status.communication_failure});
     this->system_status_pub->publish(this->system_status_msg);
 
     // send diagnostic hb to vehicle interface
-    this->diagnostic_hb_pub->publish(counter_hb);
+    this->diagnostic_hb_pub->publish({static_cast<size_t>(counter_hb)});
     counter_hb++;
     if (counter_hb == 8){
         counter_hb = 0;

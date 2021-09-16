@@ -48,6 +48,10 @@ const NodeStatus &nif::common::NodeStatusManager::getNodeStatus() const {
   return node_status;
 }
 
+void nif::common::NodeStatusManager::setNodeId(const nif::common::types::t_node_id &node_id) {
+    node_status.node_id = node_id;
+}
+
 // NOT A SINGLETON ANYMORE!
 //const NodeStatusManager* NodeStatusManager::getInstance() {
 //  return instance;

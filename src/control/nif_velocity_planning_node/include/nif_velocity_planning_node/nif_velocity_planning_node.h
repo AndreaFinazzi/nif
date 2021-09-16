@@ -48,7 +48,7 @@ namespace nif{
 
                 // Subscribers
                 path_sub_ = this->create_subscription<nav_msgs::msg::Path>(
-                    "bvs_controller/target_path", nif::common::constants::QOS_PLANNING,
+                    "planning/graph/path_global", nif::common::constants::QOS_PLANNING,
                         std::bind(&VelocityPlannerNode::pathCallback, this,
                                   std::placeholders::_1));
                 odometry_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(

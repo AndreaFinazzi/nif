@@ -259,9 +259,9 @@ def generate_launch_description():
     global_params_file = None
 
     if track == LOR:
-        global_params_file = 'params_LOR.global.0.yaml'
+        global_params_file = 'params_LOR.global.yaml'
     elif track == IMS:
-        global_params_file = 'params_IMS.global.0.yaml'
+        global_params_file = 'params_IMS.global.yaml'
     else:
         raise RuntimeError("ERROR: invalid track provided: {}".format(track))
 

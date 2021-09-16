@@ -143,6 +143,8 @@ IBaseNode::IBaseNode(const std::string &node_name, const NodeType node_type, con
     {
       RCLCPP_ERROR(this->get_logger(), "Couldn't register to System Status Manager.");
       throw std::runtime_error("Couldn't register to System Status Manager. Not safe to proceed.");
+    } else {
+        this->node_status_manager.setNodeId(response->node_id);
     }
   };
   this->register_node_service_client->wait_for_service(std::chrono::seconds(2));
