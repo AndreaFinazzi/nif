@@ -90,3 +90,4 @@ ade --rc $ADERC \
     -v /home/$USER/dev_ws/src/bag/:/home/$USER/bag \
     $OPTIONS_CLION \
     $OPTIONS_NVIDIA
+

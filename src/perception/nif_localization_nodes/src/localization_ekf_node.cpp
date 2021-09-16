@@ -235,7 +235,6 @@ void EKFLocalizer::BOTTOMINSPVACallback(
 
 void EKFLocalizer::TOPINSPVACallback(
     const novatel_oem7_msgs::msg::INSPVA::SharedPtr msg) {
-  const novatel_oem7_msgs::msg::INSPVA::SharedPtr msg) {
   double yaw = (-msg->azimuth) * nif::common::constants::DEG2RAD; // TODO
   m_dGPS_Heading = yaw;
   m_dGPS_roll = msg->roll * nif::common::constants::DEG2RAD;
