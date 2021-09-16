@@ -34,7 +34,13 @@ EKFLocalizer::EKFLocalizer(const std::string &node_name) : IBaseNode(node_name) 
       std::bind(&EKFLocalizer::GPSLATLONCallback, this, std::placeholders::_1));
   subINSPVA = this->create_subscription<novatel_oem7_msgs::msg::INSPVA>(
       "in_inspva", nif::common::constants::QOS_SENSOR_DATA,
-      std::bind(&EKFLocalizer::GPSINSPVACallback, this, std::placeholders::_1));
+      std::bind(&EKFLocalizer::BOTTOMINSPVACallback, this, std::placeholders::_1));
+  subTOPINSPVA = this->create_subscription<novatel_oem7_msgs::msg::INSPVA>(
+      "in_top_inspva", nif::common::constants::QOS_SENSOR_DATA,
+      std::bind(&EKFLocalizer::TOPINSPVACallback, this, std::placeholders::_1));
+  subBESTVEL = this->create_subscription<novatel_oem7_msgs::msg::BESTVEL>(
+      "in_bestvel", nif::common::constants::QOS_SENSOR_DATA,
+      std::bind(&EKFLocalizer::BESTVELCallback, this, std::placeholders::_1));
 
   auto rmw_qos_profile = nif::common::constants::QOS_SENSOR_DATA.get_rmw_qos_profile();
 
@@ -101,11 +107,21 @@ void EKFLocalizer::run() {
                                0.01);
 
       int quality = 4;
-      if (gps_flag == true) {
+      if (gps_flag == true && heading_flag == true) {
         m_ekf.EKF_Correctionstep(m_ekf.m_xhat, m_ekf.m_Phat, quality, true,
                                  true,
                                  GPS_data); // check //true
+        // std::cout << "heading update" << std::endl;
+      } else if (gps_flag == true && heading_flag == false) {
+        m_ekf.EKF_Correctionstep(m_ekf.m_xhat, m_ekf.m_Phat, quality, true,
+                                 false,
+                                 GPS_data); // check //true
+        // std::cout << "heading updated not" << std::endl;
       }
+
+      // std::cout << "heading flag : " << heading_flag << std::endl;
+      // std::cout << "m_dVelolcity_X : " << m_dVelolcity_X << std::endl;
+      // std::cout << "m_dGPS_Heading : " << m_dGPS_Heading << std::endl;
 
       nav_msgs::msg::Odometry ekf_odom_msg;
       ekf_odom_msg.header.stamp = this->now();
@@ -142,6 +158,7 @@ void EKFLocalizer::run() {
       broadcaster_->sendTransform(nav_base_tf);
 
       gps_flag = false;
+      heading_flag = false;
 
       ImuPrevTimeDouble = ImuTimeDouble;
       VehVelocityPrevTimeDouble = VehVelocityTimeDouble;
@@ -202,13 +219,45 @@ void EKFLocalizer::GPSLATLONCallback(
   ////////////////////////////////////////////////////////////////////////////////////
 }
 
-void EKFLocalizer::GPSINSPVACallback(
+// HOW TO CORRECT HEADING IN EKD
+// 1. Bottom GPS
+// 2. Top GPS
+// 3. BestVel
+
+void EKFLocalizer::BOTTOMINSPVACallback(
     const novatel_oem7_msgs::msg::INSPVA::SharedPtr msg) {
   double yaw = (-msg->azimuth) * nif::common::constants::DEG2RAD;
   m_dGPS_Heading = yaw;
   m_dGPS_roll = msg->roll * nif::common::constants::DEG2RAD;
   bGPSHeading = true;
+  heading_flag = true;
 }
+
+void EKFLocalizer::TOPINSPVACallback(
+    const novatel_oem7_msgs::msg::INSPVA::SharedPtr msg) {
+  const novatel_oem7_msgs::msg::INSPVA::SharedPtr msg) {
+  double yaw = (-msg->azimuth) * nif::common::constants::DEG2RAD; // TODO
+  m_dGPS_Heading = yaw;
+  m_dGPS_roll = msg->roll * nif::common::constants::DEG2RAD;
+  bGPSHeading = true;
+  heading_flag = true;
+}
+
+void EKFLocalizer::BESTVELCallback(
+    const novatel_oem7_msgs::msg::BESTVEL::SharedPtr msg){
+  double yaw = (-msg->trk_gnd) * nif::common::constants::DEG2RAD;
+  
+  m_dGPS_Heading = yaw;
+  // m_dGPS_roll = msg->roll * nif::common::constants::DEG2RAD;
+  bGPSHeading = true;
+
+  if(m_dVelolcity_X > 3.0) 
+  {
+    heading_flag = true;
+  } 
+}
+
+
 
 void EKFLocalizer::MessegefilteringCallback(
     const sensor_msgs::msg::Imu ::ConstSharedPtr &imu_msg,

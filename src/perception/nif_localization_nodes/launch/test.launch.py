@@ -90,9 +90,11 @@ def generate_launch_description():
                     }],
 
                 remappings=[
-                    ("in_inspva", "novatel_bottom/inspva"),
+                    ("in_inspva", "novatel_bottom/inspva_nouse"),
+                    ("in_top_inspva", "novatel_bottom/inspva_nouses"),
                     ("in_bestpos", "novatel_bottom/bestpos"),
                     ("in_imu", "novatel_bottom/imu/data"),
+                    ("in_bestvel", "novatel_bottom/bestvel"),
                     ("in_wheel_speed_report", "raptor_dbw_interface/wheel_speed_report"),
                     ("out_odometry_ekf_estimated", "/localization/ego_odom"),
                     ("out_odometry_bestpos", "/localization/ego_odom_bestpos"),

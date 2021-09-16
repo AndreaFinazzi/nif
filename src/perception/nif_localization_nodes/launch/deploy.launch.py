@@ -67,21 +67,34 @@ def generate_launch_description():
                 emulate_tty=True,
                 namespace=ns,
                 parameters=[{
+                    # global map loader
                     'globalmap_file_name' : global_map,
+
+                    # geofence node
                     'outer_geofence_filename': outer_geofence_map,
                     'inner_geofence_filename': inner_geofence_map,
+                    'outer_geofence_bias': -0.5,
+                    'inner_geofence_bias': 0.0,
+                    'distance_low_pass_filter': 0.5,
+                    
+                    # resilient localization node
+                    'thres_for_distance_error_flag' : 1.0,
+                    'thres_for_distance_to_wall' : 2.0,
+
+
                     # 'origin_lat' : 39.809786,
                     # 'origin_lon' : -86.235148,
                     }],
 
                 remappings=[
-                    ("in_inspva", "novatel_bottom/inspva"),
+                    ("in_inspva", "novatel_bottom/inspva_nouse"),
+                    ("in_top_inspva", "novatel_bottom/inspva_nouses"),
                     ("in_bestpos", "novatel_bottom/bestpos"),
                     ("in_imu", "novatel_bottom/imu/data"),
+                    ("in_bestvel", "novatel_bottom/bestvel"),
                     ("in_wheel_speed_report", "raptor_dbw_interface/wheel_speed_report"),
-                    ("out_odometry_ekf_estimated", "/localization/ekf/odom"),
-                    ("out_odometry_bestpos", "/localization/ekf/odom_bestpos"),
-                ]
+                    ("out_odometry_ekf_estimated", "/localization/ego_odom"),
+                    ("out_odometry_bestpos", "/localization/ego_odom_bestpos"),                ]
             )
 
     return LaunchDescription(
