@@ -209,6 +209,7 @@ void EKFLocalizer::GPSLATLONCallback(
     const novatel_oem7_msgs::msg::BESTPOS::SharedPtr msg) {
 
     this->bestpos_time_last_update = this->now();
+
     nif::localization::utils::GeodeticConverter::GeoRef currentGPS;
   currentGPS.latitude = (double)msg->lat;
   currentGPS.longitude = (double)msg->lon;
@@ -330,6 +331,8 @@ void EKFLocalizer::MessegefilteringCallback(
     const raptor_dbw_msgs::msg::WheelSpeedReport::ConstSharedPtr
         &wheel_speed_msg) {
 
+  this->imu_time_last_update = this->now();
+
   m_dIMU_yaw_rate = imu_msg->angular_velocity.z;
   m_dVelolcity_X =
       (wheel_speed_msg->front_right + wheel_speed_msg->front_left) / 2 *
@@ -338,7 +341,6 @@ void EKFLocalizer::MessegefilteringCallback(
   auto ImuCurrentTime = rclcpp::Time(imu_msg->header.stamp);
   if (!bImuFirstCall) {
     bImuFirstCall = true;
-    this->imu_time_last_update = this->now();
     ImuPrevTimeDouble =
         static_cast<double>(ImuCurrentTime.seconds()) +
         static_cast<double>(ImuCurrentTime.nanoseconds()) * 1e-9;

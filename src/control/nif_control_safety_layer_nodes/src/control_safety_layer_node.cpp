@@ -78,9 +78,10 @@ void nif::control::ControlSafetyLayerNode::run() {
         this->control_cmd.header.stamp = this->now();
         this->control_cmd.header.frame_id = this->getBodyFrameId();
 
-        if (std::abs(override_control_cmd.steering_control_cmd.data) >
-            std::abs(steering_auto_override_deg) ||
-            !lat_autonomy_enabled) {
+        if (!lat_autonomy_enabled ||
+            std::abs(override_control_cmd.steering_control_cmd.data) >
+            std::abs(steering_auto_override_deg)
+            ) {
             this->control_cmd.steering_control_cmd =
                     this->override_control_cmd.steering_control_cmd;
             is_overriding_steering = true;
@@ -104,6 +105,7 @@ void nif::control::ControlSafetyLayerNode::run() {
                     // TODO implement fallback policy
                     this->buffer_empty_counter++;
                     if (this->buffer_empty_counter >= this->buffer_empty_counter_threshold) {
+                        // TODO recover mechanism should be enabled
                         this->emergency_buffer_empty = true;
                         node_status = common::NODE_ERROR;
                         this->setNodeStatus(node_status);

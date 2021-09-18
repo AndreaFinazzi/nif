@@ -235,6 +235,11 @@ public:
     this->brake_pid_ =
             PID(bp_, bi_, bd_, ts_, biMax_, brakeCmdMax_, brakeCmdMin_);
 
+    this->control_cmd.accelerator_control_cmd.data = 0.0;
+    this->control_cmd.steering_control_cmd.data = 0.0;
+    this->control_cmd.braking_control_cmd.data = 0.0;
+    this->control_cmd.gear_control_cmd.data = 1;
+
     this->setNodeStatus(common::NODE_INITIALIZED);
   }
 

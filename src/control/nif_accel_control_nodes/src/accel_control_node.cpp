@@ -231,7 +231,7 @@ void AccelControl::shiftCallback() {
     this->shifting_counter_ = 0;
   }
 
-  pubGearCmd_->publish(this->gear_cmd); // send gear command
+//  pubGearCmd_->publish(this->gear_cmd); // send gear command
 }
 
 void AccelControl::receiveVelocity(
@@ -258,6 +258,7 @@ void AccelControl::receiveDesAccel(
   calculateBrakeCmd(current_des_accel);
 
   publishThrottleBrake();
+  pubGearCmd_->publish(this->gear_cmd); // send gear command
 }
 
 void AccelControl::receivePtReport(
