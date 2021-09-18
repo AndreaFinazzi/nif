@@ -28,7 +28,7 @@ NodeStatusManager::~NodeStatusManager() {
   this->node_status.node_status_code = NodeStatusCode::NODE_DEAD;
 }
 
-void NodeStatusManager::update(NodeStatusCode status_code) {
+void NodeStatusManager::update(NodeStatusCode status_code) noexcept {
   this->node_status.stamp_last_update = this->managed_node.now();
   this->node_status.node_status_code = status_code;
 }

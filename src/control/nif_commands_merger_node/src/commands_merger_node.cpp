@@ -28,11 +28,6 @@ CommandsMergerNode::CommandsMergerNode() : Node("CommandsMergerNode") {
   recieved_steer_cmd_vec.resize(num_of_lat_controller);
   recieved_vel_cmd_vec.resize(num_of_long_controller);
 
-  // setup QOS to be best effort
-  auto qos = rclcpp::QoS(
-      rclcpp::QoSInitialization(RMW_QOS_POLICY_HISTORY_KEEP_LAST, 1));
-  qos.best_effort();
-
   // then all good
   // make lateral subscribers
   for (int sub_lat_idx = 0; sub_lat_idx < num_of_lat_controller;
@@ -42,7 +37,7 @@ CommandsMergerNode::CommandsMergerNode() : Node("CommandsMergerNode") {
                         std::placeholders::_1, sub_lat_idx);
 
     auto subscription_ = this->create_subscription<std_msgs::msg::Float32>(
-        sub_topic_name_of_lat_cmds[sub_lat_idx], qos, fcn_lat);
+        sub_topic_name_of_lat_cmds[sub_lat_idx], nif::common::constants::QOS_CONTROL_CMD, fcn_lat);
 
     // auto subscription_ =
     // this->create_subscription<std_msgs::msg::Float32>(
@@ -72,7 +67,7 @@ CommandsMergerNode::CommandsMergerNode() : Node("CommandsMergerNode") {
                          this, std::placeholders::_1, sub_long_idx);
 
     auto subscription_ = this->create_subscription<std_msgs::msg::Float32>(
-        sub_topic_name_of_long_cmds[sub_long_idx], qos, fcn_long);
+        sub_topic_name_of_long_cmds[sub_long_idx], nif::common::constants::QOS_CONTROL_CMD, fcn_long);
 
     subcribers_vec_longitudinal_cmd.push_back(subscription_);
   }
@@ -80,7 +75,7 @@ CommandsMergerNode::CommandsMergerNode() : Node("CommandsMergerNode") {
   // make publishers
   for (int pub_idx = 0; pub_idx < put_topic_name_of_cmds.size(); pub_idx++) {
     auto publisher_ = this->create_publisher<nif_msgs::msg::ControlCommand>(
-        put_topic_name_of_cmds[pub_idx], 1);
+        put_topic_name_of_cmds[pub_idx], nif::common::constants::QOS_CONTROL_CMD);
     publishers_vec_command_cmd.push_back(publisher_);
   }
 }

@@ -29,10 +29,8 @@ def generate_launch_description():
                 namespace=ns,
                 parameters=[config],
                 remappings=[
-                    ("ins_gps", "novatel_bottom/inspva_"),
-                    ("bestpos_gps", "novatel_bottom/bestpos_"),
-                    ("ins_oem", "novatel_bottom/inspva"),
-                    ("bestpos_oem", "novatel_bottom/bestpos"),
+                    ("in_inspva", "novatel_bottom/inspva"),
+                    ("in_bestpos", "novatel_bottom/bestpos"),
                     ("gps", "novatel_bottom/fix"),
                     ("imu_novatel", "novatel_bottom/raw_imu"),
                     ("imu", "novatel_bottom/imu/data"),

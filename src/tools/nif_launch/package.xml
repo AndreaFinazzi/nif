@@ -10,12 +10,19 @@
     <buildtool_depend>ament_cmake_auto</buildtool_depend>
 
     <exec_depend>ament_index_python</exec_depend>
-    <!-- <exec_depend>avt_vimba_camera</exec_depend> -->
-    <!-- <exec_depend>raptor_dbw_can</exec_depend> -->
-    <!-- <exec_depend>ros2_socketcan</exec_depend> -->
-    <!-- <exec_depend>ssc_interface</exec_depend> -->
-    <!-- <exec_depend>long_control</exec_depend> -->
-    <exec_depend>nif_control_minimal_nodes</exec_depend>
+    <exec_depend>nif_localization_nodes</exec_depend>
+    <exec_depend>nif_waypoint_manager_nodes</exec_depend>
+    <exec_depend>nif_multilayer_planning_nodes</exec_depend>
+    <exec_depend>nif_common_nodes</exec_depend>
+    <exec_depend>nif_system_status_manager_nodes</exec_depend>
+    <exec_depend>nif_points_preprocessor_nodes</exec_depend>
+    <exec_depend>av21_description</exec_depend>
+    <exec_depend>nif_control_lqr_nodes</exec_depend>
+    <exec_depend>nif_control_safety_layer_nodes</exec_depend>
+
+    <exec_depend>bvs_long_control</exec_depend>
+    <exec_depend>bvs_utils</exec_depend>
+    <exec_depend>bvs_safety</exec_depend>
 
     <test_depend>ament_cmake_gtest</test_depend>
     <test_depend>ament_lint_auto</test_depend>

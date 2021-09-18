@@ -34,7 +34,7 @@ data_files = [
     (os.path.join('share', package_name, 'launch'), glob('launch/*.launch.py')),
 ]
 data_files.extend(
-    [(d, [f]) for d, f in to_root('lib')]
+    [(d, [f]) for d, f in to_share('lib')]
 )
 data_files.extend(
     [(d, [f]) for d, f in to_share('assets')]

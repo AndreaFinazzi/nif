@@ -9,6 +9,7 @@
  * @brief path following node
  **/
 #include "nif_control_common_nodes/i_controller_node.h"
+#include <deep_orange_msgs/msg/joystick_command.hpp>
 
 #include "nav_msgs/msg/odometry.hpp"
 #include "nav_msgs/msg/path.hpp"
@@ -46,27 +47,7 @@ public:
     current_speed_ms_ = (msg->rear_left + msg->rear_right) * 0.5 * nif::common::constants::KPH2MS;
   }
 
-  void steeringCallback(const std_msgs::msg::Float32::SharedPtr msg) {
-    override_steering_target_ = msg->data;
-  }
-
-  void throttleCallback(const std_msgs::msg::Float32::SharedPtr msg) {
-    override_throttle_target_ = msg->data;
-  }
-
-  void brakeCallback(const std_msgs::msg::Float32::SharedPtr msg) {
-    override_brake_target_ = msg->data;
-  }
-
-  void gearCallback(const std_msgs::msg::UInt8::SharedPtr msg) {
-    override_gear_target_ = msg->data;
-  }
-
-  void ptReportCallback(const deep_orange_msgs::msg::PtReport::SharedPtr msg) {
-    current_gear_ = msg->current_gear;
-    current_engine_speed_ = msg->engine_rpm;
-    engine_running_ = (msg->engine_rpm > 500) ? true : false;
-  }
+  void joystickCallback(const deep_orange_msgs::msg::JoystickCommand::SharedPtr msg);
 
 private:
   //! Debug Interface
@@ -84,10 +65,7 @@ private:
   rclcpp::Publisher<std_msgs::msg::UInt8>::SharedPtr gear_command_pub_;
   //! Input Data
   rclcpp::Subscription<raptor_dbw_msgs::msg::WheelSpeedReport>::SharedPtr velocity_sub_;
-  rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr steering_sub_;
-  rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr throttle_sub_;
-  rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr brake_sub_;
-  rclcpp::Subscription<std_msgs::msg::UInt8>::SharedPtr gear_sub_;
+  rclcpp::Subscription<deep_orange_msgs::msg::JoystickCommand>::SharedPtr joystick_sub_;
   rclcpp::Subscription<deep_orange_msgs::msg::PtReport>::SharedPtr pt_report_sub_;
 
   //! Lateral LQR Controller
@@ -134,7 +112,6 @@ private:
   }
 
   nif::common::msgs::ControlCmd::SharedPtr solve() override;
-
 }; /* class PathFollowerNode */
 
 } // namespace nif

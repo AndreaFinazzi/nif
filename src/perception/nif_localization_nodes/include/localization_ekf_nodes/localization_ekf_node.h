@@ -1,9 +1,9 @@
 //  Copyright (c) 2021 Unmanned System Research Group @ KAIST
-//  Author: Daegty Lee
+//  Author: Daegyu Lee
 
 //
 // Created by usrg on 09/02/21.
-//
+// 
 
 #ifndef EKF_LOCALIZER_NODE_H
 #define EKF_LOCALIZER_NODE_H
@@ -44,7 +44,6 @@
 #include <stdio.h>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-#include <tf2_ros/static_transform_broadcaster.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 #include <time.h>
@@ -89,7 +88,7 @@ private:
   rclcpp::TimerBase::SharedPtr timer_;
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr pub_EKF_odometry;
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr pub_bestpos_odometry;
-  std::unique_ptr<tf2_ros::StaticTransformBroadcaster> broadcaster_;
+  std::unique_ptr<tf2_ros::TransformBroadcaster> broadcaster_;
 
   using SyncPolicyT = message_filters::sync_policies::ApproximateTime<
       sensor_msgs::msg::Imu, raptor_dbw_msgs::msg::WheelSpeedReport>;
@@ -149,4 +148,4 @@ private:
 } // namespace localization
 } // namespace nif
 
-#endif // EKF_LOCALIZER_NODE_H3
+#endif // EKF_LOCALIZER_NODE_H

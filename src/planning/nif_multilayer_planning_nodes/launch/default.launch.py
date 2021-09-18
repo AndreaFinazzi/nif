@@ -18,11 +18,20 @@ def generate_launch_description():
         package='nif_multilayer_planning_nodes',
         executable='nif_multilayer_planning_nodes_exe',
         output='screen',
-        parameters=[],
+        parameters=[
+            {
+                "globtraj_input_path": get_share_file("nif_multilayer_planning_nodes", "inputs/traj_ltpl_cl/traj_ltpl_cl_lgsim_ims.csv"),
+                "graph_store_path": get_share_file("nif_multilayer_planning_nodes", "inputs/stored_graph.pckl"),
+                "ltpl_offline_param_path": get_share_file("nif_multilayer_planning_nodes", "params/ltpl_config_offline.ini"),
+                "ltpl_online_param_path": get_share_file("nif_multilayer_planning_nodes", "params/ltpl_config_online.ini"),
+                "log_path": get_share_file("nif_multilayer_planning_nodes", "logs/graph_ltpl"),
+                # "graph_log_id": ,
+            }
+        ],
         remappings={
             ('out_local_maptrack_inglobal', '/planning/path_global'),
             # ('in_vehicle_odometry', '/localization/ego_odom'),
-            ('in_vehicle_odometry', '/sensor/odom_ground_truth'),
+            ('in_ego_odometry', '/sensor/odom_converted'),
             # ('in_perception_result', '/perception/result'),
         }
     )

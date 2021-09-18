@@ -1,54 +1,64 @@
-# Copyright 2020-2021, The Autoware Foundation
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-"""Launch file for IAC vehicle."""
-
 import os
-
 from ament_index_python import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
+from launch.conditions import IfCondition
 from launch_ros.actions import Node
 
 
-def get_share_file(package_name, file_name):
-    return os.path.join(get_package_share_directory(package_name), file_name)
-
-
 def generate_launch_description():
+    global_map = os.path.join(
+            get_package_share_directory("nif_localization_nodes"),
+            "map",
+            "ims",
+            "full_map.pcd", #IMS
+        )    
+    outer_geofence_map = os.path.join(
+            get_package_share_directory("nif_localization_nodes"),
+            "map",
+            "ims",
+            "outer_map.pcd" # IMS
+            # "outer_map.pcd", #LOR
+        )
+    inner_geofence_map = os.path.join(
+            get_package_share_directory("nif_localization_nodes"),
+            "map",
+            "ims",
+            "inner_map.pcd", #IMS
+            # "inner_map.pcd", #LOR
+        )
+    ns = ""
 
-    lqr_control_node = Node(
-        package='nif_localization_nodes',
-        executable='nif_localization_nodes_exe',
-        parameters=[],
-        output={
-            'stdout': 'screen',
-            'stderr': 'screen',
-        },
-        remappings=[
-            ('in_bestpos', '/novatel_bottom/bestpos'),
-            ('in_inspva', '/novatel_bottom/inspva'),
-            ('in_imu', '/novatel_bottom/imu/data'),
-            ('in_wheel_speed_report', '/raptor_dbw_interface/wheel_speed_report'),
-            ('out_odometry_ekf_estimated', '/localization/odometry/ekf'),
-            ('out_odometry_bestpos', '/localization/odometry/bestpos'),
+    localization_node = Node(
+                package="nif_localization_nodes",
+                executable="nif_localization_nodes_exe",
+                output="screen",
+                emulate_tty=True,
+                namespace=ns,
+                parameters=[{
+                    'globalmap_file_name' : global_map,
+                    'outer_geofence_filename': outer_geofence_map,
+                    'inner_geofence_filename': inner_geofence_map,
+                    # 'origin_lat' : 39.809786,
+                    # 'origin_lon' : -86.235148,
+                    }],
+
+                remappings=[
+                    ("in_inspva", "novatel_bottom/inspva"),
+                    ("in_bestpos", "novatel_bottom/bestpos"),
+                    ("in_imu", "novatel_bottom/imu/data"),
+                    ("in_wheel_speed_report", "raptor_dbw_interface/wheel_speed_report"),
+                ]
+            )
+
+    return LaunchDescription(
+        [
+            localization_node
         ]
     )
 
-    return LaunchDescription([
-        lqr_control_node,
-    ])
+
+

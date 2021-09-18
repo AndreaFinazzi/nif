@@ -1,0 +1,16 @@
+# Dynamics Bicycle Model Parameters
+model_params:
+  cornering_stiffness_front: 130634.4
+  cornering_stiffness_rear: 130634.4
+  mass: 761.
+  length_front: 1.54
+  length_rear: 2.554
+  yaw_moment_inertia: 550
+
+# Velocity Brackets to generate
+# feedback matrices from
+# Q: [ lateral_error, lateral_error_dot, yaw_error, yaw_error_dot ]
+velocity_brackets:
+- velocity: 30
+  q_trace: [1.0, 1.0, 0.1, 0.0]
+  r_trace: [250.]

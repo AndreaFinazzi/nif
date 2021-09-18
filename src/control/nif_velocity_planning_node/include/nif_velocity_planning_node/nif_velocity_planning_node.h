@@ -42,40 +42,35 @@ namespace nif{
                                 const std::chrono::microseconds &timer_period,
                                 const rclcpp::NodeOptions &options = rclcpp::NodeOptions{}) : Node(node_name) {
 
-                // setup QOS to be best effort
-                auto qos = rclcpp::QoS(
-                        rclcpp::QoSInitialization(RMW_QOS_POLICY_HISTORY_KEEP_LAST, 1));
-                qos.best_effort();
-
                 // Publishers
                 des_vel_pub_ = this->create_publisher<std_msgs::msg::Float32>(
-                        "/velocity_planner/des_vel", qos);
+                    "velocity_planner/des_vel", nif::common::constants::QOS_CONTROL_CMD);
 
                 // Subscribers
                 path_sub_ = this->create_subscription<nav_msgs::msg::Path>(
-                        "bvs_controller/target_path", qos,
+                    "bvs_controller/target_path", nif::common::constants::QOS_PLANNING,
                         std::bind(&VelocityPlannerNode::pathCallback, this,
                                   std::placeholders::_1));
                 odometry_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
-                        "bvs_localization/ltp_odom", qos,
+                    "bvs_localization/ltp_odom", nif::common::constants::QOS_EGO_ODOMETRY,
                         std::bind(&VelocityPlannerNode::odometryCallback, this,
                                   std::placeholders::_1));
                 velocity_sub_ =
                         this->create_subscription<raptor_dbw_msgs::msg::WheelSpeedReport>(
-                                "/raptor_dbw_interface/wheel_speed_report", qos,
+                            "raptor_dbw_interface/wheel_speed_report", nif::common::constants::QOS_SENSOR_DATA,
                                 std::bind(&VelocityPlannerNode::velocityCallback, this,
                                           std::placeholders::_1));
                 imu_sub_ = this->create_subscription<sensor_msgs::msg::Imu>(
-                        "/novatel_bottom/imu/data", qos,
+                    "novatel_bottom/imu/data", nif::common::constants::QOS_SENSOR_DATA,
                         std::bind(&VelocityPlannerNode::imuCallback, this,
                                   std::placeholders::_1));
                 steering_sub_ =
                         this->create_subscription<raptor_dbw_msgs::msg::SteeringReport>(
-                                "/raptor_dbw_interface/steering_report", qos,
+                            "raptor_dbw_interface/steering_report", nif::common::constants::QOS_SENSOR_DATA,
                                 std::bind(&VelocityPlannerNode::steerCallback, this,
                                           std::placeholders::_1));
                 error_sub_ = this->create_subscription<std_msgs::msg::Float32MultiArray>(
-                        "/bvs_controller/lqr_error", qos,
+                    "bvs_controller/lqr_error", nif::common::constants::QOS_DEFAULT,
                         std::bind(&VelocityPlannerNode::errorCallback, this,
                                   std::placeholders::_1));
 

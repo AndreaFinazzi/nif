@@ -2,7 +2,7 @@
 //  Author: Daegyu Lee
 
 //
-// Created by usrg on 09/02/21.
+// Created by usrg on 09/09/21.
 //
 
 #include "localization_ekf_nodes/localization_ekf_node.h"
@@ -18,23 +18,25 @@ EKFLocalizer::EKFLocalizer(const std::string &node_name) : IBaseNode(node_name) 
 
   m_origin_lat = this->get_global_parameter<double>("coordinates.ecef_ref_lat");
   m_origin_lon = this->get_global_parameter<double>("coordinates.ecef_ref_lon");
+
+  // this->m_origin_lat = this->get_parameter("origin_lat").as_double();
+  // this->m_origin_lon = this->get_parameter("origin_lon").as_double();
+
+  RCLCPP_INFO(this->get_logger(), "ORIGIN LATITUDE : ", m_origin_lat);
+  RCLCPP_INFO(this->get_logger(), "ORIGIN LONGITUDE : ", m_origin_lon);
+
   const std::string& topic_ego_odometry =
       this->get_global_parameter<std::string>(
           nif::common::constants::parameters::names::TOPIC_ID_EGO_ODOMETRY);
 
-  // setup QOS to be best effort
-  auto qos = rclcpp::QoS(
-      rclcpp::QoSInitialization(RMW_QOS_POLICY_HISTORY_KEEP_LAST, 1));
-  qos.best_effort();
-
   sub_gpslatlon = this->create_subscription<novatel_oem7_msgs::msg::BESTPOS>(
-      "in_bestpos", qos,
+      "in_bestpos", nif::common::constants::QOS_SENSOR_DATA,
       std::bind(&EKFLocalizer::GPSLATLONCallback, this, std::placeholders::_1));
   subINSPVA = this->create_subscription<novatel_oem7_msgs::msg::INSPVA>(
-      "in_inspva", qos,
+      "in_inspva", nif::common::constants::QOS_SENSOR_DATA,
       std::bind(&EKFLocalizer::GPSINSPVACallback, this, std::placeholders::_1));
 
-  auto rmw_qos_profile = qos.get_rmw_qos_profile();
+  auto rmw_qos_profile = nif::common::constants::QOS_SENSOR_DATA.get_rmw_qos_profile();
 
   sub_filtered_IMU.subscribe(this,
                              "in_imu", rmw_qos_profile);
@@ -50,14 +52,15 @@ EKFLocalizer::EKFLocalizer(const std::string &node_name) : IBaseNode(node_name) 
 
   pub_EKF_odometry =
       this->create_publisher<nav_msgs::msg::Odometry>(
-          "out_odometry_ekf_estimated", qos);
+          "out_odometry_ekf_estimated", nif::common::constants::QOS_EGO_ODOMETRY);
   pub_bestpos_odometry =
       this->create_publisher<nav_msgs::msg::Odometry>(
-          "out_odometry_bestpos", qos);
+          "out_odometry_bestpos", nif::common::constants::QOS_EGO_ODOMETRY);
 
-  broadcaster_ = std::make_unique<tf2_ros::StaticTransformBroadcaster>(this);
+  broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(this);
 
   using namespace std::chrono_literals; // NOLINT
+  // TODO convert period to paramter
   timer_ = this->create_wall_timer(
       10ms, std::bind(&EKFLocalizer::timer_callback, this));
 
@@ -68,22 +71,18 @@ EKFLocalizer::EKFLocalizer(const std::string &node_name) : IBaseNode(node_name) 
   ref.altitude = 0.;
   conv_.initializeReference(ref);
 
+  this->setNodeStatus(common::NODE_INITIALIZED);
   RCLCPP_INFO(this->get_logger(), "START EKF NODE");
 }
 
 EKFLocalizer ::~EKFLocalizer(){};
 
-void EKFLocalizer::respond() {
-  this->get_parameter("origin_lat", m_origin_lat);
-  this->get_parameter("origin_lon", m_origin_lon);
-}
 
 void EKFLocalizer::timer_callback() {
   run();
 }
 
 void EKFLocalizer::run() {
-
   if (bImuFirstCall && bGPS && bGPSHeading) {
     vel_and_yawRate = cv::Mat::zeros(3, 1, CV_64FC1);
     GPS_data = cv::Mat::zeros(3, 1, CV_64FC1);
@@ -94,7 +93,9 @@ void EKFLocalizer::run() {
     GPS_data.ptr<double>(1)[0] = m_dGPS_Y;       // odom
     GPS_data.ptr<double>(2)[0] = m_dGPS_Heading; // odom
 
-    if (ImuTimeDouble != ImuPrevTimeDouble) {
+//
+//    if (ImuTimeDouble != ImuPrevTimeDouble && bImuFirstCall) {
+//    }
 
       m_ekf.EKF_Predictionstep(m_ekf.m_xhat, m_ekf.m_Phat, vel_and_yawRate,
                                0.01);
@@ -144,11 +145,11 @@ void EKFLocalizer::run() {
 
       ImuPrevTimeDouble = ImuTimeDouble;
       VehVelocityPrevTimeDouble = VehVelocityTimeDouble;
-    } else {
-      // RCLCPP_WARN(this->get_logger(), "[Imu / Wheel speed] is not updated");
-      return;
-    }
-
+    // } else {
+    //   // RCLCPP_WARN(this->get_logger(), "[Imu / Wheel speed] is not updated");
+    //   return;
+    // }
+    this->setNodeStatus(common::NODE_OK);
   } else {
     RCLCPP_DEBUG(this->get_logger(), "Waiting for -[/novatel_bottom/bestpos]");
     RCLCPP_DEBUG(this->get_logger(), "            -[/novatel_bottom/inspva]");
@@ -170,7 +171,7 @@ void EKFLocalizer::GPSLATLONCallback(
 
   nav_msgs::msg::Odometry ltp_odom;
 
-  ltp_odom.header.frame_id = "odom";
+  ltp_odom.header.frame_id = ODOM;
   ltp_odom.header.stamp = this->now();
   ltp_odom.child_frame_id = BASE_LINK;
 
@@ -182,7 +183,6 @@ void EKFLocalizer::GPSLATLONCallback(
   ltp_odom.pose.pose.position.y = m_dGPS_Y;
   ltp_odom.pose.pose.position.z = -ltp_pt.z;
 
-  ltp_odom.header = msg->header;
   ltp_odom.pose.pose.orientation.w = 1;
   ltp_odom.pose.pose.position.x = m_dGPS_X;
   ltp_odom.pose.pose.position.y = m_dGPS_Y;

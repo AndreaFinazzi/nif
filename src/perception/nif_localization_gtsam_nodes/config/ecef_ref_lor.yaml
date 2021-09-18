@@ -1,5 +1,6 @@
 localization_node:
   ros__parameters:
     ecef_ref_lat: 39.8125900071711
-    ecef_ref_lon: -86.3418060783425 # LOR on 2021-08-05
+    ecef_ref_lon: -86.3418060783425 # LOR
+    ecef_ref_hgt: 0.0               # LOR
     use_enu: false

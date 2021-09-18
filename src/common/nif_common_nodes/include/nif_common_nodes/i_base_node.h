@@ -54,7 +54,6 @@ protected:
   const rclcpp::Time &getGclockNodeInit() const;
   const msgs::Odometry &getEgoOdometry() const;
   const msgs::PowertrainState &getEgoPowertrainState() const;
-  const msgs::SystemStatus &getSystemState() const;
   const msgs::RaceControlStatus &getRaceControlState() const;
 
   bool hasEgoOdometry() const;
@@ -71,8 +70,9 @@ protected:
 
   rclcpp::SyncParametersClient::SharedPtr global_parameters_client;
 
+  OnSetParametersCallbackHandle::SharedPtr parameters_callback_handle;
 
-  void setNodeStatus(NodeStatusCode status_code);
+  void setNodeStatus(NodeStatusCode status_code) noexcept;
 
   /**
    * Gets a global parameter through the global parameter client.
@@ -248,7 +248,12 @@ private:
   virtual
       void afterRaceControlStatusCallback() {}
 
-
+  virtual
+      rcl_interfaces::msg::SetParametersResult
+  parametersSetCallback(const std::vector<rclcpp::Parameter> &vector)
+  {
+    return rcl_interfaces::msg::SetParametersResult{};
+  }
 //  ### NODE STATUS COMPONENTS
   rclcpp::TimerBase::SharedPtr node_status_timer;
 

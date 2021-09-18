@@ -40,7 +40,7 @@ private:
   void calculateFB();
   void calculateSteeringCmd();
   void setCmdsToZeros();
-  void publishSteering();
+  void checkSteeringCmd();
   void publishDebugSignals();
   void receivePath(const nav_msgs::msg::Path::SharedPtr msg);
   static int findLookaheadIndex(std::vector<geometry_msgs::msg::PoseStamped> refPath, double desLookaheadValue);

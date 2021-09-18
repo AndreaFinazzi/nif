@@ -8,6 +8,7 @@
   <license>TODO: License declaration</license>
 
   <exec_depend>rclpy</exec_depend>
+  <exec_depend>nifpy_common_nodes</exec_depend>
   <exec_depend>std_msgs</exec_depend>
   <exec_depend>nif_msgs</exec_depend>
   <exec_depend>nav_msgs</exec_depend>

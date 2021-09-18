@@ -54,37 +54,82 @@ public:
   {
     this->control_sub =
         this->create_subscription<nif::common::msgs::ControlCmd>(
-            "in_control_cmd", nif::common::constants::QOS_DEFAULT,
+            "in_control_cmd", nif::common::constants::QOS_CONTROL_CMD,
             std::bind(&ControlSafetyLayerNode::controlCallback, this,
                       std::placeholders::_1));
 
     this->control_override_sub =
-        this->template create_subscription<nif::common::msgs::ControlCmd>(
-            "in_override_control_cmd", nif::common::constants::QOS_DEFAULT,
+        this->create_subscription<nif::common::msgs::ControlCmd>(
+            "in_override_control_cmd", nif::common::constants::QOS_CONTROL_CMD_OVERRIDE,
             std::bind(&ControlSafetyLayerNode::controlOverrideCallback, this,
                       std::placeholders::_1));
 
     this->control_pub = this->create_publisher<nif::common::msgs::ControlCmd>(
-            "out_control_cmd", rclcpp::QoS{1});
+        "out_control_cmd",nif::common::constants::QOS_CONTROL_CMD);
 
     this->steering_control_pub =
         this->create_publisher<nif::common::msgs::ControlSteeringCmd>(
-            "out_steering_control_cmd", rclcpp::QoS{1});
+            "out_steering_control_cmd", nif::common::constants::QOS_CONTROL_CMD);
 
     this->accelerator_control_pub =
         this->create_publisher<nif::common::msgs::ControlAcceleratorCmd>(
-            "out_accelerator_control_cmd", rclcpp::QoS{1});
+            "out_accelerator_control_cmd", nif::common::constants::QOS_CONTROL_CMD);
 
     this->braking_control_pub =
         this->create_publisher<nif::common::msgs::ControlBrakingCmd>(
-            "out_braking_control_cmd", rclcpp::QoS{1});
+            "out_braking_control_cmd", nif::common::constants::QOS_CONTROL_CMD);
 
     this->gear_control_pub =
         this->create_publisher<nif::common::msgs::ControlGearCmd>(
-            "out_gear_control_cmd", rclcpp::QoS{1});
+            "out_gear_control_cmd", nif::common::constants::QOS_CONTROL_CMD);
+
+    // Automatically boot with lateral_tracking_enabled
+    this->declare_parameter("lateral_tracking_enabled", false);
+    // Max Steering Angle in Degrees
+    this->declare_parameter("max_steering_angle_deg", 20.0);
+    // Degrees at which to automatically revert to the override
+    this->declare_parameter("steering_auto_override_deg", 4.0);
+    // convert from degress to steering units (should be 1 - 1 ?)
+    this->declare_parameter("steering_units_multiplier", 1.0);
+
+    // Safety timeouts for odometry and the path. If exceeded, toggle emergency.
+    this->declare_parameter("odometry_timeout_sec", 0.1);
+    this->declare_parameter("path_timeout_sec", 0.5);
+    // Limit the max change in the steering signal over time
+    this->declare_parameter("steering_max_ddeg_dt", 5.0);
+
+    //  Invert steering command for simulation
+    this->declare_parameter("invert_steering", false);
+
+    // Read in misc. parameters
+    max_steering_angle_deg =
+        this->get_parameter("max_steering_angle_deg").as_double();
+    steering_auto_override_deg =
+        this->get_parameter("steering_auto_override_deg").as_double();
+    steering_units_multiplier =
+        this->get_parameter("steering_units_multiplier").as_double();
+
+    odometry_timeout_sec =
+        this->get_parameter("odometry_timeout_sec").as_double();
+
+    path_timeout_sec =
+        this->get_parameter("path_timeout_sec").as_double();
+
+    steering_max_ddeg_dt =
+        this->get_parameter("steering_max_ddeg_dt").as_double();
+
+    if (  (odometry_timeout_sec) < 0. ||
+    (path_timeout_sec) < 0.) {
+      throw rclcpp::exceptions::InvalidParametersException("odometry_timeout_sec or path_timeout_sec parameter is negative.");
+    }
+
+    this->parameters_callback_handle = this->add_on_set_parameters_callback(
+        std::bind(&ControlSafetyLayerNode::parametersCallback, this, std::placeholders::_1));
+
+    this->setNodeStatus(common::NODE_INITIALIZED);
   }
 
-protected:
+private:
   /**
    * Check if msg is valid, then push it in the ControlCmd buffer.
    * @param msg
@@ -94,13 +139,40 @@ protected:
   uint8_t getCommandsCount() const {
     return control_buffer.size();
   }
-
-private:
   // Prevent default constructor to be called from the outside
   ControlSafetyLayerNode();
 
-  void initParameters();
-  void getParameters();
+  // emergency lane flag. Activated in case of emergency.
+  bool emergency_lane_enabled = false;
+
+  // Automatically boot with lateral_tracking_enabled
+  bool lateral_tracking_enabled;
+
+  // Max Steering Angle in Degrees
+  double max_steering_angle_deg;
+
+  // Degrees at which to automatically revert to the override
+  double steering_auto_override_deg;
+
+  // convert from degress to steering units (should be 1 - 1 ?)
+  double steering_units_multiplier;
+
+  // Safety timeouts for odometry and the path. If exceeded, toggle emergency.
+  double odometry_timeout_sec;
+  // Safety timeouts for odometry and the path. If exceeded, toggle emergency.
+  double path_timeout_sec;
+
+  // Maximum steering speed [deg/sec]
+  double steering_max_ddeg_dt;
+
+  // Maximum steering speed [deg/sec]
+  bool invert_steering;
+
+//OVERRIDE SIIGNALS
+  nif::common::msgs::ControlCmd override_control_cmd;
+  nif::common::msgs::ControlCmd last_control_cmd;
+  nif::common::msgs::ControlCmd control_cmd;
+  rclcpp::Time override_last_update;
 
   /**
    * Stores control commands coming from the controllers' stack. It's flushed at
@@ -160,7 +232,8 @@ private:
 
   void controlCallback(const nif::common::msgs::ControlCmd::SharedPtr msg);
   void controlOverrideCallback(const nif::common::msgs::ControlCmd::SharedPtr msg);
-
+  rcl_interfaces::msg::SetParametersResult
+  parametersCallback(const std::vector<rclcpp::Parameter> &vector);
   void run() override;
 
   bool publishSteeringCmd(const nif::common::msgs::ControlSteeringCmd &msg) const;
@@ -168,7 +241,10 @@ private:
   bool publishBrakingCmd(const nif::common::msgs::ControlBrakingCmd &msg) const;
   bool publishGearCmd(const nif::common::msgs::ControlGearCmd &msg) const;
 
-  //  TODO define safety checks functions
+    void afterSystemStatusCallback() override;
+
+    //  TODO define safety checks functions
+
 };
 } // namespace control
 } // namespace nif

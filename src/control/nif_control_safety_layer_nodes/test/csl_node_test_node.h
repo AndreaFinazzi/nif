@@ -15,7 +15,7 @@ public:
     this->control_command = std::make_shared<nif::common::msgs::ControlCmd>();
 
     this->csl_cmd_sub = this->create_subscription<nif::common::msgs::ControlCmd>(
-        "csl_control_cmd", nif::common::constants::QOS_DEFAULT, std::bind(&MockControlNode::controlCallback, this, std::placeholders::_1)
+        "csl_control_cmd", nif::common::constants::QOS_CONTROL_CMD, std::bind(&MockControlNode::controlCallback, this, std::placeholders::_1)
         );
   }
 
@@ -24,7 +24,7 @@ public:
     RCLCPP_INFO(this->get_logger(),
                 "race_control_state: %s",
                 (this->getRaceControlState().track_cond));
-    RCLCPP_INFO(this->get_logger(), "system_state: %s", this->getSystemStatus().health_status.is_system_healthy);
+    RCLCPP_INFO(this->get_logger(), "system_failure: %s", this->getSystemStatus().health_status.system_failure);
   }
 
   std::shared_ptr<rclcpp::Subscription<nif::common::msgs::ControlCmd>> csl_cmd_sub;

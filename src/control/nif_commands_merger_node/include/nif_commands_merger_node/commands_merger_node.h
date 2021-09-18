@@ -22,6 +22,7 @@
 #include "std_msgs/msg/float32.hpp"
 #include "std_msgs/msg/float64.hpp"
 #include "std_msgs/msg/u_int8.hpp"
+#include "nif_common/types.h"
 #include <map>
 #include <rclcpp/rclcpp.hpp>
 

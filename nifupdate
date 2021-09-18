@@ -4,8 +4,8 @@
 sudo apt update
 
 # Import external repos
-GL_TOKEN=$(cat .secret.gitlab) bash -c 'cat nif.foxy.repos | envsubst > nif.foxy.repos.tmp'
-vcs import < nif.foxy.repos.tmp --workers=1
+GL_TOKEN=$(cat .secret.gitlab) GH_TOKEN=$(cat .secret.github) bash -c 'cat nif.foxy.repos | envsubst > nif.foxy.repos.tmp'
+vcs import < nif.foxy.repos.tmp --workers=1 --recursive
 rm nif.foxy.repos.tmp
 
 # Install python dependencies

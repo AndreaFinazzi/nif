@@ -34,6 +34,8 @@ ControlPurePursuitNode::ControlPurePursuitNode(const std::string &node_name)
       m_param_use_lpf_flg,
       m_param_lfp_gain,
       m_param_is_steer_sign_inver);
+
+  this->setNodeStatus(common::NodeStatusCode::NODE_INITIALIZED);
 }
 
 /**
@@ -89,7 +91,8 @@ nif::common::msgs::ControlCmd::SharedPtr ControlPurePursuitNode::solve() {
                  "steering command.");
 
     control_command->steering_control_cmd.data = 0.0;
-    return control_command;
+    this->setNodeStatus(common::NODE_ERROR);
+    return nullptr;
 
   }
 }

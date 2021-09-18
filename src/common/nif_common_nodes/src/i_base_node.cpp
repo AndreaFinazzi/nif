@@ -61,6 +61,11 @@ IBaseNode::IBaseNode(const std::string &node_name, const NodeType node_type, con
 
   }
 
+//  Declare set parameters callback
+//  TODO not ready yet. When enabled, each parameter should be handled in the callback.
+//  this->callback_handle = this->add_on_set_parameters_callback(
+//      std::bind(&IBaseNode::parametersSetCallback, this, std::placeholders::_1));
+
   //  Declare subscriptions
   //                TODO : Define QoS macros
 
@@ -82,25 +87,25 @@ IBaseNode::IBaseNode(const std::string &node_name, const NodeType node_type, con
 
   this->ego_odometry_sub =
       this->create_subscription<nif::common::msgs::Odometry>(
-          topic_ego_odometry, nif::common::constants::QOS_DEFAULT,
+          topic_ego_odometry, nif::common::constants::QOS_EGO_ODOMETRY,
           std::bind(&IBaseNode::egoOdometryCallback, this,
                     std::placeholders::_1));
 
   this->system_status_sub =
       this->create_subscription<nif::common::msgs::SystemStatus>(
-          topic_system_status, nif::common::constants::QOS_DEFAULT,
+          topic_system_status, nif::common::constants::QOS_INTERNAL_STATUS,
           std::bind(&IBaseNode::systemStatusCallback, this,
                     std::placeholders::_1));
 
   this->race_control_status_sub =
       this->create_subscription<nif::common::msgs::RaceControlStatus>(
-          topic_race_control_status, nif::common::constants::QOS_DEFAULT,
+          topic_race_control_status, nif::common::constants::QOS_INTERNAL_STATUS,
           std::bind(&IBaseNode::raceControlStatusCallback, this,
                     std::placeholders::_1));
 
   this->ego_powertrain_state_sub =
       this->create_subscription<nif::common::msgs::PowertrainState>(
-          topic_ego_powertrain_status, nif::common::constants::QOS_DEFAULT,
+          topic_ego_powertrain_status, nif::common::constants::QOS_INTERNAL_STATUS,
           std::bind(&IBaseNode::egoPowertrainCallback, this,
                     std::placeholders::_1));
 
@@ -118,7 +123,7 @@ IBaseNode::IBaseNode(const std::string &node_name, const NodeType node_type, con
   }
 
   this->node_status_pub = this->create_publisher<nif::common::msgs::NodeStatus>(
-                                  this->getNodeStatusTopicName(), rclcpp::QoS{1});
+      this->getNodeStatusTopicName(), nif::common::constants::QOS_INTERNAL_STATUS);
 
   // TODO make global parameter
   this->register_node_service_client =
@@ -190,7 +195,7 @@ void IBaseNode::nodeStatusTimerCallback() {
 }
 
 //  ### NODE STATUS COMPONENTS
-void IBaseNode::setNodeStatus(NodeStatusCode status_code) {
+void IBaseNode::setNodeStatus(NodeStatusCode status_code) noexcept {
   this->node_status_manager.update(status_code);
 }
 
@@ -210,9 +215,6 @@ const msgs::Odometry &IBaseNode::getEgoOdometry() const {
 }
 const msgs::PowertrainState &IBaseNode::getEgoPowertrainState() const {
   return ego_powertrain_state;
-}
-const msgs::SystemStatus &IBaseNode::getSystemState() const {
-  return system_status;
 }
 const msgs::RaceControlStatus &IBaseNode::getRaceControlState() const {
   return race_control_status;
@@ -239,3 +241,4 @@ bool IBaseNode::hasEgoOdometry() const { return has_ego_odometry; }
 bool IBaseNode::hasEgoPowertrainState() const { return has_ego_powertrain_state; }
 bool IBaseNode::hasSystemStatus() const { return has_system_status; }
 bool IBaseNode::hasRaceControlStatus() const { return has_race_control_status; }
+
