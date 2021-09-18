@@ -35,11 +35,11 @@ def get_share_file(package_name, file_name):
 def generate_launch_description():
     """Launch all packages for the vehicle in IAC."""
     ssc_interface_param_file = get_share_file(
-        package_name='bvs_common', file_name='param/ssc.param.yaml'
+        package_name='ssc_interface', file_name='param/defaults.param.yaml'
     )
 
     dbc_file_path = get_share_file(
-        package_name='raptor_dbw_can', file_name='launch/CAN1_INDY_V3.dbc'
+        package_name='raptor_dbw_can', file_name='launch/CAN1_INDY_V4.dbc'
     )
 
     bvs_long_control_param_file = get_share_file(

@@ -29,17 +29,6 @@ def get_share_file(package_name, file_name):
 
 
 def generate_launch_description():
-    # MAPs
-    lor_inside_line_csv = get_share_file(
-        package_name='bvs_control', file_name='config/LOR_inside_line.csv'
-    )
-
-    ims_center_line_csv = get_share_file(
-        package_name='bvs_control', file_name='config/IMS_center_line.csv'
-    )
-
-    map_csv = None
-
     if track == LOR:
         globtraj_input_path = get_share_file("nif_multilayer_planning_nodes", "inputs/traj_ltpl_cl/traj_ltpl_cl_lor_test.csv")
         graph_store_path = get_share_file("nif_multilayer_planning_nodes", "inputs/stored_graph.pckl")
@@ -74,7 +63,7 @@ def generate_launch_description():
         ],
         remappings={
             ('out_local_maptrack_inglobal', '/planning/graph/path_global'),
-            ('in_ego_odometry', '/localization/ekf/odom'),
+            ('in_ego_odometry', '/localization/ekf/odom_bestpos'),
         }
     )
 

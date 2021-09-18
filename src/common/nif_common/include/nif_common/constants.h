@@ -105,7 +105,16 @@ const rclcpp::QoS QOS_CONTROL_CMD = rclcpp::QoS{1};
  * TODO verify and improve.
  */
 const rclcpp::QoS QOS_CONTROL_CMD_OVERRIDE = rclcpp::SensorDataQoS();
-    //    rclcpp::QoS(rclcpp::QoSInitialization::from_rmw(
+
+
+
+/**
+ * Default QoS parameter for Race Control topics.
+ */
+const rclcpp::QoS QOS_RACE_CONTROL = rclcpp::ServicesQoS();
+
+
+//    rclcpp::QoS(rclcpp::QoSInitialization::from_rmw(
 //    {
 //    RMW_QOS_POLICY_HISTORY_KEEP_LAST,
 //    1,

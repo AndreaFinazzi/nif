@@ -20,6 +20,19 @@ SystemStatusManagerNode::SystemStatusManagerNode(
             "in_joystick_cmd", nif::common::constants::QOS_CONTROL_CMD_OVERRIDE,
             std::bind(&SystemStatusManagerNode::joystickCallback, this, std::placeholders::_1));
 
+    // TODO define internal msg and proper conversion
+    this->rc_flag_summary_sub = this->create_subscription<common::msgs::RCFlagSummary>(
+            "rc_interface/rc_flag_summary", nif::common::constants::QOS_RACE_CONTROL,
+            std::bind(&SystemStatusManagerNode::RCFlagSummaryCallback, this, std::placeholders::_1));
+
+    // TODO this is only temporary, as the localization status should be handled in the localization nodes.
+    this->subscriber_bestpos = this->create_subscription<novatel_oem7_msgs::msg::BESTPOS>(
+            "/novatel_top/bestpos", 1, std::bind(&SystemStatusManagerNode::receive_bestpos, this, std::placeholders::_1));
+
+    // TODO this is only temporary, as the localization status should be handled in the localization nodes.
+    this->subscriber_insstdev = this->create_subscription<novatel_oem7_msgs::msg::INSSTDEV>(
+            "/novatel_top/insstdev", 1, std::bind(&SystemStatusManagerNode::receive_insstdev, this, std::placeholders::_1));
+
     //  Publishers
     this->system_status_pub = this->create_publisher<nif::common::msgs::SystemStatus>(
             "out_system_status", nif::common::constants::QOS_INTERNAL_STATUS
@@ -229,32 +242,6 @@ nif::common::types::t_node_id SystemStatusManagerNode::newStatusRecord(
     return node_id;
 }
 
-void SystemStatusManagerNode::recoveryServiceHandler(
-        const std::shared_ptr<rmw_request_id_t> request_header,
-        const std_srvs::srv::Trigger::Request::SharedPtr request,
-        std_srvs::srv::Trigger::Response::SharedPtr response) {
-    if (!this->recovery_enabled) {
-
-        this->recovery_enabled = true;
-        response->success = this->recovery_enabled;
-        response->message = "recovery_enabled set to ";
-        response->message.append(this->recovery_enabled ? "true" : "false");
-    } else {
-        response->success = true;
-        response->message = "WARN: service call has been ignored, recovery_enable is already true. (pull-up only)";
-    }
-
-}
-
-void SystemStatusManagerNode::joystickCallback(const nif::common::msgs::OverrideControlCmd::SharedPtr msg) {
-    // parse counter
-    this->counter_joy = msg->counter;
-    // parse emergency
-    if (msg->emergency_stop == 1) {
-        joy_emergency_stop = true;
-    }
-}
-
 bool SystemStatusManagerNode::heartbeatOk() {
     // check for timeouts
     if (counter_joy_prev != counter_joy) {
@@ -278,4 +265,38 @@ bool SystemStatusManagerNode::heartbeatOk() {
             return true;
         }
     }
+}
+
+void SystemStatusManagerNode::recoveryServiceHandler(
+        const std::shared_ptr<rmw_request_id_t> request_header,
+        const std_srvs::srv::Trigger::Request::SharedPtr request,
+        std_srvs::srv::Trigger::Response::SharedPtr response) {
+    if (!this->recovery_enabled) {
+
+        this->recovery_enabled = true;
+        response->success = this->recovery_enabled;
+        response->message = "recovery_enabled set to ";
+        response->message.append(this->recovery_enabled ? "true" : "false");
+    } else {
+        response->success = true;
+        response->message = "WARN: service call has been ignored, recovery_enable is already true. (pull-up only)";
+    }
+}
+
+void SystemStatusManagerNode::joystickCallback(const nif::common::msgs::OverrideControlCmd::SharedPtr msg) {
+    // parse counter
+    this->counter_joy = msg->counter;
+    // parse emergency
+    if (msg->emergency_stop == 1) {
+        joy_emergency_stop = true;
+    }
+}
+
+void
+SystemStatusManagerNode::RCFlagSummaryCallback(
+        const nif::common::msgs::RCFlagSummary::UniquePtr msg)
+{
+    this->rc_flag_summary = std::move(*msg);
+    this->rc_flag_summary_update_time = this->now();
+    this->has_rc_flag_summary = true;
 }

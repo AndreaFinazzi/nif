@@ -231,7 +231,7 @@ private:
       gear_control_pub;
 
   void controlCallback(const nif::common::msgs::ControlCmd::SharedPtr msg);
-  void controlOverrideCallback(const nif::common::msgs::ControlCmd::SharedPtr msg);
+  void controlOverrideCallback(const nif::common::msgs::ControlCmd::UniquePtr msg);
   rcl_interfaces::msg::SetParametersResult
   parametersCallback(const std::vector<rclcpp::Parameter> &vector);
   void run() override;

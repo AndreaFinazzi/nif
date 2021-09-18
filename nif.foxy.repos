@@ -4,15 +4,15 @@ repositories:
     url: https://github.com/AndreaFinazzi/nif_msgs.git
     version: main
 
-  src/external/deep_orange_msgs:
-    type: git
-    url: https://gitlab.com/IACBaseSoftware/deep_orange_msgs.git
-    version: master
+#  src/external/deep_orange_msgs:
+#    type: git
+#    url: https://gitlab.com/IACBaseSoftware/deep_orange_msgs.git
+#    version: master
 
-  src/external/raptor-dbw-ros2:
-    type: git
-    url: https://gitlab.com/IACBaseSoftware/raptor-dbw-ros2.git
-    version: master
+#  src/external/raptor-dbw-ros2:
+#    type: git
+#    url: https://gitlab.com/IACBaseSoftware/raptor-dbw-ros2.git
+#    version: master
 
   src/external/official-novatel-driver:
     type: git

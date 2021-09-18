@@ -24,7 +24,7 @@ void nif::control::ControlSafetyLayerNode::afterSystemStatusCallback()
 }
 
 void nif::control::ControlSafetyLayerNode::controlOverrideCallback(
-    const nif::common::msgs::ControlCmd::SharedPtr msg) {
+    const nif::common::msgs::ControlCmd::UniquePtr msg) {
   // TODO Declare thresholds params and implement override mechanism.
   this->override_control_cmd = std::move(*msg);
   this->override_last_update = this->now();
