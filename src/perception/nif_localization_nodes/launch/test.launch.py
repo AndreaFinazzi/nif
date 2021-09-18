@@ -55,6 +55,14 @@ def generate_launch_description():
             "inner_map.pcd", #IMS
             # "LOR_inner.pcd", #LOR
         )
+    trajectory_map = os.path.join(
+            get_package_share_directory("nif_localization_nodes"),
+            "map",
+            track_subdir,
+            # "have_to_generate.pcd", #IMS
+            "trajectory.pcd", #LOR
+        )
+
 
     base_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -72,6 +80,8 @@ def generate_launch_description():
                 parameters=[{
                     # global map loader
                     'globalmap_file_name' : global_map,
+                    'trajectory_pcd_file' : trajectory_map,
+                    'use_trajectory' : True,
 
                     # geofence node
                     'outer_geofence_filename': outer_geofence_map,

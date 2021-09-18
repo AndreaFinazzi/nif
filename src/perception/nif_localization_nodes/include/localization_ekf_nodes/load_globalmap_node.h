@@ -78,7 +78,8 @@ private:
   std::string m_glbalmap_file_name;
   std::string m_trajectory_file_name;
   bool bUseTrajectory;
-  bool bMapReady;
+  bool bMapReady = false;
+  bool bTrajectoryReady = false;
   bool bPublishOnce;
   double m_voxel_size;
 };
