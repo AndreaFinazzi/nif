@@ -135,6 +135,34 @@ public:
     //  Invert steering command for simulation
     this->declare_parameter("invert_steering", false);
 
+    this->declare_parameter("time_step", 0.01);
+
+    this->declare_parameter("throttle.proportional_gain", 4.0);
+    this->declare_parameter("throttle.integral_gain", 0.0);
+    this->declare_parameter("throttle.derivative_gain", 0.0);
+    this->declare_parameter("throttle.max_integrator_error", 10.0);
+    this->declare_parameter("throttle.cmd_max", 25.0);
+    this->declare_parameter("throttle.cmd_min", 0.0);
+    this->declare_parameter("throttle.reset_integral_below_this_cmd", 15.0);
+
+    this->declare_parameter("brake.proportional_gain", 4.0);
+    this->declare_parameter("brake.integral_gain", 0.0);
+    this->declare_parameter("brake.derivative_gain", 0.0);
+    this->declare_parameter("brake.max_integrator_error", 10.0);
+    this->declare_parameter("brake.cmd_max", 2000000.7);
+    this->declare_parameter("brake.cmd_min", 0.0);
+    this->declare_parameter("brake.reset_integral_below_this_cmd", 15.0);
+    this->declare_parameter("brake.vel_error_deadband_mps", 0.5);
+
+    this->declare_parameter("gear.shift_up", 13.0);
+    this->declare_parameter("gear.shift_down", 11.0);
+    this->declare_parameter("gear.shift_time_ms", 300);
+
+    this->declare_parameter("safe_des_vel.safe_vel_thres_mph", 30.0);
+    this->declare_parameter("safe_des_vel.hard_braking_time", 1.5);
+    this->declare_parameter("safe_des_vel.soft_braking_time", 1.0);
+
+
     // Read in misc. parameters
     max_steering_angle_deg =
         this->get_parameter("max_steering_angle_deg").as_double();
@@ -162,31 +190,6 @@ public:
 
 //  EMERGENCY LONG CONTROL FEATURES
     this->initializeGears();
-
-    this->declare_parameter("throttle.proportional_gain", 4.0);
-    this->declare_parameter("throttle.integral_gain", 0.0);
-    this->declare_parameter("throttle.derivative_gain", 0.0);
-    this->declare_parameter("throttle.max_integrator_error", 10.0);
-    this->declare_parameter("throttle.cmd_max", 25.0);
-    this->declare_parameter("throttle.cmd_min", 0.0);
-    this->declare_parameter("throttle.reset_integral_below_this_cmd", 15.0);
-
-    this->declare_parameter("brake.proportional_gain", 4.0);
-    this->declare_parameter("brake.integral_gain", 0.0);
-    this->declare_parameter("brake.derivative_gain", 0.0);
-    this->declare_parameter("brake.max_integrator_error", 10.0);
-    this->declare_parameter("brake.cmd_max", 2000000.7);
-    this->declare_parameter("brake.cmd_min", 0.0);
-    this->declare_parameter("brake.reset_integral_below_this_cmd", 15.0);
-    this->declare_parameter("brake.vel_error_deadband_mps", 0.5);
-
-    this->declare_parameter("gear.shift_up", 13.0);
-    this->declare_parameter("gear.shift_down", 11.0);
-    this->declare_parameter("gear.shift_time_ms", 300);
-
-    this->declare_parameter("safe_des_vel.safe_vel_thres_mph", 30.0);
-    this->declare_parameter("safe_des_vel.hard_braking_time", 1.5);
-    this->declare_parameter("safe_des_vel.soft_braking_time", 1.0);
 
     this->safe_vel_thres_mph_ =
             this->get_parameter("safe_des_vel.safe_vel_thres_mph").as_double();
@@ -382,6 +385,7 @@ private:
         this->curr_gear_ptr_ = this->gear_states[1];
     }
 
+
     double init_tick_ = -1.0;
     double init_vel_ = -1.0;
     double safe_braking_time_ = -1.0;
@@ -417,6 +421,7 @@ private:
     double iBrakeReset_;
     double brake_deadband;
 
+    bool has_vel = false;
     rclcpp::Time vel_recv_time_;
 
     rclcpp::Subscription<raptor_dbw_msgs::msg::WheelSpeedReport>::SharedPtr wheel_speed_sub;
@@ -477,7 +482,8 @@ private:
         double rear_right = msg->rear_right;
         // average wheel speeds (kph) and convert to m/s
         this->speed_mps_ = (rear_left + rear_right) * 0.5 * kphToMps;
-        this->vel_recv_time_ = rclcpp::Clock().now();
+        this->has_vel = true;
+        this->vel_recv_time_ = this->now();
     }
 
     void receivePtReport(
@@ -488,7 +494,7 @@ private:
     }
 
     double calculateVelocityError() {
-        rclcpp::Duration time_diff = this->now() - this->vel_recv_time_;
+        rclcpp::Duration time_diff = this->now() - (has_vel ? this->vel_recv_time_ : this->getGclockNodeInit());
         double dt = static_cast<double>(time_diff.seconds()) +
                 static_cast<double>(time_diff.nanoseconds()) * 1e-9;
 

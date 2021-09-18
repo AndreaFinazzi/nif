@@ -118,10 +118,10 @@ public:
     }
 
     auto now = this->now();
-    bool valid_path = !m_current_path.poses.empty() &&
+    bool valid_path = has_path && !m_current_path.poses.empty() &&
                       (secs(now - m_path_update_time) < m_path_timeout_sec ||
                        m_path_timeout_sec < 0.0);
-    bool valid_odom = secs(now - m_odom_update_time) < m_odometry_timeout_sec ||
+    bool valid_odom = has_odometry && secs(now - m_odom_update_time) < m_odometry_timeout_sec ||
                       m_odometry_timeout_sec < 0.0;
     bool valid_tracking_result = false;
 
@@ -263,13 +263,15 @@ public:
 
   /** ROS Callbacks / Subscription Interface **/
   void pathCallback(const nav_msgs::msg::Path::SharedPtr msg) {
-    m_path_update_time = rclcpp::Clock().now();
+      has_path = true;
+    m_path_update_time = this->now();
     // lqr_tracking_idx_ = 0; // Reset Tracking
     m_current_path = *msg;
   }
 
   void odometryCallback(const nav_msgs::msg::Odometry::SharedPtr msg) {
-    m_odom_update_time = rclcpp::Clock().now();
+      has_odometry = true;
+    m_odom_update_time = this->now();
     m_current_odometry = *msg;
   }
 
@@ -317,7 +319,9 @@ private:
 
   //! Track when certain variables have been updated
   rclcpp::Time m_path_update_time;
+  bool has_path = false;
   rclcpp::Time m_odom_update_time;
+  bool has_odometry = false;
 
   //! Load vehicle dynamics manager
   TireManager m_tire_manager;

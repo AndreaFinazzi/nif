@@ -513,11 +513,11 @@ def generate_launch_description():
         nif_joint_lqr_param,
         nif_accel_control_param,
 
-        ssc_interface,
-        socketcan_receiver_launch,
-        socketcan_sender_launch,
-        raptor_node,
-        telemetry_node,
+        # ssc_interface,
+        # socketcan_receiver_launch,
+        # socketcan_sender_launch,
+        # raptor_node,
+        # telemetry_node,
 
         nif_global_param_node,
         nif_system_status_manager_node,

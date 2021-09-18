@@ -24,10 +24,10 @@ find_package(deep_orange_msgs REQUIRED)
 
 include_directories(include)
 
-add_executable(nif_accel_control_nodes src/accel_control_node.cpp src/control_model.cpp)
-ament_target_dependencies(nif_accel_control_nodes rclcpp std_msgs raptor_dbw_msgs deep_orange_msgs)
+add_executable(${PROJECT_NAME}_exe src/accel_control_node.cpp src/control_model.cpp)
+ament_target_dependencies(${PROJECT_NAME}_exe rclcpp std_msgs raptor_dbw_msgs deep_orange_msgs)
 install(
-  TARGETS nif_accel_control_nodes
+  TARGETS ${PROJECT_NAME}_exe
   DESTINATION lib/${PROJECT_NAME}
 )
 

@@ -17,7 +17,7 @@ int32_t main(int32_t argc, char **argv) {
   using nif::control::ControlLQRNode;
   using namespace nif::common::constants;
 
-  const char *node_name = "control_lqr_node";
+  const char *node_name = "control_joint_lqr_node";
 
   rclcpp::Node::SharedPtr nd;
 

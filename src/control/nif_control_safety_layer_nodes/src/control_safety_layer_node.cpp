@@ -39,6 +39,7 @@ void nif::control::ControlSafetyLayerNode::run() {
 
   if (
           this->emergency_lane_enabled ||
+          !this->hasSystemStatus()     ||
           this->now().nanoseconds() - this->getSystemStatusUpdateTime().nanoseconds() > rclcpp::Duration::from_seconds(0.5).nanoseconds())
   {
 //      TODO EMERGENCY LANE HANDLING

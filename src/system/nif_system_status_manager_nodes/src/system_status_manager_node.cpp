@@ -72,11 +72,13 @@ void SystemStatusManagerNode::systemStatusTimerCallback() {
 
     // check safety conditions
     bool hb_ok = heartbeatOk();
+    bool localization_ok = gps_health_ok();
 
     if (!hb_ok || !this->recovery_enabled) {
         hb_ok = false;
     }
     this->system_status_msg.health_status.communication_failure = !hb_ok;
+    this->system_status_msg.health_status.localization_failure = !localization_ok;
 
     // if operator commands emergency stop
     if (joy_emergency_stop) {
