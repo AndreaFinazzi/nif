@@ -3,14 +3,12 @@ windows:
   - window_name: ROSBAG PLAY Tab
     layout: tiled
     shell_command_before:
-      - source /home/usrg/nif/install/setup.bash && cd /home/usrg/bag/VEH4_IMS_RUN-ontrack00_2021-09-03
+      - source /home/usrg/nif/install/setup.bash && cd /home/usrg/bag/LOR/VEH4_LOR_RUN-manual.01_2021-09-16_for_mapping 
     panes:
       - shell_command:
-          - ros2 bag play sensors_2021-09-03_10-59-19/ --topics /luminar_front_points /luminar_left_points /luminar_right_points  
+          - ros2 bag play sensors_2021-09-16_11-23-16/ --topics /merged/lidar /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /raptor_dbw_interface/wheel_speed_report /novatel_top/bestpos /novatel_top/inspva /novatel_top/bestvel /novatel_top/imu/data /novatel_bottom/insstdev
       - shell_command:
-          - ros2 bag play autonomy_2021-09-03_10-59-19/ --topics /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /raptor_dbw_interface/wheel_speed_report
-      - shell_command:
-          - ros2 launch nif_launch base.launch.py
+          # - ros2 launch nif_launch base.launch.py
 
   - window_name: Algorithm Tab
     layout: tiled

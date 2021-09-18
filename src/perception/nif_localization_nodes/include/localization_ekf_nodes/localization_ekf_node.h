@@ -144,6 +144,11 @@ private:
   bool gps_flag;
   bool heading_flag;
 
+  bool m_use_inspva_heading;
+  bool m_inspva_heading_init = false;
+
+  double m_bestvel_heading_update_thres;
+
   double vel_y;
 
   int countpos = 0;
