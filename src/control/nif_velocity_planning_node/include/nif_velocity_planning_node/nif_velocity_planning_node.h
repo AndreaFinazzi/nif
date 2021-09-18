@@ -63,7 +63,7 @@ public:
                                 std::bind(&VelocityPlannerNode::velocityCallback, this,
                                           std::placeholders::_1));
                 imu_sub_ = this->create_subscription<sensor_msgs::msg::Imu>(
-                    "novatel_bottom/imu/data", nif::common::constants::QOS_SENSOR_DATA,
+                    "novatel_top/imu/data", nif::common::constants::QOS_SENSOR_DATA,
                         std::bind(&VelocityPlannerNode::imuCallback, this,
                                   std::placeholders::_1));
                 steering_sub_ =
@@ -108,15 +108,16 @@ public:
 
   void velocityPlanning() {
     // Update desired velocity from ros param
-    m_max_vel = this->get_parameter("des_vel_mps").as_double();
+    auto new_max_vel = this->get_parameter("des_vel_mps").as_double();
     // TODO: Update maximum limit of the desired velocity
-    if (m_max_vel > 100.0 / 3.6) {
-      std::cout << "----- Current limit for Maximum velocity is 100.0 kph!!!"
-                << std::endl;
-      m_max_vel = std::min(m_max_vel, 100. / 3.6);
+    if (new_max_vel > 100.0 / 3.6) {
+      RCLCPP_WARN(this->get_logger(), "----- Current limit for Maximum velocity is 100.0 kph!!!");
+
+    } else {
+        m_max_vel = new_max_vel;
     }
 
-    auto now = rclcpp::Clock().now();
+    auto now = this->now();
     bool valid_path = !m_current_path.poses.empty() &&
                       (secs(now - m_path_update_time) < m_path_timeout_sec ||
                        m_path_timeout_sec < 0.0);

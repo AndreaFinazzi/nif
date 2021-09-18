@@ -16,10 +16,26 @@
 #include "nif_common_nodes/i_base_synchronized_node.h"
 #include "nif_control_common/control_command_compare.h"
 
+#include <PID.hpp>
+
 #include "rclcpp/rclcpp.hpp"
 
 namespace nif {
 namespace control {
+
+struct GearState {
+    int gear;
+    double gearRatio;
+    double downshiftSpeed;
+    double upshiftSpeed;
+    GearState(int gear, double gearRatio, double downshiftSpeed,
+              double upshiftSpeed) {
+        this->gear = gear;
+        this->gearRatio = gearRatio;
+        this->downshiftSpeed = downshiftSpeed;
+        this->upshiftSpeed = upshiftSpeed;
+    }
+};
 
 /**
  * ControlSafetyLayerNode is responsible to send the final control message to
@@ -126,6 +142,14 @@ public:
     this->parameters_callback_handle = this->add_on_set_parameters_callback(
         std::bind(&ControlSafetyLayerNode::parametersCallback, this, std::placeholders::_1));
 
+//  EMERGENCY LONG CONTROL FEATURES
+    this->initializeGears();
+
+
+
+
+
+
     this->setNodeStatus(common::NODE_INITIALIZED);
   }
 
@@ -230,6 +254,12 @@ private:
   rclcpp::Publisher<nif::common::msgs::ControlGearCmd>::SharedPtr
       gear_control_pub;
 
+  std::map<int, std::shared_ptr<GearState>> gear_states;
+  std::shared_ptr<control::GearState> curr_gear_ptr_;
+
+  PID vel_pid_;
+  PID brake_pid_;
+
   void controlCallback(const nif::common::msgs::ControlCmd::SharedPtr msg);
   void controlOverrideCallback(const nif::common::msgs::ControlCmd::UniquePtr msg);
   rcl_interfaces::msg::SetParametersResult
@@ -243,6 +273,27 @@ private:
 
     void afterSystemStatusCallback() override;
 
+    void initializeGears() {
+        // LOR params
+        // this->gear_states = {
+        //    {1, std::make_shared<control::GearState>(1, 2.92, -255, 11)},
+        //    {2, std::make_shared<control::GearState>(2, 1.875, 9.5, 16)},
+        //    {3, std::make_shared<control::GearState>(3, 1.38, 14, 22)},
+        //    {4, std::make_shared<control::GearState>(4, 1.5, 17, 30)},
+        //    {5, std::make_shared<control::GearState>(5, 0.96, 22, 35)},
+        //    {6, std::make_shared<control::GearState>(6, 0.889, 30, 255)}};
+
+        // IMS params
+        this->gear_states = {
+                {1, std::make_shared<control::GearState>(1, 2.92, -255, 11)},
+                {2, std::make_shared<control::GearState>(2, 1.875, 9.5, 22)},
+                {3, std::make_shared<control::GearState>(3, 1.38, 19.5, 28.5)},
+                {4, std::make_shared<control::GearState>(4, 1.5, 25, 37.5)},
+                {5, std::make_shared<control::GearState>(5, 0.96, 35, 44)},
+                {6, std::make_shared<control::GearState>(6, 0.889, 41.5, 255)}};
+
+        this->curr_gear_ptr_ = this->gear_states[1];
+    }
     //  TODO define safety checks functions
 
 };
