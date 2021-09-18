@@ -262,6 +262,7 @@ void EKFLocalizer::TOPINSPVACallback(
   if(yaw != 0.0)
   {
     m_inspva_heading_init = true;
+    std::cout << "INSPVA HEADING IS NOT INITIALIZED" << std::endl;
   }
   if (!m_inspva_heading_init) {
     return;
