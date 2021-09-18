@@ -17,9 +17,12 @@ void nif::control::ControlSafetyLayerNode::afterSystemStatusCallback()
 {
     if (this->getSystemStatus().health_status.system_failure ||
         this->getSystemStatus().health_status.communication_failure || // too conservative
+        this->getSystemStatus().health_status.localization_failure ||
         this->getSystemStatus().health_status.commanded_stop)
     {
         this->emergency_lane_enabled = true;
+    } else {
+        this->emergency_lane_enabled = false;
     }
 }
 
@@ -39,8 +42,19 @@ void nif::control::ControlSafetyLayerNode::run() {
           this->now().nanoseconds() - this->getSystemStatusUpdateTime().nanoseconds() > rclcpp::Duration::from_seconds(0.5).nanoseconds())
   {
 //      TODO EMERGENCY LANE HANDLING
+        double error = calculateVelocityError();
+        this->control_cmd.steering_control_cmd =
+            this->override_control_cmd.steering_control_cmd;
+        this->control_cmd.gear_control_cmd.data = this->getGearCmd();
+        this->control_cmd.accelerator_control_cmd.data = 0.0;
+        this->control_cmd.braking_control_cmd.data = this->getBrakeCmd(error);
 
-  }
+        this->publishAcceleratorCmd(this->control_cmd.accelerator_control_cmd);
+        this->publishBrakingCmd(this->control_cmd.braking_control_cmd);
+        this->publishGearCmd(this->control_cmd.gear_control_cmd);
+        this->control_pub->publish(this->control_cmd);
+  } else {
+
   // Check / Process Overrides
   // If override.steering is greater than the threshold, use it
   // TODO If override.brake is greater than 0.0, use it
@@ -48,7 +62,7 @@ void nif::control::ControlSafetyLayerNode::run() {
 
   if (std::abs(override_control_cmd.steering_control_cmd.data) >
           std::abs(steering_auto_override_deg) ||
-      !lateral_tracking_enabled) {
+      !lat_autonomy_enabled) {
     this->control_cmd.steering_control_cmd =
         this->override_control_cmd.steering_control_cmd;
     is_overriding_steering = true;
@@ -73,7 +87,7 @@ void nif::control::ControlSafetyLayerNode::run() {
     this->control_pub->publish(this->control_cmd);
 
     this->publishSteeringCmd(this->control_cmd.steering_control_cmd);
-
+    this->publishDesiredAcceleration(this->control_cmd.desired_accel_cmd);
     this->setNodeStatus(node_status);
     //      TODO long_control is in charge of these, at the moment
     //      this->publishAcceleratorCmd(msg->accelerator_control_cmd);
@@ -86,6 +100,7 @@ void nif::control::ControlSafetyLayerNode::run() {
 //    Notify the SystemStatusManager of the change.
     this->emergency_lane_enabled = true;
     this->setNodeStatus(common::NodeStatusCode::NODE_ERROR);
+  }
   }
   this->bufferFlush();
 }
@@ -154,14 +169,21 @@ nif::control::ControlSafetyLayerNode::parametersCallback(
   result.successful = false;
   result.reason = "";
   for (const auto &param : vector) {
-    if (param.get_name() == "lateral_tracking_enabled") {
+    if (param.get_name() == "lat_autonomy_enabled") {
       if (param.get_type() == rclcpp::ParameterType::PARAMETER_BOOL) {
         if (true) // TODO implement switching policy, if needed
         {
-          this->lateral_tracking_enabled = param.as_bool();
+          this->lat_autonomy_enabled = param.as_bool();
           result.successful = true;
         }
       }
+    } else if (param.get_name() == "long_autonomy_enabled") {
+        if (param.get_type() == rclcpp::ParameterType::PARAMETER_BOOL) {
+            if (true) {
+                this->long_autonomy_enabled = param.as_bool();
+                result.successful = true;
+            }
+        }
     } else if (param.get_name() == "max_steering_angle_deg") {
       if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
         if (true) {

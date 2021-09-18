@@ -257,7 +257,7 @@ def generate_launch_description():
         },
         remappings=[
             ('in_control_cmd_prev', '/control_safety_layer/out/control_cmd'),
-            ('out_control_cmd', '/control_pool/control_cmd'),
+            ('out_control_cmd', '/control_pool/disabled/control_cmd'),
             ('in_reference_path', '/planning/path_global'),
         ]
     )
@@ -285,10 +285,68 @@ def generate_launch_description():
             ('out_accelerator_control_cmd', '/joystick/accelerator_cmd'),
             ('out_braking_control_cmd', '/joystick/brake_cmd'),
             ('out_gear_control_cmd', '/joystick/gear_cmd'),
+            ('out_desired_acceleration_cmd', '/control_safety_layer/out/desired_accel'),
         ]
     )
 
-    # nif_csl_launch = IncludeLaunchDescription(
+    nif_velocity_planning_node = Node(
+        package='nif_velocity_planning_node',
+        executable='nif_velocity_planning_node_exe',
+        output='screen',
+    )
+
+    lqr_joint_config_file = get_share_file(
+        package_name='nif_control_joint_lqr_nodes', file_name='config/lqr/lqr_params.deploy.yaml'
+    )
+
+    nif_joint_lqr_rosparams_file = get_share_file(
+        package_name='nif_control_joint_lqr_nodes', file_name='config/deploy.params.yaml'
+    )
+
+    nif_joint_lqr_param = DeclareLaunchArgument(
+        'control_joint_lqr_params_file',
+        default_value=nif_joint_lqr_rosparams_file,
+        description='Path to config file for nif_control_lqr'
+    )
+
+    nif_joint_lqr_control_node = Node(
+        package='nif_control_joint_lqr_nodes',
+        executable='nif_control_joint_lqr_nodes_exe',
+        parameters=[
+            LaunchConfiguration('control_joint_lqr_params_file'),
+            {
+                'lqr_config_file': lqr_joint_config_file,
+            }
+        ],
+        output={
+            'stdout': 'screen',
+            'stderr': 'screen',
+        },
+        remappings=[
+            ('in_control_cmd_prev', '/control_safety_layer/out/control_cmd'),
+            ('out_control_cmd', '/control_pool/control_cmd'),
+            ('in_reference_path', '/planning/path_global'),
+        ]
+    )
+
+    nif_accel_control_param = DeclareLaunchArgument(
+        'accel_control_param',
+        default_value=get_share_file(package_name='nif_accel_control_nodes', file_name='config/params.yaml'
+        ),
+        description='Path to config file for nif_accel_control_nodes'
+    )
+
+    nif_accel_control_node = Node(
+        package='nif_accel_control_nodes',
+        executable='nif_accel_control_nodes_exe',
+        output='screen',
+        parameters=[
+            LaunchConfiguration('accel_control_param')
+        ]
+    )
+
+
+# nif_csl_launch = IncludeLaunchDescription(
     #     PythonLaunchDescriptionSource(
     #         get_package_share_directory('nif_control_safety_layer_nodes') + '/launch/deploy.launch.py'
     #     ),
@@ -460,6 +518,8 @@ def generate_launch_description():
         nif_csl_param,
         nif_lqr_param,
         nif_wpt_param,
+        nif_joint_lqr_param,
+        nif_accel_control_param,
 
         ssc_interface,
         socketcan_receiver_launch,
@@ -478,5 +538,8 @@ def generate_launch_description():
         nif_waypoint_manager_node,
         bvs_safety_node,
         robot_description_launch,
-        nif_multilayer_planning_node
+        nif_multilayer_planning_node,
+        nif_velocity_planning_node,
+        nif_joint_lqr_control_node,
+        nif_accel_control_node,
     ])

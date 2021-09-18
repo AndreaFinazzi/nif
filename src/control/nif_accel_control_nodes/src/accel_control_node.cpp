@@ -27,7 +27,7 @@ AccelControl::AccelControl() : Node("AccelControlNode") {
   this->pubGearCmd_ =
       this->create_publisher<std_msgs::msg::UInt8>("/joystick/gear_cmd", 1);
   this->pubControlStatus_ = this->create_publisher<std_msgs::msg::String>(
-      "/bvs_long_control/control_status", 1);
+      "/control_low_level/control_status", 1);
 
   // setup QOS to be best effort
   auto qos = rclcpp::QoS(
@@ -46,7 +46,7 @@ AccelControl::AccelControl() : Node("AccelControlNode") {
           std::bind(&AccelControl::receiveVelocity, this,
                     std::placeholders::_1));
   this->subDesAccel_ = this->create_subscription<std_msgs::msg::Float32>(
-      "/desired_accel", 1,
+          "/control_safety_layer/out/desired_accel", rclcpp::SensorDataQoS(),
       std::bind(&AccelControl::receiveDesAccel, this, std::placeholders::_1));
   this->subPtReport_ =
       this->create_subscription<deep_orange_msgs::msg::PtReport>(
@@ -162,7 +162,7 @@ void AccelControl::controlCallback() {
   calculateBrakeCmd(current_des_accel);
 
   publishThrottleBrake();
-  setCmdsToZeros();
+//  setCmdsToZeros();
 }
 
 void AccelControl::paramUpdateCallback() {

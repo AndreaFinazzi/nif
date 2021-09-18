@@ -41,8 +41,8 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
   //     std::placeholders::_1));
 
   this->declare_parameter("lqr_config_file", "");
-  // Automatically boot with lateral_tracking_enabled
-  this->declare_parameter("lateral_tracking_enabled", false);
+  // Automatically boot with lat_autonomy_enabled
+  this->declare_parameter("lat_autonomy_enabled", false);
   // Max Steering Angle in Degrees
   this->declare_parameter("max_steering_angle_deg", 20.0);
   // Degrees at which to automatically revert to the override
@@ -137,7 +137,7 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
   auto now = this->now();
 
   bool lateral_tracking_enabled =
-      this->get_parameter("lateral_tracking_enabled").as_bool();
+      this->get_parameter("lat_autonomy_enabled").as_bool();
 
   bool invert_steering =
       this->get_parameter("invert_steering").as_bool();

@@ -13,10 +13,12 @@
    limitations under the License.
 */
 
-#include "PID.hpp"
+#include "nif_control_common/PID.hpp"
 
 #include <algorithm>
 #include <cmath>
+
+namespace nif {
 
 namespace control {
 PID::PID(const double &p, const double &i, const double &d, const double &dt,
@@ -104,4 +106,5 @@ double PID::SaturateCmd(const double &cmd) {
 void PID::SaturateIntegratedError() {
   this->eInt_ = std::min(std::max(-iMax_, eInt_), iMax_);
 }
-}  // End namespace control
+}  // namespace control
+}  // namespace nif

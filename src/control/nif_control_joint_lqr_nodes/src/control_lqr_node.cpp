@@ -10,27 +10,27 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
 
   // Debug Publishers
   lqr_command_valid_pub_ = this->create_publisher<std_msgs::msg::Bool>(
-      "control_lqr/tracking_valid", 1);
+      "control_joint_lqr/tracking_valid", nif::common::constants::QOS_DEFAULT);
   lqr_steering_command_pub_ = this->create_publisher<std_msgs::msg::Float32>(
-      "control_lqr/lqr_command", 1);
+      "control_joint_lqr/lqr_command", nif::common::constants::QOS_DEFAULT);
   lqr_accel_command_pub_ = this->create_publisher<std_msgs::msg::Float32>(
-      "control_lqr/accel_command", 1);
+      "control_joint_lqr/accel_command", nif::common::constants::QOS_DEFAULT);
   track_distance_pub_ = this->create_publisher<std_msgs::msg::Float32>(
-      "control_lqr/track_distance", 1);
+      "control_joint_lqr/track_distance", nif::common::constants::QOS_DEFAULT);
   lqr_tracking_point_pub_ =
       this->create_publisher<geometry_msgs::msg::PoseStamped>(
-          "control_lqr/track_point", 1);
+          "control_joint_lqr/track_point", nif::common::constants::QOS_DEFAULT);
   lqr_error_pub_ = this->create_publisher<std_msgs::msg::Float32MultiArray>(
-      "control_lqr/lqr_error", 1);
+      "control_joint_lqr/lqr_error", nif::common::constants::QOS_DEFAULT);
 
   // Subscribers
   desired_vx_sub_ = this->create_subscription<std_msgs::msg::Float32>(
-      "/velocity_planner/des_vel", 1,
+          "velocity_planner/des_vel", nif::common::constants::QOS_CONTROL_CMD,
       std::bind(&ControlLQRNode::desiredVxCallback, this,
                 std::placeholders::_1));
   velocity_sub_ =
       this->create_subscription<raptor_dbw_msgs::msg::WheelSpeedReport>(
-          "/raptor_dbw_interface/wheel_speed_report", 1,
+              "/raptor_dbw_interface/wheel_speed_report", nif::common::constants::QOS_SENSOR_DATA,
           std::bind(&ControlLQRNode::velocityCallback, this,
                     std::placeholders::_1));
   //   TODO update to the single-topic joystick comms
@@ -63,8 +63,8 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
   //      std::bind(&PathFollowerNode::executeControl, this));
 
   this->declare_parameter("lqr_config_file", "");
-  // Automatically boot with lateral_tracking_enabled
-  this->declare_parameter("lateral_tracking_enabled", false);
+  // Automatically boot with lat_autonomy_enabled
+  this->declare_parameter("lat_autonomy_enabled", false);
   // Max Steering Angle in Degrees
   this->declare_parameter("max_steering_angle_deg", 20.0);
   // Degrees at which to automatically revert to the override
@@ -158,7 +158,7 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
   auto now = this->now();
 
   bool lateral_tracking_enabled =
-      this->get_parameter("lateral_tracking_enabled").as_bool();
+      this->get_parameter("lat_autonomy_enabled").as_bool();
 
   bool invert_steering = this->get_parameter("invert_steering").as_bool();
   //  Check whether we have updated data

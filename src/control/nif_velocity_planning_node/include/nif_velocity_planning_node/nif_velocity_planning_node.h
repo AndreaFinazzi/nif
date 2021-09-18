@@ -72,8 +72,8 @@ public:
                                 std::bind(&VelocityPlannerNode::steerCallback, this,
                                           std::placeholders::_1));
                 error_sub_ = this->create_subscription<std_msgs::msg::Float32MultiArray>(
-                    "control_lqr/lqr_error", nif::common::constants::QOS_DEFAULT,
-                        std::bind(&VelocityPlannerNode::errorCallback, this,
+                        "control_lqr/lqr_error", nif::common::constants::QOS_DEFAULT,
+                            std::bind(&VelocityPlannerNode::errorCallback, this,
                                   std::placeholders::_1));
 
     //! Timer to execute control at 25Hz
