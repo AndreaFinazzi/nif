@@ -29,6 +29,7 @@
 #include <nav_msgs/msg/odometry.hpp>
 #include <novatel_oem7_msgs/msg/bestpos.hpp>
 #include <novatel_oem7_msgs/msg/inspva.hpp>
+#include <novatel_oem7_msgs/msg/bestvel.hpp>
 #include <opencv2/opencv.hpp>
 #include <raptor_dbw_msgs/msg/wheel_speed_report.hpp>
 #include <rclcpp/rclcpp.hpp>
@@ -65,8 +66,10 @@ public:
   void GPSOdometryCallback(const nav_msgs::msg::Odometry::SharedPtr msg);
   void timer_callback();
   void GPSLATLONCallback(const novatel_oem7_msgs::msg::BESTPOS::SharedPtr msg);
-  void GPSINSPVACallback(const novatel_oem7_msgs::msg::INSPVA::SharedPtr msg);
+  void BOTTOMINSPVACallback(const novatel_oem7_msgs::msg::INSPVA::SharedPtr msg);
+  void TOPINSPVACallback(const novatel_oem7_msgs::msg::INSPVA::SharedPtr msg);
 
+  void BESTVELCallback(const novatel_oem7_msgs::msg::BESTVEL::SharedPtr msg);
   void MessegefilteringCallback(
       const sensor_msgs::msg::Imu ::ConstSharedPtr &imu_msg,
       const raptor_dbw_msgs::msg::WheelSpeedReport::ConstSharedPtr
@@ -84,8 +87,11 @@ private:
   rclcpp::Subscription<novatel_oem7_msgs::msg::BESTPOS>::SharedPtr
       sub_gpslatlon;
   rclcpp::Subscription<novatel_oem7_msgs::msg::INSPVA>::SharedPtr subINSPVA;
+  rclcpp::Subscription<novatel_oem7_msgs::msg::INSPVA>::SharedPtr subTOPINSPVA;
 
-  rclcpp::TimerBase::SharedPtr timer_;
+  rclcpp::Subscription<novatel_oem7_msgs::msg::BESTVEL>::SharedPtr subBESTVEL;
+
+      rclcpp::TimerBase::SharedPtr timer_;
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr pub_EKF_odometry;
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr pub_bestpos_odometry;
   std::unique_ptr<tf2_ros::TransformBroadcaster> broadcaster_;
@@ -136,6 +142,12 @@ private:
   double gps_count_prev = 0.0;
   double gps_count_curr = 0.0;
   bool gps_flag;
+  bool heading_flag;
+
+  bool m_use_inspva_heading;
+  bool m_inspva_heading_init = false;
+
+  double m_bestvel_heading_update_thres;
 
   double vel_y;
 
