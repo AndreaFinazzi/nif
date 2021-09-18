@@ -89,6 +89,8 @@ EKFLocalizer::EKFLocalizer(const std::string &node_name) : IBaseNode(node_name) 
   ref.altitude = 0.;
   conv_.initializeReference(ref);
 
+  gps_timeout = rclcpp::Duration(1, 0);
+
   this->setNodeStatus(common::NODE_INITIALIZED);
   RCLCPP_INFO(this->get_logger(), "START EKF NODE");
 }
@@ -102,6 +104,9 @@ void EKFLocalizer::timer_callback() {
 
 void EKFLocalizer::run() {
   if (bImuFirstCall && bGPS && bGPSHeading) {
+      auto node_status = nif::common::NODE_ERROR;
+
+
     vel_and_yawRate = cv::Mat::zeros(3, 1, CV_64FC1);
     GPS_data = cv::Mat::zeros(3, 1, CV_64FC1);
     vel_and_yawRate.ptr<double>(0)[0] = m_dVelolcity_X; // vel_x
@@ -111,9 +116,22 @@ void EKFLocalizer::run() {
     GPS_data.ptr<double>(1)[0] = m_dGPS_Y;       // odom
     GPS_data.ptr<double>(2)[0] = m_dGPS_Heading; // odom
 
-//
+
 //    if (ImuTimeDouble != ImuPrevTimeDouble && bImuFirstCall) {
+//
 //    }
+
+        // If the geofence data is too old, report error, but keep going.
+        if ((this->now().nanoseconds() - bestpos_time_last_update.nanoseconds()) >=
+                this->gps_timeout.nanoseconds()
+                ||
+                (this->now().nanoseconds() - imu_time_last_update.nanoseconds()) >=
+                this->gps_timeout.nanoseconds()) {
+            // Set error, but keep going
+            node_status = common::NODE_ERROR;
+        } else {
+            node_status = common::NODE_OK;
+        }
 
       m_ekf.EKF_Predictionstep(m_ekf.m_xhat, m_ekf.m_Phat, vel_and_yawRate,
                                0.01);
@@ -178,7 +196,7 @@ void EKFLocalizer::run() {
     //   // RCLCPP_WARN(this->get_logger(), "[Imu / Wheel speed] is not updated");
     //   return;
     // }
-    this->setNodeStatus(common::NODE_OK);
+    this->setNodeStatus(node_status);
   } else {
     RCLCPP_DEBUG(this->get_logger(), "Waiting for -[/novatel_bottom/bestpos]");
     RCLCPP_DEBUG(this->get_logger(), "            -[/novatel_bottom/inspva]");
@@ -189,7 +207,9 @@ void EKFLocalizer::run() {
 }
 void EKFLocalizer::GPSLATLONCallback(
     const novatel_oem7_msgs::msg::BESTPOS::SharedPtr msg) {
-  nif::localization::utils::GeodeticConverter::GeoRef currentGPS;
+
+    this->bestpos_time_last_update = this->now();
+    nif::localization::utils::GeodeticConverter::GeoRef currentGPS;
   currentGPS.latitude = (double)msg->lat;
   currentGPS.longitude = (double)msg->lon;
   // Currently ignore altitude for the most part and just track x/y
@@ -318,6 +338,7 @@ void EKFLocalizer::MessegefilteringCallback(
   auto ImuCurrentTime = rclcpp::Time(imu_msg->header.stamp);
   if (!bImuFirstCall) {
     bImuFirstCall = true;
+    this->imu_time_last_update = this->now();
     ImuPrevTimeDouble =
         static_cast<double>(ImuCurrentTime.seconds()) +
         static_cast<double>(ImuCurrentTime.nanoseconds()) * 1e-9;

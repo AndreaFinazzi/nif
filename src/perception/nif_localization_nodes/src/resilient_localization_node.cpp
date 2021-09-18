@@ -60,16 +60,18 @@ ResilientLocalization::ResilientLocalization(const std::string &node_name_)
   timer_ = this->create_wall_timer(10ms, [this]() {
     if (bDetectedOuter && bGeofenceOuter)
     {
+        auto node_status = nif::common::NODE_ERROR;
       // If the geofence data is too old, report error, but keep going.
       if (this->now() - m_geofence_outer_last_update_ >=
               this->m_geofence_timeout_ ||
           this->now() - m_detected_outer_last_update_ >=
               this->m_geofence_timeout_) {
         
-        std::cout << "A :" << (this->now() - m_detected_outer_last_update_).nanoseconds() << std::endl;
-        std::cout << "B :" << this->m_geofence_timeout_.nanoseconds() << std::endl;
-        std::uint8_t tmp = 123;
-        this->setNodeStatus((nif::common::NodeStatusCode) tmp);
+       RCLCPP_DEBUG(this->get_logger(), "A : %f", (this->now() - m_detected_outer_last_update_).nanoseconds());
+       RCLCPP_DEBUG(this->get_logger(), "B : %f", this->m_geofence_timeout_.nanoseconds());
+       node_status = nif::common::NODE_ERROR;
+      } else {
+          node_status = nif::common::NODE_OK;
       }
 
       double current = static_cast<double>(this->now().seconds()) +
@@ -102,7 +104,7 @@ ResilientLocalization::ResilientLocalization(const std::string &node_name_)
       TooCloseToWallMsg.data = true;
     }
     pubTooCloseToWallFlag->publish(TooCloseToWallMsg);
-    this->setNodeStatus(common::NODE_OK);
+    this->setNodeStatus(node_status);
     }
   });
 

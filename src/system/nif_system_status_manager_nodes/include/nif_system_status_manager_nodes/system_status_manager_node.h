@@ -80,6 +80,7 @@ private:
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr joy_emergency_pub;
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr hb_emergency_pub;
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr diagnostic_hb_pub;
+  rclcpp::Publisher<nif::common::msgs::SystemStatus>::SharedPtr system_status_telem_pub;
 
   rclcpp::Subscription<nif::common::msgs::OverrideControlCmd>::SharedPtr joystick_sub;
   std::vector<
@@ -89,6 +90,7 @@ private:
   rclcpp::Subscription<novatel_oem7_msgs::msg::INSSTDEV>::SharedPtr subscriber_insstdev;
 
   rclcpp::TimerBase::SharedPtr system_status_timer;
+  rclcpp::TimerBase::SharedPtr telemetry_timer;
 
   rclcpp::Service<nif_msgs::srv::RegisterNodeStatus>::SharedPtr
       register_node_service;
@@ -126,6 +128,10 @@ private:
   double long_stdev_ = 0.0;
   double best_pos_lat_stdev_ = 0.0;
   double best_pos_long_stdev_ = 0.0;
+
+  void telemetry_timer_callback() {
+      this->system_status_telem_pub->publish(this->system_status_msg);
+  }
 
   void receive_bestpos(const novatel_oem7_msgs::msg::BESTPOS::SharedPtr msg) {
       this->best_pos_lat_stdev_ = msg->lat_stdev;

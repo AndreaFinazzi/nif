@@ -522,7 +522,7 @@ def generate_launch_description():
         nif_global_param_node,
         nif_system_status_manager_node,
         bvs_long_control_node,
-        nif_lqr_control_node,
+        # nif_lqr_control_node,
         nif_csl_node,
         nif_localization_launch,
         bvs_localization_node_bg,

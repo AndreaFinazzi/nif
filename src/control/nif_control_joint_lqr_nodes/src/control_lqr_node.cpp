@@ -156,6 +156,7 @@ void ControlLQRNode::publishSteerAccelDiagnostics(
 
 nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
   auto now = this->now();
+  nif::common::NodeStatusCode node_status = common::NODE_ERROR;
 
   bool lateral_tracking_enabled =
       this->get_parameter("lat_autonomy_enabled").as_bool();
@@ -240,8 +241,11 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
     override_sig = true;
   }
 
-  if (!(valid_path && valid_odom) && !override_sig)
-    return nullptr;
+  if (!(valid_path && valid_odom) && !override_sig) {
+      node_status = common::NODE_ERROR;
+      this->setNodeStatus(node_status);
+      return nullptr;
+  }
 
   last_steering_command_ = steering_angle_deg;
   last_accel_command_ = desired_accel;
@@ -251,5 +255,7 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
   // for acceleration command
   this->control_cmd->desired_accel_cmd.data = desired_accel;
 
+  node_status = common::NODE_OK;
+  this->setNodeStatus(node_status);
   return this->control_cmd;
 }

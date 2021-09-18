@@ -24,6 +24,7 @@
     <exec_depend>nif_control_safety_layer_nodes</exec_depend>
 
     <exec_depend>telemetry</exec_depend>
+    <exec_depend>autoware_auto_msgs</exec_depend>
     <exec_depend>ssc_interface</exec_depend>
     <exec_depend>ros2_socketcan</exec_depend>
     <exec_depend>raptor_dbw_can</exec_depend>

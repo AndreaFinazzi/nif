@@ -136,6 +136,7 @@ public:
     this->declare_parameter("invert_steering", false);
 
     this->declare_parameter("time_step", 0.01);
+    this->declare_parameter("buffer_empty_counter_threshold", 10);
 
     this->declare_parameter("throttle.proportional_gain", 4.0);
     this->declare_parameter("throttle.integral_gain", 0.0);
@@ -203,6 +204,7 @@ public:
       if (gear_shift_time_ms <= 0) throw std::range_error("shift_time_ms must be greater than zero.");
 
     this->ts_ = this->get_parameter("time_step").as_double();
+    this->buffer_empty_counter_threshold = this->get_parameter("buffer_empty_counter_threshold").as_int();
 
     // Create throttle PID object
     this->p_ = this->get_parameter("throttle.proportional_gain").as_double();
@@ -251,6 +253,7 @@ private:
 
   // emergency lane flag. Activated in case of emergency.
   bool emergency_lane_enabled = false;
+  bool emergency_buffer_empty = false;
 
   // Automatically boot with lat_autonomy_enabled
   bool lat_autonomy_enabled;
@@ -385,6 +388,8 @@ private:
         this->curr_gear_ptr_ = this->gear_states[1];
     }
 
+    int buffer_empty_counter = 0;
+    int buffer_empty_counter_threshold = 10;
 
     double init_tick_ = -1.0;
     double init_vel_ = -1.0;
@@ -416,7 +421,7 @@ private:
     double bi_;
     double bd_;
     double biMax_;
-    double brakeCmdMax_;
+    double brakeCmdMax_ = 2000000.7;
     double brakeCmdMin_;
     double iBrakeReset_;
     double brake_deadband;
@@ -493,7 +498,7 @@ private:
         this->engine_running_ = (msg->engine_rpm > 500) ? true : false;
     }
 
-    double calculateVelocityError() {
+    double emergencyVelocityError() {
         rclcpp::Duration time_diff = this->now() - (has_vel ? this->vel_recv_time_ : this->getGclockNodeInit());
         double dt = static_cast<double>(time_diff.seconds()) +
                 static_cast<double>(time_diff.nanoseconds()) * 1e-9;
@@ -503,7 +508,7 @@ private:
         }
 
         // Apply safe desired vel profiler for safe braking w.r.t. pose uncertainty
-        auto safe_des_velocity = safeDesVelProfiler();
+        auto safe_des_velocity = emergencyDesVelProfiler();
 
         double vel_error = safe_des_velocity - this->speed_mps_;
         return vel_error;
@@ -527,7 +532,7 @@ private:
         return this->brake_pid_.CurrentControl();
     }
 
-    double safeDesVelProfiler() {
+    double emergencyDesVelProfiler() {
         /*
         Safe desired velocity profiler w.r.t. pose uncertainty
         : Decrease desired velocity while the GPS uncertainty (cov) is larger than

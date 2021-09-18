@@ -106,8 +106,9 @@ def generate_launch_description():
                     ("in_bestvel", "novatel_bottom/bestvel"), #HEADING BACK UP SOLUTION
                     ("in_wheel_speed_report", "raptor_dbw_interface/wheel_speed_report"), # WHEEL SPEED
 
-                    ("out_odometry_ekf_estimated", "/localization/ego_odom"),
-                    ("out_odometry_bestpos", "/localization/ego_odom_bestpos"),          ]
+                    ("out_odometry_ekf_estimated", "/localization/ekf/odom"),
+                    ("out_odometry_bestpos", "/localization/ekf/odom_bestpos")
+                ]
             )
 
     return LaunchDescription(

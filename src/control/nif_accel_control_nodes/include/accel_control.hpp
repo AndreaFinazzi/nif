@@ -84,8 +84,6 @@ private:
   void receiveDesAccel(const std_msgs::msg::Float32::SharedPtr msg);
   void receivePtReport(const deep_orange_msgs::msg::PtReport::SharedPtr msg);
 
-  rclcpp::TimerBase::SharedPtr control_timer_;
-  rclcpp::TimerBase::SharedPtr param_timer_;
   rclcpp::TimerBase::SharedPtr gear_timer_;
 
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pubThrottleCmd_;

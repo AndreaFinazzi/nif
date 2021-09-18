@@ -155,6 +155,11 @@ private:
 
   double hcount = 0.0;
   double hbias = 0.0;
+
+  rclcpp::Time imu_time_last_update;
+  rclcpp::Time bestpos_time_last_update;
+
+  rclcpp::Duration gps_timeout = rclcpp::Duration(1, 0);
 };
 } // namespace ekf
 } // namespace localization

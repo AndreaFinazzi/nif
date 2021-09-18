@@ -2,8 +2,10 @@
 //  Author: Andrea Finazzi
 
 #include "nif_system_status_manager_nodes/system_status_manager_node.h"
+#include <chrono>
 
 using nif::system::SystemStatusManagerNode;
+using namespace std::chrono_literals;
 
 SystemStatusManagerNode::SystemStatusManagerNode(
         const std::string &node_name)
@@ -39,11 +41,22 @@ SystemStatusManagerNode::SystemStatusManagerNode(
     );
 
     this->joy_emergency_pub = this->create_publisher<std_msgs::msg::Bool>(
-            "/ssm/emergency_joystick", 10);
+            "/vehicle/emergency_joystick", 10);
     this->hb_emergency_pub = this->create_publisher<std_msgs::msg::Bool>(
-            "/ssm/emergency_heartbeat", 10);
+            "/vehicle/emergency_heartbeat", 10);
     this->diagnostic_hb_pub = this->create_publisher<std_msgs::msg::Int32>(
-            "/ssm/heartbeat", 10);
+            "/diagnostics/heartbeat", 10);
+
+    auto qos = rclcpp::QoS(rclcpp::QoSInitialization(RMW_QOS_POLICY_HISTORY_KEEP_LAST, 1));
+    qos.best_effort();
+
+    this->system_status_telem_pub = this->create_publisher<nif::common::msgs::SystemStatus>(
+            "/telemetry/system_status", qos
+            );
+
+    this->telemetry_timer = this->create_wall_timer(
+            250ms, std::bind(&SystemStatusManagerNode::telemetry_timer_callback, this));
+
 
     // Services
     // TODO make global parameter
@@ -90,12 +103,19 @@ void SystemStatusManagerNode::systemStatusTimerCallback() {
     this->system_status_msg.health_status.system_failure = !isSystemHealthy();
     this->system_status_msg.health_status.system_status_code = getSystemStatusCode();
 
-    this->joy_emergency_pub->publish({this->system_status_msg.health_status.commanded_stop});
-    this->hb_emergency_pub->publish({this->system_status_msg.health_status.communication_failure});
+    auto message_joy = std_msgs::msg::Bool();
+    auto message_hb = std_msgs::msg::Bool();
+    message_joy.data = this->system_status_msg.health_status.commanded_stop;
+    message_hb.data = this->system_status_msg.health_status.communication_failure;
+
+    this->joy_emergency_pub->publish(message_joy);
+    this->hb_emergency_pub->publish(message_hb);
     this->system_status_pub->publish(this->system_status_msg);
 
     // send diagnostic hb to vehicle interface
-    this->diagnostic_hb_pub->publish({static_cast<size_t>(counter_hb)});
+    auto joy_hb = std_msgs::msg::Int32();
+    joy_hb.data = counter_hb;
+    this->diagnostic_hb_pub->publish(joy_hb);
     counter_hb++;
     if (counter_hb == 8){
         counter_hb = 0;

@@ -135,9 +135,9 @@ SscInterface::SscInterface(
     node.create_subscription<raptor_dbw_msgs::msg::SteeringReport>(
     "steer_report", rclcpp::QoS{10},
     [this](raptor_dbw_msgs::msg::SteeringReport::SharedPtr msg) {steer_report_callback(msg);});
-//  m_rc_to_ct_sub = node.create_subscription<deep_orange_msgs::msg::RcToCt>(
-//    "rc_to_ct_info", rclcpp::QoS{10},
-//    [this](deep_orange_msgs::msg::RcToCt::SharedPtr msg) {rc_to_ct_callback(msg);});
+  m_rc_to_ct_sub = node.create_subscription<deep_orange_msgs::msg::RcToCt>(
+    "rc_to_ct_info", rclcpp::QoS{10},
+    [this](deep_orange_msgs::msg::RcToCt::SharedPtr msg) {rc_to_ct_callback(msg);});
   m_flag_summary_sub = node.create_subscription<deep_orange_msgs::msg::BaseToCarSummary>(
           "flag_summary", rclcpp::ServicesQoS(),
           [this](deep_orange_msgs::msg::BaseToCarSummary::SharedPtr msg) {flag_summary_callback(msg);});
