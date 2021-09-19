@@ -1,0 +1,100 @@
+// STD
+#include <cstdio>
+#include <limits>
+#include <string>
+#include <vector>
+#include <iostream>
+#include <memory>
+
+// ROSBAG
+#include "rcpputils/filesystem_helper.hpp"
+#include "rosbag2_cpp/reader.hpp"
+#include "rosbag2_cpp/readers/sequential_reader.hpp"
+#include "rosbag2_cpp/writer.hpp"
+#include "rosbag2_cpp/writers/sequential_writer.hpp"
+
+int main(int argc, char** argv) {
+    std::vector<std::string> input_bag_files;
+    std::string output_bag;
+    std::vector<std::string> topics;
+    double start_time = 0.0;
+    double end_time = std::numeric_limits<double>::max();
+
+    for(int i = 0; i < argc; ++i) {
+        std::string argn = std::string(argv[i]);
+        if(argn == "-h" || argn == "--help") {
+            std::cout << "rosbag_merger -i <input bagfile> [-i <input bagfile 2>] -o <output_bagfile> -s <start_time> -e <end_time> [-t <topic_a>] [-t <topic_b>]" << std::endl;
+            std::cout << "Mergest input bags into a single output bag." << std::endl;
+            return 0;
+        } else if(argn == "-i") {
+            if(i + 1 >= argc) {
+                std::cout << "bag name must be after -i flag" << std::endl;
+                continue;
+            }
+            if(argv[i + 1][0] == '-') {
+                std::cout << "start of argument after -i flag is a `-`... do better." << std::endl;
+                continue;
+            }
+            input_bag_files.push_back(std::string(argv[i + 1]));
+            ++i;
+        } else if(argn == "-o") {
+            if(i + 1 >= argc) {
+                std::cerr << "bag name must be after -o flag" << std::endl;
+                continue;
+            }
+            if(argv[i + 1][0] == '-') {
+                std::cerr << "start of argument after -o flag is a `-`... do better." << std::endl;
+                continue;
+            }
+            output_bag = std::string(argv[i+1]);
+            ++i;
+        } else if(argn == "-t") {
+            if(i + 1 >= argc) {
+                std::cerr << "topic name must be after -t flag" << std::endl;
+                continue;
+            }
+            if(argv[i + 1][0] == '-') {
+                std::cerr << "start of argument after -t flag is a `-`... do better." << std::endl;
+                continue;
+            }
+            topics.push_back(std::string(argv[i+1]));
+            ++i;
+        }
+    }
+    if(input_bag_files.size() == 0) {
+        std::cerr << "No input bags :(" << std::endl;
+        return 1;
+    }
+    if(output_bag == "") {
+        std::cerr << "Output bag not set" << std::endl;
+        return 1;
+    }
+
+    std::vector<std::shared_ptr<rosbag2_cpp::Reader>> readers;
+    std::cout << "Reading from " << input_bag_files.size() << " bags:" << std::endl;
+    for(const auto& bag : input_bag_files) {
+        std::cout << "  - " << bag << std::endl;
+        try {
+            auto new_reader = std::make_shared<rosbag2_cpp::Reader>();
+            auto path = rcpputils::fs::path(bag);
+            new_reader->open(path.string());
+            readers.push_back(new_reader);
+        } catch(const std::exception& err) {
+            std::cout << "Unable to open " << bag << ": " << err.what() << std::endl;
+            continue;
+        }
+    }
+    std::cout << "Writing to " << output_bag << std::endl;
+    auto output_bag_path = rcpputils::fs::path(output_bag);
+    rosbag2_cpp::Writer writer;
+    writer.open(output_bag_path.string());
+
+    if(topics.size() > 0) {
+        std::cout << "Reading only " << topics.size() << " topics." << std::endl;
+        for(const auto& topic : topics) {
+            std::cout << "  - " << topic << std::endl;
+        }
+    }
+
+    return 0;
+}

@@ -1,0 +1,31 @@
+LongControlNode:
+  ros__parameters:
+    auto_enabled: false
+    desired_velocity: 30.0 # m/s
+    time_step: 0.01
+    throttle:
+      proportional_gain: 4.0
+      integral_gain: 0.0
+      derivative_gain: 0.0
+      max_integrator_error: 10.0
+      cmd_max: 25.0
+      cmd_min: 0.0
+      reset_integral_below_this_cmd: 15.0
+    brake:
+      proportional_gain: 200000.1
+      integral_gain: 0.0
+      derivative_gain: 0.0
+      max_integrator_error: 10.0
+      cmd_max: 2000000.7
+      cmd_min: 0.0
+      reset_integral_below_this_cmd: 100000.0
+      vel_error_deadband_mps: 0.5
+    gear:
+      shift_up: 4000.0
+      shift_down: 2200.0
+      shift_time_ms: 1000
+    safe_des_vel:
+      pose_stdev_thres: 2.0
+      safe_vel_thres_mph: 30.0
+      hard_braking_time: 1.5
+      soft_braking_time: 1.0

@@ -7,9 +7,8 @@ void nif::control::ControlSafetyLayerNode::controlCallback(
         const nif::common::msgs::ControlCmd::SharedPtr msg) {
     //  TODO consider not to accept commands from the future!
     //  Store control command if it's not too old
-    if ((this->now().nanoseconds() - msg->header.stamp.nanosec) <
-        this->getGclockPeriodNs().count() ||
-        true) // TODO REMOVE THIS!!!
+    if ((this->now() - msg->header.stamp) <
+        this->getGclockPeriodDuration() )
         this->bufferStore(msg);
 }
 
@@ -35,12 +34,12 @@ void nif::control::ControlSafetyLayerNode::run() {
     bool is_overriding_steering = false;
     nif::common::NodeStatusCode node_status = common::NODE_ERROR;
 
-    if (
-            this->emergency_lane_enabled ||
+    if (    this->emergency_lane_enabled ||
             this->emergency_buffer_empty ||
-            !this->hasSystemStatus() ||
-            this->now().nanoseconds() - this->getSystemStatusUpdateTime().nanoseconds() >
-            rclcpp::Duration::from_seconds(0.5).nanoseconds()) {
+            !this->hasSystemStatus()     ||
+            this->now() - this->getSystemStatusUpdateTime() >
+            rclcpp::Duration::from_seconds(0.5))
+    {
         this->control_cmd.header.stamp = this->now();
 //      TODO EMERGENCY LANE HANDLING
         double error = emergencyVelocityError();
@@ -145,16 +144,14 @@ void nif::control::ControlSafetyLayerNode::run() {
         } catch (...) {
             //      TODO handle critical error in the safest way
             RCLCPP_ERROR(this->get_logger(),
-                         "ControlSafetyLayerNode has caught an exception, enabling emergency lane control");
+                         "ControlSafetyLayerNode caught an exception, enabling emergency lane control");
 //    Notify the SystemStatusManager of the change.
             this->emergency_lane_enabled = true;
             this->setNodeStatus(common::NodeStatusCode::NODE_ERROR);
         }
     }
 
-    this->
-
-            bufferFlush();
+    this->bufferFlush();
 
 }
 
