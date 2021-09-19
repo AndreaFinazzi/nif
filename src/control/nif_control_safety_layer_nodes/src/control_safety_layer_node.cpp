@@ -21,6 +21,9 @@ void nif::control::ControlSafetyLayerNode::afterSystemStatusCallback() {
     } else {
         this->emergency_lane_enabled = false;
     }
+
+    this->lat_autonomy_enabled = this->getSystemStatus().autonomy_status.lateral_autonomy_enabled;
+    this->long_autonomy_enabled = this->getSystemStatus().autonomy_status.longitudinal_autonomy_enabled;
 }
 
 void nif::control::ControlSafetyLayerNode::controlOverrideCallback(
