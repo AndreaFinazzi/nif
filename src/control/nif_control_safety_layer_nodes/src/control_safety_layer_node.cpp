@@ -126,7 +126,7 @@ void nif::control::ControlSafetyLayerNode::run() {
             this->publishSteeringCmd(this->control_cmd.steering_control_cmd);
 
 //    Always allow braking override
-            if (this->override_control_cmd.braking_control_cmd.data > 1.0)
+            if (this->override_control_cmd.braking_control_cmd.data > 100.0)
             {
                 this->control_cmd.braking_control_cmd =
                         this->override_control_cmd.braking_control_cmd;

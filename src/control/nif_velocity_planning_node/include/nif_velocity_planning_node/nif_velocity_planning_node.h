@@ -86,7 +86,7 @@ public:
     // Curv-based planner
     this->declare_parameter(
         "des_vel_mps",
-        11.1); // [m/s]. 11.11m/s (40km/h), 13.89m/s (50km/h), 16.67 (60km/h)
+        27.0); // [m/s]. 11.11m/s (40km/h), 13.89m/s (50km/h), 16.67 (60km/h)
     this->declare_parameter("lpf_curve_f", 8.0); // lower --> smoother & delayed
     this->declare_parameter("lpf_curve_dt", 0.01); // for Low pass filter
     this->declare_parameter("lpf_curve_x0", 0.0);  // for Low pass filter
