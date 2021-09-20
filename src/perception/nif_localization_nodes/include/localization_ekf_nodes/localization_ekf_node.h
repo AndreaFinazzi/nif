@@ -120,6 +120,9 @@ private:
   bool bGPSHeading;
 
   double m_dIMU_yaw_rate;
+  double m_dIMU_roll_rate; 
+  double m_dIMU_pitch_rate; 
+  
   double m_dVelolcity_X;
 
   bool bImuFirstCall;
@@ -150,6 +153,9 @@ private:
   double m_bestvel_heading_update_thres;
 
   double vel_y;
+
+  double m_dGPS_vel_x_onBody;
+  double m_dGPS_vel_y_onBody;
 
   int countpos = 0;
 
