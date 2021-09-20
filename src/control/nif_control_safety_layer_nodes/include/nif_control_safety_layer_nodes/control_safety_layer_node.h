@@ -8,6 +8,7 @@
 #ifndef ROS2MASTER_CONTROL_SAFETY_LAYER_NODE_H
 #define ROS2MASTER_CONTROL_SAFETY_LAYER_NODE_H
 
+#include <std_msgs/msg/int32.hpp>
 #include <nav_msgs/msg/odometry.hpp>
 #include "raptor_dbw_msgs/msg/wheel_speed_report.hpp"
 #include "deep_orange_msgs/msg/pt_report.hpp"
@@ -115,6 +116,9 @@ public:
     this->desired_acceleration_pub =
             this->create_publisher<std_msgs::msg::Float32>(
                     "out_desired_acceleration_cmd", nif::common::constants::QOS_CONTROL_CMD);
+
+    this->diagnostic_hb_pub = this->create_publisher<std_msgs::msg::Int32>(
+            "/diagnostics/heartbeat", 10);
 
     // Automatically boot with lat_autonomy_enabled
     this->declare_parameter("lat_autonomy_enabled", false);
@@ -351,6 +355,8 @@ private:
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr
     desired_acceleration_pub;
 
+  rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr diagnostic_hb_pub;
+
   std::map<int, std::shared_ptr<GearState>> gear_states;
   std::shared_ptr<control::GearState> curr_gear_ptr_;
 
@@ -392,6 +398,8 @@ private:
 
         this->curr_gear_ptr_ = this->gear_states[1];
     }
+
+    int counter_hb = 0;
 
     int buffer_empty_counter = 0;
     int buffer_empty_counter_threshold = 10;

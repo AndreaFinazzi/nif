@@ -63,7 +63,6 @@ private:
 //  TODO make parameter
   const int max_counter_drop = 20;
   int t = 0;
-  int counter_hb = 0;
 
   const int default_counter = 502;
   int counter_joy_prev = default_counter-1;
@@ -79,7 +78,7 @@ private:
   rclcpp::Publisher<nif::common::msgs::SystemStatus>::SharedPtr system_status_pub;
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr joy_emergency_pub;
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr hb_emergency_pub;
-  rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr diagnostic_hb_pub;
+
   rclcpp::Publisher<nif::common::msgs::SystemStatus>::SharedPtr system_status_telem_pub;
 
   rclcpp::Subscription<nif::common::msgs::OverrideControlCmd>::SharedPtr joystick_sub;

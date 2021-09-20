@@ -8,7 +8,7 @@
     pure_pursuit_max_dist_m: 8.0
     pure_pursuit_k_vel_m_ms: 0.75
     use_tire_velocity: true
-    odometry_timeout_sec: 0.2
-    path_timeout_sec: 1.
+    odometry_timeout_sec: 0.1
+    path_timeout_sec: 0.5
     steering_max_ddeg_dt: 3.0
     invert_steering: false

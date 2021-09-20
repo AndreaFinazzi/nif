@@ -54,6 +54,7 @@ def generate_launch_description():
             "inner_map.pcd", #IMS
             # "inner_map.pcd", #LOR
         )
+
     trajectory_map = os.path.join(
             get_package_share_directory("nif_localization_nodes"),
             "map",
@@ -76,7 +77,7 @@ def generate_launch_description():
                     # global map loader
                     'globalmap_file_name' : global_map,
                     'trajectory_pcd_file' : trajectory_map,
-                    'use_trajectory' : True,
+                    'use_trajectory' : False,
 
                     # geofence node
                     'outer_geofence_filename': outer_geofence_map,

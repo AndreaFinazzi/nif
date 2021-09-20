@@ -15,7 +15,7 @@ SystemStatusManagerNode::SystemStatusManagerNode(
 
     this->declare_parameter("timeout_node_inactive_ms", 1000);
     this->declare_parameter("timeout_bestpos_msg_ms", 500);
-    this->declare_parameter("timeout_bestpos_diff_age_ms", 5000);
+    this->declare_parameter("timeout_bestpos_diff_age_ms", 60000);
     this->declare_parameter("lat_autonomy_enabled", false);
     this->declare_parameter("long_autonomy_enabled", false);
     this->declare_parameter("insstdev_threshold", 2.0);
@@ -67,8 +67,6 @@ SystemStatusManagerNode::SystemStatusManagerNode(
             "/vehicle/emergency_joystick", 10);
     this->hb_emergency_pub = this->create_publisher<std_msgs::msg::Bool>(
             "/vehicle/emergency_heartbeat", 10);
-    this->diagnostic_hb_pub = this->create_publisher<std_msgs::msg::Int32>(
-            "/diagnostics/heartbeat", 10);
 
     auto qos = rclcpp::QoS(rclcpp::QoSInitialization(RMW_QOS_POLICY_HISTORY_KEEP_LAST, 1));
     qos.best_effort();
@@ -135,14 +133,6 @@ void SystemStatusManagerNode::systemStatusTimerCallback() {
     this->hb_emergency_pub->publish(message_hb);
     this->system_status_pub->publish(this->system_status_msg);
 
-    // send diagnostic hb to vehicle interface
-    auto joy_hb = std_msgs::msg::Int32();
-    joy_hb.data = counter_hb;
-    this->diagnostic_hb_pub->publish(joy_hb);
-    counter_hb++;
-    if (counter_hb == 8) {
-        counter_hb = 0;
-    }
 }
 
 void SystemStatusManagerNode::subscribeNodeStatus(

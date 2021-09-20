@@ -26,7 +26,19 @@ from launch_ros.actions import Node
 
 IMS = 0
 LOR = 1
-track = LOR
+
+track = None
+
+# get which track we are at
+track_id = os.environ.get('TRACK').strip()
+
+if track_id == "IMS":
+    track = IMS
+elif track_id == "LOR":
+    track = LOR
+else:
+    raise RuntimeError("ERROR: Invalid track {}".format(track_id))
+
 
 def get_share_file(package_name, file_name):
     return os.path.join(get_package_share_directory(package_name), file_name)
@@ -166,24 +178,6 @@ def generate_launch_description():
     else:
         print("ERROR: invalid track provided: {}".format(track))
 
-    bvs_localization_node_bg = Node(
-        package='bvs_localization',
-        executable='localization_node',
-        output='screen',
-        parameters=[
-            {
-                "ltp_frame": "odom",
-                "base_link_frame": "base_link",
-                "ltp_latitude": 39.8125900071711,
-                "ltp_longitude": -86.3418060783425,
-            },
-            {"subscribe_novatel_oem7_msgs": True },
-            {"subscribe_novatel_gps_msgs": False }
-        ],
-        remappings=[
-            ("novatel_oem7_msgs/inspva", "novatel_bottom/inspva")
-        ]
-    )
 
     nif_localization_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -196,19 +190,6 @@ def generate_launch_description():
             get_package_share_directory('nif_points_preprocessor_nodes') + '/launch/deploy.launch.py'
         ),
     )
-
-    # path_publisher_node_bg = Node(
-    #     package='bvs_utils',
-    #     executable='path_publisher_node',
-    #     parameters=[{'track_line_csv': map_csv}],
-    #     output={
-    #         'stdout': 'screen',
-    #         'stderr': 'screen',
-    #     },
-    #     remappings=[
-    #         ('bvs_localization/ltp_odom', '/localization/ekf/odom')
-    #     ]
-    # )
 
     bvs_long_control_param_file = get_share_file(
         package_name='bvs_long_control', file_name='config/params.yaml'
@@ -521,14 +502,10 @@ def generate_launch_description():
 
         nif_global_param_node,
         nif_system_status_manager_node,
-        # bvs_long_control_node,
-        # nif_lqr_control_node,
         nif_csl_node,
         nif_localization_launch,
-        bvs_localization_node_bg,
         nif_wall_node_launch_bg,
         nif_waypoint_manager_node,
-        # bvs_safety_node,
         robot_description_launch,
         nif_multilayer_planning_node,
         nif_velocity_planning_node,

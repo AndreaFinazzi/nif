@@ -44,7 +44,7 @@ GlobalmapLoader::GlobalmapLoader(const std::string &node_name)
     if (!bMapReady) {
       pcdFileIO();
 
-    } else if (!bTrajectoryReady)
+    } else if (!bTrajectoryReady && bUseTrajectory)
     {
       TrajectorypcdFileIO();
 
@@ -122,11 +122,13 @@ void GlobalmapLoader::Publisher() {
   GlobalMapCloudMsg.header.stamp = this->now();
   pubGlobalmap->publish(GlobalMapCloudMsg);
 
-  sensor_msgs::msg::PointCloud2 TrajectoryCloudMsg;
-  pcl::toROSMsg(*m_trajectory_ptr, TrajectoryCloudMsg);
-  TrajectoryCloudMsg.header.frame_id = ODOM;
-  TrajectoryCloudMsg.header.stamp = this->now();
-  pubTrajectory->publish(TrajectoryCloudMsg);
-
+  if(bUseTrajectory)
+  {
+    sensor_msgs::msg::PointCloud2 TrajectoryCloudMsg;
+    pcl::toROSMsg(*m_trajectory_ptr, TrajectoryCloudMsg);
+    TrajectoryCloudMsg.header.frame_id = ODOM;
+    TrajectoryCloudMsg.header.stamp = this->now();
+    pubTrajectory->publish(TrajectoryCloudMsg);
+  }
   bPublishOnce = true;
 }
