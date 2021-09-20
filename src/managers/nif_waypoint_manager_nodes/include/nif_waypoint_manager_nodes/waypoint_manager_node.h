@@ -35,11 +35,6 @@ namespace nif
       WaypointManagerNode();
       void timerCallback();
 
-      // TODO: not used function. @Andrea told that these functions should be fixed
-      // or removed
-      void initParameters();
-      void getParameters();
-
       void setWaypointManager(const std::shared_ptr<WaypointManagerMinimal> wpt_manager_ptr)
       {
         this->wpt_manager = wpt_manager_ptr;

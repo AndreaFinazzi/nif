@@ -297,7 +297,7 @@ double LongControl::safeDesVelProfiler(double orig_des_vel) {
   @ Args
     - orig_des_vel : original desired velocity in ROS param
   @ Params
-    - pose_stdev_thres     : Threshold of the pose stdev
+    - insstdev_threshold     : Threshold of the pose stdev
     - safe_vel_thres_mph   : Velocity (Mph) threshold w.r.t. safe braking time
     - hard_braking_time    : safe braking time when faster than
   safe_vel_thres_mph

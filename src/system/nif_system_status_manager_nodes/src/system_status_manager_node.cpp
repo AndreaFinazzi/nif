@@ -14,8 +14,29 @@ SystemStatusManagerNode::SystemStatusManagerNode(
     this->system_status_msg.health_status.system_failure = false;
 
     this->declare_parameter("timeout_node_inactive_ms", 1000);
+    this->declare_parameter("timeout_bestpos_msg_ms", 500);
+    this->declare_parameter("timeout_bestpos_diff_age_ms", 3000);
+    this->declare_parameter("lat_autonomy_enabled", false);
+    this->declare_parameter("long_autonomy_enabled", false);
+    this->declare_parameter("insstdev_threshold", 2.0);
 
     this->node_inactive_timeout = rclcpp::Duration(1, 0);
+    this->system_status_msg.autonomy_status.lateral_autonomy_enabled = this->get_parameter(
+            "lat_autonomy_enabled").as_bool();
+    this->system_status_msg.autonomy_status.longitudinal_autonomy_enabled = this->get_parameter(
+            "long_autonomy_enabled").as_bool();
+
+    auto timeout_bestpos_last_update_ms = this->get_parameter("timeout_bestpos_msg_ms").as_int();
+    auto timeout_bestpos_diff_age_ms = this->get_parameter("timeout_bestpos_diff_age_ms").as_int();
+    this->timeout_bestpos_diff_age_s = timeout_bestpos_diff_age_ms / 1000;
+    this->timeout_bestpos_last_update = rclcpp::Duration(timeout_bestpos_last_update_ms * 1000000);
+    this->timeout_bestpos_diff_age = rclcpp::Duration(timeout_bestpos_diff_age_ms * 1000000);
+
+    this->insstdev_threshold = this->get_parameter("insstdev_threshold").as_double();
+
+    this->parameters_callback_handle = this->add_on_set_parameters_callback(
+            std::bind(&SystemStatusManagerNode::parametersCallback, this, std::placeholders::_1));
+
 
     // Subscribers
     this->joystick_sub = this->create_subscription<deep_orange_msgs::msg::JoystickCommand>(
@@ -29,11 +50,13 @@ SystemStatusManagerNode::SystemStatusManagerNode(
 
     // TODO this is only temporary, as the localization status should be handled in the localization nodes.
     this->subscriber_bestpos = this->create_subscription<novatel_oem7_msgs::msg::BESTPOS>(
-            "/novatel_top/bestpos", 1, std::bind(&SystemStatusManagerNode::receive_bestpos, this, std::placeholders::_1));
+            "/novatel_bottom/bestpos", 1,
+            std::bind(&SystemStatusManagerNode::receive_bestpos, this, std::placeholders::_1));
 
     // TODO this is only temporary, as the localization status should be handled in the localization nodes.
     this->subscriber_insstdev = this->create_subscription<novatel_oem7_msgs::msg::INSSTDEV>(
-            "/novatel_top/insstdev", 1, std::bind(&SystemStatusManagerNode::receive_insstdev, this, std::placeholders::_1));
+            "/novatel_bottom/insstdev", 1,
+            std::bind(&SystemStatusManagerNode::receive_insstdev, this, std::placeholders::_1));
 
     //  Publishers
     this->system_status_pub = this->create_publisher<nif::common::msgs::SystemStatus>(
@@ -52,7 +75,7 @@ SystemStatusManagerNode::SystemStatusManagerNode(
 
     this->system_status_telem_pub = this->create_publisher<nif::common::msgs::SystemStatus>(
             "/telemetry/system_status", qos
-            );
+    );
 
     this->telemetry_timer = this->create_wall_timer(
             250ms, std::bind(&SystemStatusManagerNode::telemetry_timer_callback, this));
@@ -117,7 +140,7 @@ void SystemStatusManagerNode::systemStatusTimerCallback() {
     joy_hb.data = counter_hb;
     this->diagnostic_hb_pub->publish(joy_hb);
     counter_hb++;
-    if (counter_hb == 8){
+    if (counter_hb == 8) {
         counter_hb = 0;
     }
 }
@@ -140,7 +163,7 @@ void SystemStatusManagerNode::registerNodeServiceHandler(
 //  Request data check
     if (
             !request->node_name.empty() &&
-            this->status_by_name.find(request->node_name) == this->status_by_name.end() &&
+            this->status_index_by_name.find(request->node_name) == this->status_index_by_name.end() &&
             // Process only if not already subscribed
             isNodeTypeInRange(static_cast<NodeType>(request->node_type)) &&
             !request->status_topic_name.empty()) {
@@ -163,13 +186,13 @@ void SystemStatusManagerNode::registerNodeServiceHandler(
 void SystemStatusManagerNode::nodeStatusUpdate(
         const nif::common::msgs::NodeStatus::SharedPtr msg) {
     // TODO implement checks over msg.
-    if (this->now() - msg->stamp_last_update >= this->node_inactive_timeout)
-    {
-    // TODO implement check on last_update_stamp to detect inactive nodes.
+    if (this->now() - msg->stamp_last_update >= this->node_inactive_timeout) {
+        // TODO implement check on last_update_stamp to detect inactive nodes.
         msg->node_status_code = common::NODE_INACTIVE;
     }
-    auto index = this->status_by_id[msg->node_id];
+    auto index = this->status_index_by_id[msg->node_id];
     this->node_status_records[index]->node_status = msg;
+    this->system_status_msg.health_status.node_statuses_list[index].node_status_code = msg->node_status_code;
 }
 
 bool SystemStatusManagerNode::isSystemHealthy() {
@@ -206,13 +229,12 @@ void SystemStatusManagerNode::nodeStatusesAgeCheck() {
     // Extra iteration over all the records, it could be moved smw else, but
     // assuming a reasonable number of nodes, it shouldn't affect performance significantly.
     for (const auto &record : this->node_status_records) {
-        if (record->node_status &&
-            record->node_status->node_status_code != common::NodeStatusCode::NODE_NOT_INITIALIZED) {
-            // Check if last update is recent enough
-            if ((this->now() - record->node_status->stamp).nanoseconds() <=
-                std::chrono::duration_cast<std::chrono::nanoseconds>(nif::system::NODE_DEAD_TIMEOUT_US).count()) {
-                record->node_status->node_status_code = common::NODE_DEAD;
-            }
+        // Check if last update is recent enough
+        if (record->node_status && (this->now() - record->node_status->stamp) >=
+                                   nif::system::NODE_DEAD_TIMEOUT) {
+            record->node_status->node_status_code = common::NODE_DEAD;
+            auto index = this->status_index_by_id[record->node_status->node_id];
+            this->system_status_msg.health_status.node_statuses_list[index].node_status_code = record->node_status->node_status_code;
         }
     }
 }
@@ -221,6 +243,7 @@ nif::common::types::t_node_id SystemStatusManagerNode::newStatusRecord(
         const nif_msgs::srv::RegisterNodeStatus::Request::SharedPtr request) {
     nif::common::types::t_node_id node_id;
     node_id = next_node_id++;
+    nif_msgs::msg::NodeStatusShort node_status_short;
 
     {
         // Add the calling node to the registry of watched nodes
@@ -231,31 +254,36 @@ nif::common::types::t_node_id SystemStatusManagerNode::newStatusRecord(
         this->node_status_records.push_back(std::move(node_status_record_ptr));
     }
     auto node_index = this->node_status_records.size() - 1;
+    node_status_short.node_id = node_id;
+    node_status_short.node_name = request->node_name;
+    node_status_short.node_status_code = common::NODE_INACTIVE;
 
     this->system_status_msg.health_status.node_list.push_back(request->node_name);
+    auto it = this->system_status_msg.health_status.node_statuses_list.begin();
+    this->system_status_msg.health_status.node_statuses_list.insert(it + node_index, std::move(node_status_short));
 
-    this->status_by_id.insert({
+    this->status_index_by_id.insert({
                                       node_id, node_index
                               });
 
-    this->status_by_name.insert(
+    this->status_index_by_name.insert(
             {
                     std::move(request->node_name),
                     node_index
             });
 
     auto node_type = static_cast<const NodeType>(request->node_type);
-    auto by_type_registry = this->statuses_by_type.find(node_type);
+    auto by_type_registry = this->status_indices_by_type.find(node_type);
     // Key is not present
-    if (by_type_registry == this->statuses_by_type.end()) {
+    if (by_type_registry == this->status_indices_by_type.end()) {
         auto type_vector = std::make_unique<std::vector<t_record_index>>();
         type_vector->push_back(node_index);
-        this->statuses_by_type.insert({
+        this->status_indices_by_type.insert({
                                               node_type,
                                               std::move(type_vector)
                                       });
     } else {
-        this->statuses_by_type[node_type]->push_back(node_index);
+        this->status_indices_by_type[node_type]->push_back(node_index);
     }
 
     // Subscribe to node status topic
@@ -316,9 +344,35 @@ void SystemStatusManagerNode::joystickCallback(const nif::common::msgs::Override
 
 void
 SystemStatusManagerNode::RCFlagSummaryCallback(
-        const nif::common::msgs::RCFlagSummary::UniquePtr msg)
-{
+        const nif::common::msgs::RCFlagSummary::UniquePtr msg) {
     this->rc_flag_summary = std::move(*msg);
     this->rc_flag_summary_update_time = this->now();
     this->has_rc_flag_summary = true;
+}
+
+rcl_interfaces::msg::SetParametersResult
+SystemStatusManagerNode::parametersCallback(
+        const std::vector<rclcpp::Parameter> &vector) {
+    rcl_interfaces::msg::SetParametersResult result;
+    result.successful = false;
+    result.reason = "";
+    for (const auto &param : vector) {
+        if (param.get_name() == "lat_autonomy_enabled") {
+            if (param.get_type() == rclcpp::ParameterType::PARAMETER_BOOL) {
+                if (true) // TODO implement switching policy, if needed
+                {
+                    this->system_status_msg.autonomy_status.lateral_autonomy_enabled = param.as_bool();
+                    result.successful = true;
+                }
+            }
+        } else if (param.get_name() == "long_autonomy_enabled") {
+            if (param.get_type() == rclcpp::ParameterType::PARAMETER_BOOL) {
+                if (true) {
+                    this->system_status_msg.autonomy_status.longitudinal_autonomy_enabled = param.as_bool();
+                    result.successful = true;
+                }
+            }
+        }
+        return result;
+    }
 }

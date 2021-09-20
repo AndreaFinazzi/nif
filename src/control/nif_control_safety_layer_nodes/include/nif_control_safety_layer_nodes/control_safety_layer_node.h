@@ -163,6 +163,7 @@ public:
     this->declare_parameter("safe_des_vel.hard_braking_time", 1.5);
     this->declare_parameter("safe_des_vel.soft_braking_time", 1.0);
 
+    this->declare_parameter("desired_acceleration.cmd_max", 5.0);
 
     // Read in misc. parameters
     max_steering_angle_deg =
@@ -212,13 +213,14 @@ public:
     this->d_ = this->get_parameter("throttle.derivative_gain").as_double();
     this->iMax_ =
             this->get_parameter("throttle.max_integrator_error").as_double();
-    this->throttleCmdMax_ = this->get_parameter("throttle.cmd_max").as_double();
-    this->throttleCmdMin_ = this->get_parameter("throttle.cmd_min").as_double();
+    this->throttle_cmd_max = this->get_parameter("throttle.cmd_max").as_double();
+    this->throttle_cmd_min = this->get_parameter("throttle.cmd_min").as_double();
     this->iThrottleReset_ =
             this->get_parameter("throttle.reset_integral_below_this_cmd").as_double();
+    this->desired_acceleration_cmd_max = this->get_parameter("desired_acceleration.cmd_max").as_double();
 
     this->vel_pid_ =
-            PID(p_, i_, d_, ts_, iMax_, throttleCmdMax_, throttleCmdMin_);
+            PID(p_, i_, d_, ts_, iMax_, throttle_cmd_max, throttle_cmd_min);
 
     // Create brake PID object
     this->bp_ = this->get_parameter("brake.proportional_gain").as_double();
@@ -362,12 +364,10 @@ private:
   void run() override;
 
   bool publishSteeringCmd(const nif::common::msgs::ControlSteeringCmd &msg) const;
-  bool publishAcceleratorCmd(const nif::common::msgs::ControlAcceleratorCmd &msg) const;
-  bool publishBrakingCmd(const nif::common::msgs::ControlBrakingCmd &msg) const;
+  bool publishAcceleratorCmd(common::msgs::ControlAcceleratorCmd msg) const;
+  bool publishBrakingCmd(common::msgs::ControlBrakingCmd msg) const;
   bool publishGearCmd(const nif::common::msgs::ControlGearCmd &msg) const;
-  bool publishDesiredAcceleration(const std_msgs::msg::Float32 &msg) const {
-
-  }
+  bool publishDesiredAcceleration(std_msgs::msg::Float32 msg) const;
 
     void afterSystemStatusCallback() override;
 
@@ -418,9 +418,10 @@ private:
     double i_;
     double d_;
     double iMax_;
-    double throttleCmdMax_;
-    double throttleCmdMin_;
+    double throttle_cmd_max;
+    double throttle_cmd_min;
     double iThrottleReset_;
+    double desired_acceleration_cmd_max;
 
     double bp_;
     double bi_;
@@ -528,9 +529,9 @@ private:
         }
     }
 
-    double getBrakeCmd(double vel_err) {
+    double emergencyBrakeCmd(double vel_err) {
         this->brake_pid_.Update(-vel_err);
-        if(this->speed_mps_ < 1.5)
+        if(this->speed_mps_ < 3.0)
         {
             return this->brakeCmdMax_;
         }
@@ -545,7 +546,7 @@ private:
         @ Args
           - orig_des_vel : original desired velocity in ROS param
         @ Params
-          - pose_stdev_thres     : Threshold of the pose stdev
+          - insstdev_threshold     : Threshold of the pose stdev
           - safe_vel_thres_mph   : Velocity (Mph) threshold w.r.t. safe braking time
           - hard_braking_time    : safe braking time when faster than
         safe_vel_thres_mph

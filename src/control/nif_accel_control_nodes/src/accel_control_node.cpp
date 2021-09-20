@@ -35,11 +35,11 @@ AccelControl::AccelControl() : Node("AccelControlNode") {
   qos.best_effort();
 
   // Subscribers
-//  this->subJoystick =
-//      this->create_subscription<deep_orange_msgs::msg::JoystickCommand>(
-//          "/joystick/command", qos,
-//          std::bind(&AccelControl::receiveJoystick, this,
-//                    std::placeholders::_1));
+  this->subJoystick =
+      this->create_subscription<deep_orange_msgs::msg::JoystickCommand>(
+          "/joystick/command", rclcpp::SensorDataQoS(),
+          std::bind(&AccelControl::receiveJoystick, this,
+                    std::placeholders::_1));
   this->subVelocity_ =
       this->create_subscription<raptor_dbw_msgs::msg::WheelSpeedReport>(
           "/raptor_dbw_interface/wheel_speed_report", 1,
@@ -233,6 +233,14 @@ void AccelControl::shiftCallback() {
 
 //  pubGearCmd_->publish(this->gear_cmd); // send gear command
 }
+
+void AccelControl::receiveJoystick(
+        const deep_orange_msgs::msg::JoystickCommand::SharedPtr msg) {
+    this->max_throttle_ = msg->accelerator_cmd;
+    this->joy_gear_ = msg->gear_cmd;
+    this->joy_recv_time_ = this->now();
+}
+
 
 void AccelControl::receiveVelocity(
     const raptor_dbw_msgs::msg::WheelSpeedReport::SharedPtr msg) {
