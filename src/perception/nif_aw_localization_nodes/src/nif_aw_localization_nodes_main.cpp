@@ -10,6 +10,7 @@
 #include <cstdio>
 #include <iostream>
 #include <memory>
+#include <rclcpp/rclcpp.hpp>
 
 int32_t main(int32_t argc, char **argv) {
   rclcpp::init(argc, argv);
@@ -17,27 +18,29 @@ int32_t main(int32_t argc, char **argv) {
   // using namespace nif::common::constants;
   // using namespace nif::perception;
 
-  const char *node_name = "aw_localization_node";
+  const char *node_name = "nif_aw_localization_nodes";
 
   rclcpp::Node::SharedPtr nd;
 
   try {
-    // RCLCPP_INFO(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
-    //             "Instantiating AWLocalizationNode with name: %s", &node_name);
+    RCLCPP_INFO(rclcpp::get_logger("nif_aw_localization_nodes"),
+                "Instantiating AWLocalizationNode with name: %s", &node_name);
+    rclcpp::NodeOptions options;
+
     nd = std::make_shared<AWLocalizationNode>(node_name);
 
   } catch (std::exception &e) {
-    // RCLCPP_FATAL(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
-    //              "FATAL ERROR during node initialization: ABORTING.\n%s",
-    //              e.what());
+    RCLCPP_FATAL(rclcpp::get_logger("nif_aw_localization_nodes"),
+                 "FATAL ERROR during node initialization: ABORTING.\n%s",
+                 e.what());
     return -1;
   }
-
+  
   rclcpp::spin(nd);
   rclcpp::shutdown();
 
-  // RCLCPP_INFO(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
-  //             "Shutting down %s [AWLocalizationNode]", node_name);
+  RCLCPP_INFO(rclcpp::get_logger("nif_aw_localization_nodes"),
+              "Shutting down %s [nif_aw_localization_nodes]", &node_name);
 
   return 0;
 }
