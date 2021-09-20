@@ -82,6 +82,7 @@ void GlobalmapLoader::pcdFileIO() {
 }
 
 void GlobalmapLoader::TrajectorypcdFileIO() {
+  // Skip if not using traj
   if (!bUseTrajectory)
   {
     bTrajectoryReady = true;

@@ -35,6 +35,15 @@ void nif::control::ControlSafetyLayerNode::controlOverrideCallback(
 }
 
 void nif::control::ControlSafetyLayerNode::run() {
+    // send diagnostic hb to vehicle interface
+    auto joy_hb = std_msgs::msg::Int32();
+    joy_hb.data = this->counter_hb;
+    this->diagnostic_hb_pub->publish(joy_hb);
+    this->counter_hb++;
+    if (this->counter_hb == 8) {
+        this->counter_hb = 0;
+    }
+
     bool is_overriding_steering = false;
     nif::common::NodeStatusCode node_status = common::NODE_ERROR;
 
@@ -161,15 +170,6 @@ void nif::control::ControlSafetyLayerNode::run() {
     }
 
     this->bufferFlush();
-
-    // send diagnostic hb to vehicle interface
-    auto joy_hb = std_msgs::msg::Int32();
-    joy_hb.data = this->counter_hb;
-    this->diagnostic_hb_pub->publish(joy_hb);
-    this->counter_hb++;
-    if (this->counter_hb == 8) {
-        this->counter_hb = 0;
-    }
 }
 
 bool nif::control::ControlSafetyLayerNode::publishSteeringCmd(

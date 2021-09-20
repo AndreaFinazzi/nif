@@ -277,9 +277,13 @@ void EKFLocalizer::BOTTOMINSPVACallback(
   if (yaw != 0.0) {
     m_inspva_heading_init = true;
   }
-  if (!m_inspva_heading_init){
-    std::cout << "INSPVA HEADING IS NOT INITIALIZED" << std::endl;
+  if (!m_inspva_heading_init) 
+  {
+    RCLCPP_WARN_ONCE(this->get_logger(), "INSPVA HEADING IS NOT INITIALIZED");
     return;
+    
+  } else {
+    RCLCPP_INFO_ONCE(this->get_logger(), "INSPVA HEADING INITIALIZED");
   }
 
   m_dGPS_Heading = yaw;
@@ -305,7 +309,7 @@ void EKFLocalizer::TOPINSPVACallback(
     m_inspva_heading_init = true;
   }
   if (!m_inspva_heading_init) {
-    std::cout << "INSPVA HEADING IS NOT INITIALIZED" << std::endl;
+    RCLCPP_WARN_ONCE(this->get_logger(), "INSPVA HEADING IS NOT INITIALIZED");
     return;
   }
 

@@ -37,6 +37,11 @@ SystemStatusManagerNode::SystemStatusManagerNode(
     this->parameters_callback_handle = this->add_on_set_parameters_callback(
             std::bind(&SystemStatusManagerNode::parametersCallback, this, std::placeholders::_1));
 
+    // Inintializa to failure state
+    this->system_status_msg.health_status.communication_failure = true;
+    this->system_status_msg.health_status.localization_failure = true;
+    this->system_status_msg.health_status.system_failure = true;
+    this->system_status_msg.health_status.commanded_stop = false;
 
     // Subscribers
     this->joystick_sub = this->create_subscription<deep_orange_msgs::msg::JoystickCommand>(

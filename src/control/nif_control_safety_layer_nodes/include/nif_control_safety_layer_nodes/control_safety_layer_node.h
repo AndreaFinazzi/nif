@@ -146,7 +146,7 @@ public:
     this->declare_parameter("throttle.integral_gain", 0.0);
     this->declare_parameter("throttle.derivative_gain", 0.0);
     this->declare_parameter("throttle.max_integrator_error", 10.0);
-    this->declare_parameter("throttle.cmd_max", 40.0);
+    this->declare_parameter("throttle.cmd_max", 30.0);
     this->declare_parameter("throttle.cmd_min", 0.0);
     this->declare_parameter("throttle.reset_integral_below_this_cmd", 15.0);
 
