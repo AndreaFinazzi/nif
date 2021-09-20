@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>bvs_common</name>
+  <version>1.0.0</version>
+  <description>Launch files for the Indy Autonomous Challenge</description>
+  <maintainer email="josh.whitley@autoware.org">Joshua Whitley</maintainer>
+  <license>Apache 2.0</license>
+
+  <buildtool_depend>ament_cmake_auto</buildtool_depend>
+  <buildtool_depend>autoware_auto_cmake</buildtool_depend>
+
+  <exec_depend>ament_index_python</exec_depend>
+  <exec_depend>aptiv_esr_ros2</exec_depend>
+  <exec_depend>aptiv_mrr_driver</exec_depend>
+  <exec_depend>diagnostics</exec_depend>
+  <!-- <exec_depend>kin_control</exec_depend>
+  <exec_depend>long_control</exec_depend>
+  <exec_depend>path_server</exec_depend> -->
+  <exec_depend>raptor_dbw_can</exec_depend>
+  <exec_depend>robot_state_publisher</exec_depend>
+  <exec_depend>ros2_luminar</exec_depend>
+  <exec_depend>ros2_socketcan</exec_depend>
+  <exec_depend>ssc_interface</exec_depend>
+  <exec_depend>av21_description</exec_depend>
+  <exec_depend>telemetry</exec_depend>
+  <exec_depend>novatel_oem7_driver</exec_depend>
+  <exec_depend>bvs_msgs</exec_depend>
+  <exec_depend>bvs_safety</exec_depend>
+  <exec_depend>bvs_control</exec_depend>
+  <exec_depend>bvs_long_control</exec_depend>
+  <exec_depend>bvs_localization</exec_depend>
+  <exec_depend>camera-utils</exec_depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

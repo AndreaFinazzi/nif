@@ -24,7 +24,7 @@
       radar_rear: "radar_rear"
 
     topics:
-      ego_odometry: /bvs_localization/ltp_odom
+      ego_odometry: /localization/ekf/odom
         # bvs_localization/ltp_odom #
       #     localization/ego_odom
       system_status: system/status
@@ -34,7 +34,7 @@
       node_status_prefix: /node_status/
 
     time:
-      period_node_status_us: 40000
+      period_node_status_us: 20000
 
     coordinates:
       use_enu: false

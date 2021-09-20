@@ -4,7 +4,7 @@
 @date   2021-08-11
 @brief  subscriber node for lgsvl simulation with topic names matched to the real car
 '''
-
+import numpy as np
 import rclpy
 import csv
 import pandas as pd
@@ -170,8 +170,16 @@ class LGSVLSubscriberNode(BaseNode):
         pass
         # self.get_logger().info('Subscribed imu_bottom')
 
-    def callback_vehicleodometry(self, msg):
-        pass
+    def callback_vehicleodometry(self, msg : VehicleOdometry):
+        wheel_speed_msg = WheelSpeedReport()
+        wheel_speed_msg.header = msg.header
+        vel_kph = msg.velocity * 3.6
+        wheel_speed_msg.front_left = vel_kph
+        wheel_speed_msg.front_right = vel_kph
+        wheel_speed_msg.rear_left = vel_kph
+        wheel_speed_msg.rear_right = vel_kph
+
+        self.pub_wheel_speed.publish(wheel_speed_msg)
         # self.get_logger().info('Subscribed vehicleodometry')
 
     def callback_gps_top(self, msg):
@@ -306,13 +314,6 @@ class LGSVLSubscriberNode(BaseNode):
 
         self.pub_odom_converted.publish(odom_converted)
         self.tf_broadcast(odom_converted)
-
-        wheel_speed_msg = WheelSpeedReport()
-        wheel_speed_msg.header = msg.header
-        wheel_speed_msg.front_left = msg.twist.twist.linear.x
-        wheel_speed_msg.front_right = msg.twist.twist.linear.x
-
-        self.pub_wheel_speed.publish(wheel_speed_msg)
 
     def tf_broadcast(self, msg):
         tfs = TransformStamped()

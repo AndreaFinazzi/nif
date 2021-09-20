@@ -223,6 +223,7 @@ void EKFLocalizer::GPSLATLONCallback(
     const novatel_oem7_msgs::msg::BESTPOS::SharedPtr msg) {
 
     this->bestpos_time_last_update = this->now();
+
     nif::localization::utils::GeodeticConverter::GeoRef currentGPS;
   currentGPS.latitude = (double)msg->lat;
   currentGPS.longitude = (double)msg->lon;
@@ -276,9 +277,13 @@ void EKFLocalizer::BOTTOMINSPVACallback(
   if (yaw != 0.0) {
     m_inspva_heading_init = true;
   }
-  if (!m_inspva_heading_init){
-    std::cout << "INSPVA HEADING IS NOT INITIALIZED" << std::endl;
+  if (!m_inspva_heading_init) 
+  {
+    RCLCPP_WARN_ONCE(this->get_logger(), "INSPVA HEADING IS NOT INITIALIZED");
     return;
+    
+  } else {
+    RCLCPP_INFO_ONCE(this->get_logger(), "INSPVA HEADING INITIALIZED");
   }
 
   m_dGPS_Heading = yaw;
@@ -304,7 +309,7 @@ void EKFLocalizer::TOPINSPVACallback(
     m_inspva_heading_init = true;
   }
   if (!m_inspva_heading_init) {
-    std::cout << "INSPVA HEADING IS NOT INITIALIZED" << std::endl;
+    RCLCPP_WARN_ONCE(this->get_logger(), "INSPVA HEADING IS NOT INITIALIZED");
     return;
   }
 
@@ -356,6 +361,8 @@ void EKFLocalizer::MessegefilteringCallback(
     const raptor_dbw_msgs::msg::WheelSpeedReport::ConstSharedPtr
         &wheel_speed_msg) {
 
+  this->imu_time_last_update = this->now();
+
   m_dIMU_yaw_rate = imu_msg->angular_velocity.z;
   m_dIMU_roll_rate = imu_msg->angular_velocity.x;
   m_dIMU_pitch_rate = imu_msg->angular_velocity.y;
@@ -367,7 +374,6 @@ void EKFLocalizer::MessegefilteringCallback(
   auto ImuCurrentTime = rclcpp::Time(imu_msg->header.stamp);
   if (!bImuFirstCall) {
     bImuFirstCall = true;
-    this->imu_time_last_update = this->now();
     ImuPrevTimeDouble =
         static_cast<double>(ImuCurrentTime.seconds()) +
         static_cast<double>(ImuCurrentTime.nanoseconds()) * 1e-9;

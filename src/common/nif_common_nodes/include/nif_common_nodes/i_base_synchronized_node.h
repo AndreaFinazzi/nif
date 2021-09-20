@@ -27,7 +27,8 @@ protected:
 
       : IBaseNode(node_name, node_type, options),
         gclock_period_ns(
-            std::chrono::duration_cast<decltype(gclock_period_ns)>(period))
+            std::chrono::duration_cast<decltype(gclock_period_ns)>(period)),
+        gclock_period_duration(period)
 
   {
     if (this->gclock_period_ns >= nif::common::constants::SYNC_PERIOD_MIN &&
@@ -44,6 +45,7 @@ protected:
   }
 
   const std::chrono::nanoseconds &getGclockPeriodNs() const;
+  const rclcpp::Duration &getGclockPeriodDuration() const;
 
 protected:
   /**
@@ -57,6 +59,7 @@ private:
 
   //  Not const to keep a door open (changing period at runtime)
   nif::common::types::t_clock_period_ns gclock_period_ns;
+  rclcpp::Duration gclock_period_duration;
 
   void gClockCallback();
 };

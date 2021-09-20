@@ -1,0 +1,24 @@
+[submodule "bvs_utils"]
+	path = bvs_utils
+	url = git@github.com:PITT-MIT-IAC/bvs_utils.git
+[submodule "bvs_long_control"]
+	path = bvs_long_control
+	url = git@github.com:PITT-MIT-IAC/bvs_long_control.git
+[submodule "bvs_common"]
+	path = bvs_common
+	url = git@github.com:PITT-MIT-IAC/bvs_common.git
+[submodule "bvs_localization"]
+	path = bvs_localization
+	url = git@github.com:PITT-MIT-IAC/bvs_localization.git
+[submodule "camera-utils"]
+	path = camera-utils
+	url = git@gitlab.com:IACBaseSoftware/camera-utils.git
+[submodule "bvs_control"]
+	path = bvs_control
+	url = git@github.com:PITT-MIT-IAC/bvs_control.git
+[submodule "bvs_safety"]
+	path = bvs_safety
+	url = git@github.com:PITT-MIT-IAC/bvs_safety.git
+[submodule "bvs_msgs"]
+	path = bvs_msgs
+	url = git@github.com:PITT-MIT-IAC/bvs_msgs.git

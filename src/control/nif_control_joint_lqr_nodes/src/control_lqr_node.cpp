@@ -33,42 +33,13 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
               "/raptor_dbw_interface/wheel_speed_report", nif::common::constants::QOS_SENSOR_DATA,
           std::bind(&ControlLQRNode::velocityCallback, this,
                     std::placeholders::_1));
-  //   TODO update to the single-topic joystick comms
-  //   steering_sub_ = this->create_subscription<std_msgs::msg::Float32>(
-  //       "/joystick/steering_cmd_not_used", 1,
-  //       std::bind(&ControlLQRNode::steeringCallback, this,
-  //                 std::placeholders::_1));
-  //   throttle_sub_ = this->create_subscription<std_msgs::msg::Float32>(
-  //       "/joystick/accelerator_cmd_max", 1,
-  //       std::bind(&ControlLQRNode::throttleCallback, this,
-  //                 std::placeholders::_1));
-  //   brake_sub_ = this->create_subscription<std_msgs::msg::Float32>(
-  //       "/joystick/brake_cmd_override", 1,
-  //       std::bind(&ControlLQRNode::brakeCallback, this,
-  //                 std::placeholders::_1));
-  //   gear_sub_ = this->create_subscription<std_msgs::msg::UInt8>(
-  //       "/joystick/gear_cmd_not_used", 1,
-  //       std::bind(&ControlLQRNode::gearCallback, this,
-  //                 std::placeholders::_1));
 
-  // Gives memory exceptions with my test rosbag :(
-  // pt_report_sub_ =
-  // this->create_subscription<deep_orange_msgs::msg::PtReport>("/raptor_dbw_interface/pt_report",
-  //     1, std::bind(&PathFollowerNode::ptReportCallback, this,
-  //     std::placeholders::_1));
-
-  //! Timer to execute control at 25Hz
-  //  control_timer_ = this->create_wall_timer(
-  //      std::chrono::milliseconds(static_cast<int>(1000. / update_rate_hz)),
-  //      std::bind(&PathFollowerNode::executeControl, this));
 
   this->declare_parameter("lqr_config_file", "");
   // Automatically boot with lat_autonomy_enabled
-  this->declare_parameter("lat_autonomy_enabled", false);
+//  this->declare_parameter("lat_autonomy_enabled", false);
   // Max Steering Angle in Degrees
   this->declare_parameter("max_steering_angle_deg", 20.0);
-  // Degrees at which to automatically revert to the override
-  this->declare_parameter("steering_auto_override_deg", 4.0);
   // convert from degress to steering units (should be 1 - 1 ?)
   this->declare_parameter("steering_units_multiplier", 1.0);
   // Minimum pure pursuit tracking distance
@@ -105,8 +76,6 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
   // Read in misc. parameters
   max_steering_angle_deg_ =
       this->get_parameter("max_steering_angle_deg").as_double();
-  steering_auto_override_deg_ =
-      this->get_parameter("steering_auto_override_deg").as_double();
   steering_units_multiplier_ =
       this->get_parameter("steering_units_multiplier").as_double();
   pure_pursuit_min_dist_m_ =
@@ -158,8 +127,8 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
   auto now = this->now();
   nif::common::NodeStatusCode node_status = common::NODE_ERROR;
 
-  bool lateral_tracking_enabled =
-      this->get_parameter("lat_autonomy_enabled").as_bool();
+//  bool lateral_tracking_enabled =
+//      this->get_parameter("lat_autonomy_enabled").as_bool();
 
   bool invert_steering = this->get_parameter("invert_steering").as_bool();
   //  Check whether we have updated data
@@ -232,16 +201,8 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
         this->getReferencePath()->poses[lqr_tracking_idx_], error);
   }
 
-  // Check / Process Overrides
-  bool override_sig = false;
-  if (std::abs(override_steering_target_) >
-          std::abs(steering_auto_override_deg_) ||
-      !lateral_tracking_enabled) {
-    steering_angle_deg = override_steering_target_;
-    override_sig = true;
-  }
-
-  if (!(valid_path && valid_odom) && !override_sig) {
+  if ( ( this->getSystemStatus().autonomy_status.lateral_autonomy_enabled || this->getSystemStatus().autonomy_status.longitudinal_autonomy_enabled ) &&
+        !(valid_path && valid_odom) ) {
       node_status = common::NODE_ERROR;
       this->setNodeStatus(node_status);
       return nullptr;
