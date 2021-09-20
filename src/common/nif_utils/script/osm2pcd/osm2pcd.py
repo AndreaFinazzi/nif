@@ -3,9 +3,17 @@ from xml.etree.ElementTree import parse
 import glob
 import os
 from lxml import etree
+import pandas as pd
+import argparse
 import numpy as np
-from pyproj import Proj
+from easydict import EasyDict as edict
 import math
+from tqdm import tqdm
+
+from pymap3d.ecef import ecef2geodetic
+from pymap3d.ned import ned2geodetic, geodetic2ned, geodetic2enu
+
+import csv
 
 HEADER = '''\
 # .PCD v0.7 - Point Cloud Data file format
@@ -36,46 +44,6 @@ def indent(elem, level=0):
         if level and (not elem.tail or not elem.tail.strip()):
             elem.tail = i
 
-
-### READ xml file ###
-root_path = "./include/waypoints"
-
-osm_file_path = os.path.join(root_path, 'LOR_inner_new.osm') # input
-pcd_path = os.path.join(root_path, 'LOR_inner_new.pcd') # output 
-
-tree = parse(osm_file_path)
-root = tree.getroot()
-
-nodes = root.findall("node")
-ways = root.findall("way")
-
-ids = np.empty((0))
-lats = np.empty((0))
-lons = np.empty((0))
-
-removed_ids = []
-replaced_ids = []
-
-# utm_proj = Proj("+proj=utm +zone=52N, +north +ellps=WGS84 +datum=WGS84 +units=m +no_defs")
-utm_proj = Proj("+proj=utm +zone=16N, +north +ellps=WGS84 +datum=WGS84 +units=m +no_defs")
-
-# origin_y, origin_x = utm_proj(126.7495693,37.6969797) #any latlon is okay
-# origin_y, origin_x = utm_proj(126.7495693,37.6969797) #ilsan
-# origin_y, origin_x = utm_proj(-86.235148, 39.809786)  #indy
-origin_y, origin_x = utm_proj(-86.3418060783425, 39.8125900071711)  #Lucas Oil Racing
-
-
-
-print(origin_x, origin_y)
-ConvertedPoints = []
-
-# def write_pcd(points, save_pcd_path):
-
-#     with open(save_pcd_path, 'w') as f:
-#         f.write(HEADER.format(len(points), len(points)) + '\n')
-#         for point in points:
-#             np.savetxt(f, point, delimiter = ' ', fmt = '%f %f %f %d')
-
 def write_pcd(points, save_pcd_path):
     n = len(points)
     lines = []
@@ -87,29 +55,80 @@ def write_pcd(points, save_pcd_path):
     with open(save_pcd_path, 'w') as f:
         f.write(HEADER.format(n, n))
         f.write('\n'.join(lines))
-    
-idx = 0
-for node in nodes:
-    id_ = int(node.attrib['id'])
-    lat = float(node.attrib['lat'])
-    lon = float(node.attrib['lon'])
-    y, x = utm_proj(lon, lat, inverse=False)
-    x = x - origin_x 
-    y = y - origin_y 
-    # yaw_bias = 2.
-    yaw_bias = -90.
 
-    yaw_bias = yaw_bias * math.pi / 180
-    utm_x = x * math.cos(yaw_bias) + y* math.sin(yaw_bias)
-    utm_y = -x * math.sin(yaw_bias) + y* math.cos(yaw_bias)
+def write_csv(points, save_csv_path):
+    header = ['x', 'y']
 
-    # print(lat, lon, x ,y)
-    pointBuf = [utm_y, utm_x, 0.0, idx]
-    print(pointBuf)
-    ConvertedPoints.append(pointBuf)
-    # print(pointBuf)
-    idx = idx + 1
+    with open(save_csv_path, 'w', encoding='UTF8') as f:
+        writer = csv.writer(f)
+
+        # write the header
+        writer.writerow(header)
+        for point in points:
+            # write the data
+            writer.writerow(point)
+
+def parse_configs():
+    parser = argparse.ArgumentParser(description='The csv data read')
+    parser.add_argument('--filename', type=str, default='',
+                        help='csv file name')
+    parser.add_argument('--check_header', type=bool, default=False,
+                        help='check headers name')
+    parser.add_argument('--set_topic', type=str, default="/novatel_bottom/bestpos",
+                        help='check headers name')
+
+    lon_0, lat_0 = -86.235148, 39.809786  #indy
+    # lon_0, lat_0 = -86.3418060783425, 39.8125900071711  #Lucas Oil Racing
     
-write_pcd(ConvertedPoints, pcd_path)
+    nedPoints = []
+
+    configs = edict(vars(parser.parse_args()))
+
+    root_path = './include' 
+    osm_file_name = os.path.join(root_path, 'osm' ,configs.filename)
+    pcd_file_name = osm_file_name[:-3] + "pcd" 
+    wpt_file_name = osm_file_name[:-4] + "_wpt.csv" 
+
+    # osm_file_name = os.path.join(root_path, osm_file_name)
+
+
+
+    tree = parse(osm_file_name)
+    root = tree.getroot()
+
+    nodes = root.findall("node")
+    ways = root.findall("way")
+
+    idx = 0
+
+    for node in tqdm(nodes):
+
+        lat = float(node.attrib['lat'])
+        lon = float(node.attrib['lon'])
+
+        ned = geodetic2ned(lat, lon, 0., lat_0, lon_0, 0., deg=True)
+        
+        # if ((ned[0] - x_prev)**2 + (ned[1] - y_prev)**2) ** 0.5 < 0.5 :
+        #     continue 
+
+        # print("ned: " , ned)
+
+        pointBuf = [ned[0], -ned[1], 0.0, idx]
+        nedPoints.append(pointBuf)
+        # print(pointBuf)
+        idx = idx + 1
     
-    
+    indent(root)
+    # dump(root)            
+    tree = ElementTree(root)
+    tree.write(osm_file_name)
+    write_pcd(nedPoints, pcd_file_name)
+    write_csv(nedPoints, wpt_file_name)
+
+
+    print("===========" * 5)
+    print("COMPLETED!")
+
+
+if __name__ == "__main__":
+    parse_configs()

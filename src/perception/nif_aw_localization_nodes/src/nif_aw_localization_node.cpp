@@ -214,11 +214,11 @@ void AWLocalizationNode::timerCallback()
       gps_flag = false;
     }
 
-    if(measure_flag == true)
-    {
-      measurementUpdateTwist(imu_time_last_update, veh_x, veh_yaw_rate);
-      measure_flag = false;
-    }
+    // if(measure_flag == true)
+    // {
+    measurementUpdateTwist(imu_time_last_update, veh_x, veh_yaw_rate);
+    //   measure_flag = false;
+    // }
 
     /* set current pose, twist */
     setCurrentResult();
