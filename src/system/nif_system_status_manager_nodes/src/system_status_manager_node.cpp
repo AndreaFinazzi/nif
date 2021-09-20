@@ -15,7 +15,7 @@ SystemStatusManagerNode::SystemStatusManagerNode(
 
     this->declare_parameter("timeout_node_inactive_ms", 1000);
     this->declare_parameter("timeout_bestpos_msg_ms", 500);
-    this->declare_parameter("timeout_bestpos_diff_age_ms", 3000);
+    this->declare_parameter("timeout_bestpos_diff_age_ms", 5000);
     this->declare_parameter("lat_autonomy_enabled", false);
     this->declare_parameter("long_autonomy_enabled", false);
     this->declare_parameter("insstdev_threshold", 2.0);
