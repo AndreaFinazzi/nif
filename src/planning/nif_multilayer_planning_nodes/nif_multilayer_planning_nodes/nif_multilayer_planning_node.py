@@ -44,6 +44,7 @@ class GraphBasedPlanner(rclpy.node.Node):
 
         self.pose_resolution = 2.5
         self.maptrack_len = 100
+        
 #       Pre-initialize memory
 #       TODO pre-load all these info
         self.msg = Path()
