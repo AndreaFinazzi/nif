@@ -353,17 +353,29 @@ def generate_launch_description():
 ### NIF WAYPOINT MANAGER END #############################
 
     if track == LOR:
-        globtraj_input_path = get_share_file("nif_multilayer_planning_nodes", "inputs/traj_ltpl_cl/traj_ltpl_cl_lor_test.csv")
-        graph_store_path = get_share_file("nif_multilayer_planning_nodes", "inputs/stored_graph.pckl")
-        ltpl_offline_param_path = get_share_file("nif_multilayer_planning_nodes", "params/ltpl_config_offline.ini")
-        ltpl_online_param_path = get_share_file("nif_multilayer_planning_nodes", "params/ltpl_config_online.ini")
-        log_path = get_share_file("nif_multilayer_planning_nodes", "logs/graph_ltpl")
+        globtraj_input_path = get_share_file("nif_multilayer_planning_nodes", "inputs/traj_ltpl_cl/lor_narrow/traj_ltpl_cl.csv")
+        graph_store_path = get_share_file("nif_multilayer_planning_nodes", "inputs/track_offline_graphs/lor_narrow/stored_graph.pckl")
+        ltpl_offline_param_path = get_share_file("nif_multilayer_planning_nodes", "params/lor_narrow/ltpl_config_offline.ini")
+        ltpl_online_param_path = get_share_file("nif_multilayer_planning_nodes", "params/lor_narrow/ltpl_config_online.ini")
+        log_path = get_share_file("nif_multilayer_planning_nodes", "logs/lor_narrow/graph_ltpl")
     elif track == IMS:
-        globtraj_input_path = get_share_file("nif_multilayer_planning_nodes", "inputs/traj_ltpl_cl/traj_ltpl_cl_ims.csv")
-        graph_store_path = get_share_file("nif_multilayer_planning_nodes", "inputs/stored_graph.pckl")
-        ltpl_offline_param_path = get_share_file("nif_multilayer_planning_nodes", "params/ltpl_config_offline.ini")
-        ltpl_online_param_path = get_share_file("nif_multilayer_planning_nodes", "params/ltpl_config_online.ini")
-        log_path = get_share_file("nif_multilayer_planning_nodes", "logs/graph_ltpl")
+        globtraj_input_path = get_share_file("nif_multilayer_planning_nodes", "inputs/traj_ltpl_cl/ims/traj_ltpl_cl.csv")
+        graph_store_path = get_share_file("nif_multilayer_planning_nodes", "inputs/track_offline_graphs/ims/stored_graph.pckl")
+        ltpl_offline_param_path = get_share_file("nif_multilayer_planning_nodes", "params/ims/ltpl_config_offline.ini")
+        ltpl_online_param_path = get_share_file("nif_multilayer_planning_nodes", "params/ims/ltpl_config_online.ini")
+        log_path = get_share_file("nif_multilayer_planning_nodes", "logs/ims/graph_ltpl")
+    elif track == LG_SIM:
+        globtraj_input_path = get_share_file("nif_multilayer_planning_nodes", "inputs/traj_ltpl_cl/lg_sim/traj_ltpl_cl.csv")
+        graph_store_path = get_share_file("nif_multilayer_planning_nodes", "inputs/track_offline_graphs/lg_sim/stored_graph.pckl")
+        ltpl_offline_param_path = get_share_file("nif_multilayer_planning_nodes", "params/lg_sim/ltpl_config_offline.ini")
+        ltpl_online_param_path = get_share_file("nif_multilayer_planning_nodes", "params/lg_sim/ltpl_config_online.ini")
+        log_path = get_share_file("nif_multilayer_planning_nodes", "logs/lg_sim/graph_ltpl")
+    # elif track == LOR_NARROW:
+    #     globtraj_input_path = get_share_file("nif_multilayer_planning_nodes", "inputs/traj_ltpl_cl/lg_sim/traj_ltpl_cl.csv")
+    #     graph_store_path = get_share_file("nif_multilayer_planning_nodes", "inputs/track_offline_graphs/lg_sim/stored_graph.pckl")
+    #     ltpl_offline_param_path = get_share_file("nif_multilayer_planning_nodes", "params/lg_sim/ltpl_config_offline.ini")
+    #     ltpl_online_param_path = get_share_file("nif_multilayer_planning_nodes", "params/lg_sim/ltpl_config_online.ini")
+    #     log_path = get_share_file("nif_multilayer_planning_nodes", "logs/lg_sim/graph_ltpl")
     else:
         raise RuntimeError("ERROR: invalid track provided: {}".format(track))
 
