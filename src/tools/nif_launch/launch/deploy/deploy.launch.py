@@ -54,16 +54,6 @@ def generate_launch_description():
         package_name='raptor_dbw_can', file_name='launch/CAN1_INDY_V4.dbc'
     )
 
-    bvs_long_control_param_file = get_share_file(
-        package_name='bvs_long_control', file_name='config/params.yaml'
-    )
-
-    bvs_long_control_param = DeclareLaunchArgument(
-        'long_control_param_file',
-        default_value=bvs_long_control_param_file,
-        description='Path to config file for long_control'
-    )
-
     ssc_interface_param = DeclareLaunchArgument(
         'ssc_interface_param_file',
         default_value=ssc_interface_param_file,
@@ -156,29 +146,7 @@ def generate_launch_description():
         output='screen',
     )
 
-    lqr_params_config = get_share_file(
-        package_name='bvs_control', file_name='config/lqr_params.yaml'
-    )
-
-    # MAPs
-    lor_inside_line_csv = get_share_file(
-        package_name='bvs_control', file_name='config/LOR_inside_line.csv'
-    )
-
-    ims_center_line_csv = get_share_file(
-        package_name='bvs_control', file_name='config/IMS_center_line.csv'
-    )
-
-    map_csv = None
-
-    if track == LOR:
-        map_csv = lor_inside_line_csv
-    elif track == IMS:
-        map_csv = ims_center_line_csv
-    else:
-        print("ERROR: invalid track provided: {}".format(track))
-
-
+    # Localization
     nif_localization_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             get_package_share_directory('nif_localization_nodes') + '/launch/deploy.launch.py'
@@ -191,57 +159,7 @@ def generate_launch_description():
         ),
     )
 
-    bvs_long_control_param_file = get_share_file(
-        package_name='bvs_long_control', file_name='config/params.yaml'
-    )
-
-    bvs_long_control_param = DeclareLaunchArgument(
-        'long_control_param_file',
-        default_value=bvs_long_control_param_file,
-        description='Path to config file for long_control'
-    )
-
-    bvs_long_control_node = Node(
-        package='bvs_long_control',
-        executable='long_control',
-        output='screen',
-        parameters=[LaunchConfiguration('long_control_param_file')],
-    )
-
-# NIF LQR + CSL ###############################################
-    lqr_config_file = get_share_file(
-        package_name='nif_control_lqr_nodes', file_name='config/lqr/lqr_params.deploy.yaml'
-    )
-
-    nif_lqr_rosparams_file = get_share_file(
-        package_name='nif_control_lqr_nodes', file_name='config/deploy.params.yaml'
-    )
-
-    nif_lqr_param = DeclareLaunchArgument(
-        'control_lqr_params_file',
-        default_value=nif_lqr_rosparams_file,
-        description='Path to config file for nif_control_lqr'
-    )
-
-    nif_lqr_control_node = Node(
-        package='nif_control_lqr_nodes',
-        executable='nif_control_lqr_nodes_exe',
-        parameters=[
-            LaunchConfiguration('control_lqr_params_file'),
-            {
-                'lqr_config_file': lqr_config_file,
-            }
-        ],
-        output={
-            'stdout': 'screen',
-            'stderr': 'screen',
-        },
-        remappings=[
-            ('in_control_cmd_prev', '/control_safety_layer/out/control_cmd'),
-            ('out_control_cmd', '/control_pool/disabled/control_cmd'),
-            ('in_reference_path', '/planning/path_global'),
-        ]
-    )
+# NIF CONTROL STACK ###############################################
 
     nif_csl_param_file = get_share_file(
         package_name='nif_control_safety_layer_nodes', file_name='config/deploy.yaml'
@@ -274,6 +192,15 @@ def generate_launch_description():
         package='nif_velocity_planning_node',
         executable='nif_velocity_planning_node_exe',
         output='screen',
+        remappings=-[
+            ('out_desired_velocity', 'velocity_planner/des_vel'),
+            ('in_reference_path', 'planning/path_global'),
+            ('in_ego_odometry', 'localization/ekf/odom'),
+            ('in_wheel_speed_report', 'raptor_dbw_interface/wheel_speed_report'),
+            ('in_imu_data', 'novatel_top/imu/data'),
+            ('in_steering_report', 'raptor_dbw_interface/steering_report'),
+            ('in_control_error', 'control_joint_lqr/lqr_error')
+        ]
     )
 
     lqr_joint_config_file = get_share_file(
@@ -328,8 +255,6 @@ def generate_launch_description():
 
 # NIF LQR + CSL END ###############################################
 
-
-
     global_params_file = None
 
     if track == LOR:
@@ -367,15 +292,9 @@ def generate_launch_description():
         remappings=[
             ('in_joystick_cmd', '/joystick/command'),
             ('out_system_status', '/system/status'),
+            ('in_novatel_bestpos', '/novatel_bottom/bestpos'),
+            ('in_novatel_insstdev', '/novatel_bottom/insstdev')
         ]
-    )
-
-
-    bvs_safety_node = Node(
-        package='bvs_safety',
-        executable='safety_executive_node',
-        name='safety_executive_node',
-        output='screen'
     )
 
     robot_description_launch = IncludeLaunchDescription(
@@ -425,7 +344,6 @@ def generate_launch_description():
             LaunchConfiguration('nif_waypoint_manager_param_file')
         ],
         remappings=[
-            # ('topic_ego_odometry', '/bvs_localization/ltp_odom'),
             ('topic_ego_odometry', 'localization/ekf/odom'),
             ('wpt_manager/maptrack_path/global', '/planning/path_global'),
             ('wpt_manager/maptrack_path/body', '/planning/path_body')
@@ -433,16 +351,6 @@ def generate_launch_description():
     )
 
 ### NIF WAYPOINT MANAGER END #############################
-
-    lor_inside_line_csv = get_share_file(
-        package_name='bvs_control', file_name='config/LOR_inside_line.csv'
-    )
-
-    ims_center_line_csv = get_share_file(
-        package_name='bvs_control', file_name='config/IMS_center_line.csv'
-    )
-
-    map_csv = None
 
     if track == LOR:
         globtraj_input_path = get_share_file("nif_multilayer_planning_nodes", "inputs/traj_ltpl_cl/traj_ltpl_cl_lor_test.csv")
@@ -486,10 +394,8 @@ def generate_launch_description():
 
     return LaunchDescription([
         ssc_interface_param,
-        bvs_long_control_param,
         nif_global_param,
         nif_csl_param,
-        nif_lqr_param,
         nif_wpt_param,
         nif_joint_lqr_param,
         nif_accel_control_param,

@@ -132,9 +132,10 @@ private:
 
   bool has_bestpos = false;
   rclcpp::Time bestpos_last_update = rclcpp::Time();
-  double timeout_bestpos_diff_age_s = 2.0;
+
   rclcpp::Duration timeout_bestpos_diff_age = rclcpp::Duration(2, 0);
   rclcpp::Duration timeout_bestpos_last_update = rclcpp::Duration(0, 500000);
+  rclcpp::Duration timeout_rc_flag_summary = rclcpp::Duration(10, 0);
 
   void telemetry_timer_callback() {
       this->system_status_telem_pub->publish(this->system_status_msg);
@@ -157,7 +158,7 @@ private:
 
   bool gps_health_ok() {
       bool has_bestpos_trigger = !this->has_bestpos;
-      bool bestpos_diff_age_trigger = (this->bestpos_diff_age_s > this->timeout_bestpos_diff_age_s );
+      bool bestpos_diff_age_trigger = (this->bestpos_diff_age_s > this->timeout_bestpos_diff_age.seconds() );
       bool bestpos_last_update_trigger = !this->has_bestpos || (( this->now() - this->bestpos_last_update ) > this->timeout_bestpos_last_update );
 
       bool std_dev_trigger = (this->lat_stdev_ >  this->insstdev_threshold ||
@@ -177,6 +178,12 @@ private:
    * @return boolean system health state. true if system health is nominal.
    */
   bool isSystemHealthy();
+
+  /**
+   * Mission Status state machine.
+   * @return the mission encoding.
+   */
+  nif_msgs::msg::MissionStatus::_mission_status_code_type getMissionStatus();
 
   /**
    * System status state machine, with status output code.

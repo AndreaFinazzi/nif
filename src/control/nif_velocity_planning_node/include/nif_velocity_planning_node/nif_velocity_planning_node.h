@@ -46,33 +46,33 @@ public:
 
                 // Publishers
                 des_vel_pub_ = this->create_publisher<std_msgs::msg::Float32>(
-                    "velocity_planner/des_vel", nif::common::constants::QOS_CONTROL_CMD);
+                    "out_desired_velocity", nif::common::constants::QOS_CONTROL_CMD);
 
                 // Subscribers
                 path_sub_ = this->create_subscription<nav_msgs::msg::Path>(
-                    "planning/path_global", nif::common::constants::QOS_PLANNING,
+                    "in_reference_path", nif::common::constants::QOS_PLANNING,
                         std::bind(&VelocityPlannerNode::pathCallback, this,
                                   std::placeholders::_1));
                 odometry_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
-                    "localization/ekf/odom", nif::common::constants::QOS_EGO_ODOMETRY,
+                    "in_ego_odometry", nif::common::constants::QOS_EGO_ODOMETRY,
                         std::bind(&VelocityPlannerNode::odometryCallback, this,
                                   std::placeholders::_1));
                 velocity_sub_ =
                         this->create_subscription<raptor_dbw_msgs::msg::WheelSpeedReport>(
-                            "raptor_dbw_interface/wheel_speed_report", nif::common::constants::QOS_SENSOR_DATA,
+                            "in_wheel_speed_report", nif::common::constants::QOS_SENSOR_DATA,
                                 std::bind(&VelocityPlannerNode::velocityCallback, this,
                                           std::placeholders::_1));
                 imu_sub_ = this->create_subscription<sensor_msgs::msg::Imu>(
-                    "novatel_top/imu/data", nif::common::constants::QOS_SENSOR_DATA,
+                    "in_imu_data", nif::common::constants::QOS_SENSOR_DATA,
                         std::bind(&VelocityPlannerNode::imuCallback, this,
                                   std::placeholders::_1));
                 steering_sub_ =
                         this->create_subscription<raptor_dbw_msgs::msg::SteeringReport>(
-                            "raptor_dbw_interface/steering_report", nif::common::constants::QOS_SENSOR_DATA,
+                            "in_steering_report", nif::common::constants::QOS_SENSOR_DATA,
                                 std::bind(&VelocityPlannerNode::steerCallback, this,
                                           std::placeholders::_1));
                 error_sub_ = this->create_subscription<std_msgs::msg::Float32MultiArray>(
-                        "control_lqr/lqr_error", nif::common::constants::QOS_DEFAULT,
+                        "in_control_error", nif::common::constants::QOS_DEFAULT,
                             std::bind(&VelocityPlannerNode::errorCallback, this,
                                   std::placeholders::_1));
 
