@@ -24,10 +24,6 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
       "control_joint_lqr/lqr_error", nif::common::constants::QOS_DEFAULT);
 
   // Subscribers
-  desired_vx_sub_ = this->create_subscription<std_msgs::msg::Float32>(
-          "velocity_planner/des_vel", nif::common::constants::QOS_CONTROL_CMD,
-      std::bind(&ControlLQRNode::desiredVxCallback, this,
-                std::placeholders::_1));
   velocity_sub_ =
       this->create_subscription<raptor_dbw_msgs::msg::WheelSpeedReport>(
               "/raptor_dbw_interface/wheel_speed_report", nif::common::constants::QOS_SENSOR_DATA,
@@ -169,8 +165,13 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
                             target_reached_end); // outputs
 
     // Run LQR :)
+    
+    // Desired velocity check
+    auto l_desired_velocity = this->hasDesiredVelocity() ? this->getDesiredVelocity()->data : 0.0;
+    l_desired_velocity = ( this->now() - this->getDesiredVelocityUpdateTime() <= rclcpp::Duration(1, 0)) ? l_desired_velocity : 0.0; 
+
     auto goal = joint_lqr::utils::LQRGoal(
-        this->getReferencePath()->poses[lqr_tracking_idx_], desired_vx_);
+      this->getReferencePath()->poses[lqr_tracking_idx_], l_desired_velocity);
     auto error = joint_lqr_->computeError(state, goal);
     auto cmd = joint_lqr_->process(state, goal);
     steering_angle_deg = cmd(0, 0) * nif::common::constants::RAD2DEG;

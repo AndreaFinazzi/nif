@@ -3,6 +3,8 @@
 
 #include "nif_control_common_nodes/i_controller_node.h"
 
+using nif_msgs::msg::MissionStatus;
+
 nif::control::IControllerNode::IControllerNode(const std::string &node_name)
     : nif::common::IBaseSynchronizedNode(node_name, common::NodeType::CONTROL, common::constants::SYNC_PERIOD_DEFAULT_US) {
 
@@ -28,8 +30,15 @@ nif::control::IControllerNode::IControllerNode(const std::string &node_name)
           std::bind(&IControllerNode::referencePathCallback, this,
                     std::placeholders::_1));
 
+  this->desired_velocity_sub = this->create_subscription<std_msgs::msg::Float32>(
+          "velocity_planner/des_vel", nif::common::constants::QOS_CONTROL_CMD,
+      std::bind(&IControllerNode::desiredVelocityCallback, this,
+                std::placeholders::_1));
+
   this->control_cmd_pub = this->create_publisher<nif::common::msgs::ControlCmd>(
       "out_control_cmd", nif::common::constants::QOS_CONTROL_CMD);
+
+  this->desired_velocity = std::make_shared<std_msgs::msg::Float32>();
 }
 
 /**
@@ -69,6 +78,51 @@ void nif::control::IControllerNode::referencePathCallback(
   this->afterReferencePathCallback();
 }
 
+void nif::control::IControllerNode::desiredVelocityCallback(
+    std_msgs::msg::Float32::SharedPtr msg) {
+  this->has_desired_velocity = true;
+  this->desired_velocity_update_time = this->now();
+
+  // CHECK MISSION CONDITIONS
+  switch (this->getSystemStatus().mission_status.mission_status_code)
+  {
+  case MissionStatus::MISSION_EMERGENCY_STOP:
+    this->desired_velocity->data = 0.0;
+    break;
+  
+  case MissionStatus::MISSION_COMMANDED_STOP:
+    this->desired_velocity->data = 0.0;
+    break;
+
+  case MissionStatus::MISSION_STANDBY:
+    this->desired_velocity->data = 0.0;
+    break;
+
+  case MissionStatus::MISSION_SLOW_DRIVE:
+    this->desired_velocity->data = 10.0;
+    break;
+
+  case MissionStatus::MISSION_PIT_IN:
+    this->desired_velocity->data = 10.0;
+    break;
+
+  case MissionStatus::MISSION_PIT_OUT:
+    this->desired_velocity->data = 10.0;
+    break;
+
+  case MissionStatus::MISSION_RACE:
+    this->desired_velocity = std::move(msg);
+    break;
+
+  default:
+    this->desired_velocity->data = 0.0;
+    break;
+  }
+
+  this->desired_velocity = msg;
+  this->afterDesiredVelocityCallback();
+}
+
 const nif::common::msgs::Trajectory::SharedPtr &
 nif::control::IControllerNode::getReferenceTrajectory() const {
   return reference_trajectory;
@@ -81,6 +135,10 @@ const nav_msgs::msg::Path::SharedPtr &
 nif::control::IControllerNode::getReferencePath() const {
   return reference_path;
 }
+const std_msgs::msg::Float32::SharedPtr &
+nif::control::IControllerNode::getDesiredVelocity() const {
+  return desired_velocity;
+}
 const rclcpp::Time &
 nif::control::IControllerNode::getReferenceTrajectoryUpdateTime() const {
   return reference_trajectory_update_time;
@@ -92,6 +150,10 @@ nif::control::IControllerNode::getReferencePathUpdateTime() const {
 const rclcpp::Time &
 nif::control::IControllerNode::getControlCmdPrevUpdateTime() const {
   return control_cmd_prev_update_time;
+}
+const rclcpp::Time &
+nif::control::IControllerNode::getDesiredVelocityUpdateTime() const {
+  return desired_velocity_update_time;
 }
 
 /**
@@ -117,3 +179,12 @@ bool nif::control::IControllerNode::hasReferencePath() const {
 bool nif::control::IControllerNode::hasControlCmdPrev() const {
   return has_control_cmd_prev;
 }
+
+/**
+ * Return true if desired_velocity has been initialized.
+ * false otherwise
+ */
+bool nif::control::IControllerNode::hasDesiredVelocity() const {
+  return has_desired_velocity;
+}
+

@@ -41,9 +41,9 @@ public:
     lqr_tracking_idx_ = 0; // Reset Tracking
   }
 
-  void desiredVxCallback(const std_msgs::msg::Float32::SharedPtr msg) {
-    desired_vx_ = msg->data;
-  }
+  // void desiredVxCallback(const std_msgs::msg::Float32::SharedPtr msg) {
+  //   desired_vx_ = msg->data;
+  // }
 
   void velocityCallback(
       const raptor_dbw_msgs::msg::WheelSpeedReport::SharedPtr msg) {

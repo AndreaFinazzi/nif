@@ -192,7 +192,7 @@ def generate_launch_description():
         package='nif_velocity_planning_node',
         executable='nif_velocity_planning_node_exe',
         output='screen',
-        remappings=-[
+        remappings=[
             ('out_desired_velocity', 'velocity_planner/des_vel'),
             ('in_reference_path', 'planning/path_global'),
             ('in_ego_odometry', 'localization/ekf/odom'),
