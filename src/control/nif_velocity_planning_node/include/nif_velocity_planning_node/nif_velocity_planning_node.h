@@ -306,11 +306,13 @@ public:
       //! Check desired velocity should not be too large value
       if (param.get_name() == "des_vel_mps") {
         if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE &&
-            param.as_double() <= 200 / 3.6) {
-          if (true) {
-            this->m_max_vel = param.as_double();
-            result.successful = true;
-          }
+            param.as_double() <= 200 / 3.6) 
+        {
+          this->m_max_vel = param.as_double();
+          result.successful = true;
+        } else {
+          result.successful = false;
+          result.reason = "des_vel_mps must be a double below (200 / 3.6).";
         }
       }
     }
