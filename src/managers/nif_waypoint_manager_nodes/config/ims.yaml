@@ -3,6 +3,7 @@
     file_path_list:
 #      - 'maps/LOR_inside_line.csv'
        - 'maps/IMS_center_line.csv'
+#      - 'maps/IMS_inout_line.csv'
 #      - 'maps/2021-08-06_LOR/LOR_earth_rl.csv'
 #      - 'maps/lgsvl_sim/lg_sim_racing_line.csv'
 #      - 'maps/lgsvl_sim/wpt_left_filtered.csv'
