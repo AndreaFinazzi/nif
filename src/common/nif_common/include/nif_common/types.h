@@ -17,7 +17,7 @@
 #include "std_msgs/msg/int8.hpp"
 #include "std_msgs/msg/u_int8.hpp"
 
-#include "nif_msgs/msg/system_health.hpp"
+#include "nif_msgs/msg/system_health_status.hpp"
 #include "deep_orange_msgs/msg/rc_to_ct.hpp"
 #include "deep_orange_msgs/msg/pt_report.hpp"
 #include "nif_msgs/msg/autonomy_status.hpp"
@@ -30,18 +30,19 @@
 #include "nif_msgs/msg/terrain_status.hpp"
 #include "nif_msgs/msg/waypoints.hpp"
 #include "nif_msgs/msg/waypoints_array.hpp"
+#include "deep_orange_msgs/msg/base_to_car_summary.hpp"
 
 namespace nif {
 namespace common {
 
 
 enum SystemStatusCode : std::uint8_t {
-  SYSTEM_NOT_INITIALIZED = nif_msgs::msg::SystemHealth::SYSTEM_NOT_INITIALIZED,
-  SYSTEM_INITIALIZED = nif_msgs::msg::SystemHealth::SYSTEM_INITIALIZED,
-  SYSTEM_OK = nif_msgs::msg::SystemHealth::SYSTEM_OK,
-  SYSTEM_ERROR = nif_msgs::msg::SystemHealth::SYSTEM_ERROR,
-  SYSTEM_FATAL_ERROR = nif_msgs::msg::SystemHealth::SYSTEM_FATAL_ERROR,
-  SYSTEM_DEAD = nif_msgs::msg::SystemHealth::SYSTEM_DEAD
+  SYSTEM_NOT_INITIALIZED = nif_msgs::msg::SystemHealthStatus::SYSTEM_NOT_INITIALIZED,
+  SYSTEM_INITIALIZED = nif_msgs::msg::SystemHealthStatus::SYSTEM_INITIALIZED,
+  SYSTEM_OK = nif_msgs::msg::SystemHealthStatus::SYSTEM_OK,
+  SYSTEM_ERROR = nif_msgs::msg::SystemHealthStatus::SYSTEM_ERROR,
+  SYSTEM_FATAL_ERROR = nif_msgs::msg::SystemHealthStatus::SYSTEM_FATAL_ERROR,
+  SYSTEM_DEAD = nif_msgs::msg::SystemHealthStatus::SYSTEM_DEAD
 };
 
 enum NodeStatusCode : std::uint8_t {
@@ -104,7 +105,8 @@ using TerrainState = nif_msgs::msg::TerrainStatus;
  * This message contains the race flag information from the race control.
  * TODO: should be changed based on the bag file
  */
-using RaceControlStatus = deep_orange_msgs::msg::RcToCt;
+using RCFlagSummary = deep_orange_msgs::msg::BaseToCarSummary;
+using OverrideRCFlagSummary = deep_orange_msgs::msg::BaseToCarSummary;
 
 /**
  * This message contains the autonomy status information which should updated
@@ -123,7 +125,7 @@ using SystemStatus = nif_msgs::msg::SystemStatus;
  * This message contains the health status of the node which should updated in
  * the system status monitor node.
  */
-using SystemHealth = nif_msgs::msg::SystemHealth;
+using SystemHealthStatus = nif_msgs::msg::SystemHealthStatus;
 
 /**
  * This message contains the perception result which should updated

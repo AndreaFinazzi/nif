@@ -18,15 +18,40 @@ public:
                               const rclcpp::NodeOptions &options = rclcpp::NodeOptions{})
       : Node(node_name, options) {
 
+    this->nif_control_cmd_pub = this->create_publisher<nif::common::msgs::ControlCmd>("control_pool/override_cmd", 10);
+    std::weak_ptr<std::remove_pointer<decltype(this->nif_control_cmd_pub.get())>::type> captured_pub = this->nif_control_cmd_pub;
+
+    // Publish a converted message
+    auto callback = [this, captured_pub](nif::common::msgs::OverrideControlCmd::SharedPtr msg) -> void {
+        auto pub_ptr = captured_pub.lock();
+        if (!pub_ptr) {
+            return;
+        }
+        nif::common::msgs::ControlCmd::UniquePtr control_cmd_ptr(new nif::common::msgs::ControlCmd());
+        control_cmd_ptr->header.stamp = msg->stamp;
+        control_cmd_ptr->order = 0;
+        control_cmd_ptr->steering_control_cmd.data = msg->steering_cmd;
+        control_cmd_ptr->accelerator_control_cmd.data = msg->accelerator_cmd;
+        control_cmd_ptr->braking_control_cmd.data = msg->brake_cmd;
+        control_cmd_ptr->gear_control_cmd.data = msg->gear_cmd;
+
+        pub_ptr->publish(std::move(control_cmd_ptr));
+    };
+
     this->override_msg_sub =
             this->create_subscription<nif::common::msgs::OverrideControlCmd>(
-            "/joystick/command", nif::common::constants::QOS_CONTROL_CMD_OVERRIDE,
-            std::bind(&OverrideDeviceInterfaceNode::joystickCallback, this,
-                      std::placeholders::_1));
+                    "/joystick/command", nif::common::constants::QOS_CONTROL_CMD_OVERRIDE,
+                    callback);
 
-    this->nif_control_cmd_pub =
-        this->create_publisher<nif::common::msgs::ControlCmd>(
-            "control_pool/override_cmd", nif::common::constants::QOS_CONTROL_CMD_OVERRIDE);
+//    this->override_msg_sub =
+//            this->create_subscription<nif::common::msgs::OverrideControlCmd>(
+//                    "/joystick/command", nif::common::constants::QOS_CONTROL_CMD_OVERRIDE,
+//                    std::bind(&OverrideDeviceInterfaceNode::joystickCallback, this,
+//                              std::placeholders::_1));
+//
+//    this->nif_control_cmd_pub =
+//        this->create_publisher<nif::common::msgs::ControlCmd>(
+//            "control_pool/override_cmd", nif::common::constants::QOS_CONTROL_CMD_OVERRIDE);
   }
 
 private:

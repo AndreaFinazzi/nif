@@ -21,3 +21,7 @@ void IBaseSynchronizedNode::gClockCallback() {
 const nif::common::types::t_clock_period_ns &IBaseSynchronizedNode::getGclockPeriodNs() const {
   return gclock_period_ns;
 }
+
+const rclcpp::Duration &IBaseSynchronizedNode::getGclockPeriodDuration() const {
+    return gclock_period_duration;
+}

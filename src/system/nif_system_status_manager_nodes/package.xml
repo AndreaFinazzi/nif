@@ -15,6 +15,9 @@
   <depend>nif_common</depend>
   <depend>nif_common_nodes</depend>
 
+  <!--  TODO remove dependency as soon as insstdev check is replaced -->
+  <depend>novatel_oem7_msgs</depend>
+
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
 

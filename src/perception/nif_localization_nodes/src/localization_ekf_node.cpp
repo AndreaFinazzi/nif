@@ -15,6 +15,8 @@ using namespace nif::common::frame_id::localization;
 EKFLocalizer::EKFLocalizer(const std::string &node_name) : IBaseNode(node_name) {
   this->declare_parameter<double>("origin_lat", double(39.809786));
   this->declare_parameter<double>("origin_lon", double(-86.235148));
+  this->declare_parameter<bool>("use_inspva_heading", bool(true));
+  this->declare_parameter<double>("bestvel_heading_update_velocity_thres", double(2.0)); // unit : km/h
 
   m_origin_lat = this->get_global_parameter<double>("coordinates.ecef_ref_lat");
   m_origin_lon = this->get_global_parameter<double>("coordinates.ecef_ref_lon");
@@ -22,22 +24,38 @@ EKFLocalizer::EKFLocalizer(const std::string &node_name) : IBaseNode(node_name) 
   // this->m_origin_lat = this->get_parameter("origin_lat").as_double();
   // this->m_origin_lon = this->get_parameter("origin_lon").as_double();
 
+  this->m_use_inspva_heading =
+      this->get_parameter("use_inspva_heading").as_bool();
+  this->m_bestvel_heading_update_thres =
+      this->get_parameter("bestvel_heading_update_velocity_thres").as_double();
+
   RCLCPP_INFO(this->get_logger(), "ORIGIN LATITUDE : ", m_origin_lat);
   RCLCPP_INFO(this->get_logger(), "ORIGIN LONGITUDE : ", m_origin_lon);
 
-  const std::string& topic_ego_odometry =
-      this->get_global_parameter<std::string>(
-          nif::common::constants::parameters::names::TOPIC_ID_EGO_ODOMETRY);
+  const std::string &topic_ego_odometry =
+          this->get_global_parameter<std::string>(
+              nif::common::constants::parameters::names::TOPIC_ID_EGO_ODOMETRY);
 
+  // POSE(X, Y)
   sub_gpslatlon = this->create_subscription<novatel_oem7_msgs::msg::BESTPOS>(
       "in_bestpos", nif::common::constants::QOS_SENSOR_DATA,
       std::bind(&EKFLocalizer::GPSLATLONCallback, this, std::placeholders::_1));
+  // NOT USED
   subINSPVA = this->create_subscription<novatel_oem7_msgs::msg::INSPVA>(
       "in_inspva", nif::common::constants::QOS_SENSOR_DATA,
-      std::bind(&EKFLocalizer::GPSINSPVACallback, this, std::placeholders::_1));
+      std::bind(&EKFLocalizer::BOTTOMINSPVACallback, this, std::placeholders::_1));
+  // HEADING
+  subTOPINSPVA = this->create_subscription<novatel_oem7_msgs::msg::INSPVA>(
+      "in_top_inspva", nif::common::constants::QOS_SENSOR_DATA,
+      std::bind(&EKFLocalizer::TOPINSPVACallback, this, std::placeholders::_1));
+  // HEADING BACK-UP SOLUTION
+  subBESTVEL = this->create_subscription<novatel_oem7_msgs::msg::BESTVEL>(
+      "in_bestvel", nif::common::constants::QOS_SENSOR_DATA,
+      std::bind(&EKFLocalizer::BESTVELCallback, this, std::placeholders::_1));
 
   auto rmw_qos_profile = nif::common::constants::QOS_SENSOR_DATA.get_rmw_qos_profile();
-
+  
+  // YAW RATE AND WHEEL SPEED
   sub_filtered_IMU.subscribe(this,
                              "in_imu", rmw_qos_profile);
   sub_filtered_Wheel.subscribe(this, "in_wheel_speed_report",
@@ -71,6 +89,8 @@ EKFLocalizer::EKFLocalizer(const std::string &node_name) : IBaseNode(node_name) 
   ref.altitude = 0.;
   conv_.initializeReference(ref);
 
+  gps_timeout = rclcpp::Duration(1, 0);
+
   this->setNodeStatus(common::NODE_INITIALIZED);
   RCLCPP_INFO(this->get_logger(), "START EKF NODE");
 }
@@ -84,6 +104,9 @@ void EKFLocalizer::timer_callback() {
 
 void EKFLocalizer::run() {
   if (bImuFirstCall && bGPS && bGPSHeading) {
+      auto node_status = nif::common::NODE_ERROR;
+
+
     vel_and_yawRate = cv::Mat::zeros(3, 1, CV_64FC1);
     GPS_data = cv::Mat::zeros(3, 1, CV_64FC1);
     vel_and_yawRate.ptr<double>(0)[0] = m_dVelolcity_X; // vel_x
@@ -93,19 +116,42 @@ void EKFLocalizer::run() {
     GPS_data.ptr<double>(1)[0] = m_dGPS_Y;       // odom
     GPS_data.ptr<double>(2)[0] = m_dGPS_Heading; // odom
 
-//
+
 //    if (ImuTimeDouble != ImuPrevTimeDouble && bImuFirstCall) {
+//
 //    }
+
+        // If the geofence data is too old, report error, but keep going.
+        if ((this->now().nanoseconds() - bestpos_time_last_update.nanoseconds()) >=
+                this->gps_timeout.nanoseconds()
+                ||
+                (this->now().nanoseconds() - imu_time_last_update.nanoseconds()) >=
+                this->gps_timeout.nanoseconds()) {
+            // Set error, but keep going
+            node_status = common::NODE_ERROR;
+        } else {
+            node_status = common::NODE_OK;
+        }
 
       m_ekf.EKF_Predictionstep(m_ekf.m_xhat, m_ekf.m_Phat, vel_and_yawRate,
                                0.01);
 
       int quality = 4;
-      if (gps_flag == true) {
+      if (gps_flag == true && heading_flag == true) {
         m_ekf.EKF_Correctionstep(m_ekf.m_xhat, m_ekf.m_Phat, quality, true,
                                  true,
                                  GPS_data); // check //true
+        // std::cout << "heading update" << std::endl;
+      } else if (gps_flag == true && heading_flag == false) {
+        m_ekf.EKF_Correctionstep(m_ekf.m_xhat, m_ekf.m_Phat, quality, true,
+                                 false,
+                                 GPS_data); // check //true
+        // std::cout << "heading updated not" << std::endl;
       }
+
+      // std::cout << "heading flag : " << heading_flag << std::endl;
+      // std::cout << "m_dVelolcity_X : " << m_dVelolcity_X << std::endl;
+      // std::cout << "m_dGPS_Heading : " << m_dGPS_Heading << std::endl;
 
       nav_msgs::msg::Odometry ekf_odom_msg;
       ekf_odom_msg.header.stamp = this->now();
@@ -114,6 +160,20 @@ void EKFLocalizer::run() {
       ekf_odom_msg.pose.pose.position.x = m_ekf.m_xhat.ptr<double>(0)[0];
       ekf_odom_msg.pose.pose.position.y = m_ekf.m_xhat.ptr<double>(1)[0];
       ekf_odom_msg.pose.pose.position.z = 0.0;
+
+      // Twist messages
+      if (this->getSystemStatus().health_status.localization_failure == false &&
+          m_inspva_heading_init) {
+        ekf_odom_msg.twist.twist.linear.x = m_dGPS_vel_x_onBody; 
+        ekf_odom_msg.twist.twist.linear.y = m_dGPS_vel_y_onBody;
+      } else {
+        ekf_odom_msg.twist.twist.linear.x = m_dVelolcity_X;
+        ekf_odom_msg.twist.twist.linear.y = 0.;
+      }
+      ekf_odom_msg.twist.twist.angular.x = m_dIMU_roll_rate; 
+      ekf_odom_msg.twist.twist.angular.y = m_dIMU_pitch_rate; 
+      ekf_odom_msg.twist.twist.angular.z = m_dIMU_yaw_rate;
+
       tf2::Quaternion quat_ekf;
       geometry_msgs::msg::Quaternion quat_ekf_msg;
       double angle_z_rad = m_ekf.m_xhat.ptr<double>(2)[0];
@@ -142,6 +202,7 @@ void EKFLocalizer::run() {
       broadcaster_->sendTransform(nav_base_tf);
 
       gps_flag = false;
+      heading_flag = false;
 
       ImuPrevTimeDouble = ImuTimeDouble;
       VehVelocityPrevTimeDouble = VehVelocityTimeDouble;
@@ -149,7 +210,7 @@ void EKFLocalizer::run() {
     //   // RCLCPP_WARN(this->get_logger(), "[Imu / Wheel speed] is not updated");
     //   return;
     // }
-    this->setNodeStatus(common::NODE_OK);
+    this->setNodeStatus(node_status);
   } else {
     RCLCPP_DEBUG(this->get_logger(), "Waiting for -[/novatel_bottom/bestpos]");
     RCLCPP_DEBUG(this->get_logger(), "            -[/novatel_bottom/inspva]");
@@ -160,7 +221,10 @@ void EKFLocalizer::run() {
 }
 void EKFLocalizer::GPSLATLONCallback(
     const novatel_oem7_msgs::msg::BESTPOS::SharedPtr msg) {
-  nif::localization::utils::GeodeticConverter::GeoRef currentGPS;
+
+    this->bestpos_time_last_update = this->now();
+
+    nif::localization::utils::GeodeticConverter::GeoRef currentGPS;
   currentGPS.latitude = (double)msg->lat;
   currentGPS.longitude = (double)msg->lon;
   // Currently ignore altitude for the most part and just track x/y
@@ -202,20 +266,107 @@ void EKFLocalizer::GPSLATLONCallback(
   ////////////////////////////////////////////////////////////////////////////////////
 }
 
-void EKFLocalizer::GPSINSPVACallback(
+// HOW TO CORRECT HEADING IN EKF
+// 1. Bottom GPS
+// 2. Top GPS
+// 3. BestVel
+
+void EKFLocalizer::BOTTOMINSPVACallback(
     const novatel_oem7_msgs::msg::INSPVA::SharedPtr msg) {
   double yaw = (-msg->azimuth) * nif::common::constants::DEG2RAD;
+  if (yaw != 0.0) {
+    m_inspva_heading_init = true;
+  }
+  if (!m_inspva_heading_init) 
+  {
+    RCLCPP_WARN_ONCE(this->get_logger(), "INSPVA HEADING IS NOT INITIALIZED");
+    return;
+    
+  } else {
+    RCLCPP_INFO_ONCE(this->get_logger(), "INSPVA HEADING INITIALIZED");
+  }
+
   m_dGPS_Heading = yaw;
   m_dGPS_roll = msg->roll * nif::common::constants::DEG2RAD;
+  m_dGPS_vel_x_onBody = msg->north_velocity * std::cos(-yaw) +
+                        msg->east_velocity * std::sin(-yaw);
+  m_dGPS_vel_y_onBody = msg->north_velocity * std::sin(-yaw) -
+                        msg->east_velocity * std::cos(-yaw);
+
   bGPSHeading = true;
+  if (m_use_inspva_heading)
+  {
+    heading_flag = true;
+  }
 }
+
+void EKFLocalizer::TOPINSPVACallback(
+    const novatel_oem7_msgs::msg::INSPVA::SharedPtr msg) {          
+  double yaw = (-msg->azimuth) * nif::common::constants::DEG2RAD; // TODO
+  
+  if(yaw != 0.0)
+  {
+    m_inspva_heading_init = true;
+  }
+  if (!m_inspva_heading_init) {
+    RCLCPP_WARN_ONCE(this->get_logger(), "INSPVA HEADING IS NOT INITIALIZED");
+    return;
+  }
+
+  m_dGPS_Heading = yaw;
+  m_dGPS_roll = msg->roll * nif::common::constants::DEG2RAD;
+
+  m_dGPS_vel_x_onBody = msg->north_velocity * std::cos(-yaw) +
+                   msg->east_velocity * std::sin(-yaw);
+  m_dGPS_vel_y_onBody = msg->north_velocity * std::sin(-yaw) -
+                        msg->east_velocity * std::cos(-yaw);
+
+  bGPSHeading = true;
+  if (m_use_inspva_heading) {
+    heading_flag = true;
+  }
+}
+
+void EKFLocalizer::BESTVELCallback(
+    const novatel_oem7_msgs::msg::BESTVEL::SharedPtr msg){
+  double yaw = (-msg->trk_gnd) * nif::common::constants::DEG2RAD;
+
+  if (!m_inspva_heading_init &&
+      m_use_inspva_heading) // INSPVA HEADING BACK UP SOLUTITON
+  {
+    m_dGPS_Heading = yaw;
+    // m_dGPS_roll = msg->roll * nif::common::constants::DEG2RAD;
+    bGPSHeading = true;
+  }
+
+  // When we don't use INSPVA HEADING, we use bestvel heading
+  // param [use_inspva_heading]
+  //       True :  Use bestvel for only back-up solution
+  //       False : Use bestvel for heading estimation
+  if (!m_use_inspva_heading) 
+  {
+    m_dGPS_Heading = yaw;
+    // m_dGPS_roll = msg->roll * nif::common::constants::DEG2RAD;
+    bGPSHeading = true;
+  }
+
+  if (m_dVelolcity_X > m_bestvel_heading_update_thres) {
+    heading_flag = true;
+  }
+}
+
 
 void EKFLocalizer::MessegefilteringCallback(
     const sensor_msgs::msg::Imu ::ConstSharedPtr &imu_msg,
     const raptor_dbw_msgs::msg::WheelSpeedReport::ConstSharedPtr
         &wheel_speed_msg) {
 
+  this->imu_time_last_update = this->now();
+
   m_dIMU_yaw_rate = imu_msg->angular_velocity.z;
+  m_dIMU_roll_rate = imu_msg->angular_velocity.x;
+  m_dIMU_pitch_rate = imu_msg->angular_velocity.y;
+
   m_dVelolcity_X =
       (wheel_speed_msg->front_right + wheel_speed_msg->front_left) / 2 *
       nif::common::constants::KPH2MS;

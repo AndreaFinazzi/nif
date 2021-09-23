@@ -58,22 +58,41 @@ ResilientLocalization::ResilientLocalization(const std::string &node_name_)
 
   using namespace std::chrono_literals; // NOLINT
   timer_ = this->create_wall_timer(10ms, [this]() {
-      // If the geofence data is too old, report error, but keep going.
-    if (m_geofence_outer_last_update_ - this->now() >= this->m_geofence_timeout_ ||
-        m_detected_outer_last_update_ - this->now() >= this->m_geofence_timeout_)
+    if (bDetectedOuter && bGeofenceOuter)
     {
-        this->setNodeStatus(common::NODE_ERROR);
-    }
-    double m_outer_error = m_geofence_outer_distance - m_detected_outer_distance;
-    std_msgs::msg::Float32 OuterDistanceMsg;
-    OuterDistanceMsg.data = m_outer_error;
+        auto node_status = nif::common::NODE_ERROR;
+      // If the geofence data is too old, report error, but keep going.
+      if (this->now() - m_geofence_outer_last_update_ >=
+              this->m_geofence_timeout_ ||
+          this->now() - m_detected_outer_last_update_ >=
+              this->m_geofence_timeout_) {
+        
+       RCLCPP_DEBUG(this->get_logger(), "A : %f", (this->now() - m_detected_outer_last_update_).nanoseconds());
+       RCLCPP_DEBUG(this->get_logger(), "B : %f", this->m_geofence_timeout_.nanoseconds());
+       node_status = nif::common::NODE_ERROR;
+      } else {
+          node_status = nif::common::NODE_OK;
+      }
 
-    std_msgs::msg::Bool OuterDistanceHighErrorFlagMsg;
-    OuterDistanceHighErrorFlagMsg.data = false;
+      double current = static_cast<double>(this->now().seconds()) +
+                       static_cast<double>(this->now().nanoseconds()) * 1e-9;
+      double geofence_time =
+          static_cast<double>(m_detected_outer_last_update_.seconds()) +
+          static_cast<double>(m_detected_outer_last_update_.nanoseconds()) *
+              1e-9;
 
-    if (fabs(m_outer_error) > m_ThresForDistanceErrorFlag &&
-        m_detected_outer_distance != 0. && m_on_the_track) {
-      OuterDistanceHighErrorFlagMsg.data =  true;
+
+      double m_outer_error =
+          m_geofence_outer_distance - m_detected_outer_distance;
+      std_msgs::msg::Float32 OuterDistanceMsg;
+      OuterDistanceMsg.data = m_outer_error;
+
+      std_msgs::msg::Bool OuterDistanceHighErrorFlagMsg;
+      OuterDistanceHighErrorFlagMsg.data = false;
+
+      if (fabs(m_outer_error) > m_ThresForDistanceErrorFlag &&
+          m_detected_outer_distance != 0. && m_on_the_track) {
+        OuterDistanceHighErrorFlagMsg.data = true;
     }
     pubOuterError->publish(OuterDistanceMsg);
     pubOuterErrorFlag->publish(OuterDistanceHighErrorFlagMsg);
@@ -85,7 +104,8 @@ ResilientLocalization::ResilientLocalization(const std::string &node_name_)
       TooCloseToWallMsg.data = true;
     }
     pubTooCloseToWallFlag->publish(TooCloseToWallMsg);
-    this->setNodeStatus(common::NODE_OK);
+    this->setNodeStatus(node_status);
+    }
   });
 
   this->setNodeStatus(common::NODE_INITIALIZED);
@@ -100,6 +120,7 @@ void ResilientLocalization::respond() {
   this->get_parameter("geofence_timeout_ms", geofence_timeout_ms);
 
   m_geofence_timeout_ = rclcpp::Duration(geofence_timeout_ms * 1000000);
+
   // this->get_parameter("inner_geofence_filename", m_InnerGeoFenceFileName);
 }
 
@@ -118,11 +139,15 @@ void ResilientLocalization::InnerGeofenceDistanceCallback(
     const std_msgs::msg::Float32::SharedPtr msg) {
   m_geofence_inner_distance = msg->data;
   m_geofence_inner_last_update_ = this->now();
+
+
 }
 void ResilientLocalization::OuterGeofenceDistanceCallback(
     const std_msgs::msg::Float32::SharedPtr msg) {
   m_geofence_outer_distance = msg->data;
   m_geofence_outer_last_update_ = this->now();
+
+  bGeofenceOuter = true;
 }
 void ResilientLocalization::InnerDetectedDistanceCallback(
     const std_msgs::msg::Float32::SharedPtr msg) {
@@ -133,6 +158,8 @@ void ResilientLocalization::OuterDetectedDistanceCallback(
     const std_msgs::msg::Float32::SharedPtr msg) {
   m_detected_outer_distance = msg->data;
   m_detected_outer_last_update_ = this->now();
+
+  bDetectedOuter = true;
 }
 
 void ResilientLocalization::OnTheTrackCallback(const std_msgs::msg::Bool::SharedPtr msg)

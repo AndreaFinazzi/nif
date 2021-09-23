@@ -38,7 +38,6 @@ bool TireManager::CalcDynamicsFeasibility(nav_msgs::msg::Path path, double vx,
   // - check dynamics feasibility
   bool dyn_feasible = true;
   for (int i = 0; i < path.poses.size(); i++) {
-    std::cout << "i : " << i << std::endl;
     // - calculate current lateral acceleration w.r.t. curvature
     double ay_i = pow(current_velocity, 2.0) * curv_array[i];
     double ay_imax =

@@ -43,13 +43,18 @@ GlobalmapLoader::GlobalmapLoader(const std::string &node_name)
   timer_ = this->create_wall_timer(5000ms, [this]() {
     if (!bMapReady) {
       pcdFileIO();
-      // TrajectorypcdFileIO();
-    } else {
-      // if(bPublishOnce)
-      //   return;
 
-      Publisher();
+    } else if (!bTrajectoryReady && bUseTrajectory)
+    {
+      TrajectorypcdFileIO();
+
     }
+      else {
+        // if(bPublishOnce)
+        //   return;
+
+        Publisher();
+      }
   });
 }
 
@@ -77,8 +82,13 @@ void GlobalmapLoader::pcdFileIO() {
 }
 
 void GlobalmapLoader::TrajectorypcdFileIO() {
+  // Skip if not using traj
   if (!bUseTrajectory)
+  {
+    bTrajectoryReady = true;
     return;
+  }
+    
 
   m_trajectory_ptr.reset(new pcl::PointCloud<pcl::PointXYZI>());
   //  read m_trajectory_ptr from a pcd file
@@ -90,6 +100,8 @@ void GlobalmapLoader::TrajectorypcdFileIO() {
     RCLCPP_INFO(this->get_logger(), "...");
   }
   m_trajectory_ptr->header.frame_id = ODOM;
+
+  bTrajectoryReady = true;
 }
 
 pcl::PointCloud<pcl::PointXYZI>::Ptr
@@ -111,11 +123,13 @@ void GlobalmapLoader::Publisher() {
   GlobalMapCloudMsg.header.stamp = this->now();
   pubGlobalmap->publish(GlobalMapCloudMsg);
 
-  // sensor_msgs::msg::PointCloud2 TrajectoryCloudMsg;
-  // pcl::toROSMsg(*m_trajectory_ptr, TrajectoryCloudMsg);
-  // TrajectoryCloudMsg.header.frame_id = ODOM;
-  // TrajectoryCloudMsg.header.stamp = this->now();
-  // pubTrajectory->publish(TrajectoryCloudMsg);
-
+  if(bUseTrajectory)
+  {
+    sensor_msgs::msg::PointCloud2 TrajectoryCloudMsg;
+    pcl::toROSMsg(*m_trajectory_ptr, TrajectoryCloudMsg);
+    TrajectoryCloudMsg.header.frame_id = ODOM;
+    TrajectoryCloudMsg.header.stamp = this->now();
+    pubTrajectory->publish(TrajectoryCloudMsg);
+  }
   bPublishOnce = true;
 }

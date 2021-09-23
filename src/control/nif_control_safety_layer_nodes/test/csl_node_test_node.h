@@ -21,9 +21,6 @@ public:
 
   void stateReport() {
     RCLCPP_INFO(this->get_logger(), "ego_odometry: %s", (this->getEgoOdometry().header.stamp));
-    RCLCPP_INFO(this->get_logger(),
-                "race_control_state: %s",
-                (this->getRaceControlState().track_cond));
     RCLCPP_INFO(this->get_logger(), "system_failure: %s", this->getSystemStatus().health_status.system_failure);
   }
 

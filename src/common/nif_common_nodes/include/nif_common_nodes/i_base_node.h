@@ -54,19 +54,15 @@ protected:
   const rclcpp::Time &getGclockNodeInit() const;
   const msgs::Odometry &getEgoOdometry() const;
   const msgs::PowertrainState &getEgoPowertrainState() const;
-  const msgs::RaceControlStatus &getRaceControlState() const;
 
   bool hasEgoOdometry() const;
   bool hasEgoPowertrainState() const;
   bool hasSystemStatus() const;
-  bool hasRaceControlStatus() const;
 
   const msgs::SystemStatus &getSystemStatus() const;
-  const msgs::RaceControlStatus &getRaceControlStatus() const;
   const rclcpp::Time &getEgoOdometryUpdateTime() const;
   const rclcpp::Time &getEgoPowertrainStateUpdateTime() const;
   const rclcpp::Time &getSystemStatusUpdateTime() const;
-  const rclcpp::Time &getRaceControlStatusUpdateTime() const;
 
   rclcpp::SyncParametersClient::SharedPtr global_parameters_client;
 
@@ -166,13 +162,6 @@ private:
 
   bool has_system_status = false;
 
-  // TODO : finalize RaceControlState class
-  /**
-  * Race Control input from the race control interface.
-  * It's automatically stored by its callback along with race_control_status_update_time.
-  */
-  nif::common::msgs::RaceControlStatus race_control_status;
-
   bool has_race_control_status = false;
 
   /**
@@ -191,12 +180,6 @@ private:
   */
   rclcpp::Time system_status_update_time;
 
-  // TODO : finalize RaceControlState class
-  /**
-  * Race Control input last update time.
-  */
-  rclcpp::Time race_control_status_update_time;
-
 
   rclcpp::Subscription<nif::common::msgs::Odometry>::SharedPtr
       ego_odometry_sub;
@@ -205,8 +188,6 @@ private:
 
   rclcpp::Subscription<nif::common::msgs::SystemStatus>::SharedPtr
       system_status_sub;
-  rclcpp::Subscription<nif::common::msgs::RaceControlStatus>::SharedPtr
-      race_control_status_sub;
 
   void egoOdometryCallback(
       const nif::common::msgs::Odometry::SharedPtr msg);
@@ -217,8 +198,6 @@ private:
   void systemStatusCallback(
       const nif::common::msgs::SystemStatus::SharedPtr msg);
 
-  void raceControlStatusCallback(
-      const nif::common::msgs::RaceControlStatus::SharedPtr msg);
 
   /**
   * It's called at the end of egoOdometryCallback(...)
@@ -240,13 +219,6 @@ private:
   */
   virtual
       void afterSystemStatusCallback() {}
-
-  /**
-  * It's called at the end of raceControlStatusCallback(...)
-  * and it can be customized.
-  */
-  virtual
-      void afterRaceControlStatusCallback() {}
 
   virtual
       rcl_interfaces::msg::SetParametersResult

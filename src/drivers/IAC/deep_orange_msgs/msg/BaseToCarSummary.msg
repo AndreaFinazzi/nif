@@ -1,0 +1,7 @@
+builtin_interfaces/Time stamp
+uint8 base_to_car_heartbeat
+uint8 track_flag
+uint8 veh_flag
+uint8 veh_rank
+float32 lap_status_whole
+float32 lap_status_fraction

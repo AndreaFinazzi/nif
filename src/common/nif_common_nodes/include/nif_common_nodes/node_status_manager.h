@@ -33,20 +33,20 @@ public:
   getNodeStatusesMap();
   //  NOT A SINGLETON ANYMORE
 //  static const NodeStatusManager* getInstance();
+    const rclcpp::Time &getTimeLastUpdate() const;
+    const NodeType getNodeType() const;
+    const msgs::NodeStatus &getNodeStatus() const;
+
+    void setNodeId(const types::t_node_id &node_id);
 
 private:
   NodeStatusManager();
 
   const nif::common::IBaseNode& managed_node;
 
-public:
-  const rclcpp::Time &getTimeLastUpdate() const;
-  const NodeType getNodeType() const;
-  const msgs::NodeStatus &getNodeStatus() const;
-
 private:
   //  nif::common::types::t_node_id node_id
-  
+
   const NodeType node_type;
 
   nif::common::msgs::NodeStatus node_status;
@@ -59,7 +59,7 @@ private:
 
 //  NOT A SINGLETON ANYMORE
 //  static const NodeStatusManager* instance;
-};
+    };
 
 }
 }

@@ -120,6 +120,10 @@ private:
   double m_ThresToWallDistance;
 
   bool m_on_the_track;
+
+  bool bDetectedOuter = false;
+  bool bGeofenceOuter = false;
+
 };
 } // namespace resilient
 } // namespace localization

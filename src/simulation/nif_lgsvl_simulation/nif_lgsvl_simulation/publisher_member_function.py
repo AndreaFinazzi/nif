@@ -103,7 +103,7 @@ class LGSVLPublisherNode(BaseNode):
 
     # Subscribe brake pressure in pascal -> publish braking pedal %
     def callback_brake(self, msg):
-        self.braking_pct = 100 * msg.data / 3447379
+        self.braking_pct = 100 * msg.data / 2757900.0
 
     # Subscribe desired gear -> publish desired gear
     # uint8 GEAR_NEUTRAL = 0
