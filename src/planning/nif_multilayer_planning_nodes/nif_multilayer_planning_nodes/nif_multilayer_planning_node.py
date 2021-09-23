@@ -133,6 +133,8 @@ class GraphBasedPlanner(rclpy.node.Node):
         self.obj_list = []
         tic = time.time()
 
+        self.cnt = 0
+
     def yaw_from_ros_quaternion(self, quat):
         """
         Convert a quaternion into euler angles (roll, pitch, yaw)
@@ -178,6 +180,9 @@ class GraphBasedPlanner(rclpy.node.Node):
             self.obj_list.append(template_dict)
 
     def timer_callback(self):
+        self.cnt = self.cnt +1
+        print(self.out_of_track)
+        print(self.cnt)
         if self.out_of_track == True:
             return
         # -- SELECT ONE OF THE PROVIDED TRAJECTORIES -----------------------------------------------------------------------
