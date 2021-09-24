@@ -3,9 +3,9 @@ nif_aw_localization_nodes:
     use_inspva_heading: true
     bestvel_heading_update_velocity_thres : 2.0
     origin_lat: 39.8125900071711  
-    origin_lon: -86.3418060783425      
-                 #  39.8125900071711  #LOR
-                 # -86.3418060783425 #LOR
+    origin_lon: -86.3418060783425  
+    # origin_lat: 39.809786
+    # origin_lon: -86.235148    
     show_debug_info : false
     predict_frequency : 100.0
     tf_rate : 10.0
@@ -15,7 +15,7 @@ nif_aw_localization_nodes:
     pose_additional_delay : 0.0
     pose_measure_uncertainty_time : 0.01
     pose_rate : 20.0
-    pose_gate_dist : 10000.0
+    pose_gate_dist : 10.0
     pose_stddev_x : 0.05
     pose_stddev_y : 0.05
     pose_stddev_yaw : 0.035
@@ -23,13 +23,13 @@ nif_aw_localization_nodes:
 
     twist_additional_delay : 0.0
     twist_rate : 100.0
-    twist_gate_dist : 10000.0
+    twist_gate_dist : 20.0
     twist_stddev_vx : 0.2
     twist_stddev_wz : 0.03
     use_twist_with_covariance : false
 
     proc_stddev_yaw_c : 0.005
     proc_stddev_yaw_bias_c : 0.001
-    proc_stddev_vx_c : 2.0
+    proc_stddev_vx_c : 0.5
     proc_stddev_wz_c : 0.2
 

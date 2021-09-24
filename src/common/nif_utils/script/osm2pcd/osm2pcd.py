@@ -77,8 +77,8 @@ def parse_configs():
     parser.add_argument('--set_topic', type=str, default="/novatel_bottom/bestpos",
                         help='check headers name')
 
-    lon_0, lat_0 = -86.235148, 39.809786  #indy
-    # lon_0, lat_0 = -86.3418060783425, 39.8125900071711  #Lucas Oil Racing
+    # lon_0, lat_0 = -86.235148, 39.809786  #indy
+    lon_0, lat_0 = -86.3418060783425, 39.8125900071711  #Lucas Oil Racing
     
     nedPoints = []
 

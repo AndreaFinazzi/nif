@@ -84,8 +84,16 @@ def parse_configs():
 
     configs = edict(vars(parser.parse_args()))
 
+
     root_path = './csv' 
     file_name = os.path.join(root_path, configs.filename)
+    directory_name = os.path.join(root_path, file_name[:-3])
+    if not os.path.exists(os.path.join(root_path, file_name[:-3])):
+        os.makedirs(file_name)
+        print("DIRECTORY is generated. ", os.path.join(root_path, file_name[:-3]))
+    else:
+        print("DIRECTORY is existed")
+
     osm_file_name = file_name[:-3] + "osm" 
     pcd_file_name = file_name[:-3] + "pcd" 
     wpt_file_name = file_name[:-4] + "_wpt.csv" 
@@ -195,6 +203,10 @@ def parse_configs():
     # dump(root)            
     tree = ElementTree(root)
     tree.write(osm_file_name)
+
+os.path.join(root_path, file_name[:-3])
+
+
     write_pcd(nedPoints, pcd_file_name)
     write_csv(nedPoints, wpt_file_name)
 

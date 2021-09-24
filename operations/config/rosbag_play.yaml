@@ -3,14 +3,17 @@ windows:
   - window_name: ROSBAG PLAY Tab
     layout: tiled
     shell_command_before:
-      # - source /home/usrg/nif/install/setup.bash && cd /home/usrg/bag/LOR/VEH4_LOR_RUN-manual.01_2021-09-16_for_mapping
-      - source /home/usrg/nif/install/setup.bash && cd /home/usrg/bag/VEH4_IMS_RUN-ontrack00_2021-09-03      
+      # - source /home/usrg/nif/install/setup.bash && cd /home/usrg/bag/LOR/VEH4_LOR_RUN-manual.01_2021-09-16_for_mapping 
+      # - source /home/usrg/nif/install/setup.bash && cd /home/usrg/bag/VEH4_IMS_RUN-ontrack00_2021-09-03 #IMS Full track     
+      - source /home/usrg/nif/install/setup.bash && cd /home/usrg/media/shared_data/VEH4_LOR_RUN-nif.full_2021-09-12
     panes:
     - shell_command:
         # - ros2 bag play sensors_2021-09-03_10-59-19/ --topics /merged/lidar /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /raptor_dbw_interface/wheel_speed_report /novatel_top/bestpos /novatel_top/inspva /novatel_top/bestvel /novatel_top/imu/data /novatel_bottom/insstdev
-        - ros2 bag play autonomy_2021-09-03_10-59-19/ --topics /merged/lidar /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /raptor_dbw_interface/wheel_speed_report /novatel_top/bestpos /novatel_top/inspva /novatel_top/bestvel /novatel_top/imu/data /novatel_bottom/insstdev
+        # - ros2 bag play autonomy_2021-09-03_10-59-19/ --topics /merged/lidar /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /raptor_dbw_interface/wheel_speed_report /novatel_top/bestpos /novatel_top/inspva /novatel_top/bestvel /novatel_top/imu/data /novatel_bottom/insstdev
+        - ros2 bag play autonomy_2021-09-12_15-46-44/ --topics /raptor_dbw_interface/wheel_speed_report /bvs_localization/ltp_odom
     - shell_command:
-        - ros2 bag play sensors_2021-09-03_10-59-19/ --topics /merged/lidar /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /raptor_dbw_interface/wheel_speed_report /novatel_top/bestpos /novatel_top/inspva /novatel_top/bestvel /novatel_top/imu/data /novatel_bottom/insstdev
+        # - ros2 bag play sensors_2021-09-03_10-59-19/ --topics /merged/lidar /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /raptor_dbw_interface/wheel_speed_report /novatel_top/bestpos /novatel_top/inspva /novatel_top/bestvel /novatel_top/imu/data /novatel_bottom/insstdev
+        - ros2 bag play sensors_2021-09-12_15-46-44/ --topics /merged/lidar /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /raptor_dbw_interface/wheel_speed_report /novatel_top/bestpos /novatel_top/inspva /novatel_top/bestvel /novatel_top/imu/data /novatel_bottom/insstdev
     - shell_command:
         # - ros2 launch nif_launch base.launch.py
 
@@ -24,9 +27,10 @@ windows:
       - shell_command:
           - ros2 launch nif_points_preprocessor_nodes default.launch.py
       - shell_command:
-          - 
+          - ros2 launch nif_aw_localization_nodes default.launch.py
       - shell_command:
           - 
+          # - ros2 bag record /aw_localization/ekf/odom /localization/ekf/odom /localization/ekf/odom_bestpos /bvs_localization/ltp_odom
 
   - window_name: Monitoring Tab
     layout: tiled

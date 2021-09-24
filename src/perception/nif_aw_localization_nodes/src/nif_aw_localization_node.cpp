@@ -32,7 +32,6 @@ AWLocalizationNode::AWLocalizationNode(const std::string &node_name)
 
   this->declare_parameter<bool>("show_debug_info", bool(false));
   this->declare_parameter<double>("predict_frequency", double(50.0));
-  ekf_dt_ = 1.0 / std::max(ekf_rate_, 0.1);
   this->declare_parameter<double>("tf_rate", double(10.0));
   this->declare_parameter<bool>("enable_yaw_bias_estimation", bool(true));
   this->declare_parameter<int>("extend_state_step", int(50));
@@ -62,10 +61,7 @@ AWLocalizationNode::AWLocalizationNode(const std::string &node_name)
   this->declare_parameter<double>("proc_stddev_yaw_bias_c", double(0.001));
   this->declare_parameter<double>("proc_stddev_vx_c", double(2.0));
   this->declare_parameter<double>("proc_stddev_wz_c", double(0.2));
-  if (!enable_yaw_bias_estimation_)
-  {
-    proc_stddev_yaw_bias_c = 0.0;
-  }
+
 
   this->m_use_inspva_heading =
       this->get_parameter("use_inspva_heading").as_bool();
@@ -103,7 +99,10 @@ AWLocalizationNode::AWLocalizationNode(const std::string &node_name)
   proc_stddev_vx_c = this->get_parameter("proc_stddev_vx_c").as_double();
   proc_stddev_wz_c = this->get_parameter("proc_stddev_wz_c").as_double();
 
-
+  ekf_dt_ = 1.0 / std::max(ekf_rate_, 0.1);
+  if (!enable_yaw_bias_estimation_) {
+    proc_stddev_yaw_bias_c = 0.0;
+  }
   RCLCPP_INFO(this->get_logger(), "ORIGIN LATITUDE : %f", this->m_origin_lat);
   RCLCPP_INFO(this->get_logger(), "ORIGIN LONGITUDE : %f", this->m_origin_lon);
 
@@ -261,20 +260,9 @@ void AWLocalizationNode::setCurrentResult()
   current_ekf_pose_.pose.position.y = ekf_.getXelement(IDX::Y);
 
   tf2::Quaternion q_tf;
-  double roll, pitch, yaw;
-  if (measure_odom_ptr_ != nullptr)
-  {
-    current_ekf_pose_.pose.position.z = measure_odom_ptr_->pose.pose.position.z;
-    tf2::fromMsg(measure_odom_ptr_->pose.pose.orientation, q_tf); /* use Pose pitch and roll */
-    tf2::Matrix3x3(q_tf).getRPY(roll, pitch, yaw);
-  }
-  else
-  {
-    current_ekf_pose_.pose.position.z = 0.0;
-    roll = 0;
-    pitch = 0;
-  }
-  // yaw = ekf_.getXelement(IDX::YAW) + ekf_.getXelement(IDX::YAWB);
+  double roll = 0.;
+  double pitch = 0.;
+  double yaw = ekf_.getXelement(IDX::YAW) + ekf_.getXelement(IDX::YAWB);
   q_tf.setRPY(roll, pitch, yaw);
   tf2::convert(q_tf, current_ekf_pose_.pose.orientation);
 
@@ -575,10 +563,9 @@ void AWLocalizationNode::measurementUpdatePose(rclcpp::Time measurement_time_,
   }
   int delay_step = std::roundf(delay_time / ekf_dt_);
   if (delay_step > extend_state_step_ - 1) {
-    // ROS_WARN_DELAYED_THROTTLE(1.0,
-    // "Pose delay exceeds the compensation limit, ignored. delay: %f[s], limit
-    // = " "extend_state_step * ekf_dt : %f [s]", delay_time, extend_state_step_
-    // * ekf_dt_);
+    RCLCPP_WARN(this->get_logger(), 
+                "Pose delay exceeds the compensation limit, ignored. delay: %f[s], "
+                " limit= extend_state_step * ekf_dt : %f [s]", delay_time, extend_state_step_* ekf_dt_);
     return;
   }
   // DEBUG_INFO("delay_time: %f [s]", delay_time);
@@ -592,8 +579,8 @@ void AWLocalizationNode::measurementUpdatePose(rclcpp::Time measurement_time_,
       normalizeYaw(yaw - ekf_yaw); //  normalize the error not to exceed 2 pi
    
   yaw = yaw_error + ekf_yaw;
-  std::cout << yaw << ", " << yaw_error << ", "
-            << ekf_yaw << std::endl;
+  // std::cout << yaw << ", " << yaw_error << ", "
+  //           << ekf_yaw << std::endl;
                    /* Set measurement matrix */
   Eigen::MatrixXd y(dim_y, 1);
   y << corr_x_, corr_y_, yaw;
@@ -611,9 +598,8 @@ void AWLocalizationNode::measurementUpdatePose(rclcpp::Time measurement_time_,
   ekf_.getLatestP(P_curr);
   P_y = P_curr.block(0, 0, dim_y, dim_y);
   if (!mahalanobisGate(pose_gate_dist_, y_ekf, y, P_y)) {
-    // ROS_WARN_DELAYED_THROTTLE(2.0, "[EKF] Pose measurement update,
-    // mahalanobis distance is over limit. ignore "
-    //                                "measurement data.");
+    RCLCPP_WARN(this->get_logger(), "[EKF] Pose measurement update, mahalanobis distance is over limit.ignore measurement data.");
+
     return;
   }
 
@@ -656,6 +642,9 @@ void AWLocalizationNode::measurementUpdatePose(rclcpp::Time measurement_time_,
   /* In order to avoid a large change at the time of updating, measuremeent
    * update is performed by dividing at every step. */
   R *= (ekf_rate_ / pose_rate_);
+
+  // std::cout << "ekf_rate_: "  << ekf_rate_ << std::endl;
+  // std::cout << "pose_rate_: " << pose_rate_ << std::endl;
 
   ekf_.updateWithDelay(y, C, R, delay_step);
 

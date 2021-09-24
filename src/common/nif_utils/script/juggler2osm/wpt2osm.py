@@ -74,15 +74,22 @@ def parse_configs():
                         help='csv file name')
     parser.add_argument('--check_header', type=bool, default=False,
                         help='check headers name')
+    parser.add_argument('--optional_dir', type=str, default='',
+                        help='optionally add directory name')
 
-    lon_0, lat_0 = -86.235148, 39.809786  #indy
-    # lon_0, lat_0 = -86.3418060783425, 39.8125900071711  #Lucas Oil Racing
+    # lon_0, lat_0 = -86.235148, 39.809786  #indy
+    lon_0, lat_0 = -86.3418060783425, 39.8125900071711  #Lucas Oil Racing
     
     nedPoints = []
 
     configs = edict(vars(parser.parse_args()))
 
-    root_path = './wpt' 
+    
+    if(configs.optional_dir == ''):
+        root_path = './wpt' 
+    else:
+        root_path = './wpt/' + configs.optional_dir
+
     file_name = os.path.join(root_path, configs.filename)
     osm_file_name = file_name[:-3] + "osm" 
     pcd_file_name = file_name[:-3] + "pcd" 
