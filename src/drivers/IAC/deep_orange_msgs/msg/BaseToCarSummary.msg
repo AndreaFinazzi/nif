@@ -3,8 +3,8 @@ uint8 base_to_car_heartbeat
 
 uint8 TRACK_FLAG_NULL=0
 uint8 TRACK_FLAG_RED=1
-uint8 TRACK_FLAG_YELLOW=2
-uint8 TRACK_FLAG_ORANGE=3
+uint8 TRACK_FLAG_ORANGE=2
+uint8 TRACK_FLAG_YELLOW=3
 uint8 TRACK_FLAG_GREEN=4
 uint8 track_flag
 

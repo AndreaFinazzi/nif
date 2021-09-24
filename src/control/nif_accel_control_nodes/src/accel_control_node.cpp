@@ -125,22 +125,22 @@ AccelControl::AccelControl() : Node("AccelControlNode") {
 
 void AccelControl::initializeGears() {
   // LOR params
-  //  this->gear_states = {
-  //      {1, std::make_shared<control::GearState>(1, 2.92, -255, 11)},
-  //      {2, std::make_shared<control::GearState>(2, 1.875, 9.5, 16)},
-  //      {3, std::make_shared<control::GearState>(3, 1.38, 14, 22)},
-  //      {4, std::make_shared<control::GearState>(4, 1.5, 17, 30)},
-  //      {5, std::make_shared<control::GearState>(5, 0.96, 22, 35)},
-  //      {6, std::make_shared<control::GearState>(6, 0.889, 30, 255)}};
+    this->gear_states = {
+        {1, std::make_shared<control::GearState>(1, 2.92, -255, 11)},
+        {2, std::make_shared<control::GearState>(2, 1.875, 9.5, 16)},
+        {3, std::make_shared<control::GearState>(3, 1.38, 14, 22)},
+        {4, std::make_shared<control::GearState>(4, 1.5, 17, 30)},
+        {5, std::make_shared<control::GearState>(5, 0.96, 22, 35)},
+        {6, std::make_shared<control::GearState>(6, 0.889, 30, 255)}};
 
   // IMS params
-  this->gear_states = {
-      {1, std::make_shared<control::GearState>(1, 2.92, -255, 13.5)},
-      {2, std::make_shared<control::GearState>(2, 1.875, 11, 22)},
-      {3, std::make_shared<control::GearState>(3, 1.38, 19.5, 30)},
-      {4, std::make_shared<control::GearState>(4, 1.5, 27.5, 37.5)},
-      {5, std::make_shared<control::GearState>(5, 0.96, 35, 44)},
-      {6, std::make_shared<control::GearState>(6, 0.889, 41.5, 255)}};
+//  this->gear_states = {
+//      {1, std::make_shared<control::GearState>(1, 2.92, -255, 13.5)},
+//      {2, std::make_shared<control::GearState>(2, 1.875, 11, 22)},
+//      {3, std::make_shared<control::GearState>(3, 1.38, 19.5, 30)},
+//      {4, std::make_shared<control::GearState>(4, 1.5, 27.5, 37.5)},
+//      {5, std::make_shared<control::GearState>(5, 0.96, 35, 44)},
+//      {6, std::make_shared<control::GearState>(6, 0.889, 41.5, 255)}};
 
   this->curr_gear_ptr_ = this->gear_states[1];
 }

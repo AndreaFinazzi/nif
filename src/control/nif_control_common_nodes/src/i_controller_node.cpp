@@ -114,6 +114,10 @@ void nif::control::IControllerNode::desiredVelocityCallback(
     this->desired_velocity = std::move(msg);
     break;
 
+  case MissionStatus::MISSION_TEST:
+    this->desired_velocity = std::move(msg);
+    break;
+
   default:
     this->desired_velocity->data = 0.0;
     break;

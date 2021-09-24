@@ -194,10 +194,11 @@ def generate_launch_description():
         output='screen',
         remappings=[
             ('out_desired_velocity', 'velocity_planner/des_vel'),
+            # ('in_reference_path', 'planning/graph/path_global'),
             ('in_reference_path', 'planning/path_global'),
             ('in_ego_odometry', 'localization/ekf/odom'),
             ('in_wheel_speed_report', 'raptor_dbw_interface/wheel_speed_report'),
-            ('in_imu_data', 'novatel_top/imu/data'),
+            ('in_imu_data', 'novatel_bottom/imu/data'),
             ('in_steering_report', 'raptor_dbw_interface/steering_report'),
             ('in_control_error', 'control_joint_lqr/lqr_error')
         ]
@@ -233,6 +234,7 @@ def generate_launch_description():
         remappings=[
             ('in_control_cmd_prev', '/control_safety_layer/out/control_cmd'),
             ('out_control_cmd', '/control_pool/control_cmd'),
+            # ('in_reference_path', '/planning/graph/path_global'),
             ('in_reference_path', '/planning/path_global'),
         ]
     )
@@ -397,7 +399,8 @@ def generate_launch_description():
             }
         ],
         remappings={
-            ('out_local_maptrack_inglobal', '/planning/graph/path_global'),
+            # ('out_local_maptrack_inglobal', '/planning/graph/path_global'),
+            ('out_local_maptrack_inglobal', '/planning/path_global'),
             ('in_ego_odometry', '/localization/ekf/odom'),
         }
     )

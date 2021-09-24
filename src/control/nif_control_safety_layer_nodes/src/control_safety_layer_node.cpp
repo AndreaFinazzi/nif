@@ -17,7 +17,8 @@ void nif::control::ControlSafetyLayerNode::afterSystemStatusCallback() {
     if (this->getSystemStatus().health_status.communication_failure || // too conservative
         (this->lat_autonomy_enabled && this->getSystemStatus().health_status.localization_failure) ||
         this->getSystemStatus().health_status.commanded_stop ||
-        this->getSystemStatus().autonomy_status.emergency_mode_enabled ) {
+        this->getSystemStatus().autonomy_status.emergency_mode_enabled ) 
+    {
         this->emergency_lane_enabled = true;
     } else {
         this->emergency_lane_enabled = false;
@@ -79,6 +80,13 @@ void nif::control::ControlSafetyLayerNode::run() {
         node_status = common::NODE_OK;
         this->setNodeStatus(node_status);
         this->bufferFlush();
+        
+        // Recover emergency buffer empty in manual mode
+        if (this->emergency_buffer_empty &&
+            !lat_autonomy_enabled &&
+            !long_autonomy_enabled )
+            this->emergency_buffer_empty = false;
+
         return;
     } else {
         node_status = common::NODE_OK;

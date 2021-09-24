@@ -239,7 +239,7 @@ bool SystemStatusManagerNode::isSystemHealthy() {
 
       case RCFlagSummary::VEH_FLAG_BLANK:
 
-        switch (this->rc_flag_summary.veh_flag)
+        switch (this->rc_flag_summary.track_flag)
         {
         case RCFlagSummary::TRACK_FLAG_RED:
             return MissionStatus::MISSION_COMMANDED_STOP;
@@ -251,6 +251,35 @@ bool SystemStatusManagerNode::isSystemHealthy() {
 
         case RCFlagSummary::TRACK_FLAG_ORANGE:
             return MissionStatus::MISSION_STANDBY;
+            break;
+
+        case RCFlagSummary::TRACK_FLAG_GREEN:
+            // TODO If in pit, PIT_OUT should be set and maintained.
+            // TODO If on track, RACE should be set and maintained.
+            // TODO  
+            return MissionStatus::MISSION_TEST;
+            break;
+
+        default:
+            return MissionStatus::MISSION_COMMANDED_STOP;
+            break;
+        }
+
+      case RCFlagSummary::VEH_FLAG_NULL:
+
+        switch (this->rc_flag_summary.track_flag)
+        {
+        case RCFlagSummary::TRACK_FLAG_RED:
+            return MissionStatus::MISSION_COMMANDED_STOP;
+            break;
+
+        case RCFlagSummary::TRACK_FLAG_ORANGE:
+            return MissionStatus::MISSION_STANDBY;
+            break;
+
+        case RCFlagSummary::TRACK_FLAG_YELLOW:
+            // TODO If in pit, STANDBY?
+            return MissionStatus::MISSION_SLOW_DRIVE;
             break;
 
         case RCFlagSummary::TRACK_FLAG_GREEN:
