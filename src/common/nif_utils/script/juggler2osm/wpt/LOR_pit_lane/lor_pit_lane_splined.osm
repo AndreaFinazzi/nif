@@ -1,0 +1,2412 @@
+<osm version="0.6" upload="false" generator="JOSM">
+  <node id="-237279" action="modify" lat="39.812537986937905" lon="-86.3415499978">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237280" action="modify" lat="39.812519973955744" lon="-86.3415499978">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237281" action="modify" lat="39.81250196097352" lon="-86.3415499978">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237282" action="modify" lat="39.812483947991254" lon="-86.3415499978">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237283" action="modify" lat="39.81246593500894" lon="-86.34154999780004">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237284" action="modify" lat="39.812447922026564" lon="-86.34154999780294">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237285" action="modify" lat="39.812429909046585" lon="-86.34154999860884">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237286" action="modify" lat="39.812411896074444" lon="-86.34155000202122">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237287" action="modify" lat="39.81239388309298" lon="-86.3415500023774">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237288" action="modify" lat="39.812375870082796" lon="-86.3415499933035">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237289" action="modify" lat="39.81235785704088" lon="-86.34154997379746">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237290" action="modify" lat="39.81233984398899" lon="-86.34154995103012">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237291" action="modify" lat="39.812321830951" lon="-86.34154993285777">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237292" action="modify" lat="39.812303817950784" lon="-86.3415499271367">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237293" action="modify" lat="39.812285805012216" lon="-86.34154994172313">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237294" action="modify" lat="39.81226779215917" lon="-86.34154998447333">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237295" action="modify" lat="39.8122497794126" lon="-86.34155006229491">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237296" action="modify" lat="39.81223176677131" lon="-86.34155017484245">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237297" action="modify" lat="39.81221375422381" lon="-86.3415503184225">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237298" action="modify" lat="39.81219574175859" lon="-86.3415504893237">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237299" action="modify" lat="39.812177729364166" lon="-86.34155068383457">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237300" action="modify" lat="39.81215971702897" lon="-86.34155089824375">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237301" action="modify" lat="39.81214170474149" lon="-86.34155112883982">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237302" action="modify" lat="39.81212369249025" lon="-86.34155137191141">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237303" action="modify" lat="39.8121056802637" lon="-86.3415516237471">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237304" action="modify" lat="39.812087668050324" lon="-86.34155188063549">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237305" action="modify" lat="39.812069655838606" lon="-86.34155213886523">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237306" action="modify" lat="39.81205164361703" lon="-86.3415523947249">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237307" action="modify" lat="39.812033631374085" lon="-86.34155264450317">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237308" action="modify" lat="39.81201561909824" lon="-86.3415528844886">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237309" action="modify" lat="39.81199760677799" lon="-86.3415531109699">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237310" action="modify" lat="39.811979594401826" lon="-86.34155332023565">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237311" action="modify" lat="39.8119615819582" lon="-86.34155350857449">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237312" action="modify" lat="39.81194356943561" lon="-86.34155367227507">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237313" action="modify" lat="39.811925556822544" lon="-86.34155380762604">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237314" action="modify" lat="39.811907544107484" lon="-86.34155391091606">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237315" action="modify" lat="39.811889531278894" lon="-86.34155397843375">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237316" action="modify" lat="39.8118715183253" lon="-86.3415540064678">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237317" action="modify" lat="39.811853505235455" lon="-86.34155399139516">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237318" action="modify" lat="39.81183549207369" lon="-86.34155394982614">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237319" action="modify" lat="39.811817479075515" lon="-86.34155394428">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237320" action="modify" lat="39.811799466497376" lon="-86.34155404293148">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237321" action="modify" lat="39.81178145440077" lon="-86.34155426453103">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237322" action="modify" lat="39.81176344252298" lon="-86.3415545456614">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237323" action="modify" lat="39.81174543057064" lon="-86.34155481514496">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237324" action="modify" lat="39.81172741825041" lon="-86.3415550018049">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237325" action="modify" lat="39.81170940539358" lon="-86.3415550597227">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237326" action="modify" lat="39.81169139228394" lon="-86.34155503469407">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237327" action="modify" lat="39.811673379307265" lon="-86.34155499328713">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237328" action="modify" lat="39.811655366514515" lon="-86.34155498370207">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237329" action="modify" lat="39.811637353126564" lon="-86.34155500503135">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237330" action="modify" lat="39.81161934071117" lon="-86.34155498410176">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237331" action="modify" lat="39.81160133715715" lon="-86.34155464427023">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237332" action="modify" lat="39.81158336184786" lon="-86.34155310024394">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237333" action="modify" lat="39.811565397424594" lon="-86.34155139567717">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237334" action="modify" lat="39.81154747165051" lon="-86.34154908769409">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237335" action="modify" lat="39.81152960513542" lon="-86.3415461126639">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237336" action="modify" lat="39.81151181773705" lon="-86.34154245067612">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237337" action="modify" lat="39.811494053004054" lon="-86.34153854692413">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237338" action="modify" lat="39.8114765845498" lon="-86.34153287756962">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237339" action="modify" lat="39.81145907153101" lon="-86.34152735675313">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237340" action="modify" lat="39.811441733866396" lon="-86.34152111636713">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237341" action="modify" lat="39.811424707737075" lon="-86.34151345376256">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237342" action="modify" lat="39.81140762922818" lon="-86.34150600570398">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237343" action="modify" lat="39.81139050254354" lon="-86.341498785126">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237344" action="modify" lat="39.81137343797762" lon="-86.34149131900001">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237345" action="modify" lat="39.81135639815535" lon="-86.34148373080289">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237346" action="modify" lat="39.811339376807105" lon="-86.34147606461846">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237347" action="modify" lat="39.81132259549972" lon="-86.34146760580676">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237348" action="modify" lat="39.81130607084602" lon="-86.34145830054386">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237349" action="modify" lat="39.81128951358772" lon="-86.34144909119374">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237350" action="modify" lat="39.81127297850954" lon="-86.341439833773">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237351" action="modify" lat="39.811256618758115" lon="-86.3414300604592">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237352" action="modify" lat="39.81124034825835" lon="-86.34142002849318">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237353" action="modify" lat="39.81122417469993" lon="-86.3414097468044">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237354" action="modify" lat="39.81120819322305" lon="-86.34139897753381">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237355" action="modify" lat="39.811192324857736" lon="-86.34138792021925">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237356" action="modify" lat="39.81117642822451" lon="-86.34137693250679">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237357" action="modify" lat="39.81116052171376" lon="-86.3413659754973">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237358" action="modify" lat="39.81114459618702" lon="-86.34135506269159">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237359" action="modify" lat="39.81112853339615" lon="-86.34134446093292">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237360" action="modify" lat="39.811112864194854" lon="-86.34133298051108">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237361" action="modify" lat="39.81109769116752" lon="-86.34132037933705">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237362" action="modify" lat="39.811082286477614" lon="-86.34130827042564">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237363" action="modify" lat="39.811066950001305" lon="-86.34129602458972">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237364" action="modify" lat="39.811052049619434" lon="-86.3412828928044">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237365" action="modify" lat="39.81103749683569" lon="-86.34126912951857">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237366" action="modify" lat="39.811022972105796" lon="-86.34125530838357">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237367" action="modify" lat="39.81100845591438" lon="-86.34124147290207">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237368" action="modify" lat="39.810994379381526" lon="-86.34122691661949">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237369" action="modify" lat="39.81098071909281" lon="-86.34121168124672">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237370" action="modify" lat="39.810967174511156" lon="-86.34119627848528">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237371" action="modify" lat="39.81095398439693" lon="-86.34118037960826">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237372" action="modify" lat="39.81094118762185" lon="-86.34116393647913">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237373" action="modify" lat="39.81092861675426" lon="-86.34114720810733">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237374" action="modify" lat="39.81091640444026" lon="-86.3411300359656">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237375" action="modify" lat="39.810904681185846" lon="-86.34111230428537">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237376" action="modify" lat="39.81089333897004" lon="-86.34109415801768">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237377" action="modify" lat="39.8108820970637" lon="-86.34107590628349">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237378" action="modify" lat="39.81087135220385" lon="-86.34105716006263">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237379" action="modify" lat="39.8108613987726" lon="-86.3410376938859">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237380" action="modify" lat="39.81085210318282" lon="-86.34101768554409">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237381" action="modify" lat="39.810843150571046" lon="-86.34099740702763">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237382" action="modify" lat="39.81083474964815" lon="-86.34097675251641">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237383" action="modify" lat="39.810827170920746" lon="-86.34095556366381">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237384" action="modify" lat="39.8108201792575" lon="-86.34093402473125">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237385" action="modify" lat="39.81081361860062" lon="-86.34091228658174">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237386" action="modify" lat="39.810807738421445" lon="-86.34089021367582">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237387" action="modify" lat="39.8108021542168" lon="-86.34086794906015">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237388" action="modify" lat="39.81079436981836" lon="-86.34084695907744">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237389" action="modify" lat="39.81078557636064" lon="-86.34082656008393">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237390" action="modify" lat="39.810776058009836" lon="-86.34080676954208">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237391" action="modify" lat="39.81076639139605" lon="-86.34078706748092">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237392" action="modify" lat="39.810757259105195" lon="-86.34076693105892">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237393" action="modify" lat="39.810749375857" lon="-86.34074594164213">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237394" action="modify" lat="39.81074437375959" lon="-86.34072351829279">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237395" action="modify" lat="39.81074193820556" lon="-86.34070039963102">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237396" action="modify" lat="39.81073936610869" lon="-86.34067728073742">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237397" action="modify" lat="39.810738152511654" lon="-86.34065397799941">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237398" action="modify" lat="39.81073658740929" lon="-86.34063071049103">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237399" action="modify" lat="39.81073532074594" lon="-86.34060741512191">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237400" action="modify" lat="39.81073455565589" lon="-86.34058407625486">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237401" action="modify" lat="39.81073399580495" lon="-86.34056073221015">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237402" action="modify" lat="39.810733899577464" lon="-86.3405373753236">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237403" action="modify" lat="39.81073435904498" lon="-86.3405140253929">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237404" action="modify" lat="39.810735282608235" lon="-86.34049070007802">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237405" action="modify" lat="39.81073615041066" lon="-86.34046736698083">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237406" action="modify" lat="39.810736997109565" lon="-86.34044403952137">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237407" action="modify" lat="39.81073919977025" lon="-86.34042086338015">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237408" action="modify" lat="39.81074088767412" lon="-86.34039759525942">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237409" action="modify" lat="39.81074309155862" lon="-86.34037444759116">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237410" action="modify" lat="39.810746439925985" lon="-86.34035148658245">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237411" action="modify" lat="39.81074895517472" lon="-86.34032835865023">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237412" action="modify" lat="39.81075261653303" lon="-86.34030549331992">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237413" action="modify" lat="39.810757471007065" lon="-86.34028297234899">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237414" action="modify" lat="39.81076283614935" lon="-86.34026067729373">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237415" action="modify" lat="39.81076812783271" lon="-86.3402383528898">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237416" action="modify" lat="39.81077343604333" lon="-86.34021603219297">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237417" action="modify" lat="39.81077876450853" lon="-86.3401937206807">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237418" action="modify" lat="39.810783954584736" lon="-86.34017135227977">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237419" action="modify" lat="39.810789618740074" lon="-86.3401491868274">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237420" action="modify" lat="39.810795484988766" lon="-86.34012709966441">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237421" action="modify" lat="39.810801051383656" lon="-86.34010487854319">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237422" action="modify" lat="39.81080733665986" lon="-86.34008300581702">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237423" action="modify" lat="39.810814517679" lon="-86.34006157318731">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237424" action="modify" lat="39.81082209424051" lon="-86.3400403838788">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237425" action="modify" lat="39.81083032614781" lon="-86.3400196126317">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237426" action="modify" lat="39.81083855888153" lon="-86.33999883592064">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237427" action="modify" lat="39.81084652752445" lon="-86.33997788803829">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237428" action="modify" lat="39.81085483726365" lon="-86.33995716903799">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237429" action="modify" lat="39.81086371050393" lon="-86.33993683807734">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237430" action="modify" lat="39.8108730375199" lon="-86.33991684814805">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237431" action="modify" lat="39.81088285810988" lon="-86.33989726908784">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237432" action="modify" lat="39.8108932005023" lon="-86.33987814886656">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237433" action="modify" lat="39.810903797802744" lon="-86.33985925506418">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237434" action="modify" lat="39.81091463527191" lon="-86.33984060029522">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237435" action="modify" lat="39.8109260424783" lon="-86.33982252593212">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237436" action="modify" lat="39.81093780108529" lon="-86.33980482665382">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237437" action="modify" lat="39.810949814578336" lon="-86.33978742534576">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237438" action="modify" lat="39.81096216318956" lon="-86.33977042031039">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237439" action="modify" lat="39.81097478255877" lon="-86.33975375006403">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237440" action="modify" lat="39.81098765976714" lon="-86.33973741816021">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237441" action="modify" lat="39.81100087297333" lon="-86.33972154157645">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237442" action="modify" lat="39.81101444750173" lon="-86.33970618565081">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237443" action="modify" lat="39.81102817519568" lon="-86.33969106304698">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237444" action="modify" lat="39.81104159876819" lon="-86.33967548976095">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237445" action="modify" lat="39.811055210884845" lon="-86.33966019009937">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237446" action="modify" lat="39.81106886963262" lon="-86.33964496902283">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237447" action="modify" lat="39.811081922674454" lon="-86.33962887189759">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237448" action="modify" lat="39.81109531927161" lon="-86.33961325861951">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237449" action="modify" lat="39.81110897810389" lon="-86.33959802461591">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237450" action="modify" lat="39.81112286007166" lon="-86.33958314303437">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237451" action="modify" lat="39.81113708381163" lon="-86.33956881262226">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237452" action="modify" lat="39.81115150228615" lon="-86.3395548111303">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237453" action="modify" lat="39.8111661680031" lon="-86.33954124496042">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237454" action="modify" lat="39.81118129031152" lon="-86.3395285525041">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237455" action="modify" lat="39.81119695313468" lon="-86.33951703140758">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237456" action="modify" lat="39.8112128491389" lon="-86.33950602017501">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237457" action="modify" lat="39.81122875632589" lon="-86.33949504955055">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237458" action="modify" lat="39.81124491076924" lon="-86.33948474441044">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237459" action="modify" lat="39.81126139321778" lon="-86.33947531739315">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237460" action="modify" lat="39.811278014899436" lon="-86.33946628721695">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237461" action="modify" lat="39.81129466369975" lon="-86.33945737106943">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237462" action="modify" lat="39.81131138317958" lon="-86.33944868883022">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237463" action="modify" lat="39.81132820091932" lon="-86.33944031987">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237464" action="modify" lat="39.811345117376376" lon="-86.33943228152009">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237465" action="modify" lat="39.81136217010475" lon="-86.33942475837857">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237466" action="modify" lat="39.81137939301241" lon="-86.33941792332021">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237467" action="modify" lat="39.81139668016822" lon="-86.3394113528807">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237468" action="modify" lat="39.811413932463644" lon="-86.33940464081998">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237469" action="modify" lat="39.811431214984815" lon="-86.33939804644423">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237470" action="modify" lat="39.811448605904296" lon="-86.33939194417616">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237471" action="modify" lat="39.81146615048972" lon="-86.33938667298135">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237472" action="modify" lat="39.81148380274874" lon="-86.33938201417598">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237473" action="modify" lat="39.811501421969176" lon="-86.33937715207993">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237474" action="modify" lat="39.811518985020385" lon="-86.33937196112227">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237475" action="modify" lat="39.81153663529717" lon="-86.33936730149007">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237476" action="modify" lat="39.811554409977596" lon="-86.33936349021998">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237477" action="modify" lat="39.8115722572945" lon="-86.3393603424131">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237478" action="modify" lat="39.811590140079424" lon="-86.33935750453747">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237479" action="modify" lat="39.811608042107274" lon="-86.3393548325983">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237480" action="modify" lat="39.81162598172708" lon="-86.3393528274924">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237481" action="modify" lat="39.811643970561676" lon="-86.33935181014998">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237482" action="modify" lat="39.811661986261356" lon="-86.33935131050752">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237483" action="modify" lat="39.81168000072362" lon="-86.33935072417287">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237484" action="modify" lat="39.8116979996949" lon="-86.3393497532628">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237485" action="modify" lat="39.81171598745438" lon="-86.33934851006653">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237486" action="modify" lat="39.81173396957588" lon="-86.33934713552789">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237487" action="modify" lat="39.81175195163324" lon="-86.33934577059084">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237488" action="modify" lat="39.81176993912126" lon="-86.33934455414338">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237489" action="modify" lat="39.8117879341833" lon="-86.33934353796532">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237490" action="modify" lat="39.81180593444246" lon="-86.3393426563432">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237491" action="modify" lat="39.81182393720228" lon="-86.33934183525928">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237492" action="modify" lat="39.811841939766346" lon="-86.3393410006958">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237493" action="modify" lat="39.811859940264355" lon="-86.33934010766654">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237494" action="modify" lat="39.811877940163754" lon="-86.3393392284821">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237495" action="modify" lat="39.81189594162076" lon="-86.33933845828898">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237496" action="modify" lat="39.811913945301285" lon="-86.33933782664162">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237497" action="modify" lat="39.8119319510359" lon="-86.33933732632963">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237498" action="modify" lat="39.81194995864601" lon="-86.33933694973703">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237499" action="modify" lat="39.81196796795296" lon="-86.33933668924787">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237500" action="modify" lat="39.81198597877815" lon="-86.33933653724621">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237501" action="modify" lat="39.81200399094294" lon="-86.33933648611605">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237502" action="modify" lat="39.81202200426871" lon="-86.33933652824143">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237503" action="modify" lat="39.81204001857683" lon="-86.33933665600638">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237504" action="modify" lat="39.812058033688665" lon="-86.33933686179489">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237505" action="modify" lat="39.81207604942561" lon="-86.33933713799095">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237506" action="modify" lat="39.81209406560902" lon="-86.33933747697859">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237507" action="modify" lat="39.81211208206028" lon="-86.33933787114177">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237508" action="modify" lat="39.81213009860077" lon="-86.33933831286444">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237509" action="modify" lat="39.812148115051826" lon="-86.33933879453062">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237510" action="modify" lat="39.81216613123487" lon="-86.33933930852423">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237511" action="modify" lat="39.812184146971255" lon="-86.33933984722924">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237512" action="modify" lat="39.812202162082336" lon="-86.3393404030296">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237513" action="modify" lat="39.81222017638953" lon="-86.33934096830922">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237514" action="modify" lat="39.81223818971417" lon="-86.33934153545205">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237515" action="modify" lat="39.81225620187804" lon="-86.339342096847">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237516" action="modify" lat="39.81227421281893" lon="-86.33934264631584">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237517" action="modify" lat="39.81229222275003" lon="-86.33934318108372">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237518" action="modify" lat="39.812310231924556" lon="-86.33934369887012">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237519" action="modify" lat="39.81232824059577" lon="-86.33934419739454">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237520" action="modify" lat="39.81234624901688" lon="-86.33934467437646">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237521" action="modify" lat="39.81236425744114" lon="-86.33934512753535">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237522" action="modify" lat="39.812382266121766" lon="-86.33934555459071">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237523" action="modify" lat="39.81240027531199" lon="-86.33934595326198">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237524" action="modify" lat="39.81241828526503" lon="-86.33934632126866">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237525" action="modify" lat="39.81243629623413" lon="-86.33934665633022">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237526" action="modify" lat="39.81245430847254" lon="-86.33934695616612">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237527" action="modify" lat="39.81247232215374" lon="-86.33934721943686">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237528" action="modify" lat="39.812490336949" lon="-86.3393474507299">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237529" action="modify" lat="39.81250835233462" lon="-86.33934765693442">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237530" action="modify" lat="39.81252636778641" lon="-86.33934784494471">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237531" action="modify" lat="39.81254438278022" lon="-86.33934802165508">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237532" action="modify" lat="39.812562396791854" lon="-86.33934819395981">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237533" action="modify" lat="39.812580409297176" lon="-86.33934836875318">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237534" action="modify" lat="39.81259841977201" lon="-86.33934855292954">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237535" action="modify" lat="39.81261642769219" lon="-86.33934875338318">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237536" action="modify" lat="39.81263443253354" lon="-86.33934897700846">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237537" action="modify" lat="39.81265244016267" lon="-86.33934909777274">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237538" action="modify" lat="39.81267046851089" lon="-86.33934875870087">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237539" action="modify" lat="39.81268832755367" lon="-86.33935151399058">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237540" action="modify" lat="39.812705788413254" lon="-86.33935733459047">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237541" action="modify" lat="39.8127230631478" lon="-86.33936395454582">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237542" action="modify" lat="39.812740502587324" lon="-86.33936975084875">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237543" action="modify" lat="39.81275819617145" lon="-86.33937414239834">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237544" action="modify" lat="39.81277601159477" lon="-86.33937785186379">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237545" action="modify" lat="39.81279388744236" lon="-86.33938084111304">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237546" action="modify" lat="39.81281183500848" lon="-86.33938236144891">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237547" action="modify" lat="39.81282984485355" lon="-86.33938240531138">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237548" action="modify" lat="39.81284787591696" lon="-86.33938201148311">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237549" action="modify" lat="39.8128658925144" lon="-86.33938210172794">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237550" action="modify" lat="39.81288389591173" lon="-86.3393826688775">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237551" action="modify" lat="39.81290189850413" lon="-86.33938342596826">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237552" action="modify" lat="39.81291991263732" lon="-86.33938408687274">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237553" action="modify" lat="39.81293793164483" lon="-86.3393846934387">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237554" action="modify" lat="39.812955901583365" lon="-86.33938610307688">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237555" action="modify" lat="39.812973786033915" lon="-86.33938886939555">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237556" action="modify" lat="39.81299163119617" lon="-86.33939212627823">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237557" action="modify" lat="39.81300947028159" lon="-86.33939536130819">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237558" action="modify" lat="39.81302731550012" lon="-86.33939851210792">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237559" action="modify" lat="39.81304517851923" lon="-86.33940152233858">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237560" action="modify" lat="39.813063067680744" lon="-86.3394042863655">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237561" action="modify" lat="39.813080988117264" lon="-86.33940665098523">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237562" action="modify" lat="39.81309894293137" lon="-86.33940849658002">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237563" action="modify" lat="39.813116922550776" lon="-86.33940994059361">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237564" action="modify" lat="39.81313491222645" lon="-86.33941119734658">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237565" action="modify" lat="39.81315290144755" lon="-86.33941242168517">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237566" action="modify" lat="39.81317089027372" lon="-86.33941361994022">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237567" action="modify" lat="39.81318888037872" lon="-86.33941477576455">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237568" action="modify" lat="39.81320687343625" lon="-86.33941587281095">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237569" action="modify" lat="39.8132248703472" lon="-86.33941690707799">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237570" action="modify" lat="39.81324286759273" lon="-86.33941794515985">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237571" action="modify" lat="39.81326086008579" lon="-86.339419078702">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237572" action="modify" lat="39.81327884273734" lon="-86.33942039937965">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237573" action="modify" lat="39.813296811032146" lon="-86.33942199034225">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237574" action="modify" lat="39.813314768978685" lon="-86.33942380806049">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237575" action="modify" lat="39.81333272661762" lon="-86.33942571721849">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237576" action="modify" lat="39.81335067149729" lon="-86.33942781963994">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237577" action="modify" lat="39.81336855968953" lon="-86.33943055000749">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237578" action="modify" lat="39.813386341249974" lon="-86.33943432717976">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237579" action="modify" lat="39.81340394386285" lon="-86.33943932543116">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237580" action="modify" lat="39.81342129427564" lon="-86.33944560669602">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237581" action="modify" lat="39.81343836155287" lon="-86.33945311469952">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237582" action="modify" lat="39.813455044204346" lon="-86.3394619508335">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237583" action="modify" lat="39.813471097794626" lon="-86.33947253622014">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237584" action="modify" lat="39.813487112785154" lon="-86.33948320548926">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237585" action="modify" lat="39.81350364291485" lon="-86.33949248393151">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237586" action="modify" lat="39.81352033643563" lon="-86.33950131550425">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237587" action="modify" lat="39.81353694298787" lon="-86.33951036746689">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237588" action="modify" lat="39.81355356184844" lon="-86.3395193622801">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237589" action="modify" lat="39.813570277193655" lon="-86.33952806739987">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237590" action="modify" lat="39.81358704350214" lon="-86.33953660893735">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237591" action="modify" lat="39.8136038829225" lon="-86.33954490226951">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237592" action="modify" lat="39.81362069734975" lon="-86.33955328033804">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237593" action="modify" lat="39.81363690905291" lon="-86.33956350066661">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237594" action="modify" lat="39.813652053433515" lon="-86.33957613229302">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237595" action="modify" lat="39.81366632831542" lon="-86.3395904042852">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237596" action="modify" lat="39.813680230695965" lon="-86.33960525284796">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237597" action="modify" lat="39.81369373257927" lon="-86.3396207099303">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237598" action="modify" lat="39.81370695336985" lon="-86.33963658441057">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237599" action="modify" lat="39.81372003794876" lon="-86.33965264496736">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237600" action="modify" lat="39.81373306573977" lon="-86.33966877932934">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237601" action="modify" lat="39.81374610798729" lon="-86.33968489010144">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237602" action="modify" lat="39.81375923593585" lon="-86.33970087988847">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237603" action="modify" lat="39.813772520829964" lon="-86.33971665129526">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237604" action="modify" lat="39.81378602220553" lon="-86.33973212298639">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237605" action="modify" lat="39.81379961886985" lon="-86.339747461514">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237606" action="modify" lat="39.813813047620755" lon="-86.33976302821054">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237607" action="modify" lat="39.81382604378393" lon="-86.33977918615902">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237608" action="modify" lat="39.81383850325291" lon="-86.33979605987123">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237609" action="modify" lat="39.81385058223077" lon="-86.3398133928011">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237610" action="modify" lat="39.8138624562043" lon="-86.33983095606338">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237611" action="modify" lat="39.81387428304165" lon="-86.3398485733589">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237612" action="modify" lat="39.813886103205476" lon="-86.33986619892944">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237613" action="modify" lat="39.81389790192922" lon="-86.33988384824556">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237614" action="modify" lat="39.81390967945099" lon="-86.33990152050534">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237615" action="modify" lat="39.81392147415251" lon="-86.33991917352041">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237616" action="modify" lat="39.81393333024926" lon="-86.33993675877286">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237617" action="modify" lat="39.813945289446046" lon="-86.33995423050202">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237618" action="modify" lat="39.81395726608472" lon="-86.33997168281364">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237619" action="modify" lat="39.813968989430045" lon="-86.33998941306005">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237620" action="modify" lat="39.81398021612486" lon="-86.34000768119526">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237621" action="modify" lat="39.813990921915334" lon="-86.34002646847905">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237622" action="modify" lat="39.814001253655796" lon="-86.34004559801232">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237623" action="modify" lat="39.81401158892955" lon="-86.34006473731121">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237624" action="modify" lat="39.81402191256967" lon="-86.34008388660227">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237625" action="modify" lat="39.81403143653604" lon="-86.34010369090045">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237626" action="modify" lat="39.8140402034226" lon="-86.34012410923873">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237627" action="modify" lat="39.81404889624849" lon="-86.34014457416286">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237628" action="modify" lat="39.814057681571164" lon="-86.34016496064511">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237629" action="modify" lat="39.81406654639709" lon="-86.34018529354262">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237630" action="modify" lat="39.81407545929537" lon="-86.34020559019541">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237631" action="modify" lat="39.814084355637" lon="-86.3402258984089">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237632" action="modify" lat="39.81409307239383" lon="-86.34024635264632">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237633" action="modify" lat="39.81410093575846" lon="-86.34026734936819">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237634" action="modify" lat="39.814107745195315" lon="-86.34028898213154">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237635" action="modify" lat="39.81411424108549" lon="-86.34031078980053">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237636" action="modify" lat="39.8141204916297" lon="-86.34033269718533">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237637" action="modify" lat="39.81412620018365" lon="-86.34035483912623">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237638" action="modify" lat="39.81413120743654" lon="-86.34037727814969">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237639" action="modify" lat="39.814135613348284" lon="-86.34039994002922">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237640" action="modify" lat="39.814139539155384" lon="-86.34042274231042">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237641" action="modify" lat="39.8141430563792" lon="-86.34044565050408">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237642" action="modify" lat="39.814146214523134" lon="-86.34046865129456">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237643" action="modify" lat="39.814149020928284" lon="-86.34049173407547">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237644" action="modify" lat="39.81415137129749" lon="-86.34051489518367">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237645" action="modify" lat="39.814153150990876" lon="-86.3405381315254">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237646" action="modify" lat="39.81415445707816" lon="-86.34056142488183">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237647" action="modify" lat="39.81415561544152" lon="-86.34058474068763">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237648" action="modify" lat="39.81415691292374" lon="-86.34060804768498">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237649" action="modify" lat="39.81415817445085" lon="-86.34063135236093">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237650" action="modify" lat="39.81415897702413" lon="-86.34065468146076">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237651" action="modify" lat="39.81415895622721" lon="-86.340678045832">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237652" action="modify" lat="39.81415803646426" lon="-86.34070138007539">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237653" action="modify" lat="39.814156274739396" lon="-86.3407246170646">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237654" action="modify" lat="39.81415393224883" lon="-86.34074777991104">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237655" action="modify" lat="39.81415132364243" lon="-86.34077091572304">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237656" action="modify" lat="39.81414855603675" lon="-86.34079402235453">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237657" action="modify" lat="39.81414533984883" lon="-86.34081700350863">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237658" action="modify" lat="39.81414134606549" lon="-86.34083975373241">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237659" action="modify" lat="39.81413646819439" lon="-86.34086222893073">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237660" action="modify" lat="39.81413089939448" lon="-86.3408844676347">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237661" action="modify" lat="39.814124853951945" lon="-86.34090651420141">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237662" action="modify" lat="39.814118489720926" lon="-86.34092839391845">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237663" action="modify" lat="39.814111754188694" lon="-86.34095006098583">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237664" action="modify" lat="39.81410454583318" lon="-86.34097145304213">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237665" action="modify" lat="39.814096818875285" lon="-86.34099254141425">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237666" action="modify" lat="39.81408880511071" lon="-86.34101346518271">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237667" action="modify" lat="39.81408081473934" lon="-86.34103441052801">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237668" action="modify" lat="39.81407285562432" lon="-86.34105536993124">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237669" action="modify" lat="39.814064543952426" lon="-86.34107608493643">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237670" action="modify" lat="39.814055570988124" lon="-86.34109633942465">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237671" action="modify" lat="39.814045973272115" lon="-86.34111611881363">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237672" action="modify" lat="39.814035851200906" lon="-86.34113544705127">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237673" action="modify" lat="39.8140252333335" lon="-86.34115431541458">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237674" action="modify" lat="39.81401412979117" lon="-86.34117271080548">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237675" action="modify" lat="39.81400259490519" lon="-86.34119065336965">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237676" action="modify" lat="39.813990714754496" lon="-86.34120820908757">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237677" action="modify" lat="39.8139786254887" lon="-86.34122552988055">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237678" action="modify" lat="39.813966401500856" lon="-86.34124269332034">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237679" action="modify" lat="39.81395386774602" lon="-86.3412594642476">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237680" action="modify" lat="39.81394087779439" lon="-86.34127564395091">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237681" action="modify" lat="39.81392754762755" lon="-86.34129136447133">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237682" action="modify" lat="39.813914011930045" lon="-86.3413067811235">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237683" action="modify" lat="39.81390026307921" lon="-86.34132186850172">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237684" action="modify" lat="39.81388627495621" lon="-86.34133658270578">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237685" action="modify" lat="39.81387208133954" lon="-86.34135096969037">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237686" action="modify" lat="39.813857722583556" lon="-86.34136508406492">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237687" action="modify" lat="39.81384317833682" lon="-86.34137886935927">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237688" action="modify" lat="39.81382837897128" lon="-86.3413921790202">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237689" action="modify" lat="39.81381333201034" lon="-86.34140501850577">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237690" action="modify" lat="39.81379819579567" lon="-86.34141768982055">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237691" action="modify" lat="39.81378300145478" lon="-86.34143023838664">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237692" action="modify" lat="39.81376761480001" lon="-86.34144237719568">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237693" action="modify" lat="39.81375196073795" lon="-86.34145393571222">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237694" action="modify" lat="39.813736084969925" lon="-86.341464982101">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237695" action="modify" lat="39.813720020578764" lon="-86.34147555402207">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237696" action="modify" lat="39.81370374202044" lon="-86.3414855602337">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237697" action="modify" lat="39.813687217369704" lon="-86.34149487895849">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237698" action="modify" lat="39.81367042387051" lon="-86.34150333294778">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237699" action="modify" lat="39.81365336149734" lon="-86.3415108158042">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237700" action="modify" lat="39.81363612507519" lon="-86.34151762815043">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237701" action="modify" lat="39.81361874866568" lon="-86.34152378550208">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237702" action="modify" lat="39.813601216715654" lon="-86.34152910185256">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237703" action="modify" lat="39.81358357206501" lon="-86.34153384821416">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237704" action="modify" lat="39.81356585692827" lon="-86.34153819281096">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237705" action="modify" lat="39.813547992944535" lon="-86.3415409487771">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237706" action="modify" lat="39.81352998299126" lon="-86.34154188691119">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237707" action="modify" lat="39.81351195294901" lon="-86.34154221599186">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237708" action="modify" lat="39.8134939432967" lon="-86.34154222580285">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237709" action="modify" lat="39.813475943351904" lon="-86.34154166212323">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237710" action="modify" lat="39.813457945772925" lon="-86.3415406061822">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237711" action="modify" lat="39.81343994766987" lon="-86.34153953055022">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237712" action="modify" lat="39.81342194640608" lon="-86.3415389278489">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237713" action="modify" lat="39.8134039406868" lon="-86.34153906208006">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237714" action="modify" lat="39.813385932008295" lon="-86.34153972172012">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237715" action="modify" lat="39.81336792221497" lon="-86.34154063593991">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237716" action="modify" lat="39.813349913066375" lon="-86.341541544843">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237717" action="modify" lat="39.813331905127285" lon="-86.34154234240205">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237718" action="modify" lat="39.813313898079905" lon="-86.34154303625859">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237719" action="modify" lat="39.81329589158582" lon="-86.34154363671483">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237720" action="modify" lat="39.813277885306555" lon="-86.34154415407299">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237721" action="modify" lat="39.813259878903644" lon="-86.34154459863525">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237722" action="modify" lat="39.81324187203868" lon="-86.34154498070386">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237723" action="modify" lat="39.81322386442813" lon="-86.34154530958969">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237724" action="modify" lat="39.81320585604273" lon="-86.34154559001759">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237725" action="modify" lat="39.81318784692662" lon="-86.3415458253871">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237726" action="modify" lat="39.813169837123986" lon="-86.34154601909763">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237727" action="modify" lat="39.81315182667899" lon="-86.34154617454857">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237728" action="modify" lat="39.81313381563583" lon="-86.34154629513928">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237729" action="modify" lat="39.81311580403867" lon="-86.3415463842692">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237730" action="modify" lat="39.81309779193168" lon="-86.34154644533766">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237731" action="modify" lat="39.81307977935904" lon="-86.34154648174407">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237732" action="modify" lat="39.81306176636494" lon="-86.3415464968878">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237733" action="modify" lat="39.813043752993515" lon="-86.34154649416823">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237734" action="modify" lat="39.813025739288996" lon="-86.3415464769847">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237735" action="modify" lat="39.81300772529551" lon="-86.34154644873661">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237736" action="modify" lat="39.812989711057256" lon="-86.34154641282329">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237737" action="modify" lat="39.81297169661841" lon="-86.34154637264412">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237738" action="modify" lat="39.81295368202312" lon="-86.34154633159844">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237739" action="modify" lat="39.8129356673156" lon="-86.34154629308563">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237740" action="modify" lat="39.81291765254001" lon="-86.34154626050498">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237741" action="modify" lat="39.81289963774051" lon="-86.3415462372559">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237742" action="modify" lat="39.812881622961285" lon="-86.34154622673768">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237743" action="modify" lat="39.81286360824652" lon="-86.34154623234967">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237744" action="modify" lat="39.81284559364038" lon="-86.34154625749123">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237745" action="modify" lat="39.81282757918705" lon="-86.34154630556165">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237746" action="modify" lat="39.812809564930696" lon="-86.34154637996029">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237747" action="modify" lat="39.81279155091547" lon="-86.34154648408645">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237748" action="modify" lat="39.81277353718559" lon="-86.34154662133945">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237749" action="modify" lat="39.81275552378521" lon="-86.34154679511862">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237750" action="modify" lat="39.812737510758524" lon="-86.34154700882326">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237751" action="modify" lat="39.81271949814967" lon="-86.34154726585267">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237752" action="modify" lat="39.81270148600285" lon="-86.34154756960616">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237753" action="modify" lat="39.81268347436224" lon="-86.34154792348305">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237754" action="modify" lat="39.812665463245104" lon="-86.34154832737038">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237755" action="modify" lat="39.8126474524744" lon="-86.34154875578099">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237756" action="modify" lat="39.81262944178769" lon="-86.34154917207934">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237757" action="modify" lat="39.81261143092222" lon="-86.34154953958192">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237758" action="modify" lat="39.812593419615155" lon="-86.3415498216053">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237759" action="modify" lat="39.81257540760373" lon="-86.34154998146607">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+  <node id="-237760" action="modify" lat="39.812557394732984" lon="-86.34154999958797">
+    <tag k="alt" v="0.0" />
+    <tag k="yaw" v="0.0" />
+    <tag k="speed" v="0.0" />
+  </node>
+</osm>

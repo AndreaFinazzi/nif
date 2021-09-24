@@ -85,7 +85,7 @@ def parse_configs():
     configs = edict(vars(parser.parse_args()))
 
     root_path = './include' 
-    osm_file_name = os.path.join(root_path, 'osm' ,configs.filename)
+    osm_file_name = os.path.join(root_path, 'osm', 'lor' ,configs.filename)
     pcd_file_name = osm_file_name[:-3] + "pcd" 
     wpt_file_name = osm_file_name[:-4] + "_wpt.csv" 
 

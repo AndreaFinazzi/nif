@@ -77,22 +77,23 @@ def parse_configs():
     parser.add_argument('--set_topic', type=str, default="/novatel_bottom/bestpos",
                         help='check headers name')
 
-    lon_0, lat_0 = -86.235148, 39.809786  #indy
-    # lon_0, lat_0 = -86.3418060783425, 39.8125900071711  #Lucas Oil Racing
+    # lon_0, lat_0 = -86.235148, 39.809786  #indy
+    lon_0, lat_0 = -86.3418060783425, 39.8125900071711  #Lucas Oil Racing
     
     nedPoints = []
 
     configs = edict(vars(parser.parse_args()))
 
 
-    root_path = './csv' 
-    file_name = os.path.join(root_path, configs.filename)
-    directory_name = os.path.join(root_path, file_name[:-3])
-    if not os.path.exists(os.path.join(root_path, file_name[:-3])):
-        os.makedirs(file_name)
-        print("DIRECTORY is generated. ", os.path.join(root_path, file_name[:-3]))
-    else:
-        print("DIRECTORY is existed")
+    root_path = './csv/LOR' 
+    input_name = configs.filename
+    file_name = os.path.join(root_path, input_name)
+    # directory_name = os.path.join(root_path, input_name[:-4])
+    # if not os.path.exists(directory_name):
+    #     os.makedirs(directory_name)
+    #     print("DIRECTORY is generated. ", directory_name)
+    # else:
+    #     print("DIRECTORY is existed")
 
     osm_file_name = file_name[:-3] + "osm" 
     pcd_file_name = file_name[:-3] + "pcd" 
@@ -204,7 +205,6 @@ def parse_configs():
     tree = ElementTree(root)
     tree.write(osm_file_name)
 
-os.path.join(root_path, file_name[:-3])
 
 
     write_pcd(nedPoints, pcd_file_name)
