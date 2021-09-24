@@ -150,18 +150,18 @@ public:
     this->declare_parameter("throttle.cmd_min", 0.0);
     this->declare_parameter("throttle.reset_integral_below_this_cmd", 15.0);
 
-    this->declare_parameter("brake.proportional_gain", 4.0);
+    this->declare_parameter("brake.proportional_gain", 200000.1);
     this->declare_parameter("brake.integral_gain", 0.0);
     this->declare_parameter("brake.derivative_gain", 0.0);
     this->declare_parameter("brake.max_integrator_error", 10.0);
     this->declare_parameter("brake.cmd_max", 2000000.7);
     this->declare_parameter("brake.cmd_min", 0.0);
-    this->declare_parameter("brake.reset_integral_below_this_cmd", 15.0);
+    this->declare_parameter("brake.reset_integral_below_this_cmd", 100000.0);
     this->declare_parameter("brake.vel_error_deadband_mps", 0.5);
 
-    this->declare_parameter("gear.shift_up", 13.0);
-    this->declare_parameter("gear.shift_down", 11.0);
-    this->declare_parameter("gear.shift_time_ms", 300);
+    this->declare_parameter("gear.shift_up", 4000.0);
+    this->declare_parameter("gear.shift_down", 2200.0);
+    this->declare_parameter("gear.shift_time_ms", 1000);
 
     this->declare_parameter("safe_des_vel.safe_vel_thres_mph", 30.0);
     this->declare_parameter("safe_des_vel.hard_braking_time", 1.5);
@@ -539,7 +539,7 @@ private:
 
     double emergencyBrakeCmd(double vel_err) {
         this->brake_pid_.Update(-vel_err);
-        if(this->speed_mps_ < 3.0)
+        if(this->speed_mps_ < 6.0)
         {
             return this->brakeCmdMax_;
         }

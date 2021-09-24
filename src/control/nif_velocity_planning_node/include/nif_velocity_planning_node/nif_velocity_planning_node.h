@@ -21,6 +21,7 @@
 #include "nav_msgs/msg/odometry.hpp"
 #include "nav_msgs/msg/path.hpp"
 #include "nif_common/constants.h"
+#include "nif_common/types.h"
 #include "nif_common/vehicle_model.h"
 #include "nif_vehicle_dynamics_manager/tire_manager.hpp"
 #include "nif_velocity_planning_node/low_pass_filter.h"
@@ -44,37 +45,37 @@ public:
       const rclcpp::NodeOptions &options = rclcpp::NodeOptions{})
       : Node(node_name) {
 
-                // Publishers
-                des_vel_pub_ = this->create_publisher<std_msgs::msg::Float32>(
-                    "velocity_planner/des_vel", nif::common::constants::QOS_CONTROL_CMD);
+    // Publishers
+    des_vel_pub_ = this->create_publisher<std_msgs::msg::Float32>(
+        "out_desired_velocity", nif::common::constants::QOS_CONTROL_CMD);
 
-                // Subscribers
-                path_sub_ = this->create_subscription<nav_msgs::msg::Path>(
-                    "planning/path_global", nif::common::constants::QOS_PLANNING,
-                        std::bind(&VelocityPlannerNode::pathCallback, this,
-                                  std::placeholders::_1));
-                odometry_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
-                    "localization/ekf/odom", nif::common::constants::QOS_EGO_ODOMETRY,
-                        std::bind(&VelocityPlannerNode::odometryCallback, this,
-                                  std::placeholders::_1));
-                velocity_sub_ =
-                        this->create_subscription<raptor_dbw_msgs::msg::WheelSpeedReport>(
-                            "raptor_dbw_interface/wheel_speed_report", nif::common::constants::QOS_SENSOR_DATA,
-                                std::bind(&VelocityPlannerNode::velocityCallback, this,
-                                          std::placeholders::_1));
-                imu_sub_ = this->create_subscription<sensor_msgs::msg::Imu>(
-                    "novatel_top/imu/data", nif::common::constants::QOS_SENSOR_DATA,
-                        std::bind(&VelocityPlannerNode::imuCallback, this,
-                                  std::placeholders::_1));
-                steering_sub_ =
-                        this->create_subscription<raptor_dbw_msgs::msg::SteeringReport>(
-                            "raptor_dbw_interface/steering_report", nif::common::constants::QOS_SENSOR_DATA,
-                                std::bind(&VelocityPlannerNode::steerCallback, this,
-                                          std::placeholders::_1));
-                error_sub_ = this->create_subscription<std_msgs::msg::Float32MultiArray>(
-                        "control_lqr/lqr_error", nif::common::constants::QOS_DEFAULT,
-                            std::bind(&VelocityPlannerNode::errorCallback, this,
-                                  std::placeholders::_1));
+    // Subscribers
+    path_sub_ = this->create_subscription<nav_msgs::msg::Path>(
+        "in_reference_path", nif::common::constants::QOS_PLANNING,
+            std::bind(&VelocityPlannerNode::pathCallback, this,
+                      std::placeholders::_1));
+    odometry_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
+        "in_ego_odometry", nif::common::constants::QOS_EGO_ODOMETRY,
+            std::bind(&VelocityPlannerNode::odometryCallback, this,
+                      std::placeholders::_1));
+    velocity_sub_ =
+            this->create_subscription<raptor_dbw_msgs::msg::WheelSpeedReport>(
+                "in_wheel_speed_report", nif::common::constants::QOS_SENSOR_DATA,
+                    std::bind(&VelocityPlannerNode::velocityCallback, this,
+                              std::placeholders::_1));
+    imu_sub_ = this->create_subscription<sensor_msgs::msg::Imu>(
+        "in_imu_data", nif::common::constants::QOS_SENSOR_DATA,
+            std::bind(&VelocityPlannerNode::imuCallback, this,
+                      std::placeholders::_1));
+    steering_sub_ =
+            this->create_subscription<raptor_dbw_msgs::msg::SteeringReport>(
+                "in_steering_report", nif::common::constants::QOS_SENSOR_DATA,
+                    std::bind(&VelocityPlannerNode::steerCallback, this,
+                              std::placeholders::_1));
+    error_sub_ = this->create_subscription<std_msgs::msg::Float32MultiArray>(
+            "in_control_error", nif::common::constants::QOS_DEFAULT,
+                std::bind(&VelocityPlannerNode::errorCallback, this,
+                      std::placeholders::_1));
 
     //! Timer to execute control at 25Hz
     control_timer_ = this->create_wall_timer(
@@ -104,24 +105,19 @@ public:
     m_odometry_timeout_sec =
         this->get_parameter("odometry_timeout_sec").as_double();
     m_path_timeout_sec = this->get_parameter("path_timeout_sec").as_double();
+
+    // Parameter check
+    parameters_callback_handle = this->add_on_set_parameters_callback(std::bind(
+        &VelocityPlannerNode::parametersCallback, this, std::placeholders::_1));
   };
 
   void velocityPlanning() {
-    // Update desired velocity from ros param
-    auto new_max_vel = this->get_parameter("des_vel_mps").as_double();
-    // TODO: Update maximum limit of the desired velocity
-    if (new_max_vel > 100.0 / 3.6) {
-      RCLCPP_WARN(this->get_logger(), "----- Current limit for Maximum velocity is 100.0 kph!!!");
-
-    } else {
-        m_max_vel = new_max_vel;
-    }
-
     auto now = this->now();
     bool valid_path = has_path && !m_current_path.poses.empty() &&
                       (secs(now - m_path_update_time) < m_path_timeout_sec ||
                        m_path_timeout_sec < 0.0);
-    bool valid_odom = has_odometry && secs(now - m_odom_update_time) < m_odometry_timeout_sec ||
+    bool valid_odom = has_odometry && secs(now - m_odom_update_time) <
+                                          m_odometry_timeout_sec ||
                       m_odometry_timeout_sec < 0.0;
     bool valid_tracking_result = false;
 
@@ -263,14 +259,14 @@ public:
 
   /** ROS Callbacks / Subscription Interface **/
   void pathCallback(const nav_msgs::msg::Path::SharedPtr msg) {
-      has_path = true;
+    has_path = true;
     m_path_update_time = this->now();
     // lqr_tracking_idx_ = 0; // Reset Tracking
     m_current_path = *msg;
   }
 
   void odometryCallback(const nav_msgs::msg::Odometry::SharedPtr msg) {
-      has_odometry = true;
+    has_odometry = true;
     m_odom_update_time = this->now();
     m_current_odometry = *msg;
   }
@@ -299,6 +295,28 @@ public:
     lpf_error.getFilteredValue(m_error_y, m_error_y_lpf);
   }
 
+  rcl_interfaces::msg::SetParametersResult
+  parametersCallback(const std::vector<rclcpp::Parameter> &vector) {
+    rcl_interfaces::msg::SetParametersResult result;
+    result.successful = false;
+    result.reason = "";
+    for (const auto &param : vector) {
+      //! Check desired velocity should not be too large value
+      if (param.get_name() == "des_vel_mps") {
+        if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE &&
+            param.as_double() <= 200 / 3.6) 
+        {
+          this->m_max_vel = param.as_double();
+          result.successful = true;
+        } else {
+          result.successful = false;
+          result.reason = "des_vel_mps must be a double below (200 / 3.6).";
+        }
+      }
+    }
+    return result;
+  }
+
 private:
   //! Input Data
   rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr path_sub_;
@@ -316,6 +334,9 @@ private:
 
   //! Update Timers
   rclcpp::TimerBase::SharedPtr control_timer_;
+
+  //! for rosparam checking
+  OnSetParametersCallbackHandle::SharedPtr parameters_callback_handle;
 
   //! Track when certain variables have been updated
   rclcpp::Time m_path_update_time;
