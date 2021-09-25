@@ -404,7 +404,8 @@ bool SystemStatusManagerNode::heartbeatOk() {
         return true;
     } else {
         // have not received update; check for timeout
-        t++;
+        if (t < 3 * max_counter_drop) t++; // Avoid huge (hardly recoverable) numbers
+
         if (t >= max_counter_drop) {
             this->recovery_enabled = false;
             return false;

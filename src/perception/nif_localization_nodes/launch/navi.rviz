@@ -6,6 +6,7 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
+        - /Path1
         - /Path1/Topic1
         - /Odometry1
         - /Odometry1/Topic1
@@ -30,7 +31,6 @@ Panels:
         - /Path6/Status1
         - /Path6/Topic1
         - /Path7
-        - /Path7/Status1
         - /Path7/Topic1
       Splitter Ratio: 0.4676470458507538
     Tree Height: 699
@@ -99,6 +99,8 @@ Visualization Manager:
           Value: true
         luminar_right:
           Value: true
+        odom:
+          Value: true
         radar_front:
           Value: true
         radar_port:
@@ -117,7 +119,42 @@ Visualization Manager:
       Show Axes: true
       Show Names: false
       Tree:
-        {}
+        odom:
+          base_link:
+            center_of_gravity:
+              rear_axle_middle:
+                camera_front_1:
+                  {}
+                camera_front_2:
+                  {}
+                camera_front_left:
+                  {}
+                camera_front_right:
+                  {}
+                camera_rear_left:
+                  {}
+                camera_rear_right:
+                  {}
+                gps_bottom:
+                  {}
+                gps_top:
+                  {}
+                luminar_front:
+                  {}
+                luminar_left:
+                  {}
+                luminar_right:
+                  {}
+                radar_front:
+                  {}
+                radar_port:
+                  {}
+                radar_rear:
+                  {}
+                radar_starboard:
+                  {}
+                rear_axle_middle_ground:
+                  {}
       Update Interval: 0
       Value: true
     - Alpha: 1
@@ -377,7 +414,7 @@ Visualization Manager:
       Color: 255; 255; 255
       Color Transformer: Intensity
       Decay Time: 0
-      Enabled: true
+      Enabled: false
       Invert Rainbow: false
       Max Color: 255; 255; 255
       Max Intensity: 1.99951171875
@@ -397,7 +434,7 @@ Visualization Manager:
         Value: /merged/lidar
       Use Fixed Frame: true
       Use rainbow: true
-      Value: true
+      Value: false
     - Angle Tolerance: 0.10000000149011612
       Class: rviz_default_plugins/Odometry
       Covariance:
@@ -415,7 +452,7 @@ Visualization Manager:
           Scale: 1
           Value: true
         Value: true
-      Enabled: true
+      Enabled: false
       Keep: 100
       Name: Odometry
       Position Tolerance: 0.10000000149011612
@@ -435,7 +472,7 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Best Effort
         Value: /aw_localization/ekf/odom
-      Value: true
+      Value: false
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
@@ -448,7 +485,7 @@ Visualization Manager:
       Color: 255; 255; 255
       Color Transformer: Intensity
       Decay Time: 0
-      Enabled: true
+      Enabled: false
       Invert Rainbow: false
       Max Color: 255; 255; 255
       Max Intensity: 5199
@@ -468,12 +505,12 @@ Visualization Manager:
         Value: /pcd_trajectory
       Use Fixed Frame: true
       Use rainbow: true
-      Value: true
+      Value: false
     - Alpha: 1
       Buffer Length: 1
       Class: rviz_default_plugins/Path
       Color: 25; 255; 0
-      Enabled: true
+      Enabled: false
       Head Diameter: 0.30000001192092896
       Head Length: 0.20000000298023224
       Length: 0.30000001192092896
@@ -495,7 +532,7 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Best Effort
         Value: /planning/path_global
-      Value: true
+      Value: false
     - Alpha: 1
       Buffer Length: 1
       Class: rviz_default_plugins/Path
@@ -592,7 +629,7 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Angle: 1.5599994659423828
+      Angle: 0
       Class: rviz_default_plugins/TopDownOrtho
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
@@ -602,11 +639,11 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 1.1741445064544678
+      Scale: 2.0224192142486572
       Target Frame: base_link
       Value: TopDownOrtho (rviz_default_plugins)
-      X: -1291.138671875
-      Y: 132.67076110839844
+      X: 33.128639221191406
+      Y: 54.884761810302734
     Saved: ~
 Window Geometry:
   Displays:

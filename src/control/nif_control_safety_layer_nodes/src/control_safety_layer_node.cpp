@@ -77,7 +77,16 @@ void nif::control::ControlSafetyLayerNode::run() {
         this->publishSteeringCmd(this->control_cmd.steering_control_cmd);
 
         this->control_pub->publish(this->control_cmd);
-        node_status = common::NODE_OK;
+        if (this->emergency_buffer_empty ||
+            !this->hasSystemStatus()     ||
+            this->now() - this->getSystemStatusUpdateTime() >
+            rclcpp::Duration::from_seconds(0.5))
+        { 
+            node_status = common::NODE_ERROR;
+        } else {
+            node_status = common::NODE_OK;
+        }
+
         this->setNodeStatus(node_status);
         this->bufferFlush();
         

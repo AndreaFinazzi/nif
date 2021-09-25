@@ -141,7 +141,8 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
   double steering_angle_deg = 0.0;
   double desired_accel = 0.0;
   // Perform Tracking if path is good
-  if (valid_path && valid_odom) {
+  if (valid_path && valid_odom) 
+  {
     valid_tracking_result = true;
 
     auto state = joint_lqr::utils::LQRState(this->getEgoOdometry());
@@ -167,8 +168,12 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
     // Run LQR :)
     
     // Desired velocity check
-    auto l_desired_velocity = this->hasDesiredVelocity() ? this->getDesiredVelocity()->data : 0.0;
-    l_desired_velocity = ( this->now() - this->getDesiredVelocityUpdateTime() <= rclcpp::Duration(1, 0)) ? l_desired_velocity : 0.0; 
+    auto l_desired_velocity = 0.0;
+    if (this->hasDesiredVelocity() && 
+        ( this->now() - this->getDesiredVelocityUpdateTime() <= rclcpp::Duration(1, 0)) )
+    {
+      l_desired_velocity = this->getDesiredVelocity()->data;
+    }
 
     auto goal = joint_lqr::utils::LQRGoal(
       this->getReferencePath()->poses[lqr_tracking_idx_], l_desired_velocity);
