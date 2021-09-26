@@ -108,10 +108,10 @@ private:
   //! Current Vehicle State
   double current_speed_ms_;
   uint8_t current_gear_;
-  uint8_t current_engine_speed_;
+  uint8_t current_engine_speed_ = 0.0;
   bool engine_running_;
-  double last_steering_command_;
-  double last_accel_command_;
+  double last_steering_command_ = 0.0;
+  double last_accel_command_ = 0.0;
 
   //! Desired Velocity from Velocity Planner
   double desired_vx_;
@@ -120,10 +120,10 @@ private:
   unsigned int lqr_tracking_idx_;
 
   //! Manual Overrides for when auto mode is disabled
-  double override_steering_target_;
-  double override_brake_target_;
-  double override_throttle_target_;
-  uint8_t override_gear_target_;
+  double override_steering_target_ = 0.0;
+  double override_brake_target_ = 0.0;
+  double override_throttle_target_ = 0.0;
+  uint8_t override_gear_target_ = 0;
 
   //! Misc. Parameters (see notes in constructor)
   double max_steering_angle_deg_;
@@ -137,6 +137,7 @@ private:
   double path_timeout_sec_;
   double steering_max_ddeg_dt_;
   double des_accel_max_da_dt_;
+  bool invert_steering_;
 
   double secs(rclcpp::Time t) {
     return static_cast<double>(t.seconds()) +

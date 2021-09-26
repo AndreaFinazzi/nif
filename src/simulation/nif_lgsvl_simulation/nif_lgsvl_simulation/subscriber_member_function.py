@@ -82,7 +82,7 @@ class LGSVLSubscriberNode(BaseNode):
 
         # Vehicle odometry subsciptions (includes front/rear wheel angles and velocity)
         self.sub_vehicleodometry = self.create_subscription(VehicleOdometry, self.namespace + '/sensor/odometry', self.callback_vehicleodometry, rclpy.qos.qos_profile_sensor_data)
-        self.pub_wheel_speed = self.create_publisher(WheelSpeedReport, self.namespace + '/raptor_dbw_interface/wheel_speed_report', rclpy.qos.qos_profile_sensor_data)
+        self.pub_wheel_speed = self.create_publisher(WheelSpeedReport, self.namespace + '/raptor_dbw_interface/wheel_speed_report', 20) # rclpy.qos.qos_profile_sensor_data)
         # GPS subscriptions
         self.sub_gps_top = self.create_subscription(NavSatFix, self.namespace + '/novatel_top/fix', self.callback_gps_top, rclpy.qos.qos_profile_sensor_data)
         self.sub_gps_bottom = self.create_subscription(NavSatFix, self.namespace + '/novatel_bottom/fix', self.callback_gps_bottom, rclpy.qos.qos_profile_sensor_data)
@@ -91,8 +91,8 @@ class LGSVLSubscriberNode(BaseNode):
         self.pub_gps_inspva_top = self.create_publisher(INSPVA, self.namespace + '/novatel_top/inspva', rclpy.qos.qos_profile_sensor_data)
         self.pub_gps_inspva_bottom = self.create_publisher(INSPVA, self.namespace + '/novatel_bottom/inspva', rclpy.qos.qos_profile_sensor_data)
 
-        self.pub_gps_bestpos_top = self.create_publisher(BESTPOS, self.namespace + '/novatel_top/bestpos', rclpy.qos.qos_profile_sensor_data)
-        self.pub_gps_bestpos_bottom = self.create_publisher(BESTPOS, self.namespace + '/novatel_bottom/bestpos', rclpy.qos.qos_profile_sensor_data)
+        self.pub_gps_bestpos_top = self.create_publisher(BESTPOS, self.namespace + '/novatel_top/bestpos', 10) #rclpy.qos.qos_profile_sensor_data)
+        self.pub_gps_bestpos_bottom = self.create_publisher(BESTPOS, self.namespace + '/novatel_bottom/bestpos', 10) #rclpy.qos.qos_profile_sensor_data)
 
         # Vehicle ground truth state
         self.sub_ground_truth_state = self.create_subscription(Odometry, '/sensor/odom_ground_truth', self.callback_ground_truth_state, rclpy.qos.qos_profile_sensor_data)

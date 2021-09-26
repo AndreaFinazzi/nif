@@ -87,11 +87,16 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
   steering_max_ddeg_dt_ =
       this->get_parameter("steering_max_ddeg_dt").as_double();
   des_accel_max_da_dt_ = this->get_parameter("des_accel_max_da_dt").as_double();
+  invert_steering_ = this->get_parameter("invert_steering").as_bool();
 
-  if ((odometry_timeout_sec_) < 0. || (path_timeout_sec_) < 0.) {
-    throw rclcpp::exceptions::InvalidParametersException(
-        "odometry_timeout_sec_ or path_timeout_sec_ parameter is negative.");
+
+  if (odometry_timeout_sec_ <= 0. || path_timeout_sec_ <= 0.) {
+      RCLCPP_ERROR(this->get_logger(),
+                    "path and ego_odometry timeouts must be greater than zero. Got odometry_timeout_sec_: %f; path_timeout_sec_: %f",
+                    odometry_timeout_sec_, path_timeout_sec_);
+      throw std::range_error("Parameter out of range.");
   }
+
 }
 
 void ControlLQRNode::publishSteerAccelDiagnostics(
@@ -126,16 +131,14 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
 //  bool lateral_tracking_enabled =
 //      this->get_parameter("lat_autonomy_enabled").as_bool();
 
-  bool invert_steering = this->get_parameter("invert_steering").as_bool();
   //  Check whether we have updated data
   bool valid_path =
-      this->hasReferencePath() && this->getReferencePath()->poses.size() > 0 &&
-      (secs(now - this->getReferencePathUpdateTime()) < path_timeout_sec_ ||
-       path_timeout_sec_ < 0.0);
+      this->hasReferencePath() && 
+      !this->getReferencePath()->poses.empty() &&
+      secs(now - this->getReferencePathUpdateTime()) < path_timeout_sec_;
   bool valid_odom =
       this->hasEgoOdometry() && secs(now - this->getEgoOdometryUpdateTime()) <
-                                    odometry_timeout_sec_ ||
-      odometry_timeout_sec_ < 0.0;
+                                    odometry_timeout_sec_;
   bool valid_tracking_result = false;
 
   double steering_angle_deg = 0.0;
@@ -168,7 +171,7 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
     // Run LQR :)
     
     // Desired velocity check
-    auto l_desired_velocity = 0.0;
+    double l_desired_velocity = 0.0;
     if (this->hasDesiredVelocity() && 
         ( this->now() - this->getDesiredVelocityUpdateTime() <= rclcpp::Duration(1, 0)) )
     {
@@ -207,7 +210,8 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
         this->getReferencePath()->poses[lqr_tracking_idx_], error);
   }
 
-  if ( ( this->getSystemStatus().autonomy_status.lateral_autonomy_enabled || this->getSystemStatus().autonomy_status.longitudinal_autonomy_enabled ) &&
+  if (  !this->hasSystemStatus() || 
+        ( this->getSystemStatus().autonomy_status.lateral_autonomy_enabled || this->getSystemStatus().autonomy_status.longitudinal_autonomy_enabled ) &&
         !(valid_path && valid_odom) ) {
       node_status = common::NODE_ERROR;
       this->setNodeStatus(node_status);
@@ -218,7 +222,7 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
   last_accel_command_ = desired_accel;
   // for steering command
   this->control_cmd->steering_control_cmd.data =
-      invert_steering ? -last_steering_command_ : last_steering_command_;
+      invert_steering_ ? -last_steering_command_ : last_steering_command_;
   // for acceleration command
   this->control_cmd->desired_accel_cmd.data = desired_accel;
 

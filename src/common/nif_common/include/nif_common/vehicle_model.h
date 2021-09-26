@@ -38,7 +38,7 @@ const double VEH_MASS_KG = 5.0;
 /**
  * Steering ratio between steering wheel angle and steer angle.
  */
-const double STEERING_RATIO = 5.0;
+const double STEERING_RATIO = 9.50;
 
 /**
  * Radius of the rear tyre in [mm].

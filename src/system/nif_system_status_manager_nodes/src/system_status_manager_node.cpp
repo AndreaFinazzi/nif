@@ -5,6 +5,7 @@
 #include <chrono>
 
 using nif::system::SystemStatusManagerNode;
+using nif_msgs::msg::MissionStatus;
 using namespace std::chrono_literals;
 
 SystemStatusManagerNode::SystemStatusManagerNode(
@@ -142,8 +143,9 @@ void SystemStatusManagerNode::systemStatusTimerCallback() {
     this->hb_emergency_pub->publish(message_hb);
 
     // Mission encoding
-    this->system_status_msg.mission_status.mission_status_code = this->getMissionStatus();
-
+    this->system_status_msg.mission_status.mission_status_code = this->getMissionStatusCode();
+    this->system_status_msg.mission_status.max_velocity_mps =
+            this->getMissionMaxVelocityMps(this->system_status_msg.mission_status.mission_status_code);
 
     this->system_status_pub->publish(this->system_status_msg);
 
@@ -213,7 +215,7 @@ bool SystemStatusManagerNode::isSystemHealthy() {
 }
 
 // TODO this is just a draft, MUST BE REFINED AND FINALIZED
-  nif_msgs::msg::MissionStatus::_mission_status_code_type SystemStatusManagerNode::getMissionStatus()
+  nif_msgs::msg::MissionStatus::_mission_status_code_type SystemStatusManagerNode::getMissionStatusCode()
   {
     using nif_msgs::msg::MissionStatus;
     using nif::common::msgs::RCFlagSummary;
@@ -474,4 +476,39 @@ SystemStatusManagerNode::parametersCallback(
         }
         return result;
     }
+}
+
+double nif::system::SystemStatusManagerNode::getMissionMaxVelocityMps(
+        MissionStatus::_mission_status_code_type mission_code) {
+    double max_vel_mps = 0.0;
+            switch (mission_code) {
+                case MissionStatus::MISSION_EMERGENCY_STOP:
+                    max_vel_mps = 0.0;
+                    break;
+                case MissionStatus::MISSION_COMMANDED_STOP:
+                    max_vel_mps = 0.0;
+                    break;
+                case MissionStatus::MISSION_STANDBY:
+                    max_vel_mps = 0.0;
+                    break;
+                case MissionStatus::MISSION_SLOW_DRIVE:
+                    max_vel_mps = 10.0;
+                    break;
+                case MissionStatus::MISSION_PIT_IN:
+                    max_vel_mps = 10.0;
+                    break;
+                case MissionStatus::MISSION_PIT_OUT:
+                    max_vel_mps = 10.0;
+                    break;
+                case MissionStatus::MISSION_RACE:
+                    max_vel_mps = 67.0;
+                    break;
+                case MissionStatus::MISSION_TEST:
+                    max_vel_mps = 67.0;
+                    break;
+                default:
+                    max_vel_mps = 0.0;
+                    break;
+            }
+    return max_vel_mps;
 }

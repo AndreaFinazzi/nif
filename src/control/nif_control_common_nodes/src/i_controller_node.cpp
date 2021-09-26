@@ -85,48 +85,16 @@ void nif::control::IControllerNode::desiredVelocityCallback(
 
     // CHECK MISSION CONDITIONS
     if (this->hasSystemStatus()) {
-      
-    switch (this->getSystemStatus().mission_status.mission_status_code)
-    {
-    case MissionStatus::MISSION_EMERGENCY_STOP:
-      this->desired_velocity->data = 0.0;
-      break;
-    
-    case MissionStatus::MISSION_COMMANDED_STOP:
-      this->desired_velocity->data = 0.0;
-      break;
-
-    case MissionStatus::MISSION_STANDBY:
-      this->desired_velocity->data = 0.0;
-      break;
-
-    case MissionStatus::MISSION_SLOW_DRIVE:
-      this->desired_velocity->data = 10.0;
-      break;
-
-    case MissionStatus::MISSION_PIT_IN:
-      this->desired_velocity->data = 10.0;
-      break;
-
-    case MissionStatus::MISSION_PIT_OUT:
-      this->desired_velocity->data = 10.0;
-      break;
-
-    case MissionStatus::MISSION_RACE:
-      this->desired_velocity = std::move(msg);
-      break;
-
-    case MissionStatus::MISSION_TEST:
-      this->desired_velocity = std::move(msg);
-      break;
-
-    default:
-      this->desired_velocity->data = 0.0;
-      break;
-    }
-
-    this->afterDesiredVelocityCallback();
+      if (msg->data > this->getSystemStatus().mission_status.max_velocity_mps) {
+        this->desired_velocity->data =  this->getSystemStatus().mission_status.max_velocity_mps;
+      } else {
+        this->desired_velocity->data = msg->data;
+      }
+  } else {
+    this->desired_velocity->data = 0;
   }
+
+  this->afterDesiredVelocityCallback();
 }
 
 const nif::common::msgs::Trajectory::SharedPtr &

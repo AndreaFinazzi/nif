@@ -183,7 +183,7 @@ private:
    * Mission Status state machine.
    * @return the mission encoding.
    */
-  nif_msgs::msg::MissionStatus::_mission_status_code_type getMissionStatus();
+  nif_msgs::msg::MissionStatus::_mission_status_code_type getMissionStatusCode();
 
   /**
    * System status state machine, with status output code.
@@ -200,6 +200,8 @@ private:
 
   rclcpp::Duration node_inactive_timeout = rclcpp::Duration(1, 0);
   OnSetParametersCallbackHandle::SharedPtr parameters_callback_handle;
+
+  double getMissionMaxVelocityMps(nif_msgs::msg::MissionStatus::_mission_status_code_type);
 };
 
 } // namespace system
