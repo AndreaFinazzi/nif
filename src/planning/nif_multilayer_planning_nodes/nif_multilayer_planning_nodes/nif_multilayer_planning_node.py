@@ -79,7 +79,7 @@ class GraphBasedPlanner(rclpy.node.Node):
         self.graph_config = configparser.ConfigParser()
 
         # TODO: Loading the pit-in waypoints
-        self.pit_in_wpt_file_path = ''
+        self.pit_in_wpt_file_path = None
         self.pit_in_wpt = None
         self.pit_in_allowed_zone_min_x = None
         self.pit_in_allowed_zone_max_x = None
@@ -144,6 +144,8 @@ class GraphBasedPlanner(rclpy.node.Node):
         else:
             raise ValueError('[nif_multilayer_planning_nodes] Track specification in driving_task.ini is wrong!')
 
+        if(self.pit_in_wpt_file_path == None):
+            raise ValueError('[nif_multilayer_planning_nodes] Pit-in waypoint is not configured')
         if(self.pit_in_allowed_zone_min_x == None or self.pit_in_allowed_zone_max_x == None or
                     self.pit_in_allowed_zone_min_y == None or self.pit_in_allowed_zone_max_y == None):
             raise ValueError('[nif_multilayer_planning_nodes] Pit-in allowed zone is not configured')
