@@ -24,7 +24,7 @@
       radar_rear: "radar_rear"
 
     topics:
-      ego_odometry: /bvs_localization/ltp_odom
+      ego_odometry: /sensor/odom_ground_truth
         # bvs_localization/ltp_odom #
       #     localization/ego_odom
       system_status: system/status

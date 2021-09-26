@@ -8,6 +8,7 @@
 #ifndef ROS2MASTER_CONTROL_SAFETY_LAYER_NODE_H
 #define ROS2MASTER_CONTROL_SAFETY_LAYER_NODE_H
 
+#include <std_msgs/msg/int32.hpp>
 #include <nav_msgs/msg/odometry.hpp>
 #include "raptor_dbw_msgs/msg/wheel_speed_report.hpp"
 #include "deep_orange_msgs/msg/pt_report.hpp"
@@ -116,6 +117,9 @@ public:
             this->create_publisher<std_msgs::msg::Float32>(
                     "out_desired_acceleration_cmd", nif::common::constants::QOS_CONTROL_CMD);
 
+    this->diagnostic_hb_pub = this->create_publisher<std_msgs::msg::Int32>(
+            "/diagnostics/heartbeat", 10);
+
     // Automatically boot with lat_autonomy_enabled
     this->declare_parameter("lat_autonomy_enabled", false);
     this->declare_parameter("long_autonomy_enabled", false);
@@ -142,27 +146,28 @@ public:
     this->declare_parameter("throttle.integral_gain", 0.0);
     this->declare_parameter("throttle.derivative_gain", 0.0);
     this->declare_parameter("throttle.max_integrator_error", 10.0);
-    this->declare_parameter("throttle.cmd_max", 25.0);
+    this->declare_parameter("throttle.cmd_max", 30.0);
     this->declare_parameter("throttle.cmd_min", 0.0);
     this->declare_parameter("throttle.reset_integral_below_this_cmd", 15.0);
 
-    this->declare_parameter("brake.proportional_gain", 4.0);
+    this->declare_parameter("brake.proportional_gain", 200000.1);
     this->declare_parameter("brake.integral_gain", 0.0);
     this->declare_parameter("brake.derivative_gain", 0.0);
     this->declare_parameter("brake.max_integrator_error", 10.0);
     this->declare_parameter("brake.cmd_max", 2000000.7);
     this->declare_parameter("brake.cmd_min", 0.0);
-    this->declare_parameter("brake.reset_integral_below_this_cmd", 15.0);
+    this->declare_parameter("brake.reset_integral_below_this_cmd", 100000.0);
     this->declare_parameter("brake.vel_error_deadband_mps", 0.5);
 
-    this->declare_parameter("gear.shift_up", 13.0);
-    this->declare_parameter("gear.shift_down", 11.0);
-    this->declare_parameter("gear.shift_time_ms", 300);
+    this->declare_parameter("gear.shift_up", 4000.0);
+    this->declare_parameter("gear.shift_down", 2200.0);
+    this->declare_parameter("gear.shift_time_ms", 1000);
 
     this->declare_parameter("safe_des_vel.safe_vel_thres_mph", 30.0);
     this->declare_parameter("safe_des_vel.hard_braking_time", 1.5);
     this->declare_parameter("safe_des_vel.soft_braking_time", 1.0);
 
+    this->declare_parameter("desired_acceleration.cmd_max", 5.0);
 
     // Read in misc. parameters
     max_steering_angle_deg =
@@ -212,13 +217,14 @@ public:
     this->d_ = this->get_parameter("throttle.derivative_gain").as_double();
     this->iMax_ =
             this->get_parameter("throttle.max_integrator_error").as_double();
-    this->throttleCmdMax_ = this->get_parameter("throttle.cmd_max").as_double();
-    this->throttleCmdMin_ = this->get_parameter("throttle.cmd_min").as_double();
+    this->throttle_cmd_max = this->get_parameter("throttle.cmd_max").as_double();
+    this->throttle_cmd_min = this->get_parameter("throttle.cmd_min").as_double();
     this->iThrottleReset_ =
             this->get_parameter("throttle.reset_integral_below_this_cmd").as_double();
+    this->desired_acceleration_cmd_max = this->get_parameter("desired_acceleration.cmd_max").as_double();
 
     this->vel_pid_ =
-            PID(p_, i_, d_, ts_, iMax_, throttleCmdMax_, throttleCmdMin_);
+            PID(p_, i_, d_, ts_, iMax_, throttle_cmd_max, throttle_cmd_min);
 
     // Create brake PID object
     this->bp_ = this->get_parameter("brake.proportional_gain").as_double();
@@ -349,6 +355,8 @@ private:
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr
     desired_acceleration_pub;
 
+  rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr diagnostic_hb_pub;
+
   std::map<int, std::shared_ptr<GearState>> gear_states;
   std::shared_ptr<control::GearState> curr_gear_ptr_;
 
@@ -362,12 +370,10 @@ private:
   void run() override;
 
   bool publishSteeringCmd(const nif::common::msgs::ControlSteeringCmd &msg) const;
-  bool publishAcceleratorCmd(const nif::common::msgs::ControlAcceleratorCmd &msg) const;
-  bool publishBrakingCmd(const nif::common::msgs::ControlBrakingCmd &msg) const;
+  bool publishAcceleratorCmd(common::msgs::ControlAcceleratorCmd msg) const;
+  bool publishBrakingCmd(common::msgs::ControlBrakingCmd msg) const;
   bool publishGearCmd(const nif::common::msgs::ControlGearCmd &msg) const;
-  bool publishDesiredAcceleration(const std_msgs::msg::Float32 &msg) const {
-
-  }
+  bool publishDesiredAcceleration(std_msgs::msg::Float32 msg) const;
 
     void afterSystemStatusCallback() override;
 
@@ -393,8 +399,10 @@ private:
         this->curr_gear_ptr_ = this->gear_states[1];
     }
 
+    int counter_hb = 0;
+
     int buffer_empty_counter = 0;
-    int buffer_empty_counter_threshold = 10;
+    int buffer_empty_counter_threshold = 20;
 
     double init_tick_ = -1.0;
     double init_vel_ = -1.0;
@@ -418,9 +426,10 @@ private:
     double i_;
     double d_;
     double iMax_;
-    double throttleCmdMax_;
-    double throttleCmdMin_;
+    double throttle_cmd_max;
+    double throttle_cmd_min;
     double iThrottleReset_;
+    double desired_acceleration_cmd_max;
 
     double bp_;
     double bi_;
@@ -528,9 +537,9 @@ private:
         }
     }
 
-    double getBrakeCmd(double vel_err) {
+    double emergencyBrakeCmd(double vel_err) {
         this->brake_pid_.Update(-vel_err);
-        if(this->speed_mps_ < 1.5)
+        if(this->speed_mps_ < 6.0)
         {
             return this->brakeCmdMax_;
         }
@@ -545,7 +554,7 @@ private:
         @ Args
           - orig_des_vel : original desired velocity in ROS param
         @ Params
-          - pose_stdev_thres     : Threshold of the pose stdev
+          - insstdev_threshold     : Threshold of the pose stdev
           - safe_vel_thres_mph   : Velocity (Mph) threshold w.r.t. safe braking time
           - hard_braking_time    : safe braking time when faster than
         safe_vel_thres_mph

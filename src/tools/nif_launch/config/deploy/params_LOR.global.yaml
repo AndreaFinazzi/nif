@@ -34,7 +34,7 @@
       node_status_prefix: /node_status/
 
     time:
-      period_node_status_us: 40000
+      period_node_status_us: 20000
 
     coordinates:
       use_enu: false

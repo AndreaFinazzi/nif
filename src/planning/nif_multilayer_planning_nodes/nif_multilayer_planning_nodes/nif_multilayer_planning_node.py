@@ -188,7 +188,7 @@ class GraphBasedPlanner(rclpy.node.Node):
         # TODO---------------------------------------------------
         # TODO : Change the topic name / QOS for inout from deagyu
         # TODO----------------------------------------------------
-        self.system_status_sub = self.create_subscription(SystemStatus, 'todo', self.system_status_callback, 10)
+        self.system_status_sub = self.create_subscription(SystemStatus, '/system/status', self.system_status_callback, 10)
         self.track_inout_bool_sub = self.create_subscription(Bool, 'todo', self.track_inout_callback, 10)
 
         self.out_of_track = None

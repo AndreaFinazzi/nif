@@ -6,7 +6,7 @@ model_params:
   length_front: 1.54
   length_rear: 2.554
   yaw_moment_inertia: 550
-  drag_coeff: 0.4
+  drag_coeff: 0.814
 
 # Velocity Brackets to generate
 # feedback matrices from

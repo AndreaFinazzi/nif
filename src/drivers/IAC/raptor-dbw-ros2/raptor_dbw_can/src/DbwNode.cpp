@@ -354,11 +354,11 @@ void DbwNode::recvCAN(const can_msgs::msg::Frame::SharedPtr msg)
 
             pub_flags_->publish(out);
 
-            deep_orange_msgs::msg::RcToCt out2;
-            out2.stamp = msg->header.stamp;
-            out2.track_cond = message->GetSignal("track_flag")->GetResult();
-            out2.rolling_counter = message->GetSignal("base_to_car_heartbeat")->GetResult();
-            pub_rc_to_ct_->publish(out2);
+//            deep_orange_msgs::msg::RcToCt out2;
+//            out2.stamp = msg->header.stamp;
+//            out2.track_cond = message->GetSignal("track_flag")->GetResult();
+//            out2.rolling_counter = message->GetSignal("base_to_car_heartbeat")->GetResult();
+//            pub_rc_to_ct_->publish(out2);
 
           }
         }
@@ -489,7 +489,7 @@ void DbwNode::recvCAN(const can_msgs::msg::Frame::SharedPtr msg)
             out.track_cond = message->GetSignal("track_cond")->GetResult(); 
             // TODO: adding statements for arrays of black checkered purple flags trackpositions
             out.rolling_counter = message->GetSignal("rc_rolling_counter")->GetResult();
-            pub_rc_to_ct_->publish(out);
+//            pub_rc_to_ct_->publish(out);
           }
         }
         break;

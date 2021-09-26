@@ -5,6 +5,7 @@
 #include <chrono>
 
 using nif::system::SystemStatusManagerNode;
+using nif_msgs::msg::MissionStatus;
 using namespace std::chrono_literals;
 
 SystemStatusManagerNode::SystemStatusManagerNode(
@@ -14,8 +15,37 @@ SystemStatusManagerNode::SystemStatusManagerNode(
     this->system_status_msg.health_status.system_failure = false;
 
     this->declare_parameter("timeout_node_inactive_ms", 1000);
+    this->declare_parameter("timeout_bestpos_msg_ms", 500);
+    this->declare_parameter("timeout_bestpos_diff_age_ms", 60000);
+    this->declare_parameter("timeout_rc_flag_summary_s", 10.0);
+    this->declare_parameter("lat_autonomy_enabled", false);
+    this->declare_parameter("long_autonomy_enabled", false);
+    this->declare_parameter("insstdev_threshold", 2.0);
 
     this->node_inactive_timeout = rclcpp::Duration(1, 0);
+    this->system_status_msg.autonomy_status.lateral_autonomy_enabled = this->get_parameter(
+            "lat_autonomy_enabled").as_bool();
+    this->system_status_msg.autonomy_status.longitudinal_autonomy_enabled = this->get_parameter(
+            "long_autonomy_enabled").as_bool();
+
+    auto timeout_bestpos_last_update_ms = this->get_parameter("timeout_bestpos_msg_ms").as_int();
+    auto timeout_bestpos_diff_age_ms = this->get_parameter("timeout_bestpos_diff_age_ms").as_int();
+    auto timeout_rc_flag_summary_s = this->get_parameter("timeout_bestpos_diff_age_ms").as_int();
+
+    this->timeout_bestpos_last_update = rclcpp::Duration(timeout_bestpos_last_update_ms * 1000000);
+    this->timeout_bestpos_diff_age = rclcpp::Duration(timeout_bestpos_diff_age_ms * 1000000);
+    this->timeout_rc_flag_summary = rclcpp::Duration(timeout_rc_flag_summary_s, 0);
+
+    this->insstdev_threshold = this->get_parameter("insstdev_threshold").as_double();
+
+    this->parameters_callback_handle = this->add_on_set_parameters_callback(
+            std::bind(&SystemStatusManagerNode::parametersCallback, this, std::placeholders::_1));
+
+    // Inintializa to failure state
+    this->system_status_msg.health_status.communication_failure = true;
+    this->system_status_msg.health_status.localization_failure = true;
+    this->system_status_msg.health_status.system_failure = true;
+    this->system_status_msg.health_status.commanded_stop = false;
 
     // Subscribers
     this->joystick_sub = this->create_subscription<deep_orange_msgs::msg::JoystickCommand>(
@@ -29,11 +59,13 @@ SystemStatusManagerNode::SystemStatusManagerNode(
 
     // TODO this is only temporary, as the localization status should be handled in the localization nodes.
     this->subscriber_bestpos = this->create_subscription<novatel_oem7_msgs::msg::BESTPOS>(
-            "/novatel_top/bestpos", 1, std::bind(&SystemStatusManagerNode::receive_bestpos, this, std::placeholders::_1));
+            "in_novatel_bestpos", 1,
+            std::bind(&SystemStatusManagerNode::receive_bestpos, this, std::placeholders::_1));
 
     // TODO this is only temporary, as the localization status should be handled in the localization nodes.
     this->subscriber_insstdev = this->create_subscription<novatel_oem7_msgs::msg::INSSTDEV>(
-            "/novatel_top/insstdev", 1, std::bind(&SystemStatusManagerNode::receive_insstdev, this, std::placeholders::_1));
+            "in_novatel_insstdev", 1,
+            std::bind(&SystemStatusManagerNode::receive_insstdev, this, std::placeholders::_1));
 
     //  Publishers
     this->system_status_pub = this->create_publisher<nif::common::msgs::SystemStatus>(
@@ -44,15 +76,13 @@ SystemStatusManagerNode::SystemStatusManagerNode(
             "/vehicle/emergency_joystick", 10);
     this->hb_emergency_pub = this->create_publisher<std_msgs::msg::Bool>(
             "/vehicle/emergency_heartbeat", 10);
-    this->diagnostic_hb_pub = this->create_publisher<std_msgs::msg::Int32>(
-            "/diagnostics/heartbeat", 10);
 
     auto qos = rclcpp::QoS(rclcpp::QoSInitialization(RMW_QOS_POLICY_HISTORY_KEEP_LAST, 1));
     qos.best_effort();
 
     this->system_status_telem_pub = this->create_publisher<nif::common::msgs::SystemStatus>(
             "/telemetry/system_status", qos
-            );
+    );
 
     this->telemetry_timer = this->create_wall_timer(
             250ms, std::bind(&SystemStatusManagerNode::telemetry_timer_callback, this));
@@ -81,6 +111,7 @@ SystemStatusManagerNode::SystemStatusManagerNode(
 }
 
 void SystemStatusManagerNode::systemStatusTimerCallback() {
+    // Check for passed out topics
     nodeStatusesAgeCheck();
 
     // check safety conditions
@@ -107,19 +138,17 @@ void SystemStatusManagerNode::systemStatusTimerCallback() {
     auto message_hb = std_msgs::msg::Bool();
     message_joy.data = this->system_status_msg.health_status.commanded_stop;
     message_hb.data = this->system_status_msg.health_status.communication_failure;
-
+    // Publish diagnostic msgs 
     this->joy_emergency_pub->publish(message_joy);
     this->hb_emergency_pub->publish(message_hb);
+
+    // Mission encoding
+    this->system_status_msg.mission_status.mission_status_code = this->getMissionStatusCode();
+    this->system_status_msg.mission_status.max_velocity_mps =
+            this->getMissionMaxVelocityMps(this->system_status_msg.mission_status.mission_status_code);
+
     this->system_status_pub->publish(this->system_status_msg);
 
-    // send diagnostic hb to vehicle interface
-    auto joy_hb = std_msgs::msg::Int32();
-    joy_hb.data = counter_hb;
-    this->diagnostic_hb_pub->publish(joy_hb);
-    counter_hb++;
-    if (counter_hb == 8){
-        counter_hb = 0;
-    }
 }
 
 void SystemStatusManagerNode::subscribeNodeStatus(
@@ -140,7 +169,7 @@ void SystemStatusManagerNode::registerNodeServiceHandler(
 //  Request data check
     if (
             !request->node_name.empty() &&
-            this->status_by_name.find(request->node_name) == this->status_by_name.end() &&
+            this->status_index_by_name.find(request->node_name) == this->status_index_by_name.end() &&
             // Process only if not already subscribed
             isNodeTypeInRange(static_cast<NodeType>(request->node_type)) &&
             !request->status_topic_name.empty()) {
@@ -163,13 +192,13 @@ void SystemStatusManagerNode::registerNodeServiceHandler(
 void SystemStatusManagerNode::nodeStatusUpdate(
         const nif::common::msgs::NodeStatus::SharedPtr msg) {
     // TODO implement checks over msg.
-    if (this->now() - msg->stamp_last_update >= this->node_inactive_timeout)
-    {
-    // TODO implement check on last_update_stamp to detect inactive nodes.
+    if (this->now() - msg->stamp_last_update >= this->node_inactive_timeout) {
+        // TODO implement check on last_update_stamp to detect inactive nodes.
         msg->node_status_code = common::NODE_INACTIVE;
     }
-    auto index = this->status_by_id[msg->node_id];
+    auto index = this->status_index_by_id[msg->node_id];
     this->node_status_records[index]->node_status = msg;
+    this->system_status_msg.health_status.node_statuses_list[index].node_status_code = msg->node_status_code;
 }
 
 bool SystemStatusManagerNode::isSystemHealthy() {
@@ -184,6 +213,100 @@ bool SystemStatusManagerNode::isSystemHealthy() {
     this->is_system_healthy = true;
     return this->is_system_healthy;
 }
+
+// TODO this is just a draft, MUST BE REFINED AND FINALIZED
+  nif_msgs::msg::MissionStatus::_mission_status_code_type SystemStatusManagerNode::getMissionStatusCode()
+  {
+    using nif_msgs::msg::MissionStatus;
+    using nif::common::msgs::RCFlagSummary;
+    
+    if (
+        this->has_rc_flag_summary &&
+        this->now() - this->rc_flag_summary_update_time < this->timeout_rc_flag_summary )
+    {
+
+      switch (this->rc_flag_summary.veh_flag)
+      {
+      case RCFlagSummary::VEH_FLAG_PURPLE:
+        return MissionStatus::MISSION_EMERGENCY_STOP;
+        break;
+      
+      case RCFlagSummary::VEH_FLAG_BLACK:
+        return MissionStatus::MISSION_PIT_IN;
+        break;
+      
+      case RCFlagSummary::VEH_FLAG_CHECKERED:
+        return MissionStatus::MISSION_PIT_IN;
+        break;
+
+      case RCFlagSummary::VEH_FLAG_BLANK:
+
+        switch (this->rc_flag_summary.track_flag)
+        {
+        case RCFlagSummary::TRACK_FLAG_RED:
+            return MissionStatus::MISSION_COMMANDED_STOP;
+            break;
+        case RCFlagSummary::TRACK_FLAG_YELLOW:
+            // TODO If in pit, STANDBY?
+            return MissionStatus::MISSION_SLOW_DRIVE;
+            break;
+
+        case RCFlagSummary::TRACK_FLAG_ORANGE:
+            return MissionStatus::MISSION_STANDBY;
+            break;
+
+        case RCFlagSummary::TRACK_FLAG_GREEN:
+            // TODO If in pit, PIT_OUT should be set and maintained.
+            // TODO If on track, RACE should be set and maintained.
+            // TODO  
+            return MissionStatus::MISSION_TEST;
+            break;
+
+        default:
+            return MissionStatus::MISSION_COMMANDED_STOP;
+            break;
+        }
+
+      case RCFlagSummary::VEH_FLAG_NULL:
+
+        switch (this->rc_flag_summary.track_flag)
+        {
+        case RCFlagSummary::TRACK_FLAG_RED:
+            return MissionStatus::MISSION_COMMANDED_STOP;
+            break;
+
+        case RCFlagSummary::TRACK_FLAG_ORANGE:
+            return MissionStatus::MISSION_STANDBY;
+            break;
+
+        case RCFlagSummary::TRACK_FLAG_YELLOW:
+            // TODO If in pit, STANDBY?
+            return MissionStatus::MISSION_SLOW_DRIVE;
+            break;
+
+        case RCFlagSummary::TRACK_FLAG_GREEN:
+            // TODO If in pit, PIT_OUT should be set and maintained.
+            // TODO If on track, RACE should be set and maintained.
+            // TODO  
+            return MissionStatus::MISSION_TEST;
+            break;
+
+        default:
+            return MissionStatus::MISSION_COMMANDED_STOP;
+            break;
+        }
+
+        break; // VEH_FLAG_BLANK
+      
+      default:
+        return MissionStatus::MISSION_COMMANDED_STOP;
+        break;
+      }
+    } else {
+        return MissionStatus::MISSION_COMMANDED_STOP;
+    }
+  }
+
 
 SystemStatusCode SystemStatusManagerNode::getSystemStatusCode() {
     // TODO implement meaningful FSM
@@ -206,13 +329,12 @@ void SystemStatusManagerNode::nodeStatusesAgeCheck() {
     // Extra iteration over all the records, it could be moved smw else, but
     // assuming a reasonable number of nodes, it shouldn't affect performance significantly.
     for (const auto &record : this->node_status_records) {
-        if (record->node_status &&
-            record->node_status->node_status_code != common::NodeStatusCode::NODE_NOT_INITIALIZED) {
-            // Check if last update is recent enough
-            if ((this->now() - record->node_status->stamp).nanoseconds() <=
-                std::chrono::duration_cast<std::chrono::nanoseconds>(nif::system::NODE_DEAD_TIMEOUT_US).count()) {
-                record->node_status->node_status_code = common::NODE_DEAD;
-            }
+        // Check if last update is recent enough
+        if (record->node_status && (this->now() - record->node_status->stamp) >=
+                                   nif::system::NODE_DEAD_TIMEOUT) {
+            record->node_status->node_status_code = common::NODE_DEAD;
+            auto index = this->status_index_by_id[record->node_status->node_id];
+            this->system_status_msg.health_status.node_statuses_list[index].node_status_code = record->node_status->node_status_code;
         }
     }
 }
@@ -221,6 +343,7 @@ nif::common::types::t_node_id SystemStatusManagerNode::newStatusRecord(
         const nif_msgs::srv::RegisterNodeStatus::Request::SharedPtr request) {
     nif::common::types::t_node_id node_id;
     node_id = next_node_id++;
+    nif_msgs::msg::NodeStatusShort node_status_short;
 
     {
         // Add the calling node to the registry of watched nodes
@@ -231,31 +354,36 @@ nif::common::types::t_node_id SystemStatusManagerNode::newStatusRecord(
         this->node_status_records.push_back(std::move(node_status_record_ptr));
     }
     auto node_index = this->node_status_records.size() - 1;
+    node_status_short.node_id = node_id;
+    node_status_short.node_name = request->node_name;
+    node_status_short.node_status_code = common::NODE_INACTIVE;
 
     this->system_status_msg.health_status.node_list.push_back(request->node_name);
+    auto it = this->system_status_msg.health_status.node_statuses_list.begin();
+    this->system_status_msg.health_status.node_statuses_list.insert(it + node_index, std::move(node_status_short));
 
-    this->status_by_id.insert({
+    this->status_index_by_id.insert({
                                       node_id, node_index
                               });
 
-    this->status_by_name.insert(
+    this->status_index_by_name.insert(
             {
                     std::move(request->node_name),
                     node_index
             });
 
     auto node_type = static_cast<const NodeType>(request->node_type);
-    auto by_type_registry = this->statuses_by_type.find(node_type);
+    auto by_type_registry = this->status_indices_by_type.find(node_type);
     // Key is not present
-    if (by_type_registry == this->statuses_by_type.end()) {
+    if (by_type_registry == this->status_indices_by_type.end()) {
         auto type_vector = std::make_unique<std::vector<t_record_index>>();
         type_vector->push_back(node_index);
-        this->statuses_by_type.insert({
+        this->status_indices_by_type.insert({
                                               node_type,
                                               std::move(type_vector)
                                       });
     } else {
-        this->statuses_by_type[node_type]->push_back(node_index);
+        this->status_indices_by_type[node_type]->push_back(node_index);
     }
 
     // Subscribe to node status topic
@@ -278,7 +406,8 @@ bool SystemStatusManagerNode::heartbeatOk() {
         return true;
     } else {
         // have not received update; check for timeout
-        t++;
+        if (t < 3 * max_counter_drop) t++; // Avoid huge (hardly recoverable) numbers
+
         if (t >= max_counter_drop) {
             this->recovery_enabled = false;
             return false;
@@ -316,9 +445,70 @@ void SystemStatusManagerNode::joystickCallback(const nif::common::msgs::Override
 
 void
 SystemStatusManagerNode::RCFlagSummaryCallback(
-        const nif::common::msgs::RCFlagSummary::UniquePtr msg)
-{
+        const nif::common::msgs::RCFlagSummary::UniquePtr msg) {
     this->rc_flag_summary = std::move(*msg);
     this->rc_flag_summary_update_time = this->now();
     this->has_rc_flag_summary = true;
+}
+
+rcl_interfaces::msg::SetParametersResult
+SystemStatusManagerNode::parametersCallback(
+        const std::vector<rclcpp::Parameter> &vector) {
+    rcl_interfaces::msg::SetParametersResult result;
+    result.successful = false;
+    result.reason = "";
+    for (const auto &param : vector) {
+        if (param.get_name() == "lat_autonomy_enabled") {
+            if (param.get_type() == rclcpp::ParameterType::PARAMETER_BOOL) {
+                if (true) // TODO implement switching policy, if needed
+                {
+                    this->system_status_msg.autonomy_status.lateral_autonomy_enabled = param.as_bool();
+                    result.successful = true;
+                }
+            }
+        } else if (param.get_name() == "long_autonomy_enabled") {
+            if (param.get_type() == rclcpp::ParameterType::PARAMETER_BOOL) {
+                if (true) {
+                    this->system_status_msg.autonomy_status.longitudinal_autonomy_enabled = param.as_bool();
+                    result.successful = true;
+                }
+            }
+        }
+        return result;
+    }
+}
+
+double nif::system::SystemStatusManagerNode::getMissionMaxVelocityMps(
+        MissionStatus::_mission_status_code_type mission_code) {
+    double max_vel_mps = 0.0;
+            switch (mission_code) {
+                case MissionStatus::MISSION_EMERGENCY_STOP:
+                    max_vel_mps = 0.0;
+                    break;
+                case MissionStatus::MISSION_COMMANDED_STOP:
+                    max_vel_mps = 0.0;
+                    break;
+                case MissionStatus::MISSION_STANDBY:
+                    max_vel_mps = 0.0;
+                    break;
+                case MissionStatus::MISSION_SLOW_DRIVE:
+                    max_vel_mps = 10.0;
+                    break;
+                case MissionStatus::MISSION_PIT_IN:
+                    max_vel_mps = 10.0;
+                    break;
+                case MissionStatus::MISSION_PIT_OUT:
+                    max_vel_mps = 10.0;
+                    break;
+                case MissionStatus::MISSION_RACE:
+                    max_vel_mps = 67.0;
+                    break;
+                case MissionStatus::MISSION_TEST:
+                    max_vel_mps = 67.0;
+                    break;
+                default:
+                    max_vel_mps = 0.0;
+                    break;
+            }
+    return max_vel_mps;
 }

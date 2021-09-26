@@ -16,7 +16,9 @@ void nif::control::ControlSafetyLayerNode::afterSystemStatusCallback() {
     //    this->getSystemStatus().health_status.system_failure
     if (this->getSystemStatus().health_status.communication_failure || // too conservative
         (this->lat_autonomy_enabled && this->getSystemStatus().health_status.localization_failure) ||
-        this->getSystemStatus().health_status.commanded_stop) {
+        this->getSystemStatus().health_status.commanded_stop ||
+        this->getSystemStatus().autonomy_status.emergency_mode_enabled ) 
+    {
         this->emergency_lane_enabled = true;
     } else {
         this->emergency_lane_enabled = false;
@@ -34,6 +36,15 @@ void nif::control::ControlSafetyLayerNode::controlOverrideCallback(
 }
 
 void nif::control::ControlSafetyLayerNode::run() {
+    // send diagnostic hb to vehicle interface
+    auto joy_hb = std_msgs::msg::Int32();
+    joy_hb.data = this->counter_hb;
+    this->diagnostic_hb_pub->publish(joy_hb);
+    this->counter_hb++;
+    if (this->counter_hb == 8) {
+        this->counter_hb = 0;
+    }
+
     bool is_overriding_steering = false;
     nif::common::NodeStatusCode node_status = common::NODE_ERROR;
 
@@ -46,7 +57,7 @@ void nif::control::ControlSafetyLayerNode::run() {
         this->control_cmd.header.stamp = this->now();
 //      TODO EMERGENCY LANE HANDLING
         double error = emergencyVelocityError();
-        double safe_brake_cmd = this->getBrakeCmd(error);
+        double safe_brake_cmd = this->emergencyBrakeCmd(error);
 //        RCLCPP_INFO(this->get_logger(), "safe_brake_cmd: %f", safe_brake_cmd);
         safe_brake_cmd = std::max(safe_brake_cmd,
                                   static_cast<double>(this->override_control_cmd.braking_control_cmd.data));
@@ -66,12 +77,28 @@ void nif::control::ControlSafetyLayerNode::run() {
         this->publishSteeringCmd(this->control_cmd.steering_control_cmd);
 
         this->control_pub->publish(this->control_cmd);
-        node_status = common::NODE_OK;
+        if (this->emergency_buffer_empty ||
+            !this->hasSystemStatus()     ||
+            this->now() - this->getSystemStatusUpdateTime() >
+            rclcpp::Duration::from_seconds(0.5))
+        { 
+            node_status = common::NODE_ERROR;
+        } else {
+            node_status = common::NODE_OK;
+        }
+
         this->setNodeStatus(node_status);
         this->bufferFlush();
+        
+        // Recover emergency buffer empty in manual mode
+        if (this->emergency_buffer_empty &&
+            !lat_autonomy_enabled &&
+            !long_autonomy_enabled )
+            this->emergency_buffer_empty = false;
+
         return;
     } else {
-
+        node_status = common::NODE_OK;
         // Check / Process Overrides
         // If override.steering is greater than the threshold, use it
         // TODO If override.brake is greater than 0.0, use it
@@ -94,13 +121,15 @@ void nif::control::ControlSafetyLayerNode::run() {
                 if (!this->control_buffer.empty()) {
                     auto top_control_cmd = std::move(*this->control_buffer.top());
                     this->buffer_empty_counter = 0;
-                    node_status = common::NODE_OK;
 
                     if (!is_overriding_steering)
                         this->control_cmd.steering_control_cmd = top_control_cmd.steering_control_cmd;
 
-                    if (long_autonomy_enabled)
+                    if (long_autonomy_enabled) {
                         this->control_cmd.desired_accel_cmd = top_control_cmd.desired_accel_cmd;
+                    } else {
+                        this->control_cmd.desired_accel_cmd.data = 0.0;
+                    }
                     //      TODO implement safety checks
                 } else {
                     // Set error, but keep going
@@ -116,12 +145,15 @@ void nif::control::ControlSafetyLayerNode::run() {
                         return;
                     }
                 }
+            } else {
+                this->emergency_buffer_empty = false;
             }
 
             this->publishSteeringCmd(this->control_cmd.steering_control_cmd);
 
 //    Always allow braking override
-            if (this->override_control_cmd.braking_control_cmd.data > 1.0) {
+            if (this->override_control_cmd.braking_control_cmd.data > 100.0)
+            {
                 this->control_cmd.braking_control_cmd =
                         this->override_control_cmd.braking_control_cmd;
                 this->control_cmd.accelerator_control_cmd.data = 0.0;
@@ -155,7 +187,6 @@ void nif::control::ControlSafetyLayerNode::run() {
     }
 
     this->bufferFlush();
-
 }
 
 bool nif::control::ControlSafetyLayerNode::publishSteeringCmd(
@@ -170,9 +201,11 @@ bool nif::control::ControlSafetyLayerNode::publishSteeringCmd(
 }
 
 bool nif::control::ControlSafetyLayerNode::publishAcceleratorCmd(
-        const nif::common::msgs::ControlAcceleratorCmd &msg) const {
+        common::msgs::ControlAcceleratorCmd msg) const {
     //  TODO implement safety checks
     if (this->accelerator_control_pub) {
+        if (msg.data > this->throttle_cmd_max)
+            msg.data = this->throttle_cmd_max;
         this->accelerator_control_pub->publish(msg);
 
         return true; // OK
@@ -181,7 +214,7 @@ bool nif::control::ControlSafetyLayerNode::publishAcceleratorCmd(
 }
 
 bool nif::control::ControlSafetyLayerNode::publishBrakingCmd(
-        const nif::common::msgs::ControlBrakingCmd &msg) const {
+        common::msgs::ControlBrakingCmd msg) const {
 
     //  TODO implement safety checks
     if (this->braking_control_pub) {
@@ -199,6 +232,19 @@ bool nif::control::ControlSafetyLayerNode::publishGearCmd(
     //  TODO use min/max as constants here
     if (msg.data >= 0 && msg.data < 6) {
         this->gear_control_pub->publish(msg);
+
+        return true; // OK
+    }
+    return false;
+}
+
+bool nif::control::ControlSafetyLayerNode::publishDesiredAcceleration(std_msgs::msg::Float32 msg) const
+{
+    //  TODO implement safety checks
+    if (this->desired_acceleration_pub) {
+        if (msg.data > this->desired_acceleration_cmd_max)
+            msg.data = this->desired_acceleration_cmd_max;
+        this->desired_acceleration_pub->publish(msg);
 
         return true; // OK
     }
@@ -227,15 +273,15 @@ nif::control::ControlSafetyLayerNode::parametersCallback(
             if (param.get_type() == rclcpp::ParameterType::PARAMETER_BOOL) {
                 if (true) // TODO implement switching policy, if needed
                 {
-                    this->lat_autonomy_enabled = param.as_bool();
-                    result.successful = true;
+//                    this->lat_autonomy_enabled = param.as_bool();
+                    result.successful = false;
                 }
             }
         } else if (param.get_name() == "long_autonomy_enabled") {
             if (param.get_type() == rclcpp::ParameterType::PARAMETER_BOOL) {
                 if (true) {
-                    this->long_autonomy_enabled = param.as_bool();
-                    result.successful = true;
+//                    this->long_autonomy_enabled = param.as_bool();
+                    result.successful = false;
                 }
             }
         } else if (param.get_name() == "max_steering_angle_deg") {

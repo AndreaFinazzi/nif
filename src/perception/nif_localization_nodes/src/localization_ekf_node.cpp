@@ -160,6 +160,20 @@ void EKFLocalizer::run() {
       ekf_odom_msg.pose.pose.position.x = m_ekf.m_xhat.ptr<double>(0)[0];
       ekf_odom_msg.pose.pose.position.y = m_ekf.m_xhat.ptr<double>(1)[0];
       ekf_odom_msg.pose.pose.position.z = 0.0;
+
+      // Twist messages
+      if (this->getSystemStatus().health_status.localization_failure == false &&
+          m_inspva_heading_init) {
+        ekf_odom_msg.twist.twist.linear.x = m_dGPS_vel_x_onBody; 
+        ekf_odom_msg.twist.twist.linear.y = m_dGPS_vel_y_onBody;
+      } else {
+        ekf_odom_msg.twist.twist.linear.x = m_dVelolcity_X;
+        ekf_odom_msg.twist.twist.linear.y = 0.;
+      }
+      ekf_odom_msg.twist.twist.angular.x = m_dIMU_roll_rate; 
+      ekf_odom_msg.twist.twist.angular.y = m_dIMU_pitch_rate; 
+      ekf_odom_msg.twist.twist.angular.z = m_dIMU_yaw_rate;
+
       tf2::Quaternion quat_ekf;
       geometry_msgs::msg::Quaternion quat_ekf_msg;
       double angle_z_rad = m_ekf.m_xhat.ptr<double>(2)[0];
@@ -252,7 +266,7 @@ void EKFLocalizer::GPSLATLONCallback(
   ////////////////////////////////////////////////////////////////////////////////////
 }
 
-// HOW TO CORRECT HEADING IN EKD
+// HOW TO CORRECT HEADING IN EKF
 // 1. Bottom GPS
 // 2. Top GPS
 // 3. BestVel
@@ -263,12 +277,22 @@ void EKFLocalizer::BOTTOMINSPVACallback(
   if (yaw != 0.0) {
     m_inspva_heading_init = true;
   }
-  if (!m_inspva_heading_init){
+  if (!m_inspva_heading_init) 
+  {
+    RCLCPP_WARN_ONCE(this->get_logger(), "INSPVA HEADING IS NOT INITIALIZED");
     return;
+    
+  } else {
+    RCLCPP_INFO_ONCE(this->get_logger(), "INSPVA HEADING INITIALIZED");
   }
 
   m_dGPS_Heading = yaw;
   m_dGPS_roll = msg->roll * nif::common::constants::DEG2RAD;
+  m_dGPS_vel_x_onBody = msg->north_velocity * std::cos(-yaw) +
+                        msg->east_velocity * std::sin(-yaw);
+  m_dGPS_vel_y_onBody = msg->north_velocity * std::sin(-yaw) -
+                        msg->east_velocity * std::cos(-yaw);
+
   bGPSHeading = true;
   if (m_use_inspva_heading)
   {
@@ -283,14 +307,20 @@ void EKFLocalizer::TOPINSPVACallback(
   if(yaw != 0.0)
   {
     m_inspva_heading_init = true;
-    std::cout << "INSPVA HEADING IS NOT INITIALIZED" << std::endl;
   }
   if (!m_inspva_heading_init) {
+    RCLCPP_WARN_ONCE(this->get_logger(), "INSPVA HEADING IS NOT INITIALIZED");
     return;
   }
 
   m_dGPS_Heading = yaw;
   m_dGPS_roll = msg->roll * nif::common::constants::DEG2RAD;
+
+  m_dGPS_vel_x_onBody = msg->north_velocity * std::cos(-yaw) +
+                   msg->east_velocity * std::sin(-yaw);
+  m_dGPS_vel_y_onBody = msg->north_velocity * std::sin(-yaw) -
+                        msg->east_velocity * std::cos(-yaw);
+
   bGPSHeading = true;
   if (m_use_inspva_heading) {
     heading_flag = true;
@@ -334,6 +364,9 @@ void EKFLocalizer::MessegefilteringCallback(
   this->imu_time_last_update = this->now();
 
   m_dIMU_yaw_rate = imu_msg->angular_velocity.z;
+  m_dIMU_roll_rate = imu_msg->angular_velocity.x;
+  m_dIMU_pitch_rate = imu_msg->angular_velocity.y;
+
   m_dVelolcity_X =
       (wheel_speed_msg->front_right + wheel_speed_msg->front_left) / 2 *
       nif::common::constants::KPH2MS;

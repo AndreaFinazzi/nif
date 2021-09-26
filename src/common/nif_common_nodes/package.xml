@@ -18,6 +18,7 @@
 
   <depend>nif_common</depend>
   <depend>nif_utils</depend>
+  <depend>nif_msgs</depend>
   <!-- TODO solve cross-dependancy -->
   <!-- <depend>nif_node_status_manager</depend> -->
 

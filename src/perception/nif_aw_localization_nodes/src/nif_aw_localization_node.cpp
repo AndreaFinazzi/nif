@@ -18,7 +18,18 @@ using namespace std::placeholders;
 
 // clang-format on
 AWLocalizationNode::AWLocalizationNode(const std::string &node_name)
-    : IBaseNode(node_name), dim_x_(6 /* x, y, yaw, yaw_bias, vx, wz */) {
+    // : IBaseNode(node_name), dim_x_(6 /* x, y, yaw, yaw_bias, vx, wz */)
+    : Node(node_name), dim_x_(6 /* x, y, yaw, yaw_bias, vx, wz */)
+
+{
+  this->declare_parameter<bool>("use_inspva_heading", bool(true));
+  this->declare_parameter<double>("bestvel_heading_update_velocity_thres", double(2.));
+  this->declare_parameter<double>("origin_lat", double(39.809786));
+  this->declare_parameter<double>("origin_lon", double(-86.235148));
+
+  // m_origin_lat = this->get_global_parameter<double>("coordinates.ecef_ref_lat");
+  // m_origin_lon = this->get_global_parameter<double>("coordinates.ecef_ref_lon");
+
   this->declare_parameter<bool>("show_debug_info", bool(false));
   this->declare_parameter<double>("predict_frequency", double(50.0));
   ekf_dt_ = 1.0 / std::max(ekf_rate_, 0.1);
@@ -27,14 +38,10 @@ AWLocalizationNode::AWLocalizationNode(const std::string &node_name)
   this->declare_parameter<int>("extend_state_step", int(50));
   this->declare_parameter<std::string>("pose_frame_id", std::string("odom"));
 
-  this->declare_parameter<std::string>("measure_odom_name", std::string("/ndt_odom"));
-  this->declare_parameter<std::string>("system_odom_name", std::string("/Odometry/system"));
-  this->declare_parameter<std::string>("final_output_odom_name", std::string("/Odometry/ekf_estimated"));
-
   /* pose measurement */
   this->declare_parameter<double>("pose_additional_delay", double(0.0));
   this->declare_parameter<double>("pose_measure_uncertainty_time", double(0.01));
-  this->declare_parameter<double>("pose_rate", double(10.0));              //  used for covariance calculation
+  this->declare_parameter<double>("pose_rate", double(20.0));              //  used for covariance calculation
   this->declare_parameter<double>("pose_gate_dist", double(10000.0)); //  Mahalanobis limit
   this->declare_parameter<double>("pose_stddev_x", double(0.05));
   this->declare_parameter<double>("pose_stddev_y", double(0.05));
@@ -60,17 +67,17 @@ AWLocalizationNode::AWLocalizationNode(const std::string &node_name)
     proc_stddev_yaw_bias_c = 0.0;
   }
 
+  this->m_use_inspva_heading =
+      this->get_parameter("use_inspva_heading").as_bool();
+  this->get_parameter("bestvel_heading_update_velocity_thres").as_double();
+  this->m_origin_lat = this->get_parameter("origin_lat").as_double();
+  this->m_origin_lon = this->get_parameter("origin_lon").as_double();
 
   this->show_debug_info_ = this->get_parameter("show_debug_info").as_bool();
   this->ekf_rate_ = this->get_parameter("predict_frequency").as_double();
   this->tf_rate_ = this->get_parameter("tf_rate").as_double();
   this->enable_yaw_bias_estimation_ = this->get_parameter("enable_yaw_bias_estimation").as_bool();
   this->extend_state_step_ = this->get_parameter("extend_state_step").as_int();
-  this->pose_frame_id_ = this->get_parameter("pose_frame_id").as_string();
-
-  this->measure_odom_name_ = this->get_parameter("measure_odom_name").as_string();
-  this->system_odom_name_ = this->get_parameter("system_odom_name").as_string();
-  this->final_output_odom_name_ = this->get_parameter("final_output_odom_name").as_string();
 
   /* pose measurement */
   this->pose_additional_delay_ = this->get_parameter("pose_additional_delay").as_double();
@@ -97,6 +104,9 @@ AWLocalizationNode::AWLocalizationNode(const std::string &node_name)
   proc_stddev_wz_c = this->get_parameter("proc_stddev_wz_c").as_double();
 
 
+  RCLCPP_INFO(this->get_logger(), "ORIGIN LATITUDE : %f", this->m_origin_lat);
+  RCLCPP_INFO(this->get_logger(), "ORIGIN LONGITUDE : %f", this->m_origin_lon);
+
   /* convert to continuous to discrete */
   proc_cov_vx_d_ = std::pow(proc_stddev_vx_c, 2.0) * ekf_dt_;
   proc_cov_wz_d_ = std::pow(proc_stddev_wz_c, 2.0) * ekf_dt_;
@@ -107,24 +117,30 @@ AWLocalizationNode::AWLocalizationNode(const std::string &node_name)
   using namespace std::chrono_literals; // NOLINT
   timer_control_ = this->create_wall_timer(
       10ms, std::bind(&AWLocalizationNode::timerCallback, this));
-  timer_tf_ = this->create_wall_timer(
-      10ms, std::bind(&AWLocalizationNode::timerTFCallback, this));
 
-  pub_odom_ = this->create_publisher<nav_msgs::msg::Odometry>(final_output_odom_name_, nif::common::constants::QOS_EGO_ODOMETRY);
+  pub_odom_ = this->create_publisher<nav_msgs::msg::Odometry>(
+      "out_odometry_ekf_estimated", nif::common::constants::QOS_EGO_ODOMETRY);
   pub_yaw_bias_ = this->create_publisher<std_msgs::msg::Float64>("estimated_yaw_bias", nif::common::constants::QOS_EGO_ODOMETRY);
   pub_bestpos_odometry = this->create_publisher<nav_msgs::msg::Odometry>(
       "out_odometry_bestpos", nif::common::constants::QOS_EGO_ODOMETRY);
 
-  // sub_initialpose_ = this->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>("initialpose", 1, std::bind(&AWLocalizationNode::callbackInitialPose, this, std::placeholders::_1));
-  sub_odom_measure_ = this->create_subscription<nav_msgs::msg::Odometry>(measure_odom_name_, 5, std::bind(&AWLocalizationNode::callbackOdometryMeasure, this, std::placeholders::_1));
-  sub_odom_system_ = this->create_subscription<nav_msgs::msg::Odometry>(system_odom_name_, 20, std::bind(&AWLocalizationNode::callbackOdometrySystem, this, std::placeholders::_1));
-
+  // POSE(X, Y)
   sub_gpslatlon = this->create_subscription<novatel_oem7_msgs::msg::BESTPOS>(
       "in_bestpos", nif::common::constants::QOS_SENSOR_DATA,
       std::bind(&AWLocalizationNode::GPSLATLONCallback, this, std::placeholders::_1));
+  // NOT USED
   subINSPVA = this->create_subscription<novatel_oem7_msgs::msg::INSPVA>(
       "in_inspva", nif::common::constants::QOS_SENSOR_DATA,
-      std::bind(&AWLocalizationNode::GPSINSPVACallback, this, std::placeholders::_1));
+      std::bind(&AWLocalizationNode::BOTTOMINSPVACallback, this,
+                std::placeholders::_1));
+  // HEADING
+  subTOPINSPVA = this->create_subscription<novatel_oem7_msgs::msg::INSPVA>(
+      "in_top_inspva", nif::common::constants::QOS_SENSOR_DATA,
+      std::bind(&AWLocalizationNode::TOPINSPVACallback, this, std::placeholders::_1));
+  // HEADING BACK-UP SOLUTION
+  subBESTVEL = this->create_subscription<novatel_oem7_msgs::msg::BESTVEL>(
+      "in_bestvel", nif::common::constants::QOS_SENSOR_DATA,
+      std::bind(&AWLocalizationNode::BESTVELCallback, this, std::placeholders::_1));
 
   auto rmw_qos_profile =
       nif::common::constants::QOS_SENSOR_DATA.get_rmw_qos_profile();
@@ -147,6 +163,17 @@ AWLocalizationNode::AWLocalizationNode(const std::string &node_name)
   /* debug */
   pub_debug_ = this->create_publisher<std_msgs::msg::Float64MultiArray>("debug", 1);
   pub_measured_pose_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("debug/measured_pose", 1);
+
+  // Set the ltp reference point
+  nif::localization::utils::GeodeticConverter::GeoRef ref;
+  ref.latitude = m_origin_lat;
+  ref.longitude = m_origin_lon;
+  ref.altitude = 0.;
+  conv_.initializeReference(ref);
+
+  gps_timeout = rclcpp::Duration(1, 0);
+
+  // this->setNodeStatus(nif::common::NODE_INITIALIZED);
 };
 
 AWLocalizationNode::~AWLocalizationNode(){};
@@ -156,55 +183,61 @@ AWLocalizationNode::~AWLocalizationNode(){};
  */
 void AWLocalizationNode::timerCallback()
 {
+  if (bImuFirstCall && bGPS && bGPSHeading) {
+    auto node_status = nif::common::NODE_ERROR;
 
-  // DEBUG_INFO("========================= timer called
-  // =========================");
+    // If the geofence data is too old, report error, but keep going.
+    if ((this->now().nanoseconds() - bestpos_time_last_update.nanoseconds()) >=
+            this->gps_timeout.nanoseconds() ||
+        (this->now().nanoseconds() - imu_time_last_update.nanoseconds()) >=
+            this->gps_timeout.nanoseconds()) {
+      // Set error, but keep going
+      node_status = nif::common::NODE_ERROR;
+    } else {
+      node_status = nif::common::NODE_OK;
+    }
 
-  /* predict model in EKF */
-  auto start = std::chrono::system_clock::now();
-  // DEBUG_INFO("------------------------- start prediction
-  // -------------------------");
-  predictKinematicsModel();
-  double elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(
-                       std::chrono::system_clock::now() - start)
-                       .count();
-  // DEBUG_INFO("[EKF] predictKinematicsModel calculation time = %f [ms]",
-  // elapsed * 1.0e-6); DEBUG_INFO("------------------------- end prediction
-  // -------------------------\n");
+    predictKinematicsModel();
 
-  /* pose measurement update */
-  if (measure_odom_ptr_ != nullptr) {
-    // DEBUG_INFO("------------------------- start Pose
-    // -------------------------");
-    start = std::chrono::system_clock::now();
-    measurementUpdatePose(measure_odom_ptr_);
-    elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(
-                  std::chrono::system_clock::now() - start)
-                  .count();
-    // DEBUG_INFO("[EKF] measurementUpdatePose calculation time = %f [ms]",
-    // elapsed * 1.0e-6); DEBUG_INFO("------------------------- end Pose
-    // -------------------------\n");
+    double veh_x = m_dVelolcity_X;
+    double veh_yaw_rate = m_dIMU_yaw_rate;
+    double correction_x = m_dGPS_X;
+    double correction_y = m_dGPS_Y;
+    double correction_yaw = m_dGPS_Heading;
+
+    /* pose measurement update */
+    if (gps_flag == true) {
+      measurementUpdatePose(bestpos_time_last_update, correction_x,
+                            correction_y, correction_yaw);
+      // std::cout << "correction_yaw : " << correction_yaw << std::endl;
+
+      gps_flag = false;
+    }
+
+    if(measure_flag == true)
+    {
+      measurementUpdateTwist(imu_time_last_update, veh_x, veh_yaw_rate);
+      measure_flag = false;
+    }
+
+    /* set current pose, twist */
+    setCurrentResult();
+
+    /* publish ekf result */
+    publishEstimateResult();
+
+    // this->setNodeStatus(node_status);
+
+
+    // std::cout << "Run " << std::endl;
+
+  } else {
+    RCLCPP_DEBUG(this->get_logger(), "Waiting for -[/novatel_bottom/bestpos]");
+    RCLCPP_DEBUG(this->get_logger(), "            -[/novatel_bottom/inspva]");
+    RCLCPP_DEBUG(this->get_logger(), "            -[/novatel_bottom/imu/data]");
+    RCLCPP_DEBUG(this->get_logger(),
+                 "            -[/raptor_dbw_interface/wheel_speed_report]");
   }
-
-  /* twist measurement update */
-  if (system_odom_ptr_ != nullptr) {
-    // DEBUG_INFO("------------------------- start twist
-    // -------------------------");
-    start = std::chrono::system_clock::now();
-    measurementUpdateTwist(system_odom_ptr_);
-    elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(
-                  std::chrono::system_clock::now() - start)
-                  .count();
-    // DEBUG_INFO("[EKF] measurementUpdateTwist calculation time = %f [ms]",
-    // elapsed * 1.0e-6); DEBUG_INFO("------------------------- end twist
-    // -------------------------\n");
-  }
-
-  /* set current pose, twist */
-  setCurrentResult();
-
-  /* publish ekf result */
-  publishEstimateResult();
 }
 
 void AWLocalizationNode::showCurrentX()
@@ -222,7 +255,7 @@ void AWLocalizationNode::showCurrentX()
  */
 void AWLocalizationNode::setCurrentResult()
 {
-  current_ekf_pose_.header.frame_id = pose_frame_id_;
+  current_ekf_pose_.header.frame_id = nif::common::frame_id::localization::ODOM;
   current_ekf_pose_.header.stamp = this->now();
   current_ekf_pose_.pose.position.x = ekf_.getXelement(IDX::X);
   current_ekf_pose_.pose.position.y = ekf_.getXelement(IDX::Y);
@@ -245,101 +278,20 @@ void AWLocalizationNode::setCurrentResult()
   q_tf.setRPY(roll, pitch, yaw);
   tf2::convert(q_tf, current_ekf_pose_.pose.orientation);
 
-  current_ekf_twist_.header.frame_id = pose_frame_id_;
+  current_ekf_twist_.header.frame_id = nif::common::frame_id::localization::ODOM;
   current_ekf_twist_.header.stamp = this->now();
   current_ekf_twist_.twist.linear.x = ekf_.getXelement(IDX::VX);
   current_ekf_twist_.twist.angular.z = ekf_.getXelement(IDX::WZ);
 }
 
-/*
- * timerTFCallback
- */
-void AWLocalizationNode::timerTFCallback()
-{
-  if (current_ekf_pose_.header.frame_id == "")
-    return;
-
-  // geometry_msgs::TransformStamped transformStamped;
-  // transformStamped.header.stamp = ros::Time::now();
-  // transformStamped.header.frame_id = current_ekf_pose_.header.frame_id;
-  // transformStamped.child_frame_id = "base_link";
-  // transformStamped.transform.translation.x = current_ekf_pose_.pose.position.x;
-  // transformStamped.transform.translation.y = current_ekf_pose_.pose.position.y;
-  // transformStamped.transform.translation.z = current_ekf_pose_.pose.position.z;
-
-  // transformStamped.transform.rotation.x = current_ekf_pose_.pose.orientation.x;
-  // transformStamped.transform.rotation.y = current_ekf_pose_.pose.orientation.y;
-  // transformStamped.transform.rotation.z = current_ekf_pose_.pose.orientation.z;
-  // transformStamped.transform.rotation.w = current_ekf_pose_.pose.orientation.w;
-
-  // tf_br_.sendTransform(transformStamped);
-}
-
-/*
- * getTransformFromTF
- */
-bool AWLocalizationNode::getTransformFromTF(std::string parent_frame, std::string child_frame,
-                                      geometry_msgs::msg::TransformStamped& transform)
-{
-  // tf2_ros::Buffer tf_buffer;
-  // tf2_ros::TransformListener tf_listener(tf_buffer);
-  // ros::Duration(0.1).sleep();
-  // if (parent_frame.front() == '/')
-  //   parent_frame.erase(0, 1);
-  // if (child_frame.front() == '/')
-  //   child_frame.erase(0, 1);
-
-  // TODO
-  // for (int i = 0; i < 50; ++i)
-  // {
-  //   try
-  //   {
-  //     transform = tf_buffer.lookupTransform(parent_frame, child_frame, ros::Time(0));
-  //     return true;
-  //   }
-  //   catch (tf2::TransformException& ex)
-  //   {
-  //     ROS_WARN("%s", ex.what());
-  //     ros::Duration(0.1).sleep();
-  //   }
-  // }
-  return false;
-}
-
-/*
- * callbackInitialPose
- */
-// void AWLocalizationNode::callbackInitialPose(const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr initialpose)
-// {
-//   geometry_msgs::msg::TransformStamped transform;
-//   if (!getTransformFromTF(pose_frame_id_, initialpose->header.frame_id, transform))
-//   {
-//     // ROS_ERROR("[EKF] TF transform failed. parent = %s, child = %s", pose_frame_id_.c_str(),
-//               // initialpose->header.frame_id.c_str());
-//   };
-
-//   Eigen::MatrixXd X(dim_x_, 1);
-//   Eigen::MatrixXd P = Eigen::MatrixXd::Zero(dim_x_, dim_x_);
-
-//   X(IDX::X) = initialpose->pose.pose.position.x + transform.transform.translation.x;
-//   X(IDX::Y) = initialpose->pose.pose.position.y + transform.transform.translation.y;
-//   X(IDX::YAW) = tf2::getYaw(initialpose->pose.pose.orientation) + tf2::getYaw(transform.transform.rotation);
-//   X(IDX::YAWB) = 0.0;
-//   X(IDX::VX) = 0.0;
-//   X(IDX::WZ) = 0.0;
-
-//   P(IDX::X, IDX::X) = initialpose->pose.covariance[0];
-//   P(IDX::Y, IDX::Y) = initialpose->pose.covariance[6 + 1];
-//   P(IDX::YAW, IDX::YAW) = initialpose->pose.covariance[6 * 5 + 5];
-//   P(IDX::YAWB, IDX::YAWB) = 0.0001;
-//   P(IDX::VX, IDX::VX) = 0.01;
-//   P(IDX::WZ, IDX::WZ) = 0.01;
-
-//   ekf_.init(X, P, extend_state_step_);
-// };
-
+// HOW TO CORRECT HEADING IN EKF
+// 1. Bottom GPS
+// 2. Top GPS
+// 3. BestVel
 void AWLocalizationNode::GPSLATLONCallback(
     const novatel_oem7_msgs::msg::BESTPOS::SharedPtr msg) {
+
+  this->bestpos_time_last_update = this->now();
   nif::localization::utils::GeodeticConverter::GeoRef currentGPS;
   currentGPS.latitude = (double)msg->lat;
   currentGPS.longitude = (double)msg->lon;
@@ -382,12 +334,70 @@ void AWLocalizationNode::GPSLATLONCallback(
   ////////////////////////////////////////////////////////////////////////////////////
 }
 
-void AWLocalizationNode::GPSINSPVACallback(
+void AWLocalizationNode::BOTTOMINSPVACallback(
     const novatel_oem7_msgs::msg::INSPVA::SharedPtr msg) {
   double yaw = (-msg->azimuth) * nif::common::constants::DEG2RAD;
+  if (yaw != 0.0) {
+    m_inspva_heading_init = true;
+  }
+  if (!m_inspva_heading_init) {
+    // std::cout << "INSPVA HEADING IS NOT INITIALIZED" << std::endl;
+    return;
+  }
+
   m_dGPS_Heading = yaw;
   m_dGPS_roll = msg->roll * nif::common::constants::DEG2RAD;
   bGPSHeading = true;
+  if (m_use_inspva_heading) {
+    heading_flag = true;
+  }
+}
+
+void AWLocalizationNode::TOPINSPVACallback(
+    const novatel_oem7_msgs::msg::INSPVA::SharedPtr msg) {
+  double yaw = (-msg->azimuth) * nif::common::constants::DEG2RAD; // TODO
+
+  if (yaw != 0.0) {
+    m_inspva_heading_init = true;
+  }
+  if (!m_inspva_heading_init) {
+    // std::cout << "INSPVA HEADING IS NOT INITIALIZED" << std::endl;
+    return;
+  }
+
+  m_dGPS_Heading = yaw;
+  m_dGPS_roll = msg->roll * nif::common::constants::DEG2RAD;
+  bGPSHeading = true;
+  if (m_use_inspva_heading) {
+    heading_flag = true;
+  }
+}
+
+void AWLocalizationNode::BESTVELCallback(
+    const novatel_oem7_msgs::msg::BESTVEL::SharedPtr msg) {
+  double yaw = (-msg->trk_gnd) * nif::common::constants::DEG2RAD;
+
+  if (!m_inspva_heading_init &&
+      m_use_inspva_heading) // INSPVA HEADING BACK UP SOLUTITON
+  {
+    m_dGPS_Heading = yaw;
+    // m_dGPS_roll = msg->roll * nif::common::constants::DEG2RAD;
+    bGPSHeading = true;
+  }
+
+  // When we don't use INSPVA HEADING, we use bestvel heading
+  // param [use_inspva_heading]
+  //       True :  Use bestvel for only back-up solution
+  //       False : Use bestvel for heading estimation
+  if (!m_use_inspva_heading) {
+    m_dGPS_Heading = yaw;
+    // m_dGPS_roll = msg->roll * nif::common::constants::DEG2RAD;
+    bGPSHeading = true;
+  }
+
+  if (m_dVelolcity_X > m_bestvel_heading_update_thres) {
+    heading_flag = true;
+  }
 }
 
 void AWLocalizationNode::MessegefilteringCallback(
@@ -403,6 +413,7 @@ void AWLocalizationNode::MessegefilteringCallback(
   auto ImuCurrentTime = rclcpp::Time(imu_msg->header.stamp);
   if (!bImuFirstCall) {
     bImuFirstCall = true;
+    this->imu_time_last_update = this->now();
     ImuPrevTimeDouble =
         static_cast<double>(ImuCurrentTime.seconds()) +
         static_cast<double>(ImuCurrentTime.nanoseconds()) * 1e-9;
@@ -411,44 +422,6 @@ void AWLocalizationNode::MessegefilteringCallback(
   ImuTimeDouble = static_cast<double>(ImuCurrentTime.seconds()) +
                   static_cast<double>(ImuCurrentTime.nanoseconds()) * 1e-9;
 };
-
-/*
- * callbackOdometryMeasure
- */
-void AWLocalizationNode::callbackOdometryMeasure(const nav_msgs::msg::Odometry::SharedPtr msg)
-{
-  measure_odom_ptr_ = std::make_shared<nav_msgs::msg::Odometry>(*msg);
-  if (!use_pose_with_covariance_)
-  {
-    // std::cout << "No use pose cov" << std::endl;
-  }
-
-  if (use_pose_with_covariance_)
-  {
-    // std::cout << "Use pose cov" << std::endl;
-    current_pose_covariance_ = msg->pose.covariance;
-  }
-};
-
-/*
- * callbackOdometrySystem
- */
-void AWLocalizationNode::callbackOdometrySystem(const nav_msgs::msg::Odometry::SharedPtr msg)
-{
-
-  if (!use_twist_with_covariance_)
-  {
-    system_odom_ptr_ = std::make_shared<nav_msgs::msg::Odometry>(*msg);
-    twist_linear_x = msg -> twist.twist.linear.x;
-      
-  }
-
-  if (use_twist_with_covariance_)
-  {
-    current_twist_covariance_ = msg->twist.covariance;
-  } 
-};
-
 
 
 /*
@@ -573,13 +546,17 @@ void AWLocalizationNode::predictKinematicsModel()
 /*
  * measurementUpdatePose
  */
-void AWLocalizationNode::measurementUpdatePose(const nav_msgs::msg::Odometry::SharedPtr msg)
-{
- //  if (msg->header.frame_id != pose_frame_id_)
- //  {
- //    ROS_WARN_DELAYED_THROTTLE(2, "pose frame_id is %s, but pose_frame is set as %s. They must be same.",
- //                              msg->header.frame_id.c_str(), pose_frame_id_.c_str());
- //  }
+void AWLocalizationNode::measurementUpdatePose(rclcpp::Time measurement_time_,
+                                               const double &corr_x_,
+                                               const double &corr_y_,
+                                               const double &corr_yaw_) {
+  //  if (msg->header.frame_id != nif::common::frame_id::localization::ODOM)
+  //  {
+  //    ROS_WARN_DELAYED_THROTTLE(2, "pose frame_id is %s, but pose_frame is set
+  //    as %s. They must be same.",
+  //                              msg->header.frame_id.c_str(),
+  //                              nif::common::frame_id::localization::ODOM.c_str());
+  //  }
   Eigen::MatrixXd X_curr(dim_x_, 1); //  curent state
   ekf_.getLatestX(X_curr);
   DEBUG_PRINT_MAT(X_curr.transpose());
@@ -588,51 +565,54 @@ void AWLocalizationNode::measurementUpdatePose(const nav_msgs::msg::Odometry::Sh
   auto t_curr = this->now();
 
   /* Calculate delay step */
-  double delay_time = (t_curr - msg->header.stamp).seconds() +
-                      (t_curr - msg->header.stamp).nanoseconds() * 1e-9 +
-                       pose_additional_delay_;
-  if (delay_time < 0.0)
-  {
+  double delay_time = (t_curr - measurement_time_).seconds() +
+                      (t_curr - measurement_time_).nanoseconds() * 1e-9 +
+                      pose_additional_delay_;
+  if (delay_time < 0.0) {
     delay_time = 0.0;
-   //  ROS_WARN_DELAYED_THROTTLE(1.0, "Pose time stamp is inappropriate, set delay to 0[s]. delay = %f", delay_time);
+    //  ROS_WARN_DELAYED_THROTTLE(1.0, "Pose time stamp is inappropriate, set
+    //  delay to 0[s]. delay = %f", delay_time);
   }
   int delay_step = std::roundf(delay_time / ekf_dt_);
-  if (delay_step > extend_state_step_ - 1)
-  {
+  if (delay_step > extend_state_step_ - 1) {
     // ROS_WARN_DELAYED_THROTTLE(1.0,
-                              // "Pose delay exceeds the compensation limit, ignored. delay: %f[s], limit = "
-                              // "extend_state_step * ekf_dt : %f [s]",
-                              // delay_time, extend_state_step_ * ekf_dt_);
+    // "Pose delay exceeds the compensation limit, ignored. delay: %f[s], limit
+    // = " "extend_state_step * ekf_dt : %f [s]", delay_time, extend_state_step_
+    // * ekf_dt_);
     return;
   }
   // DEBUG_INFO("delay_time: %f [s]", delay_time);
 
   /* Set yaw */
-  const double yaw_curr = ekf_.getXelement((unsigned int)(delay_step * dim_x_ + IDX::YAW));
-  double yaw = tf2::getYaw(msg->pose.pose.orientation);
+  const double yaw_curr =
+      ekf_.getXelement((unsigned int)(delay_step * dim_x_ + IDX::YAW));
+  double yaw = corr_yaw_;
   const double ekf_yaw = ekf_.getXelement(delay_step * dim_x_ + IDX::YAW);
-  const double yaw_error = normalizeYaw(yaw - ekf_yaw); //  normalize the error not to exceed 2 pi
+  const double yaw_error =
+      normalizeYaw(yaw - ekf_yaw); //  normalize the error not to exceed 2 pi
+   
   yaw = yaw_error + ekf_yaw;
-
-  /* Set measurement matrix */
+  std::cout << yaw << ", " << yaw_error << ", "
+            << ekf_yaw << std::endl;
+                   /* Set measurement matrix */
   Eigen::MatrixXd y(dim_y, 1);
-  y << msg->pose.pose.position.x, msg->pose.pose.position.y, yaw;
+  y << corr_x_, corr_y_, yaw;
 
-  if (isnan(y.array()).any() || isinf(y.array()).any())
-  {
-    // ROS_WARN("[EKF] pose measurement matrix includes NaN of Inf. ignore update. check pose message.");
+  if (isnan(y.array()).any() || isinf(y.array()).any()) {
+    RCLCPP_WARN(this->get_logger(), "[EKF] pose measurement matrix includes NaN of Inf. ignore update. check pose message.");    
     return;
   }
 
   /* Gate */
   Eigen::MatrixXd y_ekf(dim_y, 1);
-  y_ekf << ekf_.getXelement(delay_step * dim_x_ + IDX::X), ekf_.getXelement(delay_step * dim_x_ + IDX::Y), ekf_yaw;
+  y_ekf << ekf_.getXelement(delay_step * dim_x_ + IDX::X),
+      ekf_.getXelement(delay_step * dim_x_ + IDX::Y), ekf_yaw;
   Eigen::MatrixXd P_curr, P_y;
   ekf_.getLatestP(P_curr);
   P_y = P_curr.block(0, 0, dim_y, dim_y);
-  if (!mahalanobisGate(pose_gate_dist_, y_ekf, y, P_y))
-  {
-    // ROS_WARN_DELAYED_THROTTLE(2.0, "[EKF] Pose measurement update, mahalanobis distance is over limit. ignore "
+  if (!mahalanobisGate(pose_gate_dist_, y_ekf, y, P_y)) {
+    // ROS_WARN_DELAYED_THROTTLE(2.0, "[EKF] Pose measurement update,
+    // mahalanobis distance is over limit. ignore "
     //                                "measurement data.");
     return;
   }
@@ -649,8 +629,7 @@ void AWLocalizationNode::measurementUpdatePose(const nav_msgs::msg::Odometry::Sh
 
   /* Set measurement noise covariancs */
   Eigen::MatrixXd R = Eigen::MatrixXd::Zero(dim_y, dim_y);
-  if (use_pose_with_covariance_)
-  {
+  if (use_pose_with_covariance_) {
     R(0, 0) = current_pose_covariance_.at(0);  //  x - x
     R(0, 1) = current_pose_covariance_.at(1);  //  x - y
     R(0, 2) = current_pose_covariance_.at(5);  //  x - yaw
@@ -660,42 +639,44 @@ void AWLocalizationNode::measurementUpdatePose(const nav_msgs::msg::Odometry::Sh
     R(2, 0) = current_pose_covariance_.at(30); //  yaw - x
     R(2, 1) = current_pose_covariance_.at(31); //  yaw - y
     R(2, 2) = current_pose_covariance_.at(35); //  yaw - yaw
-  }
-  else
-  {
+  } else {
     const double ekf_yaw = ekf_.getXelement(IDX::YAW);
     const double vx = ekf_.getXelement(IDX::VX);
     const double wz = ekf_.getXelement(IDX::WZ);
-    const double cov_pos_x = std::pow(pose_measure_uncertainty_time_ * vx * cos(ekf_yaw), 2.0);
-    const double cov_pos_y = std::pow(pose_measure_uncertainty_time_ * vx * sin(ekf_yaw), 2.0);
+    const double cov_pos_x =
+        std::pow(pose_measure_uncertainty_time_ * vx * cos(ekf_yaw), 2.0);
+    const double cov_pos_y =
+        std::pow(pose_measure_uncertainty_time_ * vx * sin(ekf_yaw), 2.0);
     const double cov_yaw = std::pow(pose_measure_uncertainty_time_ * wz, 2.0);
     R(0, 0) = std::pow(pose_stddev_x_, 2) + cov_pos_x; //  pos_x
     R(1, 1) = std::pow(pose_stddev_y_, 2) + cov_pos_y; //  pos_y
     R(2, 2) = std::pow(pose_stddev_yaw_, 2) + cov_yaw; //  yaw
   }
 
-  /* In order to avoid a large change at the time of updating, measuremeent update is performed by dividing at every
-   * step. */
+  /* In order to avoid a large change at the time of updating, measuremeent
+   * update is performed by dividing at every step. */
   R *= (ekf_rate_ / pose_rate_);
 
   ekf_.updateWithDelay(y, C, R, delay_step);
 
- //  debug
+  //  debug
   Eigen::MatrixXd X_result(dim_x_, 1);
   ekf_.getLatestX(X_result);
   DEBUG_PRINT_MAT(X_result.transpose());
   DEBUG_PRINT_MAT((X_result - X_curr).transpose());
 }
 
+
 /*
  * measurementUpdateTwist
  */
-void AWLocalizationNode::measurementUpdateTwist(const nav_msgs::msg::Odometry::SharedPtr msg)
-{
- //  if (msg->header.frame_id != "base_link")
- //  {
- //    ROS_WARN_DELAYED_THROTTLE(2.0, "twist frame_id must be base_link");
- //  }
+void AWLocalizationNode::measurementUpdateTwist(rclcpp::Time measurement_time_,
+                                                const double &pred_vel_x_,
+                                                const double &pred_yaw_rate_) {
+  //  if (msg->header.frame_id != nif::common::frame_id::localization::ODOM)
+  //  {
+  //    ROS_WARN_DELAYED_THROTTLE(2.0, "twist frame_id must be base_link");
+  //  }
 
   Eigen::MatrixXd X_curr(dim_x_, 1); //  curent state
   ekf_.getLatestX(X_curr);
@@ -706,21 +687,21 @@ void AWLocalizationNode::measurementUpdateTwist(const nav_msgs::msg::Odometry::S
 
   /* Calculate delay step */
   /* Calculate delay step */
-  double delay_time = (t_curr - msg->header.stamp).seconds() +
-                      (t_curr - msg->header.stamp).nanoseconds() * 1e-9 +
+  double delay_time = (t_curr - measurement_time_).seconds() +
+                      (t_curr - measurement_time_).nanoseconds() * 1e-9 +
                       twist_additional_delay_;
-                      
-  if (delay_time < 0.0)
-  {
-    // ROS_WARN_DELAYED_THROTTLE(1.0, "Twist time stamp is inappropriate (delay = %f [s]), set delay to 0[s].",
+
+  if (delay_time < 0.0) {
+    // ROS_WARN_DELAYED_THROTTLE(1.0, "Twist time stamp is inappropriate (delay
+    // = %f [s]), set delay to 0[s].",
     //                           delay_time);
     delay_time = 0.0;
   }
   int delay_step = std::roundf(delay_time / ekf_dt_);
-  if (delay_step > extend_state_step_ - 1)
-  {
+  if (delay_step > extend_state_step_ - 1) {
     // ROS_WARN_DELAYED_THROTTLE(1.0,
-    //                           "Twist delay exceeds the compensation limit, ignored. delay: %f[s], limit = "
+    //                           "Twist delay exceeds the compensation limit,
+    //                           ignored. delay: %f[s], limit = "
     //                           "extend_state_step * ekf_dt : %f [s]",
     //                           delay_time, extend_state_step_ * ekf_dt_);
     return;
@@ -729,23 +710,24 @@ void AWLocalizationNode::measurementUpdateTwist(const nav_msgs::msg::Odometry::S
 
   /* Set measurement matrix */
   Eigen::MatrixXd y(dim_y, 1);
-  y << msg->twist.twist.linear.x, -msg->twist.twist.angular.z * 0.5;
+  y << pred_vel_x_, pred_yaw_rate_;
 
-  if (isnan(y.array()).any() || isinf(y.array()).any())
-  {
-    // ROS_WARN("[EKF] twist measurement matrix includes NaN of Inf. ignore update. check twist message.");
+  if (isnan(y.array()).any() || isinf(y.array()).any()) {
+    // ROS_WARN("[EKF] twist measurement matrix includes NaN of Inf. ignore
+    // update. check twist message.");
     return;
   }
 
   /* Gate */
   Eigen::MatrixXd y_ekf(dim_y, 1);
-  y_ekf << ekf_.getXelement(delay_step * dim_x_ + IDX::VX), ekf_.getXelement(delay_step * dim_x_ + IDX::WZ);
+  y_ekf << ekf_.getXelement(delay_step * dim_x_ + IDX::VX),
+      ekf_.getXelement(delay_step * dim_x_ + IDX::WZ);
   Eigen::MatrixXd P_curr, P_y;
   ekf_.getLatestP(P_curr);
   P_y = P_curr.block(4, 4, dim_y, dim_y);
-  if (!mahalanobisGate(twist_gate_dist_, y_ekf, y, P_y))
-  {
-    // ROS_WARN_DELAYED_THROTTLE(2.0, "[EKF] Twist measurement update, mahalanobis distance is over limit. ignore "
+  if (!mahalanobisGate(twist_gate_dist_, y_ekf, y, P_y)) {
+    // ROS_WARN_DELAYED_THROTTLE(2.0, "[EKF] Twist measurement update,
+    // mahalanobis distance is over limit. ignore "
     //                                "measurement data.");
     return;
   }
@@ -761,25 +743,23 @@ void AWLocalizationNode::measurementUpdateTwist(const nav_msgs::msg::Odometry::S
 
   /* Set measurement noise covariancs */
   Eigen::MatrixXd R = Eigen::MatrixXd::Zero(dim_y, dim_y);
-  if (use_twist_with_covariance_)
-  {
+  if (use_twist_with_covariance_) {
     R(0, 0) = current_twist_covariance_.at(0);  //  vx - vx
     R(0, 1) = current_twist_covariance_.at(5);  //  vx - wz
     R(1, 0) = current_twist_covariance_.at(30); //  wz - vx
     R(1, 1) = current_twist_covariance_.at(35); //  wz - wz
-  }
-  else
-  {
+  } else {
     R(0, 0) = twist_stddev_vx_ * twist_stddev_vx_ * ekf_dt_; //  for vx
     R(1, 1) = twist_stddev_wz_ * twist_stddev_wz_ * ekf_dt_; //  for wz
   }
 
-  /* In order to avoid a large change by update, measurement update is performed by dividing at every step. */
+  /* In order to avoid a large change by update, measurement update is performed
+   * by dividing at every step. */
   R *= (ekf_rate_ / twist_rate_);
 
   ekf_.updateWithDelay(y, C, R, delay_step);
 
- //  debug
+  //  debug
   Eigen::MatrixXd X_result(dim_x_, 1);
   ekf_.getLatestX(X_result);
   DEBUG_PRINT_MAT(X_result.transpose());
@@ -814,8 +794,8 @@ void AWLocalizationNode::publishEstimateResult()
   ekf_.getLatestP(P);
 
   current_ekf_odom_.header.stamp = current_time;
-  current_ekf_odom_.header.frame_id = pose_frame_id_;
-  current_ekf_odom_.child_frame_id = "base_link";
+  current_ekf_odom_.header.frame_id = nif::common::frame_id::localization::ODOM;
+  current_ekf_odom_.child_frame_id = nif::common::frame_id::localization::BASE_LINK;
   current_ekf_odom_.pose.pose = current_ekf_pose_.pose;
   current_ekf_odom_.pose.covariance[0] = P(IDX::X, IDX::X);
   current_ekf_odom_.pose.covariance[1] = P(IDX::X, IDX::Y);

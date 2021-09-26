@@ -87,6 +87,7 @@ void nif::managers::WaypointManagerNode::timerCallback() try {
     m_map_track_global_publisher->publish(path_in_global);
     m_map_track_body_publisher->publish(path_in_body);
     this->wpt_manager->setCurrentOdometry(this->getEgoOdometry());
+
     if (  path_in_body.poses.size() >= this->maptrack_size_safety_threshold &&
     path_in_global.poses.size() >= this->maptrack_size_safety_threshold)
     {
@@ -102,6 +103,3 @@ void nif::managers::WaypointManagerNode::timerCallback() try {
     RCLCPP_ERROR(this->get_logger(), "Unknown exception thrown in WaypointManagerNode.");
     this->setNodeStatus(common::NODE_FATAL_ERROR);
 }
-
-void nif::managers::WaypointManagerNode::initParameters() {}
-void nif::managers::WaypointManagerNode::getParameters() {}

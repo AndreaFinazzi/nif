@@ -4,7 +4,7 @@
 @date   2021-08-11
 @brief  subscriber node for lgsvl simulation with topic names matched to the real car
 '''
-
+import numpy as np
 import rclpy
 import csv
 import pandas as pd
@@ -82,7 +82,7 @@ class LGSVLSubscriberNode(BaseNode):
 
         # Vehicle odometry subsciptions (includes front/rear wheel angles and velocity)
         self.sub_vehicleodometry = self.create_subscription(VehicleOdometry, self.namespace + '/sensor/odometry', self.callback_vehicleodometry, rclpy.qos.qos_profile_sensor_data)
-        self.pub_wheel_speed = self.create_publisher(WheelSpeedReport, self.namespace + '/raptor_dbw_interface/wheel_speed_report', rclpy.qos.qos_profile_sensor_data)
+        self.pub_wheel_speed = self.create_publisher(WheelSpeedReport, self.namespace + '/raptor_dbw_interface/wheel_speed_report', 20) # rclpy.qos.qos_profile_sensor_data)
         # GPS subscriptions
         self.sub_gps_top = self.create_subscription(NavSatFix, self.namespace + '/novatel_top/fix', self.callback_gps_top, rclpy.qos.qos_profile_sensor_data)
         self.sub_gps_bottom = self.create_subscription(NavSatFix, self.namespace + '/novatel_bottom/fix', self.callback_gps_bottom, rclpy.qos.qos_profile_sensor_data)
@@ -91,8 +91,8 @@ class LGSVLSubscriberNode(BaseNode):
         self.pub_gps_inspva_top = self.create_publisher(INSPVA, self.namespace + '/novatel_top/inspva', rclpy.qos.qos_profile_sensor_data)
         self.pub_gps_inspva_bottom = self.create_publisher(INSPVA, self.namespace + '/novatel_bottom/inspva', rclpy.qos.qos_profile_sensor_data)
 
-        self.pub_gps_bestpos_top = self.create_publisher(BESTPOS, self.namespace + '/novatel_top/bestpos', rclpy.qos.qos_profile_sensor_data)
-        self.pub_gps_bestpos_bottom = self.create_publisher(BESTPOS, self.namespace + '/novatel_bottom/bestpos', rclpy.qos.qos_profile_sensor_data)
+        self.pub_gps_bestpos_top = self.create_publisher(BESTPOS, self.namespace + '/novatel_top/bestpos', 10) #rclpy.qos.qos_profile_sensor_data)
+        self.pub_gps_bestpos_bottom = self.create_publisher(BESTPOS, self.namespace + '/novatel_bottom/bestpos', 10) #rclpy.qos.qos_profile_sensor_data)
 
         # Vehicle ground truth state
         self.sub_ground_truth_state = self.create_subscription(Odometry, '/sensor/odom_ground_truth', self.callback_ground_truth_state, rclpy.qos.qos_profile_sensor_data)
@@ -170,8 +170,16 @@ class LGSVLSubscriberNode(BaseNode):
         pass
         # self.get_logger().info('Subscribed imu_bottom')
 
-    def callback_vehicleodometry(self, msg):
-        pass
+    def callback_vehicleodometry(self, msg : VehicleOdometry):
+        wheel_speed_msg = WheelSpeedReport()
+        wheel_speed_msg.header = msg.header
+        vel_kph = msg.velocity * 3.6
+        wheel_speed_msg.front_left = vel_kph
+        wheel_speed_msg.front_right = vel_kph
+        wheel_speed_msg.rear_left = vel_kph
+        wheel_speed_msg.rear_right = vel_kph
+
+        self.pub_wheel_speed.publish(wheel_speed_msg)
         # self.get_logger().info('Subscribed vehicleodometry')
 
     def callback_gps_top(self, msg):
@@ -306,13 +314,6 @@ class LGSVLSubscriberNode(BaseNode):
 
         self.pub_odom_converted.publish(odom_converted)
         self.tf_broadcast(odom_converted)
-
-        wheel_speed_msg = WheelSpeedReport()
-        wheel_speed_msg.header = msg.header
-        wheel_speed_msg.front_left = msg.twist.twist.linear.x
-        wheel_speed_msg.front_right = msg.twist.twist.linear.x
-
-        self.pub_wheel_speed.publish(wheel_speed_msg)
 
     def tf_broadcast(self, msg):
         tfs = TransformStamped()

@@ -28,10 +28,16 @@ protected:
 
   const nif::common::msgs::Trajectory::SharedPtr &getReferenceTrajectory() const;
   const nif::common::msgs::ControlCmd::SharedPtr &getControlCmdPrev() const;
-  const nif::common::msgs::Path::SharedPtr &getReferencePath() const;
+  const nif::common::msgs::Path::SharedPtr &getReferencePath() const;  
+  const std_msgs::msg::Float32::SharedPtr &getDesiredVelocity() const;
   const rclcpp::Time &getReferenceTrajectoryUpdateTime() const;
   const rclcpp::Time &getControlCmdPrevUpdateTime() const;
-  const rclcpp::Time &getReferencePathUpdateTime() const;
+  const rclcpp::Time &getReferencePathUpdateTime() const;  
+  const rclcpp::Time &getDesiredVelocityUpdateTime() const;
+  bool hasReferenceTrajectory() const;
+  bool hasReferencePath() const;
+  bool hasControlCmdPrev() const;  
+  bool hasDesiredVelocity() const;
 
 private:
   IControllerNode();
@@ -64,16 +70,22 @@ private:
   nif::common::msgs::ControlCmd::SharedPtr control_cmd_prev;
   bool has_control_cmd_prev = false;
 
-public:
-  bool hasReferenceTrajectory() const;
-  bool hasReferencePath() const;
-  bool hasControlCmdPrev() const;
-
-private:
   /**
    * control_cmd_prev last update-time.
    */
   rclcpp::Time control_cmd_prev_update_time;
+
+  /**
+   * Desired velocity fed by a velocity planner.
+   */
+  std_msgs::msg::Float32::SharedPtr desired_velocity;
+  bool has_desired_velocity = false;
+
+  /**
+   * control_cmd_prev last update-time.
+   */
+  rclcpp::Time desired_velocity_update_time;
+
 
   rclcpp::Subscription<nif::common::msgs::Trajectory>::SharedPtr
       reference_trajectory_sub;
@@ -81,12 +93,15 @@ private:
     reference_path_sub;
   rclcpp::Subscription<nif::common::msgs::ControlCmd>::SharedPtr
       control_cmd_prev_sub;
+  rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr
+      desired_velocity_sub;
 
   rclcpp::Publisher<nif::common::msgs::ControlCmd>::SharedPtr control_cmd_pub;
 
   void controlCmdPrevCallback(nif::common::msgs::ControlCmd::SharedPtr msg);
   void referenceTrajectoryCallback(nif::common::msgs::Trajectory::SharedPtr msg);
   void referencePathCallback(nif::common::msgs::Path::SharedPtr msg);
+  void desiredVelocityCallback(std_msgs::msg::Float32::SharedPtr msg);
 
   /**
    * It's called at the end of referenceTrajectoryCallback(...)
@@ -102,15 +117,19 @@ private:
   */
   virtual void afterReferencePathCallback() {}
 
-
-private:
-
   /**
   * It's called at the end of controlCmdPrevCallback(...)
   * and it can be customized.
   * @param path
   */
   virtual void afterControlCmdPrevCallback() {}
+
+  /**
+  * It's called at the end of desiredVelocityCallback(...)
+  * and it can be customized.
+  * @param path
+  */
+  virtual void afterDesiredVelocityCallback() {}
 
 
   /**

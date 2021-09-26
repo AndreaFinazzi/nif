@@ -69,7 +69,7 @@ LongControl::LongControl() : Node("LongControlNode") {
   this->declare_parameter("throttle.cmd_min", 0.0);
   this->declare_parameter("throttle.reset_integral_below_this_cmd", 15.0);
 
-  this->declare_parameter("brake.proportional_gain", 4.0);
+  this->declare_parameter("brake.proportional_gain", 200000.1);
   this->declare_parameter("brake.integral_gain", 0.0);
   this->declare_parameter("brake.derivative_gain", 0.0);
   this->declare_parameter("brake.max_integrator_error", 10.0);
@@ -297,7 +297,7 @@ double LongControl::safeDesVelProfiler(double orig_des_vel) {
   @ Args
     - orig_des_vel : original desired velocity in ROS param
   @ Params
-    - pose_stdev_thres     : Threshold of the pose stdev
+    - insstdev_threshold     : Threshold of the pose stdev
     - safe_vel_thres_mph   : Velocity (Mph) threshold w.r.t. safe braking time
     - hard_braking_time    : safe braking time when faster than
   safe_vel_thres_mph

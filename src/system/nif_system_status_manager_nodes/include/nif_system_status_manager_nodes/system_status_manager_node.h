@@ -24,7 +24,7 @@ using t_record_index = unsigned int;
 namespace nif {
 namespace system {
 
-const std::chrono::microseconds NODE_DEAD_TIMEOUT_US(250000); // 0.25s
+const rclcpp::Duration NODE_DEAD_TIMEOUT(500000000); // 0.5s
 
 struct NodeStatusRecord {
   nif::common::msgs::NodeStatus::SharedPtr node_status;
@@ -63,7 +63,6 @@ private:
 //  TODO make parameter
   const int max_counter_drop = 20;
   int t = 0;
-  int counter_hb = 0;
 
   const int default_counter = 502;
   int counter_joy_prev = default_counter-1;
@@ -79,7 +78,7 @@ private:
   rclcpp::Publisher<nif::common::msgs::SystemStatus>::SharedPtr system_status_pub;
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr joy_emergency_pub;
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr hb_emergency_pub;
-  rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr diagnostic_hb_pub;
+
   rclcpp::Publisher<nif::common::msgs::SystemStatus>::SharedPtr system_status_telem_pub;
 
   rclcpp::Subscription<nif::common::msgs::OverrideControlCmd>::SharedPtr joystick_sub;
@@ -99,13 +98,13 @@ private:
   //  Node statuses storage and indices
   std::vector<std::shared_ptr<NodeStatusRecord>> node_status_records{};
 
-  std::unordered_map<nif::common::types::t_node_id, t_record_index > status_by_id{};
+  std::unordered_map<nif::common::types::t_node_id, t_record_index > status_index_by_id{};
 
-  std::unordered_map<std::string, t_record_index> status_by_name{};
+  std::unordered_map<std::string, t_record_index> status_index_by_name{};
 
   std::unordered_map<NodeType,
                      std::unique_ptr<
-                         std::vector<t_record_index>>> statuses_by_type{};
+                         std::vector<t_record_index>>> status_indices_by_type{};
 
 
   void subscribeNodeStatus(const std::string & topic_name);
@@ -128,6 +127,15 @@ private:
   double long_stdev_ = 0.0;
   double best_pos_lat_stdev_ = 0.0;
   double best_pos_long_stdev_ = 0.0;
+  double bestpos_diff_age_s = 99999.9;
+  double insstdev_threshold = 2.0;
+
+  bool has_bestpos = false;
+  rclcpp::Time bestpos_last_update = rclcpp::Time();
+
+  rclcpp::Duration timeout_bestpos_diff_age = rclcpp::Duration(2, 0);
+  rclcpp::Duration timeout_bestpos_last_update = rclcpp::Duration(0, 500000);
+  rclcpp::Duration timeout_rc_flag_summary = rclcpp::Duration(10, 0);
 
   void telemetry_timer_callback() {
       this->system_status_telem_pub->publish(this->system_status_msg);
@@ -136,6 +144,9 @@ private:
   void receive_bestpos(const novatel_oem7_msgs::msg::BESTPOS::SharedPtr msg) {
       this->best_pos_lat_stdev_ = msg->lat_stdev;
       this->best_pos_long_stdev_ = msg->lon_stdev;
+      this->bestpos_diff_age_s = msg->diff_age;
+      this->bestpos_last_update = this->now();
+      this->has_bestpos = true;
   }
 
   void receive_insstdev(
@@ -146,11 +157,14 @@ private:
   }
 
   bool gps_health_ok() {
-      double pose_stdev_thres = 2.0;
-      bool std_dev_trigger = (this->lat_stdev_ >  pose_stdev_thres ||
-              this->long_stdev_ > pose_stdev_thres);
+      bool has_bestpos_trigger = !this->has_bestpos;
+      bool bestpos_diff_age_trigger = (this->bestpos_diff_age_s > this->timeout_bestpos_diff_age.seconds() );
+      bool bestpos_last_update_trigger = !this->has_bestpos || (( this->now() - this->bestpos_last_update ) > this->timeout_bestpos_last_update );
+
+      bool std_dev_trigger = (this->lat_stdev_ >  this->insstdev_threshold ||
+              this->long_stdev_ > this->insstdev_threshold);
       bool time_since_trigger = (this->insstdev_time_since_last_update_ > 0);
-      return (!std_dev_trigger && !time_since_trigger);
+      return (!has_bestpos_trigger && !std_dev_trigger && !time_since_trigger && !bestpos_diff_age_trigger && !bestpos_last_update_trigger);
   }
 
 
@@ -166,6 +180,12 @@ private:
   bool isSystemHealthy();
 
   /**
+   * Mission Status state machine.
+   * @return the mission encoding.
+   */
+  nif_msgs::msg::MissionStatus::_mission_status_code_type getMissionStatusCode();
+
+  /**
    * System status state machine, with status output code.
    * @return system status code
    */
@@ -174,7 +194,14 @@ private:
 
   bool heartbeatOk();
 
+  rcl_interfaces::msg::SetParametersResult
+  parametersCallback(
+          const std::vector<rclcpp::Parameter> &vector);
+
   rclcpp::Duration node_inactive_timeout = rclcpp::Duration(1, 0);
+  OnSetParametersCallbackHandle::SharedPtr parameters_callback_handle;
+
+  double getMissionMaxVelocityMps(nif_msgs::msg::MissionStatus::_mission_status_code_type);
 };
 
 } // namespace system

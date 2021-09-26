@@ -359,7 +359,7 @@ class OnlineTrajectoryHandler(object):
 
             # warn if calc time exceeds threshold
             if calc_time > self.__calc_time_warn_thr:
-                self.__log.warning("Warning: One trajectory generation iteration took more than %.3fs (Actual "
+                self.__log.debug("Warning: One trajectory generation iteration took more than %.3fs (Actual "
                                    "calculation time: %.3fs)" % (self.__calc_time_warn_thr, calc_time))
             self.__log.debug("Update frequency: %.2f Hz" % (1.0 / max(calc_time, 0.001)))
 

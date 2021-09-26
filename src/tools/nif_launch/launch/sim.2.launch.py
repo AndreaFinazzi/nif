@@ -26,7 +26,8 @@ from launch_ros.actions import Node
 
 IMS = 0
 LOR = 1
-track = LOR
+LG_SVL = 2
+track = LG_SVL
 
 def get_share_file(package_name, file_name):
     return os.path.join(get_package_share_directory(package_name), file_name)
@@ -42,28 +43,11 @@ def generate_launch_description():
         package_name='raptor_dbw_can', file_name='launch/CAN1_INDY_V4.dbc'
     )
 
-    bvs_long_control_param_file = get_share_file(
-        package_name='bvs_long_control', file_name='config/params.yaml'
-    )
-
-    bvs_long_control_param = DeclareLaunchArgument(
-        'long_control_param_file',
-        default_value=bvs_long_control_param_file,
-        description='Path to config file for long_control'
-    )
-
     ssc_interface_param = DeclareLaunchArgument(
         'ssc_interface_param_file',
         default_value=ssc_interface_param_file,
         description='Path to config file for ssc_interface'
     )
-
-    # diagnostics_node = Node(
-    #     package='diagnostics',
-    #     executable='emergency_diagnostics',
-    #     name='emergency_diagnostics',
-    #     output='screen'
-    # )
 
     ssc_interface = Node(
         package='ssc_interface',
@@ -84,7 +68,7 @@ def generate_launch_description():
             ('vehicle_kinematic_state_cog', '/vehicle/vehicle_kinematic_state'),
             ('state_report_out', '/vehicle/vehicle_state_report'),
             ('state_command', '/vehicle/vehicle_state_command'),
-            ####
+
             ('accelerator_pedal_cmd', '/raptor_dbw_interface/accelerator_pedal_cmd'),
             ('brake_cmd', '/raptor_dbw_interface/brake_cmd'),
             ('steering_cmd', '/raptor_dbw_interface/steering_cmd'),
@@ -144,47 +128,7 @@ def generate_launch_description():
         output='screen',
     )
 
-    lqr_params_config = get_share_file(
-        package_name='bvs_control', file_name='config/lqr_params.yaml'
-    )
-
-    # MAPs
-    lor_inside_line_csv = get_share_file(
-        package_name='bvs_control', file_name='config/LOR_inside_line.csv'
-    )
-
-    ims_center_line_csv = get_share_file(
-        package_name='bvs_control', file_name='config/IMS_center_line.csv'
-    )
-
-    map_csv = None
-
-    if track == LOR:
-        map_csv = lor_inside_line_csv
-    elif track == IMS:
-        map_csv = ims_center_line_csv
-    else:
-        print("ERROR: invalid track provided: {}".format(track))
-
-    bvs_localization_node_bg = Node(
-        package='bvs_localization',
-        executable='localization_node',
-        output='screen',
-        parameters=[
-            {
-                "ltp_frame": "odom",
-                "base_link_frame": "base_link",
-                "ltp_latitude": 39.8125900071711,
-                "ltp_longitude": -86.3418060783425,
-            },
-            {"subscribe_novatel_oem7_msgs": True },
-            {"subscribe_novatel_gps_msgs": False }
-        ],
-        remappings=[
-            ("novatel_oem7_msgs/inspva", "novatel_bottom/inspva")
-        ]
-    )
-
+    # Localization
     nif_localization_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             get_package_share_directory('nif_localization_nodes') + '/launch/deploy.launch.py'
@@ -197,70 +141,7 @@ def generate_launch_description():
         ),
     )
 
-    # path_publisher_node_bg = Node(
-    #     package='bvs_utils',
-    #     executable='path_publisher_node',
-    #     parameters=[{'track_line_csv': map_csv}],
-    #     output={
-    #         'stdout': 'screen',
-    #         'stderr': 'screen',
-    #     },
-    #     remappings=[
-    #         ('bvs_localization/ltp_odom', '/localization/ekf/odom')
-    #     ]
-    # )
-
-    bvs_long_control_param_file = get_share_file(
-        package_name='bvs_long_control', file_name='config/params.yaml'
-    )
-
-    bvs_long_control_param = DeclareLaunchArgument(
-        'long_control_param_file',
-        default_value=bvs_long_control_param_file,
-        description='Path to config file for long_control'
-    )
-
-    bvs_long_control_node = Node(
-        package='bvs_long_control',
-        executable='long_control',
-        output='screen',
-        parameters=[LaunchConfiguration('long_control_param_file')],
-    )
-
-# NIF LQR + CSL ###############################################
-    lqr_config_file = get_share_file(
-        package_name='nif_control_lqr_nodes', file_name='config/lqr/lqr_params.deploy.yaml'
-    )
-
-    nif_lqr_rosparams_file = get_share_file(
-        package_name='nif_control_lqr_nodes', file_name='config/deploy.params.yaml'
-    )
-
-    nif_lqr_param = DeclareLaunchArgument(
-        'control_lqr_params_file',
-        default_value=nif_lqr_rosparams_file,
-        description='Path to config file for nif_control_lqr'
-    )
-
-    nif_lqr_control_node = Node(
-        package='nif_control_lqr_nodes',
-        executable='nif_control_lqr_nodes_exe',
-        parameters=[
-            LaunchConfiguration('control_lqr_params_file'),
-            {
-                'lqr_config_file': lqr_config_file,
-            }
-        ],
-        output={
-            'stdout': 'screen',
-            'stderr': 'screen',
-        },
-        remappings=[
-            ('in_control_cmd_prev', '/control_safety_layer/out/control_cmd'),
-            ('out_control_cmd', '/control_pool/disabled/control_cmd'),
-            ('in_reference_path', '/planning/path_global'),
-        ]
-    )
+# NIF CONTROL STACK ###############################################
 
     nif_csl_param_file = get_share_file(
         package_name='nif_control_safety_layer_nodes', file_name='config/deploy.yaml'
@@ -293,10 +174,24 @@ def generate_launch_description():
         package='nif_velocity_planning_node',
         executable='nif_velocity_planning_node_exe',
         output='screen',
+        remappings=[
+            ('out_desired_velocity', 'velocity_planner/des_vel'),
+            ('in_reference_path', 'planning/graph/path_global'),
+            # ('in_reference_path', 'planning/path_global'),
+            ('in_ego_odometry', '/sensor/odom_ground_truth'),
+            ('in_wheel_speed_report', 'raptor_dbw_interface/wheel_speed_report'),
+            ('in_imu_data', 'novatel_bottom/imu/data'),
+            ('in_steering_report', 'raptor_dbw_interface/steering_report'),
+            ('in_control_error', 'control_joint_lqr/lqr_error')
+        ],
+        parameters=[{
+                'odometry_timeout_sec' : 0.5,
+                'path_timeout_sec' : 1.0,
+            }]
     )
 
     lqr_joint_config_file = get_share_file(
-        package_name='nif_control_joint_lqr_nodes', file_name='config/lqr/lqr_params.deploy.yaml'
+        package_name='nif_control_joint_lqr_nodes', file_name='config/lqr/lqr_params.sim.yaml'
     )
 
     nif_joint_lqr_rosparams_file = get_share_file(
@@ -316,6 +211,14 @@ def generate_launch_description():
             LaunchConfiguration('control_joint_lqr_params_file'),
             {
                 'lqr_config_file': lqr_joint_config_file,
+                'odometry_timeout_sec' : 0.5,
+                'path_timeout_sec' : 1.0,
+                'use_tire_velocity' : True,
+                # 'max_steering_angle_deg': 20.0,
+                'pure_pursuit_min_dist_m' : 8.0,
+                'pure_pursuit_max_dist_m' : 16.0,
+                'steering_max_ddeg_dt' : 3.0
+
             }
         ],
         output={
@@ -325,7 +228,7 @@ def generate_launch_description():
         remappings=[
             ('in_control_cmd_prev', '/control_safety_layer/out/control_cmd'),
             ('out_control_cmd', '/control_pool/control_cmd'),
-            ('in_reference_path', '/planning/path_global'),
+            ('in_reference_path', '/planning/graph/path_global'),
         ]
     )
 
@@ -347,13 +250,13 @@ def generate_launch_description():
 
 # NIF LQR + CSL END ###############################################
 
-
-
     global_params_file = None
 
     if track == LOR:
         global_params_file = 'params_LOR.sim.global.yaml'
     elif track == IMS:
+        global_params_file = 'params_IMS.sim.global.yaml'
+    elif track == LG_SVL:
         global_params_file = 'params_IMS.sim.global.yaml'
     else:
         raise RuntimeError("ERROR: invalid track provided: {}".format(track))
@@ -385,15 +288,13 @@ def generate_launch_description():
         remappings=[
             ('in_joystick_cmd', '/joystick/command'),
             ('out_system_status', '/system/status'),
-        ]
-    )
-
-
-    bvs_safety_node = Node(
-        package='bvs_safety',
-        executable='safety_executive_node',
-        name='safety_executive_node',
-        output='screen'
+            ('in_novatel_bestpos', '/novatel_bottom/bestpos'),
+            ('in_novatel_insstdev', '/novatel_bottom/insstdev')
+        ],
+        parameters=[{
+            # 'lat_autonomy_enabled': True,
+            # 'long_autonomy_enabled': True
+        }]
     )
 
     robot_description_launch = IncludeLaunchDescription(
@@ -420,12 +321,22 @@ def generate_launch_description():
         ),
     )
 
+    wpt_config_file_svl = (
+        os.path.join(
+            get_package_share_directory("nif_waypoint_manager_nodes"),
+            "config",
+            "svl.yaml",
+        ),
+    )
+
     config_file = None
 
     if track == LOR:
         config_file = wpt_config_file_lor
     elif track == IMS:
         config_file = wpt_config_file_ims
+    elif track == LG_SVL:
+        config_file = wpt_config_file_svl
     else:
         raise RuntimeError("ERROR: invalid track provided: {}".format(track))
 
@@ -444,7 +355,7 @@ def generate_launch_description():
         ],
         remappings=[
             # ('topic_ego_odometry', '/bvs_localization/ltp_odom'),
-            ('topic_ego_odometry', 'sensor/ego_odom'),
+            ('topic_ego_odometry', '/sensor/odom_ground_truth'),
             ('wpt_manager/maptrack_path/global', '/planning/path_global'),
             ('wpt_manager/maptrack_path/body', '/planning/path_body')
         ]
@@ -463,17 +374,23 @@ def generate_launch_description():
     map_csv = None
 
     if track == LOR:
-        globtraj_input_path = get_share_file("nif_multilayer_planning_nodes", "inputs/traj_ltpl_cl/traj_ltpl_cl_lor_test.csv")
-        graph_store_path = get_share_file("nif_multilayer_planning_nodes", "inputs/stored_graph.pckl")
-        ltpl_offline_param_path = get_share_file("nif_multilayer_planning_nodes", "params/ltpl_config_offline.ini")
-        ltpl_online_param_path = get_share_file("nif_multilayer_planning_nodes", "params/ltpl_config_online.ini")
-        log_path = get_share_file("nif_multilayer_planning_nodes", "logs/graph_ltpl")
+        globtraj_input_path = get_share_file("nif_multilayer_planning_nodes", "inputs/traj_ltpl_cl/lor/traj_ltpl_cl.csv")
+        graph_store_path = get_share_file("nif_multilayer_planning_nodes", "inputs/track_offline_graphs/lor/stored_graph.pckl")
+        ltpl_offline_param_path = get_share_file("nif_multilayer_planning_nodes", "params/lor/ltpl_config_offline.ini")
+        ltpl_online_param_path = get_share_file("nif_multilayer_planning_nodes", "params/lor/ltpl_config_online.ini")
+        log_path = get_share_file("nif_multilayer_planning_nodes", "logs/lor/graph_ltpl")
     elif track == IMS:
-        globtraj_input_path = get_share_file("nif_multilayer_planning_nodes", "inputs/traj_ltpl_cl/traj_ltpl_cl_ims.csv")
-        graph_store_path = get_share_file("nif_multilayer_planning_nodes", "inputs/stored_graph.pckl")
-        ltpl_offline_param_path = get_share_file("nif_multilayer_planning_nodes", "params/ltpl_config_offline.ini")
-        ltpl_online_param_path = get_share_file("nif_multilayer_planning_nodes", "params/ltpl_config_online.ini")
-        log_path = get_share_file("nif_multilayer_planning_nodes", "logs/graph_ltpl")
+        globtraj_input_path = get_share_file("nif_multilayer_planning_nodes", "inputs/traj_ltpl_cl/ims/traj_ltpl_cl.csv")
+        graph_store_path = get_share_file("nif_multilayer_planning_nodes", "inputs/track_offline_graphs/ims/stored_graph.pckl")
+        ltpl_offline_param_path = get_share_file("nif_multilayer_planning_nodes", "params/ims/ltpl_config_offline.ini")
+        ltpl_online_param_path = get_share_file("nif_multilayer_planning_nodes", "params/ims/ltpl_config_online.ini")
+        log_path = get_share_file("nif_multilayer_planning_nodes", "logs/ims/graph_ltpl")
+    elif track == LG_SVL:
+        globtraj_input_path = get_share_file("nif_multilayer_planning_nodes", "inputs/traj_ltpl_cl/lg_sim/traj_ltpl_cl.csv")
+        graph_store_path = get_share_file("nif_multilayer_planning_nodes", "inputs/track_offline_graphs/lg_sim/stored_graph.pckl")
+        ltpl_offline_param_path = get_share_file("nif_multilayer_planning_nodes", "params/lg_sim/ltpl_config_offline.ini")
+        ltpl_online_param_path = get_share_file("nif_multilayer_planning_nodes", "params/lg_sim/ltpl_config_online.ini")
+        log_path = get_share_file("nif_multilayer_planning_nodes", "logs/lg_sim/graph_ltpl")
     else:
         raise RuntimeError("ERROR: invalid track provided: {}".format(track))
 
@@ -496,18 +413,22 @@ def generate_launch_description():
         ],
         remappings={
             ('out_local_maptrack_inglobal', '/planning/graph/path_global'),
-            ('in_ego_odometry', '/localization/ekf/odom'),
+            ('in_ego_odometry', '/sensor/odom_ground_truth'),
         }
+    )
+
+    lgsvl_simulation_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            get_share_file("nif_lgsvl_simulation", 'launch/default.launch.py')
+        )
     )
 
 ### NIF MULTILAYER PLANNER END #############################
 
     return LaunchDescription([
         ssc_interface_param,
-        bvs_long_control_param,
         nif_global_param,
         nif_csl_param,
-        nif_lqr_param,
         nif_wpt_param,
         nif_joint_lqr_param,
         nif_accel_control_param,
@@ -520,17 +441,14 @@ def generate_launch_description():
 
         nif_global_param_node,
         nif_system_status_manager_node,
-        # bvs_long_control_node,
-        # nif_lqr_control_node,
         nif_csl_node,
-        nif_localization_launch,
-        bvs_localization_node_bg,
+        # nif_localization_launch,
         nif_wall_node_launch_bg,
         nif_waypoint_manager_node,
-        # bvs_safety_node,
         robot_description_launch,
         nif_multilayer_planning_node,
         nif_velocity_planning_node,
         nif_joint_lqr_control_node,
         nif_accel_control_node,
+        lgsvl_simulation_launch
     ])
