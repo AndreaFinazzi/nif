@@ -80,13 +80,12 @@ class GraphBasedPlanner(rclpy.node.Node):
 
         # TODO: Loading the pit-in waypoints
         self.pit_in_wpt_file_path = ''
-        self.pit_in_wpt = []
-        self.pit_in_allowable_layers = []
-        self.pit_in_blocked_zone = {'blocked_zone_for_pitIn': 
-                                [[64, 64, 64, 64, 64, 64, 64, 65, 65, 65, 65, 65, 65, 65, 66, 66, 66, 66, 66, 66, 66],
-                                [0, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 4, 5, 6],
-                                np.array([[-20.54, 227.56], [23.80, 186.64]]),
-                                np.array([[-23.80, 224.06], [20.17, 183.60]])]}
+        self.pit_in_wpt = None
+        self.pit_in_allowed_zone_min_x = None
+        self.pit_in_allowed_zone_max_x = None
+        self.pit_in_allowed_zone_min_y = None
+        self.pit_in_allowed_zone_max_y = None
+        self.pit_in_blocked_zone = None
         self.num_pit_in_wpt = 0
         self.pit_in_maptrack_len = 100
         self.pit_in_flg = False
@@ -102,12 +101,10 @@ class GraphBasedPlanner(rclpy.node.Node):
                     'Specified graph config file does not exist or is empty!')
             self.pit_in_wpt_file_path = self.graph_config.get("PIT","pit_in_wpt_file")
             self.pit_in_wpt_maximum_vel = self.graph_config.getfloat("pit_in_wpt_maximum_vel")
-            self.pit_in_allowable_layers_min = 0
-            self.pit_in_allowable_layers_max = 3
-            self.pit_box_area_x_min = 0
-            self.pit_box_area_x_max = 0
-            self.pit_box_area_y_min = 0
-            self.pit_box_area_y_max = 0
+            self.pit_in_allowed_zone_min_x = self.graph_config.getfloat("pit_in_allowed_x_min")
+            self.pit_in_allowed_zone_max_x = self.graph_config.getfloat("pit_in_allowed_x_max")
+            self.pit_in_allowed_zone_min_y = self.graph_config.getfloat("pit_in_allowed_y_min")
+            self.pit_in_allowed_zone_max_y = self.graph_config.getfloat("pit_in_allowed_y_max")
             self.pit_in_blocked_zone = {'blocked_zone_for_pitIn': 
                                 [[64, 64, 64, 64, 64, 64, 64, 65, 65, 65, 65, 65, 65, 65, 66, 66, 66, 66, 66, 66, 66],
                                 [0, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 4, 5, 6],
@@ -120,8 +117,11 @@ class GraphBasedPlanner(rclpy.node.Node):
             # self.pit_in_wpt_file_path = '/home/usrg/Downloads/LOR_pit_lane_new_wpt.csv'
             self.pit_in_wpt_file_path = self.graph_config.get("PIT","pit_in_wpt_file")
             self.pit_in_wpt_maximum_vel = self.graph_config.getfloat("pit_in_wpt_maximum_vel")
-            self.pit_in_allowable_layers = [] 
-            self.pit_in_blocked_zone = {'blocked_zone_for_pitIn': 
+            self.pit_in_allowed_zone_min_x = self.graph_config.getfloat("pit_in_allowed_x_min")
+            self.pit_in_allowed_zone_max_x = self.graph_config.getfloat("pit_in_allowed_x_max")
+            self.pit_in_allowed_zone_min_y = self.graph_config.getfloat("pit_in_allowed_y_min")
+            self.pit_in_allowed_zone_max_y = self.graph_config.getfloat("pit_in_allowed_y_max")
+            self.pit_in_blocked_zone = {'blocked_zone_for_pitIn':
                                 [[64, 64, 64, 64, 64, 64, 64, 65, 65, 65, 65, 65, 65, 65, 66, 66, 66, 66, 66, 66, 66],
                                 [0, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 4, 5, 6],
                                 np.array([[-20.54, 227.56], [23.80, 186.64]]),
@@ -132,7 +132,10 @@ class GraphBasedPlanner(rclpy.node.Node):
                     'Specified graph config file does not exist or is empty!')
             self.pit_in_wpt_file_path = self.graph_config.get("PIT","pit_in_wpt_file")
             self.pit_in_wpt_maximum_vel = self.graph_config.getfloat("pit_in_wpt_maximum_vel")
-            self.pit_in_allowable_layers = [] 
+            self.pit_in_allowed_zone_min_x = self.graph_config.getfloat("pit_in_allowed_x_min")
+            self.pit_in_allowed_zone_max_x = self.graph_config.getfloat("pit_in_allowed_x_max")
+            self.pit_in_allowed_zone_min_y = self.graph_config.getfloat("pit_in_allowed_y_min")
+            self.pit_in_allowed_zone_max_y = self.graph_config.getfloat("pit_in_allowed_y_max")
             self.pit_in_blocked_zone = {'blocked_zone_for_pitIn': 
                                 [[64, 64, 64, 64, 64, 64, 64, 65, 65, 65, 65, 65, 65, 65, 66, 66, 66, 66, 66, 66, 66],
                                 [0, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 4, 5, 6],
@@ -140,7 +143,15 @@ class GraphBasedPlanner(rclpy.node.Node):
                                 np.array([[-23.80, 224.06], [20.17, 183.60]])]}
         else:
             raise ValueError('[nif_multilayer_planning_nodes] Track specification in driving_task.ini is wrong!')
-        self.loadPitInWaypoint()
+
+        if(self.pit_in_allowed_zone_min_x == None or self.pit_in_allowed_zone_max_x == None or
+                    self.pit_in_allowed_zone_min_y == None or self.pit_in_allowed_zone_max_y == None):
+            raise ValueError('[nif_multilayer_planning_nodes] Pit-in allowed zone is not configured')
+        if(self.pit_in_allowed_zone_min_x >= self.pit_in_allowed_zone_max_x or
+                self.pit_in_allowed_zone_min_y >= self.pit_in_allowed_zone_max_y):
+            raise ValueError('[nif_multilayer_planning_nodes] Pit-in allowed zone is not properly configured!')
+
+        self.load_pit_in_waypoint()
         self.pit_in_tree = KDTree(self.pit_in_wpt)
 
         # TODO pre-load all these info
@@ -189,8 +200,10 @@ class GraphBasedPlanner(rclpy.node.Node):
         # ----------------------------------------------------------------------------------------------------------------------
         # intialize graph_ltpl-class
         self.ltpl_obj = Graph_LTPL(path_dict=path_dict, visual_mode=False, log_to_file=False)
+
         # calculate offline graph
         self.ltpl_obj.graph_init()
+
         # set start pose based on first point in provided reference-line
         self.refline = graph_ltpl.imp_global_traj.src. \
             import_globtraj_csv.import_globtraj_csv(import_path=path_dict['globtraj_input_path'])[0]
@@ -225,7 +238,7 @@ class GraphBasedPlanner(rclpy.node.Node):
     def track_inout_callback(self,msg):
         self.out_of_track = not msg.data
 
-    def loadPitInWaypoint(self):
+    def load_pit_in_waypoint(self):
         with open(self.pit_in_wpt_file_path) as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=',')
             line_count = 0
@@ -363,17 +376,14 @@ class GraphBasedPlanner(rclpy.node.Node):
             # 2. Current velocity
             # 3. What else?
             # TODO : not layer, should be zone to be more simple
-            pit_in_allowed_zone_flg = (127.0 < self.current_veh_odom.pose.pose.position.x < 135.0) and (720.0 < self.current_veh_odom.pose.pose.position.y < 730.0)
+            pit_in_allowed_zone_flg = (self.pit_in_allowed_zone_min_x < self.current_veh_odom.pose.pose.position.x < self.pit_in_allowed_zone_max_x) \
+                                        and (self.pit_in_allowed_zone_min_y < self.current_veh_odom.pose.pose.position.y < self.pit_in_allowed_zone_max_y)
 
             if (self.vel_est < self.pit_in_wpt_maximum_vel and pit_in_allowed_zone_flg == True and self.pit_in_first_call == False):
                 self.pit_in_first_call = True
-                
-                # Can change the waypoint
                 nearest_dist, nearest_ind = self.pit_in_tree.query((self.current_veh_odom.pose.pose.position.x,
-                                                    self.current_veh_odom.pose.pose.position.y), k=1)
-
+                                                                    self.current_veh_odom.pose.pose.position.y), k=1)
                 self.pit_in_wpt_msg.header.stamp = self.get_clock().now().to_msg()
-
                 for i in range(self.pit_in_maptrack_len):
                     if nearest_ind + i < self.num_pit_in_wpt:
                         self.pit_in_wpt_msg.poses[i].pose.position.x = self.pit_in_wpt[nearest_ind + i][0]
@@ -381,16 +391,12 @@ class GraphBasedPlanner(rclpy.node.Node):
                     else:
                         self.pit_in_wpt_msg.poses[i].pose.position.x = self.pit_in_wpt[nearest_ind + i - self.pit_in_maptrack_len][0]
                         self.pit_in_wpt_msg.poses[i].pose.position.y = self.pit_in_wpt[nearest_ind + i - self.pit_in_maptrack_len][1]
-
                 self.local_maptrack_inglobal_pub.publish(self.pit_in_wpt_msg)
 
-                
             elif self.pit_in_first_call == True:
                 nearest_dist, nearest_ind = self.pit_in_tree.query((self.current_veh_odom.pose.pose.position.x,
                                                     self.current_veh_odom.pose.pose.position.y), k=1)
-
                 self.pit_in_wpt_msg.header.stamp = self.get_clock().now().to_msg()
-
                 for i in range(self.pit_in_maptrack_len):
                     if nearest_ind + i < self.num_pit_in_wpt:
                         self.pit_in_wpt_msg.poses[i].pose.position.x = self.pit_in_wpt[nearest_ind + i][0]
@@ -398,7 +404,6 @@ class GraphBasedPlanner(rclpy.node.Node):
                     else:
                         self.pit_in_wpt_msg.poses[i].pose.position.x = self.pit_in_wpt[nearest_ind + i - self.pit_in_maptrack_len][0]
                         self.pit_in_wpt_msg.poses[i].pose.position.y = self.pit_in_wpt[nearest_ind + i - self.pit_in_maptrack_len][1]
-
                 self.local_maptrack_inglobal_pub.publish(self.pit_in_wpt_msg)
 
             else:
