@@ -57,7 +57,7 @@ def write_pcd(points, save_pcd_path):
         f.write('\n'.join(lines))
 
 def write_csv(points, save_csv_path):
-    header = ['x', 'y']
+    header = ['x', 'y','z','idx']
 
     with open(save_csv_path, 'w', encoding='UTF8') as f:
         writer = csv.writer(f)

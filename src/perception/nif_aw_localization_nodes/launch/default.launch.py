@@ -37,6 +37,7 @@ def generate_launch_description():
                     ("in_bestpos", "novatel_bottom/bestpos"), # POSE (X,Y)
                     ("in_imu", "novatel_bottom/imu/data"), # YAW RATE
                     ("in_bestvel", "novatel_bottom/bestvel"), #HEADING BACK UP SOLUTION
+                    ("in_insstdev", "novatel_bottom/insstdev"), #INS STANDARD DEVIATION
                     ("in_wheel_speed_report", "raptor_dbw_interface/wheel_speed_report"), # WHEEL SPEED
 
                     ("out_odometry_ekf_estimated", "/aw_localization/ekf/odom"),
