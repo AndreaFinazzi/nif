@@ -364,16 +364,24 @@ class GraphBasedPlanner(rclpy.node.Node):
                     break
 
             maptrack_inglobal = self.traj_set.get(sel_action_current)
-            if len(maptrack_inglobal[0]) < self.maptrack_len:
-                mp_len = len(maptrack_inglobal[0])
-            else:
-                mp_len = self.maptrack_len
+            mp_len = len(maptrack_inglobal[0])
+            if mp_len < len(self.msg.poses):
+                for idx in range(mp_len, len(self.msg.poses)):
+                    self.msg.poses.pop()
+                self.maptrack_len = mp_len
 
             self.msg.header.stamp = self.get_clock().now().to_msg()
 
     #       TODO pre-load all these info
             for idx in range(mp_len):
-                pose = self.msg.poses[idx]
+                if idx < len(self.msg.poses):
+                    pose = self.msg.poses[idx]
+                else:
+                    pose = PoseStamped()
+                    pose.header.frame_id = self.pit_in_wpt_msg.header.frame_id
+                    self.msg.poses.append(pose)
+                    self.maptrack_len += 1
+
                 pose.header.stamp = self.get_clock().now().to_msg()
                 pose.pose.position.x = maptrack_inglobal[0][idx][1]  # for x
                 pose.pose.position.y = maptrack_inglobal[0][idx][2]  # for x
@@ -389,7 +397,7 @@ class GraphBasedPlanner(rclpy.node.Node):
 
                 # self.get_logger().debug("%f, %f" % (pose.pose.position.x, pose.pose.position.y))
                 self.last_pose = pose
-                        
+
             self.msg.poses[0].pose.orientation = self.msg.poses[1].pose.orientation
             self.local_maptrack_inglobal_pub.publish(self.msg)
 
