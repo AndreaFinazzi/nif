@@ -22,12 +22,18 @@ AccelControl::AccelControl() : Node("AccelControlNode") {
   // Publishers
   this->pubThrottleCmd_ = this->create_publisher<std_msgs::msg::Float32>(
       "/joystick/accelerator_cmd", 1);
+  this->pubThrottleCmdRaw_ = this->create_publisher<std_msgs::msg::Float32>(
+      "/joystick/accelerator_cmd/raw", 1);
   this->pubBrakeCmd_ =
       this->create_publisher<std_msgs::msg::Float32>("/joystick/brake_cmd", 1);
+  this->pubBrakeCmdRaw_ = this->create_publisher<std_msgs::msg::Float32>(
+      "/joystick/brake_cmd/raw", 1);
+  this->pubSlipRatio_ = this->create_publisher<std_msgs::msg::Float32>(
+      "/accel_control/slip_ratio", 1);
   this->pubGearCmd_ =
       this->create_publisher<std_msgs::msg::UInt8>("/joystick/gear_cmd", 1);
-//  this->pubControlStatus_ = this->create_publisher<std_msgs::msg::String>(
-//      "/control_low_level/control_status", 1);
+  //  this->pubControlStatus_ = this->create_publisher<std_msgs::msg::String>(
+  //      "/control_low_level/control_status", 1);
 
   // setup QOS to be best effort
   auto qos = rclcpp::QoS(
@@ -46,7 +52,7 @@ AccelControl::AccelControl() : Node("AccelControlNode") {
           std::bind(&AccelControl::receiveVelocity, this,
                     std::placeholders::_1));
   this->subDesAccel_ = this->create_subscription<std_msgs::msg::Float32>(
-          "/control_safety_layer/out/desired_accel", rclcpp::SensorDataQoS(),
+      "/control_safety_layer/out/desired_accel", rclcpp::SensorDataQoS(),
       std::bind(&AccelControl::receiveDesAccel, this, std::placeholders::_1));
   this->subPtReport_ =
       this->create_subscription<deep_orange_msgs::msg::PtReport>(
@@ -121,16 +127,16 @@ AccelControl::AccelControl() : Node("AccelControlNode") {
 
 void AccelControl::initializeGears() {
   // LOR params
-//  this->gear_states = {
-//      {1, std::make_shared<control::GearState>(1, 2.92, -255, 11)},
-//      {2, std::make_shared<control::GearState>(2, 1.875, 9.5, 16)},
-//      {3, std::make_shared<control::GearState>(3, 1.38, 14, 22)},
-//      {4, std::make_shared<control::GearState>(4, 1.5, 17, 30)},
-//      {5, std::make_shared<control::GearState>(5, 0.96, 22, 35)},
-//      {6, std::make_shared<control::GearState>(6, 0.889, 30, 255)}};
+  //  this->gear_states = {
+  //      {1, std::make_shared<control::GearState>(1, 2.92, -255, 11)},
+  //      {2, std::make_shared<control::GearState>(2, 1.875, 9.5, 16)},
+  //      {3, std::make_shared<control::GearState>(3, 1.38, 14, 22)},
+  //      {4, std::make_shared<control::GearState>(4, 1.5, 17, 30)},
+  //      {5, std::make_shared<control::GearState>(5, 0.96, 22, 35)},
+  //      {6, std::make_shared<control::GearState>(6, 0.889, 30, 255)}};
 
   // IMS params
-   this->gear_states = {
+  this->gear_states = {
       {1, std::make_shared<control::GearState>(1, 2.92, -255, 13.5)},
       {2, std::make_shared<control::GearState>(2, 1.875, 11, 22)},
       {3, std::make_shared<control::GearState>(3, 1.38, 19.5, 30)},
@@ -157,11 +163,25 @@ void AccelControl::calculateThrottleCmd(double des_accel) {
 void AccelControl::calculateBrakeCmd(double des_accel) {
   // brake command
   double db = this->get_parameter("brake.des_accel_deadband").as_double();
+  double brake_cmd_out = 0.0;
   if (des_accel < -db) {
-    this->brake_cmd.data = this->brake_controller_.CurrentControl(des_accel);
-  } else {
-    this->brake_cmd.data = 0.0;
+    brake_cmd_out = this->brake_controller_.CurrentControl(des_accel);
   }
+  // Calculate tire slip ratio
+  double sigma =
+      m_tire_manager_.CalcTireSlipRatio(this->front_speed_, this->rear_speed_);
+  // Grab current translational speed of the car
+  double curr_speed = this->speed_;
+  // Compute ABS control output
+  brake_cmd_out =
+      m_abs_controller_.ABS_control(brake_cmd_out, curr_speed, sigma);
+
+  // Final brake command output
+  this->brake_cmd.data = brake_cmd_out;
+
+  // for debugging
+  this->sigma_msg.data = sigma;
+  pubSlipRatio_->publish(this->sigma_msg);
 }
 
 void AccelControl::setCmdsToZeros() {
@@ -171,21 +191,22 @@ void AccelControl::setCmdsToZeros() {
 
 void AccelControl::publishThrottleBrake() {
   // Uses joystick cmds if autonomous mode is not enabled
-    // run controller if comms is bad or auto is enabled
-    // Sets the joystick throttle cmd as the saturation limit on throttle
+  // run controller if comms is bad or auto is enabled
+  // Sets the joystick throttle cmd as the saturation limit on throttle
 
-    if (this->throttle_cmd.data > this->max_throttle_)
-    {
-      RCLCPP_DEBUG(this->get_logger(), "%s\n", "Throttle Limit Max Reached");
-      this->throttle_cmd.data = this->max_throttle_;
-    }
+  pubThrottleCmdRaw_->publish(this->throttle_cmd);
+  pubBrakeCmdRaw_->publish(this->brake_cmd);
 
-    this->throttle_cmd.data =
-        (this->brake_cmd.data > 0.0) ? 0.0 : this->throttle_cmd.data;
+  if (this->throttle_cmd.data > this->max_throttle_) {
+    RCLCPP_DEBUG(this->get_logger(), "%s\n", "Throttle Limit Max Reached");
+    this->throttle_cmd.data = this->max_throttle_;
+  }
+
+  this->throttle_cmd.data =
+      (this->brake_cmd.data > 0.0) ? 0.0 : this->throttle_cmd.data;
 
   pubThrottleCmd_->publish(this->throttle_cmd);
   pubBrakeCmd_->publish(this->brake_cmd);
-
 }
 
 void AccelControl::shiftCallback() {
@@ -205,7 +226,7 @@ void AccelControl::shiftCallback() {
       this->shifting_counter_ * 100 >= shift_time_limit) {
     this->gear_cmd.data = this->current_gear_;
     this->shifting_counter_ = 0;
-//    pubGearCmd_->publish(this->gear_cmd);
+    //    pubGearCmd_->publish(this->gear_cmd);
     return;
   }
 
@@ -231,28 +252,32 @@ void AccelControl::shiftCallback() {
     this->shifting_counter_ = 0;
   }
 
-//  pubGearCmd_->publish(this->gear_cmd); // send gear command
+  //  pubGearCmd_->publish(this->gear_cmd); // send gear command
 }
 
 void AccelControl::receiveJoystick(
-        const deep_orange_msgs::msg::JoystickCommand::SharedPtr msg) {
-    this->max_throttle_ = msg->accelerator_cmd;
-    this->joy_gear_ = msg->gear_cmd;
-    this->joy_recv_time_ = this->now();
+    const deep_orange_msgs::msg::JoystickCommand::SharedPtr msg) {
+  this->max_throttle_ = msg->accelerator_cmd;
+  this->joy_gear_ = msg->gear_cmd;
+  this->joy_recv_time_ = this->now();
 }
-
 
 void AccelControl::receiveVelocity(
     const raptor_dbw_msgs::msg::WheelSpeedReport::SharedPtr msg) {
   const double kphToMps = 1.0 / 3.6;
   // front left wheel speed (kph)
-//  double front_left = msg->front_left;
-//  double front_right = msg->front_right;
-   double rear_left = msg->rear_left;
-   double rear_right = msg->rear_right;
+  //  double front_left = msg->front_left;
+  //  double front_right = msg->front_right;
+  double front_left = msg->front_left;
+  double front_right = msg->front_right;
+  double rear_left = msg->rear_left;
+  double rear_right = msg->rear_right;
   // average wheel speeds (kph) and convert to m/s
-  this->speed_ = (rear_right + rear_left) * 0.5 * kphToMps;
-  this->vel_recv_time_ = this->now();
+  this->speed_ = (rear_left + rear_right) * 0.5 * kphToMps;
+  // front/rear wheel speed
+  this->front_speed_ = (front_left + front_right) * 0.5 * kphToMps;
+  this->rear_speed_ = (rear_left + rear_right) * 0.5 * kphToMps;
+  this->vel_recv_time_ = rclcpp::Clock().now();
 }
 
 void AccelControl::receiveDesAccel(
