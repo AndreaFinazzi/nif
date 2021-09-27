@@ -38,13 +38,11 @@ EgoShapeFilterNode::EgoShapeFilterNode(const std::string &node_name_)
 
   // Controller Parameters
   this->declare_parameter<double>("min_lookahead", double(4.0));
-  this->declare_parameter<double>("max_lookahead", double(50.0));
+  this->declare_parameter<double>("max_lookahead", double(30.0));
   this->declare_parameter<double>("lookahead_speed_ratio", double(0.75));
   this->declare_parameter<double>("proportional_gain", double(0.2));
   this->declare_parameter<double>("vehicle.wheelbase", double(2.97));
   this->declare_parameter<double>("max_steer_angle", double(30.0)); // 15 deg * 2 because ratio is wrong
-  this->declare_parameter<double>("steering_override_threshold", double(4.0));
-  this->declare_parameter<bool>("auto_enabled", bool(false));
 
   respond();
 
@@ -73,6 +71,12 @@ EgoShapeFilterNode::EgoShapeFilterNode(const std::string &node_name_)
       "/merged/lidar", nif::common::constants::QOS_SENSOR_DATA,
       std::bind(&EgoShapeFilterNode::mergedPointsCallback, this,
                 std::placeholders::_1));
+  sub_wheel_speed_ = this->create_subscription<raptor_dbw_msgs::msg::WheelSpeedReport>(
+      "raptor_dbw_interface/wheel_speed_report",
+      nif::common::constants::QOS_SENSOR_DATA,
+      std::bind(&EgoShapeFilterNode::WheelSpeedCallback, this,
+                std::placeholders::_1));
+
   using namespace std::chrono_literals; // NOLINT
   // TODO convert period to paramter
   timer_ = this->create_wall_timer(
@@ -111,6 +115,10 @@ EgoShapeFilterNode::EgoShapeFilterNode(const std::string &node_name_)
       "/detected_inner_distance", nif::common::constants::QOS_SENSOR_DATA);
   pub_outer_wall_distance = this->create_publisher<std_msgs::msg::Float32>(
       "/detected_outer_distance", nif::common::constants::QOS_SENSOR_DATA);
+
+  pub_wall_following_steer_cmd = this->create_publisher<std_msgs::msg::Float32>(
+      "/wall_following_steering_cmd",
+      nif::common::constants::QOS_CONTROL_CMD); // TODO
 
   lidar_timeout = rclcpp::Duration(1, 0);
 
@@ -154,8 +162,6 @@ void EgoShapeFilterNode::SetControllerParams() {
   m_KinController.Kp = this->get_parameter("proportional_gain").as_double();
   m_KinController.L = this->get_parameter("vehicle.wheelbase").as_double();
   m_KinController.ms = this->get_parameter("max_steer_angle").as_double();
-  m_KinController.steer_override_threshold = this->get_parameter("steering_override_threshold").as_double();
-  m_KinController.auto_enabled = this->get_parameter("auto_enabled").as_bool();
 }
 
 void EgoShapeFilterNode::EgoShape(
@@ -418,7 +424,13 @@ void EgoShapeFilterNode::timer_callback() {
     - output : predictive path on the base_link frame
   */
   m_KinController.setPath(final_wall_following_path_msg);
-  
+  m_KinController.setVelocity(m_vel_speed_x);
+  m_KinController.run();
+  double wall_following_steering_cmd;
+  m_KinController.getSteering(wall_following_steering_cmd);
+  std_msgs::msg::Float32 wall_following_steering_cmd_msg;
+  wall_following_steering_cmd_msg.data = wall_following_steering_cmd;
+  pub_wall_following_steer_cmd->publish(wall_following_steering_cmd_msg);
 }
 
 void EgoShapeFilterNode::mergedPointsCallback(
@@ -451,6 +463,12 @@ void EgoShapeFilterNode::mergedPointsCallback(
 
   bMergedLidar = true;
 }
+
+void EgoShapeFilterNode::WheelSpeedCallback(const raptor_dbw_msgs::msg::WheelSpeedReport::SharedPtr msg)
+{
+  m_vel_speed_x = (msg->front_right + msg->front_left) / 2 * nif::common::constants::KPH2MS;
+}
+
 
 void EgoShapeFilterNode::RegisterPointToGrid(
     pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud_ptr, double in_resolution,

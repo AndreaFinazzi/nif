@@ -17,9 +17,9 @@ using namespace nif::perception;
 
 int32_t main(int32_t argc, char **argv) {
   rclcpp::init(argc, argv);
-  
-  const char *node_name_1 = "point_concat_filter";
-  const char *node_name_2 = "ego_shape_filter";
+
+  const char *node_name_1 = "nif_points_concat_node";
+  const char *node_name_2 = "nif_ego_shape_filter_node";
 
   auto PC_FILTER = std::make_shared<PointsConcatFilterNode>(node_name_1);
   auto EGO_FILTER = std::make_shared<EgoShapeFilterNode>(node_name_2);
