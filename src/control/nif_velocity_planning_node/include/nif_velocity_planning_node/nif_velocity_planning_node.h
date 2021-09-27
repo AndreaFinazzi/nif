@@ -24,6 +24,7 @@
 #include "nif_common/types.h"
 #include "nif_common/vehicle_model.h"
 #include "nif_common_nodes/i_base_synchronized_node.h"
+#include "nif_vehicle_dynamics_manager/kalman.h"
 #include "nif_vehicle_dynamics_manager/tire_manager.hpp"
 #include "nif_velocity_planning_node/low_pass_filter.h"
 #include "raptor_dbw_msgs/msg/steering_report.hpp"
@@ -52,6 +53,8 @@ public:
     // Publishers
     des_vel_pub_ = this->create_publisher<std_msgs::msg::Float32>(
         "out_desired_velocity", nif::common::constants::QOS_CONTROL_CMD);
+    diag_pub_ = this->create_publisher<std_msgs::msg::Float32MultiArray>(
+        "/velocity_planner/diagnostic", 1);
 
     // Subscribers
     path_sub_ = this->create_subscription<nav_msgs::msg::Path>(
@@ -90,6 +93,13 @@ public:
     // Safety timeouts for odometry and the path (set negative to ignore)
     this->declare_parameter("odometry_timeout_sec", 0.1);
     this->declare_parameter("path_timeout_sec", 0.5);
+    // Safe path distance
+    // - min safe distance. safe_dist_gain:=0.
+    this->declare_parameter("path_dist_min", 8.0);
+    // - max safe distance. safe_dist_gain:=1.
+    this->declare_parameter("path_dist_max", 30.0);
+    // - time to collision(arrive) until safe path dist
+    this->declare_parameter("ttc_thres", 2.0);
 
     // Read in misc. parameters
     m_vel_plan_enabled = this->get_parameter("vel_plan_enabled").as_bool();
@@ -101,6 +111,9 @@ public:
     m_odometry_timeout_sec =
         this->get_parameter("odometry_timeout_sec").as_double();
     m_path_timeout_sec = this->get_parameter("path_timeout_sec").as_double();
+    m_path_dist_min = this->get_parameter("path_dist_min").as_double();
+    m_path_dist_max = this->get_parameter("path_dist_max").as_double();
+    m_ttc_thres = this->get_parameter("ttc_thres").as_double();
 
     if (m_odometry_timeout_sec <= 0. || m_path_timeout_sec <= 0.) {
       RCLCPP_ERROR(this->get_logger(),
@@ -147,27 +160,35 @@ private:
       // Publish planned desired velocity
       if (valid_path && valid_odom) {
         valid_tracking_result = true;
-        // nav_msgs::msg::Path current_path = m_current_path;
-
         // Get current accelerations
-        double a_lon = m_current_imu.linear_acceleration.x;
-        double a_lat = m_current_imu.linear_acceleration.y;
-        double yaw_rate = m_current_imu.angular_velocity.z;
+        // double a_lon = m_current_imu.linear_acceleration.x;
+        // double a_lat = m_current_imu.linear_acceleration.y;
+        // double yaw_rate = m_current_imu.angular_velocity.z;
 
-        // Get curvature
+        // Get curvature & cumul. distance
         // - get curvature array (+curv: CCW rotation / -curv: CW rotation)
         int path_len = m_current_path.poses.size();
-        std::vector<double> curv_array(path_len, 0.0);
+        std::vector<double> curv_array(path_len, 0.0); // for curvature
+        std::vector<double> dist_array(path_len, 0.0); // for cumul. distance
         std::vector<double> lpf_curv_array(path_len, 0.0);
-        getCurvatureArray(curv_array);
+        // - get curv. & dist. array (+curv: CCW rotation / -curv: CW rotation)
+        getCurvatureDistArray(curv_array, dist_array);
+        // // - get curvature array (+curv: CCW rotation / -curv: CW rotation)
+        // getCurvatureArray(curv_array);
+
         // - apply low pass filter
         lpf_curve.getFilteredArray(curv_array, lpf_curv_array);
         // - get instantaneous curvature
         double kappa = lpf_curv_array[0];
+        // - get path distance
+        double path_dist = dist_array[path_len - 1];
 
         // Get Lateral Acceleration Limit using Vehicle dynamics manager
         double a_lat_max = m_tire_manager.ComputeLateralAccelLimit(
-            a_lon, a_lat, yaw_rate, current_steer_rad, current_velocity_mps);
+            m_a_x_kf, m_a_y_kf, m_yaw_rate_kf, current_steer_rad,
+            current_velocity_mps);
+        // double a_lat_max = m_tire_manager.ComputeLateralAccelLimit(
+        //     a_lon, a_lat, yaw_rate, current_steer_rad, current_velocity_mps);
 
         // Compute maximum velocity
         if (abs(kappa) <= m_CURVATURE_MINIMUM) {
@@ -180,12 +201,28 @@ private:
           desired_velocity_mps = std::min(desired_velocity_mps, m_max_vel_mps);
         }
         // Decrease desired velocity w.r.t. lateral error
-        // double error_ratio = std::min(abs(m_error_y), m_ERROR_Y_MAX) /
-        //                      m_ERROR_Y_MAX;          // [0.0~1.0] ratio
         double error_ratio = std::min(abs(m_error_y_lpf), m_ERROR_Y_MAX) /
                              m_ERROR_Y_MAX;          // [0.0~1.0] ratio
         double error_gain = 1.0 - 0.5 * error_ratio; // [1.0~0.5] gain
-        desired_velocity_mps = error_gain * desired_velocity_mps;
+
+        // Decrease desired velocity w.r.t. Safe path distance
+        double path_dist_safe =
+            m_path_dist_min + m_current_speed_mps * m_ttc_thres;
+        path_dist_safe = std::max(m_path_dist_min + 0.001,
+                                  std::min(path_dist_safe, m_path_dist_max));
+
+        double safe_dist_gain =
+            (path_dist - m_path_dist_min) / (path_dist_safe - m_path_dist_min);
+        safe_dist_gain = std::max(0.0, std::min(safe_dist_gain, 1.0));
+
+        // Safe path gain + Error gain
+        desired_velocity_mps =
+            error_gain * safe_dist_gain * desired_velocity_mps;
+        // desired_velocity_mps = error_gain * desired_velocity_mps;
+
+        // Publish diagnose message
+        publishDiagnostic(kappa, abs(a_lat_max), error_gain, safe_dist_gain,
+                          path_dist_safe, m_a_x_kf, m_a_y_kf, m_yaw_rate_kf);
 
       } else {
         //! Publish zero desired velocity
@@ -238,6 +275,37 @@ private:
     curvature_array = vec;
   }
 
+  void getCurvatureDistArray(std::vector<double> &curv_array,
+                             std::vector<double> &dist_array) {
+    // Iterate computeCurvature to get curvature for each point in path.
+    double path_size = m_current_path.poses.size();
+
+    std::vector<double> vec_curv(path_size, 0.0);
+    std::vector<double> vec_dist(path_size, 0.0);
+
+    for (int i = 1; i < path_size - 1; i++) {
+      // - compute curvature
+      vec_curv[i] =
+          computeCurvature(m_current_path.poses[i - 1], m_current_path.poses[i],
+                           m_current_path.poses[i + 1]);
+      // - compute cumulative distance
+      vec_dist[i] =
+          vec_dist[i - 1] +
+          computeDistance(m_current_path.poses[i - 1], m_current_path.poses[i]);
+    }
+    // first & last index
+    // - curvature
+    vec_curv[0] = vec_curv[1];
+    vec_curv[path_size - 1] = vec_curv[path_size - 2];
+    // - cumulative distance
+    vec_dist[path_size - 1] =
+        vec_dist[path_size - 2] +
+        computeDistance(m_current_path.poses[path_size - 2],
+                        m_current_path.poses[path_size - 1]);
+    curv_array = vec_curv;
+    dist_array = vec_dist;
+  }
+
   double computeCurvature(geometry_msgs::msg::PoseStamped &pose_i_prev,
                           geometry_msgs::msg::PoseStamped &pose_i,
                           geometry_msgs::msg::PoseStamped &pose_i_next) {
@@ -286,11 +354,39 @@ private:
     return curvature;
   }
 
+  double computeDistance(geometry_msgs::msg::PoseStamped pose_i_prev,
+                         geometry_msgs::msg::PoseStamped pose_i) {
+    double x_1 = pose_i_prev.pose.position.x;
+    double x_2 = pose_i.pose.position.x;
+    double y_1 = pose_i_prev.pose.position.y;
+    double y_2 = pose_i.pose.position.y;
+
+    return sqrt(pow(x_1 - x_2, 2.0) + pow(y_1 - y_2, 2.0));
+  }
+
   /** ROS Publishing Interface **/
   void publishPlannedVelocity(double desired_velocity_mps) {
     std_msgs::msg::Float32 des_vel;
     des_vel.data = desired_velocity_mps;
     des_vel_pub_->publish(des_vel);
+  }
+
+  void publishDiagnostic(double curvature, double a_lat_max, double error_gain,
+                         double safe_dist_gain, double safe_dist, double a_x_kf,
+                         double a_y_kf, double yaw_rate_kf) {
+    // Diagnostic: {curvature, a_lat_max}
+    std_msgs::msg::Float32MultiArray diagnostic;
+    diagnostic.data.push_back(curvature);
+    diagnostic.data.push_back(a_lat_max);
+    diagnostic.data.push_back(error_gain);
+    diagnostic.data.push_back(safe_dist_gain);
+    diagnostic.data.push_back(safe_dist);
+
+    diagnostic.data.push_back(a_x_kf);
+    diagnostic.data.push_back(a_y_kf);
+    diagnostic.data.push_back(yaw_rate_kf);
+
+    diag_pub_->publish(diagnostic);
   }
 
   /** ROS Callbacks / Subscription Interface **/
@@ -309,6 +405,39 @@ private:
 
   void imuCallback(const sensor_msgs::msg::Imu::SharedPtr msg) {
     m_current_imu = *msg;
+    // kalman filter initialization
+    if (!kalman_init) {
+      kf_a_lat.init(2);
+      kf_a_lat.setProcessNoise(0.1, 0.01);
+      kf_a_lat.setMeasurementNoise(0.4);
+
+      kf_a_lon.init(2);
+      kf_a_lon.setProcessNoise(0.1, 0.01);
+      kf_a_lon.setMeasurementNoise(0.4);
+
+      kf_yaw_rate.init(2);
+      kf_yaw_rate.setProcessNoise(0.05, 0.0025);
+      kf_yaw_rate.setMeasurementNoise(0.1);
+
+      kalman_init = true;
+    }
+    // kalman filtering
+    auto now = rclcpp::Clock().now();
+    float dt = secs(now - m_imu_update_time);
+    // - prediction
+    kf_a_lat.predict(dt);
+    kf_a_lon.predict(dt);
+    kf_yaw_rate.predict(dt);
+    // - get filtered values
+    m_a_x_kf = kf_a_lon.get();
+    m_a_y_kf = kf_a_lat.get();
+    m_yaw_rate_kf = kf_yaw_rate.get();
+    // - correction
+    kf_a_lon.correct((float)(msg->linear_acceleration.x));
+    kf_a_lat.correct((float)(msg->linear_acceleration.y));
+    kf_yaw_rate.correct((float)(msg->angular_velocity.z));
+
+    m_imu_update_time = now;
   }
 
   void
@@ -356,6 +485,11 @@ private:
     return result;
   }
 
+  // Kalman filters
+  KalmanFilter kf_a_lat;
+  KalmanFilter kf_a_lon;
+  KalmanFilter kf_yaw_rate;
+
   //! Input Data
   rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr path_sub_;
   rclcpp::Subscription<raptor_dbw_msgs::msg::WheelSpeedReport>::SharedPtr
@@ -368,6 +502,7 @@ private:
 
   //! Publisher
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr des_vel_pub_;
+  rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr diag_pub_;
 
   //! Update Timers
   rclcpp::TimerBase::SharedPtr control_timer_;
@@ -377,6 +512,7 @@ private:
 
   //! Track when certain variables have been updated
   rclcpp::Time m_path_update_time;
+  rclcpp::Time m_imu_update_time = rclcpp::Clock().now();
   bool has_path = false;
 
   //! Load vehicle dynamics manager
@@ -400,6 +536,11 @@ private:
   double m_error_y = 0;           // [m]
   double m_error_y_lpf = 0;       // [m]
 
+  bool kalman_init = false;
+  double m_a_x_kf = 0.0;      // longitudinal accel from KF
+  double m_a_y_kf = 0.0;      // lateral accel from KF
+  double m_yaw_rate_kf = 0.0; // yaw rate from KF
+
   //! Params for Velocity planning
   std::vector<double> m_velocity_profile;
   std::vector<double> m_SpeedProfile;
@@ -421,8 +562,22 @@ private:
   double m_path_timeout_sec;
   rclcpp::Duration m_path_timeout = rclcpp::Duration(1, 0);
 
+  double m_path_dist_min;
+  double m_path_dist_max;
+  double m_ttc_thres;
+
   double m_CURVATURE_MINIMUM = 0.000001;
   double m_ERROR_Y_MAX = 4.0; // halving des_vel point. Width of IMS track: 12 m
-};                            /* class VelocityPlannerNode */
+
+  double secs(rclcpp::Time t) {
+    return static_cast<double>(t.seconds()) +
+           static_cast<double>(t.nanoseconds()) * 1e-9;
+  }
+  double secs(rclcpp::Duration t) {
+    return static_cast<double>(t.seconds()) +
+           static_cast<double>(t.nanoseconds()) * 1e-9;
+  }
+
+}; /* class VelocityPlannerNode */
 } // namespace control
 } // namespace nif
