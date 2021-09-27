@@ -34,67 +34,75 @@ EgoShapeFilterNode::EgoShapeFilterNode(const std::string &node_name_)
   this->declare_parameter<double>("x_roi", double(0.));
   this->declare_parameter<double>("distance_extract_thres", double(0.5));
   this->declare_parameter<double>("distance_low_fass_filter", double(0.5));
+  this->declare_parameter<double>("target_space_to_wall", double(7.));
 
   respond();
 
-  std::cout << "left_lower_distance_: " << left_lower_distance_ << std::endl;
-  std::cout << "right_lower_distance_: " << right_lower_distance_ << std::endl;
-  std::cout << "rear_lower_distance_: " << rear_lower_distance_ << std::endl;
-  std::cout << "front_lower_distance_: " << front_lower_distance_ << std::endl;
+  RCLCPP_INFO(this->get_logger(), "left_lower_distance_: %f", left_lower_distance_);
+  RCLCPP_INFO(this->get_logger(), "right_lower_distance_: %f", right_lower_distance_);
+  RCLCPP_INFO(this->get_logger(), "rear_lower_distance_: %f", rear_lower_distance_);
+  RCLCPP_INFO(this->get_logger(), "front_lower_distance_: %f", front_lower_distance_);
 
-  std::cout << "left_upper_distance_: " << left_upper_distance_ << std::endl;
-  std::cout << "right_upper_distance_: " << right_upper_distance_ << std::endl;
-  std::cout << "rear_upper_distance_: " << rear_upper_distance_ << std::endl;
-  std::cout << "front_upper_distance_: " << front_upper_distance_ << std::endl;
+  RCLCPP_INFO(this->get_logger(), "left_upper_distance_: %f", left_upper_distance_);
+  RCLCPP_INFO(this->get_logger(), "right_upper_distance_: %f", right_upper_distance_);
+  RCLCPP_INFO(this->get_logger(), "rear_upper_distance_: %f", rear_upper_distance_);
+  RCLCPP_INFO(this->get_logger(), "front_upper_distance_: %f", front_upper_distance_);
 
-  std::cout << "height_lower_distance: " << height_lower_distance_ << std::endl;
-  std::cout << "height_upper_distance: " << height_upper_distance_ << std::endl;
-  std::cout << "resolution: " << resolution_ << std::endl;
-  std::cout << "normal_angle_thres: " << normal_angle_thres_ << std::endl;
-  std::cout << "ransac_pts_thresh: " << ransac_pts_thresh_ << std::endl;
+  RCLCPP_INFO(this->get_logger(), "height_lower_distance: %f", height_lower_distance_);
+  RCLCPP_INFO(this->get_logger(), "height_upper_distance: %f", height_upper_distance_);
+  RCLCPP_INFO(this->get_logger(), "resolution: %f", resolution_);
+  RCLCPP_INFO(this->get_logger(), "normal_angle_thres: %f", normal_angle_thres_);
+  RCLCPP_INFO(this->get_logger(), "ransac_pts_thresh: %f", ransac_pts_thresh_);
 
-  // setup QOS to be best effort
-  auto qos = rclcpp::QoS(
-      rclcpp::QoSInitialization(RMW_QOS_POLICY_HISTORY_KEEP_LAST, 1));
-  qos.best_effort();
-  auto rmw_qos_profile = qos.get_rmw_qos_profile();
+  RCLCPP_INFO(this->get_logger(), "x_roi : %f", extract_distance_x_roi);
+  RCLCPP_INFO(this->get_logger(), "distance_extract_thres : %f", extract_distance_thres );
+  RCLCPP_INFO(this->get_logger(), "distance_low_fass_filter : %f", distance_low_fass_filter );
+  RCLCPP_INFO(this->get_logger(), "target_space_to_wall : %f", m_target_space_to_wall );
 
   sub_points_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
-      "/merged/lidar", qos,
+      "/merged/lidar", nif::common::constants::QOS_SENSOR_DATA,
       std::bind(&EgoShapeFilterNode::mergedPointsCallback, this,
                 std::placeholders::_1));
+  using namespace std::chrono_literals; // NOLINT
+  // TODO convert period to paramter
+  timer_ = this->create_wall_timer(
+      10ms, std::bind(&EgoShapeFilterNode::timer_callback, this));
 
   pub_filtered_points = this->create_publisher<sensor_msgs::msg::PointCloud2>(
-      "/merged/ego_filtered", qos);
+      "/merged/ego_filtered", nif::common::constants::QOS_SENSOR_DATA);
   pub_oc_grid = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
-      "/OccupancyGridMap/map", qos);
+      "/OccupancyGridMap/map", nif::common::constants::QOS_SENSOR_DATA);
   pub_forwarding_map_grid =
       this->create_publisher<nav_msgs::msg::OccupancyGrid>(
-          "/OccupancyGridMap/forwarding_map", qos);
+          "/OccupancyGridMap/forwarding_map", nif::common::constants::QOS_SENSOR_DATA);
 
   pub_inverse_points = this->create_publisher<sensor_msgs::msg::PointCloud2>(
-      "/inverse_mapped_points", qos);
+      "/inverse_mapped_points", nif::common::constants::QOS_SENSOR_DATA);
   pub_weaker_thres_inverse_points = this->create_publisher<sensor_msgs::msg::PointCloud2>(
-      "/weaker_thres_inverse_mapped_points", qos);
+      "/weaker_thres_inverse_mapped_points", nif::common::constants::QOS_SENSOR_DATA);
   pub_left_ransac_filtered_points =
       this->create_publisher<sensor_msgs::msg::PointCloud2>(
-          "/ransac_filtered_points/left", qos);
+          "/ransac_filtered_points/left", nif::common::constants::QOS_SENSOR_DATA);
   pub_right_ransac_filtered_points =
       this->create_publisher<sensor_msgs::msg::PointCloud2>(
-          "/ransac_filtered_points/right", qos);
+          "/ransac_filtered_points/right", nif::common::constants::QOS_SENSOR_DATA);
   pub_both_ransac_filtered_points =
       this->create_publisher<sensor_msgs::msg::PointCloud2>(
-          "/ransac_filtered_points/both", qos);
+          "/ransac_filtered_points/both", nif::common::constants::QOS_SENSOR_DATA);
 
   pub_left_wall_line =
-      this->create_publisher<nav_msgs::msg::Path>("/wall_left", qos);
+      this->create_publisher<nav_msgs::msg::Path>("/wall_left", nif::common::constants::QOS_SENSOR_DATA);
   pub_right_wall_line =
-      this->create_publisher<nav_msgs::msg::Path>("/wall_right", qos);
+      this->create_publisher<nav_msgs::msg::Path>("/wall_right", nif::common::constants::QOS_SENSOR_DATA);
+  pub_predictive_path = this->create_publisher<nav_msgs::msg::Path>(
+      "/wall_based_predictive_path", nif::common::constants::QOS_SENSOR_DATA);
 
   pub_inner_wall_distance = this->create_publisher<std_msgs::msg::Float32>(
-      "/detected_inner_distance", qos);
+      "/detected_inner_distance", nif::common::constants::QOS_SENSOR_DATA);
   pub_outer_wall_distance = this->create_publisher<std_msgs::msg::Float32>(
-      "/detected_outer_distance", qos);
+      "/detected_outer_distance", nif::common::constants::QOS_SENSOR_DATA);
+
+  lidar_timeout = rclcpp::Duration(1, 0);
 }
 
 EgoShapeFilterNode::~EgoShapeFilterNode() {}
@@ -121,6 +129,8 @@ void EgoShapeFilterNode::respond() {
   this->get_parameter("x_roi", extract_distance_x_roi);
   this->get_parameter("distance_extract_thres", extract_distance_thres);
   this->get_parameter("distance_low_fass_filter", distance_low_fass_filter);
+  this->get_parameter("target_space_to_wall", m_target_space_to_wall);
+
 }
 
 void EgoShapeFilterNode::EgoShape(
@@ -181,35 +191,23 @@ void EgoShapeFilterNode::EgoShape(
   extract.filter(*out_cloud_ptr);
 }
 
-void EgoShapeFilterNode::mergedPointsCallback(
-    const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
-  pcl::PointCloud<pcl::PointXYZI>::Ptr CloudIn(
-      new pcl::PointCloud<pcl::PointXYZI>);
-  pcl::PointCloud<pcl::PointXYZI>::Ptr CloudVoxelized(
-      new pcl::PointCloud<pcl::PointXYZI>);
-  pcl::PointCloud<pcl::PointXYZI>::Ptr CloudShapeFiltered(
-      new pcl::PointCloud<pcl::PointXYZI>);
+void EgoShapeFilterNode::timer_callback() {
+  std::lock_guard<std::mutex> sensor_lock(sensor_mtx);
 
-  RCLCPP_DEBUG(this->get_logger(), "-------------");
+  if (!bMergedLidar)
+    return;
 
-  pcl::fromROSMsg(*msg, *CloudIn);
-  CloudVoxelized = downsample(CloudIn, resolution_);
-
-  EgoShape(CloudVoxelized, CloudShapeFiltered, left_lower_distance_,
-           right_lower_distance_, front_lower_distance_, rear_lower_distance_,
-           left_upper_distance_, right_upper_distance_, front_upper_distance_,
-           rear_upper_distance_, height_lower_distance_,
-           height_upper_distance_);
-  sensor_msgs::msg::PointCloud2 cloud_msg;
-  pcl::toROSMsg(*CloudShapeFiltered, cloud_msg);
-  cloud_msg.header = msg->header;
-  cloud_msg.header.frame_id = BASE_LINK;
-  pub_filtered_points->publish(cloud_msg);
+  if ((this->now() - lidar_time_last_update) >= this->lidar_timeout) {
+    // Set error, but keep going
+    // node_status = common::NODE_ERROR;
+    RCLCPP_WARN(this->get_logger(), "No lidar update");
+    return;
+  } else {
+    // node_status = common::NODE_OK;
+  }
 
   float min_x = -(front_upper_distance_ + rear_upper_distance_) / 2;
   float min_y = -(left_upper_distance_ + right_upper_distance_) / 2;
-
-  RegisterPointToGrid(CloudShapeFiltered, resolution_, min_x, min_y);
 
   pcl::PointCloud<pcl::PointXYZI>::Ptr CloudInverseBoth(
       new pcl::PointCloud<pcl::PointXYZI>);
@@ -220,9 +218,22 @@ void EgoShapeFilterNode::mergedPointsCallback(
   pcl::PointCloud<pcl::PointXYZI>::Ptr CloudInverseWeakerThres(
       new pcl::PointCloud<pcl::PointXYZI>);
 
-  InverseMap(CloudShapeFiltered, CloudInverseBoth,
-             CloudInverseWeakerThres, CloudInverseLeft, CloudInverseRight, min_x,
-             min_y, resolution_);
+  /* REGISTER POINTS TO GRID 
+  1. Register points on the 2-d grid map for ground-filtering
+  2. Visualize the occupancy grid map
+    - input : ego-shape & voxelized points, grid resolution, origin point of grid
+    - output : 2-D grid map
+  */
+  RegisterPointToGrid(m_CloudShapeFiltered, resolution_, min_x, min_y);
+
+  /* INVERSE MAP
+  1. Find the ground filtered points
+  2. Find the left/right filtered points
+    - input : ego-shape & voxelized points, grid resolution, origin point of grid
+    - output : Inverse mapped filtered points (Both, Left, Right)
+  */
+  InverseMap(m_CloudShapeFiltered, CloudInverseBoth, CloudInverseWeakerThres,
+             CloudInverseLeft, CloudInverseRight, min_x, min_y, resolution_);
 
   sensor_msgs::msg::PointCloud2 cloud_inverse_msg;
   pcl::toROSMsg(*CloudInverseBoth, cloud_inverse_msg);
@@ -236,27 +247,31 @@ void EgoShapeFilterNode::mergedPointsCallback(
   cloud_weaker_thres_inverse_msg.header.stamp = this->now();
   pub_weaker_thres_inverse_points->publish(cloud_weaker_thres_inverse_msg);
 
+  /* LEFT RANSAC FILTER
+  1. Remove outlier points
+  2. Implement left/right points separately.
+    - input : left ground filtered points
+    - output : distance to the wall, ransac filtered left wall points
+  */
   pcl::PointCloud<pcl::PointXYZI>::Ptr CloudRANSACLeft(
       new pcl::PointCloud<pcl::PointXYZI>);
   // left wall detection
-  boost::optional<Eigen::Vector4f> left_wall =
+  boost::optional<Eigen::Vector4f> left_wall_plane_coeff =
       wall_detect(CloudInverseLeft, CloudRANSACLeft);
 
   inner_bound_distance = 0;
   outer_bound_distance = 0;
-  // detected left_wall coefficients
-  if (left_wall && !CloudRANSACLeft->points.empty()) {
+  // detected left_wall_plane_coeff coefficients
+  if (left_wall_plane_coeff && !CloudRANSACLeft->points.empty()) {
     // for (int i = 0; i < 4; i++) {
-    //   std::cout << "left wall" << (*left_wall)[i] << std::endl;
+    //   std::cout << "left wall" << (*left_wall_plane_coeff)[i] << std::endl;
     // }
-    // inner_bound_distance = (*left_wall)[3];
+    // inner_bound_distance = (*left_wall_plane_coeff)[3];
     RCLCPP_DEBUG(this->get_logger(), "Left margin : %f", inner_bound_distance);
 
     ExtractDistanceInCloud(CloudRANSACLeft, extract_distance_x_roi,
                            extract_distance_thres, inner_bound_distance);
   }
-
-
   sensor_msgs::msg::PointCloud2 cloud_left_ransac_filtered_msg;
   pcl::toROSMsg(*CloudRANSACLeft, cloud_left_ransac_filtered_msg);
   cloud_left_ransac_filtered_msg.header.frame_id = BASE_LINK;
@@ -270,24 +285,29 @@ void EgoShapeFilterNode::mergedPointsCallback(
 
   prev_inner_bound_distance = inner_bound_distance;
 
+  /* RIGHT WALL BASED
+  1. Remove outlier points
+  2. Implement left/right points separately.
+    - input : right ground filtered points
+    - output : distance to the wall, ransac filtered right wall points
+  */
   pcl::PointCloud<pcl::PointXYZI>::Ptr CloudRANSACRight(
       new pcl::PointCloud<pcl::PointXYZI>);
-  // left wall detection
-  boost::optional<Eigen::Vector4f> right_wall =
+  // right wall detection
+  boost::optional<Eigen::Vector4f> right_wall_plane_coeff =
       wall_detect(CloudInverseRight, CloudRANSACRight);
 
-  // detected right_wall coefficients
-  if (right_wall && !CloudRANSACRight->points.empty()) {
+  // detected right_wall_plane_coeff coefficients
+  if (right_wall_plane_coeff && !CloudRANSACRight->points.empty()) {
     // for (int i = 0; i < 4; i++) {
-    //   std::cout << "right wall" << (*right_wall)[i] << std::endl;
+    //   std::cout << "right wall" << (*right_wall_plane_coeff)[i] << std::endl;
     // }
-    // outer_bound_distance = (*right_wall)[3];
-    RCLCPP_DEBUG(this->get_logger(), "Right margin : %f", -1 * outer_bound_distance);
+    // outer_bound_distance = (*right_wall_plane_coeff)[3];
+    RCLCPP_DEBUG(this->get_logger(), "Right margin : %f",
+                 -1 * outer_bound_distance);
     ExtractDistanceInCloud(CloudRANSACRight, extract_distance_x_roi,
                            extract_distance_thres, outer_bound_distance);
-
   }
-
   sensor_msgs::msg::PointCloud2 cloud_right_ransac_filtered_msg;
   pcl::toROSMsg(*CloudRANSACRight, cloud_right_ransac_filtered_msg);
   cloud_right_ransac_filtered_msg.header.frame_id = BASE_LINK;
@@ -298,12 +318,17 @@ void EgoShapeFilterNode::mergedPointsCallback(
   // outer_bound_distance_msg.data =
   //     -1 * ((distance_low_fass_filter)*outer_bound_distance +
   //           (1 - distance_low_fass_filter) * prev_outer_bound_distance);
-  outer_bound_distance_msg.data = -1 *outer_bound_distance;
+  outer_bound_distance_msg.data = -1 * outer_bound_distance;
 
   pub_outer_wall_distance->publish(outer_bound_distance_msg);
 
   prev_outer_bound_distance = outer_bound_distance;
 
+  /* BOTH OF RANSAC-FILTERED POINTS PUBLISHER
+  1. Publish ransac filtered both of wall points
+    - input : left/right ransac filtered points
+    - output : both of ransac filtered points
+  */
   pcl::PointCloud<pcl::PointXYZI>::Ptr CloudRANSACBoth(
       new pcl::PointCloud<pcl::PointXYZI>);
   *CloudRANSACBoth += *CloudRANSACRight;
@@ -315,12 +340,82 @@ void EgoShapeFilterNode::mergedPointsCallback(
   cloud_both_ransac_filtered_msg.header.stamp = this->now();
   pub_both_ransac_filtered_points->publish(cloud_both_ransac_filtered_msg);
 
-  pub_left_wall_line->publish(LineVisualizer(
-      CloudRANSACLeft, left_wall, front_upper_distance_, rear_upper_distance_));
-  pub_right_wall_line->publish(LineVisualizer(CloudRANSACRight, right_wall,
-                                              front_upper_distance_,
-                                              rear_upper_distance_));
+  /* CUBIC SPLINER & WALL PATH PUBLISHER
+  1. Publish left/right wall detected path on the BASE_LINK frame
+    - input : left/right ransac-filtered points
+    - output : ransac-filtered wall path
+  */
+  nav_msgs::msg::Path left_path_msg;
+  left_path_msg.header.frame_id = BASE_LINK;
+  left_path_msg.header.stamp = this->now();
+  cv::Mat LeftPolyCoefficient;
+  CubicSpliner(CloudRANSACLeft, left_wall_plane_coeff, front_upper_distance_,
+               rear_upper_distance_, left_path_msg, LeftPolyCoefficient);
+  pub_left_wall_line->publish(left_path_msg);
 
+  nav_msgs::msg::Path right_path_msg;
+  right_path_msg.header.frame_id = BASE_LINK;
+  right_path_msg.header.stamp = this->now();
+  cv::Mat RightPolyCoefficient;
+  CubicSpliner(CloudRANSACRight, right_wall_plane_coeff, front_upper_distance_,
+               rear_upper_distance_, right_path_msg, RightPolyCoefficient);
+  pub_right_wall_line->publish(right_path_msg);
+
+  /* WALL CURVATURE BASED CONTROLLER 
+  1. Left/Right wall based lateral control output
+  2. Estimated curvature / predictive path based on the kinematic model
+    - input : coefficient of cubic splined wall
+    - input : feasibility of wall detection result(named as left_wall_plane_coeff/right_wall_plane_coeff)
+    - output : control output
+    - output : predictive path on the base_link frame
+  */
+  nav_msgs::msg::Path predictive_path_msg;
+  predictive_path_msg.header.frame_id = BASE_LINK;
+  predictive_path_msg.header.stamp = this->now();
+
+  if (right_wall_plane_coeff && outer_bound_distance != 0.0) {
+    m_margin_to_wall = outer_bound_distance + m_target_space_to_wall;
+  }
+
+  EstimatePredictivePath(right_wall_plane_coeff, RightPolyCoefficient,
+                         predictive_path_msg, m_margin_to_wall);
+
+  if (right_wall_plane_coeff && !predictive_path_msg.poses.empty()) {
+    final_wall_following_path_msg = predictive_path_msg;
+  }
+
+  pub_predictive_path->publish(final_wall_following_path_msg);
+}
+
+void EgoShapeFilterNode::mergedPointsCallback(
+    const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
+  std::lock_guard<std::mutex> sensor_lock(sensor_mtx);
+
+  lidar_time_last_update = this->now();
+
+  pcl::PointCloud<pcl::PointXYZI>::Ptr CloudIn(
+          new pcl::PointCloud<pcl::PointXYZI>);
+  pcl::PointCloud<pcl::PointXYZI>::Ptr CloudVoxelized(
+      new pcl::PointCloud<pcl::PointXYZI>);
+  m_CloudShapeFiltered.reset(new pcl::PointCloud<pcl::PointXYZI>());
+
+  RCLCPP_DEBUG(this->get_logger(), "-------------");
+
+  pcl::fromROSMsg(*msg, *CloudIn);
+  CloudVoxelized = downsample(CloudIn, resolution_);
+
+  EgoShape(CloudVoxelized, m_CloudShapeFiltered, left_lower_distance_,
+           right_lower_distance_, front_lower_distance_, rear_lower_distance_,
+           left_upper_distance_, right_upper_distance_, front_upper_distance_,
+           rear_upper_distance_, height_lower_distance_,
+           height_upper_distance_);
+  sensor_msgs::msg::PointCloud2 cloud_msg;
+  pcl::toROSMsg(*m_CloudShapeFiltered, cloud_msg);
+  cloud_msg.header = msg->header;
+  cloud_msg.header.frame_id = BASE_LINK;
+  pub_filtered_points->publish(cloud_msg);
+
+  bMergedLidar = true;
 }
 
 void EgoShapeFilterNode::RegisterPointToGrid(
@@ -500,10 +595,11 @@ void EgoShapeFilterNode::ExtractDistanceInCloud(
 
     }
 
-    nav_msgs::msg::Path EgoShapeFilterNode::LineVisualizer(
+void EgoShapeFilterNode::CubicSpliner(
         pcl::PointCloud<pcl::PointXYZI>::Ptr cloudIn,
-        const boost::optional<Eigen::Vector4f> coeff,
-        double in_front_upper_threshold, double in_rear_upper_threshold) {
+        const boost::optional<Eigen::Vector4f> wall_plane_coeff,
+        double in_front_upper_threshold, double in_rear_upper_threshold,
+        nav_msgs::msg::Path& path_msg_out, cv::Mat& PolyCoefficientOut) {
 
   std::vector<cv::Point2f> ToBeFit;
   ToBeFit.clear();
@@ -517,32 +613,27 @@ void EgoShapeFilterNode::ExtractDistanceInCloud(
 
   // For polynomial fitting
   int poly_order = 3;
-  cv::Mat PolyCoefficient = polyfit(ToBeFit, poly_order);
+  PolyCoefficientOut = polyfit(ToBeFit, poly_order);
 
-  nav_msgs::msg::Path path_msg;
-  path_msg.header.frame_id = BASE_LINK;
-  path_msg.header.stamp = this->now();
-
-  if (!coeff) {
-    return path_msg;
+  if (!wall_plane_coeff) {
+    return;
   }
 
   for (double x = -10; x < 20; x = x + 0.5) {
     geometry_msgs::msg::PoseStamped pose_buf;
     pose_buf.pose.position.x = x;
     pose_buf.pose.position.y =
-        PolyCoefficient.at<double>(poly_order, 0) * pow(x, poly_order) +
-        PolyCoefficient.at<double>(poly_order - 1, 0) * pow(x, poly_order - 1) +
-        PolyCoefficient.at<double>(poly_order - 2, 0) * pow(x, poly_order - 2) +
-        PolyCoefficient.at<double>(poly_order - 3, 0); // Cubic
+        PolyCoefficientOut.at<double>(poly_order, 0) * pow(x, poly_order) +
+        PolyCoefficientOut.at<double>(poly_order - 1, 0) * pow(x, poly_order - 1) +
+        PolyCoefficientOut.at<double>(poly_order - 2, 0) * pow(x, poly_order - 2) +
+        PolyCoefficientOut.at<double>(poly_order - 3, 0); // Cubic
     pose_buf.pose.orientation.w = 1;
     pose_buf.pose.orientation.x = 0;
     pose_buf.pose.orientation.y = 0;
     pose_buf.pose.orientation.z = 0;
-    path_msg.poses.push_back(pose_buf);
+    path_msg_out.poses.push_back(pose_buf);
   }
 
-  return path_msg;
 }
 
 cv::Mat EgoShapeFilterNode::polyfit(std::vector<cv::Point2f> &in_point, int n) {
@@ -572,5 +663,31 @@ cv::Mat EgoShapeFilterNode::polyfit(std::vector<cv::Point2f> &in_point, int n) {
     mat_k = (mat_u.t() * mat_u).inv() * mat_u.t() * mat_y;
 
     return mat_k;
+  }
+}
+
+void EgoShapeFilterNode::EstimatePredictivePath(
+    const boost::optional<Eigen::Vector4f> wall_plane_coeff,
+    const cv::Mat &PolyCoefficientIn, nav_msgs::msg::Path &path_msg_out,
+    const double &target_space_to_wall) {
+  if (!wall_plane_coeff) {
+    return;
+  }
+  
+  int poly_order = 3;
+  for (double x = -10; x < 30; x = x + 0.5) {
+    geometry_msgs::msg::PoseStamped pose_buf;
+    pose_buf.pose.position.x = x;
+    pose_buf.pose.position.y =
+        PolyCoefficientIn.at<double>(poly_order, 0) * pow(x, poly_order) +
+        PolyCoefficientIn.at<double>(poly_order - 1, 0) * pow(x, poly_order - 1) +
+        PolyCoefficientIn.at<double>(poly_order - 2, 0) * pow(x, poly_order - 2) +
+        target_space_to_wall; // Cubic
+
+    pose_buf.pose.orientation.w = 1;
+    pose_buf.pose.orientation.x = 0;
+    pose_buf.pose.orientation.y = 0;
+    pose_buf.pose.orientation.z = 0;
+    path_msg_out.poses.push_back(pose_buf);
   }
 }

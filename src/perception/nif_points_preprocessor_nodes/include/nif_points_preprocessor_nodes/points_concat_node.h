@@ -117,9 +117,10 @@ private:
   std::string input_topics_;
   std::string output_topic_;
   std::string output_frame_id_;
+  bool use_new_luminar_driver_;
 
-  void respond();
-  void make_transform_list();
+  void
+      make_transform_list();
   void pointcloud_callback(const PointCloudMsgT::ConstPtr &msg1,
                            const PointCloudMsgT::ConstPtr &msg2,
                            const PointCloudMsgT::ConstPtr &msg3);

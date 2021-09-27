@@ -13,29 +13,31 @@ using namespace nif::common::frame_id::localization;
 
 PointsConcatFilterNode::PointsConcatFilterNode(const std::string &node_name_)
     : Node(node_name_) {
+  this->declare_parameter<bool>("use_new_luminar_driver", bool(true));
   this->declare_parameter<std::string>(
       "input_topics",
-      std::string("[/luminar_front_points, /luminar_left_points, "
-                  "/luminar_right_points]"));
+      std::string("[/luminar_front_points, /luminar_left_points, /luminar_right_points]"));
   this->declare_parameter<std::string>("output_topic",
                                        std::string("/merged/lidar"));
   this->declare_parameter<std::string>("output_frame_id",
                                        std::string(BASE_LINK));
-  // setup QOS to be best effort
-  auto qos = rclcpp::QoS(
-      rclcpp::QoSInitialization(RMW_QOS_POLICY_HISTORY_KEEP_LAST, 1));
-  qos.best_effort();
-  auto rmw_qos_profile = qos.get_rmw_qos_profile();
 
-  respond();
+  this->use_new_luminar_driver_ =
+      this->get_parameter("use_new_luminar_driver").as_bool();
+  this->input_topics_ = this->get_parameter("input_topics").as_string();
+  this->output_topic_ = this->get_parameter("output_topic").as_string();
+  this->output_frame_id_ = this->get_parameter("output_frame_id").as_string();
+
+
+  auto rmw_qos_profile =
+      nif::common::constants::QOS_SENSOR_DATA.get_rmw_qos_profile();
+
   make_transform_list();
 
-  std::cout << "input_topics : " << input_topics_ << std::endl;
-  std::cout << "output_topic : " << output_topic_ << std::endl;
-  std::cout << "output_frame_id : " << output_frame_id_ << std::endl;
-
-  // input_topics_ = "[/front_lidar, /left_lidar, /right_lidar]";
-  // std::cout << input_topics_ << std::endl;
+  RCLCPP_INFO(this->get_logger(), "input_topics : '%s'", input_topics_.c_str());
+  RCLCPP_INFO(this->get_logger(), "output_topic : '%s'", output_topic_.c_str());
+  RCLCPP_INFO(this->get_logger(), "output_frame_id : '%s'",
+              output_frame_id_.c_str());
 
   YAML::Node topics = YAML::Load(input_topics_);
 
@@ -61,17 +63,11 @@ PointsConcatFilterNode::PointsConcatFilterNode(const std::string &node_name_)
   cloud_synchronizer_->registerCallback(bind(
       &PointsConcatFilterNode::pointcloud_callback, this, std::placeholders::_1,
       std::placeholders::_2, std::placeholders::_3));
-  cloud_publisher_ =
-      this->create_publisher<sensor_msgs::msg::PointCloud2>(output_topic_, qos);
+  cloud_publisher_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(
+      output_topic_, nif::common::constants::QOS_SENSOR_DATA);
 }
 
 PointsConcatFilterNode::~PointsConcatFilterNode() {}
-
-void PointsConcatFilterNode::respond() {
-  this->get_parameter("input_topics", input_topics_);
-  this->get_parameter("output_topic", output_topic_);
-  this->get_parameter("output_frame_id", output_frame_id_);
-}
 
 void PointsConcatFilterNode::pointcloud_callback(
     const PointCloudMsgT::ConstPtr &msg1, const PointCloudMsgT::ConstPtr &msg2,

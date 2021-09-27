@@ -1,5 +1,5 @@
 session_name: nif_bag_play
-windows:
+windows: 
   - window_name: ROSBAG PLAY Tab
     layout: tiled
     shell_command_before:
@@ -27,9 +27,9 @@ windows:
           - echo $TRACK
           - ros2 launch nif_multilayer_planning_nodes deploy.launch.py
       - shell_command:
-          - 
+          - ros2 launch nif_aw_localization_nodes default.launch.py
       - shell_command:
-          - 
+          # - ros2 bag record /aw_localization/ekf/odom /localization/ekf/odom /localization/ekf/odom_bestpos /bvs_localization/ltp_odom /novatel_bottom/insstdev /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /out_localization_error
 
   - window_name: Monitoring Tab
     layout: tiled

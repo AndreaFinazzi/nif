@@ -121,8 +121,6 @@ class OnlineTrajectoryHandler(object):
         self.__calc_time_safety = graph_config.getfloat('CALC_TIME', 'calc_time_safety')
         self.__calc_time_buffer_len = graph_config.getint('CALC_TIME', 'calc_time_buffer_len')
 
-        self.in_track = True
-
         # Init velocity planners
         vp_type = graph_config.get('VP', 'vp_type')
 
@@ -200,6 +198,7 @@ class OnlineTrajectoryHandler(object):
 
         self.__v_start = start_vel
 
+        in_track = True
         cor_heading = True
 
         self.reinit_iterative_memory()
@@ -215,13 +214,10 @@ class OnlineTrajectoryHandler(object):
         if not graph_ltpl.online_graph.src.check_inside_bounds.check_inside_bounds(bound1=bound1,
                                                                                    bound2=bound2,
                                                                                    pos=start_pos):
-            if self.in_track is not False:
-                self.__log.warning("Vehicle is out of track, check if correct reference line is provided!")
-            self.in_track = False
-            return self.in_track, cor_heading
+            self.__log.warning("Vehicle is out of track, check if correct reference line is provided!")
+            in_track = False
+            return in_track, cor_heading
             # raise ValueError("VEHICLE SEEMS TO BE OUT OF TRACK!")
-        else:
-            self.in_track = True
 
         # -- SELECT INITIAL PLANNING NODE ------------------------------------------------------------------------------
         closest_nodes, distance = self.__graph_base.get_closest_nodes(pos=start_pos, limit=1)
@@ -241,7 +237,7 @@ class OnlineTrajectoryHandler(object):
         if heading_diff > max_heading_offset:
             self.__log.warning("Heading mismatch between vehicle and track grid, check if vehicle oriented correctly!")
             cor_heading = False
-            return self.in_track, cor_heading
+            return in_track, cor_heading
             # raise ValueError("VEHICLE HEADING MISMATCH (TRACK <-> VEHICLE)!")
 
         # calculate spline to start node
@@ -271,7 +267,7 @@ class OnlineTrajectoryHandler(object):
         self.__last_action_set_nodes = {act_id: [[[None, None], self.__start_node]]}
         self.__last_action_set_node_idx = {act_id: [[0, path.shape[0] - 1]]}
 
-        return self.in_track, cor_heading
+        return in_track, cor_heading
 
     def update_objects(self,
                        obj_veh: list,
@@ -359,7 +355,7 @@ class OnlineTrajectoryHandler(object):
 
             # warn if calc time exceeds threshold
             if calc_time > self.__calc_time_warn_thr:
-                self.__log.debug("Warning: One trajectory generation iteration took more than %.3fs (Actual "
+                self.__log.warning("Warning: One trajectory generation iteration took more than %.3fs (Actual "
                                    "calculation time: %.3fs)" % (self.__calc_time_warn_thr, calc_time))
             self.__log.debug("Update frequency: %.2f Hz" % (1.0 / max(calc_time, 0.001)))
 

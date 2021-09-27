@@ -24,11 +24,13 @@
 #include <novatel_oem7_msgs/msg/bestpos.hpp>
 #include <novatel_oem7_msgs/msg/bestvel.hpp>
 #include <novatel_oem7_msgs/msg/inspva.hpp>
+#include <novatel_oem7_msgs/msg/insstdev.hpp>
 #include <opencv2/opencv.hpp>
 #include <raptor_dbw_msgs/msg/wheel_speed_report.hpp>
 #include <sensor_msgs/msg/imu.hpp>
 #include <std_msgs/msg/float64.hpp>
 #include <std_msgs/msg/float64_multi_array.hpp>
+#include <std_msgs/msg/float32.hpp>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2/utils.h>
 #include <tf2_ros/transform_broadcaster.h>
@@ -58,6 +60,9 @@ class AWLocalizationNode : public rclcpp::Node {
         pub_measured_pose_; // !< @brief debug measurement pose publisher
     rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr
         pub_yaw_bias_; // !< @brief ekf estimated yaw bias publisher
+    rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr
+        pub_mahalanobisScore; // localization result score
+
     rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr pub_bestpos_odometry;
 
     rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::
@@ -77,6 +82,7 @@ class AWLocalizationNode : public rclcpp::Node {
     rclcpp::Subscription<novatel_oem7_msgs::msg::INSPVA>::SharedPtr
         subTOPINSPVA;
     rclcpp::Subscription<novatel_oem7_msgs::msg::BESTVEL>::SharedPtr subBESTVEL;
+    rclcpp::Subscription<novatel_oem7_msgs::msg::INSSTDEV>::SharedPtr subINSSTDEV;
 
     using SyncPolicyT = message_filters::sync_policies::ApproximateTime<
         sensor_msgs::msg::Imu, raptor_dbw_msgs::msg::WheelSpeedReport>;
@@ -182,7 +188,12 @@ class AWLocalizationNode : public rclcpp::Node {
     double VehVelocityTimeDouble;
     double VehVelocityPrevTimeDouble;
 
+    double m_stdev_longitude;
+    double m_stdev_latitude;
+    double m_stdev_azimuth;
+
     double VehVelocity_dt;
+    double m_mahalanobisScore;
 
     rclcpp::Time imu_time_last_update;
     rclcpp::Time bestpos_time_last_update;
@@ -228,6 +239,7 @@ class AWLocalizationNode : public rclcpp::Node {
     BOTTOMINSPVACallback(const novatel_oem7_msgs::msg::INSPVA::SharedPtr msg);
     void TOPINSPVACallback(const novatel_oem7_msgs::msg::INSPVA::SharedPtr msg);
     void BESTVELCallback(const novatel_oem7_msgs::msg::BESTVEL::SharedPtr msg);
+    void INSSTDEVCallback(const novatel_oem7_msgs::msg::INSSTDEV::SharedPtr msg);
 
     void MessegefilteringCallback(
         const sensor_msgs::msg::Imu ::ConstSharedPtr &imu_msg,
@@ -273,29 +285,32 @@ class AWLocalizationNode : public rclcpp::Node {
                          const Eigen::MatrixXd &estimated,
                          const Eigen::MatrixXd &measured,
                          const Eigen::MatrixXd &estimated_cov);
+    bool GPSIgnoreGate(const double &dist_max,
+                       const Eigen::MatrixXd &x,     // estimated
+                       const Eigen::MatrixXd &obj_x, // correct
+                       const Eigen::MatrixXd &cov);
+      /**
+       * @brief normalize yaw angle
+       * @param yaw yaw angle
+       * @return normalized yaw
+       */
+      double normalizeYaw(const double &yaw);
 
-    /**
-     * @brief normalize yaw angle
-     * @param yaw yaw angle
-     * @return normalized yaw
-     */
-    double normalizeYaw(const double &yaw);
+      /**
+       * @brief set current EKF estimation result to current_ekf_pose_ &
+       * current_ekf_twist_
+       */
+      void setCurrentResult();
 
-    /**
-     * @brief set current EKF estimation result to current_ekf_pose_ &
-     * current_ekf_twist_
-     */
-    void setCurrentResult();
+      /**
+       * @brief publish current EKF estimation result
+       */
+      void publishEstimateResult();
 
-    /**
-     * @brief publish current EKF estimation result
-     */
-    void publishEstimateResult();
+      /**
+       * @brief for debug
+       */
+      void showCurrentX();
 
-    /**
-     * @brief for debug
-     */
-    void showCurrentX();
-
-    friend class AWLocalizationNodeTestSuite; //  for test code
-  };
+      friend class AWLocalizationNodeTestSuite; //  for test code
+    };
