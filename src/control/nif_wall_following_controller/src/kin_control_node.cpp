@@ -42,8 +42,6 @@ void KinControl::run()
     setCmdsToZeros();
   }
 
-  publishSteering();
-  publishDebugSignals();
 }
 
 void KinControl::calculateFFW()
@@ -63,6 +61,22 @@ void KinControl::calculateSteeringCmd()
   // Convert desired yaw rate to steering angle using kinematic model
   this->steering_cmd = (this->speed_ > 1.0) ? L * (this->feedback_ + this->feedforward_) / this->speed_ : L * (this->feedback_ + this->feedforward_);
   this->steering_cmd = this->steering_cmd*57.296*19.0/9.0; // times 19.0/9 because ratio is wrong
+
+
+  // steering command saturator
+  if (this->steering_cmd > ms) {
+    // RCLCPP_DEBUG(this->get_logger(), "%s\n", "Saturation Limit Max");
+    this->steering_cmd = ms;
+  }
+  if (this->steering_cmd < -ms) {
+    // RCLCPP_DEBUG(this->get_logger(), "%s\n", "Saturation Limit Min");
+    this->steering_cmd = -ms;
+  }
+
+  // RCLCPP_INFO(this->get_logger(), "cmd : %f", this->steering_cmd);
+  // RCLCPP_INFO(this->get_logger(), "lookahead_error : %f",
+  //             this->lookahead_error);
+  // RCLCPP_INFO(this->get_logger(), "lateral_error : %f", this->lat_error);
 }
 
 void KinControl::setCmdsToZeros()
@@ -76,28 +90,6 @@ void KinControl::setCmdsToZeros()
   this->steering_cmd = 0.0;
 }
 
-void KinControl::publishSteering()
-{
-  // steering command saturator
-  if(this->steering_cmd > ms)
-  {
-    // RCLCPP_DEBUG(this->get_logger(), "%s\n", "Saturation Limit Max");
-    this->steering_cmd = ms;
-  }
-  if(this->steering_cmd < -ms)
-  {
-    // RCLCPP_DEBUG(this->get_logger(), "%s\n", "Saturation Limit Min");
-    this->steering_cmd = -ms;
-  }
-  
-  this->steering_cmd = this->steering_cmd;
-}
-
-void KinControl::publishDebugSignals()
-{
-  // pubLookaheadError_->publish(this->lookahead_error);
-  // pubLatError_->publish(this->lat_error);
-}
 
 int KinControl::findLookaheadIndex(std::vector<geometry_msgs::msg::PoseStamped> refPath, double desLookaheadValue)
 {
@@ -114,6 +106,7 @@ int KinControl::findLookaheadIndex(std::vector<geometry_msgs::msg::PoseStamped> 
 
 void KinControl::setVelocity(const double &SpeedMps) {
   this->speed_ = SpeedMps; // average wheel speeds (kph) and convert to m/s
+  // RCLCPP_INFO(this->get_logger(), "speed: %f", this->speed_);
 }
 
 void KinControl::setPath(const nav_msgs::msg::Path &pathIn){
@@ -125,6 +118,8 @@ void KinControl::setPath(const nav_msgs::msg::Path &pathIn){
   // distance
   std::vector<geometry_msgs::msg::PoseStamped> path = pathIn.poses;
   int idx = findLookaheadIndex(path, lookahead_distance);
+
+  // RCLCPP_INFO(this->get_logger(), "lookahead_distance: %f", lookahead_distance);
 
   // Sets the lookahead and lateral error
   if (path.size() > 0) {
@@ -142,7 +137,4 @@ void KinControl::getPredictivePath(nav_msgs::msg::Path &pathOut)
   
 }
 
-void KinControl::getSteering(double &SpeedMps)
-{
-
-}
+void KinControl::getSteering(double &SpeedMps) { SpeedMps = this->steering_cmd;}
