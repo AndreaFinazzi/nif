@@ -57,6 +57,10 @@ SystemStatusManagerNode::SystemStatusManagerNode(
             "rc_interface/rc_flag_summary", nif::common::constants::QOS_RACE_CONTROL,
             std::bind(&SystemStatusManagerNode::RCFlagSummaryCallback, this, std::placeholders::_1));
 
+    this->localization_quality_sub = this->create_subscription<std_msgs::msg::Float64>(
+            "in_localization_quality", nif::common::constants::QOS_EGO_ODOMETRY,
+            std::bind(&SystemStatusManagerNode::localizationQualityCallback, this, std::placeholders::_1));
+
     // TODO this is only temporary, as the localization status should be handled in the localization nodes.
     this->subscriber_bestpos = this->create_subscription<novatel_oem7_msgs::msg::BESTPOS>(
             "in_novatel_bestpos", 1,
@@ -66,6 +70,7 @@ SystemStatusManagerNode::SystemStatusManagerNode(
     this->subscriber_insstdev = this->create_subscription<novatel_oem7_msgs::msg::INSSTDEV>(
             "in_novatel_insstdev", 1,
             std::bind(&SystemStatusManagerNode::receive_insstdev, this, std::placeholders::_1));
+
 
     //  Publishers
     this->system_status_pub = this->create_publisher<nif::common::msgs::SystemStatus>(
@@ -441,6 +446,13 @@ void SystemStatusManagerNode::joystickCallback(const nif::common::msgs::Override
     if (msg->emergency_stop == 1) {
         joy_emergency_stop = true;
     }
+}
+
+void SystemStatusManagerNode::localizationQualityCallback(const std_msgs::msg::Float64::SharedPtr msg)
+{
+    this->has_localization_quality = true;
+    this->localization_quality_last_update = this->now();
+    this->localization_quality = msg->data;
 }
 
 void

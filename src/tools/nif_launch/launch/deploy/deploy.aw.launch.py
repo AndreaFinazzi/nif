@@ -195,7 +195,7 @@ def generate_launch_description():
             ('out_desired_velocity', 'velocity_planner/des_vel'),
             ('in_reference_path', 'planning/graph/path_global'),
             # ('in_reference_path', 'planning/path_global'),
-            ('in_ego_odometry', 'localization/ekf/odom'),
+            ('in_ego_odometry', 'aw_localization/ekf/odom'),
             ('in_wheel_speed_report', 'raptor_dbw_interface/wheel_speed_report'),
             ('in_imu_data', 'novatel_bottom/imu/data'),
             ('in_steering_report', 'raptor_dbw_interface/steering_report'),
@@ -259,7 +259,7 @@ def generate_launch_description():
     global_params_file = None
 
     if track == LOR:
-        global_params_file = 'params_LOR.global.yaml'
+        global_params_file = 'params_LOR.aw.global.yaml'
     elif track == IMS:
         global_params_file = 'params_IMS.global.yaml'
     else:
@@ -345,7 +345,7 @@ def generate_launch_description():
             LaunchConfiguration('nif_waypoint_manager_param_file')
         ],
         remappings=[
-            ('topic_ego_odometry', 'localization/ekf/odom'),
+            ('topic_ego_odometry', 'aw_localization/ekf/odom'),
             ('wpt_manager/maptrack_path/global', '/planning/path_global'),
             ('wpt_manager/maptrack_path/body', '/planning/path_body')
         ]
@@ -387,7 +387,7 @@ def generate_launch_description():
         ],
         remappings={
             ('out_local_maptrack_inglobal', '/planning/graph/path_global'),
-            ('in_ego_odometry', '/localization/ekf/odom'),
+            ('in_ego_odometry', '/aw_localization/ekf/odom'),
         }
     )
 

@@ -9,6 +9,7 @@
 #include "nif_common/types.h"
 #include <std_msgs/msg/bool.hpp>
 #include <std_msgs/msg/int32.hpp>
+#include <std_msgs/msg/float64.hpp>
 #include <std_srvs/srv/trigger.hpp>
 #include "nif_msgs/srv/register_node_status.hpp"
 #include "novatel_oem7_msgs/msg/bestpos.hpp"
@@ -70,6 +71,26 @@ private:
   bool joy_emergency_stop = false;
   bool recovery_enabled = true;
 
+  unsigned int insstdev_time_since_last_update_ = 0;
+  double lat_stdev_ = 0.0;
+  double long_stdev_ = 0.0;
+  double best_pos_lat_stdev_ = 0.0;
+  double best_pos_long_stdev_ = 0.0;
+  double bestpos_diff_age_s = 99999.9;
+  double insstdev_threshold = 2.0;
+
+  double localization_quality = 1000.0;
+  bool has_localization_quality = false;
+  
+  bool has_bestpos = false;
+  rclcpp::Time bestpos_last_update = rclcpp::Time();
+  rclcpp::Time localization_quality_last_update = rclcpp::Time();
+
+  rclcpp::Duration timeout_bestpos_diff_age = rclcpp::Duration(2, 0);
+  rclcpp::Duration timeout_bestpos_last_update = rclcpp::Duration(0, 500000);
+  rclcpp::Duration timeout_rc_flag_summary = rclcpp::Duration(10, 0);
+  rclcpp::Duration timeout_localization_quality = rclcpp::Duration(0, 500000000);
+
 
   /**
    * SystemStatus publisher. Publishes the latest system_status message, after
@@ -82,6 +103,7 @@ private:
   rclcpp::Publisher<nif::common::msgs::SystemStatus>::SharedPtr system_status_telem_pub;
 
   rclcpp::Subscription<nif::common::msgs::OverrideControlCmd>::SharedPtr joystick_sub;
+  rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr localization_quality_sub;
   std::vector<
       rclcpp::Subscription<nif::common::msgs::NodeStatus>::SharedPtr> node_statuses_subs;
   rclcpp::Subscription<nif::common::msgs::RCFlagSummary>::SharedPtr rc_flag_summary_sub;
@@ -120,22 +142,8 @@ private:
   void systemStatusTimerCallback();
 
   void joystickCallback(const nif::common::msgs::OverrideControlCmd::SharedPtr msg);
+  void localizationQualityCallback(const std_msgs::msg::Float64::SharedPtr msg);
   void RCFlagSummaryCallback(const nif::common::msgs::RCFlagSummary::UniquePtr msg);
-
-  unsigned int insstdev_time_since_last_update_ = 0;
-  double lat_stdev_ = 0.0;
-  double long_stdev_ = 0.0;
-  double best_pos_lat_stdev_ = 0.0;
-  double best_pos_long_stdev_ = 0.0;
-  double bestpos_diff_age_s = 99999.9;
-  double insstdev_threshold = 2.0;
-
-  bool has_bestpos = false;
-  rclcpp::Time bestpos_last_update = rclcpp::Time();
-
-  rclcpp::Duration timeout_bestpos_diff_age = rclcpp::Duration(2, 0);
-  rclcpp::Duration timeout_bestpos_last_update = rclcpp::Duration(0, 500000);
-  rclcpp::Duration timeout_rc_flag_summary = rclcpp::Duration(10, 0);
 
   void telemetry_timer_callback() {
       this->system_status_telem_pub->publish(this->system_status_msg);
