@@ -60,13 +60,6 @@ def generate_launch_description():
         description='Path to config file for ssc_interface'
     )
 
-    # diagnostics_node = Node(
-    #     package='diagnostics',
-    #     executable='emergency_diagnostics',
-    #     name='emergency_diagnostics',
-    #     output='screen'
-    # )
-
     ssc_interface = Node(
         package='ssc_interface',
         name='ssc_interface_node',
@@ -86,7 +79,7 @@ def generate_launch_description():
             ('vehicle_kinematic_state_cog', '/vehicle/vehicle_kinematic_state'),
             ('state_report_out', '/vehicle/vehicle_state_report'),
             ('state_command', '/vehicle/vehicle_state_command'),
-            ####
+
             ('accelerator_pedal_cmd', '/raptor_dbw_interface/accelerator_pedal_cmd'),
             ('brake_cmd', '/raptor_dbw_interface/brake_cmd'),
             ('steering_cmd', '/raptor_dbw_interface/steering_cmd'),
@@ -153,6 +146,12 @@ def generate_launch_description():
         ),
     )
 
+    nif_aw_localization_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            get_package_share_directory('nif_aw_localization_nodes') + '/launch/deploy.launch.py'
+        ),
+    )
+
     nif_wall_node_launch_bg = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             get_package_share_directory('nif_points_preprocessor_nodes') + '/launch/deploy.launch.py'
@@ -192,12 +191,13 @@ def generate_launch_description():
         package='nif_velocity_planning_node',
         executable='nif_velocity_planning_node_exe',
         output='screen',
-        remappings=-[
+        remappings=[
             ('out_desired_velocity', 'velocity_planner/des_vel'),
-            ('in_reference_path', 'planning/path_global'),
+            ('in_reference_path', 'planning/graph/path_global'),
+            # ('in_reference_path', 'planning/path_global'),
             ('in_ego_odometry', 'localization/ekf/odom'),
             ('in_wheel_speed_report', 'raptor_dbw_interface/wheel_speed_report'),
-            ('in_imu_data', 'novatel_top/imu/data'),
+            ('in_imu_data', 'novatel_bottom/imu/data'),
             ('in_steering_report', 'raptor_dbw_interface/steering_report'),
             ('in_control_error', 'control_joint_lqr/lqr_error')
         ]
@@ -233,7 +233,8 @@ def generate_launch_description():
         remappings=[
             ('in_control_cmd_prev', '/control_safety_layer/out/control_cmd'),
             ('out_control_cmd', '/control_pool/control_cmd'),
-            ('in_reference_path', '/planning/path_global'),
+            ('in_reference_path', '/planning/graph/path_global'),
+            # ('in_reference_path', '/planning/path_global'),
         ]
     )
 
@@ -293,7 +294,8 @@ def generate_launch_description():
             ('in_joystick_cmd', '/joystick/command'),
             ('out_system_status', '/system/status'),
             ('in_novatel_bestpos', '/novatel_bottom/bestpos'),
-            ('in_novatel_insstdev', '/novatel_bottom/insstdev')
+            ('in_novatel_insstdev', '/novatel_bottom/insstdev'),
+            ('in_localization_error', '/aw_localization/ekf/error')
         ]
     )
 
@@ -353,17 +355,17 @@ def generate_launch_description():
 ### NIF WAYPOINT MANAGER END #############################
 
     if track == LOR:
-        globtraj_input_path = get_share_file("nif_multilayer_planning_nodes", "inputs/traj_ltpl_cl/traj_ltpl_cl_lor_test.csv")
-        graph_store_path = get_share_file("nif_multilayer_planning_nodes", "inputs/stored_graph.pckl")
-        ltpl_offline_param_path = get_share_file("nif_multilayer_planning_nodes", "params/ltpl_config_offline.ini")
-        ltpl_online_param_path = get_share_file("nif_multilayer_planning_nodes", "params/ltpl_config_online.ini")
-        log_path = get_share_file("nif_multilayer_planning_nodes", "logs/graph_ltpl")
+        globtraj_input_path = get_share_file("nif_multilayer_planning_nodes", "inputs/traj_ltpl_cl/lor/traj_ltpl_cl.csv")
+        graph_store_path = get_share_file("nif_multilayer_planning_nodes", "inputs/track_offline_graphs/lor/stored_graph.pckl")
+        ltpl_offline_param_path = get_share_file("nif_multilayer_planning_nodes", "params/lor/ltpl_config_offline.ini")
+        ltpl_online_param_path = get_share_file("nif_multilayer_planning_nodes", "params/lor/ltpl_config_online.ini")
+        log_path = get_share_file("nif_multilayer_planning_nodes", "logs/lor/graph_ltpl")
     elif track == IMS:
-        globtraj_input_path = get_share_file("nif_multilayer_planning_nodes", "inputs/traj_ltpl_cl/traj_ltpl_cl_ims.csv")
-        graph_store_path = get_share_file("nif_multilayer_planning_nodes", "inputs/stored_graph.pckl")
-        ltpl_offline_param_path = get_share_file("nif_multilayer_planning_nodes", "params/ltpl_config_offline.ini")
-        ltpl_online_param_path = get_share_file("nif_multilayer_planning_nodes", "params/ltpl_config_online.ini")
-        log_path = get_share_file("nif_multilayer_planning_nodes", "logs/graph_ltpl")
+        globtraj_input_path = get_share_file("nif_multilayer_planning_nodes", "inputs/traj_ltpl_cl/ims/traj_ltpl_cl.csv")
+        graph_store_path = get_share_file("nif_multilayer_planning_nodes", "inputs/track_offline_graphs/ims/stored_graph.pckl")
+        ltpl_offline_param_path = get_share_file("nif_multilayer_planning_nodes", "params/ims/ltpl_config_offline.ini")
+        ltpl_online_param_path = get_share_file("nif_multilayer_planning_nodes", "params/ims/ltpl_config_online.ini")
+        log_path = get_share_file("nif_multilayer_planning_nodes", "logs/ims/graph_ltpl")
     else:
         raise RuntimeError("ERROR: invalid track provided: {}".format(track))
 
@@ -410,6 +412,7 @@ def generate_launch_description():
         nif_system_status_manager_node,
         nif_csl_node,
         nif_localization_launch,
+        nif_aw_localization_launch,
         nif_wall_node_launch_bg,
         nif_waypoint_manager_node,
         robot_description_launch,

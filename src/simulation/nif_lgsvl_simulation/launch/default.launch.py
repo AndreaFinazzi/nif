@@ -49,5 +49,6 @@ def generate_launch_description():
     return LaunchDescription(
         [
             lgsvl_sim_subscriber_node,
-            lgsvl_sim_publisher_node
+            lgsvl_sim_publisher_node,
+            # lgsvl_sim_controller_node
         ])

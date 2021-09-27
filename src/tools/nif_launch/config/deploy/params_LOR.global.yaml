@@ -25,8 +25,6 @@
 
     topics:
       ego_odometry: /localization/ekf/odom
-        # bvs_localization/ltp_odom #
-      #     localization/ego_odom
       system_status: system/status
       race_control_status: /raptor_dbw_interface/rc_to_ct
       ego_powertrain_status: /raptor_dbw_interface/pt_report

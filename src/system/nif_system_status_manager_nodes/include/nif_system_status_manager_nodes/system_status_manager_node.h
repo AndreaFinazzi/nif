@@ -9,6 +9,7 @@
 #include "nif_common/types.h"
 #include <std_msgs/msg/bool.hpp>
 #include <std_msgs/msg/int32.hpp>
+#include <std_msgs/msg/float64.hpp>
 #include <std_srvs/srv/trigger.hpp>
 #include "nif_msgs/srv/register_node_status.hpp"
 #include "novatel_oem7_msgs/msg/bestpos.hpp"
@@ -70,6 +71,37 @@ private:
   bool joy_emergency_stop = false;
   bool recovery_enabled = true;
 
+  unsigned int insstdev_time_since_last_update_ = 0;
+  double lat_stdev_ = 0.0;
+  double long_stdev_ = 0.0;
+  double best_pos_lat_stdev_ = 0.0;
+  double best_pos_long_stdev_ = 0.0;
+  double bestpos_diff_age_s = 99999.9;
+  double insstdev_threshold = 2.0;
+
+  double localization_error = 1000.0;
+  bool has_localization_error = false;
+  
+  bool has_bestpos = false;
+  rclcpp::Time bestpos_last_update = rclcpp::Time();
+  rclcpp::Time localization_error_last_update = rclcpp::Time();
+
+  rclcpp::Duration timeout_bestpos_diff_age = rclcpp::Duration(2, 0);
+  rclcpp::Duration timeout_bestpos_last_update = rclcpp::Duration(0, 500000);
+  rclcpp::Duration timeout_rc_flag_summary = rclcpp::Duration(10, 0);
+  rclcpp::Duration timeout_localization_error = rclcpp::Duration(0, 500000000);
+
+  // Mission and safe localization parameters
+  double velocity_zero = 0.0;
+  double velocity_max = 0.0;
+  double velocity_pit_in = 0.0;
+  double velocity_pit_out = 0.0;
+  double velocity_slow_drive = 0.0;
+  double safeloc_threshold_stop = 0.0;
+  double safeloc_threshold_slow_down = 0.0;
+  double safeloc_velocity_slow_down_max = 0.0;
+  double safeloc_velocity_slow_down_min = 0.0;
+
 
   /**
    * SystemStatus publisher. Publishes the latest system_status message, after
@@ -82,6 +114,7 @@ private:
   rclcpp::Publisher<nif::common::msgs::SystemStatus>::SharedPtr system_status_telem_pub;
 
   rclcpp::Subscription<nif::common::msgs::OverrideControlCmd>::SharedPtr joystick_sub;
+  rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr localization_error_sub;
   std::vector<
       rclcpp::Subscription<nif::common::msgs::NodeStatus>::SharedPtr> node_statuses_subs;
   rclcpp::Subscription<nif::common::msgs::RCFlagSummary>::SharedPtr rc_flag_summary_sub;
@@ -120,22 +153,8 @@ private:
   void systemStatusTimerCallback();
 
   void joystickCallback(const nif::common::msgs::OverrideControlCmd::SharedPtr msg);
+  void localizationErrorCallback(const std_msgs::msg::Float64::SharedPtr msg);
   void RCFlagSummaryCallback(const nif::common::msgs::RCFlagSummary::UniquePtr msg);
-
-  unsigned int insstdev_time_since_last_update_ = 0;
-  double lat_stdev_ = 0.0;
-  double long_stdev_ = 0.0;
-  double best_pos_lat_stdev_ = 0.0;
-  double best_pos_long_stdev_ = 0.0;
-  double bestpos_diff_age_s = 99999.9;
-  double insstdev_threshold = 2.0;
-
-  bool has_bestpos = false;
-  rclcpp::Time bestpos_last_update = rclcpp::Time();
-
-  rclcpp::Duration timeout_bestpos_diff_age = rclcpp::Duration(2, 0);
-  rclcpp::Duration timeout_bestpos_last_update = rclcpp::Duration(0, 500000);
-  rclcpp::Duration timeout_rc_flag_summary = rclcpp::Duration(10, 0);
 
   void telemetry_timer_callback() {
       this->system_status_telem_pub->publish(this->system_status_msg);
@@ -183,7 +202,7 @@ private:
    * Mission Status state machine.
    * @return the mission encoding.
    */
-  nif_msgs::msg::MissionStatus::_mission_status_code_type getMissionStatus();
+  nif_msgs::msg::MissionStatus::_mission_status_code_type getMissionStatusCode();
 
   /**
    * System status state machine, with status output code.
@@ -193,6 +212,7 @@ private:
   void nodeStatusesAgeCheck();
 
   bool heartbeatOk();
+  bool localizationOk();
 
   rcl_interfaces::msg::SetParametersResult
   parametersCallback(
@@ -200,6 +220,8 @@ private:
 
   rclcpp::Duration node_inactive_timeout = rclcpp::Duration(1, 0);
   OnSetParametersCallbackHandle::SharedPtr parameters_callback_handle;
+
+  double getMissionMaxVelocityMps(nif_msgs::msg::MissionStatus::_mission_status_code_type);
 };
 
 } // namespace system

@@ -34,9 +34,12 @@ windows:
       - source /home/usrg/nif/install/setup.bash && cd /home/usrg/nif
     panes:
       - shell_command:
+          - export ROS_DOMAIN_ID=7
           - ros2 launch nif_localization_nodes test.launch.py
       - shell_command:
-          - ros2 launch nif_points_preprocessor_nodes default.launch.py
+          - export TRACK=LOR
+          - echo $TRACK
+          - ros2 launch nif_multilayer_planning_nodes deploy.launch.py
       - shell_command:
           - ros2 launch nif_aw_localization_nodes default.launch.py
       - shell_command:
@@ -48,7 +51,7 @@ windows:
       - source /home/usrg/nif/install/setup.bash && cd /home/usrg/nif/src/perception/nif_localization_nodes/launch
     panes:
       - shell_command:
-          - rviz2 -d navi.rviz
+          - rviz2
 
           
 

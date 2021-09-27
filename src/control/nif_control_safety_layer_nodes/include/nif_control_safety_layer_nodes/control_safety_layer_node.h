@@ -402,7 +402,7 @@ private:
     int counter_hb = 0;
 
     int buffer_empty_counter = 0;
-    int buffer_empty_counter_threshold = 10;
+    int buffer_empty_counter_threshold = 20;
 
     double init_tick_ = -1.0;
     double init_vel_ = -1.0;

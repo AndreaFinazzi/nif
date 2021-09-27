@@ -87,7 +87,9 @@ private:
   rclcpp::TimerBase::SharedPtr gear_timer_;
 
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pubThrottleCmd_;
+  rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pubThrottleCmdRaw_;
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pubBrakeCmd_;
+  rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pubBrakeCmdRaw_;
   rclcpp::Publisher<std_msgs::msg::UInt8>::SharedPtr pubGearCmd_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr pubControlStatus_;
   rclcpp::Subscription<deep_orange_msgs::msg::JoystickCommand>::SharedPtr
