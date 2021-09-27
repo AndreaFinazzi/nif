@@ -36,6 +36,16 @@ EgoShapeFilterNode::EgoShapeFilterNode(const std::string &node_name_)
   this->declare_parameter<double>("distance_low_fass_filter", double(0.5));
   this->declare_parameter<double>("target_space_to_wall", double(7.));
 
+  // Controller Parameters
+  this->declare_parameter<double>("min_lookahead", double(4.0));
+  this->declare_parameter<double>("max_lookahead", double(50.0));
+  this->declare_parameter<double>("lookahead_speed_ratio", double(0.75));
+  this->declare_parameter<double>("proportional_gain", double(0.2));
+  this->declare_parameter<double>("vehicle.wheelbase", double(2.97));
+  this->declare_parameter<double>("max_steer_angle", double(30.0)); // 15 deg * 2 because ratio is wrong
+  this->declare_parameter<double>("steering_override_threshold", double(4.0));
+  this->declare_parameter<bool>("auto_enabled", bool(false));
+
   respond();
 
   RCLCPP_INFO(this->get_logger(), "left_lower_distance_: %f", left_lower_distance_);
@@ -94,7 +104,7 @@ EgoShapeFilterNode::EgoShapeFilterNode(const std::string &node_name_)
       this->create_publisher<nav_msgs::msg::Path>("/wall_left", nif::common::constants::QOS_SENSOR_DATA);
   pub_right_wall_line =
       this->create_publisher<nav_msgs::msg::Path>("/wall_right", nif::common::constants::QOS_SENSOR_DATA);
-  pub_predictive_path = this->create_publisher<nav_msgs::msg::Path>(
+  pub_wall_following_path = this->create_publisher<nav_msgs::msg::Path>(
       "/wall_based_predictive_path", nif::common::constants::QOS_SENSOR_DATA);
 
   pub_inner_wall_distance = this->create_publisher<std_msgs::msg::Float32>(
@@ -103,6 +113,10 @@ EgoShapeFilterNode::EgoShapeFilterNode(const std::string &node_name_)
       "/detected_outer_distance", nif::common::constants::QOS_SENSOR_DATA);
 
   lidar_timeout = rclcpp::Duration(1, 0);
+
+  // kin controller
+  SetControllerParams();
+  m_KinController.setCmdsToZeros();
 }
 
 EgoShapeFilterNode::~EgoShapeFilterNode() {}
@@ -131,6 +145,17 @@ void EgoShapeFilterNode::respond() {
   this->get_parameter("distance_low_fass_filter", distance_low_fass_filter);
   this->get_parameter("target_space_to_wall", m_target_space_to_wall);
 
+}
+
+void EgoShapeFilterNode::SetControllerParams() {
+  m_KinController.min_la = this->get_parameter("min_lookahead").as_double();
+  m_KinController.max_la = this->get_parameter("max_lookahead").as_double();
+  m_KinController.la_ratio = this->get_parameter("lookahead_speed_ratio").as_double();
+  m_KinController.Kp = this->get_parameter("proportional_gain").as_double();
+  m_KinController.L = this->get_parameter("vehicle.wheelbase").as_double();
+  m_KinController.ms = this->get_parameter("max_steer_angle").as_double();
+  m_KinController.steer_override_threshold = this->get_parameter("steering_override_threshold").as_double();
+  m_KinController.auto_enabled = this->get_parameter("auto_enabled").as_bool();
 }
 
 void EgoShapeFilterNode::EgoShape(
@@ -366,25 +391,34 @@ void EgoShapeFilterNode::timer_callback() {
   2. Estimated curvature / predictive path based on the kinematic model
     - input : coefficient of cubic splined wall
     - input : feasibility of wall detection result(named as left_wall_plane_coeff/right_wall_plane_coeff)
-    - output : control output
-    - output : predictive path on the base_link frame
+    - output : wall following reference path on the base_link frame
   */
-  nav_msgs::msg::Path predictive_path_msg;
-  predictive_path_msg.header.frame_id = BASE_LINK;
-  predictive_path_msg.header.stamp = this->now();
+  nav_msgs::msg::Path wall_folllowing_path_msg;
+  wall_folllowing_path_msg.header.frame_id = BASE_LINK;
+  wall_folllowing_path_msg.header.stamp = this->now();
 
   if (right_wall_plane_coeff && outer_bound_distance != 0.0) {
     m_margin_to_wall = outer_bound_distance + m_target_space_to_wall;
   }
 
   EstimatePredictivePath(right_wall_plane_coeff, RightPolyCoefficient,
-                         predictive_path_msg, m_margin_to_wall);
+                         wall_folllowing_path_msg, m_margin_to_wall);
 
-  if (right_wall_plane_coeff && !predictive_path_msg.poses.empty()) {
-    final_wall_following_path_msg = predictive_path_msg;
+  if (right_wall_plane_coeff && !wall_folllowing_path_msg.poses.empty()) {
+    final_wall_following_path_msg = wall_folllowing_path_msg;
   }
+  pub_wall_following_path->publish(final_wall_following_path_msg);
 
-  pub_predictive_path->publish(final_wall_following_path_msg);
+  /* KIN-CONTROLLER 
+  1. Calculate Control output using KinController
+  2. Calculate predictive path from the vehicle
+    - params : getparam using SetControllerParams()
+    - input : wall_folllowing_path_msg
+    - output : control output
+    - output : predictive path on the base_link frame
+  */
+  m_KinController.setPath(final_wall_following_path_msg);
+  
 }
 
 void EgoShapeFilterNode::mergedPointsCallback(
@@ -690,4 +724,6 @@ void EgoShapeFilterNode::EstimatePredictivePath(
     pose_buf.pose.orientation.z = 0;
     path_msg_out.poses.push_back(pose_buf);
   }
+
+  // 
 }

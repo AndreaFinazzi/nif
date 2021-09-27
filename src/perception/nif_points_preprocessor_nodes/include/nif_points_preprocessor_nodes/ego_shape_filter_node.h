@@ -78,6 +78,11 @@
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/opencv.hpp"
+
+// Kin-Controller
+#include "nif_wall_following_controller/kin_control_node.hpp" 
+
+
 /**
  * 2-D grid map size for wall detection
  * MAP_WIDTH : longitudinal direction
@@ -102,6 +107,7 @@ private:
   EgoShapeFilterNode();
 
   void respond();
+  void SetControllerParams();
 
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_points_;
   rclcpp::TimerBase::SharedPtr timer_;
@@ -124,7 +130,7 @@ private:
 
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_left_wall_line;
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_right_wall_line;
-  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_predictive_path;
+  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_wall_following_path;
 
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pub_inner_wall_distance;
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pub_outer_wall_distance;
@@ -164,6 +170,7 @@ private:
   rclcpp::Time lidar_time_last_update;
 
   nav_msgs::msg::Path final_wall_following_path_msg;
+  nif::control::KinControl m_KinController;
 
   std::array<std::array<float, (size_t)(MAP_WIDTH + 1)>,
              (size_t)(MAP_HEIGHT + 1)>

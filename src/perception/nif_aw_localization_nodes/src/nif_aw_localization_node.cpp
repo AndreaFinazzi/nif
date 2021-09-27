@@ -41,7 +41,7 @@ AWLocalizationNode::AWLocalizationNode(const std::string &node_name)
   this->declare_parameter<double>("pose_additional_delay", double(0.0));
   this->declare_parameter<double>("pose_measure_uncertainty_time", double(0.01));
   this->declare_parameter<double>("pose_rate", double(20.0));              //  used for covariance calculation
-  this->declare_parameter<double>("pose_gate_dist", double(10000.0)); //  Mahalanobis limit
+  this->declare_parameter<double>("pose_gate_dist", double(30.0)); //  Mahalanobis limit
   this->declare_parameter<double>("pose_stddev_x", double(0.05));
   this->declare_parameter<double>("pose_stddev_y", double(0.05));
   this->declare_parameter<double>("pose_stddev_yaw", double(0.035));
