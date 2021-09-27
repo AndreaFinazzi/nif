@@ -132,6 +132,9 @@ class OnlineTrajectoryHandler(object):
         self.__vp_fb = None
         self.__vp_sqp = None
 
+        self.__in_track = True
+        self.__cor_heading = True
+
         if vp_type == "fb":
             # forward-backward velocity planner
             self.__vp_fb = graph_ltpl.online_graph.src.VpForwardBackward. \
@@ -198,9 +201,6 @@ class OnlineTrajectoryHandler(object):
 
         self.__v_start = start_vel
 
-        in_track = True
-        cor_heading = True
-
         self.reinit_iterative_memory()
 
         # -- CHECK IF WITHIN TRACK -------------------------------------------------------------------------------------
@@ -214,11 +214,14 @@ class OnlineTrajectoryHandler(object):
         if not graph_ltpl.online_graph.src.check_inside_bounds.check_inside_bounds(bound1=bound1,
                                                                                    bound2=bound2,
                                                                                    pos=start_pos):
-            self.__log.warning("Vehicle is out of track, check if correct reference line is provided!")
-            in_track = False
-            return in_track, cor_heading
+            if self.__in_track:                                                             
+                self.__log.warning("Vehicle is out of track, check if correct reference line is provided!")
+            self.__in_track = False
+            return self.__in_track, self.__cor_heading
             # raise ValueError("VEHICLE SEEMS TO BE OUT OF TRACK!")
-
+        else:
+            if not self.__in_track:
+                self.__log.warning("Vehicle is on track!")
         # -- SELECT INITIAL PLANNING NODE ------------------------------------------------------------------------------
         closest_nodes, distance = self.__graph_base.get_closest_nodes(pos=start_pos, limit=1)
 
@@ -235,10 +238,14 @@ class OnlineTrajectoryHandler(object):
         if heading_diff > np.pi:
             heading_diff = abs(2 * np.pi - heading_diff)
         if heading_diff > max_heading_offset:
-            self.__log.warning("Heading mismatch between vehicle and track grid, check if vehicle oriented correctly!")
-            cor_heading = False
-            return in_track, cor_heading
+            if self.__cor_heading:
+                self.__log.warning("Heading mismatch between vehicle and track grid, check if vehicle oriented correctly!")
+            self.__cor_heading = False
+            return self.__in_track, self.__cor_heading
             # raise ValueError("VEHICLE HEADING MISMATCH (TRACK <-> VEHICLE)!")
+        else:
+            if not self.__cor_heading:
+                self.__log.warning("Heading OK!")
 
         # calculate spline to start node
         x_coeff, y_coeff, _, _ = tph.calc_splines.calc_splines(path=np.vstack((start_pos, end_pos)),
@@ -267,7 +274,7 @@ class OnlineTrajectoryHandler(object):
         self.__last_action_set_nodes = {act_id: [[[None, None], self.__start_node]]}
         self.__last_action_set_node_idx = {act_id: [[0, path.shape[0] - 1]]}
 
-        return in_track, cor_heading
+        return self.__in_track, self.__cor_heading
 
     def update_objects(self,
                        obj_veh: list,

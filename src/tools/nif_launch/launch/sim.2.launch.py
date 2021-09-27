@@ -373,26 +373,26 @@ def generate_launch_description():
 
     map_csv = None
 
-    if track == LOR:
-        globtraj_input_path = get_share_file("nif_multilayer_planning_nodes", "inputs/traj_ltpl_cl/lor/traj_ltpl_cl.csv")
-        graph_store_path = get_share_file("nif_multilayer_planning_nodes", "inputs/track_offline_graphs/lor/stored_graph.pckl")
-        ltpl_offline_param_path = get_share_file("nif_multilayer_planning_nodes", "params/lor/ltpl_config_offline.ini")
-        ltpl_online_param_path = get_share_file("nif_multilayer_planning_nodes", "params/lor/ltpl_config_online.ini")
-        log_path = get_share_file("nif_multilayer_planning_nodes", "logs/lor/graph_ltpl")
-    elif track == IMS:
-        globtraj_input_path = get_share_file("nif_multilayer_planning_nodes", "inputs/traj_ltpl_cl/ims/traj_ltpl_cl.csv")
-        graph_store_path = get_share_file("nif_multilayer_planning_nodes", "inputs/track_offline_graphs/ims/stored_graph.pckl")
-        ltpl_offline_param_path = get_share_file("nif_multilayer_planning_nodes", "params/ims/ltpl_config_offline.ini")
-        ltpl_online_param_path = get_share_file("nif_multilayer_planning_nodes", "params/ims/ltpl_config_online.ini")
-        log_path = get_share_file("nif_multilayer_planning_nodes", "logs/ims/graph_ltpl")
-    elif track == LG_SVL:
-        globtraj_input_path = get_share_file("nif_multilayer_planning_nodes", "inputs/traj_ltpl_cl/lg_sim/traj_ltpl_cl.csv")
-        graph_store_path = get_share_file("nif_multilayer_planning_nodes", "inputs/track_offline_graphs/lg_sim/stored_graph.pckl")
-        ltpl_offline_param_path = get_share_file("nif_multilayer_planning_nodes", "params/lg_sim/ltpl_config_offline.ini")
-        ltpl_online_param_path = get_share_file("nif_multilayer_planning_nodes", "params/lg_sim/ltpl_config_online.ini")
-        log_path = get_share_file("nif_multilayer_planning_nodes", "logs/lg_sim/graph_ltpl")
-    else:
-        raise RuntimeError("ERROR: invalid track provided: {}".format(track))
+    # if track == LOR:
+    #     globtraj_input_path = get_share_file("nif_multilayer_planning_nodes", "inputs/traj_ltpl_cl/lor/traj_ltpl_cl.csv")
+    #     graph_store_path = get_share_file("nif_multilayer_planning_nodes", "inputs/track_offline_graphs/lor/stored_graph.pckl")
+    #     ltpl_offline_param_path = get_share_file("nif_multilayer_planning_nodes", "params/lor/ltpl_config_offline.ini")
+    #     ltpl_online_param_path = get_share_file("nif_multilayer_planning_nodes", "params/lor/ltpl_config_online.ini")
+    #     log_path = get_share_file("nif_multilayer_planning_nodes", "logs/lor/graph_ltpl")
+    # elif track == IMS:
+    #     globtraj_input_path = get_share_file("nif_multilayer_planning_nodes", "inputs/traj_ltpl_cl/ims/traj_ltpl_cl.csv")
+    #     graph_store_path = get_share_file("nif_multilayer_planning_nodes", "inputs/track_offline_graphs/ims/stored_graph.pckl")
+    #     ltpl_offline_param_path = get_share_file("nif_multilayer_planning_nodes", "params/ims/ltpl_config_offline.ini")
+    #     ltpl_online_param_path = get_share_file("nif_multilayer_planning_nodes", "params/ims/ltpl_config_online.ini")
+    #     log_path = get_share_file("nif_multilayer_planning_nodes", "logs/ims/graph_ltpl")
+    # elif track == LG_SVL:
+    #     globtraj_input_path = get_share_file("nif_multilayer_planning_nodes", "inputs/traj_ltpl_cl/lg_sim/traj_ltpl_cl.csv")
+    #     graph_store_path = get_share_file("nif_multilayer_planning_nodes", "inputs/track_offline_graphs/lg_sim/stored_graph.pckl")
+    #     ltpl_offline_param_path = get_share_file("nif_multilayer_planning_nodes", "params/lg_sim/ltpl_config_offline.ini")
+    #     ltpl_online_param_path = get_share_file("nif_multilayer_planning_nodes", "params/lg_sim/ltpl_config_online.ini")
+    #     log_path = get_share_file("nif_multilayer_planning_nodes", "logs/lg_sim/graph_ltpl")
+    # else:
+    #     raise RuntimeError("ERROR: invalid track provided: {}".format(track))
 
     nif_multilayer_planning_node = Node(
         package='nif_multilayer_planning_nodes',
@@ -400,20 +400,23 @@ def generate_launch_description():
         output={
             'stdout': 'log',
             'stderr': 'screen',
-        },
-        parameters=[
-            {
-                "globtraj_input_path": globtraj_input_path,
-                "graph_store_path": graph_store_path,
-                "ltpl_offline_param_path": ltpl_offline_param_path,
-                "ltpl_online_param_path": ltpl_online_param_path,
-                "log_path": log_path,
-                # "graph_log_id": ,
-            }
-        ],
+        }
+        ,
+        # parameters=[
+        #     {
+        #         "globtraj_input_path": globtraj_input_path,
+        #         "graph_store_path": graph_store_path,
+        #         "ltpl_offline_param_path": ltpl_offline_param_path,
+        #         "ltpl_online_param_path": ltpl_online_param_path,
+        #         "log_path": log_path,
+        #         # "graph_log_id": ,
+        #     }
+        # ]
+        # ,
         remappings={
             ('out_local_maptrack_inglobal', '/planning/graph/path_global'),
             ('in_ego_odometry', '/sensor/odom_ground_truth'),
+            ('in_system_status', '/system/status')
         }
     )
 
