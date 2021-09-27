@@ -31,7 +31,7 @@ int32_t main(int32_t argc, char **argv) {
 
   auto EKF_NODE = std::make_shared<EKFLocalizer>(node_name_1);
   auto GEOFENCE_NODE = std::make_shared<GeoFenceLoader>(node_name_2);
-  // auto RESILIENT_NODE = std::make_shared<ResilientLocalization>(node_name_3);
+  auto RESILIENT_NODE = std::make_shared<ResilientLocalization>(node_name_3);
   auto GLOBALMAP_NODE = std::make_shared<GlobalmapLoader>(node_name_4);
 
   rclcpp::executors::MultiThreadedExecutor executor(
@@ -42,14 +42,14 @@ int32_t main(int32_t argc, char **argv) {
                 "Instantiating LocalizationNode with name: %s", node_name_1);
     RCLCPP_INFO(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
                 "Instantiating LocalizationNode with name: %s", node_name_2);
-    // RCLCPP_INFO(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
-    //             "Instantiating LocalizationNode with name: %s", node_name_3);
+    RCLCPP_INFO(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
+                "Instantiating LocalizationNode with name: %s", node_name_3);
     RCLCPP_INFO(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
                 "Instantiating LocalizationNode with name: %s", node_name_4);
 
     executor.add_node(EKF_NODE);
     executor.add_node(GEOFENCE_NODE);
-    // executor.add_node(RESILIENT_NODE);
+    executor.add_node(RESILIENT_NODE);
     executor.add_node(GLOBALMAP_NODE);
 
   } catch (std::exception &e) {
@@ -65,8 +65,8 @@ int32_t main(int32_t argc, char **argv) {
               "Shutting down %s [LocalizationNode]", node_name_1);
   RCLCPP_INFO(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
               "Shutting down %s [LocalizationNode]", node_name_2);
-  // RCLCPP_INFO(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
-  //             "Shutting down %s [LocalizationNode]", node_name_3);
+  RCLCPP_INFO(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
+              "Shutting down %s [LocalizationNode]", node_name_3);
   RCLCPP_INFO(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
               "Shutting down %s [LocalizationNode]", node_name_4);
 
