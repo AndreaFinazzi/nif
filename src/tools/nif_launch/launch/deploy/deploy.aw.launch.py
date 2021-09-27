@@ -364,6 +364,7 @@ def generate_launch_description():
         remappings={
             ('out_local_maptrack_inglobal', '/planning/graph/path_global'),
             ('in_ego_odometry', '/aw_localization/ekf/odom'),
+            ('in_system_status', '/system/status')
         }
     )
 
