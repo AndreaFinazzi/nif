@@ -2,10 +2,13 @@ nif_aw_localization_nodes:
   ros__parameters:
     use_inspva_heading: true
     bestvel_heading_update_velocity_thres : 2.0
-    origin_lat: 39.8125900071711  #LOR
-    origin_lon: -86.3418060783425  #LOR
+    # origin_lat: 39.8125900071711  #LOR
+    # origin_lon: -86.3418060783425  #LOR
     # origin_lat: 39.809786  #IMS
     # origin_lon: -86.235148 #IMS   
+    origin_lat: 39.79312996 # LG_SVL
+    origin_lon: -86.23524024 # LG_SVL
+
     show_debug_info : false
     predict_frequency : 100.0
     tf_rate : 10.0

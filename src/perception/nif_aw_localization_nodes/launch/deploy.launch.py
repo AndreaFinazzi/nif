@@ -21,10 +21,13 @@ def generate_launch_description():
         description='nif_aw_localization_param'
     )
 
-    aw_loaclization_node =  Node(
+    aw_localization_node =  Node(
                 package="nif_aw_localization_nodes",
                 executable="nif_aw_localization_nodes_exe",
-                output="screen",
+                output={
+                    "stderr": "log",
+                    "stdout": "log"
+                },
                 emulate_tty=True,
                 parameters=[
                     LaunchConfiguration('nif_aw_localization_param_file')
@@ -49,7 +52,7 @@ def generate_launch_description():
     return LaunchDescription(
         [
             param_file_launch_arg,
-            aw_loaclization_node
+            aw_localization_node    
         ])
     
 

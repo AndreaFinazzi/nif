@@ -137,4 +137,4 @@ void KinControl::getPredictivePath(nav_msgs::msg::Path &pathOut)
   
 }
 
-void KinControl::getSteering(double &SpeedMps) { SpeedMps = this->steering_cmd;}
+void KinControl::getSteering(double &SpeedMps) { SpeedMps = - this->steering_cmd;}
