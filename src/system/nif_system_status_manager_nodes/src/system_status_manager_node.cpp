@@ -492,13 +492,13 @@ double nif::system::SystemStatusManagerNode::getMissionMaxVelocityMps(
                     max_vel_mps = 0.0;
                     break;
                 case MissionStatus::MISSION_SLOW_DRIVE:
-                    max_vel_mps = 10.0;
+                    max_vel_mps = 20.0;
                     break;
                 case MissionStatus::MISSION_PIT_IN:
-                    max_vel_mps = 10.0;
+                    max_vel_mps = 20.0;
                     break;
                 case MissionStatus::MISSION_PIT_OUT:
-                    max_vel_mps = 10.0;
+                    max_vel_mps = 20.0;
                     break;
                 case MissionStatus::MISSION_RACE:
                     max_vel_mps = 67.0;

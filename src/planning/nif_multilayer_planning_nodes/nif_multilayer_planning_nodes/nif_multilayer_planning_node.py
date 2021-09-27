@@ -5,6 +5,8 @@ import json
 import datetime
 import numpy as np
 import sys, os
+import csv
+import rclpy
 
 from ament_index_python import get_package_share_directory
 
@@ -15,9 +17,6 @@ from nifpy_common_nodes.base_node import BaseNode
 from geometry_msgs.msg import PoseStamped
 from std_msgs.msg import String
 from rclpy.node import Node
-import rclpy
-import csv
-import math
 from sklearn.neighbors import KDTree
 from geometry_msgs.msg import Quaternion
 
@@ -63,7 +62,7 @@ class GraphBasedPlanner(rclpy.node.Node):
         path_inputs = get_share_file('nif_multilayer_planning_nodes', 'inputs')
         path_logs = get_share_file('nif_multilayer_planning_nodes', 'logs')
 
-        self.sys_var_track = os.getenv('TRACK')
+        self.sys_var_track = os.environ.get('TRACK').strip()
         track_param = configparser.ConfigParser()
         if not track_param.read(os.path.join(path_params, "driving_task.ini")):
             raise ValueError('Specified online parameter config file does not exist or is empty!')
@@ -74,95 +73,9 @@ class GraphBasedPlanner(rclpy.node.Node):
         self.declare_parameter("ltpl_offline_param_path", os.path.join(path_params, self.sys_var_track, "ltpl_config_offline.ini"))
         self.declare_parameter("ltpl_online_param_path", os.path.join(path_params, self.sys_var_track, "ltpl_config_online.ini"))
         self.declare_parameter("log_path", os.path.join(path_logs, self.sys_var_track, "graph_ltpl"))
-        self.declare_parameter("graph_log_id", datetime.datetime.now().strftime("%Y_%m_%d__%H_%M_%S"))
+        self.declare_parameter("graph_log_id", self.sys_var_track + datetime.datetime.now().strftime("%Y_%m_%d__%H_%M_%S"))
 
         self.graph_config = configparser.ConfigParser()
-
-        # TODO: Loading the pit-in waypoints
-        self.pit_in_wpt_file_path = None
-        self.pit_in_wpt = None
-        self.pit_in_allowed_zone_min_x = None
-        self.pit_in_allowed_zone_max_x = None
-        self.pit_in_allowed_zone_min_y = None
-        self.pit_in_allowed_zone_max_y = None
-        self.pit_in_blocked_zone = None
-        self.num_pit_in_wpt = 0
-        self.pit_in_maptrack_len = 100
-        self.pit_in_flg = False
-        self.pit_in_wpt_maximum_vel = 0.0 # m/s
-        self.pit_in_first_call = False
-        self.pit_in_available_flg = False
-        self.odom_first_call = True
-
-        # TODO : file should be changed
-        if track_specifier == 'LOR':
-            if not self.graph_config.read("ltpl_offline_param_path"):
-                raise ValueError(
-                    'Specified graph config file does not exist or is empty!')
-            self.pit_in_wpt_file_path = self.graph_config.get("PIT","pit_in_wpt_file")
-            self.pit_in_wpt_maximum_vel = self.graph_config.getfloat("pit_in_wpt_maximum_vel")
-            self.pit_in_allowed_zone_min_x = self.graph_config.getfloat("pit_in_allowed_x_min")
-            self.pit_in_allowed_zone_max_x = self.graph_config.getfloat("pit_in_allowed_x_max")
-            self.pit_in_allowed_zone_min_y = self.graph_config.getfloat("pit_in_allowed_y_min")
-            self.pit_in_allowed_zone_max_y = self.graph_config.getfloat("pit_in_allowed_y_max")
-            self.pit_in_blocked_zone = {'blocked_zone_for_pitIn': 
-                                [[64, 64, 64, 64, 64, 64, 64, 65, 65, 65, 65, 65, 65, 65, 66, 66, 66, 66, 66, 66, 66],
-                                [0, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 4, 5, 6],
-                                np.array([[-20.54, 227.56], [23.80, 186.64]]),
-                                np.array([[-23.80, 224.06], [20.17, 183.60]])]}
-        elif track_specifier == 'IMS':
-            if not self.graph_config.read("ltpl_offline_param_path"):
-                raise ValueError(
-                    'Specified graph config file does not exist or is empty!')
-            # self.pit_in_wpt_file_path = '/home/usrg/Downloads/LOR_pit_lane_new_wpt.csv'
-            self.pit_in_wpt_file_path = self.graph_config.get("PIT","pit_in_wpt_file")
-            self.pit_in_wpt_maximum_vel = self.graph_config.getfloat("pit_in_wpt_maximum_vel")
-            self.pit_in_allowed_zone_min_x = self.graph_config.getfloat("pit_in_allowed_x_min")
-            self.pit_in_allowed_zone_max_x = self.graph_config.getfloat("pit_in_allowed_x_max")
-            self.pit_in_allowed_zone_min_y = self.graph_config.getfloat("pit_in_allowed_y_min")
-            self.pit_in_allowed_zone_max_y = self.graph_config.getfloat("pit_in_allowed_y_max")
-            self.pit_in_blocked_zone = {'blocked_zone_for_pitIn':
-                                [[64, 64, 64, 64, 64, 64, 64, 65, 65, 65, 65, 65, 65, 65, 66, 66, 66, 66, 66, 66, 66],
-                                [0, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 4, 5, 6],
-                                np.array([[-20.54, 227.56], [23.80, 186.64]]),
-                                np.array([[-23.80, 224.06], [20.17, 183.60]])]}
-        elif track_specifier == 'LG_SIM':
-            if not self.graph_config.read("ltpl_offline_param_path"):
-                raise ValueError(
-                    'Specified graph config file does not exist or is empty!')
-            self.pit_in_wpt_file_path = self.graph_config.get("PIT","pit_in_wpt_file")
-            self.pit_in_wpt_maximum_vel = self.graph_config.getfloat("pit_in_wpt_maximum_vel")
-            self.pit_in_allowed_zone_min_x = self.graph_config.getfloat("pit_in_allowed_x_min")
-            self.pit_in_allowed_zone_max_x = self.graph_config.getfloat("pit_in_allowed_x_max")
-            self.pit_in_allowed_zone_min_y = self.graph_config.getfloat("pit_in_allowed_y_min")
-            self.pit_in_allowed_zone_max_y = self.graph_config.getfloat("pit_in_allowed_y_max")
-            self.pit_in_blocked_zone = {'blocked_zone_for_pitIn': 
-                                [[64, 64, 64, 64, 64, 64, 64, 65, 65, 65, 65, 65, 65, 65, 66, 66, 66, 66, 66, 66, 66],
-                                [0, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 4, 5, 6],
-                                np.array([[-20.54, 227.56], [23.80, 186.64]]),
-                                np.array([[-23.80, 224.06], [20.17, 183.60]])]}
-        else:
-            raise ValueError('[nif_multilayer_planning_nodes] Track specification in driving_task.ini is wrong!')
-
-        if(self.pit_in_wpt_file_path == None):
-            raise ValueError('[nif_multilayer_planning_nodes] Pit-in waypoint is not configured')
-        if(self.pit_in_allowed_zone_min_x == None or self.pit_in_allowed_zone_max_x == None or
-                    self.pit_in_allowed_zone_min_y == None or self.pit_in_allowed_zone_max_y == None):
-            raise ValueError('[nif_multilayer_planning_nodes] Pit-in allowed zone is not configured')
-        if(self.pit_in_allowed_zone_min_x >= self.pit_in_allowed_zone_max_x or
-                self.pit_in_allowed_zone_min_y >= self.pit_in_allowed_zone_max_y):
-            raise ValueError('[nif_multilayer_planning_nodes] Pit-in allowed zone is not properly configured!')
-
-        self.load_pit_in_waypoint()
-        self.pit_in_tree = KDTree(self.pit_in_wpt)
-
-        # TODO pre-load all these info
-        self.pit_in_wpt_msg = Path()
-        self.pit_in_wpt_msg.header.frame_id = "odom" #str(self.get_global_parameter('frames.global'))
-        for idx in range(self.pit_in_maptrack_len):
-            pose = PoseStamped()
-            pose.header.frame_id = self.pit_in_wpt_msg.header.frame_id
-            self.pit_in_wpt_msg.poses.append(pose)
 
         # define all relevant paths
         path_dict = {
@@ -181,15 +94,115 @@ class GraphBasedPlanner(rclpy.node.Node):
         self.get_logger().info(path_dict['log_path'])
         self.get_logger().info(path_dict['graph_log_id'])
 
+
+        # TODO: Loading the pit-in waypoints
+        self.pit_in_wpt_file_path = None
+        self.pit_in_wpt = []
+        self.pit_in_allowed_zone_min_x = None
+        self.pit_in_allowed_zone_max_x = None
+        self.pit_in_allowed_zone_min_y = None
+        self.pit_in_allowed_zone_max_y = None
+        self.pit_in_blocked_zone = None
+        self.num_pit_in_wpt = 0
+        self.pit_in_maptrack_len = 100
+        self.pit_in_flg = False
+        self.pit_in_wpt_maximum_vel = 0.0 # m/s
+        self.pit_in_first_call = False
+        self.pit_in_available_flg = False
+        self.odom_first_call = True
+
+        # TODO : file should be changed
+        if self.sys_var_track == 'LOR':
+            if not self.graph_config.read(path_dict['ltpl_offline_param_path']):
+                raise ValueError(
+                    'Specified graph config file does not exist or is empty!')
+            self.pit_in_wpt_file_path = self.graph_config.get('PIT',"pit_in_wpt_file")
+            self.pit_in_wpt_file_path = get_share_file('nif_multilayer_planning_nodes', self.pit_in_wpt_file_path)
+            
+            self.pit_in_wpt_maximum_vel = self.graph_config.getfloat('PIT', "pit_in_wpt_maximum_vel")
+            self.pit_in_allowed_zone_min_x = self.graph_config.getfloat('PIT', "pit_in_allowed_x_min")
+            self.pit_in_allowed_zone_max_x = self.graph_config.getfloat('PIT', "pit_in_allowed_x_max")
+            self.pit_in_allowed_zone_min_y = self.graph_config.getfloat('PIT', "pit_in_allowed_y_min")
+            self.pit_in_allowed_zone_max_y = self.graph_config.getfloat('PIT', "pit_in_allowed_y_max")
+            self.pit_in_blocked_zone = {'blocked_zone_for_pitIn': 
+                                [[64, 64, 64, 64, 64, 64, 64, 65, 65, 65, 65, 65, 65, 65, 66, 66, 66, 66, 66, 66, 66],
+                                [0, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 4, 5, 6],
+                                np.array([[-20.54, 227.56], [23.80, 186.64]]),
+                                np.array([[-23.80, 224.06], [20.17, 183.60]])]}
+        elif self.sys_var_track == 'IMS':
+            if not self.graph_config.read(path_dict['ltpl_offline_param_path']):
+                raise ValueError(
+                    'Specified graph config file does not exist or is empty!')
+            # self.pit_in_wpt_file_path = '/home/usrg/Downloads/LOR_pit_lane_new_wpt.csv'
+            self.pit_in_wpt_file_path = self.graph_config.get('PIT',"pit_in_wpt_file")
+            self.pit_in_wpt_file_path = get_share_file('nif_multilayer_planning_nodes', self.pit_in_wpt_file_path)
+            
+            self.pit_in_wpt_maximum_vel = self.graph_config.getfloat('PIT', "pit_in_wpt_maximum_vel")
+            self.pit_in_allowed_zone_min_x = self.graph_config.getfloat('PIT', "pit_in_allowed_x_min")
+            self.pit_in_allowed_zone_max_x = self.graph_config.getfloat('PIT', "pit_in_allowed_x_max")
+            self.pit_in_allowed_zone_min_y = self.graph_config.getfloat('PIT', "pit_in_allowed_y_min")
+            self.pit_in_allowed_zone_max_y = self.graph_config.getfloat('PIT', "pit_in_allowed_y_max")
+            self.pit_in_blocked_zone = {'blocked_zone_for_pitIn':
+                                [[64, 64, 64, 64, 64, 64, 64, 65, 65, 65, 65, 65, 65, 65, 66, 66, 66, 66, 66, 66, 66],
+                                [0, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 4, 5, 6],
+                                np.array([[-20.54, 227.56], [23.80, 186.64]]),
+                                np.array([[-23.80, 224.06], [20.17, 183.60]])]}
+        elif self.sys_var_track == 'LG_SVL':
+            if not self.graph_config.read(path_dict['ltpl_offline_param_path']):
+                raise ValueError(
+                    'Specified graph config file does not exist or is empty!')
+            self.pit_in_wpt_file_path = self.graph_config.get('PIT',"pit_in_wpt_file")
+            self.pit_in_wpt_file_path = get_share_file('nif_multilayer_planning_nodes', self.pit_in_wpt_file_path)
+            
+            self.pit_in_wpt_maximum_vel = self.graph_config.getfloat('PIT', "pit_in_wpt_maximum_vel")
+            self.pit_in_allowed_zone_min_x = self.graph_config.getfloat('PIT', "pit_in_allowed_x_min")
+            self.pit_in_allowed_zone_max_x = self.graph_config.getfloat('PIT', "pit_in_allowed_x_max")
+            self.pit_in_allowed_zone_min_y = self.graph_config.getfloat('PIT', "pit_in_allowed_y_min")
+            self.pit_in_allowed_zone_max_y = self.graph_config.getfloat('PIT', "pit_in_allowed_y_max")
+            self.pit_in_blocked_zone = {'blocked_zone_for_pitIn': 
+                                [[64, 64, 64, 64, 64, 64, 64, 65, 65, 65, 65, 65, 65, 65, 66, 66, 66, 66, 66, 66, 66],
+                                [0, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 4, 5, 6],
+                                np.array([[-20.54, 227.56], [23.80, 186.64]]),
+                                np.array([[-23.80, 224.06], [20.17, 183.60]])]}
+        else:
+            raise ValueError('[nif_multilayer_planning_nodes] Track specification in driving_task.ini is wrong!')
+
+        if(self.pit_in_wpt_file_path is None):
+            raise ValueError('[nif_multilayer_planning_nodes] Pit-in waypoint is not configured')
+        if(self.pit_in_allowed_zone_min_x is None or self.pit_in_allowed_zone_max_x is None or
+                    self.pit_in_allowed_zone_min_y is None or self.pit_in_allowed_zone_max_y is None):
+            raise ValueError('[nif_multilayer_planning_nodes] Pit-in allowed zone is not configured')
+        if(self.pit_in_allowed_zone_min_x >= self.pit_in_allowed_zone_max_x or
+                self.pit_in_allowed_zone_min_y >= self.pit_in_allowed_zone_max_y):
+            raise ValueError('[nif_multilayer_planning_nodes] Pit-in allowed zone is not properly configured!')
+
+        self.load_pit_in_waypoint()
+
+        self.pit_in_entire_msg = Path()
+        self.pit_in_entire_msg.header.frame_id = "odom" #str(self.get_global_parameter('frames.global'))
+
+
+
+        self.pit_in_tree = KDTree(self.pit_in_wpt)
+
+        # TODO pre-load all these info
+        self.pit_in_wpt_msg = Path()
+        self.pit_in_wpt_msg.header.frame_id = "odom" #str(self.get_global_parameter('frames.global'))
+        for idx in range(self.pit_in_maptrack_len):
+            pose = PoseStamped()
+            pose.header.frame_id = self.pit_in_wpt_msg.header.frame_id
+            self.pit_in_wpt_msg.poses.append(pose)
+
         # Subscribers and Publisher
         self.local_maptrack_inglobal_pub = self.create_publisher(Path, 'out_local_maptrack_inglobal', rclpy.qos.qos_profile_sensor_data)
+        self.pit_in_entire_inglobal_pub = self.create_publisher(Path, 'pit_in_entire_inglobal', rclpy.qos.qos_profile_sensor_data)
         self.veh_odom_sub = self.create_subscription(Odometry, 'in_ego_odometry', self.veh_odom_callback, rclpy.qos.qos_profile_sensor_data)
         self.perception_result_sub = self.create_subscription(Perception3DArray, 'in_perception_result', self.perception_result_callback, rclpy.qos.qos_profile_sensor_data)
         # TODO---------------------------------------------------
         # TODO : Change the topic name / QOS for inout from deagyu
         # TODO----------------------------------------------------
-        self.system_status_sub = self.create_subscription(SystemStatus, '/system/status', self.system_status_callback, 10)
-        self.track_inout_bool_sub = self.create_subscription(Bool, 'todo', self.track_inout_callback, 10)
+        self.system_status_sub = self.create_subscription(SystemStatus, 'in_system_status', self.system_status_callback, 10)
+        self.track_inout_bool_sub = self.create_subscription(Bool, 'in_inout_track_flag', self.track_inout_callback, 10)
 
         self.out_of_track = None
         self.current_veh_odom = None
@@ -232,10 +245,18 @@ class GraphBasedPlanner(rclpy.node.Node):
         self.cnt = 0
 
     def system_status_callback(self, msg):
-        if msg.mission_status == msg.mission_status.MISSION_PIT_IN:
+        if msg.mission_status.mission_status_code == msg.mission_status.MISSION_PIT_IN:
             self.pit_in_flg = True
         else:
             self.pit_in_flg = False
+
+        # for idx in range(len(self.pit_in_wpt)):
+        #     pose = PoseStamped()
+        #     pose.header.frame_id = self.pit_in_entire_msg.header.frame_id
+        #     pose.pose.position.x = self.pit_in_wpt[idx][0]
+        #     pose.pose.position.y = self.pit_in_wpt[idx][1]
+        #     self.pit_in_entire_msg.poses.append(pose)
+        # self.pit_in_entire_inglobal_pub.publish(self.pit_in_entire_msg)
 
     def track_inout_callback(self,msg):
         self.out_of_track = not msg.data
@@ -245,12 +266,13 @@ class GraphBasedPlanner(rclpy.node.Node):
             csv_reader = csv.reader(csv_file, delimiter=',')
             line_count = 0
             for row in csv_reader:
-                if math.isnan(row[0]) or math.isnan(row[1]):
+                if math.isnan(float(row[0])) or math.isnan(float(row[1])):
                     raise ValueError('[nif_multilayer_planning_nodes] Track specification in driving_task.ini is wrong!')
-                self.pit_in_wpt.append([row[0],row[1]]) # order of x,y
+                self.pit_in_wpt.append([float(row[0]),float(row[1])]) # order of x,y
                 line_count += 1
         if len(self.pit_in_wpt) == 0:
             raise ValueError('[nif_multilayer_planning_nodes] Pit-in waypoint file is empty!')
+        self.num_pit_in_wpt = len(self.pit_in_wpt)
 
         print("Pit in waypoints are laoded.")
 
@@ -280,10 +302,10 @@ class GraphBasedPlanner(rclpy.node.Node):
                                  + pow(self.current_veh_odom.twist.twist.linear.y, 2)
                                  + pow(self.current_veh_odom.twist.twist.linear.z, 2))
 
-        if self.odom_first_call == True:
-            self.out_of_track = self.ltpl_obj.set_startpos(pos_est=self.pos_est,
+        if self.odom_first_call is True:
+            # self.out_of_track = 
+            self.odom_first_call = self.ltpl_obj.set_startpos(pos_est=self.pos_est,
                                         heading_est=self.heading_est)
-            self.odom_first_call = False
 
     def perception_result_callback(self, msg):
         self.obj_list.clear()
@@ -303,22 +325,25 @@ class GraphBasedPlanner(rclpy.node.Node):
         # TODO: temporal setup for lg sim
         self.out_of_track = False
 
-        if self.pit_in_race_flg == False:
+        if self.odom_first_call is True:
+            return
+
+        if self.pit_in_flg is False:
             # Green flag
             self.pit_in_first_call = False
             self.cnt = self.cnt +1
-            if self.out_of_track == True:
-                nearest_dist, nearest_ind = self.pit_in_tree.query((self.current_veh_odom.pose.pose.position.x,
-                                                                    self.current_veh_odom.pose.pose.position.y), k=1)
+            if self.out_of_track is True:
+                nearest_dist, nearest_ind = self.pit_in_tree.query([[self.current_veh_odom.pose.pose.position.x,
+                                                                    self.current_veh_odom.pose.pose.position.y]], k=1)
                 if nearest_dist < 1.0:
                     self.pit_in_wpt_msg.header.stamp = self.get_clock().now().to_msg()
                     for i in range(self.pit_in_maptrack_len):
-                        if nearest_ind + i < self.num_pit_in_wpt:
-                            self.pit_in_wpt_msg.poses[i].pose.position.x = self.pit_in_wpt[nearest_ind + i][0]
-                            self.pit_in_wpt_msg.poses[i].pose.position.y = self.pit_in_wpt[nearest_ind + i][1]
+                        if nearest_ind[0][0] + i < self.num_pit_in_wpt:
+                            self.pit_in_wpt_msg.poses[i].pose.position.x = self.pit_in_wpt[nearest_ind[0][0] + i][0]
+                            self.pit_in_wpt_msg.poses[i].pose.position.y = self.pit_in_wpt[nearest_ind[0][0] + i][1]
                         else:
-                            self.pit_in_wpt_msg.poses[i].pose.position.x = self.pit_in_wpt[nearest_ind + i - self.pit_in_maptrack_len][0]
-                            self.pit_in_wpt_msg.poses[i].pose.position.y = self.pit_in_wpt[nearest_ind + i - self.pit_in_maptrack_len][1]
+                            self.pit_in_wpt_msg.poses[i].pose.position.x = self.pit_in_wpt[nearest_ind[0][0] + i - self.num_pit_in_wpt][0]
+                            self.pit_in_wpt_msg.poses[i].pose.position.y = self.pit_in_wpt[nearest_ind[0][0] + i - self.num_pit_in_wpt][1]
                     self.local_maptrack_inglobal_pub.publish(self.pit_in_wpt_msg)
                 else:
                     return
@@ -381,36 +406,36 @@ class GraphBasedPlanner(rclpy.node.Node):
             pit_in_allowed_zone_flg = (self.pit_in_allowed_zone_min_x < self.current_veh_odom.pose.pose.position.x < self.pit_in_allowed_zone_max_x) \
                                         and (self.pit_in_allowed_zone_min_y < self.current_veh_odom.pose.pose.position.y < self.pit_in_allowed_zone_max_y)
 
-            if (self.vel_est < self.pit_in_wpt_maximum_vel and pit_in_allowed_zone_flg == True and self.pit_in_first_call == False):
+            if (self.vel_est < self.pit_in_wpt_maximum_vel and pit_in_allowed_zone_flg is True and self.pit_in_first_call is False):
                 self.pit_in_first_call = True
-                nearest_dist, nearest_ind = self.pit_in_tree.query((self.current_veh_odom.pose.pose.position.x,
-                                                                    self.current_veh_odom.pose.pose.position.y), k=1)
+                nearest_dist, nearest_ind = self.pit_in_tree.query([[self.current_veh_odom.pose.pose.position.x,
+                                                                    self.current_veh_odom.pose.pose.position.y]], k=1)
                 self.pit_in_wpt_msg.header.stamp = self.get_clock().now().to_msg()
                 for i in range(self.pit_in_maptrack_len):
-                    if nearest_ind + i < self.num_pit_in_wpt:
-                        self.pit_in_wpt_msg.poses[i].pose.position.x = self.pit_in_wpt[nearest_ind + i][0]
-                        self.pit_in_wpt_msg.poses[i].pose.position.y = self.pit_in_wpt[nearest_ind + i][1]
+                    if nearest_ind[0][0] + i < self.num_pit_in_wpt:
+                        self.pit_in_wpt_msg.poses[i].pose.position.x = self.pit_in_wpt[nearest_ind[0][0] + i][0]
+                        self.pit_in_wpt_msg.poses[i].pose.position.y = self.pit_in_wpt[nearest_ind[0][0] + i][1]
                     else:
-                        self.pit_in_wpt_msg.poses[i].pose.position.x = self.pit_in_wpt[nearest_ind + i - self.pit_in_maptrack_len][0]
-                        self.pit_in_wpt_msg.poses[i].pose.position.y = self.pit_in_wpt[nearest_ind + i - self.pit_in_maptrack_len][1]
+                        self.pit_in_wpt_msg.poses[i].pose.position.x = self.pit_in_wpt[nearest_ind[0][0] + i - self.num_pit_in_wpt][0]
+                        self.pit_in_wpt_msg.poses[i].pose.position.y = self.pit_in_wpt[nearest_ind[0][0] + i - self.num_pit_in_wpt][1]
                 self.local_maptrack_inglobal_pub.publish(self.pit_in_wpt_msg)
 
-            elif self.pit_in_first_call == True:
-                nearest_dist, nearest_ind = self.pit_in_tree.query((self.current_veh_odom.pose.pose.position.x,
-                                                    self.current_veh_odom.pose.pose.position.y), k=1)
+            elif self.pit_in_first_call is True:
+                nearest_dist, nearest_ind = self.pit_in_tree.query([[self.current_veh_odom.pose.pose.position.x,
+                                                    self.current_veh_odom.pose.pose.position.y]], k=1)
                 self.pit_in_wpt_msg.header.stamp = self.get_clock().now().to_msg()
                 for i in range(self.pit_in_maptrack_len):
-                    if nearest_ind + i < self.num_pit_in_wpt:
-                        self.pit_in_wpt_msg.poses[i].pose.position.x = self.pit_in_wpt[nearest_ind + i][0]
-                        self.pit_in_wpt_msg.poses[i].pose.position.y = self.pit_in_wpt[nearest_ind + i][1]
+                    if nearest_ind[0][0] + i < self.num_pit_in_wpt:
+                        self.pit_in_wpt_msg.poses[i].pose.position.x = self.pit_in_wpt[nearest_ind[0][0] + i][0]
+                        self.pit_in_wpt_msg.poses[i].pose.position.y = self.pit_in_wpt[nearest_ind[0][0] + i][1]
                     else:
-                        self.pit_in_wpt_msg.poses[i].pose.position.x = self.pit_in_wpt[nearest_ind + i - self.pit_in_maptrack_len][0]
-                        self.pit_in_wpt_msg.poses[i].pose.position.y = self.pit_in_wpt[nearest_ind + i - self.pit_in_maptrack_len][1]
+                        self.pit_in_wpt_msg.poses[i].pose.position.x = self.pit_in_wpt[nearest_ind[0][0] + i - self.num_pit_in_wpt][0]
+                        self.pit_in_wpt_msg.poses[i].pose.position.y = self.pit_in_wpt[nearest_ind[0][0] + i - self.num_pit_in_wpt][1]
                 self.local_maptrack_inglobal_pub.publish(self.pit_in_wpt_msg)
 
             else:
                 # Can not change the waypoint, wait until the conditions are all satistied.
-                if self.out_of_track == True:
+                if self.out_of_track is True:
                     return
                 # -- SELECT ONE OF THE PROVIDED TRAJECTORIES -----------------------------------------------------------------------
                 # (here: brute-force, replace by sophisticated behavior planner)
