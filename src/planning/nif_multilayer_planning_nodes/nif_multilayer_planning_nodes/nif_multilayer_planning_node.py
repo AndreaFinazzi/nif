@@ -63,10 +63,6 @@ class GraphBasedPlanner(rclpy.node.Node):
         path_logs = get_share_file('nif_multilayer_planning_nodes', 'logs')
 
         self.sys_var_track = os.environ.get('TRACK').strip()
-        track_param = configparser.ConfigParser()
-        if not track_param.read(os.path.join(path_params, "driving_task.ini")):
-            raise ValueError('Specified online parameter config file does not exist or is empty!')
-        track_specifier = json.loads(track_param.get('DRIVING_TASK', 'track'))
 
         self.declare_parameter("globtraj_input_path", os.path.join(path_inputs, "traj_ltpl_cl", self.sys_var_track, "traj_ltpl_cl.csv"))
         self.declare_parameter("graph_store_path", os.path.join(path_inputs, "track_offline_graphs", self.sys_var_track, "stored_graph.pckl"))
