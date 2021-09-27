@@ -42,11 +42,6 @@ CostmapGenerator::CostmapGenerator()
   
   respond();
 
-  // setup QOS to be best effort
-  auto qos = rclcpp::QoS(
-      rclcpp::QoSInitialization(RMW_QOS_POLICY_HISTORY_KEEP_LAST, 10));
-  qos.best_effort();
-
   pub_occupancy_grid_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(output_map_name_, nif::common::constants::QOS_SENSOR_DATA);
   pub_points_on_global_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(
       "/points_on_global", nif::common::constants::QOS_SENSOR_DATA);
@@ -71,7 +66,8 @@ CostmapGenerator::CostmapGenerator()
       std::bind(&CostmapGenerator::ClosestGeofenceIndexCallback, this,
                 std::placeholders::_1));
 
-  auto rmw_qos_profile = qos.get_rmw_qos_profile();
+  auto rmw_qos_profile =
+      nif::common::constants::QOS_EGO_ODOMETRY.get_rmw_qos_profile();
 
   sub_InnerGeofence.subscribe(this, "/geofence_inner", rmw_qos_profile);
   sub_OuterGeofence.subscribe(this, "/geofence_outer", rmw_qos_profile);
