@@ -181,9 +181,9 @@ class GraphBasedPlanner(rclpy.node.Node):
         self.pit_in_entire_msg = Path()
         self.pit_in_entire_msg.header.frame_id = "odom" #str(self.get_global_parameter('frames.global'))
 
-
-
         self.pit_in_tree = KDTree(self.pit_in_wpt)
+        self.on_the_way_pit = False
+
 
         # TODO pre-load all these info
         self.pit_in_wpt_msg = Path()
@@ -241,8 +241,6 @@ class GraphBasedPlanner(rclpy.node.Node):
         self.traj_set = {'straight': None}
         self.obj_list = []
         tic = time.time()
-
-        self.cnt = 0
 
     def system_status_callback(self, msg):
         if msg.mission_status.mission_status_code == msg.mission_status.MISSION_PIT_IN:
@@ -322,31 +320,35 @@ class GraphBasedPlanner(rclpy.node.Node):
             self.obj_list.append(template_dict)
 
     def timer_callback(self):
-        # TODO: temporal setup for lg sim
-        self.out_of_track = False
 
         if self.odom_first_call is True:
             return
 
+        # self.out_of_track = not self.ltpl_obj.check_out_of_track(self.pos_est)
+
+        # GREEN FLAG
         if self.pit_in_flg is False:
-            # Green flag
-            self.pit_in_first_call = False
-            self.cnt = self.cnt +1
-            if self.out_of_track is True:
+            # -------------------------------------------
+            # GREEN FLAG / EGO VEHICLE IS FOLLOWING THE PIT-IN WAYPOINT
+            # -------------------------------------------
+
+            if self.on_the_way_pit is True:
                 nearest_dist, nearest_ind = self.pit_in_tree.query([[self.current_veh_odom.pose.pose.position.x,
                                                                     self.current_veh_odom.pose.pose.position.y]], k=1)
-                if nearest_dist < 1.0:
-                    self.pit_in_wpt_msg.header.stamp = self.get_clock().now().to_msg()
-                    for i in range(self.pit_in_maptrack_len):
-                        if nearest_ind[0][0] + i < self.num_pit_in_wpt:
-                            self.pit_in_wpt_msg.poses[i].pose.position.x = self.pit_in_wpt[nearest_ind[0][0] + i][0]
-                            self.pit_in_wpt_msg.poses[i].pose.position.y = self.pit_in_wpt[nearest_ind[0][0] + i][1]
-                        else:
-                            self.pit_in_wpt_msg.poses[i].pose.position.x = self.pit_in_wpt[nearest_ind[0][0] + i - self.num_pit_in_wpt][0]
-                            self.pit_in_wpt_msg.poses[i].pose.position.y = self.pit_in_wpt[nearest_ind[0][0] + i - self.num_pit_in_wpt][1]
-                    self.local_maptrack_inglobal_pub.publish(self.pit_in_wpt_msg)
-                else:
-                    return
+                self.pit_in_wpt_msg.header.stamp = self.get_clock().now().to_msg()
+                for i in range(self.pit_in_maptrack_len):
+                    if nearest_ind[0][0] + i < self.num_pit_in_wpt:
+                        self.pit_in_wpt_msg.poses[i].pose.position.x = self.pit_in_wpt[nearest_ind[0][0] + i][0]
+                        self.pit_in_wpt_msg.poses[i].pose.position.y = self.pit_in_wpt[nearest_ind[0][0] + i][1]
+                    else:
+                        self.pit_in_wpt_msg.poses[i].pose.position.x = self.pit_in_wpt[nearest_ind[0][0] + i - self.num_pit_in_wpt][0]
+                        self.pit_in_wpt_msg.poses[i].pose.position.y = self.pit_in_wpt[nearest_ind[0][0] + i - self.num_pit_in_wpt][1]
+                self.local_maptrack_inglobal_pub.publish(self.pit_in_wpt_msg)
+                return
+
+            # ------------------------------------------------
+            # GREEN FLAG / EGO VEHICLE IS RUNNING ON THE TRACK
+            # ------------------------------------------------
 
             # -- SELECT ONE OF THE PROVIDED TRAJECTORIES -----------------------------------------------------------------------
             # (here: brute-force, replace by sophisticated behavior planner)
@@ -396,18 +398,22 @@ class GraphBasedPlanner(rclpy.node.Node):
             self.local_maptrack_inglobal_pub.publish(self.msg)
 
         else:
-            # Vehicle should pit-in
+            # -----------
+            # PIT-IN FLAG
+            # -----------
+
             # TODO : Decide whether we can change the waypoint for the pit-in
             # Considering items :
             # 1. Switching zone
             # 2. Current velocity
-            # 3. What else?
-            # TODO : not layer, should be zone to be more simple
             pit_in_allowed_zone_flg = (self.pit_in_allowed_zone_min_x < self.current_veh_odom.pose.pose.position.x < self.pit_in_allowed_zone_max_x) \
                                         and (self.pit_in_allowed_zone_min_y < self.current_veh_odom.pose.pose.position.y < self.pit_in_allowed_zone_max_y)
 
             if (self.vel_est < self.pit_in_wpt_maximum_vel and pit_in_allowed_zone_flg is True and self.pit_in_first_call is False):
                 self.pit_in_first_call = True
+                # --------------------------------------------
+                # PIT-IN FLAG / ALLOWED TO CHANGE THE WAYPOINT
+                # --------------------------------------------
                 nearest_dist, nearest_ind = self.pit_in_tree.query([[self.current_veh_odom.pose.pose.position.x,
                                                                     self.current_veh_odom.pose.pose.position.y]], k=1)
                 self.pit_in_wpt_msg.header.stamp = self.get_clock().now().to_msg()
@@ -419,8 +425,12 @@ class GraphBasedPlanner(rclpy.node.Node):
                         self.pit_in_wpt_msg.poses[i].pose.position.x = self.pit_in_wpt[nearest_ind[0][0] + i - self.num_pit_in_wpt][0]
                         self.pit_in_wpt_msg.poses[i].pose.position.y = self.pit_in_wpt[nearest_ind[0][0] + i - self.num_pit_in_wpt][1]
                 self.local_maptrack_inglobal_pub.publish(self.pit_in_wpt_msg)
+                self.on_the_way_pit = True
 
-            elif self.pit_in_first_call is True:
+            elif self.on_the_way_pit is True:
+                # ------------------------------------
+                # PIT-IN FLAG / ON THE WAY BACK TO PIT
+                # ------------------------------------
                 nearest_dist, nearest_ind = self.pit_in_tree.query([[self.current_veh_odom.pose.pose.position.x,
                                                     self.current_veh_odom.pose.pose.position.y]], k=1)
                 self.pit_in_wpt_msg.header.stamp = self.get_clock().now().to_msg()
@@ -432,11 +442,14 @@ class GraphBasedPlanner(rclpy.node.Node):
                         self.pit_in_wpt_msg.poses[i].pose.position.x = self.pit_in_wpt[nearest_ind[0][0] + i - self.num_pit_in_wpt][0]
                         self.pit_in_wpt_msg.poses[i].pose.position.y = self.pit_in_wpt[nearest_ind[0][0] + i - self.num_pit_in_wpt][1]
                 self.local_maptrack_inglobal_pub.publish(self.pit_in_wpt_msg)
+                self.on_the_way_pit = True
 
             else:
-                # Can not change the waypoint, wait until the conditions are all satistied.
-                if self.out_of_track is True:
-                    return
+
+                # ---------------------------------------------------------------
+                # PIT-IN FLAG / CONDITION TO CHANGE THE WAYPOINT IS NOT SATISFIED
+                # ---------------------------------------------------------------
+
                 # -- SELECT ONE OF THE PROVIDED TRAJECTORIES -----------------------------------------------------------------------
                 # (here: brute-force, replace by sophisticated behavior planner)
                 # for sel_action_prev in ["right", "left", "straight", "follow"]:  # try to force 'right', else try next in list
