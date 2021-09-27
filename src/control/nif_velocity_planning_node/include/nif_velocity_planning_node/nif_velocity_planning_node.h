@@ -325,7 +325,7 @@ namespace nif {
                     //! Check desired velocity should not be too large value
                     if (param.get_name() == "des_vel_mps") {
                         if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE &&
-                            param.as_double() <= 200 / 3.6) {
+                            param.as_double() <= 300 / 3.6) {
                             this->m_max_vel_mps = param.as_double();
                             result.successful = true;
                         } else {

@@ -40,7 +40,8 @@ def generate_launch_description():
                     ("in_wheel_speed_report", "raptor_dbw_interface/wheel_speed_report"), # WHEEL SPEED
 
                     ("out_odometry_ekf_estimated", "/aw_localization/ekf/odom"),
-                    ("out_odometry_bestpos", "/aw_localization/ekf/odom_bestpos")
+                    ("out_odometry_bestpos", "/aw_localization/ekf/odom_bestpos"),
+                    ('out_localization_error', '/aw_localization/ekf/error')
                 ]
     )
 

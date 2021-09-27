@@ -294,7 +294,8 @@ def generate_launch_description():
             ('in_joystick_cmd', '/joystick/command'),
             ('out_system_status', '/system/status'),
             ('in_novatel_bestpos', '/novatel_bottom/bestpos'),
-            ('in_novatel_insstdev', '/novatel_bottom/insstdev')
+            ('in_novatel_insstdev', '/novatel_bottom/insstdev'),
+            ('in_localization_error', '/aw_localization/ekf/error')
         ]
     )
 
