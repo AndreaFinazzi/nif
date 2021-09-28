@@ -105,14 +105,6 @@ SystemStatusManagerNode::SystemStatusManagerNode(
     auto qos = rclcpp::QoS(rclcpp::QoSInitialization(RMW_QOS_POLICY_HISTORY_KEEP_LAST, 1));
     qos.best_effort();
 
-    this->system_status_telem_pub = this->create_publisher<nif::common::msgs::SystemStatus>(
-            "/telemetry/system_status", qos
-    );
-
-    this->telemetry_timer = this->create_wall_timer(
-            250ms, std::bind(&SystemStatusManagerNode::telemetry_timer_callback, this));
-
-
     // Services
     // TODO make global parameter
     this->register_node_service = this->create_service<nif_msgs::srv::RegisterNodeStatus>(
