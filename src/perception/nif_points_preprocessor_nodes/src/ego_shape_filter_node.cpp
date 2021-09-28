@@ -404,7 +404,13 @@ void EgoShapeFilterNode::timer_callback() {
   wall_folllowing_path_msg.header.stamp = this->now();
 
   if (right_wall_plane_coeff && outer_bound_distance != 0.0) {
-    m_margin_to_wall = outer_bound_distance + m_target_space_to_wall;
+    if (fabs(outer_bound_distance) < m_target_space_to_wall)
+    {
+      m_margin_to_wall = outer_bound_distance + m_target_space_to_wall;
+    }
+    else {
+      m_margin_to_wall = 0.0;
+    }
   }
 
   EstimatePredictivePath(right_wall_plane_coeff, RightPolyCoefficient,
