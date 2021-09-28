@@ -140,8 +140,8 @@ def generate_launch_description():
             get_package_share_directory('nif_aw_localization_nodes') + '/launch/deploy.launch.py'
         ),
     )
-
-    nif_wall_node_launch_bg = IncludeLaunchDescription(
+    
+    nif_points_preprocessor_launch_bg = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             get_package_share_directory('nif_points_preprocessor_nodes') + '/launch/deploy.launch.py'
         ),
@@ -301,7 +301,9 @@ def generate_launch_description():
         ],
         parameters=[{
             # 'lat_autonomy_enabled': True,
-            # 'long_autonomy_enabled': True
+            # 'long_autonomy_enabled': True,
+            'safeloc.threshold_stop' : 40.0,
+            'safeloc.threshold_slow_down' : 25.0,
         }]
     )
 
@@ -412,7 +414,7 @@ def generate_launch_description():
         nif_csl_node,
         nif_localization_launch,
         nif_aw_localization_launch,
-        nif_wall_node_launch_bg,
+        nif_points_preprocessor_launch_bg,
         nif_waypoint_manager_node,
         robot_description_launch,
         nif_multilayer_planning_node,

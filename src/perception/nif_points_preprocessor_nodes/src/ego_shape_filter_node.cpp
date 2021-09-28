@@ -231,7 +231,8 @@ void EgoShapeFilterNode::timer_callback() {
   if ((this->now() - lidar_time_last_update) >= this->lidar_timeout) {
     // Set error, but keep going
     // node_status = common::NODE_ERROR;
-    RCLCPP_WARN(this->get_logger(), "No lidar update");
+    RCLCPP_WARN_ONCE(this->get_logger(), "No lidar update");
+    RCLCPP_DEBUG(this->get_logger(), "No lidar update");
     return;
   } else {
     // node_status = common::NODE_OK;

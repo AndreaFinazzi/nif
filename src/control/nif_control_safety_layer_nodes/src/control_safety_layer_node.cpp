@@ -141,8 +141,7 @@ void nif::control::ControlSafetyLayerNode::run() {
                     this->buffer_empty_counter = 0;
 
                     if (!is_overriding_steering)
-                        // this->control_cmd.steering_control_cmd = top_control_cmd.steering_control_cmd; // TODO UNCOMMENT !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
-                        this->control_cmd.steering_control_cmd.data = this->perception_steering_cmd;
+                        this->control_cmd.steering_control_cmd = top_control_cmd.steering_control_cmd;
 
                     if (long_autonomy_enabled) {
                         this->control_cmd.desired_accel_cmd = top_control_cmd.desired_accel_cmd;

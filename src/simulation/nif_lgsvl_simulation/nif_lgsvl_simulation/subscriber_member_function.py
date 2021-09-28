@@ -257,10 +257,10 @@ class LGSVLSubscriberNode(BaseNode):
         return insstdev_msg
 
     def random_noise_heading(self) -> float:
-        return np.random.normal(.0, 0.25)
+        return np.random.normal(.0, 0.025)
 
     def random_noise_position(self) -> float:
-        return np.random.normal(.0, .25)
+        return np.random.normal(.0, .025)
 
     def callback_ground_truth_state(self, msg: Odometry):
         '''

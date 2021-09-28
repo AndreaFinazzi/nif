@@ -7,12 +7,38 @@ from launch.substitutions import LaunchConfiguration
 from launch.substitutions import ThisLaunchFileDir
 from launch_ros.actions import Node
 
+IMS = 0
+LOR = 1
+LG_SVL = 2
+
+track_id = os.environ.get('TRACK').strip()
+
+if track_id == "IMS":
+    track = IMS
+elif track_id == "LOR":
+    track = LOR
+elif track_id == "LG_SVL":
+    track = LG_SVL
+else:
+    raise RuntimeError("ERROR: Invalid track {}".format(track_id))
+
 def generate_launch_description():
+
+    config_file = None
+
+    if track == LOR:
+        config_file = 'config_lor.yaml'
+    elif track == IMS:
+        config_file = 'config_ims.yaml'
+    elif track == LG_SVL:
+        config_file = 'config_lgsim.yaml'
+    else:
+        raise RuntimeError("ERROR: invalid track provided: {}".format(track))
 
     params_file = os.path.join(
             get_package_share_directory("nif_aw_localization_nodes"),
             "config",
-            "config.yaml"
+            config_file
         )
         
     param_file_launch_arg = DeclareLaunchArgument(
