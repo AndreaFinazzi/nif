@@ -19,7 +19,10 @@ def generate_launch_description():
             Node(
                 package="nif_points_preprocessor_nodes",
                 executable="nif_points_preprocessor_nodes_exe",
-                output="screen",
+                output={
+                    'stdout': 'log',
+                    'stderr': 'screen',
+                },
                 emulate_tty=True,
                 parameters=[config],
                 remappings=[

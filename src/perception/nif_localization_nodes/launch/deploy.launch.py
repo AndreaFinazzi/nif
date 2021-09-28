@@ -19,6 +19,8 @@ if track_id == "IMS":
     track = IMS
 elif track_id == "LOR":
     track = LOR
+elif track_id == "LG_SVL":
+    track = IMS
 else:
     raise RuntimeError("ERROR: Invalid track {}".format(track_id))
 

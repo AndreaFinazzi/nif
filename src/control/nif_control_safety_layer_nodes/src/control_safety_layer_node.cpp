@@ -35,6 +35,13 @@ void nif::control::ControlSafetyLayerNode::controlOverrideCallback(
     this->override_last_update = this->now();
 }
 
+void nif::control::ControlSafetyLayerNode::perceptionSteeringCallback(
+        const std_msgs::msg::Float32::UniquePtr msg) {
+    this->has_perception_steering = true;
+    this->perception_steering_cmd = msg->data;
+    this->perception_steering_last_update = this->now();
+}
+
 void nif::control::ControlSafetyLayerNode::run() {
     // send diagnostic hb to vehicle interface
     auto joy_hb = std_msgs::msg::Int32();
@@ -72,8 +79,19 @@ void nif::control::ControlSafetyLayerNode::run() {
         this->publishAcceleratorCmd(this->control_cmd.accelerator_control_cmd);
 
 //        TODO this steering command should derive from perception-based controller
-        this->control_cmd.steering_control_cmd =
-                this->override_control_cmd.steering_control_cmd;
+        if (!this->getSystemStatus().health_status.communication_failure && 
+            std::abs(override_control_cmd.steering_control_cmd.data) > std::abs(steering_auto_override_deg)
+            ) {
+            this->control_cmd.steering_control_cmd =
+                    this->override_control_cmd.steering_control_cmd;
+            is_overriding_steering = true;
+        } else if ( this->has_perception_steering && 
+                    this->now() - this->perception_steering_last_update < rclcpp::Duration(1, 0)) {
+            this->control_cmd.steering_control_cmd.data =
+                this->perception_steering_cmd;
+        } else {
+            this->control_cmd.steering_control_cmd.data = 0.0;
+        }
         this->publishSteeringCmd(this->control_cmd.steering_control_cmd);
 
         this->control_pub->publish(this->control_cmd);

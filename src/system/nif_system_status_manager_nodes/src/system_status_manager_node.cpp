@@ -551,12 +551,16 @@ double nif::system::SystemStatusManagerNode::getMissionMaxVelocityMps(
             max_vel_mps = this->velocity_pit_out;
             break;
         case MissionStatus::MISSION_RACE:
+        // Race at max speed, if localization is good enough. 
+        // Over safeloc_threshold_slow_down, reduce max speed according to the localization error
             max_vel_mps = this->velocity_max;
             if (this->localization_error > this->safeloc_threshold_slow_down)
             {
                 auto slope = (this->safeloc_velocity_slow_down_max - this->safeloc_velocity_slow_down_min) / (this->safeloc_threshold_slow_down - this->safeloc_threshold_stop);
                 max_vel_mps = slope * (this->localization_error - this->safeloc_threshold_slow_down) + this->safeloc_velocity_slow_down_max;
             }
+            if (max_vel_mps < this->safeloc_velocity_slow_down_min) 
+                max_vel_mps = this->safeloc_velocity_slow_down_min;
             break;
 
         case MissionStatus::MISSION_TEST:
@@ -566,7 +570,10 @@ double nif::system::SystemStatusManagerNode::getMissionMaxVelocityMps(
                 auto slope = (this->safeloc_velocity_slow_down_max - this->safeloc_velocity_slow_down_min) / (this->safeloc_threshold_slow_down - this->safeloc_threshold_stop);
                 max_vel_mps = slope * (this->localization_error - this->safeloc_threshold_slow_down) + this->safeloc_velocity_slow_down_max;
             }
+            if (max_vel_mps < this->safeloc_velocity_slow_down_min) 
+                max_vel_mps = this->safeloc_velocity_slow_down_min;
             break;
+            
         default:
             max_vel_mps = this->velocity_zero;
             break;
