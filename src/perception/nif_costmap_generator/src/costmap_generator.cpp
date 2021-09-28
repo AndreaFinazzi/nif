@@ -14,7 +14,7 @@ using namespace nif::common::frame_id::localization;
 
 // Constructor
 CostmapGenerator::CostmapGenerator() 
-: Node("indy_costmap_generator"), 
+: Node("nif_costmap_generator_node"), 
   SENSOR_POINTS_COSTMAP_LAYER_("sensor_points"), COMBINED_COSTMAP_LAYER_("costmap")
 {
   //   : nh_(nh), private_nh_(private_nh), has_subscribed_wayarea_(false),
@@ -38,11 +38,23 @@ CostmapGenerator::CostmapGenerator()
   this->declare_parameter<double>("maximum_laserscan_distance_thres", 50);
   this->declare_parameter<double>("minimum_laserscan_distance_thres", 0.1);
   this->declare_parameter<bool>("use_points", true);
-  this->declare_parameter<std::string>("map_topic_name", "/semantics/costmap_generator/occupancy_grid");
-  
-  respond();
 
-  pub_occupancy_grid_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(output_map_name_, nif::common::constants::QOS_SENSOR_DATA);
+  this->lidar_frame_ = this->get_parameter("lidar_frame").as_string();
+  this->map_frame_ = this->get_parameter("map_frame").as_string();
+  this->grid_min_value_ = this->get_parameter("grid_min_value").as_double();
+  this->grid_max_value_ = this->get_parameter("grid_max_value").as_double();
+  this->grid_resolution_ = this->get_parameter("grid_resolution").as_double();
+  this->grid_length_x_ = this->get_parameter("grid_length_x").as_double();
+  this->grid_length_y_ = this->get_parameter("grid_length_y").as_double();
+  this->grid_position_x_ = this->get_parameter("grid_position_x").as_double();
+  this->grid_position_y_ = this->get_parameter("grid_position_y").as_double();
+  this->maximum_lidar_height_thres_ = this->get_parameter("maximum_lidar_height_thres").as_double();
+  this->minimum_lidar_height_thres_ = this->get_parameter("minimum_lidar_height_thres").as_double();
+  this->maximum_laserscan_distance_thres_ = this->get_parameter("maximum_laserscan_distance_thres").as_double();
+  this->minimum_laserscan_distance_thres_ = this->get_parameter("minimum_laserscan_distance_thres").as_double();
+  this->use_points_ = this->get_parameter("use_points").as_bool();
+
+  pub_occupancy_grid_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>("out_map_topic_name", nif::common::constants::QOS_SENSOR_DATA);
   pub_points_on_global_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(
       "/points_on_global", nif::common::constants::QOS_SENSOR_DATA);
   pub_points_on_track_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(
@@ -57,7 +69,7 @@ CostmapGenerator::CostmapGenerator()
                 std::placeholders::_1));
 
   sub_odometry_ = this->create_subscription<nav_msgs::msg::Odometry>(
-      "/localization/ego_odom", nif::common::constants::QOS_EGO_ODOMETRY,
+      "in_odometry_ekf_estimated", nif::common::constants::QOS_EGO_ODOMETRY,
       std::bind(&CostmapGenerator::OdometryCallback, this,
                 std::placeholders::_1));
 
@@ -84,26 +96,6 @@ CostmapGenerator::CostmapGenerator()
 }
 
 CostmapGenerator::~CostmapGenerator(){}
-
-void CostmapGenerator::respond()
-{
-  this->get_parameter("lidar_frame", lidar_frame_);
-  this->get_parameter("map_frame", map_frame_);
-  this->get_parameter("grid_min_value", grid_min_value_);
-  this->get_parameter("grid_max_value", grid_max_value_);
-  this->get_parameter("grid_resolution", grid_resolution_);
-  this->get_parameter("grid_length_x", grid_length_x_);
-  this->get_parameter("grid_length_y", grid_length_y_);
-  this->get_parameter("grid_position_x", grid_position_x_);
-  this->get_parameter("grid_position_y", grid_position_y_);
-  this->get_parameter("maximum_lidar_height_thres", maximum_lidar_height_thres_);
-  this->get_parameter("minimum_lidar_height_thres", minimum_lidar_height_thres_);
-  this->get_parameter("maximum_laserscan_distance_thres", maximum_laserscan_distance_thres_);
-  this->get_parameter("minimum_laserscan_distance_thres", minimum_laserscan_distance_thres_);
-
-  this->get_parameter("use_points", use_points_);
-  this->get_parameter("map_topic_name", output_map_name_);
-}
 
 void CostmapGenerator::run() {
 

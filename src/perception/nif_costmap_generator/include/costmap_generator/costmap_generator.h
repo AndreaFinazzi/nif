@@ -98,7 +98,6 @@ public:
   void param();
 
 private:
-  void respond();
 
   bool use_points_;
   bool use_wayarea_;
@@ -134,7 +133,6 @@ private:
 
   std::string lidar_frame_;
   std::string map_frame_;
-  std::string output_map_name_;
   double grid_min_value_;
   double grid_max_value_;
   double grid_resolution_;
