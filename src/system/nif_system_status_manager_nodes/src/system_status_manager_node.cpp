@@ -134,7 +134,7 @@ void SystemStatusManagerNode::systemStatusTimerCallback() {
 
     // check safety conditions
     bool hb_ok = heartbeatOk();
-    bool localization_ok = localizationOk();
+    bool localization_ok = gps_health_ok(); // localizationOk();
 
     if (!hb_ok || !this->recovery_enabled) {
         hb_ok = false;
@@ -414,17 +414,15 @@ bool SystemStatusManagerNode::heartbeatOk() {
     // check for timeouts
     if (counter_joy_prev != counter_joy) {
         // received new message, heartbeat ok
-        t--;
-        if (t < 0) {
-            t = 0;
-        }
+        t = 0;
         if (counter_joy != default_counter) {
             counter_joy_prev = counter_joy;
         }
         return true;
     } else {
         // have not received update; check for timeout
-        if (t < 3 * max_counter_drop) t++; // Avoid huge (hardly recoverable) numbers
+        // if (t < 3 * max_counter_drop) t++; // Avoid huge (hardly recoverable) numbers
+        t++;
 
         if (t >= max_counter_drop) {
             this->recovery_enabled = false;
