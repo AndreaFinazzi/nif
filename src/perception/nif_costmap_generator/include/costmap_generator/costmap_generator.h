@@ -151,6 +151,7 @@ private:
   double m_veh_roll, m_veh_pitch, m_veh_yaw;
 
   int m_closestGeofenceIndex;
+  bool bEnablePotential_;
 
   std::vector<std::pair<double, double>> m_OuterGeoFence;
   std::vector<std::pair<double, double>> m_InnerGeoFence;
@@ -185,15 +186,8 @@ private:
 
   std::shared_ptr<message_filters::Synchronizer<SyncPolicyT>> m_sync;
 
-  //   ros::Subscriber sub_waypoint_;
-  //   ros::Subscriber sub_points_;
-  //   ros::Subscriber sub_BodyCoordPath_, sub_BoundingBoxes_;
-  //   ros::Subscriber sub_Visual_;
-
-  //   tf::TransformListener tf_listener_;
-
   //   std::vector<std::vector<geometry_msgs::Point>> area_points_;
-  //   std::vector<std::pair<double, double>> obstacleArray;
+  std::vector<std::pair<double, double>> obstacleArray;
 
   PointsToCostmap points2costmap_;
   //   LaneToCostmap lane2costmap_;
@@ -211,12 +205,11 @@ private:
 
   const std::string SENSOR_POINTS_COSTMAP_LAYER_;
   //   const std::string LASER_2D_COSTMAP_LAYER_;
+  const std::string INFLATION_COSTMAP_LAYER_;
   const std::string COMBINED_COSTMAP_LAYER_;
   //   const std::string LANE_POINTS_COSTMAP_LAYER_;
   //   const std::string BOUNDING_BOX_COSTMAP_LAYER_;
   //   const std::string VISUAL_COSTMAP_LAYER_;
-  //   const std::string INFLATION_COSTMAP_LAYER_;
-  //   bool bEnablePotential_;
 
   //   void sensorPointsCallback(
   //       const sensor_msgs::PointCloud2::ConstPtr &in_sensor_points_msg);
@@ -232,38 +225,22 @@ private:
 
   //   void LocalWaypointCallback(const nav_msgs::PathConstPtr &msg);
 
-  //   // Added by cy : 21.01.26
-  //   void RollPitchYawCallback(const geometry_msgs::Vector3::ConstPtr &msg);
-
   grid_map::GridMap initGridmap();
   void publishRosMsg(grid_map::GridMap *map);
   //   void publishRoadBoundaryMsg(grid_map::GridMap *map);
 
   grid_map::Matrix generateSensorPointsCostmap(
       const pcl::PointCloud<pcl::PointXYZI>::Ptr &in_sensor_points);
-  //   grid_map::Matrix
-  //   generateLaserScanCostmap(const sensor_msgs::LaserScanConstPtr
-  //   &in_laser_scan); grid_map::Matrix generateBBoxesCostmap(
-  //       const jsk_recognition_msgs::BoundingBoxArrayConstPtr &in_boxes);
-
-  //   grid_map::Matrix generateVisualCostmap(const
-  //   detection_msgs::BoundingBoxArrayConstPtr &msg);
 
   void generateCombinedCostmap();
   //   void publishBoundaryPathMsg(nav_msgs::OccupancyGrid &gridmap);
 
-  //   void MakeInflationWithPoints();
-  //   grid_map::Matrix createGaussianWorld(grid_map::GridMap *map, const
-  //   std::string layer_name,
-  //                                           double inflation_x, double
-  //                                           inflation_y, const
-  //                                           std::vector<std::pair<double,
-  //                                           double>>& pointArray);
-
-  //   grid_map::Matrix fillGridMap(grid_map::GridMap *map, const std::string
-  //   layer_name,
-  //                                               const AnalyticalFunctions
-  //                                               &functions);
+  void MakeInflationWithPoints();
+  grid_map::Matrix createGaussianWorld(grid_map::GridMap *map, const std::string layer_name,
+                                        double inflation_x, double inflation_y, const
+                                        std::vector<std::pair<double,double>>& pointArray);
+  grid_map::Matrix fillGridMap(grid_map::GridMap *map, const std::string layer_name,
+                                const AnalyticalFunctions &functions);
 
   //   std::string m_ndtSearchMethod;
   //   pcl::Registration<pcl::PointXYZI, pcl::PointXYZI>::Ptr registration;

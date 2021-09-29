@@ -34,17 +34,19 @@ windows:
     shell_command_before:
       - source /home/usrg/nif/install/setup.bash && cd /home/usrg/nif
       - export ROS_DOMAIN_ID=77
+      - export TRACK=LOR
+      - echo $TRACK
     panes:
       - shell_command:
           - ros2 launch nif_localization_nodes test.launch.py
       - shell_command:
           - ros2 launch nif_points_preprocessor_nodes deploy.launch.py
       - shell_command:
-          - export TRACK=LOR
-          - echo $TRACK
           - ros2 launch nif_multilayer_planning_nodes deploy.launch.py
       - shell_command:
           - ros2 launch nif_aw_localization_nodes deploy.launch.py
+      - shell_command:
+          - ros2 launch nif_costmap_generator deploy.launch.py
       - shell_command:
           # - ros2 bag record /aw_localization/ekf/odom /localization/ekf/odom /localization/ekf/odom_bestpos /bvs_localization/ltp_odom /novatel_bottom/insstdev /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /out_localization_error
 

@@ -13,13 +13,12 @@ using namespace nif::perception::costmap;
 using namespace nif::common::frame_id::localization;
 
 // Constructor
-CostmapGenerator::CostmapGenerator() 
-: Node("nif_costmap_generator_node"), 
-  SENSOR_POINTS_COSTMAP_LAYER_("sensor_points"), COMBINED_COSTMAP_LAYER_("costmap")
+CostmapGenerator::CostmapGenerator()
+    : Node("nif_costmap_generator_node"),
+      SENSOR_POINTS_COSTMAP_LAYER_("sensor_points"),
+      COMBINED_COSTMAP_LAYER_("costmap"), INFLATION_COSTMAP_LAYER_("inflation")
 {
   //   : nh_(nh), private_nh_(private_nh), has_subscribed_wayarea_(false),
-    
-      // INFLATION_COSTMAP_LAYER_("inflation"),
   //     LANE_POINTS_COSTMAP_LAYER_("lane"), LASER_2D_COSTMAP_LAYER_("laser_scan"),
   //     BOUNDING_BOX_COSTMAP_LAYER_("bounding_boxes"),
   //     VISUAL_COSTMAP_LAYER_("visual"),
@@ -38,6 +37,7 @@ CostmapGenerator::CostmapGenerator()
   this->declare_parameter<double>("maximum_laserscan_distance_thres", 50);
   this->declare_parameter<double>("minimum_laserscan_distance_thres", 0.1);
   this->declare_parameter<bool>("use_points", true);
+  this->declare_parameter<bool>("enable_potential", false);
 
   this->lidar_frame_ = this->get_parameter("lidar_frame").as_string();
   this->map_frame_ = this->get_parameter("map_frame").as_string();
@@ -53,8 +53,10 @@ CostmapGenerator::CostmapGenerator()
   this->maximum_laserscan_distance_thres_ = this->get_parameter("maximum_laserscan_distance_thres").as_double();
   this->minimum_laserscan_distance_thres_ = this->get_parameter("minimum_laserscan_distance_thres").as_double();
   this->use_points_ = this->get_parameter("use_points").as_bool();
+  this->bEnablePotential_ = this->get_parameter("enable_potential").as_bool();
 
-  pub_occupancy_grid_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>("out_map_topic_name", nif::common::constants::QOS_SENSOR_DATA);
+  pub_occupancy_grid_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
+      "out_map_topic_name", nif::common::constants::QOS_SENSOR_DATA);
   pub_points_on_global_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(
       "/points_on_global", nif::common::constants::QOS_SENSOR_DATA);
   pub_points_on_track_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(
@@ -133,8 +135,9 @@ void CostmapGenerator::run() {
                           m_veh_x, m_veh_y, m_veh_yaw);
   }
 
-    // if(bEnablePotential_)
-    //   MakeInflationWithPoints();
+  if(bEnablePotential_)
+    MakeInflationWithPoints();
+
   generateCombinedCostmap();
   publishRosMsg(&costmap_);
   // publishRoadBoundaryMsg(&RoadBoundarycostmap_);
@@ -257,32 +260,32 @@ void CostmapGenerator::TransformPointsToBody(
   }
 }
 
-    // void CostmapGenerator::MakeInflationWithPoints()
-    // {
-    //   if(!bPoints)
-    //     return;
+void CostmapGenerator::MakeInflationWithPoints()
+{
+  if(!bPoints)
+    return;
 
-    //   costmap_[INFLATION_COSTMAP_LAYER_].setConstant(grid_min_value_);
-    //   obstacleArray.clear();
-    //   int idx = 0;
-    //   for (grid_map::GridMapIterator iterator(costmap_);
-    //   !iterator.isPastEnd(); ++iterator) {
-    //     const grid_map::Index index(*iterator);
-    //     grid_map::Position pos;
-    //     costmap_.getPosition(index, pos);
-    //     if(costmap_[SENSOR_POINTS_COSTMAP_LAYER_](index(0), index(1)) != 0 )
-    //     {
-    //       std::pair<double, double> pointBuf;
-    //       pointBuf.first = pos.x();
-    //       pointBuf.second = pos.y();
-    //       obstacleArray.push_back(pointBuf);
-    //     }
-    //     idx ++;
-    //   }
-    //   costmap_[INFLATION_COSTMAP_LAYER_] = createGaussianWorld(&costmap_,
-    //   INFLATION_COSTMAP_LAYER_, 0.2, 0.2, obstacleArray);
+  costmap_[INFLATION_COSTMAP_LAYER_].setConstant(grid_min_value_);
+  obstacleArray.clear();
+  int idx = 0;
+  for (grid_map::GridMapIterator iterator(costmap_);
+  !iterator.isPastEnd(); ++iterator) {
+    const grid_map::Index index(*iterator);
+    grid_map::Position pos;
+    costmap_.getPosition(index, pos);
+    if(costmap_[SENSOR_POINTS_COSTMAP_LAYER_](index(0), index(1)) != 0 )
+    {
+      std::pair<double, double> pointBuf;
+      pointBuf.first = pos.x();
+      pointBuf.second = pos.y();
+      obstacleArray.push_back(pointBuf);
+    }
+    idx ++;
+  }
+  costmap_[INFLATION_COSTMAP_LAYER_] = createGaussianWorld(&costmap_,
+  INFLATION_COSTMAP_LAYER_, 3.0, 3.0, obstacleArray);
 
-    // }
+}
 
     // void CostmapGenerator::laneBoundaryCallback(
     //     const sensor_msgs::PointCloud2::ConstPtr
@@ -342,15 +345,6 @@ void CostmapGenerator::TransformPointsToBody(
     //   m_odom = *msg;
     // }
 
-    // void CostmapGenerator::LaserScanCallback(
-    //     const sensor_msgs::LaserScanConstPtr &in_laser_scan_msg) {
-    //   if (!use_laserscan_) {
-    //     return;
-    //   }
-    //   costmap_[LASER_2D_COSTMAP_LAYER_] =
-    //       generateLaserScanCostmap(in_laser_scan_msg);
-    // }
-
     // void CostmapGenerator::LocalWaypointCallback(
     //     const nav_msgs::PathConstPtr &msg) {
     //   m_LocalPathOnBody = *msg;
@@ -366,36 +360,15 @@ void CostmapGenerator::TransformPointsToBody(
                   grid_map::Position(grid_position_x_, grid_position_y_));
 
   map.add(SENSOR_POINTS_COSTMAP_LAYER_, grid_min_value_);
+  map.add(INFLATION_COSTMAP_LAYER_, grid_min_value_);
   // map.add(LASER_2D_COSTMAP_LAYER_, grid_min_value_);
   // map.add(BOUNDING_BOX_COSTMAP_LAYER_, grid_min_value_);
   // map.add(VISUAL_COSTMAP_LAYER_, grid_min_value_);
-  // map.add(INFLATION_COSTMAP_LAYER_, grid_min_value_);
+
   map.add(COMBINED_COSTMAP_LAYER_, grid_min_value_);
 
   return map;
 }
-
-// void CostmapGenerator::RollPitchYawCallback(
-//     const geometry_msgs::Vector3::ConstPtr &msg) {
-//   veh_roll_rad_ = msg->x;
-//   veh_pitch_rad_ = msg->y;
-//   veh_yaw_rad_ = msg->z;
-// }
-
-// // Create the map using length, resolution, pose.
-// grid_map::GridMap CostmapGenerator::initBoundaryGridmap() {
-//   grid_map::GridMap map;
-
-//   map.setFrameId(lidar_frame_);
-//   map.setGeometry(grid_map::Length(grid_length_x_, grid_length_y_),
-//                   grid_resolution_,
-//                   grid_map::Position(grid_position_x_, grid_position_y_));
-
-//   map.add(LANE_POINTS_COSTMAP_LAYER_, grid_min_value_);
-//   map.add(COMBINED_COSTMAP_LAYER_, grid_min_value_);
-
-//   return map;
-// }
 
 grid_map::Matrix CostmapGenerator::generateSensorPointsCostmap(
     const pcl::PointCloud<pcl::PointXYZI>::Ptr &in_sensor_points) {
@@ -408,15 +381,6 @@ grid_map::Matrix CostmapGenerator::generateSensorPointsCostmap(
   return sensor_points_costmap;
 }
 
-// grid_map::Matrix CostmapGenerator::generateLaserScanCostmap(
-//     const sensor_msgs::LaserScanConstPtr &in_laser_scan) {
-//   grid_map::Matrix laser_scan_costmap =
-//       laserscan2costmap_.makeCostmapFromLaserScan(
-//           maximum_laserscan_distance_thres_, minimum_laserscan_distance_thres_,
-//           grid_min_value_, grid_max_value_, costmap_, LASER_2D_COSTMAP_LAYER_,
-//           in_laser_scan);
-//   return laser_scan_costmap;
-// }
 
 // grid_map::Matrix CostmapGenerator::generateBBoxesCostmap(
 //     const jsk_recognition_msgs::BoundingBoxArrayConstPtr &in_boxes) {
@@ -434,9 +398,9 @@ void CostmapGenerator::generateCombinedCostmap() {
     costmap_[COMBINED_COSTMAP_LAYER_] =
         costmap_[COMBINED_COSTMAP_LAYER_].cwiseMax(
             costmap_[SENSOR_POINTS_COSTMAP_LAYER_]);
-    // costmap_[COMBINED_COSTMAP_LAYER_] =
-    //     costmap_[COMBINED_COSTMAP_LAYER_].cwiseMax(
-    //         costmap_[INFLATION_COSTMAP_LAYER_]);
+    costmap_[COMBINED_COSTMAP_LAYER_] =
+        costmap_[COMBINED_COSTMAP_LAYER_].cwiseMax(
+            costmap_[INFLATION_COSTMAP_LAYER_]);
   }
   // if (bBoundingBox) {
   //   costmap_[COMBINED_COSTMAP_LAYER_] =
@@ -484,69 +448,69 @@ void CostmapGenerator::publishRosMsg(grid_map::GridMap *map) {
 // }
 
 
-// //Calculate gaussian interpolation.
-// grid_map::Matrix CostmapGenerator::createGaussianWorld(grid_map::GridMap *map, const std::string layer_name, 
-//                                                          double inflation_x, double inflation_y,
-//                                                          const std::vector<std::pair<double, double>>& pointArray)
-// {
-//   struct Gaussian
-//   {
-//     double x0, y0;
-//     double varX, varY;
-//     double s;
-//   };
+//Calculate gaussian interpolation.
+grid_map::Matrix CostmapGenerator::createGaussianWorld(grid_map::GridMap *map, const std::string layer_name, 
+                                                         double inflation_x, double inflation_y,
+                                                         const std::vector<std::pair<double, double>>& pointArray)
+{
+  struct Gaussian
+  {
+    double x0, y0;
+    double varX, varY;
+    double s;
+  };
 
-//   AnalyticalFunctions func;
-//   std::vector<std::pair<double, double>> vars;
-//   std::vector<std::pair<double, double>> means;
-//   std::vector<double> scales;
-//   std::vector<Gaussian> g;
+  AnalyticalFunctions func;
+  std::vector<std::pair<double, double>> vars;
+  std::vector<std::pair<double, double>> means;
+  std::vector<double> scales;
+  std::vector<Gaussian> g;
 
-//   for(auto point : pointArray)
-//   {
-//     Gaussian gaussian_tmp;
-//     gaussian_tmp.x0 = point.first;
-//     gaussian_tmp.y0 = point.second;
-//     gaussian_tmp.varX = inflation_x; 
-//     gaussian_tmp.varY = inflation_y;
-//     gaussian_tmp.s =  1 / inflation_x;
-//     g.push_back(gaussian_tmp);
-//   }
+  for(auto point : pointArray)
+  {
+    Gaussian gaussian_tmp;
+    gaussian_tmp.x0 = point.first;
+    gaussian_tmp.y0 = point.second;
+    gaussian_tmp.varX = inflation_x; 
+    gaussian_tmp.varY = inflation_y;
+    gaussian_tmp.s =  1 / inflation_x;
+    g.push_back(gaussian_tmp);
+  }
 
-//   func.f_ = [g](double x,double y) {
-//     double value = 0.0;
-//     for (int i = 0; i < g.size(); ++i) {
-//       const double x0 = g.at(i).x0;
-//       const double y0 = g.at(i).y0;
-//       const double varX = g.at(i).varX;
-//       const double varY = g.at(i).varY;
-//       const double s = g.at(i).s;
-//       value += s * std::exp(-(x-x0)*(x-x0) / (2.0 * varX) - (y-y0)*(y-y0) / (2.0 * varY));
-//     }
-//     return value;
-//   };
+  func.f_ = [g](double x,double y) {
+    double value = 0.0;
+    for (int i = 0; i < g.size(); ++i) {
+      const double x0 = g.at(i).x0;
+      const double y0 = g.at(i).y0;
+      const double varX = g.at(i).varX;
+      const double varY = g.at(i).varY;
+      const double s = g.at(i).s;
+      value += s * std::exp(-(x-x0)*(x-x0) / (2.0 * varX) - (y-y0)*(y-y0) / (2.0 * varY));
+    }
+    return value;
+  };
 
-//   return fillGridMap(map, layer_name, func);
+  return fillGridMap(map, layer_name, func);
   
-//   // return output;
-// }
+  // return output;
+}
 
-// grid_map::Matrix CostmapGenerator::fillGridMap(grid_map::GridMap *map, const std::string layer_name, 
-//                                               const AnalyticalFunctions &functions)
-// {
-//   grid_map::Matrix& data = (*map)[layer_name];
-//   double max = 0;
-//   for (grid_map::GridMapIterator iterator(*map); !iterator.isPastEnd(); ++iterator) {
-//     const grid_map::Index index(*iterator);
-//     grid_map::Position pos;
-//     map->getPosition(index, pos);
-//     data(index(0), index(1)) =  functions.f_(pos.x(), pos.y()) * grid_resolution_ / 10;
-//     if(max < data(index(0), index(1)))
-//       max = data(index(0), index(1));
-//   }
-//   // std::cout << max << std::endl;
-//   return data;
-// }
+grid_map::Matrix CostmapGenerator::fillGridMap(grid_map::GridMap *map, const std::string layer_name, 
+                                              const AnalyticalFunctions &functions)
+{
+  grid_map::Matrix& data = (*map)[layer_name];
+  double max = 0;
+  for (grid_map::GridMapIterator iterator(*map); !iterator.isPastEnd(); ++iterator) {
+    const grid_map::Index index(*iterator);
+    grid_map::Position pos;
+    map->getPosition(index, pos);
+    data(index(0), index(1)) =  functions.f_(pos.x(), pos.y()) * grid_resolution_ / 10;
+    if(max < data(index(0), index(1)))
+      max = data(index(0), index(1));
+  }
+  // std::cout << max << std::endl;
+  return data;
+}
 
 void CostmapGenerator::SearchPointsOntrack(
     const std::vector<std::pair<double, double>> &inner_array_in,

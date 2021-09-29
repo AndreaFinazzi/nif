@@ -413,6 +413,8 @@ void EgoShapeFilterNode::timer_callback() {
       m_margin_to_wall = 0.0;
     }
   }
+  final_wall_following_path_msg.header.frame_id = BASE_LINK;
+  final_wall_following_path_msg.header.stamp = this->now();
 
   EstimatePredictivePath(right_wall_plane_coeff, RightPolyCoefficient,
                          wall_folllowing_path_msg, m_margin_to_wall);
@@ -659,11 +661,22 @@ void EgoShapeFilterNode::CubicSpliner(
         const boost::optional<Eigen::Vector4f> wall_plane_coeff,
         double in_front_upper_threshold, double in_rear_upper_threshold,
         nav_msgs::msg::Path& path_msg_out, cv::Mat& PolyCoefficientOut) {
+        
+  pcl::PointCloud<pcl::PointXYZI>::Ptr cloudDownSampled(
+      new pcl::PointCloud<pcl::PointXYZI>);
+
+  for (auto point_buf : cloudIn->points) {
+    pcl::PointXYZI ground_points;
+    ground_points.x = point_buf.x;
+    ground_points.y = point_buf.y;
+    cloudDownSampled->points.push_back(ground_points);
+  }
+  cloudDownSampled = downsample(cloudDownSampled, 0.25);
 
   std::vector<cv::Point2f> ToBeFit;
   ToBeFit.clear();
 
-  for (auto point_buf : cloudIn->points) {
+  for (auto point_buf : cloudDownSampled->points) {
     cv::Point2f pointTmp;
     pointTmp.x = point_buf.x;
     pointTmp.y = point_buf.y;
@@ -671,21 +684,21 @@ void EgoShapeFilterNode::CubicSpliner(
   }
 
   // For polynomial fitting
-  int poly_order = 3;
+  int poly_order = 2;
   PolyCoefficientOut = polyfit(ToBeFit, poly_order);
 
   if (!wall_plane_coeff) {
     return;
   }
 
-  for (double x = -10; x < 20; x = x + 0.5) {
+  for (double x = -30; x < 50; x = x + 0.5) {
     geometry_msgs::msg::PoseStamped pose_buf;
     pose_buf.pose.position.x = x;
     pose_buf.pose.position.y =
         PolyCoefficientOut.at<double>(poly_order, 0) * pow(x, poly_order) +
         PolyCoefficientOut.at<double>(poly_order - 1, 0) * pow(x, poly_order - 1) +
-        PolyCoefficientOut.at<double>(poly_order - 2, 0) * pow(x, poly_order - 2) +
-        PolyCoefficientOut.at<double>(poly_order - 3, 0); // Cubic
+        // PolyCoefficientOut.at<double>(poly_order - 2, 0) * pow(x, poly_order - 2) +
+        PolyCoefficientOut.at<double>(poly_order - 2, 0); // Cubic
     pose_buf.pose.orientation.w = 1;
     pose_buf.pose.orientation.x = 0;
     pose_buf.pose.orientation.y = 0;
@@ -733,14 +746,14 @@ void EgoShapeFilterNode::EstimatePredictivePath(
     return;
   }
   
-  int poly_order = 3;
+  int poly_order = 2;
   for (double x = -10; x < 30; x = x + 0.5) {
     geometry_msgs::msg::PoseStamped pose_buf;
     pose_buf.pose.position.x = x;
     pose_buf.pose.position.y =
         PolyCoefficientIn.at<double>(poly_order, 0) * pow(x, poly_order) +
         PolyCoefficientIn.at<double>(poly_order - 1, 0) * pow(x, poly_order - 1) +
-        PolyCoefficientIn.at<double>(poly_order - 2, 0) * pow(x, poly_order - 2) +
+        // PolyCoefficientIn.at<double>(poly_order - 2, 0) * pow(x, poly_order - 2) +
         target_space_to_wall; // Cubic
 
     pose_buf.pose.orientation.w = 1;
