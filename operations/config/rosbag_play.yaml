@@ -3,7 +3,8 @@ windows:
   - window_name: ROSBAG PLAY Tab
     layout: tiled
     shell_command_before:
-      - source /home/usrg/nif/install/setup.bash &&
+      - source /home/usrg/nif/install/setup.bash 
+      - export ROS_DOMAIN_ID=77
       # - cd /home/usrg/bag/LOR/VEH4_LOR_RUN-manual.01_2021-09-16_for_mapping 
       # - cd /home/usrg/bag/VEH4_IMS_RUN-ontrack00_2021-09-03 #IMS Full track     
       # - cd /home/usrg/media/IAC/LOR/VEH4_LOR_RUN-nif.full_2021-09-12 #Large error GPS data 
@@ -32,16 +33,18 @@ windows:
     layout: tiled
     shell_command_before:
       - source /home/usrg/nif/install/setup.bash && cd /home/usrg/nif
+      - export ROS_DOMAIN_ID=77
     panes:
       - shell_command:
-          - export ROS_DOMAIN_ID=7
           - ros2 launch nif_localization_nodes test.launch.py
+      - shell_command:
+          - ros2 launch nif_points_preprocessor_nodes deploy.launch.py
       - shell_command:
           - export TRACK=LOR
           - echo $TRACK
           - ros2 launch nif_multilayer_planning_nodes deploy.launch.py
       - shell_command:
-          - ros2 launch nif_aw_localization_nodes default.launch.py
+          - ros2 launch nif_aw_localization_nodes deploy.launch.py
       - shell_command:
           # - ros2 bag record /aw_localization/ekf/odom /localization/ekf/odom /localization/ekf/odom_bestpos /bvs_localization/ltp_odom /novatel_bottom/insstdev /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /out_localization_error
 
@@ -49,9 +52,10 @@ windows:
     layout: tiled
     shell_command_before:
       - source /home/usrg/nif/install/setup.bash && cd /home/usrg/nif/src/perception/nif_localization_nodes/launch
+      - export ROS_DOMAIN_ID=77
     panes:
       - shell_command:
-          - rviz2
+          - rviz2 -d /home/usrg/nif/src/perception/nif_localization_nodes/launch/navi.rviz
 
           
 

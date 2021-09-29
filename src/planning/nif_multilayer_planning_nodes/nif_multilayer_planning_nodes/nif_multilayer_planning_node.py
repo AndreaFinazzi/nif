@@ -19,6 +19,7 @@ from std_msgs.msg import String
 from rclpy.node import Node
 from sklearn.neighbors import KDTree
 from geometry_msgs.msg import Quaternion
+# from tf.transformations import quaternion_from_euler
 
 def get_share_file(package_name, file_name):
     return os.path.join(get_package_share_directory(package_name), file_name)
@@ -238,6 +239,14 @@ class GraphBasedPlanner(rclpy.node.Node):
         self.obj_list = []
         tic = time.time()
 
+    def euler_to_quaternion(r):
+        (yaw, pitch, roll) = (r[0], r[1], r[2])
+        qx = np.sin(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) - np.cos(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
+        qy = np.cos(roll/2) * np.sin(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.cos(pitch/2) * np.sin(yaw/2)
+        qz = np.cos(roll/2) * np.cos(pitch/2) * np.sin(yaw/2) - np.sin(roll/2) * np.sin(pitch/2) * np.cos(yaw/2)
+        qw = np.cos(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
+        return [qx, qy, qz, qw]
+
     def system_status_callback(self, msg):
         if msg.mission_status.mission_status_code == msg.mission_status.MISSION_PIT_IN:
             self.pit_in_flg = True
@@ -260,9 +269,9 @@ class GraphBasedPlanner(rclpy.node.Node):
             csv_reader = csv.reader(csv_file, delimiter=',')
             line_count = 0
             for row in csv_reader:
-                if math.isnan(float(row[0])) or math.isnan(float(row[1])):
+                if math.isnan(float(row[0])) or math.isnan(float(row[1]) or math.isnan(float(row[2])):
                     raise ValueError('[nif_multilayer_planning_nodes] Track specification in driving_task.ini is wrong!')
-                self.pit_in_wpt.append([float(row[0]),float(row[1])]) # order of x,y
+                self.pit_in_wpt.append([float(row[0]),float(row[1]),float(row[2])]) # order of x,y
                 line_count += 1
         if len(self.pit_in_wpt) == 0:
             raise ValueError('[nif_multilayer_planning_nodes] Pit-in waypoint file is empty!')
@@ -336,9 +345,12 @@ class GraphBasedPlanner(rclpy.node.Node):
                     if nearest_ind[0][0] + i < self.num_pit_in_wpt:
                         self.pit_in_wpt_msg.poses[i].pose.position.x = self.pit_in_wpt[nearest_ind[0][0] + i][0]
                         self.pit_in_wpt_msg.poses[i].pose.position.y = self.pit_in_wpt[nearest_ind[0][0] + i][1]
+                        # self.pit_in_wpt_msg.poses[i].pose.orientation = quaternion_from_euler(0.0,0.0,(self.pit_in_wpt[nearest_ind[0][0] + i][2] * 0.0174533))
+                        self.pit_in_wpt_msg.poses[i].pose.orientation = self.euler_to_quaternion([(self.pit_in_wpt[nearest_ind[0][0] + i][2] * 0.0174533),0.0,0.0])
                     else:
                         self.pit_in_wpt_msg.poses[i].pose.position.x = self.pit_in_wpt[nearest_ind[0][0] + i - self.num_pit_in_wpt][0]
                         self.pit_in_wpt_msg.poses[i].pose.position.y = self.pit_in_wpt[nearest_ind[0][0] + i - self.num_pit_in_wpt][1]
+                        self.pit_in_wpt_msg.poses[i].pose.orientation = self.euler_to_quaternion([(self.pit_in_wpt[nearest_ind[0][0] + i - self.num_pit_in_wpt][2] * 0.0174533),0.0,0.0])
                 self.local_maptrack_inglobal_pub.publish(self.pit_in_wpt_msg)
                 return
 
@@ -425,9 +437,12 @@ class GraphBasedPlanner(rclpy.node.Node):
                     if nearest_ind[0][0] + i < self.num_pit_in_wpt:
                         self.pit_in_wpt_msg.poses[i].pose.position.x = self.pit_in_wpt[nearest_ind[0][0] + i][0]
                         self.pit_in_wpt_msg.poses[i].pose.position.y = self.pit_in_wpt[nearest_ind[0][0] + i][1]
+                        # self.pit_in_wpt_msg.poses[i].pose.orientation = quaternion_from_euler(0.0,0.0,(self.pit_in_wpt[nearest_ind[0][0] + i][2] * 0.0174533))
+                        self.pit_in_wpt_msg.poses[i].pose.orientation = self.euler_to_quaternion([(self.pit_in_wpt[nearest_ind[0][0] + i][2] * 0.0174533),0.0,0.0])
                     else:
                         self.pit_in_wpt_msg.poses[i].pose.position.x = self.pit_in_wpt[nearest_ind[0][0] + i - self.num_pit_in_wpt][0]
                         self.pit_in_wpt_msg.poses[i].pose.position.y = self.pit_in_wpt[nearest_ind[0][0] + i - self.num_pit_in_wpt][1]
+                        self.pit_in_wpt_msg.poses[i].pose.orientation = self.euler_to_quaternion([(self.pit_in_wpt[nearest_ind[0][0] + i - self.num_pit_in_wpt][2] * 0.0174533),0.0,0.0])
                 self.local_maptrack_inglobal_pub.publish(self.pit_in_wpt_msg)
                 self.on_the_way_pit = True
 
@@ -442,9 +457,12 @@ class GraphBasedPlanner(rclpy.node.Node):
                     if nearest_ind[0][0] + i < self.num_pit_in_wpt:
                         self.pit_in_wpt_msg.poses[i].pose.position.x = self.pit_in_wpt[nearest_ind[0][0] + i][0]
                         self.pit_in_wpt_msg.poses[i].pose.position.y = self.pit_in_wpt[nearest_ind[0][0] + i][1]
+                        # self.pit_in_wpt_msg.poses[i].pose.orientation = quaternion_from_euler(0.0,0.0,(self.pit_in_wpt[nearest_ind[0][0] + i][2] * 0.0174533))
+                        self.pit_in_wpt_msg.poses[i].pose.orientation = self.euler_to_quaternion([(self.pit_in_wpt[nearest_ind[0][0] + i][2] * 0.0174533),0.0,0.0])
                     else:
                         self.pit_in_wpt_msg.poses[i].pose.position.x = self.pit_in_wpt[nearest_ind[0][0] + i - self.num_pit_in_wpt][0]
                         self.pit_in_wpt_msg.poses[i].pose.position.y = self.pit_in_wpt[nearest_ind[0][0] + i - self.num_pit_in_wpt][1]
+                        self.pit_in_wpt_msg.poses[i].pose.orientation = self.euler_to_quaternion([(self.pit_in_wpt[nearest_ind[0][0] + i - self.num_pit_in_wpt][2] * 0.0174533),0.0,0.0])
                 self.local_maptrack_inglobal_pub.publish(self.pit_in_wpt_msg)
                 self.on_the_way_pit = True
 
