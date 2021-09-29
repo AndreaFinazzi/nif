@@ -26,7 +26,8 @@ SystemStatusManagerNode::SystemStatusManagerNode(
     this->declare_parameter("velocity.max", 67.0);
     this->declare_parameter("velocity.pit_in", 10.0);
     this->declare_parameter("velocity.pit_out", 10.0);
-    this->declare_parameter("velocity.slow_drive", 15.0);
+    // this->declare_parameter("velocity.slow_drive", 15.0);
+    this->declare_parameter("velocity.slow_drive", 8.0);
     this->declare_parameter("safeloc.threshold_stop", 20.0);
     this->declare_parameter("safeloc.threshold_slow_down", 10.0);
     this->declare_parameter("safeloc.velocity_slow_down_max", 22.2);

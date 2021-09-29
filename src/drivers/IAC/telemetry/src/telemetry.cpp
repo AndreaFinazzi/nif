@@ -25,6 +25,7 @@ class Telemetry : public rclcpp::Node
       pub_ct_report = this->create_publisher<deep_orange_msgs::msg::CtReport>("/telemetry/ct_report", qos);
       pub_pt_report = this->create_publisher<deep_orange_msgs::msg::PtReport>("/telemetry/pt_report", qos);
       pub_misc_report_do = this->create_publisher<deep_orange_msgs::msg::MiscReport>("/telemetry/misc_report_do", qos);
+      pub_system_status = this->create_publisher<nif_msgs::msg::SystemStatus>("/telemetry/system_status", qos);
       // pub_lookahead_error = this->create_publisher<std_msgs::msg::Float64>("/telemetry/lookahead_error", qos);
       // pub_lateral_error = this->create_publisher<std_msgs::msg::Float64>("/telemetry/lateral_error", qos);
       sub_ct_report = this->create_subscription<deep_orange_msgs::msg::CtReport>(
