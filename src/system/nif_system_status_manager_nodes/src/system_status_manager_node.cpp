@@ -24,14 +24,14 @@ SystemStatusManagerNode::SystemStatusManagerNode(
 
     this->declare_parameter("velocity.zero", 0.0);
     this->declare_parameter("velocity.max", 67.0);
-    this->declare_parameter("velocity.pit_in", 10.0);
-    this->declare_parameter("velocity.pit_out", 10.0);
+    this->declare_parameter("velocity.pit_in", 8.0);
+    this->declare_parameter("velocity.pit_out", 8.0);
     // this->declare_parameter("velocity.slow_drive", 15.0);
     this->declare_parameter("velocity.slow_drive", 8.0);
-    this->declare_parameter("safeloc.threshold_stop", 20.0);
-    this->declare_parameter("safeloc.threshold_slow_down", 10.0);
+    this->declare_parameter("safeloc.threshold_stop", 40.0);
+    this->declare_parameter("safeloc.threshold_slow_down", 20.0);
     this->declare_parameter("safeloc.velocity_slow_down_max", 22.2);
-    this->declare_parameter("safeloc.velocity_slow_down_min", 0.0);
+    this->declare_parameter("safeloc.velocity_slow_down_min", 8.0);
 
     this->node_inactive_timeout = rclcpp::Duration(1, 0);
     this->system_status_msg.autonomy_status.lateral_autonomy_enabled = this->get_parameter(

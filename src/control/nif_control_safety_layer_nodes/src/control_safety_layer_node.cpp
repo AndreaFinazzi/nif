@@ -85,7 +85,7 @@ void nif::control::ControlSafetyLayerNode::run() {
             this->control_cmd.steering_control_cmd =
                     this->override_control_cmd.steering_control_cmd;
             is_overriding_steering = true;
-        } else if ( this->has_perception_steering && 
+        } else if ( false && this->has_perception_steering && 
                     this->now() - this->perception_steering_last_update < rclcpp::Duration(1, 0)) {
             this->control_cmd.steering_control_cmd.data =
                 this->perception_steering_cmd;
