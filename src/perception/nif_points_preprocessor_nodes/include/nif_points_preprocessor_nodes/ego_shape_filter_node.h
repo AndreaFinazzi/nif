@@ -155,6 +155,7 @@ private:
   double count_threshold_;
   double normal_angle_thres_;
   int ransac_pts_thresh_;
+  double m_ransacDistanceThres;
 
   double inner_bound_distance;
   double outer_bound_distance;

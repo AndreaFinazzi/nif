@@ -112,16 +112,17 @@ void CostmapGenerator::run() {
     points_on_global_msg.header.stamp = this->now();
     points_on_global_msg.header.frame_id = ODOM;
     pub_points_on_global_->publish(points_on_global_msg);
-    std::cout << "points size : " << PointsOnGlobal->points.size() << std::endl;
+    // std::cout << "points size : " << PointsOnGlobal->points.size() << std::endl;
 
     pcl::PointCloud<pcl::PointXYZI>::Ptr PointsOnTrackGlobal(
         new pcl::PointCloud<pcl::PointXYZI>);
     SearchPointsOntrack(m_InnerGeoFence, m_OuterGeoFence,
                         m_closestGeofenceIndex, PointsOnGlobal, PointsOnTrackGlobal);
-    std::cout << "tarck points size : " << PointsOnTrackGlobal->points.size() << std::endl;
+                        
+    // std::cout << "tarck points size : " << PointsOnTrackGlobal->points.size() << std::endl;
 
-    std::cout << "m_InnerGeoFence: " << m_InnerGeoFence.size() << std::endl; 
-    std::cout << "m_OuterGeoFence: " << m_OuterGeoFence.size() << std::endl;
+    // std::cout << "m_InnerGeoFence: " << m_InnerGeoFence.size() << std::endl; 
+    // std::cout << "m_OuterGeoFence: " << m_OuterGeoFence.size() << std::endl;
 
     sensor_msgs::msg::PointCloud2 points_on_track_msg;
     pcl::toROSMsg(*PointsOnTrackGlobal, points_on_track_msg);

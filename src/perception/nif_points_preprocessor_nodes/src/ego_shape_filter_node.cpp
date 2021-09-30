@@ -30,6 +30,7 @@ EgoShapeFilterNode::EgoShapeFilterNode(const std::string &node_name_)
   this->declare_parameter<double>("count_threshold", double(3.));
   this->declare_parameter<double>("normal_angle_thres", double(50.));
   this->declare_parameter<int>("ransac_pts_thresh", int(200));
+  this->declare_parameter<double>("ransac_distance_thres", double(0.2));
 
   this->declare_parameter<double>("x_roi", double(0.));
   this->declare_parameter<double>("distance_extract_thres", double(0.5));
@@ -147,6 +148,7 @@ void EgoShapeFilterNode::respond() {
   this->get_parameter("count_threshold", count_threshold_);
   this->get_parameter("normal_angle_thres", normal_angle_thres_);
   this->get_parameter("ransac_pts_thresh", ransac_pts_thresh_);
+  this->get_parameter("ransac_distance_thres",m_ransacDistanceThres);
 
   this->get_parameter("x_roi", extract_distance_x_roi);
   this->get_parameter("distance_extract_thres", extract_distance_thres);

@@ -23,6 +23,7 @@ nif_ego_shape_filter_node:
     count_threshold : 3.
     normal_angle_thres : 50.
     ransac_pts_thresh : 200
+    ransac_distance_thres : 0.2
 
     x_roi : 0.0
     distance_extract_thres : 0.5

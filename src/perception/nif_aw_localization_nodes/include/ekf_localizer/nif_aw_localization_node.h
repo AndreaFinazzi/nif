@@ -64,9 +64,11 @@ class AWLocalizationNode : public rclcpp::Node {
         pub_mahalanobisScore; // localization result score
 
     rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr pub_bestpos_odometry;
+    rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr pub_top_bestpos_odometry;
 
-    rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::
-        SharedPtr sub_initialpose_; // !< @brief initial pose subscriber
+    rclcpp::Subscription<
+        geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr
+        sub_initialpose_; // !< @brief initial pose subscriber
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr
         sub_odom_measure_; // !< @brief measurement odom subscriber including
                            // pose
@@ -77,7 +79,8 @@ class AWLocalizationNode : public rclcpp::Node {
         timer_control_; // !< @brief time for ekf calculation callback
     rclcpp::TimerBase::SharedPtr timer_tf_; // !< @brief timer to send transform
     rclcpp::Subscription<novatel_oem7_msgs::msg::BESTPOS>::SharedPtr
-        sub_gpslatlon;
+        subBESTPOS;
+    rclcpp::Subscription<novatel_oem7_msgs::msg::BESTPOS>::SharedPtr subTOPBESTPOS;
     rclcpp::Subscription<novatel_oem7_msgs::msg::INSPVA>::SharedPtr subINSPVA;
     rclcpp::Subscription<novatel_oem7_msgs::msg::INSPVA>::SharedPtr
         subTOPINSPVA;
@@ -166,6 +169,10 @@ class AWLocalizationNode : public rclcpp::Node {
     double m_dGPS_roll;
     double m_dGPS_Heading_prev;
 
+    double m_d_TOP_GPS_X;
+    double m_d_TOP_GPS_Y;
+    double m_d_TOP_GPS_Z;
+
     bool bGPS;
     bool bGPSHeading;
     bool gps_flag = false;
@@ -192,6 +199,9 @@ class AWLocalizationNode : public rclcpp::Node {
 
     double VehVelocity_dt;
     double m_mahalanobisScore;
+
+    double top_to_bottom_bias_x;
+    double top_to_bottom_bias_y;
 
     rclcpp::Time imu_time_last_update;
     rclcpp::Time bestpos_time_last_update;
@@ -232,7 +242,8 @@ class AWLocalizationNode : public rclcpp::Node {
      * @brief set odom measurement including pose and twist
      */
     void
-    GPSLATLONCallback(const novatel_oem7_msgs::msg::BESTPOS::SharedPtr msg);
+    BESTPOSCallback(const novatel_oem7_msgs::msg::BESTPOS::SharedPtr msg);
+    void TOPBESTPOSCallback(const novatel_oem7_msgs::msg::BESTPOS::SharedPtr msg);
     void
     BOTTOMINSPVACallback(const novatel_oem7_msgs::msg::INSPVA::SharedPtr msg);
     void TOPINSPVACallback(const novatel_oem7_msgs::msg::INSPVA::SharedPtr msg);

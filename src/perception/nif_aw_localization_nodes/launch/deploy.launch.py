@@ -52,7 +52,7 @@ def generate_launch_description():
                 executable="nif_aw_localization_nodes_exe",
                 output={
                     "stderr": "log",
-                    "stdout": "log"
+                    "stdout": "screen"
                 },
                 emulate_tty=True,
                 parameters=[
@@ -64,6 +64,7 @@ def generate_launch_description():
                     ("in_inspva", "novatel_bottom/inspva"), # NOT USED
                     ("in_top_inspva", "novatel_top/inspva_nouse"), # HEADING
                     ("in_bestpos", "novatel_bottom/bestpos"), # POSE (X,Y)
+                    ("in_top_bestpos", "novatel_top/bestpos"), # POSE (X,Y)
                     ("in_imu", "novatel_bottom/imu/data"), # YAW RATE
                     ("in_bestvel", "novatel_bottom/bestvel"), #HEADING BACK UP SOLUTION
                     ("in_insstdev", "novatel_bottom/insstdev"), #INS STANDARD DEVIATION
@@ -71,6 +72,7 @@ def generate_launch_description():
 
                     ("out_odometry_ekf_estimated", "/aw_localization/ekf/odom"),
                     ("out_odometry_bestpos", "/aw_localization/ekf/odom_bestpos"),
+                    ("out_top_odometry_bestpos", "/aw_localization/ekf/top_bestpos"),
                     ('out_localization_error', '/aw_localization/ekf/error')
                 ]
     )
