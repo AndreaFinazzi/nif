@@ -232,6 +232,12 @@ private:
       const boost::optional<Eigen::Vector4f> wall_plane_coeff,
       const cv::Mat &PolyCoefficient, nav_msgs::msg::Path &path_msg_out,
       const double &target_space_to_wall);
+
+  void EstimatePredictivePath(
+      const boost::optional<Eigen::Vector4f> wall_plane_coeff,
+      const cv::Mat &PolyCoefficient, const int& poly_order,
+      nav_msgs::msg::Path &path_msg_out,
+      const double &target_space_to_wall);
 };
 } // namespace perception
 } // namespace nif
