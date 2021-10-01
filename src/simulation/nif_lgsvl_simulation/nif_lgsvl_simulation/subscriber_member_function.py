@@ -12,13 +12,17 @@ import pandas as pd
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import CompressedImage, Imu, PointCloud2, NavSatFix
 from lgsvl_msgs.msg import VehicleOdometry, Detection2DArray
-from novatel_oem7_msgs.msg import INSPVA, BESTPOS
+from novatel_oem7_msgs.msg import INSPVA, BESTPOS, INSSTDEV
 from geometry_msgs.msg import PoseStamped, TransformStamped, Vector3, Quaternion
 from raptor_dbw_msgs.msg import WheelSpeedReport
 
 import math
+import tf2_py
 import tf2_ros
 from tf2_ros.transform_broadcaster import TransformBroadcaster
+
+from pymap3d.ecef import ecef2geodetic
+from pymap3d.ned import ned2geodetic, geodetic2ned, geodetic2enu
 
 from nifpy_common_nodes.base_node import BaseNode
 from nif_lgsvl_simulation.quaternion_euler import Quaternion_Euler
@@ -55,6 +59,10 @@ class LGSVLSubscriberNode(BaseNode):
         self.loc_ref_y = 24.387
         self.loc_ref_z = -0.0817
 
+        self.heading_deg = 0.0
+        self.gps_top_counter = 0
+        self.gps_bottom_counter = 0
+
         # Camera subscriptions
         self.sub_camera_front_left = self.create_subscription(CompressedImage, self.namespace + '/sensor/camera_front_left', self.callback_camera_front_left, rclpy.qos.qos_profile_sensor_data)
         self.sub_camera_front_right = self.create_subscription(CompressedImage, self.namespace + '/sensor/camera_front_right', self.callback_camera_front_right, rclpy.qos.qos_profile_sensor_data)
@@ -77,22 +85,26 @@ class LGSVLSubscriberNode(BaseNode):
         self.sub_laser_meter_flash_c = self.create_subscription(PointCloud2, self.namespace + '/sensor/laser_meter_flash_c', self.callback_laser_meter_flash_c, rclpy.qos.qos_profile_sensor_data)
 
         # IMU subscriptions
-        self.sub_imu_top = self.create_subscription(Imu, self.namespace + '/novatel_top/imu', self.callback_imu_top, rclpy.qos.qos_profile_sensor_data)
-        self.sub_imu_bottom = self.create_subscription(Imu, self.namespace + '/novatel_bottom/imu', self.callback_imu_bottom, rclpy.qos.qos_profile_sensor_data)
+        self.sub_imu_top = self.create_subscription(Imu, self.namespace + '/novatel_top/imu/data', self.callback_imu_top, rclpy.qos.qos_profile_sensor_data)
+        self.sub_imu_bottom = self.create_subscription(Imu, self.namespace + '/novatel_bottom/imu/data', self.callback_imu_bottom, rclpy.qos.qos_profile_sensor_data)
 
         # Vehicle odometry subsciptions (includes front/rear wheel angles and velocity)
         self.sub_vehicleodometry = self.create_subscription(VehicleOdometry, self.namespace + '/sensor/odometry', self.callback_vehicleodometry, rclpy.qos.qos_profile_sensor_data)
         self.pub_wheel_speed = self.create_publisher(WheelSpeedReport, self.namespace + '/raptor_dbw_interface/wheel_speed_report', 20) # rclpy.qos.qos_profile_sensor_data)
         # GPS subscriptions
-        self.sub_gps_top = self.create_subscription(NavSatFix, self.namespace + '/novatel_top/fix', self.callback_gps_top, rclpy.qos.qos_profile_sensor_data)
-        self.sub_gps_bottom = self.create_subscription(NavSatFix, self.namespace + '/novatel_bottom/fix', self.callback_gps_bottom, rclpy.qos.qos_profile_sensor_data)
+        # self.sub_gps_top = self.create_subscription(NavSatFix, self.namespace + '/novatel_top/fix', self.callback_gps_top, rclpy.qos.qos_profile_sensor_data)
+        # self.sub_gps_bottom = self.create_subscription(NavSatFix, self.namespace + '/novatel_bottom/fix', self.callback_gps_bottom, rclpy.qos.qos_profile_sensor_data)
 
         # Convert to Novatel specific topics
         self.pub_gps_inspva_top = self.create_publisher(INSPVA, self.namespace + '/novatel_top/inspva', rclpy.qos.qos_profile_sensor_data)
         self.pub_gps_inspva_bottom = self.create_publisher(INSPVA, self.namespace + '/novatel_bottom/inspva', rclpy.qos.qos_profile_sensor_data)
 
+        self.pub_gps_insstdev_top = self.create_publisher(INSSTDEV, self.namespace + '/novatel_top/insstdev', 10) #rclpy.qos.qos_profile_sensor_data)
+        self.pub_gps_insstdev_bottom = self.create_publisher(INSSTDEV, self.namespace + '/novatel_bottom/insstdev', 10) #rclpy.qos.qos_profile_sensor_data)
+
         self.pub_gps_bestpos_top = self.create_publisher(BESTPOS, self.namespace + '/novatel_top/bestpos', 10) #rclpy.qos.qos_profile_sensor_data)
         self.pub_gps_bestpos_bottom = self.create_publisher(BESTPOS, self.namespace + '/novatel_bottom/bestpos', 10) #rclpy.qos.qos_profile_sensor_data)
+
 
         # Vehicle ground truth state
         self.sub_ground_truth_state = self.create_subscription(Odometry, '/sensor/odom_ground_truth', self.callback_ground_truth_state, rclpy.qos.qos_profile_sensor_data)
@@ -183,16 +195,28 @@ class LGSVLSubscriberNode(BaseNode):
         # self.get_logger().info('Subscribed vehicleodometry')
 
     def callback_gps_top(self, msg):
-        inspva_msg = self.convert_fix_to_inspva(msg)
-        bestpos_msg = self.convert_fix_to_bestbos(msg)
+        noise = [self.random_noise_position(), self.random_noise_heading()]
+        self.gps_top_counter += 1
+
+        inspva_msg = self.convert_fix_to_inspva(msg, noise)
+        bestpos_msg = self.convert_fix_to_bestbos(msg, noise)
+        insstdev_msg = self.convert_fix_to_insstdev(msg, noise)
         self.pub_gps_inspva_top.publish(inspva_msg)
-        self.pub_gps_bestpos_top.publish(bestpos_msg)
+        if (self.gps_top_counter % 3) == 0:
+            self.pub_gps_bestpos_top.publish(bestpos_msg)
+        self.pub_gps_insstdev_top.publish(insstdev_msg)
 
     def callback_gps_bottom(self, msg):
-        inspva_msg = self.convert_fix_to_inspva(msg)
-        bestpos_msg = self.convert_fix_to_bestbos(msg)
+        noise = [self.random_noise_position(), self.random_noise_heading()]
+        self.gps_bottom_counter += 1   
+
+        inspva_msg = self.convert_fix_to_inspva(msg, noise)
+        bestpos_msg = self.convert_fix_to_bestbos(msg, noise)
+        insstdev_msg = self.convert_fix_to_insstdev(msg, noise)
         self.pub_gps_inspva_bottom.publish(inspva_msg)
-        self.pub_gps_bestpos_bottom.publish(bestpos_msg)
+        if (self.gps_bottom_counter % 3) == 0:
+            self.pub_gps_bestpos_bottom.publish(bestpos_msg)
+        self.pub_gps_insstdev_bottom.publish(insstdev_msg)
 
         # self.get_logger().info('Subscribed gps_bottom latitude: ' + str(msg.latitude) + ' altitude: '+ str(msg.altitude))
         # WPT_CSV_PATH = "./src/subtest/wpt_data/wpt_from_GPS2.csv"
@@ -204,22 +228,39 @@ class LGSVLSubscriberNode(BaseNode):
         # wr.writerow([str(msg.longitude),str(msg.latitude)])
         # f.close
 
-    def convert_fix_to_inspva(self, fix):
+    def convert_fix_to_inspva(self, fix : NavSatFix, noise):
         inspva_msg = INSPVA()
         inspva_msg.header = fix.header
-        inspva_msg.latitude = fix.latitude
-        inspva_msg.longitude = fix.longitude
-        inspva_msg.height = fix.altitude
+        inspva_msg.latitude = fix.latitude + noise[0] * 0.000001
+        inspva_msg.longitude = fix.longitude + noise[0] * 0.000001
+        inspva_msg.height = fix.altitude + noise[0] * 0.000001
+        inspva_msg.azimuth = - self.heading_deg + noise[1]
+        # inspva_msg.azimuth = self.heading_deg + noise[1]
+
         return inspva_msg
 
-    def convert_fix_to_bestbos(self, fix):
+    def convert_fix_to_bestbos(self, fix : NavSatFix, noise):
         bestpos_msg = BESTPOS()
         bestpos_msg.header = fix.header
-        bestpos_msg.lat = fix.latitude
-        bestpos_msg.lon = fix.longitude
-        bestpos_msg.hgt = fix.altitude
+        bestpos_msg.lat = fix.latitude + noise[0] * 0.000001
+        bestpos_msg.lon = fix.longitude + noise[0] * 0.000001
+        bestpos_msg.hgt = fix.altitude + noise[0] * 0.000001
         return bestpos_msg
 
+    def convert_fix_to_insstdev(self, fix : NavSatFix, noise):
+        insstdev_msg = INSSTDEV()
+        insstdev_msg.header = fix.header
+        insstdev_msg.latitude_stdev =  abs(noise[0])
+        insstdev_msg.longitude_stdev = abs(noise[0])
+        insstdev_msg.azimuth_stdev = abs(noise[1])
+        
+        return insstdev_msg
+
+    def random_noise_heading(self) -> float:
+        return np.random.normal(.0, 0.025)
+
+    def random_noise_position(self) -> float:
+        return np.random.normal(.0, .025)
 
     def callback_ground_truth_state(self, msg: Odometry):
         '''
@@ -238,6 +279,21 @@ class LGSVLSubscriberNode(BaseNode):
         @param convert_seu_to either to "enu" or "ned"
         '''
 
+        # FAKE FIX
+        ecef_ref_lat = 39.79312996
+        ecef_ref_lon = -86.23524024
+        ecef_ref_hgt = -0.170035537
+
+        llh = ned2geodetic(msg.pose.pose.position.x, -msg.pose.pose.position.y, 0., 
+                           ecef_ref_lat, ecef_ref_lon, 0.)
+        fix = NavSatFix()
+        fix.header = msg.header
+        fix.latitude = llh[0]
+        fix.longitude = llh[1]
+        fix.altitude = llh[2]
+        self.callback_gps_top(fix)
+        self.callback_gps_bottom(fix)
+        
         odom_converted = Odometry()
         odom_converted.header = msg.header
         odom_converted.child_frame_id = msg.child_frame_id
@@ -249,6 +305,10 @@ class LGSVLSubscriberNode(BaseNode):
         odom_converted.pose.pose.orientation.y = 0.0  # msg.pose.pose.orientation.y
         odom_converted.pose.pose.orientation.z = msg.pose.pose.orientation.z
         odom_converted.pose.pose.orientation.w = msg.pose.pose.orientation.w
+        
+        quat = Quaternion(x=0.0, y=0.0, z=msg.pose.pose.orientation.z, w=msg.pose.pose.orientation.w)
+        qe = Quaternion_Euler(q=quat)
+        self.heading_deg = math.degrees(qe.ToEuler().z)
 
         # options: "enu", "ned"
         convert_seu_to = "enu" if self.use_enu else "ned"
@@ -326,7 +386,7 @@ class LGSVLSubscriberNode(BaseNode):
         tfs.transform.rotation.y = msg.pose.pose.orientation.y
         tfs.transform.rotation.z = msg.pose.pose.orientation.z
         tfs.transform.rotation.w = msg.pose.pose.orientation.w
-        self._tf_publisher.sendTransform(tfs)
+        # self._tf_publisher.sendTransform(tfs)
 
 def main(args=None):
     rclpy.init(args=args)

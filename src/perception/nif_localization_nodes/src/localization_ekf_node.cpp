@@ -188,18 +188,18 @@ void EKFLocalizer::run() {
       ekf_odom_msg.pose.pose.orientation = quat_ekf_msg;
       pub_EKF_odometry->publish(ekf_odom_msg);
 
-      geometry_msgs::msg::TransformStamped nav_base_tf{};
-      nav_base_tf.transform.translation.x = ekf_odom_msg.pose.pose.position.x;
-      nav_base_tf.transform.translation.y = ekf_odom_msg.pose.pose.position.y;
-      nav_base_tf.transform.translation.z = ekf_odom_msg.pose.pose.position.z;
-      nav_base_tf.transform.rotation.w = ekf_odom_msg.pose.pose.orientation.w;
-      nav_base_tf.transform.rotation.x = ekf_odom_msg.pose.pose.orientation.x;
-      nav_base_tf.transform.rotation.y = ekf_odom_msg.pose.pose.orientation.y;
-      nav_base_tf.transform.rotation.z = ekf_odom_msg.pose.pose.orientation.z;
-      nav_base_tf.header.stamp = this->now();
-      nav_base_tf.header.frame_id = ODOM;
-      nav_base_tf.child_frame_id = BASE_LINK;
-      broadcaster_->sendTransform(nav_base_tf);
+      // geometry_msgs::msg::TransformStamped nav_base_tf{};
+      // nav_base_tf.transform.translation.x = ekf_odom_msg.pose.pose.position.x;
+      // nav_base_tf.transform.translation.y = ekf_odom_msg.pose.pose.position.y;
+      // nav_base_tf.transform.translation.z = ekf_odom_msg.pose.pose.position.z;
+      // nav_base_tf.transform.rotation.w = ekf_odom_msg.pose.pose.orientation.w;
+      // nav_base_tf.transform.rotation.x = ekf_odom_msg.pose.pose.orientation.x;
+      // nav_base_tf.transform.rotation.y = ekf_odom_msg.pose.pose.orientation.y;
+      // nav_base_tf.transform.rotation.z = ekf_odom_msg.pose.pose.orientation.z;
+      // nav_base_tf.header.stamp = this->now();
+      // nav_base_tf.header.frame_id = ODOM;
+      // nav_base_tf.child_frame_id = BASE_LINK;
+      // broadcaster_->sendTransform(nav_base_tf);
 
       gps_flag = false;
       heading_flag = false;

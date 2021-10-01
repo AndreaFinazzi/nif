@@ -41,7 +41,7 @@ AWLocalizationNode::AWLocalizationNode(const std::string &node_name)
   this->declare_parameter<double>("pose_additional_delay", double(0.0));
   this->declare_parameter<double>("pose_measure_uncertainty_time", double(0.01));
   this->declare_parameter<double>("pose_rate", double(20.0));              //  used for covariance calculation
-  this->declare_parameter<double>("pose_gate_dist", double(10000.0)); //  Mahalanobis limit
+  this->declare_parameter<double>("pose_gate_dist", double(30.0)); //  Mahalanobis limit
   this->declare_parameter<double>("pose_stddev_x", double(0.05));
   this->declare_parameter<double>("pose_stddev_y", double(0.05));
   this->declare_parameter<double>("pose_stddev_yaw", double(0.035));
@@ -162,6 +162,8 @@ AWLocalizationNode::AWLocalizationNode(const std::string &node_name)
 
   dim_x_ex_ = dim_x_ * extend_state_step_;
  //  twist_linear_x = 0;
+
+  broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(this);
 
   initEKF();
 
@@ -863,7 +865,19 @@ void AWLocalizationNode::publishEstimateResult()
 
   pub_odom_->publish(current_ekf_odom_);
 
-
+  geometry_msgs::msg::TransformStamped nav_base_tf{};
+  nav_base_tf.transform.translation.x = current_ekf_odom_.pose.pose.position.x;
+  nav_base_tf.transform.translation.y = current_ekf_odom_.pose.pose.position.y;
+  nav_base_tf.transform.translation.z = current_ekf_odom_.pose.pose.position.z;
+  nav_base_tf.transform.rotation.w = current_ekf_odom_.pose.pose.orientation.w;
+  nav_base_tf.transform.rotation.x = current_ekf_odom_.pose.pose.orientation.x;
+  nav_base_tf.transform.rotation.y = current_ekf_odom_.pose.pose.orientation.y;
+  nav_base_tf.transform.rotation.z = current_ekf_odom_.pose.pose.orientation.z;
+  nav_base_tf.header.stamp = this->now();
+  nav_base_tf.header.frame_id = nif::common::frame_id::localization::ODOM;
+  nav_base_tf.child_frame_id = nif::common::frame_id::localization::BASE_LINK;
+  broadcaster_->sendTransform(nav_base_tf);
+  
   /* publish localization score*/
   std_msgs::msg::Float64 mahalanobisScoreMsg;
   mahalanobisScoreMsg.data = m_mahalanobisScore;
@@ -882,6 +896,9 @@ void AWLocalizationNode::publishEstimateResult()
     p.header.stamp = current_time;
     pub_measured_pose_->publish(p);
   }
+
+
+
 
 }
 

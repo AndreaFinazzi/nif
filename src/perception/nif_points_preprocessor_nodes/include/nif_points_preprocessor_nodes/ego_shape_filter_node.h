@@ -29,6 +29,7 @@
 #include <std_msgs/msg/float32.hpp>
 #include <std_msgs/msg/header.hpp>
 #include <tf2_ros/transform_listener.h>
+#include <raptor_dbw_msgs/msg/wheel_speed_report.hpp>
 
 // PCL library
 
@@ -78,6 +79,11 @@
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/opencv.hpp"
+
+// Kin-Controller
+#include "nif_wall_following_controller/kin_control_node.hpp" 
+
+
 /**
  * 2-D grid map size for wall detection
  * MAP_WIDTH : longitudinal direction
@@ -96,14 +102,18 @@ public:
   EgoShapeFilterNode(const std::string &node_name_);
   ~EgoShapeFilterNode();
   void mergedPointsCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
+  void WheelSpeedCallback(const raptor_dbw_msgs::msg::WheelSpeedReport::SharedPtr msg);
   void timer_callback();
 
 private:
   EgoShapeFilterNode();
 
   void respond();
+  void SetControllerParams();
 
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_points_;
+  rclcpp::Subscription<raptor_dbw_msgs::msg::WheelSpeedReport>::SharedPtr sub_wheel_speed_;
+
   rclcpp::TimerBase::SharedPtr timer_;
 
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr
@@ -124,10 +134,11 @@ private:
 
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_left_wall_line;
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_right_wall_line;
-  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_predictive_path;
+  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_wall_following_path;
 
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pub_inner_wall_distance;
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pub_outer_wall_distance;
+  rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pub_wall_following_steer_cmd;
 
   double left_lower_distance_;
   double right_lower_distance_;
@@ -164,9 +175,10 @@ private:
   rclcpp::Time lidar_time_last_update;
 
   nav_msgs::msg::Path final_wall_following_path_msg;
-
+  nif::control::KinControl m_KinController;
+  double m_vel_speed_x;
   std::array<std::array<float, (size_t)(MAP_WIDTH + 1)>,
-             (size_t)(MAP_HEIGHT + 1)>
+                                  (size_t)(MAP_HEIGHT + 1)>
       map;
 
   void EgoShape(pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud_ptr,

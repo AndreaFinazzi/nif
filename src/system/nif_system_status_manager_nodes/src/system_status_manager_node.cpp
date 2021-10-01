@@ -24,13 +24,14 @@ SystemStatusManagerNode::SystemStatusManagerNode(
 
     this->declare_parameter("velocity.zero", 0.0);
     this->declare_parameter("velocity.max", 67.0);
-    this->declare_parameter("velocity.pit_in", 10.0);
-    this->declare_parameter("velocity.pit_out", 10.0);
-    this->declare_parameter("velocity.slow_drive", 15.0);
-    this->declare_parameter("safeloc.threshold_stop", 20.0);
-    this->declare_parameter("safeloc.threshold_slow_down", 10.0);
+    this->declare_parameter("velocity.pit_in", 8.0);
+    this->declare_parameter("velocity.pit_out", 8.0);
+    // this->declare_parameter("velocity.slow_drive", 15.0);
+    this->declare_parameter("velocity.slow_drive", 8.0);
+    this->declare_parameter("safeloc.threshold_stop", 40.0);
+    this->declare_parameter("safeloc.threshold_slow_down", 20.0);
     this->declare_parameter("safeloc.velocity_slow_down_max", 22.2);
-    this->declare_parameter("safeloc.velocity_slow_down_min", 0.0);
+    this->declare_parameter("safeloc.velocity_slow_down_min", 8.0);
 
     this->node_inactive_timeout = rclcpp::Duration(1, 0);
     this->system_status_msg.autonomy_status.lateral_autonomy_enabled = this->get_parameter(
@@ -105,14 +106,6 @@ SystemStatusManagerNode::SystemStatusManagerNode(
     auto qos = rclcpp::QoS(rclcpp::QoSInitialization(RMW_QOS_POLICY_HISTORY_KEEP_LAST, 1));
     qos.best_effort();
 
-    this->system_status_telem_pub = this->create_publisher<nif::common::msgs::SystemStatus>(
-            "/telemetry/system_status", qos
-    );
-
-    this->telemetry_timer = this->create_wall_timer(
-            250ms, std::bind(&SystemStatusManagerNode::telemetry_timer_callback, this));
-
-
     // Services
     // TODO make global parameter
     this->register_node_service = this->create_service<nif_msgs::srv::RegisterNodeStatus>(
@@ -141,7 +134,7 @@ void SystemStatusManagerNode::systemStatusTimerCallback() {
 
     // check safety conditions
     bool hb_ok = heartbeatOk();
-    bool localization_ok = localizationOk();
+    bool localization_ok = gps_health_ok(); // localizationOk();
 
     if (!hb_ok || !this->recovery_enabled) {
         hb_ok = false;
@@ -421,17 +414,15 @@ bool SystemStatusManagerNode::heartbeatOk() {
     // check for timeouts
     if (counter_joy_prev != counter_joy) {
         // received new message, heartbeat ok
-        t--;
-        if (t < 0) {
-            t = 0;
-        }
+        t = 0;
         if (counter_joy != default_counter) {
             counter_joy_prev = counter_joy;
         }
         return true;
     } else {
         // have not received update; check for timeout
-        if (t < 3 * max_counter_drop) t++; // Avoid huge (hardly recoverable) numbers
+        // if (t < 3 * max_counter_drop) t++; // Avoid huge (hardly recoverable) numbers
+        t++;
 
         if (t >= max_counter_drop) {
             this->recovery_enabled = false;
@@ -551,12 +542,16 @@ double nif::system::SystemStatusManagerNode::getMissionMaxVelocityMps(
             max_vel_mps = this->velocity_pit_out;
             break;
         case MissionStatus::MISSION_RACE:
+        // Race at max speed, if localization is good enough. 
+        // Over safeloc_threshold_slow_down, reduce max speed according to the localization error
             max_vel_mps = this->velocity_max;
             if (this->localization_error > this->safeloc_threshold_slow_down)
             {
                 auto slope = (this->safeloc_velocity_slow_down_max - this->safeloc_velocity_slow_down_min) / (this->safeloc_threshold_slow_down - this->safeloc_threshold_stop);
                 max_vel_mps = slope * (this->localization_error - this->safeloc_threshold_slow_down) + this->safeloc_velocity_slow_down_max;
             }
+            if (max_vel_mps < this->safeloc_velocity_slow_down_min) 
+                max_vel_mps = this->safeloc_velocity_slow_down_min;
             break;
 
         case MissionStatus::MISSION_TEST:
@@ -566,7 +561,10 @@ double nif::system::SystemStatusManagerNode::getMissionMaxVelocityMps(
                 auto slope = (this->safeloc_velocity_slow_down_max - this->safeloc_velocity_slow_down_min) / (this->safeloc_threshold_slow_down - this->safeloc_threshold_stop);
                 max_vel_mps = slope * (this->localization_error - this->safeloc_threshold_slow_down) + this->safeloc_velocity_slow_down_max;
             }
+            if (max_vel_mps < this->safeloc_velocity_slow_down_min) 
+                max_vel_mps = this->safeloc_velocity_slow_down_min;
             break;
+            
         default:
             max_vel_mps = this->velocity_zero;
             break;

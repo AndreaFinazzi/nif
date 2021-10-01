@@ -91,9 +91,7 @@ class AWLocalizationNode : public rclcpp::Node {
         sub_filtered_Wheel;
 
     std::shared_ptr<message_filters::Synchronizer<SyncPolicyT>> m_sync;
-
-    // tf2_ros::TransformBroadcaster tf_br_; // !< @brief tf broadcaster
-    std::unique_ptr<tf2_ros::TransformBroadcaster> tf_br_;
+    std::unique_ptr<tf2_ros::TransformBroadcaster> broadcaster_;
 
     nif::localization::utils::GeodeticConverter conv_;
 

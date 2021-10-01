@@ -222,6 +222,11 @@ class OnlineTrajectoryHandler(object):
         else:
             if not self.__in_track:
                 self.__log.warning("Vehicle is on track!")
+
+            # ///////////////////////////////////
+            self.__in_track = True
+            # ///////////////////////////////////
+
         # -- SELECT INITIAL PLANNING NODE ------------------------------------------------------------------------------
         closest_nodes, distance = self.__graph_base.get_closest_nodes(pos=start_pos, limit=1)
 
@@ -246,6 +251,7 @@ class OnlineTrajectoryHandler(object):
         else:
             if not self.__cor_heading:
                 self.__log.warning("Heading OK!")
+            self.__cor_heading = True
 
         # calculate spline to start node
         x_coeff, y_coeff, _, _ = tph.calc_splines.calc_splines(path=np.vstack((start_pos, end_pos)),

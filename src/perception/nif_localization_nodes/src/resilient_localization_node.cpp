@@ -60,15 +60,15 @@ ResilientLocalization::ResilientLocalization(const std::string &node_name_)
   timer_ = this->create_wall_timer(10ms, [this]() {
     if (bDetectedOuter && bGeofenceOuter)
     {
-        auto node_status = nif::common::NODE_ERROR;
+      auto node_status = nif::common::NODE_ERROR;
       // If the geofence data is too old, report error, but keep going.
       if (this->now() - m_geofence_outer_last_update_ >=
               this->m_geofence_timeout_ ||
           this->now() - m_detected_outer_last_update_ >=
               this->m_geofence_timeout_) {
         
-       RCLCPP_DEBUG(this->get_logger(), "A : %f", (this->now() - m_detected_outer_last_update_).nanoseconds());
-       RCLCPP_DEBUG(this->get_logger(), "B : %f", this->m_geofence_timeout_.nanoseconds());
+      //  RCLCPP_DEBUG(this->get_logger(), "A : %f", (this->now() - m_detected_outer_last_update_).nanoseconds());
+      //  RCLCPP_DEBUG(this->get_logger(), "B : %f", this->m_geofence_timeout_.nanoseconds());
        node_status = nif::common::NODE_ERROR;
       } else {
           node_status = nif::common::NODE_OK;
@@ -81,7 +81,6 @@ ResilientLocalization::ResilientLocalization(const std::string &node_name_)
           static_cast<double>(m_detected_outer_last_update_.nanoseconds()) *
               1e-9;
 
-
       double m_outer_error =
           m_geofence_outer_distance - m_detected_outer_distance;
       std_msgs::msg::Float32 OuterDistanceMsg;
@@ -93,18 +92,20 @@ ResilientLocalization::ResilientLocalization(const std::string &node_name_)
       if (fabs(m_outer_error) > m_ThresForDistanceErrorFlag &&
           m_detected_outer_distance != 0. && m_on_the_track) {
         OuterDistanceHighErrorFlagMsg.data = true;
-    }
-    pubOuterError->publish(OuterDistanceMsg);
-    pubOuterErrorFlag->publish(OuterDistanceHighErrorFlagMsg);
+      }
 
-    std_msgs::msg::Bool TooCloseToWallMsg;
-    TooCloseToWallMsg.data = false;
-    if (fabs(m_detected_outer_distance) < m_ThresToWallDistance &&
-        m_detected_outer_distance != 0. && m_on_the_track) {
-      TooCloseToWallMsg.data = true;
-    }
-    pubTooCloseToWallFlag->publish(TooCloseToWallMsg);
-    this->setNodeStatus(node_status);
+      pubOuterError->publish(OuterDistanceMsg);
+      pubOuterErrorFlag->publish(OuterDistanceHighErrorFlagMsg);
+
+      std_msgs::msg::Bool TooCloseToWallMsg;
+      TooCloseToWallMsg.data = false;
+      if (fabs(m_detected_outer_distance) < m_ThresToWallDistance &&
+          m_detected_outer_distance != 0. && m_on_the_track) {
+        TooCloseToWallMsg.data = true;
+      }
+      pubTooCloseToWallFlag->publish(TooCloseToWallMsg);
+
+      this->setNodeStatus(node_status);
     }
   });
 
@@ -114,12 +115,12 @@ ResilientLocalization::ResilientLocalization(const std::string &node_name_)
 ResilientLocalization::~ResilientLocalization() {}
 
 void ResilientLocalization::respond() {
-    int geofence_timeout_ms = 1000;
+  int geofence_timeout_ms = 1000;
   this->get_parameter("thres_for_distance_error_flag", m_ThresForDistanceErrorFlag);
   this->get_parameter("thres_for_distance_to_wall", m_ThresToWallDistance);
   this->get_parameter("geofence_timeout_ms", geofence_timeout_ms);
 
-  m_geofence_timeout_ = rclcpp::Duration(geofence_timeout_ms * 1000000);
+  m_geofence_timeout_ = rclcpp::Duration(1, 0);
 
   // this->get_parameter("inner_geofence_filename", m_InnerGeoFenceFileName);
 }

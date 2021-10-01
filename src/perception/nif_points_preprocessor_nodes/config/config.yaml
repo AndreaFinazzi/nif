@@ -1,4 +1,4 @@
-nif_points_preprocessor_nodes:
+nif_points_concat_node:
   ros__parameters:
     # point concat filter
     use_new_luminar_driver : false
@@ -6,6 +6,8 @@ nif_points_preprocessor_nodes:
     output_topic : "/merged/lidar"
     output_frame_id : "center_of_gravity"                 
 
+nif_ego_shape_filter_node:
+  ros__parameters:
     # ego-shape filter
     left_lower_distance : 0.5
     right_lower_distance : 0.5
@@ -15,8 +17,8 @@ nif_points_preprocessor_nodes:
     right_upper_distance : 30.0
     rear_upper_distance : 50.0
     front_upper_distance : 50.0
-    height_lower_distance : -0.7
-    height_upper_distance : 0.5
+    height_lower_distance : -0.5
+    height_upper_distance : 1.5
     resolution : 0.25
     count_threshold : 3.
     normal_angle_thres : 50.
@@ -26,4 +28,19 @@ nif_points_preprocessor_nodes:
     distance_extract_thres : 0.5
     distance_low_fass_filter : 0.0
     target_space_to_wall : 10.0 #should be positive value
+
+    # control params
+    min_lookahead: 4.0
+    max_lookahead: 29.0
+    lookahead_speed_ratio: 0.75
+    proportional_gain: .2
+    max_steer_angle: 25.0
+    vehicle:
+      wheelbase: 2.9718
+      cg_to_front: 1.723644
+      cg_to_rear: 1.248156
+      tire_stiffness_front: 100000.0
+      tire_stiffness_rear: 100000.0
+      mass: 720.0
+      inertia: 1000.0
 

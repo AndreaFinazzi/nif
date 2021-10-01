@@ -122,7 +122,6 @@ private:
   rclcpp::Subscription<novatel_oem7_msgs::msg::INSSTDEV>::SharedPtr subscriber_insstdev;
 
   rclcpp::TimerBase::SharedPtr system_status_timer;
-  rclcpp::TimerBase::SharedPtr telemetry_timer;
 
   rclcpp::Service<nif_msgs::srv::RegisterNodeStatus>::SharedPtr
       register_node_service;
@@ -155,10 +154,6 @@ private:
   void joystickCallback(const nif::common::msgs::OverrideControlCmd::SharedPtr msg);
   void localizationErrorCallback(const std_msgs::msg::Float64::SharedPtr msg);
   void RCFlagSummaryCallback(const nif::common::msgs::RCFlagSummary::UniquePtr msg);
-
-  void telemetry_timer_callback() {
-      this->system_status_telem_pub->publish(this->system_status_msg);
-  }
 
   void receive_bestpos(const novatel_oem7_msgs::msg::BESTPOS::SharedPtr msg) {
       this->best_pos_lat_stdev_ = msg->lat_stdev;

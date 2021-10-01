@@ -1,0 +1,17 @@
+KinControlNode:
+  ros__parameters:
+    auto_enabled: false
+    min_lookahead: 4.0
+    max_lookahead: 50.0
+    lookahead_speed_ratio: 0.75
+    proportional_gain: .2
+    max_steer_angle: 25.0
+    steering_override_threshold: 4.0
+    vehicle:
+      wheelbase: 2.9718
+      cg_to_front: 1.723644
+      cg_to_rear: 1.248156
+      tire_stiffness_front: 100000.0
+      tire_stiffness_rear: 100000.0
+      mass: 720.0
+      inertia: 1000.0
