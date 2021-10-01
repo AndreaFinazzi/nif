@@ -21,6 +21,17 @@
 
 #include "nif_vehicle_dynamics_manager/tire_manager.hpp"
 
+double TireManager::CalcTireSlipRatio(double v_front, double v_rear) {
+  // Calculate tire slip ratio using front/rear wheel speed
+  // - scaling rear wheel speed
+  double v_rear_scaled = scale_wheelspeed * v_rear;
+  // - calculate tire slip ratio
+  double sigma = (v_front - v_rear_scaled) /
+                 std::max(0.00001, std::max(v_front, v_rear_scaled));
+  // - scaling tire slip ratio, convert sign and return it
+  return scale_slip_ratio * -sigma;
+}
+
 bool TireManager::CalcDynamicsFeasibility(nav_msgs::msg::Path path, double vx,
                                           double ax, double yaw_rate,
                                           double current_steer, double dt) {

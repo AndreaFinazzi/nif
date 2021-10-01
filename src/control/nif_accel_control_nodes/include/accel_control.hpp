@@ -36,6 +36,10 @@
 #include <std_msgs/msg/string.hpp>
 #include <std_msgs/msg/u_int8.hpp>
 
+#include "nif_vehicle_dynamics_manager/tire_manager.hpp"
+#include <ABS.hpp>
+#include <control_model.hpp>
+
 namespace control {
 
 // Gear State
@@ -62,8 +66,12 @@ public:
 
   std_msgs::msg::Float32 throttle_cmd;
   std_msgs::msg::Float32 brake_cmd;
+  std_msgs::msg::Float32 sigma_msg;
   std_msgs::msg::UInt8 gear_cmd;
   std_msgs::msg::String status_msg;
+
+  TireManager m_tire_manager_;
+  ABS m_abs_controller_;
 
 private:
   void initializeGears();
@@ -90,6 +98,7 @@ private:
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pubThrottleCmdRaw_;
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pubBrakeCmd_;
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pubBrakeCmdRaw_;
+  rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pubSlipRatio_;
   rclcpp::Publisher<std_msgs::msg::UInt8>::SharedPtr pubGearCmd_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr pubControlStatus_;
   rclcpp::Subscription<deep_orange_msgs::msg::JoystickCommand>::SharedPtr
@@ -105,6 +114,8 @@ private:
 
   bool auto_enabled_ = false;
   double speed_ = 0.0;
+  double front_speed_ = 0.0;
+  double rear_speed_ = 0.0;
   double des_accel_ = 0.0;
 
   double max_throttle_ = 0.0;

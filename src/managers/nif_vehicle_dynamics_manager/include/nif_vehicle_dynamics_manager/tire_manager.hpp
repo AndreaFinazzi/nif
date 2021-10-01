@@ -59,6 +59,7 @@ private:
 
 public:
   // Functions
+  double CalcTireSlipRatio(double v_front, double v_rear);
   bool CalcDynamicsFeasibility(nav_msgs::msg::Path path, double vx, double ax,
                                double yaw_rate, double current_steer,
                                double dt);
@@ -126,6 +127,9 @@ public:
                          // assume (h_rcf + 10 mm). [m] 57.6 mm.
   double steer_ratio =
       9.0; // steering wheel ratio (steer wheel angle : tire angle)
+
+  double scale_wheelspeed = 1.0177; // scale for rear wheel speed
+  double scale_slip_ratio = 0.2323; // scale for slip ratio using model
 
   double CURVATURE_MINIMUM = 0.000001;
 
