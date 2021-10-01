@@ -94,7 +94,7 @@ public:
     // ignore)
     this->declare_parameter("odometry_timeout_sec", 0.1);
     this->declare_parameter("path_timeout_sec", 0.5);
-    this->declare_parameter("path_min_length_m", 2.0);
+    this->declare_parameter("path_min_length_m", 5.0);
     // Lateral error gain
     this->declare_parameter("lateral_error_deadband_m", 1.0); // [m]
     // Safe path distance gain
