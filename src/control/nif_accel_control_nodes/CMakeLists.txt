@@ -23,7 +23,7 @@ ament_auto_find_build_dependencies()
 ament_auto_add_library(${PROJECT_NAME} SHARED
         src/accel_control_node.cpp
         src/control_model.cpp
-        src/ABS.cpp)
+        src/TractionABS.cpp)
 
 ament_auto_add_executable (${PROJECT_NAME}_exe
         src/accel_control_node.cpp)
@@ -49,7 +49,7 @@ ament_auto_package()
 
 # include_directories(include)
 
-# add_executable(accel_controller src/accel_control_node.cpp src/control_model.cpp src/ABS.cpp)
+# add_executable(accel_controller src/accel_control_node.cpp src/control_model.cpp src/TractionABS.cpp)
 # ament_target_dependencies(accel_controller rclcpp std_msgs raptor_dbw_msgs deep_orange_msgs bvs_msgs)
 # install(
 #   TARGETS accel_controller

@@ -13,14 +13,14 @@
    limitations under the License.
 */
 
-#ifndef _ABS_H_
-#define _ABS_H_
+#ifndef _TRACTION_ABS_H_
+#define _TRACTION_ABS_H_
 
 namespace control {
-/// @class Anti-lock Braking System
+/// @class Traction Control & Anti-lock Braking System
 /// @brief
 
-class ABS {
+class TractionABS {
 public:
   /// @brief Constructor
   /// @param[in] ABS_enabled
@@ -31,10 +31,11 @@ public:
   /// @param[in] control_rate
   /// @param[in] ABS_rate
 
-  ABS(const bool &ABS_enabled = true, const double &velocity_thres_mps = 27.78,
-      const double &brake_cmd_thres = 0.5, const double &sigma_thres = 0.06,
-      const double &ABS_factor = 0.5, const double &control_rate = 100.,
-      const double &ABS_rate = 15.);
+  TractionABS(const bool &ABS_enabled = true,
+              const double &velocity_thres_mps = 27.78,
+              const double &brake_cmd_thres = 0.5,
+              const double &sigma_thres = 0.06, const double &ABS_factor = 0.5,
+              const double &control_rate = 100., const double &ABS_rate = 15.);
 
   /// @brief ABS parameters
   int cnt = 0;
@@ -50,8 +51,8 @@ private:
   double control_rate_ = 100.0;
   double ABS_rate_ = 15.;
 
-}; // End class ABS
+}; // End class TractionABS
 
 } // End namespace control
 
-#endif // End _ABS_H_
+#endif // End _TRACTION_ABS_H_

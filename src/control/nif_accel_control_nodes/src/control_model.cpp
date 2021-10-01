@@ -20,10 +20,10 @@
 #include <iostream>
 
 namespace control {
-AccelController::AccelController(const double &K_accel, const double &K_accel2,
-                                 const double &K_bias, const double &pedalToCmd,
-                                 const double &dt, const double &cmdMax,
-                                 const double &cmdMin) {
+ThrottleBrakeProfiler::ThrottleBrakeProfiler(
+    const double &K_accel, const double &K_accel2, const double &K_bias,
+    const double &pedalToCmd, const double &dt, const double &cmdMax,
+    const double &cmdMin) {
   // Set control parameters
   k_accel_ = K_accel;
   k_accel2_ = K_accel2;
@@ -34,8 +34,8 @@ AccelController::AccelController(const double &K_accel, const double &K_accel2,
   SetCmdBounds(cmdMin, cmdMax);
 }
 
-/******************* AccelController ALGORITHM *******************/
-double AccelController::CurrentControl(double des_accel) {
+/******************* ThrottleBrakeProfiler ALGORITHM *******************/
+double ThrottleBrakeProfiler::CurrentControl(double des_accel) {
   double cmd = 0.0;
 
   cmd = k_accel_ * std::abs(des_accel) + k_accel2_ * std::pow(des_accel, 2.) +
@@ -45,8 +45,8 @@ double AccelController::CurrentControl(double des_accel) {
   return SaturateCmd(cmd);
 }
 /******************************* SETTERS ************************************/
-std::pair<bool, bool> AccelController::SetCmdBounds(const double &min,
-                                                    const double &max) {
+std::pair<bool, bool> ThrottleBrakeProfiler::SetCmdBounds(const double &min,
+                                                          const double &max) {
   bool isMinSet = false, isMaxSet = false;
   if (min <= 0.0) {
     this->cmdMin_ = min;
@@ -60,7 +60,7 @@ std::pair<bool, bool> AccelController::SetCmdBounds(const double &min,
 }
 
 /*********************** PRIVATE METHODS ************************************/
-double AccelController::SaturateCmd(const double &cmd) {
+double ThrottleBrakeProfiler::SaturateCmd(const double &cmd) {
   return std::min(std::max(cmdMin_, cmd), cmdMax_);
 }
 

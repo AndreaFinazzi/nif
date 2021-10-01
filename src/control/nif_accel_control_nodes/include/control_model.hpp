@@ -19,9 +19,9 @@
 #include <utility>
 
 namespace control {
-/// @class AccelController
+/// @class ThrottleBrakeProfiler
 /// @brief
-class AccelController {
+class ThrottleBrakeProfiler {
 public:
   /// @brief Constructor
   /// @param[in] K_accel
@@ -30,10 +30,12 @@ public:
   /// @param[in] pedalToCmd
   /// @param[in] cmdMin is a lower bound on the output command. Defaults to
   /// -1e8.
-  AccelController(const double &K_accel = 0.0, const double &K_accel2 = 0.0,
-                  const double &K_bias = 0.0, const double &pedalToCmd = 0.0,
-                  const double &dt = 0.01, const double &cmdMax = 1e8,
-                  const double &cmdMin = -1e8);
+  ThrottleBrakeProfiler(const double &K_accel = 0.0,
+                        const double &K_accel2 = 0.0,
+                        const double &K_bias = 0.0,
+                        const double &pedalToCmd = 0.0, const double &dt = 0.01,
+                        const double &cmdMax = 1e8,
+                        const double &cmdMin = -1e8);
 
   /// @brief Input the current error and get back the current control value
   /// @param newError is the most recently calculated error value
@@ -68,7 +70,7 @@ private:
   /// @brief Minimum output command. Must be less than or equal to zero.
   double cmdMin_ = -1e8;
 
-}; // End class AccelController
+}; // End class ThrottleBrakeProfiler
 
 } // End namespace control
 

@@ -37,7 +37,7 @@
 #include <std_msgs/msg/u_int8.hpp>
 
 #include "nif_vehicle_dynamics_manager/tire_manager.hpp"
-#include <ABS.hpp>
+#include <TractionABS.hpp>
 #include <control_model.hpp>
 
 namespace control {
@@ -71,7 +71,7 @@ public:
   std_msgs::msg::String status_msg;
 
   TireManager m_tire_manager_;
-  ABS m_abs_controller_;
+  TractionABS m_abs_controller_;
 
 private:
   void initializeGears();
@@ -144,8 +144,8 @@ private:
   std::map<int, std::shared_ptr<GearState>> gear_states;
   std::shared_ptr<control::GearState> curr_gear_ptr_;
 
-  AccelController throttle_controller_;
-  AccelController brake_controller_;
+  ThrottleBrakeProfiler throttle_controller_;
+  ThrottleBrakeProfiler brake_controller_;
 
 }; // end of class
 

@@ -108,7 +108,7 @@ AccelControl::AccelControl() : Node("AccelControlNode") {
   this->throttleCmdMax_ = this->get_parameter("throttle.cmd_max").as_double();
   this->throttleCmdMin_ = this->get_parameter("throttle.cmd_min").as_double();
 
-  this->throttle_controller_ = AccelController(
+  this->throttle_controller_ = ThrottleBrakeProfiler(
       throttle_k_accel_, throttle_k_accel2_, throttle_k_bias_,
       throttle_pedalToCmd_, ts_, throttleCmdMax_, throttleCmdMin_);
 
@@ -121,22 +121,22 @@ AccelControl::AccelControl() : Node("AccelControlNode") {
   this->brakeCmdMin_ = this->get_parameter("brake.cmd_min").as_double();
 
   this->brake_controller_ =
-      AccelController(brake_k_accel_, brake_k_accel2_, brake_k_bias_,
-                      brake_pedalToCmd_, ts_, brakeCmdMax_, brakeCmdMin_);
+      ThrottleBrakeProfiler(brake_k_accel_, brake_k_accel2_, brake_k_bias_,
+                            brake_pedalToCmd_, ts_, brakeCmdMax_, brakeCmdMin_);
 }
 
 void AccelControl::initializeGears() {
   // LOR params
-//  this->gear_states = {
-//      {1, std::make_shared<control::GearState>(1, 2.92, -255, 11)},
-//      {2, std::make_shared<control::GearState>(2, 1.875, 9.5, 16)},
-//      {3, std::make_shared<control::GearState>(3, 1.38, 14, 22)},
-//      {4, std::make_shared<control::GearState>(4, 1.5, 17, 30)},
-//      {5, std::make_shared<control::GearState>(5, 0.96, 22, 35)},
-//      {6, std::make_shared<control::GearState>(6, 0.889, 30, 255)}};
+  //  this->gear_states = {
+  //      {1, std::make_shared<control::GearState>(1, 2.92, -255, 11)},
+  //      {2, std::make_shared<control::GearState>(2, 1.875, 9.5, 16)},
+  //      {3, std::make_shared<control::GearState>(3, 1.38, 14, 22)},
+  //      {4, std::make_shared<control::GearState>(4, 1.5, 17, 30)},
+  //      {5, std::make_shared<control::GearState>(5, 0.96, 22, 35)},
+  //      {6, std::make_shared<control::GearState>(6, 0.889, 30, 255)}};
 
   // IMS params
-   this->gear_states = {
+  this->gear_states = {
       {1, std::make_shared<control::GearState>(1, 2.92, -255, 13.5)},
       {2, std::make_shared<control::GearState>(2, 1.875, 11, 22)},
       {3, std::make_shared<control::GearState>(3, 1.38, 19.5, 30)},
@@ -194,14 +194,13 @@ void AccelControl::publishThrottleBrake() {
   // run controller if comms is bad or auto is enabled
   // Sets the joystick throttle cmd as the saturation limit on throttle
 
-    if (this->throttle_cmd.data > this->max_throttle_)
-    {
-      RCLCPP_DEBUG(this->get_logger(), "%s\n", "Throttle Limit Max Reached");
-      this->throttle_cmd.data = this->max_throttle_;
-    }
+  if (this->throttle_cmd.data > this->max_throttle_) {
+    RCLCPP_DEBUG(this->get_logger(), "%s\n", "Throttle Limit Max Reached");
+    this->throttle_cmd.data = this->max_throttle_;
+  }
 
-    this->throttle_cmd.data =
-        (this->brake_cmd.data > 0.0) ? 0.0 : this->throttle_cmd.data;
+  this->throttle_cmd.data =
+      (this->brake_cmd.data > 0.0) ? 0.0 : this->throttle_cmd.data;
 
   this->throttle_cmd.data =
       (this->brake_cmd.data > 0.0) ? 0.0 : this->throttle_cmd.data;
@@ -267,10 +266,10 @@ void AccelControl::receiveVelocity(
     const raptor_dbw_msgs::msg::WheelSpeedReport::SharedPtr msg) {
   const double kphToMps = 1.0 / 3.6;
   // front left wheel speed (kph)
-//  double front_left = msg->front_left;
-//  double front_right = msg->front_right;
-   double rear_left = msg->rear_left;
-   double rear_right = msg->rear_right;
+  double front_left = msg->front_left;
+  double front_right = msg->front_right;
+  double rear_left = msg->rear_left;
+  double rear_right = msg->rear_right;
   // average wheel speeds (kph) and convert to m/s
   this->speed_ = (rear_left + rear_right) * 0.5 * kphToMps;
   // front/rear wheel speed

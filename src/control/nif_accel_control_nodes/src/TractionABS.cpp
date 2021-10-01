@@ -13,15 +13,16 @@
    limitations under the License.
 */
 
-#include "ABS.hpp"
+#include "TractionABS.hpp"
 #include <cmath>
 #include <iostream>
 
 namespace control {
-ABS::ABS(const bool &ABS_enabled, const double &velocity_thres_mps,
-         const double &brake_cmd_thres, const double &sigma_thres,
-         const double &ABS_factor, const double &control_rate,
-         const double &ABS_rate) {
+TractionABS::TractionABS(const bool &ABS_enabled,
+                         const double &velocity_thres_mps,
+                         const double &brake_cmd_thres,
+                         const double &sigma_thres, const double &ABS_factor,
+                         const double &control_rate, const double &ABS_rate) {
   // Set control parameters
   ABS_enabled_ = ABS_enabled;
   velocity_thres_mps_ = velocity_thres_mps;
@@ -32,8 +33,8 @@ ABS::ABS(const bool &ABS_enabled, const double &velocity_thres_mps,
   ABS_rate_ = ABS_rate;
 }
 
-double ABS::ABS_control(double brake_cmd, double current_velocity,
-                        double sigma) {
+double TractionABS::ABS_control(double brake_cmd, double current_velocity,
+                                double sigma) {
   // Init
   double brake_cmd_new = brake_cmd;
   // Tire slip ratio
