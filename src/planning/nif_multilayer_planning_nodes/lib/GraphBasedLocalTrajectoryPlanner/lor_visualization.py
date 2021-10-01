@@ -143,5 +143,6 @@ if __name__ == "__main__":
     WPTFileVisualizer(pit_wpt, "pit-in-entire")
     RaceLineFileVisualizer(raceline, "race-line")
     GraphVisualizer(graph, "graph_node")
+    plt.grid()
     plt.show()
 

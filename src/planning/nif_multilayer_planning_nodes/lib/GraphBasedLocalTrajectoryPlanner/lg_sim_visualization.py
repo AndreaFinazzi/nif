@@ -136,12 +136,17 @@ if __name__ == "__main__":
 
     dir = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', '..'))
     pit_wpt = os.path.join(dir,'params',TRACK_NAME,'pit_lane.csv',)
+    pit_in_wpt = os.path.join(dir,'params',TRACK_NAME,'pit_in_wpt.csv',)
+    pit_out_wpt = os.path.join(dir,'params',TRACK_NAME,'pit_out_wpt.csv',)
     raceline = os.path.join(dir,'inputs/traj_ltpl_cl',TRACK_NAME,'traj_race_cl.csv',)
     graph = os.path.join(dir,'inputs/track_offline_graphs',TRACK_NAME,'stored_graph.pckl',)
 
 
-    WPTFileVisualizer(pit_wpt, "pit-in-entire")
+    WPTFileVisualizer(pit_wpt, "pit-entire")
+    WPTFileVisualizer(pit_in_wpt, "pit-in")
+    WPTFileVisualizer(pit_out_wpt, "pit-out")
     RaceLineFileVisualizer(raceline, "race-line")
     GraphVisualizer(graph, "graph_node")
+    plt.grid()
     plt.show()
 

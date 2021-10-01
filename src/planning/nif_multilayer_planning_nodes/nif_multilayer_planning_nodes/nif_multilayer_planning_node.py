@@ -107,6 +107,22 @@ class GraphBasedPlanner(rclpy.node.Node):
         self.pit_in_wpt_maximum_vel = 0.0 # m/s
         self.pit_in_first_call = False
         self.pit_in_available_flg = False
+
+        self.pit_out_wpt_file_path = None
+        self.pit_out_wpt = []
+        self.pit_out_wpt_xy = []
+        self.pit_out_allowed_zone_min_x = None
+        self.pit_out_allowed_zone_max_x = None
+        self.pit_out_allowed_zone_min_y = None
+        self.pit_out_allowed_zone_max_y = None
+        self.pit_out_blocked_zone = None
+        self.num_pit_out_wpt = 0
+        self.pit_out_maptrack_len = 100
+        self.pit_out_flg = False
+        self.pit_out_wpt_maximum_vel = 0.0 # m/s
+        self.pit_out_first_call = False
+        self.pit_out_available_flg = False
+
         self.odom_first_call = True
 
         # TODO : file should be changed
@@ -175,6 +191,7 @@ class GraphBasedPlanner(rclpy.node.Node):
             raise ValueError('[nif_multilayer_planning_nodes] Pit-in allowed zone is not properly configured!')
 
         self.load_pit_in_waypoint()
+        self.load_pit_out_waypoint()
 
         self.pit_in_entire_msg = Path()
         self.pit_in_entire_msg.header.frame_id = "odom" #str(self.get_global_parameter('frames.global'))
@@ -281,6 +298,23 @@ class GraphBasedPlanner(rclpy.node.Node):
         self.num_pit_in_wpt = len(self.pit_in_wpt)
 
         print("Pit in waypoints are laoded.")
+
+    def load_pit_out_waypoint(self):
+        with open(self.pit_out_wpt_file_path) as csv_file:
+            csv_reader = csv.reader(csv_file, delimiter=',')
+            line_count = 0
+            for row in csv_reader:
+                if math.isnan(float(row[0])) or math.isnan(float(row[1])) or math.isnan(float(row[2])) :
+                    raise ValueError('[nif_multilayer_planning_nodes] Track specification in driving_task.ini is wrong!')
+                
+                self.pit_out_wpt.append([float(row[0]),float(row[1]),float(row[2])]) # order of x,y
+                self.pit_out_wpt_xy.append([float(row[0]),float(row[1])])
+                line_count += 1
+        if len(self.pit_out_wpt) == 0:
+            raise ValueError('[nif_multilayer_planning_nodes] Pit-out waypoint file is empty!')
+        self.num_pit_out_wpt = len(self.pit_out_wpt)
+
+        print("Pit out waypoints are laoded.")
 
 
     def yaw_from_ros_quaternion(self, quat):
