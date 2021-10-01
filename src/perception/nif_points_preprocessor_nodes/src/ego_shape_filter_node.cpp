@@ -383,14 +383,18 @@ void EgoShapeFilterNode::timer_callback() {
   left_path_msg.header.frame_id = BASE_LINK;
   left_path_msg.header.stamp = this->now();
   cv::Mat LeftPolyCoefficient;
+  // changed
+  int left_polynorm_order = -1;
   CubicSpliner(CloudRANSACLeft, left_wall_plane_coeff, front_upper_distance_,
-               rear_upper_distance_, left_path_msg, LeftPolyCoefficient);
+               rear_upper_distance_, left_path_msg, LeftPolyCoefficient, left_polynorm_order);
   pub_left_wall_line->publish(left_path_msg);
 
   nav_msgs::msg::Path right_path_msg;
   right_path_msg.header.frame_id = BASE_LINK;
   right_path_msg.header.stamp = this->now();
   cv::Mat RightPolyCoefficient;
+  // changed
+  int right_polynorm_order = -1;
   CubicSpliner(CloudRANSACRight, right_wall_plane_coeff, front_upper_distance_,
                rear_upper_distance_, right_path_msg, RightPolyCoefficient);
   pub_right_wall_line->publish(right_path_msg);
@@ -707,7 +711,61 @@ void EgoShapeFilterNode::CubicSpliner(
     pose_buf.pose.orientation.z = 0;
     path_msg_out.poses.push_back(pose_buf);
   }
+}
 
+void EgoShapeFilterNode::CubicSpliner(
+    pcl::PointCloud<pcl::PointXYZI>::Ptr cloudIn,
+    const boost::optional<Eigen::Vector4f> wall_plane_coeff,
+    double in_front_upper_threshold, double in_rear_upper_threshold,
+    nav_msgs::msg::Path& path_msg_out, cv::Mat& PolyCoefficientOut, int& poly_order) {
+
+  pcl::PointCloud<pcl::PointXYZI>::Ptr cloudDownSampled(
+      new pcl::PointCloud<pcl::PointXYZI>);
+
+  for (auto point_buf : cloudIn->points) {
+    pcl::PointXYZI ground_points;
+    ground_points.x = point_buf.x;
+    ground_points.y = point_buf.y;
+    cloudDownSampled->points.push_back(ground_points);
+  }
+  cloudDownSampled = downsample(cloudDownSampled, 0.25);
+
+  std::vector<cv::Point2f> ToBeFit;
+  ToBeFit.clear();
+
+  for (auto point_buf : cloudDownSampled->points) {
+    cv::Point2f pointTmp;
+    pointTmp.x = point_buf.x;
+    pointTmp.y = point_buf.y;
+    ToBeFit.push_back(pointTmp);
+  }
+
+  // For polynomial fitting
+  int first_order = 1;
+  cv::Mat first_order_poly_coeff = polyfit(ToBeFit, first_order);
+
+  // For polynomial fitting
+  int second_order = 2;
+  cv::Mat second_order_poly_coeff = polyfit(ToBeFit, second_order);
+
+  if (!wall_plane_coeff) {
+    return;
+  }
+
+  for (double x = -30; x < 50; x = x + 0.5) {
+    geometry_msgs::msg::PoseStamped pose_buf;
+    pose_buf.pose.position.x = x;
+    pose_buf.pose.position.y =
+        PolyCoefficientOut.at<double>(poly_order, 0) * pow(x, poly_order) +
+        PolyCoefficientOut.at<double>(poly_order - 1, 0) * pow(x, poly_order - 1) +
+        // PolyCoefficientOut.at<double>(poly_order - 2, 0) * pow(x, poly_order - 2) +
+        PolyCoefficientOut.at<double>(poly_order - 2, 0); // Cubic
+    pose_buf.pose.orientation.w = 1;
+    pose_buf.pose.orientation.x = 0;
+    pose_buf.pose.orientation.y = 0;
+    pose_buf.pose.orientation.z = 0;
+    path_msg_out.poses.push_back(pose_buf);
+  }
 }
 
 cv::Mat EgoShapeFilterNode::polyfit(std::vector<cv::Point2f> &in_point, int n) {
