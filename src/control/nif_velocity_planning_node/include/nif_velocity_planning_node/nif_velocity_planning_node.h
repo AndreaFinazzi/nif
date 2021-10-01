@@ -101,7 +101,7 @@ public:
     // - min safe distance. safe_dist_gain:=0.
     this->declare_parameter("path_dist_min", 8.0);
     // - max safe distance. safe_dist_gain:=1.
-    this->declare_parameter("path_dist_max", 30.0);
+    this->declare_parameter("path_dist_max", 100.0);
     // - time to collision(arrive) until safe path dist
     this->declare_parameter("ttc_thres", 2.0);
     // - safety factor for lateral tire force model
