@@ -90,16 +90,22 @@ public:
     this->declare_parameter("lpf_curve_f", 8.0); // lower --> smoother & delayed
     this->declare_parameter("lpf_curve_dt", 0.01); // for Low pass filter
     this->declare_parameter("lpf_curve_x0", 0.0);  // for Low pass filter
-    // Safety timeouts for odometry and the path (set negative to ignore)
+    // Safety timeouts for odometry and the length of the path (set negative to
+    // ignore)
     this->declare_parameter("odometry_timeout_sec", 0.1);
     this->declare_parameter("path_timeout_sec", 0.5);
-    // Safe path distance
+    this->declare_parameter("path_min_length_m", 2.0);
+    // Lateral error gain
+    this->declare_parameter("lateral_error_deadband_m", 1.0); // [m]
+    // Safe path distance gain
     // - min safe distance. safe_dist_gain:=0.
     this->declare_parameter("path_dist_min", 8.0);
     // - max safe distance. safe_dist_gain:=1.
     this->declare_parameter("path_dist_max", 30.0);
     // - time to collision(arrive) until safe path dist
     this->declare_parameter("ttc_thres", 2.0);
+    // - safety factor for lateral tire force model
+    this->declare_parameter("lateral_tire_model_factor", 0.4);
 
     // Read in misc. parameters
     m_vel_plan_enabled = this->get_parameter("vel_plan_enabled").as_bool();
@@ -111,9 +117,17 @@ public:
     m_odometry_timeout_sec =
         this->get_parameter("odometry_timeout_sec").as_double();
     m_path_timeout_sec = this->get_parameter("path_timeout_sec").as_double();
+    m_path_min_length_m = this->get_parameter("path_min_length_m").as_double();
+    m_lateral_error_deadband_m =
+        this->get_parameter("lateral_error_deadband_m").as_double();
     m_path_dist_min = this->get_parameter("path_dist_min").as_double();
     m_path_dist_max = this->get_parameter("path_dist_max").as_double();
     m_ttc_thres = this->get_parameter("ttc_thres").as_double();
+    m_lat_tire_factor =
+        this->get_parameter("lateral_tire_model_factor").as_double();
+
+    // Update lateral tire model safety factor
+    m_tire_manager.gamma = m_lat_tire_factor;
 
     if (m_odometry_timeout_sec <= 0. || m_path_timeout_sec <= 0.) {
       RCLCPP_ERROR(this->get_logger(),
@@ -139,11 +153,9 @@ private:
   void run() override {
     nif::common::NodeStatusCode node_status = common::NODE_ERROR;
     auto now = this->now();
-    bool valid_path =
-        has_path &&
-        !m_current_path.poses
-             .empty() && // TODO too loose, require a minimum length.
-        now - m_path_update_time < m_path_timeout;
+    bool valid_path = has_path &&
+                      (m_current_path.poses.size() > m_path_min_length_m) &&
+                      (now - m_path_update_time < m_path_timeout);
 
     bool valid_odom =
         this->hasEgoOdometry() &&
@@ -201,8 +213,11 @@ private:
           desired_velocity_mps = std::min(desired_velocity_mps, m_max_vel_mps);
         }
         // Decrease desired velocity w.r.t. lateral error
-        double error_ratio = std::min(abs(m_error_y_lpf), m_ERROR_Y_MAX) /
-                             m_ERROR_Y_MAX;          // [0.0~1.0] ratio
+        double error_ratio = 0.0;
+        if (abs(m_error_y_lpf) > m_lateral_error_deadband_m) {
+          error_ratio = std::min(abs(m_error_y_lpf), m_ERROR_Y_MAX) /
+                        m_ERROR_Y_MAX; // [0.0~1.0] ratio
+        }
         double error_gain = 1.0 - 0.5 * error_ratio; // [1.0~0.5] gain
 
         // Decrease desired velocity w.r.t. Safe path distance
@@ -468,7 +483,7 @@ private:
           result.successful = true;
         } else {
           result.successful = false;
-          result.reason = "des_vel_mps must be a double below (200 / 3.6).";
+          result.reason = "des_vel_mps must be a double below (300 / 3.6).";
         }
       } else if (param.get_name() == "vel_plan_enabled") {
         if (param.get_type() == rclcpp::ParameterType::PARAMETER_BOOL &&
@@ -478,6 +493,19 @@ private:
         } else {
           result.successful = false;
           result.reason = "vel_plan_enabled must be a boolean, and the current "
+                          "speed must be lower than 0.1 m/s .";
+        }
+      } else if (param.get_name() == "lateral_tire_model_factor") {
+        if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE &&
+            param.as_double() <= 1.0 && this->m_current_speed_mps <= 0.1) {
+          this->m_lat_tire_factor = param.as_double();
+          // Update lateral tire model safety factor
+          this->m_tire_manager.gamma = this->m_lat_tire_factor;
+          result.successful = true;
+        } else {
+          result.successful = false;
+          result.reason = "lateral_tire_model_factor must be a double, below "
+                          "1.0, and the current "
                           "speed must be lower than 0.1 m/s .";
         }
       }
@@ -560,11 +588,14 @@ private:
   double m_odometry_timeout_sec;
   rclcpp::Duration m_odometry_timeout = rclcpp::Duration(1, 0);
   double m_path_timeout_sec;
+  double m_path_min_length_m;
   rclcpp::Duration m_path_timeout = rclcpp::Duration(1, 0);
 
+  double m_lateral_error_deadband_m;
   double m_path_dist_min;
   double m_path_dist_max;
   double m_ttc_thres;
+  double m_lat_tire_factor;
 
   double m_CURVATURE_MINIMUM = 0.000001;
   double m_ERROR_Y_MAX = 4.0; // halving des_vel point. Width of IMS track: 12 m
