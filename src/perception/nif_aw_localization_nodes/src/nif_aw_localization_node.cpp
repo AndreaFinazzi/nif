@@ -8,6 +8,8 @@
 #include "ekf_localizer/nif_aw_localization_node.h"
 #include "nif_frame_id/frame_id.h"
 
+#include <random>
+
 using namespace message_filters;
 using namespace std::placeholders;
 
@@ -208,7 +210,7 @@ AWLocalizationNode::~AWLocalizationNode(){};
  */
 void AWLocalizationNode::timerCallback()
 {
-  if (bImuFirstCall && bGPS && bGPSHeading) {
+  if (bImuFirstCall && bBOTTOM_GPS && bGPSHeading) {
     auto node_status = nif::common::NODE_ERROR;
 
     // If the geofence data is too old, report error, but keep going.
@@ -237,27 +239,45 @@ void AWLocalizationNode::timerCallback()
     CurrentEstimated.y = ekf_.getXelement(IDX::Y);
     CurrentEstimated.yaw = ekf_.getXelement(IDX::YAW) + ekf_.getXelement(IDX::YAWB);
 
-    CalculateBestCorrection(BestPosBottom, BestPosTop, 
-                            CurrentEstimated, BestCorrection);
+    double veh_vel_x, veh_yaw_rate, correction_x, correction_y, correction_yaw;
 
-    double veh_x = m_dVelolcity_X;
-    double veh_yaw_rate = m_dIMU_yaw_rate;
-    double correction_x = m_dGPS_X;
-    double correction_y = m_dGPS_Y;
-    double correction_yaw = m_dGPS_Heading;
+    veh_vel_x = m_dVelolcity_X;
+    veh_yaw_rate = m_dIMU_yaw_rate;
+    correction_yaw = m_dGPS_Heading;
 
-    /* pose measurement update */
-    if (bottom_gps_flag == true) {
+    /**
+     * @brief select best correction data
+     */
+    bool update_pose = false;
+    if (bBOTTOM_GPS && bTOP_GPS)
+    {
+      update_pose = CalculateBestCorrection(BestPosBottom, BestPosTop,
+                                              CurrentEstimated, BestCorrection);
+      correction_x = BestCorrection.x; 
+      correction_y = BestCorrection.y; 
+    } else if (bBOTTOM_GPS && !bTOP_GPS) {
+      correction_x = BestPosBottom.x; 
+      correction_y = BestPosBottom.y;
+      update_pose = true;
+    } else if (!bBOTTOM_GPS && bTOP_GPS) {
+      correction_x = BestPosTop.x;
+      correction_y = BestPosTop.y;
+      update_pose = true;
+    }
+
+      /* pose measurement update */
+    if ((bottom_gps_update == true || top_gps_update == true) && update_pose) {
       measurementUpdatePose(bestpos_time_last_update, correction_x,
                             correction_y, correction_yaw);
       // std::cout << "correction_yaw : " << correction_yaw << std::endl;
 
-      bottom_gps_flag = false;
+      bottom_gps_update = false;
+      top_gps_update = false;
     }
 
     // if(measure_flag == true)
     // {
-    measurementUpdateTwist(imu_time_last_update, veh_x, veh_yaw_rate);
+    measurementUpdateTwist(imu_time_last_update, veh_vel_x, veh_yaw_rate);
     //   measure_flag = false;
     // }
 
@@ -361,8 +381,8 @@ void AWLocalizationNode::BESTPOSCallback
 
   pub_bestpos_odometry->publish(ltp_odom);
 
-  bottom_gps_flag = true;
-  bGPS = true;
+  bottom_gps_update = true;
+  bBOTTOM_GPS = true;
 
   BestPosBottom.x = m_dGPS_X;
   BestPosBottom.y = m_dGPS_Y;
@@ -372,10 +392,13 @@ void AWLocalizationNode::BESTPOSCallback
 
 void AWLocalizationNode::TOPBESTPOSCallback(
     const novatel_oem7_msgs::msg::BESTPOS::SharedPtr msg) {
-
+  //test
+  unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+  std::default_random_engine generator(seed);
+  std::normal_distribution<double> dist(0, 2.0);
   nif::localization::utils::GeodeticConverter::GeoRef currentGPS;
-  currentGPS.latitude = (double)msg->lat;
-  currentGPS.longitude = (double)msg->lon;
+  currentGPS.latitude = (double)msg->lat  ; //+ dist(generator) * 1e-5;
+  currentGPS.longitude = (double)msg->lon ; //+ dist(generator) * 1e-5;
   // Currently ignore altitude for the most part and just track x/y
   currentGPS.altitude = 0.;
 
@@ -431,6 +454,9 @@ void AWLocalizationNode::TOPBESTPOSCallback(
 
   BestPosTop.x = transform_top_to_bottom_sync.getOrigin().x();
   BestPosTop.y = transform_top_to_bottom_sync.getOrigin().y();
+
+  bTOP_GPS = true;
+  top_gps_update = true;
 }
 
 void AWLocalizationNode::BOTTOMINSPVACallback(
@@ -946,12 +972,82 @@ double AWLocalizationNode::GetmahalanobisDistance(const Eigen::MatrixXd &x,
   return distance;
 }
 
-void AWLocalizationNode::CalculateBestCorrection(const GPSCorrectionData_t &BottomDataIn, 
+bool AWLocalizationNode::CalculateBestCorrection(const GPSCorrectionData_t &BottomDataIn, 
                                                  const GPSCorrectionData_t &TopDataIn,
                                                  const VehPose_t& CurrentEstIn,
                                                  VehPose_t& BestCorrectionOut)
 {
-  
+  Eigen::MatrixXd P_curr, P_2by2;
+  ekf_.getLatestP(P_curr);
+  P_2by2 = P_curr.block(0, 0, 2, 2);
+
+  Eigen::MatrixXd y_est(2, 1);
+  y_est << CurrentEstIn.x, CurrentEstIn.y;
+
+  Eigen::MatrixXd y_bottom(2, 1);
+  y_bottom << BottomDataIn.x, BottomDataIn.y;
+  double bottomError = GetmahalanobisDistance(y_est, y_bottom, P_2by2);
+
+  Eigen::MatrixXd y_top(2, 1);
+  y_top << TopDataIn.x, TopDataIn.y;
+  double topError = GetmahalanobisDistance(y_est, y_top, P_2by2);
+
+  double diff_top_bottom = sqrt((BottomDataIn.x - TopDataIn.x) * (BottomDataIn.x - TopDataIn.x) +
+                                (BottomDataIn.y - TopDataIn.y) * (BottomDataIn.y - TopDataIn.y));  
+
+  std::cout << "------------" << std::endl;
+  std::cout << "bottomError : " << bottomError << std::endl;
+  std::cout << "topError : " << topError << std::endl;
+  std::cout << "diff" << diff_top_bottom << std::endl;
+
+  double norm_weight_bottom, norm_weight_top;
+  double fused_x, fused_y;
+      // if bottom and top is close enough, we regard bottom status is nominal.
+      // output : bypass fusion. return novatel bottom directly.
+  if (diff_top_bottom < 0.5) {
+    BestCorrectionOut.x = BottomDataIn.x;
+    BestCorrectionOut.y = BottomDataIn.y;
+    std::cout << "BEST STATUS" << std::endl;
+
+    return true;
+  }
+  else // one of sensor has drift. we should fuse the sensors.
+  {
+    // 1. our top priority strategy is weight-sum. 
+    norm_weight_bottom = 1 - bottomError / (bottomError + topError);
+    norm_weight_top = 1 - topError / (bottomError + topError);
+
+    if (bottomError < 30.0 && topError < 30.0) {
+      fused_x =
+          BottomDataIn.x * norm_weight_bottom + TopDataIn.x * norm_weight_top;
+      fused_y =
+          BottomDataIn.y * norm_weight_bottom + TopDataIn.y * norm_weight_top;
+      std::cout << "SENSOR FUSION" << std::endl;
+
+      return true;
+    }
+    // 2. if bottom is diverged, and top is nominal, USE NOVATEL TOP
+    else if (bottomError > 30.0 && topError < 30.0) {
+      fused_x = TopDataIn.x;
+      fused_y = TopDataIn.y;
+      std::cout << "BOTTOM ERROR, USE TOP" << std::endl;
+      return true;
+    }
+    // 3. if top is diverged, and bottom is nominal, USE NOVATEL BOTTOM
+    else if (bottomError < 30.0 && topError > 30.0) {
+      fused_x = BottomDataIn.x;
+      fused_y = BottomDataIn.y;
+      std::cout << "TOP ERROR, USE BOTTOM" << std::endl;
+      return true;
+    }
+    // 4. if all the sensors are bad, do not update measurement
+    else
+    {
+      std::cout << "NO UPDATE, GPS HIGH ERROR" << std::endl;
+      return false;
+    }
+  }
+
 }
 
 /*

@@ -194,9 +194,13 @@ class AWLocalizationNode : public rclcpp::Node {
     double m_d_TOP_GPS_Y;
     double m_d_TOP_GPS_Z;
 
-    bool bGPS;
-    bool bGPSHeading;
-    bool bottom_gps_flag = false;
+    bool bBOTTOM_GPS = false;
+    bool bTOP_GPS = false;
+
+    bool bGPSHeading = false;
+    bool bottom_gps_update = false;
+    bool top_gps_update = false;
+
     bool heading_flag = false;
     bool measure_flag = false;
     bool m_inspva_heading_init = false;
@@ -320,10 +324,10 @@ class AWLocalizationNode : public rclcpp::Node {
     double GetmahalanobisDistance(const Eigen::MatrixXd &x,
                                   const Eigen::MatrixXd &obj_x,
                                   const Eigen::MatrixXd &cov);
-    void CalculateBestCorrection(const GPSCorrectionData_t &BottomDataIn, 
+    bool CalculateBestCorrection(const GPSCorrectionData_t &BottomDataIn,
                                  const GPSCorrectionData_t &TopDataIn,
-                                 const VehPose_t& CurrentEstIn,
-                                 VehPose_t& BestCorrectionOut);
+                                 const VehPose_t &CurrentEstIn,
+                                 VehPose_t &BestCorrectionOut);
     bool GPSIgnoreGate(const double &dist_max,
                        const Eigen::MatrixXd &x,     // estimated
                        const Eigen::MatrixXd &obj_x, // correct
