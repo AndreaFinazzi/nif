@@ -24,7 +24,7 @@ windows:
         # - ros2 bag play autonomy_2021-09-21_09-59-36/ --topics /raptor_dbw_interface/wheel_speed_report /bvs_localization/ltp_odom #IAC_run_0
         # - ros2 bag play autonomy_2021-09-21_14-53-58/ --topics /raptor_dbw_interface/wheel_speed_report /bvs_localization/ltp_odom #IAC_run_1
         # - ros2 bag play autonomy_2021-09-29_14-24-45/ --topics /raptor_dbw_interface/wheel_speed_report /bvs_localization/ltp_odom #LOR_0929_aw
-        - ros2 bag play autonomy_2021-09-29_14-57-31/ --topics /raptor_dbw_interface/wheel_speed_report /bvs_localization/ltp_odom /system/status /planning/graph/path_global /control_joint_lqr/lqr_error #LOR_0929_yaw_1
+        - ros2 bag play autonomy_2021-09-29_14-57-31/ --topics /bvs_localization/ltp_odom /system/status /planning/graph/path_global /control_joint_lqr/lqr_error #LOR_0929_yaw_1
 
     - shell_command:
         # - ros2 bag play sensors_2021-09-03_10-59-19/ --topics /merged/lidar /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /raptor_dbw_interface/wheel_speed_report /novatel_top/bestpos /novatel_top/inspva /novatel_top/bestvel /novatel_top/imu/data /novatel_bottom/insstdev
@@ -34,7 +34,7 @@ windows:
         # - ros2 bag play sensors_2021-09-21_14-53-58/ --topics /merged/lidar /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /raptor_dbw_interface/wheel_speed_report /novatel_top/bestpos /novatel_top/inspva /novatel_top/bestvel /novatel_top/imu/data /novatel_bottom/insstdev #IAC_run_1
         #  - ros2 bag play sensors_2021-09-21_13-20-18/  --topics /merged/lidar /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /raptor_dbw_interface/wheel_speed_report /novatel_top/bestpos /novatel_top/inspva /novatel_top/bestvel /novatel_top/imu/data /novatel_bottom/insstdev /radar_front/radar_visz_moving /luminar_front_points /luminar_left_points /luminar_right_points
         #  - ros2 bag play sensors_2021-09-29_14-24-45/  --topics /merged/lidar /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /raptor_dbw_interface/wheel_speed_report /novatel_top/bestpos /novatel_top/inspva /novatel_top/bestvel /novatel_top/imu/data /novatel_bottom/insstdev 
-         - ros2 bag play sensors_2021-09-29_14-57-31/  --topics /merged/lidar /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /raptor_dbw_interface/wheel_speed_report /novatel_top/bestpos /novatel_top/inspva /novatel_top/bestvel /novatel_top/imu/data /novatel_bottom/insstdev /novatel_top/insstdev 
+         - ros2 bag play sensors_2021-09-29_14-57-31/  --topics /merged/lidar /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /novatel_top/bestpos /novatel_top/inspva /novatel_top/bestvel /novatel_top/imu/data /novatel_bottom/insstdev /novatel_top/insstdev 
 
     - shell_command:
         # - ros2 launch nif_launch base.launch.py

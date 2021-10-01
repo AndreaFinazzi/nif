@@ -104,6 +104,8 @@ class AWLocalizationNode : public rclcpp::Node {
     rclcpp::Subscription<novatel_oem7_msgs::msg::INSSTDEV>::SharedPtr subINSSTDEV;
     rclcpp::Subscription<novatel_oem7_msgs::msg::INSSTDEV>::SharedPtr
         subTOPINSSTDEV;
+    rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr
+        subIMUONLY;
 
     using SyncPolicyT = message_filters::sync_policies::ApproximateTime<
         sensor_msgs::msg::Imu, raptor_dbw_msgs::msg::WheelSpeedReport>;
@@ -201,6 +203,8 @@ class AWLocalizationNode : public rclcpp::Node {
     bool bottom_gps_update = false;
     bool top_gps_update = false;
 
+    bool bUseBestVelForSpeed;
+
     bool heading_flag = false;
     bool measure_flag = false;
     bool m_inspva_heading_init = false;
@@ -281,11 +285,12 @@ class AWLocalizationNode : public rclcpp::Node {
         const sensor_msgs::msg::Imu ::ConstSharedPtr &imu_msg,
         const raptor_dbw_msgs::msg::WheelSpeedReport::ConstSharedPtr
             &wheel_speed_msg);
-
-    /**
-     * @brief initialization of EKF
-     */
-    void initEKF();
+    void
+    IMUCallback(const sensor_msgs::msg::Imu::SharedPtr msg);
+        /**
+         * @brief initialization of EKF
+         */
+        void initEKF();
 
     /**
      * @brief compute EKF prediction

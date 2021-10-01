@@ -36,3 +36,7 @@ nif_aw_localization_nodes:
     proc_stddev_vx_c : 0.15
     proc_stddev_wz_c : 0.05
 
+    top_to_bottom_bias_x : -1.05
+    top_to_bottom_bias_y : 0.62
+    use_bestvel_for_speed : false 
+

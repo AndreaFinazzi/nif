@@ -66,6 +66,7 @@ AWLocalizationNode::AWLocalizationNode(const std::string &node_name)
 
   this->declare_parameter<double>("top_to_bottom_bias_x", double(0.0));
   this->declare_parameter<double>("top_to_bottom_bias_y", double(0.0));
+  this->declare_parameter<bool>("use_bestvel_for_speed", bool(false));
 
   this->m_use_inspva_heading =
       this->get_parameter("use_inspva_heading").as_bool();
@@ -105,7 +106,8 @@ AWLocalizationNode::AWLocalizationNode(const std::string &node_name)
 
   this->top_to_bottom_bias_x = this->get_parameter("top_to_bottom_bias_x").as_double();
   this->top_to_bottom_bias_y = this->get_parameter("top_to_bottom_bias_y").as_double();
-
+  this->bUseBestVelForSpeed =
+      this->get_parameter("use_bestvel_for_speed").as_bool();
 
   ekf_dt_ = 1.0 / std::max(ekf_rate_, 0.1);
   if (!enable_yaw_bias_estimation_) {
@@ -166,7 +168,10 @@ AWLocalizationNode::AWLocalizationNode(const std::string &node_name)
       "in_top_insstdev", nif::common::constants::QOS_SENSOR_DATA,
       std::bind(&AWLocalizationNode::TOPINSSTDEVCallback, this,
                 std::placeholders::_1));
-
+  subIMUONLY = this->create_subscription<sensor_msgs::msg::Imu>(
+      "in_imu", nif::common::constants::QOS_SENSOR_DATA,
+      std::bind(&AWLocalizationNode::IMUCallback, this,
+                std::placeholders::_1)); //use this when putting bestvel speed as vehicle velocity. 
   auto rmw_qos_profile =
       nif::common::constants::QOS_SENSOR_DATA.get_rmw_qos_profile();
 
@@ -393,9 +398,9 @@ void AWLocalizationNode::BESTPOSCallback
 void AWLocalizationNode::TOPBESTPOSCallback(
     const novatel_oem7_msgs::msg::BESTPOS::SharedPtr msg) {
   //test
-  unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
-  std::default_random_engine generator(seed);
-  std::normal_distribution<double> dist(0, 2.0);
+  // unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+  // std::default_random_engine generator(seed);
+  // std::normal_distribution<double> dist(0, 2.0);
   nif::localization::utils::GeodeticConverter::GeoRef currentGPS;
   currentGPS.latitude = (double)msg->lat  ; //+ dist(generator) * 1e-5;
   currentGPS.longitude = (double)msg->lon ; //+ dist(generator) * 1e-5;
@@ -523,6 +528,10 @@ void AWLocalizationNode::BESTVELCallback(
   if (m_dVelolcity_X > m_bestvel_heading_update_thres) {
     heading_flag = true;
   }
+
+  if (bUseBestVelForSpeed) {
+    m_dVelolcity_X = msg->hor_speed;
+  }
 }
 
 void AWLocalizationNode::INSSTDEVCallback(
@@ -559,24 +568,34 @@ void AWLocalizationNode::MessegefilteringCallback(
       (wheel_speed_msg->front_right + wheel_speed_msg->front_left) / 2 *
       nif::common::constants::KPH2MS;
 
-  auto ImuCurrentTime = rclcpp::Time(imu_msg->header.stamp);
   if (!bImuFirstCall) {
     bImuFirstCall = true;
-    ImuPrevTimeDouble =
-        static_cast<double>(ImuCurrentTime.seconds()) +
-        static_cast<double>(ImuCurrentTime.nanoseconds()) * 1e-9;
     return;
   }
-  ImuTimeDouble = static_cast<double>(ImuCurrentTime.seconds()) +
-                  static_cast<double>(ImuCurrentTime.nanoseconds()) * 1e-9;
+}
+
+void AWLocalizationNode::IMUCallback(
+    const sensor_msgs::msg::Imu::SharedPtr msg) {
+
+  if(!bUseBestVelForSpeed)
+  {
+    return;
+  }
+
+  this->imu_time_last_update = this->now();
+  m_dIMU_yaw_rate = msg->angular_velocity.z;
+
+  if (!bImuFirstCall) {
+    bImuFirstCall = true;
+    return;
+  }
 }
 
 
-/*
- * initEKF
- */
-void AWLocalizationNode::initEKF()
-{
+    /*
+     * initEKF
+     */
+    void AWLocalizationNode::initEKF() {
   Eigen::MatrixXd X = Eigen::MatrixXd::Zero(dim_x_, 1);
   Eigen::MatrixXd P = Eigen::MatrixXd::Identity(dim_x_, dim_x_) * 1.0E15; //  for x & y
   P(IDX::YAW, IDX::YAW) = 50.0;                                           //  for yaw

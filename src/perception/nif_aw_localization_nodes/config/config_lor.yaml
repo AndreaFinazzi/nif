@@ -38,3 +38,4 @@ nif_aw_localization_nodes:
 
     top_to_bottom_bias_x : -1.05
     top_to_bottom_bias_y : 0.62
+    use_bestvel_for_speed : true 
