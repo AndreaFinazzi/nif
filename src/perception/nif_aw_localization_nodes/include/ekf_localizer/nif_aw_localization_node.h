@@ -45,6 +45,22 @@
 
 #include <utils/geodetic_conv.h>
 
+struct GPSCorrectionData_t
+{
+    double x;
+    double y;
+    double lat_noise;
+    double lon_noise;
+    double yaw_noise;
+};
+
+struct VehPose_t
+{
+    double x;
+    double y;
+    double yaw;
+};
+
 // class AWLocalizationNode : public nif::common::IBaseNode {
 class AWLocalizationNode : public rclcpp::Node {
 
@@ -86,6 +102,8 @@ class AWLocalizationNode : public rclcpp::Node {
         subTOPINSPVA;
     rclcpp::Subscription<novatel_oem7_msgs::msg::BESTVEL>::SharedPtr subBESTVEL;
     rclcpp::Subscription<novatel_oem7_msgs::msg::INSSTDEV>::SharedPtr subINSSTDEV;
+    rclcpp::Subscription<novatel_oem7_msgs::msg::INSSTDEV>::SharedPtr
+        subTOPINSSTDEV;
 
     using SyncPolicyT = message_filters::sync_policies::ApproximateTime<
         sensor_msgs::msg::Imu, raptor_dbw_msgs::msg::WheelSpeedReport>;
@@ -99,6 +117,9 @@ class AWLocalizationNode : public rclcpp::Node {
     nif::localization::utils::GeodeticConverter conv_;
 
     TimeDelayKalmanFilter ekf_; // !< @brief  extended kalman filter instance.
+
+    GPSCorrectionData_t BestPosBottom;
+    GPSCorrectionData_t BestPosTop;
 
     /* parameters */
     bool show_debug_info_;
@@ -175,7 +196,7 @@ class AWLocalizationNode : public rclcpp::Node {
 
     bool bGPS;
     bool bGPSHeading;
-    bool gps_flag = false;
+    bool bottom_gps_flag = false;
     bool heading_flag = false;
     bool measure_flag = false;
     bool m_inspva_heading_init = false;
@@ -249,6 +270,8 @@ class AWLocalizationNode : public rclcpp::Node {
     void TOPINSPVACallback(const novatel_oem7_msgs::msg::INSPVA::SharedPtr msg);
     void BESTVELCallback(const novatel_oem7_msgs::msg::BESTVEL::SharedPtr msg);
     void INSSTDEVCallback(const novatel_oem7_msgs::msg::INSSTDEV::SharedPtr msg);
+    void
+    TOPINSSTDEVCallback(const novatel_oem7_msgs::msg::INSSTDEV::SharedPtr msg);
 
     void MessegefilteringCallback(
         const sensor_msgs::msg::Imu ::ConstSharedPtr &imu_msg,
@@ -294,6 +317,13 @@ class AWLocalizationNode : public rclcpp::Node {
                          const Eigen::MatrixXd &estimated,
                          const Eigen::MatrixXd &measured,
                          const Eigen::MatrixXd &estimated_cov);
+    double GetmahalanobisDistance(const Eigen::MatrixXd &x,
+                                  const Eigen::MatrixXd &obj_x,
+                                  const Eigen::MatrixXd &cov);
+    void CalculateBestCorrection(const GPSCorrectionData_t &BottomDataIn, 
+                                 const GPSCorrectionData_t &TopDataIn,
+                                 const VehPose_t& CurrentEstIn,
+                                 VehPose_t& BestCorrectionOut);
     bool GPSIgnoreGate(const double &dist_max,
                        const Eigen::MatrixXd &x,     // estimated
                        const Eigen::MatrixXd &obj_x, // correct

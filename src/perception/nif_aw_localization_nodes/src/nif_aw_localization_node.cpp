@@ -160,6 +160,10 @@ AWLocalizationNode::AWLocalizationNode(const std::string &node_name)
       "in_insstdev", nif::common::constants::QOS_SENSOR_DATA,
       std::bind(&AWLocalizationNode::INSSTDEVCallback, this,
                 std::placeholders::_1));
+  subTOPINSSTDEV = this->create_subscription<novatel_oem7_msgs::msg::INSSTDEV>(
+      "in_top_insstdev", nif::common::constants::QOS_SENSOR_DATA,
+      std::bind(&AWLocalizationNode::TOPINSSTDEVCallback, this,
+                std::placeholders::_1));
 
   auto rmw_qos_profile =
       nif::common::constants::QOS_SENSOR_DATA.get_rmw_qos_profile();
@@ -220,6 +224,22 @@ void AWLocalizationNode::timerCallback()
 
     predictKinematicsModel();
 
+    /**
+     * @brief CalculateBestCorrection selects the best correction
+     *        using novatel_bottom and novatel_top.
+     * @param GPS_pose  novatel_bottom/bestpos, novatel_bottom/bestpos
+     * @param Current_estimation  current estimation
+     * @return fused correction data.
+     */
+    VehPose_t BestCorrection;
+    VehPose_t CurrentEstimated;
+    CurrentEstimated.x = ekf_.getXelement(IDX::X);
+    CurrentEstimated.y = ekf_.getXelement(IDX::Y);
+    CurrentEstimated.yaw = ekf_.getXelement(IDX::YAW) + ekf_.getXelement(IDX::YAWB);
+
+    CalculateBestCorrection(BestPosBottom, BestPosTop, 
+                            CurrentEstimated, BestCorrection);
+
     double veh_x = m_dVelolcity_X;
     double veh_yaw_rate = m_dIMU_yaw_rate;
     double correction_x = m_dGPS_X;
@@ -227,12 +247,12 @@ void AWLocalizationNode::timerCallback()
     double correction_yaw = m_dGPS_Heading;
 
     /* pose measurement update */
-    if (gps_flag == true && false) {
+    if (bottom_gps_flag == true) {
       measurementUpdatePose(bestpos_time_last_update, correction_x,
                             correction_y, correction_yaw);
       // std::cout << "correction_yaw : " << correction_yaw << std::endl;
 
-      gps_flag = false;
+      bottom_gps_flag = false;
     }
 
     // if(measure_flag == true)
@@ -298,8 +318,8 @@ void AWLocalizationNode::setCurrentResult()
 // 1. Bottom GPS
 // 2. Top GPS
 // 3. BestVel
-void AWLocalizationNode::BESTPOSCallback(
-    const novatel_oem7_msgs::msg::BESTPOS::SharedPtr msg) {
+void AWLocalizationNode::BESTPOSCallback
+    (const novatel_oem7_msgs::msg::BESTPOS::SharedPtr msg) {
 
   this->bestpos_time_last_update = this->now();
   nif::localization::utils::GeodeticConverter::GeoRef currentGPS;
@@ -333,10 +353,20 @@ void AWLocalizationNode::BESTPOSCallback(
   quat_ekf_msg = tf2::toMsg(quat_ekf);
   ltp_odom.pose.pose.orientation = quat_ekf_msg;
 
+  ltp_odom.pose.covariance.at(0) = BestPosBottom.lat_noise;  //  x - x
+  ltp_odom.pose.covariance.at(1) = BestPosBottom.lat_noise;  //  x - y
+  ltp_odom.pose.covariance.at(6) = BestPosBottom.lon_noise;  //  y - x
+  ltp_odom.pose.covariance.at(7) = BestPosBottom.lon_noise;  //  y - y
+  ltp_odom.pose.covariance.at(35) = BestPosBottom.yaw_noise; //  yaw - yaw
+
   pub_bestpos_odometry->publish(ltp_odom);
 
-  gps_flag = true;
+  bottom_gps_flag = true;
   bGPS = true;
+
+  BestPosBottom.x = m_dGPS_X;
+  BestPosBottom.y = m_dGPS_Y;
+
   ////////////////////////////////////////////////////////////////////////////////////
 }
 
@@ -389,10 +419,18 @@ void AWLocalizationNode::TOPBESTPOSCallback(
   top_best_pos_odom.pose.pose.orientation.y = transform_top_to_bottom_sync.getRotation().y();
   top_best_pos_odom.pose.pose.orientation.z = transform_top_to_bottom_sync.getRotation().z();
   top_best_pos_odom.pose.pose.orientation.w = transform_top_to_bottom_sync.getRotation().w();
+  top_best_pos_odom.pose.covariance.at(0) = BestPosTop.lat_noise; //  x - x
+  top_best_pos_odom.pose.covariance.at(1) = BestPosTop.lat_noise; //  x - y
+  top_best_pos_odom.pose.covariance.at(6) = BestPosTop.lon_noise; //  y - x
+  top_best_pos_odom.pose.covariance.at(7) = BestPosTop.lon_noise; //  y - y
+  top_best_pos_odom.pose.covariance.at(35) = BestPosTop.yaw_noise; //  yaw - yaw
 
   pub_top_bestpos_odometry->publish(top_best_pos_odom);
 
   ////////////////////////////////////////////////////////////////////////////////////
+
+  BestPosTop.x = transform_top_to_bottom_sync.getOrigin().x();
+  BestPosTop.y = transform_top_to_bottom_sync.getOrigin().y();
 }
 
 void AWLocalizationNode::BOTTOMINSPVACallback(
@@ -463,13 +501,25 @@ void AWLocalizationNode::BESTVELCallback(
 
 void AWLocalizationNode::INSSTDEVCallback(
     const novatel_oem7_msgs::msg::INSSTDEV::SharedPtr msg) {
-
-    // std::cout << "latitude_stdev: " <<  msg->latitude_stdev << std::endl; 
-    // std::cout << "longitude_stdev: " << msg->longitude_stdev << std::endl; 
-    // std::cout << "azimuth_stdev: " << msg->azimuth_stdev << std::endl;
     m_stdev_latitude = msg->latitude_stdev;
     m_stdev_longitude = msg->longitude_stdev;
     m_stdev_azimuth = msg->azimuth_stdev / 180 * M_PI;
+
+    BestPosBottom.lat_noise = msg->latitude_stdev;
+    BestPosBottom.lon_noise = msg->longitude_stdev;
+    BestPosBottom.yaw_noise = msg->azimuth_stdev / 180 * M_PI;
+}
+
+void AWLocalizationNode::TOPINSSTDEVCallback(
+    const novatel_oem7_msgs::msg::INSSTDEV::SharedPtr msg) {
+
+  m_stdev_latitude = msg->latitude_stdev;
+  m_stdev_longitude = msg->longitude_stdev;
+  m_stdev_azimuth = msg->azimuth_stdev / 180 * M_PI;
+
+  BestPosTop.lat_noise = msg->latitude_stdev;
+  BestPosTop.lon_noise = msg->longitude_stdev;
+  BestPosTop.yaw_noise = msg->azimuth_stdev / 180 * M_PI;
 }
 
 void AWLocalizationNode::MessegefilteringCallback(
@@ -667,8 +717,11 @@ void AWLocalizationNode::measurementUpdatePose(rclcpp::Time measurement_time_,
   //           << ekf_yaw << std::endl;
                    /* Set measurement matrix */
   Eigen::MatrixXd y(dim_y, 1);
+  Eigen::MatrixXd y_correction(2, 1);
 
   y << corr_x_, corr_y_, yaw;
+  y_correction << corr_x_, corr_y_;
+
 
   if (isnan(y.array()).any() || isinf(y.array()).any()) {
     RCLCPP_WARN(this->get_logger(), "[EKF] pose measurement matrix includes NaN of Inf. ignore update. check pose message.");    
@@ -677,13 +730,17 @@ void AWLocalizationNode::measurementUpdatePose(rclcpp::Time measurement_time_,
 
   /* Gate */
   Eigen::MatrixXd y_ekf(dim_y, 1);
+  Eigen::MatrixXd y_prediction(2, 1);
 
   y_ekf << ekf_.getXelement(delay_step * dim_x_ + IDX::X),
       ekf_.getXelement(delay_step * dim_x_ + IDX::Y), ekf_yaw;
 
-  Eigen::MatrixXd P_curr, P_y;
+  y_prediction << ekf_.getXelement(delay_step * dim_x_ + IDX::X), ekf_.getXelement(delay_step * dim_x_ + IDX::Y);
+
+  Eigen::MatrixXd P_curr, P_y, P_2by2;
   ekf_.getLatestP(P_curr);
   P_y = P_curr.block(0, 0, dim_y, dim_y);
+  P_2by2 = P_curr.block(0, 0, 2, 2);
 
   double update_ignore_distance = pose_gate_dist_ + m_dVelolcity_X * ekf_dt_;
 
@@ -691,14 +748,13 @@ void AWLocalizationNode::measurementUpdatePose(rclcpp::Time measurement_time_,
   // {
   //   return;
   // }
+  // std::cout << "P_y : " << P_y << std::endl;
 
-  std::cout << "P_y : " << P_y << std::endl;
-  if (!mahalanobisGate(update_ignore_distance, y_ekf, y, P_y))
-  {
+  // if (!mahalanobisGate(update_ignore_distance, y_ekf, y, P_y))
+  if (!mahalanobisGate(update_ignore_distance, y_prediction, y_correction,
+                       P_2by2)) {
     return;
   }
-
-
 
   DEBUG_PRINT_MAT(y.transpose());
   DEBUG_PRINT_MAT(y_ekf.transpose());
@@ -731,9 +787,9 @@ void AWLocalizationNode::measurementUpdatePose(rclcpp::Time measurement_time_,
     const double cov_pos_y =
         std::pow(pose_measure_uncertainty_time_ * vx * sin(ekf_yaw), 2.0);
     const double cov_yaw = std::pow(pose_measure_uncertainty_time_ * wz, 2.0);
-    R(0, 0) = m_stdev_latitude + cov_pos_x; // std::pow(pose_stddev_x_, 2) + cov_pos_x; //  pos_x
-    R(1, 1) = m_stdev_longitude + cov_pos_y; // std::pow(pose_stddev_y_, 2) + cov_pos_y; //  pos_y
-    R(2, 2) = m_stdev_azimuth + cov_yaw; // std::pow(pose_stddev_yaw_, 2) + cov_yaw; //  yaw
+    R(0, 0) = m_stdev_latitude + cov_pos_x +  std::pow(pose_stddev_x_, 2) ; //+ cov_pos_x; //  pos_x
+    R(1, 1) = m_stdev_longitude + cov_pos_y + std::pow(pose_stddev_y_, 2) ; //+ cov_pos_y +  pos_y
+    R(2, 2) = m_stdev_azimuth + cov_yaw; + std::pow(pose_stddev_yaw_, 2); // + cov_yaw; //  yaw
   }
 
   /* In order to avoid a large change at the time of updating, measuremeent
@@ -859,10 +915,11 @@ bool AWLocalizationNode::mahalanobisGate(const double& dist_max, const Eigen::Ma
                                    const Eigen::MatrixXd& cov)
 {
   Eigen::MatrixXd mahalanobis_squared = (x - obj_x).transpose() * cov.inverse() * (x - obj_x);
-  std::cout << "x : " << x << ", obj_x: " << obj_x << ", delta : " << x - obj_x << std::endl;
-  std::cout << "mahalanobis_squared" << mahalanobis_squared  << std::endl;
+  // std::cout << "x : " << x << ", obj_x: " << obj_x << ", delta : " << x - obj_x << std::endl;
+  // std::cout << "P_y^-1 : " << cov.inverse() << std::endl;
+  // std::cout << "mahalanobis_squared : " << std::sqrt(mahalanobis_squared(0))  << std::endl;
 
-  RCLCPP_INFO(this->get_logger(), "measurement update: mahalanobis = %f, gate limit = %f", std::sqrt(mahalanobis_squared(0)), dist_max);
+  // RCLCPP_INFO(this->get_logger(), "measurement update: mahalanobis = %f, gate limit = %f", std::sqrt(mahalanobis_squared(0)), dist_max);
   m_mahalanobisScore = std::sqrt(mahalanobis_squared(0));
 
   if (mahalanobis_squared(0) > dist_max * dist_max)
@@ -878,16 +935,36 @@ bool AWLocalizationNode::mahalanobisGate(const double& dist_max, const Eigen::Ma
   return true;
 }
 
-/*
- * GPSIgnoreGate
- * Maximum body slip angle(beta) : 0.2479 
-     = rad = atan(y_delta /  x_delta)
- */
-bool AWLocalizationNode::GPSIgnoreGate(const double &dist_max, 
-                                       const Eigen::MatrixXd &x, //estimated
-                                       const Eigen::MatrixXd &obj_x, // correct
-                                       const Eigen::MatrixXd &cov) {
+double AWLocalizationNode::GetmahalanobisDistance(const Eigen::MatrixXd &x,
+                                                  const Eigen::MatrixXd &obj_x,
+                                                  const Eigen::MatrixXd &cov)
+{
+  Eigen::MatrixXd mahalanobis_squared =
+      (x - obj_x).transpose() * cov.inverse() * (x - obj_x);
+  double distance = std::sqrt(mahalanobis_squared(0));
+
+  return distance;
+}
+
+void AWLocalizationNode::CalculateBestCorrection(const GPSCorrectionData_t &BottomDataIn, 
+                                                 const GPSCorrectionData_t &TopDataIn,
+                                                 const VehPose_t& CurrentEstIn,
+                                                 VehPose_t& BestCorrectionOut)
+{
   
+}
+
+/*
+  * GPSIgnoreGate
+  * Maximum body slip angle(beta) : 0.2479
+      = rad = atan(y_delta /  x_delta)
+  */
+bool AWLocalizationNode::GPSIgnoreGate(
+    const double &dist_max,
+    const Eigen::MatrixXd &x,     // estimated
+    const Eigen::MatrixXd &obj_x, // correct
+    const Eigen::MatrixXd &cov) {
+
   double x_delta = (obj_x(0,0)- x(0,0)) * cos(x(2,0)) + (obj_x(1,0)- x(1,0)) * sin(x(2,0));
   double y_delta = -(obj_x(0,0)- x(0,0)) * sin(x(2,0)) + (obj_x(1,0)- x(1,0)) * cos(x(2,0));
 
@@ -966,10 +1043,8 @@ void AWLocalizationNode::publishEstimateResult()
     pub_measured_pose_->publish(p);
   }
 
-
-
-
 }
+
 
 double AWLocalizationNode::normalizeYaw(const double& yaw)
 {

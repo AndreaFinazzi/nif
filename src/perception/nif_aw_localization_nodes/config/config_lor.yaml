@@ -19,9 +19,9 @@ nif_aw_localization_nodes:
     pose_measure_uncertainty_time : 0.05
     pose_rate : 20.0
     pose_gate_dist : 50.0 # this value is margin. mahalanobisGate is updated based on vehicle speed.
-    # pose_stddev_x : 0.20 # this value is replaced by novatel insstdev
-    # pose_stddev_y : 0.20 # this value is replaced by novatel insstdev
-    # pose_stddev_yaw : 0.035 # this value is replaced by novatel insstdev
+    pose_stddev_x : 0.050 # this value is replaced by novatel insstdev
+    pose_stddev_y : 0.050 # this value is replaced by novatel insstdev
+    pose_stddev_yaw : 0.005 # this value is replaced by novatel insstdev
     use_pose_with_covariance : false
 
     twist_additional_delay : 0.0
