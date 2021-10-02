@@ -26,10 +26,10 @@
 #include <utility>
 #include <vector>
 
-#include <control_model.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 #include "sensor_msgs/msg/imu.hpp"
+#include "std_msgs/msg/float32_multi_array.hpp"
 #include <deep_orange_msgs/msg/joystick_command.hpp>
 #include <deep_orange_msgs/msg/pt_report.hpp>
 #include <raptor_dbw_msgs/msg/wheel_speed_report.hpp>
@@ -67,9 +67,16 @@ public:
 
   std_msgs::msg::Float32 throttle_cmd;
   std_msgs::msg::Float32 brake_cmd;
-  std_msgs::msg::Float32 sigma_msg;
   std_msgs::msg::UInt8 gear_cmd;
   std_msgs::msg::String status_msg;
+
+  // diagnostic data
+  double m_traction_activated = 0.; // 0 for false
+  double m_ABS_activated = 0.;      // 0 for false
+  double m_sigma = 0.;
+  double m_desired_engine_torque = 0.;
+  double m_max_engine_torque = 0.;
+  double m_max_a_lon = 0.;
 
 private:
   void initializeGears();
@@ -80,7 +87,9 @@ private:
   void calculateBrakeCmd(double vel_err);
   void setCmdsToZeros();
   void publishThrottleBrake();
-  double safeDesVelProfiler(double orig_des_vel);
+  void publishDiagnostic(double is_traction_activated, double is_ABS_activated,
+                         double tire_slip_ratio, double desired_engine_torque,
+                         double max_engine_torque, double max_a_lon);
   void shiftCallback();
   void statusCallback();
   void
@@ -97,7 +106,8 @@ private:
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pubThrottleCmdRaw_;
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pubBrakeCmd_;
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pubBrakeCmdRaw_;
-  rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pubSlipRatio_;
+  rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr pubDiagnostic_;
+
   rclcpp::Publisher<std_msgs::msg::UInt8>::SharedPtr pubGearCmd_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr pubControlStatus_;
   rclcpp::Subscription<deep_orange_msgs::msg::JoystickCommand>::SharedPtr
