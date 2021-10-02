@@ -56,7 +56,7 @@ windows:
       - shell_command:
           - ros2 launch nif_points_preprocessor_nodes deploy.launch.py
       - shell_command:
-          - ros2 launch nif_multilayer_planning_nodes deploy.launch.py
+          # - ros2 launch nif_multilayer_planning_nodes deploy.launch.py
       - shell_command:
           - ros2 launch nif_aw_localization_nodes deploy.launch.py
       - shell_command:
