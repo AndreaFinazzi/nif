@@ -15,13 +15,14 @@
 
 #ifndef _CONTROL_MODEL_H_
 #define _CONTROL_MODEL_H_
-
+#include "nif_vehicle_dynamics_manager/engine_manager.hpp"
+#include "nif_vehicle_dynamics_manager/tire_manager.hpp"
 #include <utility>
 
 namespace control {
-/// @class AccelController
+/// @class ThrottleBrakeProfiler
 /// @brief
-class AccelController {
+class ThrottleBrakeProfiler {
 public:
   /// @brief Constructor
   /// @param[in] K_accel
@@ -30,10 +31,12 @@ public:
   /// @param[in] pedalToCmd
   /// @param[in] cmdMin is a lower bound on the output command. Defaults to
   /// -1e8.
-  AccelController(const double &K_accel = 0.0, const double &K_accel2 = 0.0,
-                  const double &K_bias = 0.0, const double &pedalToCmd = 0.0,
-                  const double &dt = 0.01, const double &cmdMax = 1e8,
-                  const double &cmdMin = -1e8);
+  ThrottleBrakeProfiler(const double &K_accel = 0.0,
+                        const double &K_accel2 = 0.0,
+                        const double &K_bias = 0.0,
+                        const double &pedalToCmd = 0.0, const double &dt = 0.01,
+                        const double &cmdMax = 1e8,
+                        const double &cmdMin = -1e8);
 
   /// @brief Input the current error and get back the current control value
   /// @param newError is the most recently calculated error value
@@ -68,7 +71,46 @@ private:
   /// @brief Minimum output command. Must be less than or equal to zero.
   double cmdMin_ = -1e8;
 
-}; // End class AccelController
+}; // End class ThrottleBrakeProfiler
+
+class EngineMapAccelController {
+public:
+  /// @brief Constructor
+  /// @param[in] pedalToCmd
+  /// @param[in] cmdMin
+  /// @param[in] cmdMax
+  EngineMapAccelController(const double &engine_safety_factor = 1.2,
+                           const int &engine_safety_rpm_thres = 3000,
+                           const double &pedalToCmd = 1.0,
+                           const double &cmdMax = 1e8,
+                           const double &cmdMin = -1e8);
+
+  //! Load vehicle dynamics manager
+  EngineManager m_engine_manager;
+
+  /// @brief Get the current control value (calculated based on most recent
+  /// errors)
+  double CurrentControl(double desired_acceleration, int gear_num,
+                        int engine_speed);
+
+  /// @brief Set the minimum and maximum bounds on the command output
+  std::pair<bool, bool> SetCmdBounds(const double &min, const double &max);
+
+private:
+  /// @brief Saturate the command value based on the max and min limits
+  double SaturateCmd(const double &cmd);
+
+  /// @brief Controller parameters
+  double pedalToCmd_ = 0.0;
+  /// @brief Maximum output command. Must be greater than zero.
+  double cmdMax_ = 1e8;
+  /// @brief Minimum output command. Must be less than or equal to zero.
+  double cmdMin_ = -1e8;
+
+  /// @brief Vehicle model parameter
+  double mass = m_engine_manager.MASS_TOTAL;
+
+}; // End class EngineMapAccelController
 
 } // End namespace control
 

@@ -85,7 +85,7 @@ void nif::control::ControlSafetyLayerNode::run() {
             this->control_cmd.steering_control_cmd =
                     this->override_control_cmd.steering_control_cmd;
             is_overriding_steering = true;
-        } else if ( this->has_perception_steering && 
+        } else if ( false && this->has_perception_steering && 
                     this->now() - this->perception_steering_last_update < rclcpp::Duration(1, 0)) {
             this->control_cmd.steering_control_cmd.data =
                 this->perception_steering_cmd;
@@ -169,7 +169,7 @@ void nif::control::ControlSafetyLayerNode::run() {
 
             this->publishSteeringCmd(this->control_cmd.steering_control_cmd);
 
-//    Always allow braking override
+            //    Always allow braking override
             if (this->override_control_cmd.braking_control_cmd.data > 100.0)
             {
                 this->control_cmd.braking_control_cmd =
@@ -177,10 +177,10 @@ void nif::control::ControlSafetyLayerNode::run() {
                 this->control_cmd.accelerator_control_cmd.data = 0.0;
                 this->publishBrakingCmd(this->control_cmd.braking_control_cmd);
                 this->publishAcceleratorCmd(this->control_cmd.accelerator_control_cmd);
-//  Publish desired velocity if long_autonomy_enabled
+            //  Publish desired velocity if long_autonomy_enabled
             } else if (long_autonomy_enabled) {
                 this->publishDesiredAcceleration(this->control_cmd.desired_accel_cmd);
-                // Publish joystck commands if long_autonomy_enable is false and no braking is commanded
+            // Publish joystck commands if long_autonomy_enable is false and no braking is commanded
             } else {
                 this->publishBrakingCmd(this->override_control_cmd.braking_control_cmd);
                 this->publishAcceleratorCmd(this->override_control_cmd.accelerator_control_cmd);
@@ -198,9 +198,9 @@ void nif::control::ControlSafetyLayerNode::run() {
             //      TODO handle critical error in the safest way
             RCLCPP_ERROR(this->get_logger(),
                          "ControlSafetyLayerNode caught an exception, enabling emergency lane control");
-//    Notify the SystemStatusManager of the change.
+            //    Notify the SystemStatusManager of the change.
             this->emergency_lane_enabled = true;
-            this->setNodeStatus(common::NodeStatusCode::NODE_ERROR);
+            this->setNodeStatus(common::NodeStatusCode::NODE_FATAL_ERROR);
         }
     }
 

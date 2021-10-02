@@ -16,30 +16,55 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 # find dependencies
-find_package(ament_cmake REQUIRED)
-find_package(rclcpp REQUIRED)
-find_package(std_msgs REQUIRED)
-find_package(raptor_dbw_msgs REQUIRED)
-find_package(deep_orange_msgs REQUIRED)
+find_package(ament_cmake_auto REQUIRED)
+ament_auto_find_build_dependencies()
 
-include_directories(include)
+# Library
+ament_auto_add_library(${PROJECT_NAME} SHARED
+        src/accel_control_node.cpp
+        src/control_model.cpp
+        src/TractionABS.cpp)
 
-add_executable(${PROJECT_NAME}_exe src/accel_control_node.cpp src/control_model.cpp)
-ament_target_dependencies(${PROJECT_NAME}_exe rclcpp std_msgs raptor_dbw_msgs deep_orange_msgs)
-install(
-  TARGETS ${PROJECT_NAME}_exe
-  DESTINATION lib/${PROJECT_NAME}
-)
-
-install(DIRECTORY
-  config
-  DESTINATION share/${PROJECT_NAME}
-)
+ament_auto_add_executable (${PROJECT_NAME}_exe
+        src/accel_control_node.cpp)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
-  set(ament_cmake_copyright_FOUND TRUE)
+  # the following line skips the linter which checks for copyrights
+  # uncomment the line when a copyright and license is not present in all source files
+  #set(ament_cmake_copyright_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-ament_package()
+ament_auto_package()
+
+# # find dependencies
+# find_package(ament_cmake REQUIRED)
+# find_package(rclcpp REQUIRED)
+# find_package(std_msgs REQUIRED)
+# find_package(raptor_dbw_msgs REQUIRED)
+# find_package(deep_orange_msgs REQUIRED)
+# find_package(bvs_msgs REQUIRED)
+# find_package(vehicle_dynamics_manager REQUIRED)
+
+# include_directories(include)
+
+# add_executable(accel_controller src/accel_control_node.cpp src/control_model.cpp src/TractionABS.cpp)
+# ament_target_dependencies(accel_controller rclcpp std_msgs raptor_dbw_msgs deep_orange_msgs bvs_msgs)
+# install(
+#   TARGETS accel_controller
+#   DESTINATION lib/${PROJECT_NAME}
+# )
+
+# install(DIRECTORY
+#   config
+#   DESTINATION share/${PROJECT_NAME}
+# )
+
+# if(BUILD_TESTING)
+#   find_package(ament_lint_auto REQUIRED)
+#   set(ament_cmake_copyright_FOUND TRUE)
+#   ament_lint_auto_find_test_dependencies()
+# endif()
+
+# ament_package()
