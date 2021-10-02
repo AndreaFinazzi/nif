@@ -19,8 +19,8 @@ from std_msgs.msg import String
 from rclpy.node import Node
 from sklearn.neighbors import KDTree
 from geometry_msgs.msg import Quaternion
-from quintic_polynomial_planner import *
-from utils import *
+
+from nif_multilayer_planning_nodes import quintic_polynomial_planner
 
 def get_share_file(package_name, file_name):
     return os.path.join(get_package_share_directory(package_name), file_name)
@@ -34,7 +34,7 @@ for dir_name in os.listdir(lib_path_default):
     dir_path = os.path.join(lib_path_default, dir_name)
     if os.path.isdir(dir_path):
         sys.path.insert(0, dir_path)
-os.environ['OPENBLAS_NUM_THREADS'] = str(1)
+os.environ['OPENBLAS_NUM_THREADS'] = str(3)
 
 # TODO : I don't know why but currently, we have to import the graph library in this order
 from Graph_LTPL import Graph_LTPL
@@ -166,7 +166,8 @@ class GraphBasedPlanner(rclpy.node.Node):
         # TODO pre-load all these info
         self.pit_in_wpt_msg = Path()
         self.pit_in_wpt_msg.header.frame_id = "odom" #str(self.get_global_parameter('frames.global'))
-        for idx in range(self.pit_in_maptrack_len):
+
+        for idx in range(len(self.pit_in_wpt)):
             pose = PoseStamped()
             pose.header.frame_id = self.pit_in_wpt_msg.header.frame_id
             self.pit_in_wpt_msg.poses.append(pose)
@@ -174,7 +175,7 @@ class GraphBasedPlanner(rclpy.node.Node):
         # TODO pre-load all these info
         self.pit_out_wpt_msg = Path()
         self.pit_out_wpt_msg.header.frame_id = "odom" #str(self.get_global_parameter('frames.global'))
-        for idx in range(self.pit_out_maptrack_len):
+        for idx in range(len(self.pit_out_wpt)):
             pose = PoseStamped()
             pose.header.frame_id = self.pit_out_wpt_msg.header.frame_id
             self.pit_out_wpt_msg.poses.append(pose)
@@ -350,7 +351,7 @@ class GraphBasedPlanner(rclpy.node.Node):
                 self.pit_in_wpt_gen_first_call = False
                 self.pit_out_wpt_gen_first_call = True
 
-                cur_ego_yaw_rad = yaw_from_ros_quaternion(self.current_veh_odom.pose.pose.orientation)
+                cur_ego_yaw_rad = self.yaw_from_ros_quaternion(self.current_veh_odom.pose.pose.orientation)
                 self.stitch_pit_in_waypoint(self.current_veh_odom.pose.pose.position.x,self.current_veh_odom.pose.pose.position.y,cur_ego_yaw_rad,self.vel_est,cur_acc_mpss=0.0,
                                             goal_pose_x=self.pit_in_wpt[0][0], goal_pose_y=self.pit_in_wpt[0][1], goal_pose_yaw_rad=self.pit_in_wpt[0][2],goal_speed_mps=self.vel_est, goal_acc_mpss = 0.0,
                                             max_acc_mpss=1.0, max_jerk= 1.0, dt=0.1)
@@ -386,7 +387,7 @@ class GraphBasedPlanner(rclpy.node.Node):
                 self.pit_out_wpt_gen_first_call = False
                 self.pit_in_wpt_gen_first_call = True
 
-                cur_ego_yaw_rad = yaw_from_ros_quaternion(self.current_veh_odom.pose.pose.orientation)
+                cur_ego_yaw_rad = self.yaw_from_ros_quaternion(self.current_veh_odom.pose.pose.orientation)
                 self.stitch_pit_out_waypoint(self.current_veh_odom.pose.pose.position.x,self.current_veh_odom.pose.pose.position.y,cur_ego_yaw_rad,self.vel_est,cur_acc_mpss=0.0,
                                             goal_pose_x=self.pit_out_wpt[0][0], goal_pose_y=self.pit_out_wpt[0][1], goal_pose_yaw_rad=self.pit_out_wpt[0][2],goal_speed_mps=self.vel_est, goal_acc_mpss = 0.0,
                                             max_acc_mpss=1.0, max_jerk= 1.0, dt=0.1)
