@@ -253,6 +253,9 @@ class OnlineTrajectoryHandler(object):
                 self.__log.warning("Heading OK!")
             self.__cor_heading = True
 
+        # FORCE true -- 21.10.02
+        self.__cor_heading = True
+
         # calculate spline to start node
         x_coeff, y_coeff, _, _ = tph.calc_splines.calc_splines(path=np.vstack((start_pos, end_pos)),
                                                                psi_s=start_heading,

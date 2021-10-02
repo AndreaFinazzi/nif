@@ -3,6 +3,7 @@ import configparser
 import time
 import json
 import datetime
+from typing import Tuple
 import numpy as np
 import sys, os
 import csv
@@ -421,7 +422,10 @@ class GraphBasedPlanner(rclpy.node.Node):
     def timer_callback(self):
 
         if self.odom_first_call is True:
-            return
+            planning_graph = False
+        else:
+            planning_graph = True
+
 
         if self.mission_code == MissionStatus.MISSION_PIT_IN:
             # ---------------------------------------------------
@@ -432,30 +436,33 @@ class GraphBasedPlanner(rclpy.node.Node):
             nearest_dist_list_from, nearest_ind_list_form = self.pit_tree.query([[self.current_veh_odom.pose.pose.position.x,
                                                                      self.current_veh_odom.pose.pose.position.y]], k=1)
             nearest_ind = nearest_ind_list_form[0][0]
-            self.pit_wpt_msg.header.stamp = self.get_clock().now().to_msg()
-            self.pit_wpt_msg.header.frame_id = "odom"
+            pit_in_path_msg = Path()
+            pit_in_path_msg.header.stamp = self.get_clock().now().to_msg()
+            pit_in_path_msg.header.frame_id = "odom"
 
-            for i in range(100):
-                idx = None
-                if nearest_ind + i < len(self.pit_wpt):
-                    idx = nearest_ind + i
-                else:
-                    idx = nearest_ind + i - len(self.pit_wpt)
-                goal_pt_inglobal_x = self.pit_wpt[idx][0]
-                goal_pt_inglobal_y = self.pit_wpt[idx][1]
-                goal_pt_inglobal_yaw_rad = self.pit_wpt[idx][2]
+            if self.sys_var_track == 'LG_SVL':
+                for i in range(100):
+                    idx = None
+                    if nearest_ind + i < len(self.pit_wpt):
+                        idx = nearest_ind + i
+                    else:
+                        idx = nearest_ind + i - len(self.pit_wpt)
+                    goal_pt_inglobal_x = self.pit_wpt[idx][0]
+                    goal_pt_inglobal_y = self.pit_wpt[idx][1]
+                    goal_pt_inglobal_yaw_rad = self.pit_wpt[idx][2]
 
-                quat = self.euler_to_quaternion([goal_pt_inglobal_yaw_rad,0.0,0.0])
+                    quat = self.euler_to_quaternion([goal_pt_inglobal_yaw_rad,0.0,0.0])
 
-                pose = PoseStamped()
-                pose.pose.position.x = goal_pt_inglobal_x
-                pose.pose.position.y = goal_pt_inglobal_y
-                pose.pose.orientation.x = quat[0]
-                pose.pose.orientation.y = quat[1]
-                pose.pose.orientation.z = quat[2]
-                pose.pose.orientation.w = quat[3]
-                self.pit_wpt_msg.poses.append(pose)
-            self.local_maptrack_inglobal_pub.publish(self.pit_wpt_msg)
+                    pose = PoseStamped()
+                    pose.pose.position.x = goal_pt_inglobal_x
+                    pose.pose.position.y = goal_pt_inglobal_y
+                    pose.pose.orientation.x = quat[0]
+                    pose.pose.orientation.y = quat[1]
+                    pose.pose.orientation.z = quat[2]
+                    pose.pose.orientation.w = quat[3]
+                    pit_in_path_msg.poses.append(pose)
+                self.local_maptrack_inglobal_pub.publish(pit_in_path_msg)
+            return
 
             # TODO: parameterize this look ahead index
             look_ahead_ind = 10
@@ -479,22 +486,6 @@ class GraphBasedPlanner(rclpy.node.Node):
             pit_collision_checked_local_path = Path()
             pit_collision_checked_local_path.header.frame_id = "base_link"
             # Collision checking with the cost map
-            if self.sys_var_track == 'LG_SVL':
-                for i in range(len(self.pit_wpt_local)):
-                    wpt_local_x = self.pit_wpt_local[i][0]
-                    wpt_local_y = self.pit_wpt_local[i][1]
-                    wpt_local_yaw_rad = self.pit_wpt_local[i][2]
-                    quat = self.euler_to_quaternion([wpt_local_yaw_rad,0.0,0.0])
-
-                    pose = PoseStamped()
-                    pose.pose.position.x = wpt_local_x
-                    pose.pose.position.y = wpt_local_y
-                    pose.pose.orientation.x = quat[0]
-                    pose.pose.orientation.y = quat[1]
-                    pose.pose.orientation.z = quat[2]
-                    pose.pose.orientation.w = quat[3]
-                    pit_collision_checked_local_path.poses.append(pose)
-                self.pit_wpt_inbody_pub.publish(pit_collision_checked_local_path)
 
             if self.costmap is not None and self.sys_var_track != 'LG_SVL':
                 for i in range(len(self.pit_wpt_local)):
@@ -600,30 +591,34 @@ class GraphBasedPlanner(rclpy.node.Node):
             nearest_dist_list_from, nearest_ind_list_form = self.pit_tree.query([[self.current_veh_odom.pose.pose.position.x,
                                                                      self.current_veh_odom.pose.pose.position.y]], k=1)
             nearest_ind = nearest_ind_list_form[0][0]
-            self.pit_wpt_msg.header.stamp = self.get_clock().now().to_msg()
-            self.pit_wpt_msg.header.frame_id = "odom"
+            pit_in_path_msg = Path()
+            pit_in_path_msg.header.stamp = self.get_clock().now().to_msg()
+            pit_in_path_msg.header.frame_id = "odom"
 
-            for i in range(100):
-                idx = None
-                if nearest_ind + i < len(self.pit_wpt):
-                    idx = nearest_ind + i
-                else:
-                    idx = nearest_ind + i - len(self.pit_wpt)
-                goal_pt_inglobal_x = self.pit_wpt[idx][0]
-                goal_pt_inglobal_y = self.pit_wpt[idx][1]
-                goal_pt_inglobal_yaw_rad = self.pit_wpt[idx][2]
+            if self.sys_var_track == 'LG_SVL':
+                for i in range(100):
+                    idx = None
+                    if nearest_ind + i < len(self.pit_wpt):
+                        idx = nearest_ind + i
+                    else:
+                        idx = nearest_ind + i - len(self.pit_wpt)
+                    goal_pt_inglobal_x = self.pit_wpt[idx][0]
+                    goal_pt_inglobal_y = self.pit_wpt[idx][1]
+                    goal_pt_inglobal_yaw_rad = self.pit_wpt[idx][2]
 
-                quat = self.euler_to_quaternion([goal_pt_inglobal_yaw_rad,0.0,0.0])
+                    quat = self.euler_to_quaternion([goal_pt_inglobal_yaw_rad,0.0,0.0])
 
-                pose = PoseStamped()
-                pose.pose.position.x = goal_pt_inglobal_x
-                pose.pose.position.y = goal_pt_inglobal_y
-                pose.pose.orientation.x = quat[0]
-                pose.pose.orientation.y = quat[1]
-                pose.pose.orientation.z = quat[2]
-                pose.pose.orientation.w = quat[3]
-                self.pit_wpt_msg.poses.append(pose)
-            self.local_maptrack_inglobal_pub.publish(self.pit_wpt_msg)
+                    pose = PoseStamped()
+                    pose.pose.position.x = goal_pt_inglobal_x
+                    pose.pose.position.y = goal_pt_inglobal_y
+                    pose.pose.orientation.x = quat[0]
+                    pose.pose.orientation.y = quat[1]
+                    pose.pose.orientation.z = quat[2]
+                    pose.pose.orientation.w = quat[3]
+                    pit_in_path_msg.poses.append(pose)
+                self.local_maptrack_inglobal_pub.publish(pit_in_path_msg)
+            return
+
             
             # TODO: parameterize this look ahead index
             look_ahead_ind = 10
@@ -647,22 +642,6 @@ class GraphBasedPlanner(rclpy.node.Node):
             pit_collision_checked_local_path = Path()
             pit_collision_checked_local_path.header.frame_id = "base_link"
             # Collision checking with the cost map
-            if self.sys_var_track == 'LG_SVL':
-                for i in range(len(self.pit_wpt_local)):
-                    wpt_local_x = self.pit_wpt_local[i][0]
-                    wpt_local_y = self.pit_wpt_local[i][1]
-                    wpt_local_yaw_rad = self.pit_wpt_local[i][2]
-                    quat = self.euler_to_quaternion([wpt_local_yaw_rad,0.0,0.0])
-
-                    pose = PoseStamped()
-                    pose.pose.position.x = wpt_local_x
-                    pose.pose.position.y = wpt_local_y
-                    pose.pose.orientation.x = quat[0]
-                    pose.pose.orientation.y = quat[1]
-                    pose.pose.orientation.z = quat[2]
-                    pose.pose.orientation.w = quat[3]
-                    pit_collision_checked_local_path.poses.append(pose)
-                self.pit_wpt_inbody_pub.publish(pit_collision_checked_local_path)
 
             if self.costmap is not None and self.sys_var_track != 'LG_SVL':
                 for i in range(len(self.pit_wpt_local)):
@@ -762,6 +741,9 @@ class GraphBasedPlanner(rclpy.node.Node):
 
         # TODO : Coordinate driving which means that there is no overtaking others. Maximum speed should be handeled in the velocity planner side as well.
         elif self.mission_code == MissionStatus.MISSION_SLOW_DRIVE:
+
+            if planning_graph == False:
+                return
             # -- SELECT ONE OF THE PROVIDED TRAJECTORIES -----------------------------------------------------------------------
             # (here: brute-force, replace by sophisticated behavior planner)
             for sel_action_prev in ["straight", "follow"]:  # try to force 'right', else try next in list
@@ -817,6 +799,8 @@ class GraphBasedPlanner(rclpy.node.Node):
             self.msg.poses[0].pose.orientation = self.msg.poses[1].pose.orientation
             self.local_maptrack_inglobal_pub.publish(self.msg)
         else:
+            if planning_graph == False:
+                return
             # NOMINAL CASE
             # ------------------------------------------------
             # GREEN FLAG / EGO VEHICLE IS RUNNING ON THE TRACK
