@@ -76,11 +76,12 @@ private:
 class EngineMapAccelController {
 public:
   /// @brief Constructor
-  /// @param[in] param1
   /// @param[in] pedalToCmd
   /// @param[in] cmdMin
   /// @param[in] cmdMax
-  EngineMapAccelController(const double &pedalToCmd = 1.0,
+  EngineMapAccelController(const double &engine_safety_factor = 1.2,
+                           const int &engine_safety_rpm_thres = 3000,
+                           const double &pedalToCmd = 1.0,
                            const double &cmdMax = 1e8,
                            const double &cmdMin = -1e8);
 
@@ -100,7 +101,6 @@ private:
   double SaturateCmd(const double &cmd);
 
   /// @brief Controller parameters
-  double param1_ = 0.0;
   double pedalToCmd_ = 0.0;
   /// @brief Maximum output command. Must be greater than zero.
   double cmdMax_ = 1e8;

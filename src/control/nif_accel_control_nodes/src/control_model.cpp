@@ -66,12 +66,14 @@ double ThrottleBrakeProfiler::SaturateCmd(const double &cmd) {
 }
 
 // ***** Model - EngineMapAccelController ***** //
-EngineMapAccelController::EngineMapAccelController(const double &pedalToCmd,
-                                                   const double &cmdMax,
-                                                   const double &cmdMin) {
+EngineMapAccelController::EngineMapAccelController(
+    const double &engine_safety_factor, const int &engine_safety_rpm_thres,
+    const double &pedalToCmd, const double &cmdMax, const double &cmdMin) {
   // Set control parameters
   pedalToCmd_ = pedalToCmd;
-
+  // update engine manager parameters
+  m_engine_manager.m_gamma = engine_safety_factor;
+  m_engine_manager.m_rpm_safe_thres = engine_safety_rpm_thres;
   // Set valid bounds
   SetCmdBounds(cmdMin, cmdMax);
 }
@@ -92,7 +94,7 @@ double EngineMapAccelController::CurrentControl(double desired_acceleration,
       m_engine_manager.inverseEngineModel(engine_speed, desired_engine_torque);
 
   cmd = pedalToCmd_ * desired_throttle_position; // [0~100]
-  std::cout << "---------------------------------cmd : " << cmd << std::endl;
+  // std::cout << "---------------------------------cmd : " << cmd << std::endl;
 
   return SaturateCmd(cmd);
 }
