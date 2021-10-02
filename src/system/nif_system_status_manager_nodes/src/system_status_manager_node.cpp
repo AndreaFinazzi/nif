@@ -17,7 +17,7 @@ SystemStatusManagerNode::SystemStatusManagerNode(
     this->declare_parameter("timeout_node_inactive_ms", 1000);
     this->declare_parameter("timeout_bestpos_msg_ms", 500);
     this->declare_parameter("timeout_bestpos_diff_age_ms", 60000);
-    this->declare_parameter("timeout_rc_flag_summary_s", 10.0);
+    this->declare_parameter("timeout_mission_ms", 1000);
     this->declare_parameter("lat_autonomy_enabled", false);
     this->declare_parameter("long_autonomy_enabled", false);
     this->declare_parameter("insstdev_threshold", 2.0);
@@ -33,19 +33,32 @@ SystemStatusManagerNode::SystemStatusManagerNode(
     this->declare_parameter("safeloc.velocity_slow_down_max", 22.2);
     this->declare_parameter("safeloc.velocity_slow_down_min", 8.0);
 
-    this->node_inactive_timeout = rclcpp::Duration(1, 0);
+
     this->system_status_msg.autonomy_status.lateral_autonomy_enabled = this->get_parameter(
             "lat_autonomy_enabled").as_bool();
     this->system_status_msg.autonomy_status.longitudinal_autonomy_enabled = this->get_parameter(
             "long_autonomy_enabled").as_bool();
 
-    auto timeout_bestpos_last_update_ms = this->get_parameter("timeout_bestpos_msg_ms").as_int();
+    auto timeout_node_inactive_ms = this->get_parameter("timeout_node_inactive_ms").as_int();
+    auto timeout_bestpos_msg_ms = this->get_parameter("timeout_bestpos_msg_ms").as_int();
     auto timeout_bestpos_diff_age_ms = this->get_parameter("timeout_bestpos_diff_age_ms").as_int();
-    auto timeout_rc_flag_summary_s = this->get_parameter("timeout_bestpos_diff_age_ms").as_int();
+    auto timeout_mission_ms = this->get_parameter("timeout_mission_ms").as_int();
 
-    this->timeout_bestpos_last_update = rclcpp::Duration(timeout_bestpos_last_update_ms * 1000000);
+    if (timeout_node_inactive_ms <= 0 ||
+        timeout_bestpos_msg_ms <= 0 ||
+        timeout_bestpos_diff_age_ms <= 0 ||
+        timeout_mission_ms <= 0)
+    {
+        RCLCPP_ERROR(this->get_logger(),
+                     "timeouts must be greater than zero. Got timeout_node_inactive_ms: %d; timeout_bestpos_msg_ms: %d; timeout_bestpos_diff_age_ms: %d; timeout_mission_ms: %d",
+                     timeout_node_inactive_ms, timeout_bestpos_msg_ms, timeout_bestpos_diff_age_ms, timeout_mission_ms);
+        throw std::range_error("Parameter out of range.");
+    }
+
+    this->timeout_node_inactive = rclcpp::Duration(timeout_node_inactive_ms * 1000000);
+    this->timeout_bestpos_last_update = rclcpp::Duration(timeout_bestpos_msg_ms * 1000000);
     this->timeout_bestpos_diff_age = rclcpp::Duration(timeout_bestpos_diff_age_ms * 1000000);
-    this->timeout_rc_flag_summary = rclcpp::Duration(timeout_rc_flag_summary_s, 0);
+    this->timeout_mission = rclcpp::Duration(timeout_mission_ms * 1000000);
 
     this->insstdev_threshold = this->get_parameter("insstdev_threshold").as_double();
 
@@ -74,9 +87,9 @@ SystemStatusManagerNode::SystemStatusManagerNode(
             std::bind(&SystemStatusManagerNode::joystickCallback, this, std::placeholders::_1));
 
     // TODO define internal msg and proper conversion
-    this->rc_flag_summary_sub = this->create_subscription<common::msgs::RCFlagSummary>(
-            "rc_interface/rc_flag_summary", nif::common::constants::QOS_RACE_CONTROL,
-            std::bind(&SystemStatusManagerNode::RCFlagSummaryCallback, this, std::placeholders::_1));
+    this->mission_status_sub = this->create_subscription<common::msgs::MissionStatus>(
+            "in_mission_status", nif::common::constants::QOS_INTERNAL_STATUS,
+            std::bind(&SystemStatusManagerNode::missionCallback, this, std::placeholders::_1));
 
     this->localization_error_sub = this->create_subscription<std_msgs::msg::Float64>(
             "in_localization_error", nif::common::constants::QOS_EGO_ODOMETRY,
@@ -134,7 +147,7 @@ void SystemStatusManagerNode::systemStatusTimerCallback() {
 
     // check safety conditions
     bool hb_ok = heartbeatOk();
-    bool localization_ok = gps_health_ok(); // localizationOk();
+    bool localization_ok = localizationOk(); // gps_health_ok();
 
     if (!hb_ok || !this->recovery_enabled) {
         hb_ok = false;
@@ -160,13 +173,16 @@ void SystemStatusManagerNode::systemStatusTimerCallback() {
     this->joy_emergency_pub->publish(message_joy);
     this->hb_emergency_pub->publish(message_hb);
 
-    // Mission encoding
-    this->system_status_msg.mission_status.mission_status_code = this->getMissionStatusCode();
-    this->system_status_msg.mission_status.max_velocity_mps = static_cast<nif_msgs::msg::MissionStatus::_max_velocity_mps_type>(
+    // Mission age check
+    if (!this->has_mission ||
+        this->now() - this->mission_update_time > this->timeout_mission) {
+        this->system_status_msg.mission_status.mission_status_code = MissionStatus::MISSION_EMERGENCY_STOP;
+        // Mission velocity check
+        this->system_status_msg.mission_status.max_velocity_mps = static_cast<nif_msgs::msg::MissionStatus::_max_velocity_mps_type>(
             this->getMissionMaxVelocityMps(this->system_status_msg.mission_status.mission_status_code));
+    }
 
     this->system_status_pub->publish(this->system_status_msg);
-
 }
 
 void SystemStatusManagerNode::subscribeNodeStatus(
@@ -206,11 +222,10 @@ void SystemStatusManagerNode::registerNodeServiceHandler(
     response->message = "ERROR: Bad service request.";
 }
 
-
 void SystemStatusManagerNode::nodeStatusUpdate(
         const nif::common::msgs::NodeStatus::SharedPtr msg) {
     // TODO implement checks over msg.
-    if (this->now() - msg->stamp_last_update >= this->node_inactive_timeout) {
+    if (this->now() - msg->stamp_last_update >= this->timeout_node_inactive) {
         // TODO implement check on last_update_stamp to detect inactive nodes.
         msg->node_status_code = common::NODE_INACTIVE;
     }
@@ -231,100 +246,6 @@ bool SystemStatusManagerNode::isSystemHealthy() {
     this->is_system_healthy = true;
     return this->is_system_healthy;
 }
-
-// TODO this is just a draft, MUST BE REFINED AND FINALIZED
-  nif_msgs::msg::MissionStatus::_mission_status_code_type SystemStatusManagerNode::getMissionStatusCode()
-  {
-    using nif_msgs::msg::MissionStatus;
-    using nif::common::msgs::RCFlagSummary;
-    
-    if (
-        this->has_rc_flag_summary &&
-        this->now() - this->rc_flag_summary_update_time < this->timeout_rc_flag_summary )
-    {
-
-      switch (this->rc_flag_summary.veh_flag)
-      {
-      case RCFlagSummary::VEH_FLAG_PURPLE:
-        return MissionStatus::MISSION_EMERGENCY_STOP;
-        break;
-      
-      case RCFlagSummary::VEH_FLAG_BLACK:
-        return MissionStatus::MISSION_PIT_IN;
-        break;
-      
-      case RCFlagSummary::VEH_FLAG_CHECKERED:
-        return MissionStatus::MISSION_PIT_IN;
-        break;
-
-      case RCFlagSummary::VEH_FLAG_BLANK:
-
-        switch (this->rc_flag_summary.track_flag)
-        {
-        case RCFlagSummary::TRACK_FLAG_RED:
-            return MissionStatus::MISSION_COMMANDED_STOP;
-            break;
-        case RCFlagSummary::TRACK_FLAG_YELLOW:
-            // TODO If in pit, STANDBY?
-            return MissionStatus::MISSION_SLOW_DRIVE;
-            break;
-
-        case RCFlagSummary::TRACK_FLAG_ORANGE:
-            return MissionStatus::MISSION_STANDBY;
-            break;
-
-        case RCFlagSummary::TRACK_FLAG_GREEN:
-            // TODO If in pit, PIT_OUT should be set and maintained.
-            // TODO If on track, RACE should be set and maintained.
-            // TODO  
-            return MissionStatus::MISSION_TEST;
-            break;
-
-        default:
-            return MissionStatus::MISSION_COMMANDED_STOP;
-            break;
-        }
-
-      case RCFlagSummary::VEH_FLAG_NULL:
-
-        switch (this->rc_flag_summary.track_flag)
-        {
-        case RCFlagSummary::TRACK_FLAG_RED:
-            return MissionStatus::MISSION_COMMANDED_STOP;
-            break;
-
-        case RCFlagSummary::TRACK_FLAG_ORANGE:
-            return MissionStatus::MISSION_STANDBY;
-            break;
-
-        case RCFlagSummary::TRACK_FLAG_YELLOW:
-            // TODO If in pit, STANDBY?
-            return MissionStatus::MISSION_SLOW_DRIVE;
-            break;
-
-        case RCFlagSummary::TRACK_FLAG_GREEN:
-            // TODO If in pit, PIT_OUT should be set and maintained.
-            // TODO If on track, RACE should be set and maintained.
-            // TODO  
-            return MissionStatus::MISSION_TEST;
-            break;
-
-        default:
-            return MissionStatus::MISSION_COMMANDED_STOP;
-            break;
-        }
-
-        break; // VEH_FLAG_BLANK
-      
-      default:
-        return MissionStatus::MISSION_COMMANDED_STOP;
-        break;
-      }
-    } else {
-        return MissionStatus::MISSION_COMMANDED_STOP;
-    }
-  }
-
 
 SystemStatusCode SystemStatusManagerNode::getSystemStatusCode() {
     // TODO implement meaningful FSM
@@ -478,11 +399,15 @@ void SystemStatusManagerNode::localizationErrorCallback(const std_msgs::msg::Flo
 }
 
 void
-SystemStatusManagerNode::RCFlagSummaryCallback(
-        const nif::common::msgs::RCFlagSummary::UniquePtr msg) {
-    this->rc_flag_summary = std::move(*msg);
-    this->rc_flag_summary_update_time = this->now();
-    this->has_rc_flag_summary = true;
+SystemStatusManagerNode::missionCallback(
+        const nif::common::msgs::MissionStatus::UniquePtr msg) {
+    this->mission_update_time = this->now();
+    this->has_mission = true;
+    this->system_status_msg.mission_status = std::move(*msg);
+
+    // Mission velocity check
+    this->system_status_msg.mission_status.max_velocity_mps = static_cast<nif_msgs::msg::MissionStatus::_max_velocity_mps_type>(
+            this->getMissionMaxVelocityMps(this->system_status_msg.mission_status.mission_status_code));
 }
 
 rcl_interfaces::msg::SetParametersResult
@@ -526,49 +451,67 @@ double nif::system::SystemStatusManagerNode::getMissionMaxVelocityMps(
         case MissionStatus::MISSION_EMERGENCY_STOP:
             max_vel_mps = this->velocity_zero;
             break;
+
         case MissionStatus::MISSION_COMMANDED_STOP:
             max_vel_mps = this->velocity_zero;
             break;
+
         case MissionStatus::MISSION_STANDBY:
             max_vel_mps = this->velocity_zero;
             break;
+
         case MissionStatus::MISSION_SLOW_DRIVE:
             max_vel_mps = this->velocity_slow_drive;
             break;
+
         case MissionStatus::MISSION_PIT_IN:
             max_vel_mps = this->velocity_pit_in;
             break;
+
+        case MissionStatus::MISSION_PIT_STANDBY:
+            max_vel_mps = this->velocity_zero;
+            break;
+
         case MissionStatus::MISSION_PIT_OUT:
             max_vel_mps = this->velocity_pit_out;
             break;
+
         case MissionStatus::MISSION_RACE:
-        // Race at max speed, if localization is good enough. 
-        // Over safeloc_threshold_slow_down, reduce max speed according to the localization error
+            // Race at max speed, if localization is good enough. 
             max_vel_mps = this->velocity_max;
-            if (this->localization_error > this->safeloc_threshold_slow_down)
-            {
-                auto slope = (this->safeloc_velocity_slow_down_max - this->safeloc_velocity_slow_down_min) / (this->safeloc_threshold_slow_down - this->safeloc_threshold_stop);
-                max_vel_mps = slope * (this->localization_error - this->safeloc_threshold_slow_down) + this->safeloc_velocity_slow_down_max;
-            }
-            if (max_vel_mps < this->safeloc_velocity_slow_down_min) 
-                max_vel_mps = this->safeloc_velocity_slow_down_min;
+            processSafelocVelocity(max_vel_mps);
             break;
 
         case MissionStatus::MISSION_TEST:
             max_vel_mps = this->velocity_max;
-            if (this->localization_error > this->safeloc_threshold_slow_down)
-            {
-                auto slope = (this->safeloc_velocity_slow_down_max - this->safeloc_velocity_slow_down_min) / (this->safeloc_threshold_slow_down - this->safeloc_threshold_stop);
-                max_vel_mps = slope * (this->localization_error - this->safeloc_threshold_slow_down) + this->safeloc_velocity_slow_down_max;
-            }
-            if (max_vel_mps < this->safeloc_velocity_slow_down_min) 
-                max_vel_mps = this->safeloc_velocity_slow_down_min;
+            processSafelocVelocity(max_vel_mps);
             break;
-            
+
         default:
             max_vel_mps = this->velocity_zero;
             break;
     }
 
     return max_vel_mps;
+}
+
+void SystemStatusManagerNode::processSafelocVelocity(double & max_vel_mps) 
+{
+    if (!this->has_localization_error ||
+        this->now() - this->localization_error_last_update > this->timeout_localization_error)
+        {
+            max_vel_mps = this->velocity_zero;
+            RCLCPP_ERROR_THROTTLE(this->get_logger(), *this->get_clock(), 1000, "Data timeout in SystemStatusManagerNode::processSafelocVelocity();");
+            return;
+        }
+
+    // Over safeloc_threshold_slow_down, reduce max speed according to the localization error
+    if (this->localization_error > this->safeloc_threshold_slow_down)
+    {
+        auto slope = (this->safeloc_velocity_slow_down_max - this->safeloc_velocity_slow_down_min) / (this->safeloc_threshold_slow_down - this->safeloc_threshold_stop);
+        max_vel_mps = slope * (this->localization_error - this->safeloc_threshold_slow_down) + this->safeloc_velocity_slow_down_max;
+    }
+
+    if (max_vel_mps < this->safeloc_velocity_slow_down_min) 
+        max_vel_mps = this->safeloc_velocity_slow_down_min;
 }
