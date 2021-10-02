@@ -54,6 +54,8 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
   this->declare_parameter("steering_max_ddeg_dt", 5.0);
   // Limit the max change in the des_accel signal over time
   this->declare_parameter("des_accel_max_da_dt", 5.0);
+  // Minimum length of the reference path
+  this->declare_parameter("path_min_length_m", 3.0);
 
   //  Invert steering command for simulation
   this->declare_parameter("invert_steering", false);
@@ -88,6 +90,7 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
       this->get_parameter("steering_max_ddeg_dt").as_double();
   des_accel_max_da_dt_ = this->get_parameter("des_accel_max_da_dt").as_double();
   invert_steering_ = this->get_parameter("invert_steering").as_bool();
+  m_path_min_length_m = this->get_parameter("path_min_length_m").as_double();
 
   if (odometry_timeout_sec_ <= 0. || path_timeout_sec_ <= 0.) {
     RCLCPP_ERROR(this->get_logger(),
@@ -132,7 +135,8 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
 
   //  Check whether we have updated data
   bool valid_path =
-      this->hasReferencePath() && !this->getReferencePath()->poses.empty() &&
+      this->hasReferencePath() &&
+      this->getReferencePath()->poses.size() > m_path_min_length_m &&
       secs(now - this->getReferencePathUpdateTime()) < path_timeout_sec_;
   bool valid_odom =
       this->hasEgoOdometry() &&

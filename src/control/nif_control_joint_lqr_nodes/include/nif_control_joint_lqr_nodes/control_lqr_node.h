@@ -137,6 +137,7 @@ private:
   double path_timeout_sec_;
   double steering_max_ddeg_dt_;
   double des_accel_max_da_dt_;
+  double m_path_min_length_m;
   bool invert_steering_;
 
   double secs(rclcpp::Time t) {
