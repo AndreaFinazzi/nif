@@ -50,9 +50,10 @@ public:
       : IBaseSynchronizedNode(node_name, common::NodeType::CONTROL,
                               timer_period, options) {
     // Topic name
-    const std::string &topic_ego_odometry =
-        this->get_global_parameter<std::string>(
-            constants::parameters::names::TOPIC_ID_EGO_ODOMETRY);
+    // const std::string &topic_ego_odometry =
+    //     this->get_global_parameter<std::string>(
+    //         nif::common::constants::parameters::names::TOPIC_ID_EGO_ODOMETRY);
+    const std::string topic_ego_odometry = "/aw_localization/ekf/odom";
 
     // Publishers
     des_vel_pub_ = this->create_publisher<std_msgs::msg::Float32>(
@@ -72,7 +73,7 @@ public:
                       std::placeholders::_1));
     ego_odometry_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
         topic_ego_odometry, nif::common::constants::QOS_EGO_ODOMETRY,
-        std::bind(&IBaseNode::egoOdometryCallback, this,
+        std::bind(&VelocityPlannerNode::egoOdometryCallback, this,
                   std::placeholders::_1));
 
     imu_sub_ = this->create_subscription<sensor_msgs::msg::Imu>(
@@ -92,6 +93,7 @@ public:
     // ROS Params
     this->declare_parameter("vel_plan_enabled", true); // for turn on/off
     this->declare_parameter("debug_mode", false);
+    this->declare_parameter("sub_odom_velocity", false); // using vel from odom
     // Curv-based planner
     this->declare_parameter(
         "des_vel_mps",
@@ -119,6 +121,7 @@ public:
     // Read in misc. parameters
     m_vel_plan_enabled = this->get_parameter("vel_plan_enabled").as_bool();
     m_debug_mode = this->get_parameter("debug_mode").as_bool();
+    m_sub_odom_velocity = this->get_parameter("sub_odom_velocity").as_bool();
     m_max_vel_mps = this->get_parameter("des_vel_mps").as_double();
     m_lpf_curve_f = this->get_parameter("lpf_curve_f").as_double();
     m_lpf_curve_dt = this->get_parameter("lpf_curve_dt").as_double();
@@ -166,15 +169,19 @@ private:
                       (m_current_path.poses.size() > m_path_min_length_m) &&
                       (now - m_path_update_time < m_path_timeout);
 
-    bool valid_odom =
-        this->hasEgoOdometry() &&
-        now - this->getEgoOdometryUpdateTime() < m_odometry_timeout;
+    bool valid_odom = has_ego_odometry &&
+                      now - m_ego_odometry_update_time < m_odometry_timeout;
     bool valid_tracking_result = false;
 
     // Variables
     double desired_velocity_mps = 0.0;                 // [m/s]
     double current_velocity_mps = m_current_speed_mps; // [m/s]
     double current_steer_rad = m_current_steer_rad;    // [rad]
+
+    // Switching to odometry-based velocity
+    if (m_sub_odom_velocity) {
+      current_velocity_mps = m_current_speed_odom_mps;
+    }
 
     // Perform Velocity Planning if path is good
     if (m_vel_plan_enabled) {
@@ -192,7 +199,8 @@ private:
         std::vector<double> curv_array(path_len, 0.0); // for curvature
         std::vector<double> dist_array(path_len, 0.0); // for cumul. distance
         std::vector<double> lpf_curv_array(path_len, 0.0);
-        // - get curv. & dist. array (+curv: CCW rotation / -curv: CW rotation)
+        // - get curv. & dist. array (+curv: CCW rotation / -curv: CW
+        // rotation)
         getCurvatureDistArray(curv_array, dist_array);
         // // - get curvature array (+curv: CCW rotation / -curv: CW rotation)
         // getCurvatureArray(curv_array);
@@ -209,7 +217,8 @@ private:
             m_a_x_kf, m_a_y_kf, m_yaw_rate_kf, current_steer_rad,
             current_velocity_mps);
         // double a_lat_max = m_tire_manager.ComputeLateralAccelLimit(
-        //     a_lon, a_lat, yaw_rate, current_steer_rad, current_velocity_mps);
+        //     a_lon, a_lat, yaw_rate, current_steer_rad,
+        //     current_velocity_mps);
 
         // Compute maximum velocity
         if (abs(kappa) <= m_CURVATURE_MINIMUM) {
@@ -430,11 +439,11 @@ private:
                           nif::common::constants::KPH2MS;
   }
 
-  void egoOdometryCallback(
-      const nav_msgs::msgs::Odometry::SharedPtr msg) {
+  void egoOdometryCallback(const nav_msgs::msg::Odometry::SharedPtr msg) {
     has_ego_odometry = true;
     m_ego_odometry_update_time = this->now();
     m_ego_odometry = *msg;
+    m_current_speed_odom_mps = m_ego_odometry.twist.twist.linear.x;
   }
 
   void imuCallback(const sensor_msgs::msg::Imu::SharedPtr msg) {
@@ -541,7 +550,7 @@ private:
   rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr path_sub_;
   rclcpp::Subscription<raptor_dbw_msgs::msg::WheelSpeedReport>::SharedPtr
       velocity_sub_;
-  rclcpp::Subscribtion<nav_msgs::msg::Odometry>::SharedPtr ego_odometry_sub_;
+  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr ego_odometry_sub_;
   rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub_;
   rclcpp::Subscription<raptor_dbw_msgs::msg::SteeringReport>::SharedPtr
       steering_sub_;
@@ -561,13 +570,12 @@ private:
   //! Track when certain variables have been updated
   rclcpp::Time m_path_update_time;
   rclcpp::Time m_ego_odometry_update_time;
-  rclcpp::Time m_imu_update_time =
-      rclcpp::Clock().now();
+  rclcpp::Time m_imu_update_time = rclcpp::Clock().now();
   bool has_path = false;
   bool has_ego_odometry = false;
 
-      //! Load vehicle dynamics manager
-      TireManager m_tire_manager;
+  //! Load vehicle dynamics manager
+  TireManager m_tire_manager;
   //! Low pass filter
   low_pass_filter lpf_curve =
       low_pass_filter(m_lpf_curve_dt, m_lpf_curve_f, m_lpf_curve_x0);
@@ -577,16 +585,17 @@ private:
   double m_L = nif::common::vehicle_param::VEH_WHEEL_BASE;  // wheelbase
   double m_total = nif::common::vehicle_param::VEH_MASS_KG; // total mass [kg]
   double m_steer_ratio =
-      nif::common::vehicle_param::STEERING_RATIO; // steer ratio
+      nif::common::vehicle_param::STEERING_RATIO; // steer ego_odometry_sub
 
   //! Current Vehicle State
   nav_msgs::msg::Path m_current_path;
-  nav_mags::msg::Odometry m_ego_odometry;
+  nav_msgs::msg::Odometry m_ego_odometry;
   sensor_msgs::msg::Imu m_current_imu;
-  double m_current_steer_rad{};   // [rad]
-  double m_current_speed_mps = 0; // [m/s]
-  double m_error_y = 0;           // [m]
-  double m_error_y_lpf = 0;       // [m]
+  double m_current_steer_rad{};        // [rad]
+  double m_current_speed_mps = 0;      // [m/s]
+  double m_current_speed_odom_mps = 0; // [m/s]
+  double m_error_y = 0;                // [m]
+  double m_error_y_lpf = 0;            // [m]
 
   bool kalman_init = false;
   double m_a_x_kf = 0.0;      // longitudinal accel from KF
@@ -604,6 +613,7 @@ private:
   //! bool use_tire_velocity_;
   bool m_vel_plan_enabled;
   bool m_debug_mode;
+  bool m_sub_odom_velocity;
   double m_max_vel_mps;
   double m_lpf_curve_f;
   double m_lpf_curve_dt;

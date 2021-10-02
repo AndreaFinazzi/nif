@@ -60,15 +60,15 @@ def generate_launch_description():
         #     'stdout': 'log',
         #     'stderr': 'log',
         # },
-        parameters=[
-            {
-                "globtraj_input_path": globtraj_input_path,
-                "graph_store_path": graph_store_path,
-                "ltpl_offline_param_path": ltpl_offline_param_path,
-                "ltpl_online_param_path": ltpl_online_param_path,
-                "log_path": log_path,
-            }
-        ],
+        # parameters=[
+        #     {
+        #         "globtraj_input_path": globtraj_input_path,
+        #         "graph_store_path": graph_store_path,
+        #         "ltpl_offline_param_path": ltpl_offline_param_path,
+        #         "ltpl_online_param_path": ltpl_online_param_path,
+        #         "log_path": log_path,
+        #     }
+        # ],
         remappings={
             ('out_local_maptrack_inglobal', '/planning/graph/path_global'),
             ('in_ego_odometry', '/localization/ekf/odom'),
