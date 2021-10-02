@@ -91,6 +91,22 @@ double TireManager::ComputeLateralAccelLimit(double a_lon, double a_lat,
   return a_lat_max;
 }
 
+double TireManager::ComputeLongitudinalAccelLimit(double a_lon, double a_lat) {
+  // Get Longitudinal Acceleration Limit considering Tire load transfer.
+  auto tire_data = Compute4WheelLongitudinalForceLimit(a_lon, a_lat);
+  // TODO check here
+  std::vector<double> tire_loads = std::get<0>(tire_data);
+  std::vector<double> tire_FxLimit = std::get<1>(tire_data); // positive Fx_ma
+  double FxR = (tire_FxLimit[2] + tire_FxLimit[3]); // rear wheel-driven vehicle
+
+  // Get Longitudinal Acceleration Limit using Vehicle model
+  // 'desired_accel' from high-level controller is '1 / mass *
+  // tire_traction_force', not the net_acceleration.
+  double a_lon_max = 1 / m_total * FxR;
+
+  return a_lon_max;
+}
+
 std::tuple<std::vector<double>, std::vector<double>, std::vector<double>>
 TireManager::Compute4WheelLateralForceLimit(double a_lon, double a_lat) {
   // Compute Tire load (Fy) of each (LF, RF, LR, RR)
@@ -101,16 +117,16 @@ TireManager::Compute4WheelLateralForceLimit(double a_lon, double a_lat) {
   std::vector<double> tire_FyMaxs;
   std::vector<double> tire_FyMins;
   std::tuple<double, double> FyMaxMin;
-  FyMaxMin = ComputeLateralForceLimit(tire_loads[0], m_tire_fz_fy_LF);
+  FyMaxMin = ComputeForceLimit(tire_loads[0], m_tire_fz_fy_LF);
   tire_FyMaxs.push_back(std::get<0>(FyMaxMin));
   tire_FyMins.push_back(std::get<1>(FyMaxMin));
-  FyMaxMin = ComputeLateralForceLimit(tire_loads[1], m_tire_fz_fy_RF);
+  FyMaxMin = ComputeForceLimit(tire_loads[1], m_tire_fz_fy_RF);
   tire_FyMaxs.push_back(std::get<0>(FyMaxMin));
   tire_FyMins.push_back(std::get<1>(FyMaxMin));
-  FyMaxMin = ComputeLateralForceLimit(tire_loads[2], m_tire_fz_fy_LR);
+  FyMaxMin = ComputeForceLimit(tire_loads[2], m_tire_fz_fy_LR);
   tire_FyMaxs.push_back(std::get<0>(FyMaxMin));
   tire_FyMins.push_back(std::get<1>(FyMaxMin));
-  FyMaxMin = ComputeLateralForceLimit(tire_loads[3], m_tire_fz_fy_RR);
+  FyMaxMin = ComputeForceLimit(tire_loads[3], m_tire_fz_fy_RR);
   tire_FyMaxs.push_back(std::get<0>(FyMaxMin));
   tire_FyMins.push_back(std::get<1>(FyMaxMin));
 
@@ -125,24 +141,57 @@ TireManager::Compute4WheelLateralForceLimit(double a_lon, double a_lat) {
   return std::make_tuple(tire_loads, tire_FyMaxs, tire_FyMins);
 }
 
-std::tuple<double, double> TireManager::ComputeLateralForceLimit(
-    double Fz, std::vector<std::vector<double>> table_FyMaxMin) {
+std::tuple<std::vector<double>, std::vector<double>, std::vector<double>>
+TireManager::Compute4WheelLongitudinalForceLimit(double a_lon, double a_lat) {
+  // Compute Tire load (Fy) of each (LF, RF, LR, RR)
+  std::vector<double> tire_loads;
+  tire_loads = ComputeLoadTransfer(a_lon, a_lat);
+  // Compute Maximum Longitudinal Tire Force for each (LF, RF, LR, RR)
+  std::vector<double> tire_FxMaxs;
+  std::vector<double> tire_FxMins;
+  std::tuple<double, double> FxMaxMin;
+  FxMaxMin = ComputeForceLimit(tire_loads[0], m_tire_fz_fx_LF);
+  tire_FxMaxs.push_back(std::get<0>(FxMaxMin));
+  tire_FxMins.push_back(std::get<1>(FxMaxMin));
+  FxMaxMin = ComputeForceLimit(tire_loads[1], m_tire_fz_fx_RF);
+  tire_FxMaxs.push_back(std::get<0>(FxMaxMin));
+  tire_FxMins.push_back(std::get<1>(FxMaxMin));
+  FxMaxMin = ComputeForceLimit(tire_loads[2], m_tire_fz_fx_LR);
+  tire_FxMaxs.push_back(std::get<0>(FxMaxMin));
+  tire_FxMins.push_back(std::get<1>(FxMaxMin));
+  FxMaxMin = ComputeForceLimit(tire_loads[3], m_tire_fz_fx_RR);
+  tire_FxMaxs.push_back(std::get<0>(FxMaxMin));
+  tire_FxMins.push_back(std::get<1>(FxMaxMin));
+
+  // // for Debug
+  // for (int i = 0; i < tire_FxMaxs.size(); i++) {
+  //   std::cout << "tire_FxMaxs : " << tire_FxMaxs[i] << std::endl;
+  // }
+  // for (int i = 0; i < tire_FxMins.size(); i++) {
+  //   std::cout << "tire_FxMins : " << tire_FxMins[i] << std::endl;
+  // }
+
+  return std::make_tuple(tire_loads, tire_FxMaxs, tire_FxMins);
+}
+
+std::tuple<double, double> TireManager::ComputeForceLimit(
+    double Fz, std::vector<std::vector<double>> table_ForceMaxMin) {
   // Return Lateral Force limits (FyMax, FyMin)
-  std::vector<double> Fz_table_LF, FyMax_table_LF, FyMin_table_LF;
-  for (int i = 0; i < table_FyMaxMin.size(); i++) {
-    Fz_table_LF.push_back(table_FyMaxMin[i][0]);
-    FyMax_table_LF.push_back(table_FyMaxMin[i][1]);
-    FyMin_table_LF.push_back(table_FyMaxMin[i][2]);
+  std::vector<double> Fz_table, ForceMax_table, ForceMin_table;
+  for (int i = 0; i < table_ForceMaxMin.size(); i++) {
+    Fz_table.push_back(table_ForceMaxMin[i][0]);
+    ForceMax_table.push_back(table_ForceMaxMin[i][1]);
+    ForceMin_table.push_back(table_ForceMaxMin[i][2]);
   }
   // Linear interpolation
   // w.r.t. Fz-FyMax(Min) lookup table
   // (with safety factor, model parameter belief)
-  double FyMax_out =
-      gamma * LinearInterpolation2D(Fz, Fz_table_LF, FyMax_table_LF);
-  double FyMin_out =
-      gamma * LinearInterpolation2D(Fz, Fz_table_LF, FyMin_table_LF);
+  double ForceMax_out =
+      gamma * LinearInterpolation2D(Fz, Fz_table, ForceMax_table);
+  double ForceMin_out =
+      gamma * LinearInterpolation2D(Fz, Fz_table, ForceMin_table);
 
-  return std::make_tuple(FyMax_out, FyMin_out);
+  return std::make_tuple(ForceMax_out, ForceMin_out);
 }
 
 double TireManager::LinearInterpolation2D(double input_data,

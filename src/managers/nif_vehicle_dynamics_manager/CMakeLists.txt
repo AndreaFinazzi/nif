@@ -38,6 +38,7 @@ ament_export_dependencies(ament_index_cpp)
 # Library
 ament_auto_add_library(${PROJECT_NAME} SHARED
         src/tire_manager.cpp
+        src/engine_manager.cpp
         src/kalman.cpp
         # src/pid_node.cpp
 )
