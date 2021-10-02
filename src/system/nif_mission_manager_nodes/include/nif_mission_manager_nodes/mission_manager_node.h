@@ -97,8 +97,9 @@ private:
 
     bool rc_ok = this->has_rc_flag_summary && (now - this->rc_flag_summary_update_time) <= timeout_rc_flag_summary;
     bool velocity_ok = this->has_current_velocity && (now - this->current_velocity_update_time) <= this->timeout_current_velocity;
-
-    return rc_ok && velocity_ok;
+    bool odometry_ok = this->hasEgoOdometry() && (now - this->getEgoOdometryUpdateTime()) <= rclcpp::Duration(1, 0); // TODO make global parameter
+    
+    return rc_ok && velocity_ok && odometry_ok;
   };
 
   bool missionIs(MissionStatus::_mission_status_code_type mission) {

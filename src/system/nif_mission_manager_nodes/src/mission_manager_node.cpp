@@ -12,9 +12,10 @@ MissionManagerNode::MissionManagerNode(
         : IBaseSynchronizedNode(
             node_name, 
             nif::common::NodeType::SYSTEM, 
-            nif::common::constants::SYNC_PERIOD_DEFAULT_US) {
+            std::chrono::milliseconds(50)) {
 //    Initialize to false
     this->declare_parameter("timeout_rc_flag_summary_s", 10);
+    this->declare_parameter("timeout_velocity_ms", 1500);
 
     this->declare_parameter("velocity.zero", 0.0);
     this->declare_parameter("velocity.max", 67.0);
@@ -30,14 +31,17 @@ MissionManagerNode::MissionManagerNode(
     this->declare_parameter("missions_file_path", "");
 
     long int timeout_rc_flag_summary_s = this->get_parameter("timeout_rc_flag_summary_s").as_int();
-    if (timeout_rc_flag_summary_s <= 0)
+    long int timeout_velocity_ms = this->get_parameter("timeout_velocity_ms").as_int();
+    if (timeout_rc_flag_summary_s <= 0 ||
+        timeout_velocity_ms <= 0)
     {
         RCLCPP_ERROR(this->get_logger(),
-                     "timeouts must be greater than zero. Got timeout_rc_flag_summary_s: %d", timeout_rc_flag_summary_s);
+                     "timeouts must be greater than zero. Got timeout_rc_flag_summary_s: %d; timeout_velocity_ms: %d", timeout_rc_flag_summary_s, timeout_velocity_ms);
         throw std::range_error("Parameter out of range.");
     }
 
     this->timeout_rc_flag_summary = rclcpp::Duration(timeout_rc_flag_summary_s, 0);
+    this->timeout_current_velocity = rclcpp::Duration(timeout_velocity_ms * 1000000);
 
     this->velocity_zero = this->get_parameter("velocity.zero").as_double();
     this->velocity_max = this->get_parameter("velocity.max").as_double();
@@ -148,14 +152,22 @@ MissionStatus::_mission_status_code_type MissionManagerNode::getMissionVehFlagNu
             break;
 
         case RCFlagSummary::TRACK_FLAG_ORANGE:
-            if (is_system_startup || this->missionIs(MissionStatus::MISSION_DEFAULT))
+            if (is_system_startup && this->missionIs(MissionStatus::MISSION_DEFAULT))
             {
-                is_system_startup = false;
                 return MissionStatus::MISSION_PIT_INIT;
+
             } else if (this->missionIs(MissionStatus::MISSION_PIT_INIT)) {
+                is_system_startup = false;
                 return MissionStatus::MISSION_PIT_STANDBY;
+
             } else if (this->missionIs(MissionStatus::MISSION_INIT)) {
+                is_system_startup = false;
                 return MissionStatus::MISSION_STANDBY;
+
+            } else if ( this->missionIs(MissionStatus::MISSION_STANDBY) ||
+                        this->missionIs(MissionStatus::MISSION_PIT_STANDBY)) {
+                return this->mission_status_msg.mission_status_code;
+
             } else {
                 return MissionStatus::MISSION_COMMANDED_STOP;
             }

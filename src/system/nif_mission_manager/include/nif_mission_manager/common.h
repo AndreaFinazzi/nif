@@ -76,6 +76,8 @@ namespace system {
             const nif::common::msgs::Odometry &ego_odom,
             const MissionStatus::_max_velocity_mps_type &ego_velocity_mps)
             {
+                if (!this->active) return true;
+
                 bool is_valid = this->active;
                 for (auto &&bbox : bounding_boxes)
                 {
@@ -96,6 +98,8 @@ namespace system {
             const nif::common::msgs::Odometry &ego_odom,
             const MissionStatus::_max_velocity_mps_type &ego_velocity_mps)
             {
+                if (!this->active) return true;
+
                 return (
                     this->active &&
                     ego_velocity_mps >= this->range_min_mps &&
@@ -113,6 +117,8 @@ namespace system {
             const nif::common::msgs::Odometry &ego_odom,
             const MissionStatus::_max_velocity_mps_type &ego_velocity_mps)
             {
+                if (!this->active) return true;
+
                 return
                     this->active &&
                     std::find(this->from.begin(), this->from.end(), current_mission) != this->from.end();
@@ -149,6 +155,8 @@ namespace system {
             const nif::common::msgs::Odometry &ego_odom,
             const MissionStatus::_max_velocity_mps_type &ego_velocity_mps)
             {
+                if (!this->active) return true;
+
                 return (this->active &&
                     this->activation_area.isValid(current_mission, next_mission, ego_odom, ego_velocity_mps) &&
                     this->activation_velocity.isValid(current_mission, next_mission, ego_odom, ego_velocity_mps) &&

@@ -55,7 +55,7 @@ missions:
       bboxes:
         - - -70.0 # x_min
           - 5.0 # y_min
-          - 0.0 # x_max
+          - 10.0 # x_max
           - 50.0 # y_max
     activation_velocity:
       active: false
@@ -131,9 +131,9 @@ missions:
     activation_area:
       active: true
       bboxes:
-        - - -70.0 # x_min
+        - - -200.0 # x_min
           - 5.0 # y_min
-          - 0.0 # x_max
+          - 200.0 # x_max
           - 50.0 # y_max
     allowed_transitions:
       active: true
