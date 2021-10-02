@@ -40,7 +40,7 @@ int32_t main(int32_t argc, char **argv) {
   rclcpp::shutdown();
 
   RCLCPP_INFO(rclcpp::get_logger("nif_aw_localization_nodes"),
-              "Shutting down %s [nif_aw_localization_nodes]", &node_name);
+              "Shutting down %s [localization_aw_node]", &node_name);
 
   return 0;
 }

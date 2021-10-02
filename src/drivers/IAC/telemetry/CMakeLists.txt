@@ -19,6 +19,8 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(deep_orange_msgs REQUIRED)
+find_package(nif_common REQUIRED)
+find_package(nif_msgs REQUIRED)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -32,7 +34,7 @@ if(BUILD_TESTING)
 endif()
 
 add_executable(telemetry src/telemetry.cpp)
-ament_target_dependencies(telemetry rclcpp deep_orange_msgs)
+ament_target_dependencies(telemetry rclcpp deep_orange_msgs nif_common nif_msgs)
 
 
 install(TARGETS

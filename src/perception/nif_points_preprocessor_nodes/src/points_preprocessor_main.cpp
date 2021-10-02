@@ -18,22 +18,24 @@ using namespace nif::perception;
 int32_t main(int32_t argc, char **argv) {
   rclcpp::init(argc, argv);
 
-  // const char *node_name_1 = "point_concat_filter";
-  const char *node_name_2 = "ego_shape_filter";
+  const char *node_name_1 = "nif_points_concat_node";
+  const char *node_name_2 = "nif_ego_shape_filter_node";
 
-  // auto PC_FILTER = std::make_shared<PointsConcatFilterNode>(node_name_1);
+  auto PC_FILTER = std::make_shared<PointsConcatFilterNode>(node_name_1);
   auto EGO_FILTER = std::make_shared<EgoShapeFilterNode>(node_name_2);
 
   // Use 2 threads
-  rclcpp::executors::SingleThreadedExecutor executor;
+  // rclcpp::executors::SingleThreadedExecutor executor;
+  rclcpp::executors::MultiThreadedExecutor executor(
+      rclcpp::executor::create_default_executor_arguments(), 2);
   try {
-//    RCLCPP_INFO(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
-//                "Instantiating PointsConcatFilterNode with name: %s",
-//                &node_name_1);
+    RCLCPP_INFO(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
+               "Instantiating PointsConcatFilterNode with name: %s",
+               &node_name_1);
     RCLCPP_INFO(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
                 "Instantiating EgoShapeFilterNode with name: %s", &node_name_2);
 
-    // executor.add_node(PC_FILTER);
+    executor.add_node(PC_FILTER);
     executor.add_node(EGO_FILTER);
 
   } catch (std::exception &e) {
@@ -46,8 +48,8 @@ int32_t main(int32_t argc, char **argv) {
   executor.spin();
   rclcpp::shutdown();
 
-  // RCLCPP_INFO(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
-  //             "Shutting down %s [PointsConcatFilterNode]", node_name_1);
+  RCLCPP_INFO(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
+              "Shutting down %s [PointsConcatFilterNode]", node_name_1);
   RCLCPP_INFO(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
               "Shutting down %s [EgoShapeFilterNode]", node_name_2);
   return 0;

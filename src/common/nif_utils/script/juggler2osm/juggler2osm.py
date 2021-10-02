@@ -77,15 +77,25 @@ def parse_configs():
     parser.add_argument('--set_topic', type=str, default="/novatel_bottom/bestpos",
                         help='check headers name')
 
-    # lon_0, lat_0 = utm_proj(-86.235148, 39.809786)  #indy
-    lon_0, lat_0 = -86.3418060783425, 39.8125900071711  #Lucas Oil Racing
-    
+    # lon_0, lat_0 = -86.235148, 39.809786  #indy
+    # lon_0, lat_0 = -86.3418060783425, 39.8125900071711  #Lucas Oil Racing
+    lon_0, lat_0 = -86.23524024, 39.79312996  #LGSVL
+
     nedPoints = []
 
     configs = edict(vars(parser.parse_args()))
 
-    root_path = './csv' 
-    file_name = os.path.join(root_path, configs.filename)
+
+    root_path = './csv/LGSVL' 
+    input_name = configs.filename
+    file_name = os.path.join(root_path, input_name)
+    # directory_name = os.path.join(root_path, input_name[:-4])
+    # if not os.path.exists(directory_name):
+    #     os.makedirs(directory_name)
+    #     print("DIRECTORY is generated. ", directory_name)
+    # else:
+    #     print("DIRECTORY is existed")
+
     osm_file_name = file_name[:-3] + "osm" 
     pcd_file_name = file_name[:-3] + "pcd" 
     wpt_file_name = file_name[:-4] + "_wpt.csv" 
@@ -195,6 +205,9 @@ def parse_configs():
     # dump(root)            
     tree = ElementTree(root)
     tree.write(osm_file_name)
+
+
+
     write_pcd(nedPoints, pcd_file_name)
     write_csv(nedPoints, wpt_file_name)
 

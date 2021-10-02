@@ -94,6 +94,12 @@ public:
                     std::bind(&ControlSafetyLayerNode::receivePtReport, this,
                               std::placeholders::_1));
 
+    this->perception_steering_sub =
+            this->create_subscription<std_msgs::msg::Float32>(
+                    "in_perception_steering", nif::common::constants::QOS_CONTROL_CMD,
+                    std::bind(&ControlSafetyLayerNode::perceptionSteeringCallback, this,
+                              std::placeholders::_1));                              
+
     this->control_pub = this->create_publisher<nif::common::msgs::ControlCmd>(
         "out_control_cmd",nif::common::constants::QOS_CONTROL_CMD);
 
@@ -294,7 +300,10 @@ private:
   nif::common::msgs::ControlCmd override_control_cmd;
   nif::common::msgs::ControlCmd last_control_cmd;
   nif::common::msgs::ControlCmd control_cmd;
+  float perception_steering_cmd = 0.0;
+  bool has_perception_steering = false;
   rclcpp::Time override_last_update;
+  rclcpp::Time perception_steering_last_update;
 
   /**
    * Stores control commands coming from the controllers' stack. It's flushed at
@@ -316,7 +325,8 @@ private:
  * If over a certain threshold, this control command is used instead of the ones in the control buffer.
  */
   rclcpp::Subscription<nif::common::msgs::ControlCmd>::SharedPtr control_override_sub;
-
+  
+  rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr perception_steering_sub;
 
   /**
    * Control publisher. Publishes the effective command to the vehicle interface
@@ -365,6 +375,8 @@ private:
 
   void controlCallback(const nif::common::msgs::ControlCmd::SharedPtr msg);
   void controlOverrideCallback(const nif::common::msgs::ControlCmd::UniquePtr msg);
+  void perceptionSteeringCallback(const std_msgs::msg::Float32::UniquePtr msg);
+
   rcl_interfaces::msg::SetParametersResult
   parametersCallback(const std::vector<rclcpp::Parameter> &vector);
   void run() override;
@@ -402,7 +414,7 @@ private:
     int counter_hb = 0;
 
     int buffer_empty_counter = 0;
-    int buffer_empty_counter_threshold = 10;
+    int buffer_empty_counter_threshold = 20;
 
     double init_tick_ = -1.0;
     double init_vel_ = -1.0;

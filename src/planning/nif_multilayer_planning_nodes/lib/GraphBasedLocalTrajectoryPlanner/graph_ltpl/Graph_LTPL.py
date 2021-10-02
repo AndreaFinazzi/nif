@@ -259,6 +259,34 @@ class Graph_LTPL(object):
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    def check_out_of_track(self,
+                           pos_est: np.ndarray) -> bool:
+        """
+        Check if the provided pos is within the bounds.
+
+        :param pos:               position to be checked
+        :returns:
+            * **within_bounds** - boolean flag - 'True', when the position 'pos' is within the bounds
+
+        """
+
+        # get bounds
+        bound1 = (self.__oth.__graph_base.refline + self.__oth.__graph_base.normvec_normalized
+                  * np.expand_dims(self.__oth.__graph_base.track_width_right, 1))
+        bound2 = (self.__oth.__graph_base.refline - self.__oth.__graph_base.normvec_normalized
+                  * np.expand_dims(self.__oth.__graph_base.track_width_left, 1))
+        
+        in_track = None
+        # Validate start position
+        if not graph_ltpl.online_graph.src.check_inside_bounds.check_inside_bounds(bound1=bound1,
+                                                                                   bound2=bound2,
+                                                                                   pos = pos_est):
+            in_track = False
+        else:
+            in_track = True
+
+        return in_track
+
     def set_startpos(self,
                      pos_est: np.ndarray,
                      heading_est: float,

@@ -11,6 +11,7 @@
 
     <exec_depend>ament_index_python</exec_depend>
     <exec_depend>nif_localization_nodes</exec_depend>
+    <exec_depend>nif_aw_localization_nodes</exec_depend>
     <exec_depend>nif_waypoint_manager_nodes</exec_depend>
     <exec_depend>nif_multilayer_planning_nodes</exec_depend>
     <exec_depend>nif_common_nodes</exec_depend>
@@ -22,6 +23,7 @@
     <exec_depend>nif_control_joint_lqr_nodes</exec_depend>
     <exec_depend>nif_velocity_planning_node</exec_depend>
     <exec_depend>nif_control_safety_layer_nodes</exec_depend>
+    <exec_depend>nif_lgsvl_simulation</exec_depend>
 
     <exec_depend>telemetry</exec_depend>
     <exec_depend>autoware_auto_msgs</exec_depend>

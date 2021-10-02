@@ -19,9 +19,12 @@ def generate_launch_description():
             Node(
                 package="nif_points_preprocessor_nodes",
                 executable="nif_points_preprocessor_nodes_exe",
-                output="screen",
+                output={
+                    'stdout': 'log',
+                    'stderr': 'screen',
+                },
                 emulate_tty=True,
-                parameters=[],
+                parameters=[config],
                 remappings=[
                     # ("ins_gps", "novatel_bottom/inspva_"),
                 ]

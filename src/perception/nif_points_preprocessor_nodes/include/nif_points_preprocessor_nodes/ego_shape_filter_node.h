@@ -29,6 +29,7 @@
 #include <std_msgs/msg/float32.hpp>
 #include <std_msgs/msg/header.hpp>
 #include <tf2_ros/transform_listener.h>
+#include <raptor_dbw_msgs/msg/wheel_speed_report.hpp>
 
 // PCL library
 
@@ -59,8 +60,10 @@
 #include <pcl/registration/correspondence_rejection_poly.h>
 #include <pcl/registration/transformation_estimation_svd.h>
 
+#include <mutex>
 #include <pcl/filters/approximate_voxel_grid.h>
 #include <pcl/filters/voxel_grid.h>
+#include <thread>
 
 // #include <pcl_ros/transforms.hpp>
 
@@ -76,6 +79,11 @@
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/opencv.hpp"
+
+// Kin-Controller
+#include "nif_wall_following_controller/kin_control_node.hpp" 
+
+
 /**
  * 2-D grid map size for wall detection
  * MAP_WIDTH : longitudinal direction
@@ -94,13 +102,20 @@ public:
   EgoShapeFilterNode(const std::string &node_name_);
   ~EgoShapeFilterNode();
   void mergedPointsCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
+  void WheelSpeedCallback(const raptor_dbw_msgs::msg::WheelSpeedReport::SharedPtr msg);
+  void timer_callback();
 
 private:
   EgoShapeFilterNode();
 
   void respond();
+  void SetControllerParams();
 
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_points_;
+  rclcpp::Subscription<raptor_dbw_msgs::msg::WheelSpeedReport>::SharedPtr sub_wheel_speed_;
+
+  rclcpp::TimerBase::SharedPtr timer_;
+
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr
       pub_filtered_points;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr
@@ -119,9 +134,11 @@ private:
 
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_left_wall_line;
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_right_wall_line;
+  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_wall_following_path;
 
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pub_inner_wall_distance;
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pub_outer_wall_distance;
+  rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pub_wall_following_steer_cmd;
 
   double left_lower_distance_;
   double right_lower_distance_;
@@ -148,10 +165,21 @@ private:
 
   double extract_distance_x_roi; 
   double extract_distance_thres;
+  double m_target_space_to_wall;
+  double m_margin_to_wall;
 
-      std::array<std::array<float, (size_t)(MAP_WIDTH + 1)>,
-                 (size_t)(MAP_HEIGHT + 1)>
-          map;
+  pcl::PointCloud<pcl::PointXYZI>::Ptr m_CloudShapeFiltered;
+  bool bMergedLidar = false;
+  std::mutex sensor_mtx;
+  rclcpp::Duration lidar_timeout = rclcpp::Duration(1, 0);
+  rclcpp::Time lidar_time_last_update;
+
+  nav_msgs::msg::Path final_wall_following_path_msg;
+  nif::control::KinControl m_KinController;
+  double m_vel_speed_x;
+  std::array<std::array<float, (size_t)(MAP_WIDTH + 1)>,
+                                  (size_t)(MAP_HEIGHT + 1)>
+      map;
 
   void EgoShape(pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud_ptr,
                 pcl::PointCloud<pcl::PointXYZI>::Ptr out_cloud_ptr,
@@ -185,14 +213,18 @@ private:
                          const double &x_roi_, const double &dist_thres_,
                          double &distance_out);
 
-  nav_msgs::msg::Path
-  LineVisualizer(pcl::PointCloud<pcl::PointXYZI>::Ptr cloudIn,
-                 const boost::optional<Eigen::Vector4f> coeff,
-                 double in_front_upper_threshold,
-                 double in_rear_upper_threshold);
+  void CubicSpliner(
+                  pcl::PointCloud<pcl::PointXYZI>::Ptr cloudIn,
+                  const boost::optional<Eigen::Vector4f> wall_plane_coeff,
+                  double in_front_upper_threshold, double in_rear_upper_threshold,
+                  nav_msgs::msg::Path& path_msg_out, cv::Mat& PolyCoefficient);
+
   cv::Mat polyfit(std::vector<cv::Point2f> &in_point, int n);
 
-
+  void EstimatePredictivePath(
+      const boost::optional<Eigen::Vector4f> wall_plane_coeff,
+      const cv::Mat &PolyCoefficient, nav_msgs::msg::Path &path_msg_out,
+      const double &target_space_to_wall);
 };
 } // namespace perception
 } // namespace nif

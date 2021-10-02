@@ -17,7 +17,8 @@ void nif::control::ControlSafetyLayerNode::afterSystemStatusCallback() {
     if (this->getSystemStatus().health_status.communication_failure || // too conservative
         (this->lat_autonomy_enabled && this->getSystemStatus().health_status.localization_failure) ||
         this->getSystemStatus().health_status.commanded_stop ||
-        this->getSystemStatus().autonomy_status.emergency_mode_enabled ) {
+        this->getSystemStatus().autonomy_status.emergency_mode_enabled ) 
+    {
         this->emergency_lane_enabled = true;
     } else {
         this->emergency_lane_enabled = false;
@@ -32,6 +33,13 @@ void nif::control::ControlSafetyLayerNode::controlOverrideCallback(
     // TODO Declare thresholds params and implement override mechanism.
     this->override_control_cmd = std::move(*msg);
     this->override_last_update = this->now();
+}
+
+void nif::control::ControlSafetyLayerNode::perceptionSteeringCallback(
+        const std_msgs::msg::Float32::UniquePtr msg) {
+    this->has_perception_steering = true;
+    this->perception_steering_cmd = msg->data;
+    this->perception_steering_last_update = this->now();
 }
 
 void nif::control::ControlSafetyLayerNode::run() {
@@ -71,14 +79,41 @@ void nif::control::ControlSafetyLayerNode::run() {
         this->publishAcceleratorCmd(this->control_cmd.accelerator_control_cmd);
 
 //        TODO this steering command should derive from perception-based controller
-        this->control_cmd.steering_control_cmd =
-                this->override_control_cmd.steering_control_cmd;
+        if (!this->getSystemStatus().health_status.communication_failure && 
+            std::abs(override_control_cmd.steering_control_cmd.data) > std::abs(steering_auto_override_deg)
+            ) {
+            this->control_cmd.steering_control_cmd =
+                    this->override_control_cmd.steering_control_cmd;
+            is_overriding_steering = true;
+        } else if ( false && this->has_perception_steering && 
+                    this->now() - this->perception_steering_last_update < rclcpp::Duration(1, 0)) {
+            this->control_cmd.steering_control_cmd.data =
+                this->perception_steering_cmd;
+        } else {
+            this->control_cmd.steering_control_cmd.data = 0.0;
+        }
         this->publishSteeringCmd(this->control_cmd.steering_control_cmd);
 
         this->control_pub->publish(this->control_cmd);
-        node_status = common::NODE_OK;
+        if (this->emergency_buffer_empty ||
+            !this->hasSystemStatus()     ||
+            this->now() - this->getSystemStatusUpdateTime() >
+            rclcpp::Duration::from_seconds(0.5))
+        { 
+            node_status = common::NODE_ERROR;
+        } else {
+            node_status = common::NODE_OK;
+        }
+
         this->setNodeStatus(node_status);
         this->bufferFlush();
+        
+        // Recover emergency buffer empty in manual mode
+        if (this->emergency_buffer_empty &&
+            !lat_autonomy_enabled &&
+            !long_autonomy_enabled )
+            this->emergency_buffer_empty = false;
+
         return;
     } else {
         node_status = common::NODE_OK;
@@ -134,7 +169,7 @@ void nif::control::ControlSafetyLayerNode::run() {
 
             this->publishSteeringCmd(this->control_cmd.steering_control_cmd);
 
-//    Always allow braking override
+            //    Always allow braking override
             if (this->override_control_cmd.braking_control_cmd.data > 100.0)
             {
                 this->control_cmd.braking_control_cmd =
@@ -142,10 +177,10 @@ void nif::control::ControlSafetyLayerNode::run() {
                 this->control_cmd.accelerator_control_cmd.data = 0.0;
                 this->publishBrakingCmd(this->control_cmd.braking_control_cmd);
                 this->publishAcceleratorCmd(this->control_cmd.accelerator_control_cmd);
-//  Publish desired velocity if long_autonomy_enabled
+            //  Publish desired velocity if long_autonomy_enabled
             } else if (long_autonomy_enabled) {
                 this->publishDesiredAcceleration(this->control_cmd.desired_accel_cmd);
-                // Publish joystck commands if long_autonomy_enable is false and no braking is commanded
+            // Publish joystck commands if long_autonomy_enable is false and no braking is commanded
             } else {
                 this->publishBrakingCmd(this->override_control_cmd.braking_control_cmd);
                 this->publishAcceleratorCmd(this->override_control_cmd.accelerator_control_cmd);
@@ -163,9 +198,9 @@ void nif::control::ControlSafetyLayerNode::run() {
             //      TODO handle critical error in the safest way
             RCLCPP_ERROR(this->get_logger(),
                          "ControlSafetyLayerNode caught an exception, enabling emergency lane control");
-//    Notify the SystemStatusManager of the change.
+            //    Notify the SystemStatusManager of the change.
             this->emergency_lane_enabled = true;
-            this->setNodeStatus(common::NodeStatusCode::NODE_ERROR);
+            this->setNodeStatus(common::NodeStatusCode::NODE_FATAL_ERROR);
         }
     }
 
