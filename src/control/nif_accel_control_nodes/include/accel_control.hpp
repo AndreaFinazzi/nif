@@ -29,6 +29,7 @@
 #include <control_model.hpp>
 #include <rclcpp/rclcpp.hpp>
 
+#include "sensor_msgs/msg/imu.hpp"
 #include <deep_orange_msgs/msg/joystick_command.hpp>
 #include <deep_orange_msgs/msg/pt_report.hpp>
 #include <raptor_dbw_msgs/msg/wheel_speed_report.hpp>
@@ -36,7 +37,7 @@
 #include <std_msgs/msg/string.hpp>
 #include <std_msgs/msg/u_int8.hpp>
 
-#include "nif_vehicle_dynamics_manager/tire_manager.hpp"
+#include "nif_vehicle_dynamics_manager/kalman.h"
 #include <TractionABS.hpp>
 #include <control_model.hpp>
 
@@ -70,9 +71,6 @@ public:
   std_msgs::msg::UInt8 gear_cmd;
   std_msgs::msg::String status_msg;
 
-  TireManager m_tire_manager_;
-  TractionABS m_abs_controller_;
-
 private:
   void initializeGears();
   void controlCallback();
@@ -91,6 +89,7 @@ private:
   receiveVelocity(const raptor_dbw_msgs::msg::WheelSpeedReport::SharedPtr msg);
   void receiveDesAccel(const std_msgs::msg::Float32::SharedPtr msg);
   void receivePtReport(const deep_orange_msgs::msg::PtReport::SharedPtr msg);
+  void receiveImu(const sensor_msgs::msg::Imu::SharedPtr msg);
 
   rclcpp::TimerBase::SharedPtr gear_timer_;
 
@@ -107,10 +106,12 @@ private:
       subVelocity_;
   rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr subDesAccel_;
   rclcpp::Subscription<deep_orange_msgs::msg::PtReport>::SharedPtr subPtReport_;
+  rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr subImu_;
 
   rclcpp::Time joy_recv_time_;
   rclcpp::Time vel_recv_time_;
   rclcpp::Time des_accel_recv_time_;
+  rclcpp::Time m_imu_update_time = rclcpp::Clock().now();
 
   bool auto_enabled_ = false;
   double speed_ = 0.0;
@@ -126,6 +127,12 @@ private:
   unsigned int engine_speed_ = 0;
   bool engine_running_ = false;
   unsigned int shifting_counter_ = 0;
+
+  bool kalman_init = false;
+  double m_a_x_kf = 0.0; // longitudinal accel from KF
+  double m_a_y_kf = 0.0; // lateral accel from KF
+
+  bool engine_based_throttle_enabled_ = false;
 
   double throttle_k_accel_;
   double throttle_k_accel2_;
@@ -144,8 +151,24 @@ private:
   std::map<int, std::shared_ptr<GearState>> gear_states;
   std::shared_ptr<control::GearState> curr_gear_ptr_;
 
-  ThrottleBrakeProfiler throttle_controller_;
-  ThrottleBrakeProfiler brake_controller_;
+  // Kalman filters
+  KalmanFilter kf_a_lat;
+  KalmanFilter kf_a_lon;
+
+  TireManager m_tire_manager_;
+  ThrottleBrakeProfiler m_throttle_controller_profiler_;
+  EngineMapAccelController m_throttle_controller_engine_;
+  ThrottleBrakeProfiler m_brake_controller_;
+  TractionABS m_traction_ABS_controller_;
+
+  double secs(rclcpp::Time t) {
+    return static_cast<double>(t.seconds()) +
+           static_cast<double>(t.nanoseconds()) * 1e-9;
+  }
+  double secs(rclcpp::Duration t) {
+    return static_cast<double>(t.seconds()) +
+           static_cast<double>(t.nanoseconds()) * 1e-9;
+  }
 
 }; // end of class
 

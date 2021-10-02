@@ -59,9 +59,13 @@ AccelControl::AccelControl() : Node("AccelControlNode") {
           "/raptor_dbw_interface/pt_report", 1,
           std::bind(&AccelControl::receivePtReport, this,
                     std::placeholders::_1));
+  this->subImu_ = this->create_subscription<sensor_msgs::msg::Imu>(
+      "in_imu_data", rclcpp::SensorDataQoS(),
+      std::bind(&AccelControl::receiveImu, this, std::placeholders::_1));
 
   // Declare Parameters
   this->declare_parameter("time_step", 0.01);
+  this->declare_parameter("engine_based_throttle_enabled", true);
 
   this->declare_parameter("throttle.k_accel", 0.05780);
   this->declare_parameter("throttle.k_accel2", 0.0);
@@ -84,6 +88,20 @@ AccelControl::AccelControl() : Node("AccelControlNode") {
   this->declare_parameter("gear.shift_up", 4000.0);
   this->declare_parameter("gear.shift_down", 2200.0);
   this->declare_parameter("gear.shift_time_ms", 1000);
+
+  this->declare_parameter("throttle.traction_enabled", true);
+  this->declare_parameter("throttle.traction_throttle_cmd_thres", 0.5);
+  this->declare_parameter("throttle.traction_factor", 0.2);
+  this->declare_parameter("throttle.traction_rate", 15.0);
+
+  this->declare_parameter("brake.ABS_enabled", true);
+  this->declare_parameter("brake.ABS_brake_cmd_thres", 0.5);
+  this->declare_parameter("brake.ABS_factor", 0.2);
+  this->declare_parameter("brake.ABS_rate", 15.0);
+
+  this->declare_parameter("TractionABS.velocity_thres_mps", 27.78);
+  this->declare_parameter("TractionABS.sigma_thres", 0.06);
+  this->declare_parameter("TractionABS.control_rate", 100.0);
 
   // Create Callback Timers
   this->ts_ = this->get_parameter("time_step").as_double();
@@ -108,9 +126,19 @@ AccelControl::AccelControl() : Node("AccelControlNode") {
   this->throttleCmdMax_ = this->get_parameter("throttle.cmd_max").as_double();
   this->throttleCmdMin_ = this->get_parameter("throttle.cmd_min").as_double();
 
-  this->throttle_controller_ = ThrottleBrakeProfiler(
-      throttle_k_accel_, throttle_k_accel2_, throttle_k_bias_,
-      throttle_pedalToCmd_, ts_, throttleCmdMax_, throttleCmdMin_);
+  this->engine_based_throttle_enabled_ =
+      this->get_parameter("engine_based_throttle_enabled").as_bool();
+
+  if (engine_based_throttle_enabled_) {
+    // Engine model-based throttle controller
+    this->m_throttle_controller_engine_ = EngineMapAccelController(
+        throttle_pedalToCmd_, throttleCmdMax_, throttleCmdMin_);
+  } else {
+    // Throttle profile-based throttle controller
+    this->m_throttle_controller_profiler_ = ThrottleBrakeProfiler(
+        throttle_k_accel_, throttle_k_accel2_, throttle_k_bias_,
+        throttle_pedalToCmd_, ts_, throttleCmdMax_, throttleCmdMin_);
+  }
 
   // Create brake accel controller object
   this->brake_k_accel_ = this->get_parameter("brake.k_accel").as_double();
@@ -120,9 +148,39 @@ AccelControl::AccelControl() : Node("AccelControlNode") {
   this->brakeCmdMax_ = this->get_parameter("brake.cmd_max").as_double();
   this->brakeCmdMin_ = this->get_parameter("brake.cmd_min").as_double();
 
-  this->brake_controller_ =
+  this->m_brake_controller_ =
       ThrottleBrakeProfiler(brake_k_accel_, brake_k_accel2_, brake_k_bias_,
                             brake_pedalToCmd_, ts_, brakeCmdMax_, brakeCmdMin_);
+
+  bool traction_enabled =
+      this->get_parameter("throttle.traction_enabled").as_bool();
+  double traction_throttle_cmd_thres =
+      this->get_parameter("throttle.traction_throttle_cmd_thres")
+          .as_double(); // 0.5
+  double traction_factor =
+      this->get_parameter("throttle.traction_factor").as_double(); // 0.2
+  double traction_rate =
+      this->get_parameter("throttle.traction_rate").as_double(); // 15.
+
+  bool ABS_enabled = this->get_parameter("brake.ABS_enabled").as_bool();
+  double ABS_brake_cmd_thres =
+      this->get_parameter("brake.ABS_brake_cmd_thres").as_double(); // 0.5
+  double ABS_factor =
+      this->get_parameter("brake.ABS_factor").as_double();             // 0.2
+  double ABS_rate = this->get_parameter("brake.ABS_rate").as_double(); // 15.
+
+  double velocity_thres_mps =
+      this->get_parameter("TractionABS.velocity_thres_mps")
+          .as_double(); // 27.78 mps, 100 kph
+  double sigma_thres =
+      this->get_parameter("TractionABS.sigma_thres").as_double(); // 0.06
+  double control_rate =
+      this->get_parameter("TractionABS.control_rate").as_double();
+
+  this->m_traction_ABS_controller_ = TractionABS(
+      traction_enabled, traction_throttle_cmd_thres, traction_factor,
+      traction_rate, ABS_enabled, ABS_brake_cmd_thres, ABS_factor, ABS_rate,
+      velocity_thres_mps, sigma_thres, control_rate);
 }
 
 void AccelControl::initializeGears() {
@@ -150,14 +208,39 @@ void AccelControl::initializeGears() {
 void AccelControl::paramUpdateCallback() {}
 
 void AccelControl::calculateThrottleCmd(double des_accel) {
+  // Get Longitudinal Acceleration Limit using Vehicle dynamics manager
+  double a_lon_max =
+      m_tire_manager_.ComputeLongitudinalAccelLimit(m_a_x_kf, m_a_y_kf);
+  // Constrain longitudinal acceleration
+  des_accel = std::min(des_accel, a_lon_max);
+
   // throttle command
   double db = this->get_parameter("throttle.des_accel_deadband").as_double();
+  double throttle_cmd_out = 0.0;
+  int gear_num = this->current_gear_;
+  int engine_speed = this->engine_speed_;
+
   if (des_accel > db) {
-    this->throttle_cmd.data =
-        this->throttle_controller_.CurrentControl(des_accel);
-  } else {
-    this->throttle_cmd.data = 0.0;
+    if (engine_based_throttle_enabled_) {
+      throttle_cmd_out = this->m_throttle_controller_engine_.CurrentControl(
+          des_accel, gear_num, engine_speed);
+    } else {
+      throttle_cmd_out =
+          this->m_throttle_controller_profiler_.CurrentControl(des_accel);
+    }
   }
+
+  // Traction Control
+  // - calculate tire slip ratio
+  double sigma =
+      m_tire_manager_.CalcTireSlipRatio(this->front_speed_, this->rear_speed_);
+  // - get current translational speed of the car
+  double curr_speed = this->speed_;
+  // Compute Traction control output
+  throttle_cmd_out = m_traction_ABS_controller_.tractionControl(
+      throttle_cmd_out, curr_speed, sigma);
+  // - final throttle command output
+  this->throttle_cmd.data = throttle_cmd_out;
 }
 
 void AccelControl::calculateBrakeCmd(double des_accel) {
@@ -165,18 +248,18 @@ void AccelControl::calculateBrakeCmd(double des_accel) {
   double db = this->get_parameter("brake.des_accel_deadband").as_double();
   double brake_cmd_out = 0.0;
   if (des_accel < -db) {
-    brake_cmd_out = this->brake_controller_.CurrentControl(des_accel);
+    brake_cmd_out = this->m_brake_controller_.CurrentControl(des_accel);
   }
-  // Calculate tire slip ratio
+  // ABS Control
+  // - calculate tire slip ratio
   double sigma =
       m_tire_manager_.CalcTireSlipRatio(this->front_speed_, this->rear_speed_);
-  // Grab current translational speed of the car
+  // - get current translational speed of the car
   double curr_speed = this->speed_;
-  // Compute ABS control output
+  // - compute ABS control output
   brake_cmd_out =
-      m_abs_controller_.ABS_control(brake_cmd_out, curr_speed, sigma);
-
-  // Final brake command output
+      m_traction_ABS_controller_.ABSControl(brake_cmd_out, curr_speed, sigma);
+  // - final brake command output
   this->brake_cmd.data = brake_cmd_out;
 
   // for debugging
@@ -194,13 +277,13 @@ void AccelControl::publishThrottleBrake() {
   // run controller if comms is bad or auto is enabled
   // Sets the joystick throttle cmd as the saturation limit on throttle
 
+  pubThrottleCmdRaw_->publish(this->throttle_cmd);
+  pubBrakeCmdRaw_->publish(this->brake_cmd);
+
   if (this->throttle_cmd.data > this->max_throttle_) {
     RCLCPP_DEBUG(this->get_logger(), "%s\n", "Throttle Limit Max Reached");
     this->throttle_cmd.data = this->max_throttle_;
   }
-
-  this->throttle_cmd.data =
-      (this->brake_cmd.data > 0.0) ? 0.0 : this->throttle_cmd.data;
 
   this->throttle_cmd.data =
       (this->brake_cmd.data > 0.0) ? 0.0 : this->throttle_cmd.data;
@@ -297,6 +380,34 @@ void AccelControl::receivePtReport(
   this->current_gear_ = msg->current_gear;
   this->engine_speed_ = msg->engine_rpm;
   this->engine_running_ = (msg->engine_rpm > 500) ? true : false;
+}
+
+void AccelControl::receiveImu(const sensor_msgs::msg::Imu::SharedPtr msg) {
+  // kalman filter initialization
+  if (!kalman_init) {
+    kf_a_lat.init(2);
+    kf_a_lat.setProcessNoise(0.1, 0.01);
+    kf_a_lat.setMeasurementNoise(0.4);
+
+    kf_a_lon.init(2);
+    kf_a_lon.setProcessNoise(0.1, 0.01);
+    kf_a_lon.setMeasurementNoise(0.4);
+
+    kalman_init = true;
+  }
+  // kalman filtering
+  auto now = rclcpp::Clock().now();
+  float dt = secs(now - m_imu_update_time);
+  // - prediction
+  kf_a_lat.predict(dt);
+  kf_a_lon.predict(dt);
+  // - get filtered values
+  m_a_x_kf = kf_a_lon.get();
+  m_a_y_kf = kf_a_lat.get();
+  // - correction
+  kf_a_lon.correct((float)(msg->linear_acceleration.x));
+  kf_a_lat.correct((float)(msg->linear_acceleration.y));
+  m_imu_update_time = now;
 }
 
 } // end namespace control

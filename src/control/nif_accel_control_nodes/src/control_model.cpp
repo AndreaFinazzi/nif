@@ -20,6 +20,7 @@
 #include <iostream>
 
 namespace control {
+// ***** Model - ThrottleBrakeProfiler ***** //
 ThrottleBrakeProfiler::ThrottleBrakeProfiler(
     const double &K_accel, const double &K_accel2, const double &K_bias,
     const double &pedalToCmd, const double &dt, const double &cmdMax,
@@ -34,7 +35,7 @@ ThrottleBrakeProfiler::ThrottleBrakeProfiler(
   SetCmdBounds(cmdMin, cmdMax);
 }
 
-/******************* ThrottleBrakeProfiler ALGORITHM *******************/
+/* ThrottleBrakeProfiler ALGORITHM */
 double ThrottleBrakeProfiler::CurrentControl(double des_accel) {
   double cmd = 0.0;
 
@@ -44,7 +45,7 @@ double ThrottleBrakeProfiler::CurrentControl(double des_accel) {
 
   return SaturateCmd(cmd);
 }
-/******************************* SETTERS ************************************/
+/* SETTERS */
 std::pair<bool, bool> ThrottleBrakeProfiler::SetCmdBounds(const double &min,
                                                           const double &max) {
   bool isMinSet = false, isMaxSet = false;
@@ -59,8 +60,60 @@ std::pair<bool, bool> ThrottleBrakeProfiler::SetCmdBounds(const double &min,
   return std::make_pair(isMinSet, isMaxSet);
 }
 
-/*********************** PRIVATE METHODS ************************************/
+/* PRIVATE METHODS */
 double ThrottleBrakeProfiler::SaturateCmd(const double &cmd) {
+  return std::min(std::max(cmdMin_, cmd), cmdMax_);
+}
+
+// ***** Model - EngineMapAccelController ***** //
+EngineMapAccelController::EngineMapAccelController(const double &pedalToCmd,
+                                                   const double &cmdMax,
+                                                   const double &cmdMin) {
+  // Set control parameters
+  pedalToCmd_ = pedalToCmd;
+
+  // Set valid bounds
+  SetCmdBounds(cmdMin, cmdMax);
+}
+/* EngineMapAccelController ALGORITHM */
+double EngineMapAccelController::CurrentControl(double desired_acceleration,
+                                                int gear_num,
+                                                int engine_speed) {
+  double cmd = 0.0;
+
+  // Compute desired_engine_torque from desired_acceleration
+  // (desired longitudinal tire force)
+  double desired_tire_longitudinal_force = mass * desired_acceleration;
+  double desired_engine_torque = m_engine_manager.computeEngineTorque(
+      desired_tire_longitudinal_force, gear_num);
+
+  // Compute desired_throttle_position from desired_engine_torque
+  double desired_throttle_position =
+      m_engine_manager.inverseEngineModel(engine_speed, desired_engine_torque);
+
+  cmd = pedalToCmd_ * desired_throttle_position; // [0~100]
+  std::cout << "---------------------------------cmd : " << cmd << std::endl;
+
+  return SaturateCmd(cmd);
+}
+
+/* SETTERS */
+std::pair<bool, bool>
+EngineMapAccelController::SetCmdBounds(const double &min, const double &max) {
+  bool isMinSet = false, isMaxSet = false;
+  if (min <= 0.0) {
+    this->cmdMin_ = min;
+    isMinSet = true;
+  }
+  if (max > 0.0) {
+    this->cmdMax_ = max;
+    isMaxSet = true;
+  }
+  return std::make_pair(isMinSet, isMaxSet);
+}
+
+/* PRIVATE METHODS */
+double EngineMapAccelController::SaturateCmd(const double &cmd) {
   return std::min(std::max(cmdMin_, cmd), cmdMax_);
 }
 
