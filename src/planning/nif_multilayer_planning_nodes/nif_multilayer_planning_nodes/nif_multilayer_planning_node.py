@@ -240,7 +240,7 @@ class GraphBasedPlanner(rclpy.node.Node):
             import_globtraj_csv.import_globtraj_csv(import_path=path_dict['globtraj_input_path'])[0]
 
         self.pos_est = self.refline[0, :]
-        self.heading_est = np.arctan2(np.diff(self.refline[0:2, 1]), np.diff(self.refline[0:2, 0]))
+        self.heading_est = np.arctan2(np.diff(self.refline[0:2, 1]), np.diff(self.refline[0:2, 0])) - np.pi / 2
         self.vel_est = 0.0
 
         # set start pos
@@ -260,6 +260,7 @@ class GraphBasedPlanner(rclpy.node.Node):
 
     def costmap_callback(self, msg):
         if (self.mission_code == MissionStatus.MISSION_PIT_IN or 
+            self.mission_code == MissionStatus.MISSION_PIT_STANDBY or 
             self.mission_code == MissionStatus.MISSION_PIT_OUT):
             self.costmap = msg
         else:
@@ -397,6 +398,7 @@ class GraphBasedPlanner(rclpy.node.Node):
         ])
 
         self.current_veh_odom_yaw_rad = self.yaw_from_ros_quaternion(self.current_veh_odom.pose.pose.orientation)
+        self.heading_est = self.current_veh_odom_yaw_rad - np.pi / 2
         # TODO : could use perception instead of this, we gain both accuracy and performance
         self.vel_est = math.sqrt(pow(self.current_veh_odom.twist.twist.linear.x, 2)
                                  + pow(self.current_veh_odom.twist.twist.linear.y, 2))
@@ -582,12 +584,16 @@ class GraphBasedPlanner(rclpy.node.Node):
             #     self.local_maptrack_inglobal_pub.publish(self.pit_in_wpt_msg)
             #     return
 
-        elif self.mission_code == MissionStatus.MISSION_PIT_OUT:
+        elif self.mission_code == MissionStatus.MISSION_PIT_OUT or self.mission_code == MissionStatus.MISSION_PIT_STANDBY:
             # ---------------------------------------------------
             # ---------------------------------------------------
             # V3 : Using costmap, pass a collision free trajectory only in the pit area
             # ---------------------------------------------------
             # ---------------------------------------------------
+
+            self.ltpl_obj.set_startpos(pos_est=self.pos_est,
+                                        heading_est=self.heading_est)
+                                        
             nearest_dist_list_from, nearest_ind_list_form = self.pit_tree.query([[self.current_veh_odom.pose.pose.position.x,
                                                                      self.current_veh_odom.pose.pose.position.y]], k=1)
             nearest_ind = nearest_ind_list_form[0][0]
