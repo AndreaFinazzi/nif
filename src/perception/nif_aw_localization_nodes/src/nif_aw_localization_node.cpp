@@ -290,6 +290,21 @@ void AWLocalizationNode::timerCallback()
       node_status = nif::common::NODE_ERROR;
     }
 
+    // standard deviation from novatel bottom/top
+    double bottom_noise_total = sqrt(BestPosBottom.lat_noise * BestPosBottom.lat_noise + 
+                                     BestPosBottom.lon_noise * BestPosBottom.lon_noise);
+    double top_noise_total =
+        sqrt(BestPosTop.lat_noise * BestPosTop.lat_noise +
+             BestPosTop.lon_noise * BestPosTop.lon_noise);
+
+    if (bottom_noise_total > 2.0 || top_noise_total > 2.0)
+    {
+      m_localization_status.status = "NO UPDATE, GPS HIGH ERROR";
+      m_localization_status.localization_status_code =
+          nif_msgs::msg::LocalizationStatus::GPS_HIGH_ERROR;
+      update_pose = false;
+    }
+
       /* pose measurement update */
     if ((bottom_gps_update == true || top_gps_update == true) && update_pose) {
       measurementUpdatePose(bestpos_time_last_update, correction_x,
@@ -376,8 +391,8 @@ void AWLocalizationNode::BESTPOSCallback
   // std::normal_distribution<double> dist(mean, stdev);
 
   nif::localization::utils::GeodeticConverter::GeoRef currentGPS;
-  currentGPS.latitude = (double)msg->lat; // + dist(generator) * 1e-6;
-  currentGPS.longitude = (double)msg->lon; // + dist(generator) * 1e-6;
+  currentGPS.latitude = (double)msg->lat ; //- dist(generator) * 1e-5;
+  currentGPS.longitude = (double)msg->lon; //- dist(generator) * 1e-5;
   // Currently ignore altitude for the most part and just track x/y
   currentGPS.altitude = 0.;
 
@@ -425,7 +440,7 @@ void AWLocalizationNode::BESTPOSCallback
 
 void AWLocalizationNode::TOPBESTPOSCallback(
     const novatel_oem7_msgs::msg::BESTPOS::SharedPtr msg) {
-  //test
+  // test
   // unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
   // std::default_random_engine generator(seed);
   // double mean = m_testnoise / 10.;
@@ -433,7 +448,7 @@ void AWLocalizationNode::TOPBESTPOSCallback(
   // std::normal_distribution<double> dist(mean, stdev);
 
   nif::localization::utils::GeodeticConverter::GeoRef currentGPS;
-  currentGPS.latitude = (double)msg->lat; // + dist(generator) * 1e-5;
+  currentGPS.latitude = (double)msg->lat; //+ dist(generator) * 1e-5;
   currentGPS.longitude = (double)msg->lon; //+ dist(generator) * 1e-5;
   // Currently ignore altitude for the most part and just track x/y
   currentGPS.altitude = 0.;
@@ -1111,7 +1126,6 @@ bool AWLocalizationNode::CalculateBestCorrection(
     m_localization_status.status = "BEST STATUS";
     m_localization_status.localization_status_code =
         nif_msgs::msg::LocalizationStatus::BEST_STATUS;
-
     return true;
   }
   else // one of sensor has drift. we should fuse the sensors.
