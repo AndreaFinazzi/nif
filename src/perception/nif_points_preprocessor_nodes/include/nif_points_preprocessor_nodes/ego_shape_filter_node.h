@@ -29,6 +29,7 @@
 #include <std_msgs/msg/float32.hpp>
 #include <std_msgs/msg/header.hpp>
 #include <tf2_ros/transform_listener.h>
+#include <visualization_msgs/msg/marker.hpp>
 #include <raptor_dbw_msgs/msg/wheel_speed_report.hpp>
 
 // PCL library
@@ -90,9 +91,9 @@
  * MAP_HEIGHT : longitudinal direction
  */
 const unsigned long MAP_WIDTH =
-    400; //(front_upper_distance + rear_upper_distance) / resolution
+    560; //(front_upper_distance + rear_upper_distance) / resolution
 const unsigned long MAP_HEIGHT =
-    160; // (right_upper_distance + left_upper_distance) / resolution
+    240; // (right_upper_distance + left_upper_distance) / resolution
 
 namespace nif {
 namespace perception {
@@ -103,6 +104,7 @@ public:
   ~EgoShapeFilterNode();
   void mergedPointsCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
   void WheelSpeedCallback(const raptor_dbw_msgs::msg::WheelSpeedReport::SharedPtr msg);
+  void RadarMarkerCallback(const visualization_msgs::msg::Marker::SharedPtr msg);
   void timer_callback();
 
 private:
@@ -113,7 +115,7 @@ private:
 
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_points_;
   rclcpp::Subscription<raptor_dbw_msgs::msg::WheelSpeedReport>::SharedPtr sub_wheel_speed_;
-
+  rclcpp::Subscription<visualization_msgs::msg::Marker>::SharedPtr sub_radar_marker_;
   rclcpp::TimerBase::SharedPtr timer_;
 
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr

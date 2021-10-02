@@ -77,11 +77,17 @@ EgoShapeFilterNode::EgoShapeFilterNode(const std::string &node_name_)
       nif::common::constants::QOS_SENSOR_DATA,
       std::bind(&EgoShapeFilterNode::WheelSpeedCallback, this,
                 std::placeholders::_1));
+  sub_radar_marker_ =
+      this->create_subscription<visualization_msgs::msg::Marker>(
+          "/radar_front/radar_visz_moving",
+          nif::common::constants::QOS_SENSOR_DATA,
+          std::bind(&EgoShapeFilterNode::RadarMarkerCallback, this,
+                    std::placeholders::_1));
 
   using namespace std::chrono_literals; // NOLINT
   // TODO convert period to paramter
   timer_ = this->create_wall_timer(
-      10ms, std::bind(&EgoShapeFilterNode::timer_callback, this));
+      25ms, std::bind(&EgoShapeFilterNode::timer_callback, this));
 
   pub_filtered_points = this->create_publisher<sensor_msgs::msg::PointCloud2>(
       "/merged/ego_filtered", nif::common::constants::QOS_SENSOR_DATA);
@@ -430,12 +436,12 @@ void EgoShapeFilterNode::timer_callback() {
   final_wall_following_path_msg.header.stamp = this->now();
 
 
-  //  EstimatePredictivePath(right_wall_plane_coeff, RightPolyCoefficient,
-  //                         wall_folllowing_path_msg, m_margin_to_wall);
+   EstimatePredictivePath(right_wall_plane_coeff, RightPolyCoefficient,
+                          wall_folllowing_path_msg, m_margin_to_wall);
 
   // changed
-  EstimatePredictivePath(right_wall_plane_coeff, RightPolyCoefficient, right_polynorm_order,
-                         wall_folllowing_path_msg, m_margin_to_wall);
+  // EstimatePredictivePath(right_wall_plane_coeff, RightPolyCoefficient, right_polynorm_order,
+  //                        wall_folllowing_path_msg, m_margin_to_wall);
 
 
   if (right_wall_plane_coeff && !wall_folllowing_path_msg.poses.empty()) {
@@ -502,6 +508,10 @@ void EgoShapeFilterNode::WheelSpeedCallback(const raptor_dbw_msgs::msg::WheelSpe
   m_vel_speed_x = (msg->front_right + msg->front_left) / 2 * nif::common::constants::KPH2MS;
 }
 
+void EgoShapeFilterNode::RadarMarkerCallback(
+    const visualization_msgs::msg::Marker::SharedPtr msg) {
+
+}
 
 void EgoShapeFilterNode::RegisterPointToGrid(
     pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud_ptr, double in_resolution,
@@ -616,7 +626,7 @@ EgoShapeFilterNode::wall_detect(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud,
   pcl::SampleConsensusModelPlane<pcl::PointXYZI>::Ptr model_p(
       new pcl::SampleConsensusModelPlane<pcl::PointXYZI>(cloud));
   pcl::RandomSampleConsensus<pcl::PointXYZI> ransac(model_p);
-  ransac.setDistanceThreshold(0.2);
+  ransac.setDistanceThreshold(m_ransacDistanceThres);
   ransac.computeModel();
 
   pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
@@ -857,7 +867,7 @@ void EgoShapeFilterNode::EstimatePredictivePath(
   }
   
   int poly_order = 2;
-  for (double x = -10; x < 30; x = x + 0.5) {
+  for (double x = -10; x < 50; x = x + 0.5) {
     geometry_msgs::msg::PoseStamped pose_buf;
     pose_buf.pose.position.x = x;
     pose_buf.pose.position.y =

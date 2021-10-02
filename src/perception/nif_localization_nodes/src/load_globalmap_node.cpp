@@ -19,21 +19,25 @@ GlobalmapLoader::GlobalmapLoader(const std::string &node_name)
   this->declare_parameter<bool>("use_trajectory", bool(false));
   this->declare_parameter<double>("voxel_size", double(3.0));
 
-  this->m_glbalmap_file_name = this->get_parameter("globalmap_file_name").as_string();
-  this->m_trajectory_file_name = this->get_parameter("trajectory_pcd_file").as_string();
+  this->m_glbalmap_file_name =
+      this->get_parameter("globalmap_file_name").as_string();
+  this->m_trajectory_file_name =
+      this->get_parameter("trajectory_pcd_file").as_string();
   this->bUseTrajectory = this->get_parameter("use_trajectory").as_bool();
   this->m_voxel_size = this->get_parameter("voxel_size").as_double();
 
   // setup QOS to be best effort
   auto qos = rclcpp::QoS(
-          rclcpp::QoSInitialization(RMW_QOS_POLICY_HISTORY_KEEP_LAST, 10));
+      rclcpp::QoSInitialization(RMW_QOS_POLICY_HISTORY_KEEP_LAST, 10));
   qos.best_effort();
 
-  pubGlobalmap =
-      this->create_publisher<sensor_msgs::msg::PointCloud2>("/globalmap", nif::common::constants::QOS_EGO_ODOMETRY);
+  pubGlobalmap = this->create_publisher<sensor_msgs::msg::PointCloud2>(
+      "/globalmap", nif::common::constants::QOS_EGO_ODOMETRY);
   pubTrajectory = this->create_publisher<sensor_msgs::msg::PointCloud2>(
       "/pcd_trajectory", nif::common::constants::QOS_EGO_ODOMETRY);
-
+  sub_Bool_ = this->create_subscription<std_msgs::msg::Bool>(
+      "map_load", nif::common::constants::QOS_EGO_ODOMETRY,
+      std::bind(&GlobalmapLoader::Bool_callback, this, std::placeholders::_1));
   RCLCPP_INFO(this->get_logger(), "GLOBAL MAP FILE : ", m_glbalmap_file_name);
 
   pcdFileIO();
@@ -44,17 +48,19 @@ GlobalmapLoader::GlobalmapLoader(const std::string &node_name)
     if (!bMapReady) {
       pcdFileIO();
 
-    } else if (!bTrajectoryReady && bUseTrajectory)
-    {
+    } else if (!bTrajectoryReady && bUseTrajectory) {
       TrajectorypcdFileIO();
 
-    }
-      else {
-        // if(bPublishOnce)
-        //   return;
-
+    } else {
+      // if(bPublishOnce)
+      //   return;
+      // std::cout<<"Pub cnt : "<<pub_cnt<<std::endl;
+      if (bLoadmap == true) {
+        std::cout << "Global Map Load Success!" << std::endl;
         Publisher();
+        bLoadmap = false;
       }
+    }
   });
 }
 
@@ -80,15 +86,15 @@ void GlobalmapLoader::pcdFileIO() {
   m_globalmap_ptr = downsample(CloudIn, m_voxel_size);
   bMapReady = true;
 }
-
+void GlobalmapLoader::Bool_callback(const std_msgs::msg::Bool::SharedPtr msg) {
+  bLoadmap = msg->data;
+}
 void GlobalmapLoader::TrajectorypcdFileIO() {
   // Skip if not using traj
-  if (!bUseTrajectory)
-  {
+  if (!bUseTrajectory) {
     bTrajectoryReady = true;
     return;
   }
-    
 
   m_trajectory_ptr.reset(new pcl::PointCloud<pcl::PointXYZI>());
   //  read m_trajectory_ptr from a pcd file
@@ -123,8 +129,7 @@ void GlobalmapLoader::Publisher() {
   GlobalMapCloudMsg.header.stamp = this->now();
   pubGlobalmap->publish(GlobalMapCloudMsg);
 
-  if(bUseTrajectory)
-  {
+  if (bUseTrajectory) {
     sensor_msgs::msg::PointCloud2 TrajectoryCloudMsg;
     pcl::toROSMsg(*m_trajectory_ptr, TrajectoryCloudMsg);
     TrajectoryCloudMsg.header.frame_id = ODOM;
