@@ -42,6 +42,14 @@ double EngineManager::inverseEngineModel(double engine_speed,
   // Get feasible throttle range (from 0 to 100 throttle position)
   std::vector<double> engine_torque_range = m_engine_model[idx_engine_speed];
 
+  // Safety factor for lower throttle in high RPM range
+  if (engine_speed > m_rpm_safe_thres) {
+    // safety factor. m_gamma > 1 for less throttle w.r.t. same torque output
+    for (int i = 0; i < engine_torque_range.size(); i++) {
+      engine_torque_range[i] *= m_gamma;
+    }
+  }
+
   // Check engine torque limit
   auto max_engine_torque = std::max_element(
       engine_torque_range.begin(),
@@ -51,6 +59,10 @@ double EngineManager::inverseEngineModel(double engine_speed,
   // std::endl; std::cout << "Max torque limit      : " << *max_engine_torque <<
   // std::endl; std::cout << "engine_speed          : " << engine_speed <<
   // std::endl;
+
+  // for diagnostic
+  m_desired_engine_torque = desired_engine_torque;
+  m_max_engine_torque = *max_engine_torque;
 
   // Return max engine torque when desired_engine_torque > max_engine_torque
   if (desired_engine_torque >= *max_engine_torque) {
