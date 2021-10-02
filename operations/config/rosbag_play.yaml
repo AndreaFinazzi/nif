@@ -4,7 +4,7 @@ windows:
     layout: tiled
     shell_command_before:
       - source /home/usrg/nif/install/setup.bash 
-      - export ROS_DOMAIN_ID=77
+      - export ROS_DOMAIN_ID=33
       # - cd /home/usrg/bag/LOR/VEH4_LOR_RUN-manual.01_2021-09-16_for_mapping 
       # - cd /home/usrg/bag/VEH4_IMS_RUN-ontrack00_2021-09-03 #IMS Full track     
       # - cd /home/usrg/media/IAC/LOR/VEH4_LOR_RUN-nif.full_2021-09-12 #Large error GPS data 
@@ -13,9 +13,9 @@ windows:
       # - cd /home/usrg/media/IAC/21.09.21_IMS/VEH4_IMS_RUN-ontrack.1_2021-09-21 #IAC_run_1
       # - cd /home/usrg/media/T7/IAC_0928_si/2021_09_21_IMS/VEH8_MIT-PITT-RW #RADAR  
       # - cd /home/usrg/media/IAC/LOR/VEH4_LOR_RUN-graph.aw_2021-09-29 #LOR_0929_aw
-      - cd /home/usrg/media/IAC/LOR/VEH4_LOR_RUN-graph.yaw_2021-09-29 #LOR_0929_yaw_1
+      # - cd /home/usrg/media/IAC/LOR/VEH4_LOR_RUN-graph.yaw_2021-09-29 #LOR_0929_yaw_1
       # - cd /home/usrg/media/IAC #MITPIT DATA
-
+      - cd /home/usrg/media/T7/IAC_0928_si/2021_09_21_IMS/VEH8_MIT-PITT-RW #MITPIT DATA
 
     panes:
     - shell_command:
@@ -36,8 +36,8 @@ windows:
         # - ros2 bag play sensors_2021-09-21_14-53-58/ --topics /merged/lidar /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /raptor_dbw_interface/wheel_speed_report /novatel_top/bestpos /novatel_top/inspva /novatel_top/bestvel /novatel_top/imu/data /novatel_bottom/insstdev #IAC_run_1
         #  - ros2 bag play sensors_2021-09-21_13-20-18/  --topics /merged/lidar /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /raptor_dbw_interface/wheel_speed_report /novatel_top/bestpos /novatel_top/inspva /novatel_top/bestvel /novatel_top/imu/data /novatel_bottom/insstdev /radar_front/radar_visz_moving /luminar_front_points /luminar_left_points /luminar_right_points
         #  - ros2 bag play sensors_2021-09-29_14-24-45/  --topics /merged/lidar /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /raptor_dbw_interface/wheel_speed_report /novatel_top/bestpos /novatel_top/inspva /novatel_top/bestvel /novatel_top/imu/data /novatel_bottom/insstdev 
-         - ros2 bag play sensors_2021-09-29_14-57-31/  --topics /merged/lidar /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /novatel_top/bestpos /raptor_dbw_interface/wheel_speed_report /novatel_top/inspva /novatel_top/bestvel /novatel_top/imu/data /novatel_bottom/insstdev /novatel_top/insstdev 
-      # - ros2 bag play sensors_2021-09-21_13-20-18/  --topics /luminar_front_points /luminar_left_points /luminar_right_points /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /novatel_top/bestpos /novatel_top/inspva /novatel_top/bestvel /novatel_top/imu/data /novatel_bottom/insstdev /novatel_top/insstdev 
+        #  - ros2 bag play sensors_2021-09-29_14-57-31/  --topics /merged/lidar /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /novatel_top/bestpos /raptor_dbw_interface/wheel_speed_report /novatel_top/inspva /novatel_top/bestvel /novatel_top/imu/data /novatel_bottom/insstdev /novatel_top/insstdev 
+      - ros2 bag play sensors_2021-09-21_13-20-18/  --topics /luminar_front_points /luminar_left_points /luminar_right_points /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /novatel_top/bestpos /novatel_top/inspva /novatel_top/bestvel /novatel_top/imu/data /novatel_bottom/insstdev /novatel_top/insstdev 
 
     - shell_command:
         # - ros2 run plotjuggler plotjuggler
@@ -46,8 +46,8 @@ windows:
     layout: tiled
     shell_command_before:
       - source /home/usrg/nif/install/setup.bash && cd /home/usrg/nif
-      - export ROS_DOMAIN_ID=77
-      - export TRACK=LOR
+      - export ROS_DOMAIN_ID=33
+      - export TRACK=IMS
       - echo $TRACK
     panes:
       - shell_command:
@@ -55,7 +55,7 @@ windows:
       - shell_command:
           - ros2 launch nif_points_preprocessor_nodes deploy.launch.py
       - shell_command:
-          - ros2 launch nif_multilayer_planning_nodes deploy.launch.py
+          # - ros2 launch nif_multilayer_planning_nodes deploy.launch.py
       - shell_command:
           - ros2 launch nif_aw_localization_nodes deploy.launch.py
       - shell_command:
@@ -69,7 +69,7 @@ windows:
     layout: tiled
     shell_command_before:
       - source /home/usrg/nif/install/setup.bash && cd /home/usrg/nif/src/perception/nif_localization_nodes/launch
-      - export ROS_DOMAIN_ID=77
+      - export ROS_DOMAIN_ID=33
     panes:
       - shell_command:
           - rviz2 -d /home/usrg/nif/src/perception/nif_localization_nodes/launch/navi.rviz
@@ -78,7 +78,7 @@ windows:
     layout: tiled
     shell_command_before:
       - source /home/usrg/nif/install/setup.bash && cd /home/usrg/nif/src/perception/nif_localization_nodes/launch
-      - export ROS_DOMAIN_ID=77
+      - export ROS_DOMAIN_ID=33
     panes:
       - shell_command:
           - ros2 topic echo /control_joint_lqr/lqr_error
