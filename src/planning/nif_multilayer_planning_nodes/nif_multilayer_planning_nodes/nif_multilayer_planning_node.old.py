@@ -11,7 +11,7 @@ import rclpy
 from ament_index_python import get_package_share_directory
 
 from nif_msgs.msg import Perception3DArray, SystemStatus, MissionStatus
-from nav_msgs.msg import Path, Odometry, OccupancyGrid
+from nav_msgs.msg import Path, Odometry
 from std_msgs.msg import Bool
 from nifpy_common_nodes.base_node import BaseNode
 from geometry_msgs.msg import PoseStamped
@@ -47,7 +47,6 @@ class GraphBasedPlanner(rclpy.node.Node):
 
         self.pose_resolution = 2.5
         self.maptrack_len = 100
-        self.pit_maptrack_len = 100
         
 #       Pre-initialize memory
 #       TODO pre-load all these info
@@ -103,33 +102,22 @@ class GraphBasedPlanner(rclpy.node.Node):
         self.pit_in_wpt_quintic = [] # the pit-in waypoint segment stitching with the static pit-in waypoint from the ego position [x,y,yaw_rad]
         self.num_pit_in_wpt = 0
         self.pit_in_maptrack_len = None
+        self.pit_in_flg = False
+        self.pit_in_wpt_maximum_vel = 0.0 # m/s
+        self.pit_in_first_call = False
 
         # TODO: Loading the pit-out waypoints
         self.pit_out_wpt_file_path = None
-        self.pit_out_wpt_stitched = [] # stitched pit-out waypoint [x,y,yaw_rad]
-        self.pit_out_wpt_stitched_xy = [] # stitched pit-out waypoint [x,y]
-        self.pit_out_wpt = [] # static pit-out waypoint from the waypoint file [x,y,yaw_rad]
-        self.pit_out_wpt_xy = [] # static pit-out waypoint from the waypoint file [x,y]
-        self.pit_out_wpt_quintic = [] # the pit-out waypoint segment stitching with the static pit-in waypoint from the ego position [x,y,yaw_rad]
+        self.pit_out_wpt_stitched = [] # stitched pit-in waypoint [x,y,yaw_rad]
+        self.pit_out_wpt_stitched_xy = [] # stitched pit-in waypoint [x,y]
+        self.pit_out_wpt = [] # static pit-in waypoint from the waypoint file [x,y,yaw_rad]
+        self.pit_out_wpt_xy = [] # static pit-in waypoint from the waypoint file [x,y]
+        self.pit_out_wpt_quintic = [] # the pit-in waypoint segment stitching with the static pit-in waypoint from the ego position [x,y,yaw_rad]
         self.num_pit_out_wpt = 0
         self.pit_out_maptrack_len = None
-
-        # TODO: Loading the pit waypoints (entire)
-        self.pit_wpt_file_path = None
-        self.pit_wpt_stitched = [] # stitched pit waypoint [x,y,yaw_rad]
-        self.pit_wpt_stitched_xy = [] # stitched pit waypoint [x,y]
-        self.pit_wpt = [] # static pit waypoint from the waypoint file [x,y,yaw_rad]
-        self.pit_wpt_xy = [] # static pit waypoint from the waypoint file [x,y]
-        self.pit_wpt_local = [] # Locally planned waypoint segment in body frame [x,y,yaw_rad]
-        self.num_pit_wpt = 0
-        self.pit_maptrack_len = None
-
-        # Cost map
-        self.costmap = None
-        # TODO: should be parameterized and tuned.
-        self.blocked_cost_thres = 50.0 # If the cumulated cost along the path with costmap is over than this threshold, we treat their is a collision.
-        self.costmap_sub = self.create_subscription(OccupancyGrid, 'todo', self.costmap_callback, 10)
-
+        self.pit_out_flg = False
+        self.pit_out_wpt_maximum_vel = 0.0 # m/s
+        self.pit_out_first_call = False
 
         self.pit_in_wpt_gen_first_call = True
         self.pit_out_wpt_gen_first_call = True
@@ -143,8 +131,6 @@ class GraphBasedPlanner(rclpy.node.Node):
             self.pit_in_wpt_file_path = get_share_file('nif_multilayer_planning_nodes', self.pit_in_wpt_file_path)
             self.pit_out_wpt_file_path = self.graph_config.get('PIT',"pit_out_wpt_file")
             self.pit_out_wpt_file_path = get_share_file('nif_multilayer_planning_nodes', self.pit_out_wpt_file_path)
-            self.pit_wpt_file_path = self.graph_config.get('PIT',"pit_wpt_file")
-            self.pit_wpt_file_path = get_share_file('nif_multilayer_planning_nodes', self.pit_wpt_file_path)
             
         elif self.sys_var_track == 'IMS':
             if not self.graph_config.read(path_dict['ltpl_offline_param_path']):
@@ -155,9 +141,6 @@ class GraphBasedPlanner(rclpy.node.Node):
             self.pit_in_wpt_file_path = get_share_file('nif_multilayer_planning_nodes', self.pit_in_wpt_file_path)
             self.pit_out_wpt_file_path = self.graph_config.get('PIT',"pit_out_wpt_file")
             self.pit_out_wpt_file_path = get_share_file('nif_multilayer_planning_nodes', self.pit_out_wpt_file_path)
-            self.pit_wpt_file_path = self.graph_config.get('PIT',"pit_wpt_file")
-            self.pit_wpt_file_path = get_share_file('nif_multilayer_planning_nodes', self.pit_wpt_file_path)
-
 
         elif self.sys_var_track == 'LG_SVL':
             if not self.graph_config.read(path_dict['ltpl_offline_param_path']):
@@ -167,27 +150,22 @@ class GraphBasedPlanner(rclpy.node.Node):
             self.pit_in_wpt_file_path = get_share_file('nif_multilayer_planning_nodes', self.pit_in_wpt_file_path)
             self.pit_out_wpt_file_path = self.graph_config.get('PIT',"pit_out_wpt_file")
             self.pit_out_wpt_file_path = get_share_file('nif_multilayer_planning_nodes', self.pit_out_wpt_file_path)
-            self.pit_wpt_file_path = self.graph_config.get('PIT',"pit_wpt_file")
-            self.pit_wpt_file_path = get_share_file('nif_multilayer_planning_nodes', self.pit_wpt_file_path)
-
         else:
             raise ValueError('[nif_multilayer_planning_nodes] Track specification in driving_task.ini is wrong!')
 
 
-        self.load_pit_waypoint()
-        self.pit_tree = KDTree(self.pit_wpt_stitched_xy)
+        self.load_pit_in_waypoint()
+        self.load_pit_out_waypoint()
 
-        # self.load_pit_in_waypoint()
-        # self.pit_in_tree = None
-        
-        # self.load_pit_out_waypoint()
-        # self.pit_out_tree = None
+        self.pit_in_tree = None
+        self.pit_out_tree = None
 
         self.mission_code = None
 
         # TODO pre-load all these info
         self.pit_in_wpt_msg = Path()
         self.pit_in_wpt_msg.header.frame_id = "odom" #str(self.get_global_parameter('frames.global'))
+
         for idx in range(len(self.pit_in_wpt)):
             pose = PoseStamped()
             pose.header.frame_id = self.pit_in_wpt_msg.header.frame_id
@@ -201,27 +179,16 @@ class GraphBasedPlanner(rclpy.node.Node):
             pose.header.frame_id = self.pit_out_wpt_msg.header.frame_id
             self.pit_out_wpt_msg.poses.append(pose)
 
-        # TODO pre-load all these info
-        self.pit_wpt_msg = Path()
-        self.pit_wpt_msg.header.frame_id = "odom" #str(self.get_global_parameter('frames.global'))
-        for idx in range(self.pit_maptrack_len):
-            pose = PoseStamped()
-            pose.header.frame_id = self.pit_wpt_msg.header.frame_id
-            self.pit_wpt_msg.poses.append(pose)
-
         # Subscribers and Publisher
         self.local_maptrack_inglobal_pub = self.create_publisher(Path, 'out_local_maptrack_inglobal', rclpy.qos.qos_profile_sensor_data)
         self.pit_in_entire_inglobal_pub = self.create_publisher(Path, 'pit_in_entire_inglobal', rclpy.qos.qos_profile_sensor_data)
         self.pit_out_entire_inglobal_pub = self.create_publisher(Path, 'pit_out_entire_inglobal', rclpy.qos.qos_profile_sensor_data)
-        self.pit_wpt_inglobal_pub = self.create_publisher(Path, 'pit_wpt_inglobal', rclpy.qos.qos_profile_sensor_data)
-        self.pit_wpt_inbody_pub = self.create_publisher(Path, 'pit_wpt_inbody', rclpy.qos.qos_profile_sensor_data)
         self.veh_odom_sub = self.create_subscription(Odometry, 'in_ego_odometry', self.veh_odom_callback, rclpy.qos.qos_profile_sensor_data)
         self.perception_result_sub = self.create_subscription(Perception3DArray, 'in_perception_result', self.perception_result_callback, rclpy.qos.qos_profile_sensor_data)
         self.system_status_sub = self.create_subscription(SystemStatus, 'in_system_status', self.system_status_callback, 10)
 
         self.out_of_track = None
         self.current_veh_odom = None
-        self.current_veh_odom_yaw_rad = None
 
         timer_period = 0.02  # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback)
@@ -257,34 +224,6 @@ class GraphBasedPlanner(rclpy.node.Node):
         self.traj_set = {'straight': None}
         self.obj_list = []
         tic = time.time()
-
-    def costmap_callback(self, msg):
-        if (self.mission_code == SystemStatus.MissionStatus.MISSION_PIT_IN or 
-            self.mission_code == SystemStatus.MissionStatus.MISSION_PIT_OUT):
-            self.costmap = msg
-        else:
-            self.costmap = None
-
-    def goal_pt_to_body(self, cur_odom_x, cur_odom_y, cur_odom_yaw_rad, 
-                        global_pt_x, global_pt_y, global_pt_yaw_rad):
-        body_x = (math.cos(-1 * cur_odom_yaw_rad) * (global_pt_x - cur_odom_x) -
-                math.sin(-1 * cur_odom_yaw_rad) * (global_pt_y - cur_odom_y))
-        body_y = (math.sin(-1 * cur_odom_yaw_rad) * (global_pt_x - cur_odom_x) +
-                math.cos(-1 * cur_odom_yaw_rad) * (global_pt_y - cur_odom_y))
-        body_yaw_rad = global_pt_yaw_rad - cur_odom_yaw_rad
-
-        return body_x, body_y, body_yaw_rad
-
-    def gen_local_path_using_global_goal_pt(self, cur_ego_pose_x, cur_ego_pose_y, cur_ego_pose_yaw_rad, cur_speed_mps, cur_acc_mpss,
-                                                goal_pose_x_global, goal_pose_y_global, goal_pose_yaw_rad_global, goal_speed_mps, goal_acc_mpss,
-                                                max_acc_mpss = 1.0, max_jerk = 1.0, dt = 0.1):
-        # global goal point to local point
-        goal_pose_x_local, goal_pose_y_local, goal_pose_yaw_rad_local = self.goal_pt_to_body(cur_ego_pose_x, cur_ego_pose_y, cur_ego_pose_yaw_rad,
-                                                                                            goal_pose_x_global, goal_pose_y_global, goal_pose_yaw_rad_global)
-        time, rx, ry, ryaw, rv, ra, rj = quintic_polynomials_planner(0.0, 0.0, 0.0, cur_speed_mps, cur_acc_mpss,
-                                                                    goal_pose_x_local, goal_pose_y_local, goal_pose_yaw_rad_local, goal_speed_mps, goal_acc_mpss,
-                                                                    max_acc_mpss, max_jerk, dt)
-        self.pit_wpt_local = np.column_stack((np.array(rx),np.array(ry),np.array(ryaw))).tolist()
 
     def stitch_pit_in_waypoint(self, cur_ego_pose_x, cur_ego_pose_y, cur_ego_pose_yaw_rad, cur_speed_mps, cur_acc_mpss,
                                goal_pose_x, goal_pose_y, goal_pose_yaw_rad, goal_speed_mps, goal_acc_mpss,
@@ -327,22 +266,6 @@ class GraphBasedPlanner(rclpy.node.Node):
 
     def track_inout_callback(self, msg):
         self.out_of_track = not msg.data
-
-    def load_pit_waypoint(self):
-        with open(self.pit_wpt_file_path) as csv_file:
-            csv_reader = csv.reader(csv_file, delimiter=',')
-            line_count = 0
-            for row in csv_reader:
-                if math.isnan(float(row[0])) or math.isnan(float(row[1])) or math.isnan(float(row[2])) :
-                    raise ValueError('[nif_multilayer_planning_nodes] Track specification in driving_task.ini is wrong!')
-                self.pit_wpt.append([float(row[0]),float(row[1]),float(row[2])]) # order of x,y
-                self.pit_wpt_xy.append([float(row[0]),float(row[1])])
-                line_count += 1
-        if len(self.pit_wpt) == 0:
-            raise ValueError('[nif_multilayer_planning_nodes] Pit-in waypoint file is empty!')
-        self.num_pit_wpt = len(self.pit_wpt)
-
-        print("Pit waypoints are laoded.")
 
     def load_pit_in_waypoint(self):
         with open(self.pit_in_wpt_file_path) as csv_file:
@@ -395,8 +318,6 @@ class GraphBasedPlanner(rclpy.node.Node):
             self.current_veh_odom.pose.pose.position.x,
             self.current_veh_odom.pose.pose.position.y
         ])
-
-        self.current_veh_odom_yaw_rad = self.yaw_from_ros_quaternion(self.current_veh_odom.pose.pose.orientation)
         # TODO : could use perception instead of this, we gain both accuracy and performance
         self.vel_est = math.sqrt(pow(self.current_veh_odom.twist.twist.linear.x, 2)
                                  + pow(self.current_veh_odom.twist.twist.linear.y, 2))
@@ -425,262 +346,78 @@ class GraphBasedPlanner(rclpy.node.Node):
             return
 
         if self.mission_code == SystemStatus.MissionStatus.MISSION_PIT_IN:
-            # ---------------------------------------------------
-            # ---------------------------------------------------
-            # V3 : Using costmap, pass a collision free trajectory only in the pit area
-            # ---------------------------------------------------
-            # ---------------------------------------------------
-            nearest_dist_list_from, nearest_ind_list_from = self.pit_tree.query([[self.current_veh_odom.pose.pose.position.x,
+            if self.pit_in_wpt_gen_first_call:
+                self.pit_in_wpt_gen_first_call = False
+                self.pit_out_wpt_gen_first_call = True
+
+                cur_ego_yaw_rad = self.yaw_from_ros_quaternion(self.current_veh_odom.pose.pose.orientation)
+                self.stitch_pit_in_waypoint(self.current_veh_odom.pose.pose.position.x,self.current_veh_odom.pose.pose.position.y,cur_ego_yaw_rad,self.vel_est,cur_acc_mpss=0.0,
+                                            goal_pose_x=self.pit_in_wpt[0][0], goal_pose_y=self.pit_in_wpt[0][1], goal_pose_yaw_rad=self.pit_in_wpt[0][2],goal_speed_mps=self.vel_est, goal_acc_mpss = 0.0,
+                                            max_acc_mpss=1.0, max_jerk= 1.0, dt=0.1)
+
+                self.pit_in_tree = KDTree(self.pit_in_wpt_stitched_xy)
+
+                nearest_dist, nearest_ind = self.pit_in_tree.query([[self.current_veh_odom.pose.pose.position.x,
                                                                      self.current_veh_odom.pose.pose.position.y]], k=1)
-            nearest_ind = nearest_ind_list_from[0][0]
-            self.pit_wpt_msg.header.stamp = self.get_clock().now().to_msg()
-            # TODO: parameterize this look ahead index
-            look_ahead_ind = 10
-            idx = None
-            if nearest_ind + look_ahead_ind < len(self.pit_wpt):
-                idx = nearest_ind + look_ahead_ind
+                self.pit_in_wpt_msg.header.stamp = self.get_clock().now().to_msg()
+                # for i in range(self.pit_in_maptrack_len):
+                for i in range(len(self.pit_in_wpt_stitched) - nearest_ind):
+                    self.pit_in_wpt_msg.poses[i].pose.position.x = self.pit_in_wpt[nearest_ind[0][0] + i][0]
+                    self.pit_in_wpt_msg.poses[i].pose.position.y = self.pit_in_wpt[nearest_ind[0][0] + i][1]
+                    self.pit_in_wpt_msg.poses[i].pose.orientation = self.euler_to_quaternion( [ self.pit_in_wpt[nearest_ind[0][0] + i][2] , 0.0, 0.0 ] )
+                self.pit_in_wpt_msg.poses = self.pit_in_wpt_msg.poses[: len(self.pit_in_wpt_stitched) - nearest_ind]
+                self.local_maptrack_inglobal_pub.publish(self.pit_in_wpt_msg)
+                return
             else:
-                idx = nearest_ind + look_ahead_ind - len(self.pit_wpt)
-            goal_pt_inglobal_x = self.pit_wpt[idx][0]
-            goal_pt_inglobal_y = self.pit_wpt[idx][1]
-            goal_pt_inglobal_yaw_rad = self.pit_wpt[idx][2]
-            self.gen_local_path_using_global_goal_pt(cur_ego_pose_x= self.current_veh_odom.pose.pose.position.x,
-                                                    cur_ego_pose_y= self.current_veh_odom.pose.pose.position.y,
-                                                    cur_ego_pose_yaw_rad=self.current_veh_odom_yaw_rad,
-                                                    cur_speed_mps=self.vel_est, cur_acc_mpss= 0.0,
-                                                    goal_pose_x_global=goal_pt_inglobal_x,
-                                                    goal_pose_y_global=goal_pt_inglobal_y,
-                                                    goal_pose_yaw_rad_global=goal_pt_inglobal_yaw_rad,
-                                                    goal_speed_mps=self.vel_est,goal_acc_mpss=0.0) # stored in self.pit_wpt_local
-
-            pit_collision_checked_local_path = Path()
-            pit_collision_checked_local_path.header.frame_id = "base_link"
-            # Collision checking with the cost map
-            if self.costmap is not None:
-                for i in range(len(self.pit_wpt_local)):
-                    wpt_local_x = self.pit_wpt_local[0]
-                    wpt_local_y = self.pit_wpt_local[1]
-                    wpt_local_yaw_rad = self.pit_wpt_local[2]
-                    # ##################
-                    #  Body x,y to Grid index
-                    # ##################
-                    res = self.costmap.info.resolution.data
-                    min_x = self.costmap.info.origin.position.x
-                    min_y = self.costmap.info.origin.position.y
-                    grid_x = math.floor((wpt_local_x - min_x) / res)
-                    grid_y = math.floor((wpt_local_y - min_y) / res)
-                    if (grid_x > self.costmap.info.width or grid_x < 0
-                            or grid_y > self.costmap.info.height or grid_y < 0):
-                        continue
-                    grid_data_idx = grid_y * self.costmap.info.width + grid_x
-                    grid_cost = self.costmap.data[grid_data_idx].data
-
-                    if grid_cost < self.blocked_cost_thres:
-                        pose = PoseStamped()
-                        pose.pose.position.x = wpt_local_x
-                        pose.pose.position.y = wpt_local_y
-                        quat = self.euler_to_quaternion([wpt_local_yaw_rad,0.0,0.0])
-                        pose.pose.orientation.x = quat[0]
-                        pose.pose.orientation.y = quat[1]
-                        pose.pose.orientation.z = quat[2]
-                        pose.pose.orientation.w = quat[3]
-                        pit_collision_checked_local_path.poses.append(pose)
-                    else:
-                        break
-                self.pit_wpt_inbody_pub.publish(pit_collision_checked_local_path)
-
-            # ---------------------------------------------------
-            # ---------------------------------------------------
-            # V2 : Without stitching, publish entire waypoint for pit-in (deprecated, not tested)
-            # ---------------------------------------------------
-            # ---------------------------------------------------
-            # nearest_dist_list_from, nearest_ind_list_from = self.pit_tree.query([[self.current_veh_odom.pose.pose.position.x,
-            #                                                          self.current_veh_odom.pose.pose.position.y]], k=1)
-            # nearest_ind = nearest_ind_list_from[0][0]
-            # self.pit_wpt_msg.header.stamp = self.get_clock().now().to_msg()
-
-            # for i in range(self.pit_maptrack_len):
-            #     if nearest_ind + i < len(self.pit_wpt):
-            #         idx = nearest_ind + i
-            #         self.pit_wpt_msg.poses[i].pose.position.x = self.pit_wpt[idx][0]
-            #         self.pit_wpt_msg.poses[i].pose.position.y = self.pit_wpt[idx][1]
-            #         self.pit_wpt_msg.poses[i].pose.orientation = self.euler_to_quaternion( [ self.pit_wpt[idx][2] , 0.0, 0.0 ] ) # yaw, pitch, roll
-            #     else:
-            #         idx = nearest_ind + i - len(self.pit_wpt)
-            #         self.pit_wpt_msg.poses[i].pose.position.x = self.pit_wpt[idx][0]
-            #         self.pit_wpt_msg.poses[i].pose.position.y = self.pit_wpt[idx][1]
-            #         self.pit_wpt_msg.poses[i].pose.orientation = self.euler_to_quaternion( [ self.pit_wpt[idx][2] , 0.0, 0.0 ] ) # yaw, pitch, roll
-
-            # self.pit_wpt_inglobal_pub.publish(self.pit_wpt_msg)
-            # return
-
-            # ---------------------------------------------------
-            # ---------------------------------------------------
-            # OLD VERSION WHEN WE CONSIDERED ABOUT THE STITCHGING (deprecated)
-            # ---------------------------------------------------
-            # ---------------------------------------------------
-            # if self.pit_in_wpt_gen_first_call:
-            #     self.pit_in_wpt_gen_first_call = False
-            #     self.pit_out_wpt_gen_first_call = True
-
-            #     # cur_ego_yaw_rad = self.yaw_from_ros_quaternion(self.current_veh_odom.pose.pose.orientation)
-            #     # self.stitch_pit_in_waypoint(self.current_veh_odom.pose.pose.position.x,self.current_veh_odom.pose.pose.position.y,cur_ego_yaw_rad,self.vel_est,cur_acc_mpss=0.0,
-            #     #                             goal_pose_x=self.pit_in_wpt[0][0], goal_pose_y=self.pit_in_wpt[0][1], goal_pose_yaw_rad=self.pit_in_wpt[0][2],goal_speed_mps=self.vel_est, goal_acc_mpss = 0.0,
-            #     #                             max_acc_mpss=1.0, max_jerk= 1.0, dt=0.1)
-
-            #     # self.pit_in_tree = KDTree(self.pit_in_wpt_stitched_xy)
-            #     # self.pit_in_wpt_msg.header.stamp = self.get_clock().now().to_msg()
-
-            #     # for i in range(len(self.pit_in_wpt_stitched) - nearest_ind):
-            #     #     self.pit_in_wpt_msg.poses[i].pose.position.x = self.pit_in_wpt[nearest_ind[0][0] + i][0]
-            #     #     self.pit_in_wpt_msg.poses[i].pose.position.y = self.pit_in_wpt[nearest_ind[0][0] + i][1]
-            #     #     self.pit_in_wpt_msg.poses[i].pose.orientation = self.euler_to_quaternion( [ self.pit_in_wpt[nearest_ind[0][0] + i][2] , 0.0, 0.0 ] )
-            #     # self.pit_in_wpt_msg.poses = self.pit_in_wpt_msg.poses[: len(self.pit_in_wpt_stitched) - nearest_ind]
-            #     # self.local_maptrack_inglobal_pub.publish(self.pit_in_wpt_msg)
-            #     # return
-            # else:
-            #     nearest_dist, nearest_ind = self.pit_in_tree.query([[self.current_veh_odom.pose.pose.position.x,
-            #                                                          self.current_veh_odom.pose.pose.position.y]], k=1)
-            #     self.pit_in_wpt_msg.header.stamp = self.get_clock().now().to_msg()
-            #     # for i in range(self.pit_in_maptrack_len):
-            #     for i in range(len(self.pit_in_wpt_stitched) - nearest_ind):
-            #         self.pit_in_wpt_msg.poses[i].pose.position.x = self.pit_in_wpt[nearest_ind[0][0] + i][0]
-            #         self.pit_in_wpt_msg.poses[i].pose.position.y = self.pit_in_wpt[nearest_ind[0][0] + i][1]
-            #         self.pit_in_wpt_msg.poses[i].pose.orientation = self.euler_to_quaternion( [ self.pit_in_wpt[nearest_ind[0][0] + i][2] , 0.0, 0.0 ] )
-            #     self.pit_in_wpt_msg.poses = self.pit_in_wpt_msg.poses[: len(self.pit_in_wpt_stitched) - nearest_ind]
-            #     self.local_maptrack_inglobal_pub.publish(self.pit_in_wpt_msg)
-            #     return
+                nearest_dist, nearest_ind = self.pit_in_tree.query([[self.current_veh_odom.pose.pose.position.x,
+                                                                     self.current_veh_odom.pose.pose.position.y]], k=1)
+                self.pit_in_wpt_msg.header.stamp = self.get_clock().now().to_msg()
+                # for i in range(self.pit_in_maptrack_len):
+                for i in range(len(self.pit_in_wpt_stitched) - nearest_ind):
+                    self.pit_in_wpt_msg.poses[i].pose.position.x = self.pit_in_wpt[nearest_ind[0][0] + i][0]
+                    self.pit_in_wpt_msg.poses[i].pose.position.y = self.pit_in_wpt[nearest_ind[0][0] + i][1]
+                    self.pit_in_wpt_msg.poses[i].pose.orientation = self.euler_to_quaternion( [ self.pit_in_wpt[nearest_ind[0][0] + i][2] , 0.0, 0.0 ] )
+                self.pit_in_wpt_msg.poses = self.pit_in_wpt_msg.poses[: len(self.pit_in_wpt_stitched) - nearest_ind]
+                self.local_maptrack_inglobal_pub.publish(self.pit_in_wpt_msg)
+                return
 
         elif self.mission_code == SystemStatus.MissionStatus.MISSION_PIT_OUT:
-            # ---------------------------------------------------
-            # ---------------------------------------------------
-            # V3 : Using costmap, pass a collision free trajectory only in the pit area
-            # ---------------------------------------------------
-            # ---------------------------------------------------
-            nearest_dist_list_from, nearest_ind_list_from = self.pit_tree.query([[self.current_veh_odom.pose.pose.position.x,
+            if self.pit_out_wpt_gen_first_call:
+                self.pit_out_wpt_gen_first_call = False
+                self.pit_in_wpt_gen_first_call = True
+
+                cur_ego_yaw_rad = self.yaw_from_ros_quaternion(self.current_veh_odom.pose.pose.orientation)
+                self.stitch_pit_out_waypoint(self.current_veh_odom.pose.pose.position.x,self.current_veh_odom.pose.pose.position.y,cur_ego_yaw_rad,self.vel_est,cur_acc_mpss=0.0,
+                                            goal_pose_x=self.pit_out_wpt[0][0], goal_pose_y=self.pit_out_wpt[0][1], goal_pose_yaw_rad=self.pit_out_wpt[0][2],goal_speed_mps=self.vel_est, goal_acc_mpss = 0.0,
+                                            max_acc_mpss=1.0, max_jerk= 1.0, dt=0.1)
+
+                self.pit_out_tree = KDTree(self.pit_out_wpt_stitched_xy)
+
+                nearest_dist, nearest_ind = self.pit_out_tree.query([[self.current_veh_odom.pose.pose.position.x,
                                                                      self.current_veh_odom.pose.pose.position.y]], k=1)
-            nearest_ind = nearest_ind_list_from[0][0]
-            self.pit_wpt_msg.header.stamp = self.get_clock().now().to_msg()
-            # TODO: parameterize this look ahead index
-            look_ahead_ind = 10
-            idx = None
-            if nearest_ind + look_ahead_ind < len(self.pit_wpt):
-                idx = nearest_ind + look_ahead_ind
+                self.pit_out_wpt_msg.header.stamp = self.get_clock().now().to_msg()
+                # for i in range(self.pit_in_maptrack_len):
+                for i in range(len(self.pit_out_wpt_stitched) - nearest_ind):
+                    self.pit_out_wpt_msg.poses[i].pose.position.x = self.pit_out_wpt[nearest_ind[0][0] + i][0]
+                    self.pit_out_wpt_msg.poses[i].pose.position.y = self.pit_out_wpt[nearest_ind[0][0] + i][1]
+                    self.pit_out_wpt_msg.poses[i].pose.orientation = self.euler_to_quaternion( [ self.pit_out_wpt[nearest_ind[0][0] + i][2] , 0.0, 0.0 ] )
+                self.pit_out_wpt_msg.poses = self.pit_out_wpt_msg.poses[: len(self.pit_out_wpt_stitched) - nearest_ind]
+                self.local_maptrack_inglobal_pub.publish(self.pit_out_wpt_msg)
+                return
             else:
-                idx = nearest_ind + look_ahead_ind - len(self.pit_wpt)
-            goal_pt_inglobal_x = self.pit_wpt[idx][0]
-            goal_pt_inglobal_y = self.pit_wpt[idx][1]
-            goal_pt_inglobal_yaw_rad = self.pit_wpt[idx][2]
-            self.gen_local_path_using_global_goal_pt(cur_ego_pose_x= self.current_veh_odom.pose.pose.position.x,
-                                                    cur_ego_pose_y= self.current_veh_odom.pose.pose.position.y,
-                                                    cur_ego_pose_yaw_rad=self.current_veh_odom_yaw_rad,
-                                                    cur_speed_mps=self.vel_est, cur_acc_mpss= 0.0,
-                                                    goal_pose_x_global=goal_pt_inglobal_x,
-                                                    goal_pose_y_global=goal_pt_inglobal_y,
-                                                    goal_pose_yaw_rad_global=goal_pt_inglobal_yaw_rad,
-                                                    goal_speed_mps=self.vel_est,goal_acc_mpss=0.0) # stored in self.pit_wpt_local
-
-            pit_collision_checked_local_path = Path()
-            pit_collision_checked_local_path.header.frame_id = "base_link"
-            # Collision checking with the cost map
-            if self.costmap is not None:
-                for i in range(len(self.pit_wpt_local)):
-                    wpt_local_x = self.pit_wpt_local[0]
-                    wpt_local_y = self.pit_wpt_local[1]
-                    wpt_local_yaw_rad = self.pit_wpt_local[2]
-                    # ##################
-                    #  Body x,y to Grid index
-                    # ##################
-                    res = self.costmap.info.resolution.data
-                    min_x = self.costmap.info.origin.position.x
-                    min_y = self.costmap.info.origin.position.y
-                    grid_x = math.floor((wpt_local_x - min_x) / res)
-                    grid_y = math.floor((wpt_local_y - min_y) / res)
-                    if (grid_x > self.costmap.info.width or grid_x < 0
-                            or grid_y > self.costmap.info.height or grid_y < 0):
-                        continue
-                    grid_data_idx = grid_y * self.costmap.info.width + grid_x
-                    grid_cost = self.costmap.data[grid_data_idx].data
-
-                    if grid_cost < self.blocked_cost_thres:
-                        pose = PoseStamped()
-                        pose.pose.position.x = wpt_local_x
-                        pose.pose.position.y = wpt_local_y
-                        quat = self.euler_to_quaternion([wpt_local_yaw_rad,0.0,0.0])
-                        pose.pose.orientation.x = quat[0]
-                        pose.pose.orientation.y = quat[1]
-                        pose.pose.orientation.z = quat[2]
-                        pose.pose.orientation.w = quat[3]
-                        pit_collision_checked_local_path.poses.append(pose)
-                    else:
-                        break
-                self.pit_wpt_inbody_pub.publish(pit_collision_checked_local_path)
-            # ---------------------------------------------------
-            # ---------------------------------------------------
-            # V2 : Without stitching, publish entire waypoint for pit-in (deprecated, not tested)
-            # ---------------------------------------------------
-            # ---------------------------------------------------
-            # nearest_dist_list_from, nearest_ind_list_from = self.pit_tree.query([[self.current_veh_odom.pose.pose.position.x,
-            #                                                          self.current_veh_odom.pose.pose.position.y]], k=1)
-            # nearest_ind = nearest_ind_list_from[0][0]
-            # self.pit_wpt_msg.header.stamp = self.get_clock().now().to_msg()
-
-            # for i in range(self.pit_maptrack_len):
-            #     if nearest_ind + i < len(self.pit_wpt):
-            #         idx = nearest_ind + i
-            #         self.pit_wpt_msg.poses[i].pose.position.x = self.pit_wpt[idx][0]
-            #         self.pit_wpt_msg.poses[i].pose.position.y = self.pit_wpt[idx][1]
-            #         self.pit_wpt_msg.poses[i].pose.orientation = self.euler_to_quaternion( [ self.pit_wpt[idx][2] , 0.0, 0.0 ] ) # yaw, pitch, roll
-            #     else:
-            #         idx = nearest_ind + i - len(self.pit_wpt)
-            #         self.pit_wpt_msg.poses[i].pose.position.x = self.pit_wpt[idx][0]
-            #         self.pit_wpt_msg.poses[i].pose.position.y = self.pit_wpt[idx][1]
-            #         self.pit_wpt_msg.poses[i].pose.orientation = self.euler_to_quaternion( [ self.pit_wpt[idx][2] , 0.0, 0.0 ] ) # yaw, pitch, roll
-
-            # self.pit_wpt_inglobal_pub.publish(self.pit_wpt_msg)
-            # return
-
-            # ---------------------------------------------------
-            # ---------------------------------------------------
-            # OLD VERSION WHEN WE CONSIDERED ABOUT THE STITCHGING (deprecated)
-            # ---------------------------------------------------
-            # ---------------------------------------------------
-            # if self.pit_out_wpt_gen_first_call:
-            #     self.pit_out_wpt_gen_first_call = False
-            #     self.pit_in_wpt_gen_first_call = True
-
-            #     cur_ego_yaw_rad = self.yaw_from_ros_quaternion(self.current_veh_odom.pose.pose.orientation)
-            #     self.stitch_pit_out_waypoint(self.current_veh_odom.pose.pose.position.x,self.current_veh_odom.pose.pose.position.y,cur_ego_yaw_rad,self.vel_est,cur_acc_mpss=0.0,
-            #                                 goal_pose_x=self.pit_out_wpt[0][0], goal_pose_y=self.pit_out_wpt[0][1], goal_pose_yaw_rad=self.pit_out_wpt[0][2],goal_speed_mps=self.vel_est, goal_acc_mpss = 0.0,
-            #                                 max_acc_mpss=1.0, max_jerk= 1.0, dt=0.1)
-
-            #     self.pit_out_tree = KDTree(self.pit_out_wpt_stitched_xy)
-
-            #     nearest_dist, nearest_ind = self.pit_out_tree.query([[self.current_veh_odom.pose.pose.position.x,
-            #                                                          self.current_veh_odom.pose.pose.position.y]], k=1)
-            #     self.pit_out_wpt_msg.header.stamp = self.get_clock().now().to_msg()
-            #     # for i in range(self.pit_in_maptrack_len):
-            #     for i in range(len(self.pit_out_wpt_stitched) - nearest_ind):
-            #         self.pit_out_wpt_msg.poses[i].pose.position.x = self.pit_out_wpt[nearest_ind[0][0] + i][0]
-            #         self.pit_out_wpt_msg.poses[i].pose.position.y = self.pit_out_wpt[nearest_ind[0][0] + i][1]
-            #         self.pit_out_wpt_msg.poses[i].pose.orientation = self.euler_to_quaternion( [ self.pit_out_wpt[nearest_ind[0][0] + i][2] , 0.0, 0.0 ] )
-            #     self.pit_out_wpt_msg.poses = self.pit_out_wpt_msg.poses[: len(self.pit_out_wpt_stitched) - nearest_ind]
-            #     self.local_maptrack_inglobal_pub.publish(self.pit_out_wpt_msg)
-            #     return
-            # else:
-            #     nearest_dist, nearest_ind = self.pit_out_tree.query([[self.current_veh_odom.pose.pose.position.x,
-            #                                                          self.current_veh_odom.pose.pose.position.y]], k=1)
-            #     self.pit_out_wpt_msg.header.stamp = self.get_clock().now().to_msg()
-            #     for i in range(len(self.pit_out_wpt_stitched) - nearest_ind):
-            #         self.pit_out_wpt_msg.poses[i].pose.position.x = self.pit_out_wpt[nearest_ind[0][0] + i][0]
-            #         self.pit_out_wpt_msg.poses[i].pose.position.y = self.pit_out_wpt[nearest_ind[0][0] + i][1]
-            #         self.pit_out_wpt_msg.poses[i].pose.orientation = self.euler_to_quaternion( [ self.pit_out_wpt[nearest_ind[0][0] + i][2] , 0.0, 0.0 ] )
-            #     self.pit_out_wpt_msg.poses = self.pit_out_wpt_msg.poses[: len(self.pit_out_wpt_stitched) - nearest_ind]
-            #     self.local_maptrack_inglobal_pub.publish(self.pit_out_wpt_msg)
-            #     return
+                nearest_dist, nearest_ind = self.pit_out_tree.query([[self.current_veh_odom.pose.pose.position.x,
+                                                                     self.current_veh_odom.pose.pose.position.y]], k=1)
+                self.pit_out_wpt_msg.header.stamp = self.get_clock().now().to_msg()
+                for i in range(len(self.pit_out_wpt_stitched) - nearest_ind):
+                    self.pit_out_wpt_msg.poses[i].pose.position.x = self.pit_out_wpt[nearest_ind[0][0] + i][0]
+                    self.pit_out_wpt_msg.poses[i].pose.position.y = self.pit_out_wpt[nearest_ind[0][0] + i][1]
+                    self.pit_out_wpt_msg.poses[i].pose.orientation = self.euler_to_quaternion( [ self.pit_out_wpt[nearest_ind[0][0] + i][2] , 0.0, 0.0 ] )
+                self.pit_out_wpt_msg.poses = self.pit_out_wpt_msg.poses[: len(self.pit_out_wpt_stitched) - nearest_ind]
+                self.local_maptrack_inglobal_pub.publish(self.pit_out_wpt_msg)
+                return
 
         # TODO : Coordinate driving which means that there is no overtaking others. Maximum speed should be handeled in the velocity planner side as well.
-        elif self.mission_code == SystemStatus.MissionStatus.MISSION_SLOW_DRIVE:
+        elif self.mission_code == SystemStatus.MissionStatus.MISSION_COORDINATE_DRIVING:
             # -- SELECT ONE OF THE PROVIDED TRAJECTORIES -----------------------------------------------------------------------
             # (here: brute-force, replace by sophisticated behavior planner)
             for sel_action_prev in ["straight", "follow"]:  # try to force 'right', else try next in list
