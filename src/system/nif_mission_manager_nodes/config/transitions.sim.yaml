@@ -5,6 +5,9 @@
 missions:
   - mission_code: 0 # MISSION_RACE
     active: true
+    fallback:
+      active: true
+      mission_code: 128 # MISSION_SLOW_DRIVE
     allowed_transitions:
       active: true
       from:
@@ -16,6 +19,9 @@ missions:
 
   - mission_code: 777 # MISSION_TEST
     active: true
+    fallback:
+      active: true
+      mission_code: 128 # MISSION_SLOW_DRIVE
     allowed_transitions:
       active: true
       from:
@@ -41,7 +47,7 @@ missions:
       active: true
       range_mps:
         - 0.0 # min m/s
-        - 12.0 # max m/s
+        - 30.0 # max m/s
     allowed_transitions:
       active: true
       from:

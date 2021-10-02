@@ -391,7 +391,7 @@ def generate_launch_description():
 
     mission_manager_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            get_share_file("nif_mission_manager_nodes", 'launch/deploy.launch.py')
+            get_share_file("nif_mission_manager_nodes", 'launch/sim.launch.py')
         )
     )
 
