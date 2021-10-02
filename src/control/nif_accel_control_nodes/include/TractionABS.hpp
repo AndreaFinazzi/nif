@@ -50,6 +50,10 @@ public:
   int cnt_traction = 0;
   int cnt_ABS = 0;
 
+  /// variables for diagnostic
+  double m_traction_activated = 0;
+  double m_ABS_activated = 0;
+
   double tractionControl(double throttle_cmd, double current_velocity,
                          double sigma);
   double ABSControl(double brake_cmd, double current_velocity, double sigma);

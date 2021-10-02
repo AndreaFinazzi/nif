@@ -129,5 +129,8 @@ public:
   double m_lon_load_transfer;
   double m_lat_load_transfer_F;
   double m_lat_load_transfer_R;
+
+  double m_desired_engine_torque = 0.;
+  double m_max_engine_torque = 0.;
 };
 #endif

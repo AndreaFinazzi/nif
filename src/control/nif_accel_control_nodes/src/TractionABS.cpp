@@ -52,6 +52,7 @@ double TractionABS::tractionControl(double throttle_cmd,
                                     double current_velocity, double sigma) {
   // Init
   double throttle_cmd_new = throttle_cmd;
+  m_traction_activated = 0; // 0 for false
   // Tire slip ratio
   // - assume 'vx == free wheel speed'
   // - sigma = (braking_wheelspeed - rolling_wheelspeed) /
@@ -69,8 +70,8 @@ double TractionABS::tractionControl(double throttle_cmd,
     if (cnt_condition == 0) {
       // Release brake command
       throttle_cmd_new = traction_factor_ * throttle_cmd;
-      std::cout << "Traction Control is activated!!!!!!!!!!!!!!!!!!!!!!"
-                << std::endl;
+      // for debugging
+      m_traction_activated = 1; // 1 for true
     }
   }
 
@@ -86,6 +87,7 @@ double TractionABS::ABSControl(double brake_cmd, double current_velocity,
                                double sigma) {
   // Init
   double brake_cmd_new = brake_cmd;
+  m_ABS_activated = 0; // 0 for false
   // Tire slip ratio
   // - assume 'vx == free wheel speed'
   // - sigma = (braking_wheelspeed - rolling_wheelspeed) /
@@ -101,7 +103,8 @@ double TractionABS::ABSControl(double brake_cmd, double current_velocity,
     if (cnt_condition == 0) {
       // Release brake command
       brake_cmd_new = ABS_factor_ * brake_cmd;
-      std::cout << "ABS is activated!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+      // for debugging
+      m_ABS_activated = 1; // 1 for true
     }
   }
 
