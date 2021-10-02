@@ -49,6 +49,10 @@ public:
       const rclcpp::NodeOptions &options = rclcpp::NodeOptions{})
       : IBaseSynchronizedNode(node_name, common::NodeType::CONTROL,
                               timer_period, options) {
+    // Topic name
+    const std::string &topic_ego_odometry =
+        this->get_global_parameter<std::string>(
+            constants::parameters::names::TOPIC_ID_EGO_ODOMETRY);
 
     // Publishers
     des_vel_pub_ = this->create_publisher<std_msgs::msg::Float32>(
@@ -66,6 +70,11 @@ public:
             "in_wheel_speed_report", nif::common::constants::QOS_SENSOR_DATA,
             std::bind(&VelocityPlannerNode::velocityCallback, this,
                       std::placeholders::_1));
+    ego_odometry_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
+        topic_ego_odometry, nif::common::constants::QOS_EGO_ODOMETRY,
+        std::bind(&IBaseNode::egoOdometryCallback, this,
+                  std::placeholders::_1));
+
     imu_sub_ = this->create_subscription<sensor_msgs::msg::Imu>(
         "in_imu_data", nif::common::constants::QOS_SENSOR_DATA,
         std::bind(&VelocityPlannerNode::imuCallback, this,
@@ -244,6 +253,9 @@ private:
         //! TODO: safety stop should be triggered
         //! TODO: should be improved.
         desired_velocity_mps = 0.0;
+
+        // Publish diagnose message (valid odom and path only)
+        publishDiagnostic(valid_path, valid_odom, -1, -1, -1, -1, -1, -1);
       }
     } else {
       // manual control case
@@ -418,6 +430,13 @@ private:
                           nif::common::constants::KPH2MS;
   }
 
+  void egoOdometryCallback(
+      const nav_msgs::msgs::Odometry::SharedPtr msg) {
+    has_ego_odometry = true;
+    m_ego_odometry_update_time = this->now();
+    m_ego_odometry = *msg;
+  }
+
   void imuCallback(const sensor_msgs::msg::Imu::SharedPtr msg) {
     m_current_imu = *msg;
     // kalman filter initialization
@@ -522,6 +541,7 @@ private:
   rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr path_sub_;
   rclcpp::Subscription<raptor_dbw_msgs::msg::WheelSpeedReport>::SharedPtr
       velocity_sub_;
+  rclcpp::Subscribtion<nav_msgs::msg::Odometry>::SharedPtr ego_odometry_sub_;
   rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub_;
   rclcpp::Subscription<raptor_dbw_msgs::msg::SteeringReport>::SharedPtr
       steering_sub_;
@@ -540,11 +560,14 @@ private:
 
   //! Track when certain variables have been updated
   rclcpp::Time m_path_update_time;
-  rclcpp::Time m_imu_update_time = rclcpp::Clock().now();
+  rclcpp::Time m_ego_odometry_update_time;
+  rclcpp::Time m_imu_update_time =
+      rclcpp::Clock().now();
   bool has_path = false;
+  bool has_ego_odometry = false;
 
-  //! Load vehicle dynamics manager
-  TireManager m_tire_manager;
+      //! Load vehicle dynamics manager
+      TireManager m_tire_manager;
   //! Low pass filter
   low_pass_filter lpf_curve =
       low_pass_filter(m_lpf_curve_dt, m_lpf_curve_f, m_lpf_curve_x0);
@@ -558,6 +581,7 @@ private:
 
   //! Current Vehicle State
   nav_msgs::msg::Path m_current_path;
+  nav_mags::msg::Odometry m_ego_odometry;
   sensor_msgs::msg::Imu m_current_imu;
   double m_current_steer_rad{};   // [rad]
   double m_current_speed_mps = 0; // [m/s]
