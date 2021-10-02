@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>nif_mission_manager_nodes</name>
+  <version>0.0.0</version>
+  <description>TODO: Package description</description>
+  <maintainer email="usrg@todo.todo">usrg</maintainer>
+  <license>TODO: License declaration</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>nif_msgs</depend>
+  <depend>nif_common</depend>
+  <depend>nif_common_nodes</depend>
+  <depend>nif_mission_manager</depend>
+  <depend>nif_system_status_manager_nodes</depend>
+  <depend>raptor_dbw_msgs</depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

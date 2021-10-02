@@ -386,7 +386,7 @@ class LGSVLSubscriberNode(BaseNode):
         tfs.transform.rotation.y = msg.pose.pose.orientation.y
         tfs.transform.rotation.z = msg.pose.pose.orientation.z
         tfs.transform.rotation.w = msg.pose.pose.orientation.w
-        # self._tf_publisher.sendTransform(tfs)
+        self._tf_publisher.sendTransform(tfs)
 
 def main(args=None):
     rclpy.init(args=args)
