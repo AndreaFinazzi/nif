@@ -14,6 +14,17 @@ missions:
         - 200 # MISSION_COMMANDED_STOP
         - 777 # MISSION_TEST
 
+  - mission_code: 777 # MISSION_TEST
+    active: true
+    allowed_transitions:
+      active: true
+      from:
+        - 0   # MISSION_RACE
+        - 75  # MISSION_PIT_TO_TRACK
+        - 128 # MISSION_SLOW_DRIVE
+        - 200 # MISSION_COMMANDED_STOP
+        - 777 # MISSION_TEST
+
   - mission_code: 60 # MISSION_PIT_IN
     active: true
     fallback:
