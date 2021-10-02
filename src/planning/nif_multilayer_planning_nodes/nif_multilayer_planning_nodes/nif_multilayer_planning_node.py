@@ -460,6 +460,7 @@ class GraphBasedPlanner(rclpy.node.Node):
                 for i in range(len(self.pit_wpt_local)):
                     wpt_local_x = self.pit_wpt_local[0]
                     wpt_local_y = self.pit_wpt_local[1]
+                    wpt_local_yaw_rad = self.pit_wpt_local[2]
                     # ##################
                     #  Body x,y to Grid index
                     # ##################
@@ -476,6 +477,13 @@ class GraphBasedPlanner(rclpy.node.Node):
 
                     if grid_cost < self.blocked_cost_thres:
                         pose = PoseStamped()
+                        pose.pose.position.x = wpt_local_x
+                        pose.pose.position.y = wpt_local_y
+                        quat = self.euler_to_quaternion([wpt_local_yaw_rad,0.0,0.0])
+                        pose.pose.orientation.x = quat[0]
+                        pose.pose.orientation.y = quat[1]
+                        pose.pose.orientation.z = quat[2]
+                        pose.pose.orientation.w = quat[3]
                         pit_collision_checked_local_path.poses.append(pose)
                     else:
                         break
@@ -579,6 +587,7 @@ class GraphBasedPlanner(rclpy.node.Node):
                 for i in range(len(self.pit_wpt_local)):
                     wpt_local_x = self.pit_wpt_local[0]
                     wpt_local_y = self.pit_wpt_local[1]
+                    wpt_local_yaw_rad = self.pit_wpt_local[2]
                     # ##################
                     #  Body x,y to Grid index
                     # ##################
@@ -595,6 +604,13 @@ class GraphBasedPlanner(rclpy.node.Node):
 
                     if grid_cost < self.blocked_cost_thres:
                         pose = PoseStamped()
+                        pose.pose.position.x = wpt_local_x
+                        pose.pose.position.y = wpt_local_y
+                        quat = self.euler_to_quaternion([wpt_local_yaw_rad,0.0,0.0])
+                        pose.pose.orientation.x = quat[0]
+                        pose.pose.orientation.y = quat[1]
+                        pose.pose.orientation.z = quat[2]
+                        pose.pose.orientation.w = quat[3]
                         pit_collision_checked_local_path.poses.append(pose)
                     else:
                         break
