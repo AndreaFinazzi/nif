@@ -149,9 +149,19 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
   if (valid_path && valid_odom) {
     valid_tracking_result = true;
 
+    // Check whether path is global/local
+    bool is_local_path =
+        this->getReferencePath()->header.frame_id == "base_link";
+
     auto state = joint_lqr::utils::LQRState(this->getEgoOdometry());
     if (use_tire_velocity_)
       state(2, 0) = current_speed_ms_;
+    if (is_local_path) {
+      // x, y, yaw are zeros in local coordinate
+      state(0, 0) = 0.0;
+      state(1, 0) = 0.0;
+      state(4, 0) = 0.0;
+    }
 
     // Compute the tracking distance (and ensure it is within a valid range)
     double track_distance =
