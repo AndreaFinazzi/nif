@@ -74,7 +74,8 @@ def generate_launch_description():
                     ("out_odometry_ekf_estimated", "/aw_localization/ekf/odom"),
                     ("out_odometry_bestpos", "/aw_localization/ekf/odom_bestpos"),
                     ("out_top_odometry_bestpos", "/aw_localization/ekf/top_bestpos"),
-                    ('out_localization_error', '/aw_localization/ekf/error')
+                    ('out_localization_error', '/aw_localization/ekf/error'),
+                    ('out_localization_status', '/aw_localization/ekf/status')
                 ]
     )
 

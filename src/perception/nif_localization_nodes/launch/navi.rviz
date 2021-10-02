@@ -26,6 +26,8 @@ Panels:
         - /Odometry3
         - /Odometry3/Shape1
         - /Map1/Topic1
+        - /Odometry4
+        - /Odometry4/Covariance1/Orientation1
         - /Path8
       Splitter Ratio: 0.4676470458507538
     Tree Height: 672
@@ -650,7 +652,7 @@ Visualization Manager:
           Frame: Local
           Offset: 1
           Scale: 1
-          Value: true
+          Value: false
         Position:
           Alpha: 0.30000001192092896
           Color: 204; 51; 204
@@ -747,26 +749,21 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Class: rviz_default_plugins/XYOrbit
-      Distance: 154.03854370117188
+      Angle: 1.34499990940094
+      Class: rviz_default_plugins/TopDownOrtho
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
-      Focal Point:
-        X: 0
-        Y: 0
-        Z: 0
-      Focal Shape Fixed Size: false
-      Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.5497963428497314
+      Scale: 0.22878548502922058
       Target Frame: base_link
-      Value: XYOrbit (rviz_default_plugins)
-      Yaw: 3.3353981971740723
+      Value: TopDownOrtho (rviz_default_plugins)
+      X: 0
+      Y: 0
     Saved: ~
 Window Geometry:
   Displays:

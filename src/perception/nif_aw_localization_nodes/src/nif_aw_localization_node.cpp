@@ -21,16 +21,13 @@ using namespace std::placeholders;
 // clang-format on
 AWLocalizationNode::AWLocalizationNode(const std::string &node_name)
     // : IBaseNode(node_name), dim_x_(6 /* x, y, yaw, yaw_bias, vx, wz */)
-    : Node(node_name), dim_x_(6 /* x, y, yaw, yaw_bias, vx, wz */)
+    : IBaseNode(node_name), dim_x_(6 /* x, y, yaw, yaw_bias, vx, wz */)
 
 {
   this->declare_parameter<bool>("use_inspva_heading", bool(true));
   this->declare_parameter<double>("bestvel_heading_update_velocity_thres", double(2.));
-  this->declare_parameter<double>("origin_lat", double(39.809786));
-  this->declare_parameter<double>("origin_lon", double(-86.235148));
-
-  // m_origin_lat = this->get_global_parameter<double>("coordinates.ecef_ref_lat");
-  // m_origin_lon = this->get_global_parameter<double>("coordinates.ecef_ref_lon");
+  m_origin_lat = this->get_global_parameter<double>("coordinates.ecef_ref_lat");
+  m_origin_lon = this->get_global_parameter<double>("coordinates.ecef_ref_lon");
 
   this->declare_parameter<bool>("show_debug_info", bool(false));
   this->declare_parameter<double>("predict_frequency", double(50.0));
@@ -71,9 +68,6 @@ AWLocalizationNode::AWLocalizationNode(const std::string &node_name)
   this->m_use_inspva_heading =
       this->get_parameter("use_inspva_heading").as_bool();
   this->get_parameter("bestvel_heading_update_velocity_thres").as_double();
-  this->m_origin_lat = this->get_parameter("origin_lat").as_double();
-  this->m_origin_lon = this->get_parameter("origin_lon").as_double();
-
   this->show_debug_info_ = this->get_parameter("show_debug_info").as_bool();
   this->ekf_rate_ = this->get_parameter("predict_frequency").as_double();
   this->tf_rate_ = this->get_parameter("tf_rate").as_double();
@@ -138,6 +132,9 @@ AWLocalizationNode::AWLocalizationNode(const std::string &node_name)
   pub_mahalanobisScore = this->create_publisher<std_msgs::msg::Float64>(
       "out_localization_error", nif::common::constants::QOS_EGO_ODOMETRY);
 
+  pub_localization_status = this->create_publisher<nif_msgs::msg::LocalizationStatus>(
+      "out_localization_status", nif::common::constants::QOS_EGO_ODOMETRY);
+
   // POSE(X, Y)
   subBESTPOS = this->create_subscription<novatel_oem7_msgs::msg::BESTPOS>(
       "in_bestpos", nif::common::constants::QOS_SENSOR_DATA,
@@ -171,7 +168,11 @@ AWLocalizationNode::AWLocalizationNode(const std::string &node_name)
   subIMUONLY = this->create_subscription<sensor_msgs::msg::Imu>(
       "in_imu", nif::common::constants::QOS_SENSOR_DATA,
       std::bind(&AWLocalizationNode::IMUCallback, this,
-                std::placeholders::_1)); //use this when putting bestvel speed as vehicle velocity. 
+                std::placeholders::_1)); //use this when putting bestvel speed as vehicle velocity.
+  subtest = this->create_subscription<std_msgs::msg::Float64>(
+      "test_noise", 1,
+      std::bind(&AWLocalizationNode::TestCallback, this,
+                std::placeholders::_1)); 
   auto rmw_qos_profile =
       nif::common::constants::QOS_SENSOR_DATA.get_rmw_qos_profile();
 
@@ -218,6 +219,8 @@ void AWLocalizationNode::timerCallback()
   if (bImuFirstCall && bBOTTOM_GPS && bGPSHeading) {
     auto node_status = nif::common::NODE_ERROR;
 
+    m_localization_status.stamp = this->now();
+
     // If the geofence data is too old, report error, but keep going.
     if ((this->now().nanoseconds() - bestpos_time_last_update.nanoseconds()) >=
             this->gps_timeout.nanoseconds() ||
@@ -231,13 +234,7 @@ void AWLocalizationNode::timerCallback()
 
     predictKinematicsModel();
 
-    /**
-     * @brief CalculateBestCorrection selects the best correction
-     *        using novatel_bottom and novatel_top.
-     * @param GPS_pose  novatel_bottom/bestpos, novatel_bottom/bestpos
-     * @param Current_estimation  current estimation
-     * @return fused correction data.
-     */
+
     VehPose_t BestCorrection;
     VehPose_t CurrentEstimated;
     CurrentEstimated.x = ekf_.getXelement(IDX::X);
@@ -257,17 +254,40 @@ void AWLocalizationNode::timerCallback()
     if (bBOTTOM_GPS && bTOP_GPS)
     {
       update_pose = CalculateBestCorrection(BestPosBottom, BestPosTop,
-                                              CurrentEstimated, BestCorrection);
+                                            CurrentEstimated, BestCorrection);
       correction_x = BestCorrection.x; 
-      correction_y = BestCorrection.y; 
+      correction_y = BestCorrection.y;
+      m_localization_status.top_initialized = true;
+      m_localization_status.bottom_initialized = true;
+
     } else if (bBOTTOM_GPS && !bTOP_GPS) {
       correction_x = BestPosBottom.x; 
       correction_y = BestPosBottom.y;
       update_pose = true;
+      m_localization_status.status = "TOP IS NOT STARTED. ONLY BOTTOM";
+      m_localization_status.top_initialized = false;
+      m_localization_status.bottom_initialized = true;
+      m_localization_status.localization_status_code =
+          nif_msgs::msg::LocalizationStatus::ONLY_BOTTOM;
     } else if (!bBOTTOM_GPS && bTOP_GPS) {
       correction_x = BestPosTop.x;
       correction_y = BestPosTop.y;
       update_pose = true;
+      m_localization_status.status = "BOTTOM IS NOT STARTED. ONLY TOP";
+      m_localization_status.top_initialized = true;
+      m_localization_status.bottom_initialized = false;
+      m_localization_status.localization_status_code =
+          nif_msgs::msg::LocalizationStatus::ONLY_TOP;
+    }
+    else
+    {
+      // NO SENSOR INITIALIZED
+      m_localization_status.status = "NO SENSOR INITIALIZED";
+      m_localization_status.top_initialized = false;
+      m_localization_status.bottom_initialized = false;
+      m_localization_status.localization_status_code =
+          nif_msgs::msg::LocalizationStatus::NO_SENSOR_INITIALIZED;
+      node_status = nif::common::NODE_ERROR;
     }
 
       /* pose measurement update */
@@ -292,8 +312,8 @@ void AWLocalizationNode::timerCallback()
     /* publish ekf result */
     publishEstimateResult();
 
-    // this->setNodeStatus(node_status);
-
+    pub_localization_status->publish(m_localization_status);
+    this->setNodeStatus(node_status);
 
     // std::cout << "Run " << std::endl;
 
@@ -347,9 +367,17 @@ void AWLocalizationNode::BESTPOSCallback
     (const novatel_oem7_msgs::msg::BESTPOS::SharedPtr msg) {
 
   this->bestpos_time_last_update = this->now();
+
+  // test
+  // unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+  // std::default_random_engine generator(seed);
+  // double mean = m_testnoise / 10.;
+  // double stdev = (int)m_testnoise % 10;
+  // std::normal_distribution<double> dist(mean, stdev);
+
   nif::localization::utils::GeodeticConverter::GeoRef currentGPS;
-  currentGPS.latitude = (double)msg->lat;
-  currentGPS.longitude = (double)msg->lon;
+  currentGPS.latitude = (double)msg->lat; // + dist(generator) * 1e-6;
+  currentGPS.longitude = (double)msg->lon; // + dist(generator) * 1e-6;
   // Currently ignore altitude for the most part and just track x/y
   currentGPS.altitude = 0.;
 
@@ -400,10 +428,13 @@ void AWLocalizationNode::TOPBESTPOSCallback(
   //test
   // unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
   // std::default_random_engine generator(seed);
-  // std::normal_distribution<double> dist(0, 2.0);
+  // double mean = m_testnoise / 10.;
+  // double stdev = (int)m_testnoise % 10;
+  // std::normal_distribution<double> dist(mean, stdev);
+
   nif::localization::utils::GeodeticConverter::GeoRef currentGPS;
-  currentGPS.latitude = (double)msg->lat  ; //+ dist(generator) * 1e-5;
-  currentGPS.longitude = (double)msg->lon ; //+ dist(generator) * 1e-5;
+  currentGPS.latitude = (double)msg->lat; // + dist(generator) * 1e-5;
+  currentGPS.longitude = (double)msg->lon; //+ dist(generator) * 1e-5;
   // Currently ignore altitude for the most part and just track x/y
   currentGPS.altitude = 0.;
 
@@ -590,12 +621,16 @@ void AWLocalizationNode::IMUCallback(
     return;
   }
 }
+void AWLocalizationNode::TestCallback(
+    const std_msgs::msg::Float64::SharedPtr msg)
+    {
+      m_testnoise = msg->data;
+    }
 
-
-    /*
-     * initEKF
-     */
-    void AWLocalizationNode::initEKF() {
+/*
+ * initEKF
+ */
+void AWLocalizationNode::initEKF() {
   Eigen::MatrixXd X = Eigen::MatrixXd::Zero(dim_x_, 1);
   Eigen::MatrixXd P = Eigen::MatrixXd::Identity(dim_x_, dim_x_) * 1.0E15; //  for x & y
   P(IDX::YAW, IDX::YAW) = 50.0;                                           //  for yaw
@@ -796,10 +831,10 @@ void AWLocalizationNode::measurementUpdatePose(rclcpp::Time measurement_time_,
   // std::cout << "P_y : " << P_y << std::endl;
 
   // if (!mahalanobisGate(update_ignore_distance, y_ekf, y, P_y))
-  if (!mahalanobisGate(update_ignore_distance, y_prediction, y_correction,
-                       P_2by2)) {
-    return;
-  }
+  // if (!mahalanobisGate(update_ignore_distance, y_prediction, y_correction, P_2by2) && 
+  //     m_localization_status.localization_status_code !=nif_msgs::msg::LocalizationStatus::BEST_STATUS) {
+  //   return;
+  // }
 
   DEBUG_PRINT_MAT(y.transpose());
   DEBUG_PRINT_MAT(y_ekf.transpose());
@@ -832,9 +867,41 @@ void AWLocalizationNode::measurementUpdatePose(rclcpp::Time measurement_time_,
     const double cov_pos_y =
         std::pow(pose_measure_uncertainty_time_ * vx * sin(ekf_yaw), 2.0);
     const double cov_yaw = std::pow(pose_measure_uncertainty_time_ * wz, 2.0);
-    R(0, 0) = m_stdev_latitude + cov_pos_x +  std::pow(pose_stddev_x_, 2) ; //+ cov_pos_x; //  pos_x
-    R(1, 1) = m_stdev_longitude + cov_pos_y + std::pow(pose_stddev_y_, 2) ; //+ cov_pos_y +  pos_y
-    R(2, 2) = m_stdev_azimuth + cov_yaw; + std::pow(pose_stddev_yaw_, 2); // + cov_yaw; //  yaw
+
+    R(0, 0) = m_stdev_latitude + cov_pos_x * 0.2 +  std::pow(pose_stddev_x_, 2) ; //+ cov_pos_x; //  pos_x
+    R(1, 1) = m_stdev_longitude + cov_pos_y * 0.2 + std::pow(pose_stddev_y_, 2) ; //+ cov_pos_y +  pos_y
+    R(2, 2) = m_stdev_azimuth + cov_yaw + std::pow(pose_stddev_yaw_, 2); // + cov_yaw; //  yaw
+
+    if (bBOTTOM_GPS && bTOP_GPS) // if TOP AND BOTTOM are started, calculated covariance using difference between two sensors.
+    {
+      // if (m_localization_status.localization_status_code ==
+      //         nif_msgs::msg::LocalizationStatus::BEST_STATUS)
+      // {
+        R(0, 0) = fabs(BestPosBottom.x - BestPosTop.x) + cov_pos_x +
+                  std::pow(pose_stddev_x_, 2); 
+        R(1, 1) = fabs(BestPosBottom.y - BestPosTop.y) + cov_pos_y +
+                  std::pow(pose_stddev_y_, 2); 
+        R(2, 2) = m_stdev_azimuth + cov_yaw +
+                  std::pow(pose_stddev_yaw_, 2); 
+      // } else if (m_localization_status.localization_status_code ==
+      //            nif_msgs::msg::LocalizationStatus::ONLY_TOP) {
+      //   R(0, 0) = BestPosTop.lat_noise + cov_pos_x +
+      //             std::pow(pose_stddev_x_, 2); 
+      //   R(1, 1) = BestPosTop.lon_noise + cov_pos_y +
+      //             std::pow(pose_stddev_y_, 2); 
+      //   R(2, 2) = m_stdev_azimuth + cov_yaw +
+      //             std::pow(pose_stddev_yaw_, 2); 
+      // } else if (m_localization_status.localization_status_code ==
+      //            nif_msgs::msg::LocalizationStatus::ONLY_BOTTOM) {
+      //   R(0, 0) = BestPosBottom.lat_noise + cov_pos_x +
+      //             std::pow(pose_stddev_x_, 2); 
+      //   R(1, 1) = BestPosBottom.lon_noise + cov_pos_y +
+      //             std::pow(pose_stddev_y_, 2); 
+      //   R(2, 2) = m_stdev_azimuth + cov_yaw +
+      //             std::pow(pose_stddev_yaw_, 2); 
+      // }
+    }
+
   }
 
   /* In order to avoid a large change at the time of updating, measuremeent
@@ -959,7 +1026,7 @@ void AWLocalizationNode::measurementUpdateTwist(rclcpp::Time measurement_time_,
 bool AWLocalizationNode::mahalanobisGate(const double& dist_max, const Eigen::MatrixXd& x, const Eigen::MatrixXd& obj_x,
                                    const Eigen::MatrixXd& cov)
 {
-  Eigen::MatrixXd mahalanobis_squared = (x - obj_x).transpose() * cov.inverse() * (x - obj_x);
+  Eigen::MatrixXd mahalanobis_squared = (x - obj_x).transpose() * cov * (x - obj_x);
   // std::cout << "x : " << x << ", obj_x: " << obj_x << ", delta : " << x - obj_x << std::endl;
   // std::cout << "P_y^-1 : " << cov.inverse() << std::endl;
   // std::cout << "mahalanobis_squared : " << std::sqrt(mahalanobis_squared(0))  << std::endl;
@@ -985,17 +1052,23 @@ double AWLocalizationNode::GetmahalanobisDistance(const Eigen::MatrixXd &x,
                                                   const Eigen::MatrixXd &cov)
 {
   Eigen::MatrixXd mahalanobis_squared =
-      (x - obj_x).transpose() * cov.inverse() * (x - obj_x);
+      (x - obj_x).transpose() * cov * (x - obj_x);
   double distance = std::sqrt(mahalanobis_squared(0));
 
   return distance;
 }
 
-bool AWLocalizationNode::CalculateBestCorrection(const GPSCorrectionData_t &BottomDataIn, 
-                                                 const GPSCorrectionData_t &TopDataIn,
-                                                 const VehPose_t& CurrentEstIn,
-                                                 VehPose_t& BestCorrectionOut)
-{
+/**
+ * @brief CalculateBestCorrection selects the best correction
+ *        using novatel_bottom and novatel_top.
+ * @param GPS_pose  novatel_bottom/bestpos, novatel_bottom/bestpos
+ * @param Current_estimation  current estimation
+ * @return fused correction data.
+ */
+bool AWLocalizationNode::CalculateBestCorrection(
+    const GPSCorrectionData_t &BottomDataIn,
+    const GPSCorrectionData_t &TopDataIn, const VehPose_t &CurrentEstIn,
+    VehPose_t &BestCorrectionOut) {
   Eigen::MatrixXd P_curr, P_2by2;
   ekf_.getLatestP(P_curr);
   P_2by2 = P_curr.block(0, 0, 2, 2);
@@ -1012,61 +1085,75 @@ bool AWLocalizationNode::CalculateBestCorrection(const GPSCorrectionData_t &Bott
   double topError = GetmahalanobisDistance(y_est, y_top, P_2by2);
 
   double diff_top_bottom = sqrt((BottomDataIn.x - TopDataIn.x) * (BottomDataIn.x - TopDataIn.x) +
-                                (BottomDataIn.y - TopDataIn.y) * (BottomDataIn.y - TopDataIn.y));  
+                                (BottomDataIn.y - TopDataIn.y) * (BottomDataIn.y - TopDataIn.y));
 
-  std::cout << "------------" << std::endl;
-  std::cout << "bottomError : " << bottomError << std::endl;
-  std::cout << "topError : " << topError << std::endl;
-  std::cout << "diff" << diff_top_bottom << std::endl;
+  // std::cout << "------------" << std::endl;
+  // std::cout << "bottomError : " << bottomError << std::endl;
+  // std::cout << "topError : " << topError << std::endl;
+  // std::cout << "diff: " << diff_top_bottom << std::endl;
 
   double norm_weight_bottom, norm_weight_top;
-  double fused_x, fused_y;
-      // if bottom and top is close enough, we regard bottom status is nominal.
-      // output : bypass fusion. return novatel bottom directly.
+
+  norm_weight_bottom = 1 - bottomError / (bottomError + topError);
+  norm_weight_top = 1 - topError / (bottomError + topError);
+
+  m_localization_status.bottom_error = bottomError;
+  m_localization_status.top_error = topError;
+  m_localization_status.diff = diff_top_bottom;
+  m_localization_status.bottom_weight = norm_weight_bottom;
+  m_localization_status.top_weight = norm_weight_top;
+
+  // if bottom and top is close enough, we regard bottom status is nominal.
+  // output : bypass fusion. return novatel bottom directly.
   if (diff_top_bottom < 0.5) {
     BestCorrectionOut.x = BottomDataIn.x;
     BestCorrectionOut.y = BottomDataIn.y;
-    std::cout << "BEST STATUS" << std::endl;
+    m_localization_status.status = "BEST STATUS";
+    m_localization_status.localization_status_code =
+        nif_msgs::msg::LocalizationStatus::BEST_STATUS;
 
     return true;
   }
   else // one of sensor has drift. we should fuse the sensors.
   {
-    // 1. our top priority strategy is weight-sum. 
-    norm_weight_bottom = 1 - bottomError / (bottomError + topError);
-    norm_weight_top = 1 - topError / (bottomError + topError);
-
-    if (bottomError < 30.0 && topError < 30.0) {
-      fused_x =
+    // 1. our top priority strategy is weight-sum.
+    if (bottomError < pose_gate_dist_ && topError < pose_gate_dist_ &&
+        fabs(topError - bottomError) < pose_gate_dist_) {
+      BestCorrectionOut.x =
           BottomDataIn.x * norm_weight_bottom + TopDataIn.x * norm_weight_top;
-      fused_y =
+      BestCorrectionOut.y =
           BottomDataIn.y * norm_weight_bottom + TopDataIn.y * norm_weight_top;
-      std::cout << "SENSOR FUSION" << std::endl;
-
+      m_localization_status.status = "SENSOR FUSION";
+      m_localization_status.localization_status_code =
+          nif_msgs::msg::LocalizationStatus::SENSOR_FUSION;
       return true;
     }
     // 2. if bottom is diverged, and top is nominal, USE NOVATEL TOP
-    else if (bottomError > 30.0 && topError < 30.0) {
-      fused_x = TopDataIn.x;
-      fused_y = TopDataIn.y;
-      std::cout << "BOTTOM ERROR, USE TOP" << std::endl;
+    else if (bottomError > pose_gate_dist_ && topError < pose_gate_dist_) {
+      BestCorrectionOut.x = TopDataIn.x;
+      BestCorrectionOut.y = TopDataIn.y;
+      m_localization_status.status = "BOTTOM ERROR, USE TOP";
+      m_localization_status.localization_status_code =
+          nif_msgs::msg::LocalizationStatus::ONLY_TOP;
       return true;
     }
     // 3. if top is diverged, and bottom is nominal, USE NOVATEL BOTTOM
-    else if (bottomError < 30.0 && topError > 30.0) {
-      fused_x = BottomDataIn.x;
-      fused_y = BottomDataIn.y;
-      std::cout << "TOP ERROR, USE BOTTOM" << std::endl;
+    else if (bottomError < pose_gate_dist_ && topError > pose_gate_dist_) {
+      BestCorrectionOut.x = BottomDataIn.x;
+      BestCorrectionOut.y = BottomDataIn.y;
+      m_localization_status.status = "TOP ERROR, USE BOTTOM";
+      m_localization_status.localization_status_code =
+          nif_msgs::msg::LocalizationStatus::ONLY_BOTTOM;
       return true;
     }
     // 4. if all the sensors are bad, do not update measurement
-    else
-    {
-      std::cout << "NO UPDATE, GPS HIGH ERROR" << std::endl;
+    else {
+      m_localization_status.status = "NO UPDATE, GPS HIGH ERROR";
+      m_localization_status.localization_status_code =
+          nif_msgs::msg::LocalizationStatus::GPS_HIGH_ERROR;
       return false;
     }
   }
-
 }
 
 /*
