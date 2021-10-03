@@ -30,6 +30,7 @@ EgoShapeFilterNode::EgoShapeFilterNode(const std::string &node_name_)
   this->declare_parameter<double>("count_threshold", double(3.));
   this->declare_parameter<double>("normal_angle_thres", double(50.));
   this->declare_parameter<int>("ransac_pts_thresh", int(200));
+  this->declare_parameter<double>("ransac_distance_thres", double(0.2));
 
   this->declare_parameter<double>("x_roi", double(0.));
   this->declare_parameter<double>("distance_extract_thres", double(0.5));
@@ -147,6 +148,7 @@ void EgoShapeFilterNode::respond() {
   this->get_parameter("count_threshold", count_threshold_);
   this->get_parameter("normal_angle_thres", normal_angle_thres_);
   this->get_parameter("ransac_pts_thresh", ransac_pts_thresh_);
+  this->get_parameter("ransac_distance_thres",m_ransacDistanceThres);
 
   this->get_parameter("x_roi", extract_distance_x_roi);
   this->get_parameter("distance_extract_thres", extract_distance_thres);
@@ -381,16 +383,27 @@ void EgoShapeFilterNode::timer_callback() {
   left_path_msg.header.frame_id = BASE_LINK;
   left_path_msg.header.stamp = this->now();
   cv::Mat LeftPolyCoefficient;
+
+//  CubicSpliner(CloudRANSACLeft, left_wall_plane_coeff, front_upper_distance_,
+//               rear_upper_distance_, left_path_msg, LeftPolyCoefficient);
+
+  // changed
+  int left_polynorm_order = -1;
   CubicSpliner(CloudRANSACLeft, left_wall_plane_coeff, front_upper_distance_,
-               rear_upper_distance_, left_path_msg, LeftPolyCoefficient);
+               rear_upper_distance_, left_path_msg, LeftPolyCoefficient, left_polynorm_order);
   pub_left_wall_line->publish(left_path_msg);
 
   nav_msgs::msg::Path right_path_msg;
   right_path_msg.header.frame_id = BASE_LINK;
   right_path_msg.header.stamp = this->now();
   cv::Mat RightPolyCoefficient;
+
+//  CubicSpliner(CloudRANSACRight, right_wall_plane_coeff, front_upper_distance_,
+//               rear_upper_distance_, right_path_msg, RightPolyCoefficient);
+  // changed
+  int right_polynorm_order = -1;
   CubicSpliner(CloudRANSACRight, right_wall_plane_coeff, front_upper_distance_,
-               rear_upper_distance_, right_path_msg, RightPolyCoefficient);
+               rear_upper_distance_, right_path_msg, RightPolyCoefficient, right_polynorm_order);
   pub_right_wall_line->publish(right_path_msg);
 
   /* WALL CURVATURE BASED CONTROLLER 
@@ -405,10 +418,22 @@ void EgoShapeFilterNode::timer_callback() {
   wall_folllowing_path_msg.header.stamp = this->now();
 
   if (right_wall_plane_coeff && outer_bound_distance != 0.0) {
-    m_margin_to_wall = outer_bound_distance + m_target_space_to_wall;
+    if (fabs(outer_bound_distance) < m_target_space_to_wall)
+    {
+      m_margin_to_wall = outer_bound_distance + m_target_space_to_wall;
+    }
+    else {
+      m_margin_to_wall = 0.0;
+    }
   }
+  final_wall_following_path_msg.header.frame_id = BASE_LINK;
+  final_wall_following_path_msg.header.stamp = this->now();
 
-  EstimatePredictivePath(right_wall_plane_coeff, RightPolyCoefficient,
+//  EstimatePredictivePath(right_wall_plane_coeff, RightPolyCoefficient,
+//                         wall_folllowing_path_msg, m_margin_to_wall);
+
+  // changed
+  EstimatePredictivePath(right_wall_plane_coeff, RightPolyCoefficient, right_polynorm_order,
                          wall_folllowing_path_msg, m_margin_to_wall);
 
   if (right_wall_plane_coeff && !wall_folllowing_path_msg.poses.empty()) {
@@ -653,11 +678,22 @@ void EgoShapeFilterNode::CubicSpliner(
         const boost::optional<Eigen::Vector4f> wall_plane_coeff,
         double in_front_upper_threshold, double in_rear_upper_threshold,
         nav_msgs::msg::Path& path_msg_out, cv::Mat& PolyCoefficientOut) {
+        
+  pcl::PointCloud<pcl::PointXYZI>::Ptr cloudDownSampled(
+      new pcl::PointCloud<pcl::PointXYZI>);
+
+  for (auto point_buf : cloudIn->points) {
+    pcl::PointXYZI ground_points;
+    ground_points.x = point_buf.x;
+    ground_points.y = point_buf.y;
+    cloudDownSampled->points.push_back(ground_points);
+  }
+  cloudDownSampled = downsample(cloudDownSampled, 0.25);
 
   std::vector<cv::Point2f> ToBeFit;
   ToBeFit.clear();
 
-  for (auto point_buf : cloudIn->points) {
+  for (auto point_buf : cloudDownSampled->points) {
     cv::Point2f pointTmp;
     pointTmp.x = point_buf.x;
     pointTmp.y = point_buf.y;
@@ -665,28 +701,106 @@ void EgoShapeFilterNode::CubicSpliner(
   }
 
   // For polynomial fitting
-  int poly_order = 3;
+  int poly_order = 2;
   PolyCoefficientOut = polyfit(ToBeFit, poly_order);
 
   if (!wall_plane_coeff) {
     return;
   }
 
-  for (double x = -10; x < 20; x = x + 0.5) {
+  for (double x = -30; x < 50; x = x + 0.5) {
     geometry_msgs::msg::PoseStamped pose_buf;
     pose_buf.pose.position.x = x;
     pose_buf.pose.position.y =
         PolyCoefficientOut.at<double>(poly_order, 0) * pow(x, poly_order) +
         PolyCoefficientOut.at<double>(poly_order - 1, 0) * pow(x, poly_order - 1) +
-        PolyCoefficientOut.at<double>(poly_order - 2, 0) * pow(x, poly_order - 2) +
-        PolyCoefficientOut.at<double>(poly_order - 3, 0); // Cubic
+        // PolyCoefficientOut.at<double>(poly_order - 2, 0) * pow(x, poly_order - 2) +
+        PolyCoefficientOut.at<double>(poly_order - 2, 0); // Cubic
     pose_buf.pose.orientation.w = 1;
     pose_buf.pose.orientation.x = 0;
     pose_buf.pose.orientation.y = 0;
     pose_buf.pose.orientation.z = 0;
     path_msg_out.poses.push_back(pose_buf);
   }
+}
 
+void EgoShapeFilterNode::CubicSpliner(
+    pcl::PointCloud<pcl::PointXYZI>::Ptr cloudIn,
+    const boost::optional<Eigen::Vector4f> wall_plane_coeff,
+    double in_front_upper_threshold, double in_rear_upper_threshold,
+    nav_msgs::msg::Path& path_msg_out, cv::Mat& PolyCoefficientOut, int& poly_order) {
+
+  pcl::PointCloud<pcl::PointXYZI>::Ptr cloudDownSampled(
+      new pcl::PointCloud<pcl::PointXYZI>);
+
+  for (auto point_buf : cloudIn->points) {
+    pcl::PointXYZI ground_points;
+    ground_points.x = point_buf.x;
+    ground_points.y = point_buf.y;
+    cloudDownSampled->points.push_back(ground_points);
+  }
+  cloudDownSampled = downsample(cloudDownSampled, 0.25);
+
+  std::vector<cv::Point2f> ToBeFit;
+  ToBeFit.clear();
+
+  for (auto point_buf : cloudDownSampled->points) {
+    cv::Point2f pointTmp;
+    pointTmp.x = point_buf.x;
+    pointTmp.y = point_buf.y;
+    ToBeFit.push_back(pointTmp);
+  }
+
+  // For polynomial fitting
+  int first_order = 1;
+  cv::Mat first_order_poly_coeff = polyfit(ToBeFit, first_order);
+  double first_order_error = 0.0;
+
+  // For polynomial fitting
+  int second_order = 2;
+  cv::Mat second_order_poly_coeff = polyfit(ToBeFit, second_order);
+  double second_order_error = 0.0;
+
+
+  if (!wall_plane_coeff) {
+    return;
+  }
+
+  // check which polynorm model is more fitted
+  for(int i =0 ; i < ToBeFit.size(); i++) {
+    first_order_error += pow(ToBeFit[i].y -
+                                       (first_order_poly_coeff.at<double>(first_order, 0) * pow(ToBeFit[i].x, first_order) +
+                                       first_order_poly_coeff.at<double>(first_order - 1, 0)),2);
+    second_order_error += pow(ToBeFit[i].y -
+                                       (second_order_poly_coeff.at<double>(second_order, 0) * pow(ToBeFit[i].x, second_order) +
+                                        second_order_poly_coeff.at<double>(second_order - 1, 0) * pow(ToBeFit[i].x, second_order - 1) +
+                                        second_order_poly_coeff.at<double>(second_order - 2, 0)),2);
+  }
+
+  if(second_order_error > first_order_error)
+    poly_order = first_order;
+  else
+    poly_order = second_order;
+
+  for (double x = -30; x < 50; x = x + 2.0) {
+    geometry_msgs::msg::PoseStamped pose_buf;
+    pose_buf.pose.position.x = x;
+    if (poly_order == second_order) {
+      pose_buf.pose.position.y =
+          second_order_poly_coeff.at<double>(poly_order, 0) * pow(x, poly_order) +
+          second_order_poly_coeff.at<double>(poly_order - 1, 0) * pow(x, poly_order - 1) +
+          second_order_poly_coeff.at<double>(poly_order - 2, 0); // Cubic
+    } else {
+      pose_buf.pose.position.y =
+          first_order_poly_coeff.at<double>(poly_order, 0) * pow(x, poly_order) +
+          first_order_poly_coeff.at<double>(poly_order - 1, 0);
+    }
+    pose_buf.pose.orientation.w = 1;
+    pose_buf.pose.orientation.x = 0;
+    pose_buf.pose.orientation.y = 0;
+    pose_buf.pose.orientation.z = 0;
+    path_msg_out.poses.push_back(pose_buf);
+  }
 }
 
 cv::Mat EgoShapeFilterNode::polyfit(std::vector<cv::Point2f> &in_point, int n) {
@@ -727,14 +841,14 @@ void EgoShapeFilterNode::EstimatePredictivePath(
     return;
   }
   
-  int poly_order = 3;
+  int poly_order = 2;
   for (double x = -10; x < 30; x = x + 0.5) {
     geometry_msgs::msg::PoseStamped pose_buf;
     pose_buf.pose.position.x = x;
     pose_buf.pose.position.y =
         PolyCoefficientIn.at<double>(poly_order, 0) * pow(x, poly_order) +
         PolyCoefficientIn.at<double>(poly_order - 1, 0) * pow(x, poly_order - 1) +
-        PolyCoefficientIn.at<double>(poly_order - 2, 0) * pow(x, poly_order - 2) +
+        // PolyCoefficientIn.at<double>(poly_order - 2, 0) * pow(x, poly_order - 2) +
         target_space_to_wall; // Cubic
 
     pose_buf.pose.orientation.w = 1;
@@ -745,4 +859,37 @@ void EgoShapeFilterNode::EstimatePredictivePath(
   }
 
   // 
+}
+
+void EgoShapeFilterNode::EstimatePredictivePath(
+    const boost::optional<Eigen::Vector4f> wall_plane_coeff,
+    const cv::Mat &PolyCoefficientIn, const int& poly_order,  nav_msgs::msg::Path &path_msg_out,
+    const double &target_space_to_wall) {
+  if (!wall_plane_coeff) {
+    return;
+  }
+
+  for (double x = -10; x < 30; x = x + 0.5) {
+    geometry_msgs::msg::PoseStamped pose_buf;
+    pose_buf.pose.position.x = x;
+
+    if (poly_order == 2) {
+      pose_buf.pose.position.y =
+          PolyCoefficientIn.at<double>(poly_order, 0) * pow(x, poly_order) +
+          PolyCoefficientIn.at<double>(poly_order - 1, 0) * pow(x, poly_order - 1) +
+          PolyCoefficientIn.at<double>(poly_order - 2, 0);
+    } else {
+      pose_buf.pose.position.y =
+          PolyCoefficientIn.at<double>(poly_order, 0) * pow(x, poly_order) +
+          PolyCoefficientIn.at<double>(poly_order - 1, 0);
+    }
+
+    pose_buf.pose.orientation.w = 1;
+    pose_buf.pose.orientation.x = 0;
+    pose_buf.pose.orientation.y = 0;
+    pose_buf.pose.orientation.z = 0;
+    path_msg_out.poses.push_back(pose_buf);
+  }
+
+  //
 }

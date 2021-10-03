@@ -140,14 +140,21 @@ JointLQR::ControlVector JointLQR::process(JointLQR::ErrorMatrix error,
   // Compute feedback control 2x1, (steer, accel)
   auto FBControl = -matrix * error;
 
-  RCLCPP_DEBUG(rclcpp::get_logger("joint_lqr_solver"), "matrix K e y        : %f", matrix(0, 0));
-  RCLCPP_DEBUG(rclcpp::get_logger("joint_lqr_solver"), "\nmatrix K e ydot   : %f", matrix(0, 1));
-  RCLCPP_DEBUG(rclcpp::get_logger("joint_lqr_solver"), "\nmatrix K e yaw    : %f", matrix(0, 2));
-  RCLCPP_DEBUG(rclcpp::get_logger("joint_lqr_solver"), "\nmatrix K e yawdot : %f", matrix(0, 3));
-  RCLCPP_DEBUG(rclcpp::get_logger("joint_lqr_solver"), "\nmatrix K e vx     : %f", matrix(1, 4));
+  RCLCPP_DEBUG(rclcpp::get_logger("joint_lqr_solver"),
+               "matrix K e y        : %f", matrix(0, 0));
+  RCLCPP_DEBUG(rclcpp::get_logger("joint_lqr_solver"),
+               "\nmatrix K e ydot   : %f", matrix(0, 1));
+  RCLCPP_DEBUG(rclcpp::get_logger("joint_lqr_solver"),
+               "\nmatrix K e yaw    : %f", matrix(0, 2));
+  RCLCPP_DEBUG(rclcpp::get_logger("joint_lqr_solver"),
+               "\nmatrix K e yawdot : %f", matrix(0, 3));
+  RCLCPP_DEBUG(rclcpp::get_logger("joint_lqr_solver"),
+               "\nmatrix K e vx     : %f", matrix(1, 4));
 
-  RCLCPP_DEBUG(rclcpp::get_logger("joint_lqr_solver"), "\nFeedback    - steer : %f", FBControl(0, 0));
-  RCLCPP_DEBUG(rclcpp::get_logger("joint_lqr_solver"), "\nFeedback    - accel : %f", FBControl(1, 0));
+  RCLCPP_DEBUG(rclcpp::get_logger("joint_lqr_solver"),
+               "\nFeedback    - steer : %f", FBControl(0, 0));
+  RCLCPP_DEBUG(rclcpp::get_logger("joint_lqr_solver"),
+               "\nFeedback    - accel : %f", FBControl(1, 0));
 
   return FBControl;
 }

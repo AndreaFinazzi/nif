@@ -27,6 +27,7 @@
 #include "nif_msgs/msg/perception3_d_array.hpp"
 #include "nif_msgs/msg/powertrain_status.hpp"
 #include "nif_msgs/msg/system_status.hpp"
+#include "nif_msgs/msg/mission_status.hpp"
 #include "nif_msgs/msg/terrain_status.hpp"
 #include "nif_msgs/msg/waypoints.hpp"
 #include "nif_msgs/msg/waypoints_array.hpp"
@@ -80,6 +81,7 @@ static bool isNodeTypeInRange(nif::common::NodeType type_id)
     return false;
 }
 
+
 namespace msgs {
 
 /**
@@ -115,17 +117,22 @@ using OverrideRCFlagSummary = deep_orange_msgs::msg::BaseToCarSummary;
 using AutonomyState = nif_msgs::msg::AutonomyStatus;
 
 /**
- * This message contains the system status information which should updated in
- * the system status monitor node. It contains the Autonomy status and Health
- * status of the every node.
+ * This message contains the system status information which should be updated in
+ * the system status manager node. It contains the Autonomy status, the Health
+ * status and Mission status.
  */
 using SystemStatus = nif_msgs::msg::SystemStatus;
+
+/**
+ * This message contains the health status of the system.
+ */
+using SystemHealthStatus = nif_msgs::msg::SystemHealthStatus;
 
 /**
  * This message contains the health status of the node which should updated in
  * the system status monitor node.
  */
-using SystemHealthStatus = nif_msgs::msg::SystemHealthStatus;
+using MissionStatus = nif_msgs::msg::MissionStatus;
 
 /**
  * This message contains the perception result which should updated
@@ -187,6 +194,27 @@ using Path = nav_msgs::msg::Path;
 
 // using VehicleKinematicState =
 // autoware_auto_msgs::msg::VehicleKinematicState;
+
+static bool isMissionCodeInRange(nif::common::msgs::MissionStatus::_mission_status_code_type mission_code)
+{
+    if (
+            mission_code == MissionStatus::MISSION_RACE             ||
+            mission_code == MissionStatus::MISSION_STANDBY          ||
+            mission_code == MissionStatus::MISSION_PIT_IN           ||
+            mission_code == MissionStatus::MISSION_PIT_STANDBY      ||
+            mission_code == MissionStatus::MISSION_PIT_OUT          ||
+            mission_code == MissionStatus::MISSION_PIT_TO_TRACK     ||
+            mission_code == MissionStatus::MISSION_SLOW_DRIVE       ||
+            mission_code == MissionStatus::MISSION_COMMANDED_STOP   ||
+            mission_code == MissionStatus::MISSION_EMERGENCY_STOP   ||
+            mission_code == MissionStatus::MISSION_TEST             ||
+            mission_code == MissionStatus::MISSION_INIT             ||
+            mission_code == MissionStatus::MISSION_PIT_INIT         ||
+            mission_code == MissionStatus::MISSION_DEFAULT
+            ) return true;
+    return false;
+}
+
 } // namespace msgs
 
 namespace types {

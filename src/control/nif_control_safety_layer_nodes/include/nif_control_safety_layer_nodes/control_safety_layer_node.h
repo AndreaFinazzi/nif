@@ -212,7 +212,8 @@ public:
     this->gear_shift_time_ms =
             this->get_parameter("gear.shift_time_ms").as_int();
 
-      if (gear_shift_time_ms <= 0) throw std::range_error("shift_time_ms must be greater than zero.");
+      if (gear_shift_time_ms <= 0)
+          throw std::range_error("shift_time_ms must be greater than zero.");
 
     this->ts_ = this->get_parameter("time_step").as_double();
     this->buffer_empty_counter_threshold = this->get_parameter("buffer_empty_counter_threshold").as_int();

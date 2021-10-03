@@ -287,9 +287,11 @@ def generate_launch_description():
         executable='nif_system_status_manager_nodes_exe',
         remappings=[
             ('in_joystick_cmd', '/joystick/command'),
-            ('out_system_status', '/system/status'),
             ('in_novatel_bestpos', '/novatel_bottom/bestpos'),
-            ('in_novatel_insstdev', '/novatel_bottom/insstdev')
+            ('in_novatel_insstdev', '/novatel_bottom/insstdev'),
+            ('in_localization_error', '/aw_localization/ekf/error'),
+            ('in_mission_status', '/system/mission'),
+            ('out_system_status', '/system/status'),
         ],
         parameters=[{
             # 'lat_autonomy_enabled': True,
@@ -373,51 +375,24 @@ def generate_launch_description():
 
     map_csv = None
 
-    # if track == LOR:
-    #     globtraj_input_path = get_share_file("nif_multilayer_planning_nodes", "inputs/traj_ltpl_cl/lor/traj_ltpl_cl.csv")
-    #     graph_store_path = get_share_file("nif_multilayer_planning_nodes", "inputs/track_offline_graphs/lor/stored_graph.pckl")
-    #     ltpl_offline_param_path = get_share_file("nif_multilayer_planning_nodes", "params/lor/ltpl_config_offline.ini")
-    #     ltpl_online_param_path = get_share_file("nif_multilayer_planning_nodes", "params/lor/ltpl_config_online.ini")
-    #     log_path = get_share_file("nif_multilayer_planning_nodes", "logs/lor/graph_ltpl")
-    # elif track == IMS:
-    #     globtraj_input_path = get_share_file("nif_multilayer_planning_nodes", "inputs/traj_ltpl_cl/ims/traj_ltpl_cl.csv")
-    #     graph_store_path = get_share_file("nif_multilayer_planning_nodes", "inputs/track_offline_graphs/ims/stored_graph.pckl")
-    #     ltpl_offline_param_path = get_share_file("nif_multilayer_planning_nodes", "params/ims/ltpl_config_offline.ini")
-    #     ltpl_online_param_path = get_share_file("nif_multilayer_planning_nodes", "params/ims/ltpl_config_online.ini")
-    #     log_path = get_share_file("nif_multilayer_planning_nodes", "logs/ims/graph_ltpl")
-    # elif track == LG_SVL:
-    #     globtraj_input_path = get_share_file("nif_multilayer_planning_nodes", "inputs/traj_ltpl_cl/lg_sim/traj_ltpl_cl.csv")
-    #     graph_store_path = get_share_file("nif_multilayer_planning_nodes", "inputs/track_offline_graphs/lg_sim/stored_graph.pckl")
-    #     ltpl_offline_param_path = get_share_file("nif_multilayer_planning_nodes", "params/lg_sim/ltpl_config_offline.ini")
-    #     ltpl_online_param_path = get_share_file("nif_multilayer_planning_nodes", "params/lg_sim/ltpl_config_online.ini")
-    #     log_path = get_share_file("nif_multilayer_planning_nodes", "logs/lg_sim/graph_ltpl")
-    # else:
-    #     raise RuntimeError("ERROR: invalid track provided: {}".format(track))
-
     nif_multilayer_planning_node = Node(
         package='nif_multilayer_planning_nodes',
         executable='nif_multilayer_planning_nodes_exe',
         output={
             'stdout': 'log',
             'stderr': 'screen',
-        }
-        ,
-        # parameters=[
-        #     {
-        #         "globtraj_input_path": globtraj_input_path,
-        #         "graph_store_path": graph_store_path,
-        #         "ltpl_offline_param_path": ltpl_offline_param_path,
-        #         "ltpl_online_param_path": ltpl_online_param_path,
-        #         "log_path": log_path,
-        #         # "graph_log_id": ,
-        #     }
-        # ]
-        # ,
+        },
         remappings={
             ('out_local_maptrack_inglobal', '/planning/graph/path_global'),
             ('in_ego_odometry', '/sensor/odom_ground_truth'),
             ('in_system_status', '/system/status')
         }
+    )
+
+    mission_manager_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            get_share_file("nif_mission_manager_nodes", 'launch/sim.launch.py')
+        )
     )
 
     lgsvl_simulation_launch = IncludeLaunchDescription(
@@ -453,5 +428,6 @@ def generate_launch_description():
         nif_velocity_planning_node,
         nif_joint_lqr_control_node,
         nif_accel_control_node,
+        mission_manager_launch,
         lgsvl_simulation_launch
     ])

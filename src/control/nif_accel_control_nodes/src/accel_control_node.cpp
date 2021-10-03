@@ -33,7 +33,7 @@ AccelControl::AccelControl() : Node("AccelControlNode") {
   //  this->pubControlStatus_ = this->create_publisher<std_msgs::msg::String>(
   //      "/control_low_level/control_status", 1);
   this->pubDiagnostic_ =
-      this->create_publisher<std_msgs::msg::Float32MultiArray>(
+      this->create_publisher<nif_msgs::msg::AccelControlStatus>(
           "/accel_control/diagnostic", 1);
 
   // setup QOS to be best effort
@@ -66,7 +66,7 @@ AccelControl::AccelControl() : Node("AccelControlNode") {
 
   // Declare Parameters
   this->declare_parameter("time_step", 0.01);
-  this->declare_parameter("engine_based_throttle_enabled", true);
+  this->declare_parameter("engine_based_throttle_enabled", false);
 
   this->declare_parameter("throttle.k_accel", 0.05780);
   this->declare_parameter("throttle.k_accel2", 0.0);
@@ -98,14 +98,14 @@ AccelControl::AccelControl() : Node("AccelControlNode") {
   this->declare_parameter("throttle.traction_factor", 0.2);
   this->declare_parameter("throttle.traction_rate", 15.0);
 
-  this->declare_parameter("brake.ABS_enabled", true);
-  this->declare_parameter("brake.ABS_brake_cmd_thres", 0.5);
-  this->declare_parameter("brake.ABS_factor", 0.2);
-  this->declare_parameter("brake.ABS_rate", 15.0);
+  this->declare_parameter("brake.abs_enabled", true);
+  this->declare_parameter("brake.abs_brake_cmd_thres", 0.5);
+  this->declare_parameter("brake.abs_factor", 0.2);
+  this->declare_parameter("brake.abs_rate", 15.0);
 
-  this->declare_parameter("TractionABS.velocity_thres_mps", 27.78);
-  this->declare_parameter("TractionABS.sigma_thres", 0.06);
-  this->declare_parameter("TractionABS.control_rate", 100.0);
+  this->declare_parameter("traction_abs.velocity_thres_mps", 27.78);
+  this->declare_parameter("traction_abs.sigma_thres", 0.06);
+  this->declare_parameter("traction_abs.control_rate", 100.0);
 
   // Create Callback Timers
   this->ts_ = this->get_parameter("time_step").as_double();
@@ -140,9 +140,9 @@ AccelControl::AccelControl() : Node("AccelControlNode") {
     int engine_safety_rpm_thres =
         this->get_parameter("engine.safety_rpm_thres").as_int();
 
-    this->m_throttle_controller_engine_ = EngineMapAccelController(
-        engine_safety_factor, engine_safety_rpm_thres, throttle_pedalToCmd_,
-        throttleCmdMax_, throttleCmdMin_);
+    this->m_throttle_controller_engine_ =
+        EngineMapAccelController(engine_safety_factor, engine_safety_rpm_thres,
+                                 1.0, throttleCmdMax_, throttleCmdMin_);
   } else {
     // Throttle profile-based throttle controller
     this->m_throttle_controller_profiler_ = ThrottleBrakeProfiler(
@@ -172,20 +172,20 @@ AccelControl::AccelControl() : Node("AccelControlNode") {
   double traction_rate =
       this->get_parameter("throttle.traction_rate").as_double(); // 15.
 
-  bool ABS_enabled = this->get_parameter("brake.ABS_enabled").as_bool();
+  bool ABS_enabled = this->get_parameter("brake.abs_enabled").as_bool();
   double ABS_brake_cmd_thres =
-      this->get_parameter("brake.ABS_brake_cmd_thres").as_double(); // 0.5
+      this->get_parameter("brake.abs_brake_cmd_thres").as_double(); // 0.5
   double ABS_factor =
-      this->get_parameter("brake.ABS_factor").as_double();             // 0.2
-  double ABS_rate = this->get_parameter("brake.ABS_rate").as_double(); // 15.
+      this->get_parameter("brake.abs_factor").as_double();             // 0.2
+  double ABS_rate = this->get_parameter("brake.abs_rate").as_double(); // 15.
 
   double velocity_thres_mps =
-      this->get_parameter("TractionABS.velocity_thres_mps")
+      this->get_parameter("traction_abs.velocity_thres_mps")
           .as_double(); // 27.78 mps, 100 kph
   double sigma_thres =
-      this->get_parameter("TractionABS.sigma_thres").as_double(); // 0.06
+      this->get_parameter("traction_abs.sigma_thres").as_double(); // 0.06
   double control_rate =
-      this->get_parameter("TractionABS.control_rate").as_double();
+      this->get_parameter("traction_abs.control_rate").as_double();
 
   this->m_traction_ABS_controller_ = TractionABS(
       traction_enabled, traction_throttle_cmd_thres, traction_factor,
@@ -220,7 +220,7 @@ void AccelControl::paramUpdateCallback() {}
 void AccelControl::calculateThrottleCmd(double des_accel) {
   // Get Longitudinal Acceleration Limit using Vehicle dynamics manager
   m_max_a_lon =
-      m_tire_manager_.ComputeLongitudinalAccelLimit(m_a_x_kf, m_a_y_kf);
+      m_tire_manager_.ComputeLongitudinalAccelLimit(m_a_lon_kf, m_a_lat_kf);
   // Constrain longitudinal acceleration
   des_accel = std::min(des_accel, m_max_a_lon);
 
@@ -275,7 +275,7 @@ void AccelControl::calculateBrakeCmd(double des_accel) {
   // - compute ABS control output
   brake_cmd_out =
       m_traction_ABS_controller_.ABSControl(brake_cmd_out, curr_speed, m_sigma);
-  m_ABS_activated = m_traction_ABS_controller_.m_ABS_activated;
+  m_abs_activated = m_traction_ABS_controller_.m_abs_activated;
   // - final brake command output
   this->brake_cmd.data = brake_cmd_out;
 }
@@ -305,20 +305,25 @@ void AccelControl::publishThrottleBrake() {
   pubBrakeCmd_->publish(this->brake_cmd);
 }
 
-void AccelControl::publishDiagnostic(double is_traction_activated,
-                                     double is_ABS_activated,
+void AccelControl::publishDiagnostic(double is_engine_based,
+                                     double traction_activated,
+                                     double abs_activated, double max_a_lon,
                                      double tire_slip_ratio,
                                      double desired_engine_torque,
-                                     double max_engine_torque,
-                                     double max_a_lon) {
+                                     double max_engine_torque) {
   // Diagnostic: {curvature, a_lat_max}
-  std_msgs::msg::Float32MultiArray diagnostic;
-  diagnostic.data.push_back(is_traction_activated);
-  diagnostic.data.push_back(is_ABS_activated);
-  diagnostic.data.push_back(tire_slip_ratio);
-  diagnostic.data.push_back(desired_engine_torque);
-  diagnostic.data.push_back(max_engine_torque);
-  diagnostic.data.push_back(max_a_lon);
+  nif_msgs::msg::AccelControlStatus diagnostic;
+
+  diagnostic.stamp = this->now();
+
+  diagnostic.is_engine_based = is_engine_based;
+  diagnostic.traction_activated = traction_activated;
+  diagnostic.abs_activated = abs_activated;
+  diagnostic.max_a_lon = max_a_lon;
+
+  diagnostic.tire_slip_ratio = tire_slip_ratio;
+  diagnostic.desired_engine_torque = desired_engine_torque;
+  diagnostic.max_engine_torque = max_engine_torque;
 
   pubDiagnostic_->publish(diagnostic);
 }
@@ -406,8 +411,9 @@ void AccelControl::receiveDesAccel(
   pubGearCmd_->publish(this->gear_cmd); // send gear command
 
   // publish diagnostic message
-  publishDiagnostic(m_traction_activated, m_ABS_activated, m_sigma,
-                    m_desired_engine_torque, m_max_engine_torque, m_max_a_lon);
+  publishDiagnostic(engine_based_throttle_enabled_, m_traction_activated,
+                    m_abs_activated, m_max_a_lon, m_sigma,
+                    m_desired_engine_torque, m_max_engine_torque);
 }
 
 void AccelControl::receivePtReport(
@@ -437,8 +443,8 @@ void AccelControl::receiveImu(const sensor_msgs::msg::Imu::SharedPtr msg) {
   kf_a_lat.predict(dt);
   kf_a_lon.predict(dt);
   // - get filtered values
-  m_a_x_kf = kf_a_lon.get();
-  m_a_y_kf = kf_a_lat.get();
+  m_a_lon_kf = kf_a_lon.get();
+  m_a_lat_kf = kf_a_lat.get();
   // - correction
   kf_a_lon.correct((float)(msg->linear_acceleration.x));
   kf_a_lat.correct((float)(msg->linear_acceleration.y));

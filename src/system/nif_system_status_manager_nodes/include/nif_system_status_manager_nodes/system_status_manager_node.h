@@ -46,19 +46,12 @@ private:
 
   common::SystemStatusCode system_status_code = common::SYSTEM_NOT_INITIALIZED;
 
-  // TODO : finalize RaceControlState class
-  /**
-  * Race Control input from the race control interface.
-  * It's automatically stored by its callback along with race_control_status_update_time.
-  */
-  nif::common::msgs::RCFlagSummary rc_flag_summary;
-
   /**
   * Race Control input last update time.
   */
-  rclcpp::Time rc_flag_summary_update_time;
+  rclcpp::Time mission_update_time;
 
-  bool has_rc_flag_summary = false;
+  bool has_mission = false;
 
   unsigned int mode = 255;
 //  TODO make parameter
@@ -88,7 +81,7 @@ private:
 
   rclcpp::Duration timeout_bestpos_diff_age = rclcpp::Duration(2, 0);
   rclcpp::Duration timeout_bestpos_last_update = rclcpp::Duration(0, 500000);
-  rclcpp::Duration timeout_rc_flag_summary = rclcpp::Duration(10, 0);
+  rclcpp::Duration timeout_mission = rclcpp::Duration(1, 0);
   rclcpp::Duration timeout_localization_error = rclcpp::Duration(0, 500000000);
 
   // Mission and safe localization parameters
@@ -117,7 +110,7 @@ private:
   rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr localization_error_sub;
   std::vector<
       rclcpp::Subscription<nif::common::msgs::NodeStatus>::SharedPtr> node_statuses_subs;
-  rclcpp::Subscription<nif::common::msgs::RCFlagSummary>::SharedPtr rc_flag_summary_sub;
+  rclcpp::Subscription<nif::common::msgs::MissionStatus>::SharedPtr mission_status_sub;
   rclcpp::Subscription<novatel_oem7_msgs::msg::BESTPOS>::SharedPtr subscriber_bestpos;
   rclcpp::Subscription<novatel_oem7_msgs::msg::INSSTDEV>::SharedPtr subscriber_insstdev;
 
@@ -153,7 +146,7 @@ private:
 
   void joystickCallback(const nif::common::msgs::OverrideControlCmd::SharedPtr msg);
   void localizationErrorCallback(const std_msgs::msg::Float64::SharedPtr msg);
-  void RCFlagSummaryCallback(const nif::common::msgs::RCFlagSummary::UniquePtr msg);
+  void missionCallback(const nif::common::msgs::MissionStatus::UniquePtr msg);
 
   void receive_bestpos(const novatel_oem7_msgs::msg::BESTPOS::SharedPtr msg) {
       this->best_pos_lat_stdev_ = msg->lat_stdev;
@@ -213,10 +206,18 @@ private:
   parametersCallback(
           const std::vector<rclcpp::Parameter> &vector);
 
-  rclcpp::Duration node_inactive_timeout = rclcpp::Duration(1, 0);
+  rclcpp::Duration timeout_node_inactive = rclcpp::Duration(1, 0);
   OnSetParametersCallbackHandle::SharedPtr parameters_callback_handle;
 
   double getMissionMaxVelocityMps(nif_msgs::msg::MissionStatus::_mission_status_code_type);
+
+  /**
+   * Limit the maximum speed according to the current localization error.
+   * 
+   * @param max_vel_mps maximum allowed speed in m/s
+   * @return max_vel_mps linearly clipped according to the last localization error and the defined set of parameters.
+  **/ 
+  void processSafelocVelocity(double & max_vel_mps);
 };
 
 } // namespace system

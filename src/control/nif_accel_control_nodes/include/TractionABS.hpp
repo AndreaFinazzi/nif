@@ -52,7 +52,7 @@ public:
 
   /// variables for diagnostic
   double m_traction_activated = 0;
-  double m_ABS_activated = 0;
+  double m_abs_activated = 0;
 
   double tractionControl(double throttle_cmd, double current_velocity,
                          double sigma);

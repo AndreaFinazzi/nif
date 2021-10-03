@@ -155,6 +155,7 @@ private:
   double count_threshold_;
   double normal_angle_thres_;
   int ransac_pts_thresh_;
+  double m_ransacDistanceThres;
 
   double inner_bound_distance;
   double outer_bound_distance;
@@ -219,11 +220,23 @@ private:
                   double in_front_upper_threshold, double in_rear_upper_threshold,
                   nav_msgs::msg::Path& path_msg_out, cv::Mat& PolyCoefficient);
 
+  void CubicSpliner(
+      pcl::PointCloud<pcl::PointXYZI>::Ptr cloudIn,
+      const boost::optional<Eigen::Vector4f> wall_plane_coeff,
+      double in_front_upper_threshold, double in_rear_upper_threshold,
+      nav_msgs::msg::Path& path_msg_out, cv::Mat& PolyCoefficient, int& poly_order);
+
   cv::Mat polyfit(std::vector<cv::Point2f> &in_point, int n);
 
   void EstimatePredictivePath(
       const boost::optional<Eigen::Vector4f> wall_plane_coeff,
       const cv::Mat &PolyCoefficient, nav_msgs::msg::Path &path_msg_out,
+      const double &target_space_to_wall);
+
+  void EstimatePredictivePath(
+      const boost::optional<Eigen::Vector4f> wall_plane_coeff,
+      const cv::Mat &PolyCoefficient, const int& poly_order,
+      nav_msgs::msg::Path &path_msg_out,
       const double &target_space_to_wall);
 };
 } // namespace perception

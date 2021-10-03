@@ -51,6 +51,11 @@ public:
                         nif::common::constants::KPH2MS;
   }
 
+  void
+  directDesiredVelocityCallback(const std_msgs::msg::Float32::SharedPtr msg) {
+    direct_desired_velocity_ = msg->data;
+  }
+
   void steeringCallback(const std_msgs::msg::Float32::SharedPtr msg) {
     override_steering_target_ = msg->data;
   }
@@ -92,6 +97,9 @@ private:
   rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr desired_vx_sub_;
   rclcpp::Subscription<raptor_dbw_msgs::msg::WheelSpeedReport>::SharedPtr
       velocity_sub_;
+  rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr
+      direct_desired_velocity_sub;
+
   rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr steering_sub_;
   rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr throttle_sub_;
   rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr brake_sub_;
@@ -107,6 +115,7 @@ private:
 
   //! Current Vehicle State
   double current_speed_ms_;
+  double direct_desired_velocity_;
   uint8_t current_gear_;
   uint8_t current_engine_speed_ = 0.0;
   bool engine_running_;
@@ -139,6 +148,7 @@ private:
   double des_accel_max_da_dt_;
   double m_path_min_length_m;
   bool invert_steering_;
+  bool m_use_mission_max_vel_;
 
   double secs(rclcpp::Time t) {
     return static_cast<double>(t.seconds()) +

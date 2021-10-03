@@ -31,6 +31,12 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
           std::bind(&ControlLQRNode::velocityCallback, this,
                     std::placeholders::_1));
 
+  direct_desired_velocity_sub =
+      this->create_subscription<std_msgs::msg::Float32>(
+          "velocity_planner/des_vel", nif::common::constants::QOS_CONTROL_CMD,
+          std::bind(&ControlLQRNode::directDesiredVelocityCallback, this,
+                    std::placeholders::_1));
+
   this->declare_parameter("lqr_config_file", "");
   // Automatically boot with lat_autonomy_enabled
   //  this->declare_parameter("lat_autonomy_enabled", false);
@@ -55,10 +61,12 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
   // Limit the max change in the des_accel signal over time
   this->declare_parameter("des_accel_max_da_dt", 5.0);
   // Minimum length of the reference path
-  this->declare_parameter("path_min_length_m", 3.0);
+  this->declare_parameter("path_min_length_m", 4.0);
 
   //  Invert steering command for simulation
   this->declare_parameter("invert_steering", false);
+  // Use mission status maximum desired velocity
+  this->declare_parameter("use_mission_max_vel", true);
 
   // Create Joint LQR Controller from yaml file
   std::string lqr_config_file =
@@ -90,6 +98,7 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
       this->get_parameter("steering_max_ddeg_dt").as_double();
   des_accel_max_da_dt_ = this->get_parameter("des_accel_max_da_dt").as_double();
   invert_steering_ = this->get_parameter("invert_steering").as_bool();
+  m_use_mission_max_vel_ = this->get_parameter("use_mission_max_vel").as_bool();
   m_path_min_length_m = this->get_parameter("path_min_length_m").as_double();
 
   if (odometry_timeout_sec_ <= 0. || path_timeout_sec_ <= 0.) {
@@ -187,6 +196,11 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
         (this->now() - this->getDesiredVelocityUpdateTime() <=
          rclcpp::Duration(1, 0))) {
       l_desired_velocity = this->getDesiredVelocity()->data;
+    }
+    if (!m_use_mission_max_vel_) {
+      // if not using mission status maximum velocity,
+      // directly use des_vel from velocity planner
+      l_desired_velocity = direct_desired_velocity_;
     }
 
     auto goal = joint_lqr::utils::LQRGoal(
