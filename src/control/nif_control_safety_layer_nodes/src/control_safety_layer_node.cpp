@@ -52,7 +52,11 @@ void nif::control::ControlSafetyLayerNode::run() {
         this->counter_hb = 0;
     }
 
+    this->control_cmd.header.stamp = this->now();
+    
     bool is_overriding_steering = false;
+    bool is_buffer_empty = this->control_buffer.empty();
+    
     nif::common::NodeStatusCode node_status = common::NODE_ERROR;
 
     if (    this->emergency_lane_enabled ||
@@ -61,10 +65,9 @@ void nif::control::ControlSafetyLayerNode::run() {
             this->now() - this->getSystemStatusUpdateTime() >
             rclcpp::Duration::from_seconds(0.5))
     {
-        this->control_cmd.header.stamp = this->now();
 //      TODO EMERGENCY LANE HANDLING
-        double error = emergencyVelocityError();
-        double safe_brake_cmd = this->emergencyBrakeCmd(error);
+        double velocity_error = emergencyVelocityError();
+        double safe_brake_cmd = this->emergencyBrakeCmd(velocity_error);
 //        RCLCPP_INFO(this->get_logger(), "safe_brake_cmd: %f", safe_brake_cmd);
         safe_brake_cmd = std::max(safe_brake_cmd,
                                   static_cast<double>(this->override_control_cmd.braking_control_cmd.data));
@@ -85,10 +88,19 @@ void nif::control::ControlSafetyLayerNode::run() {
             this->control_cmd.steering_control_cmd =
                     this->override_control_cmd.steering_control_cmd;
             is_overriding_steering = true;
-        } else if ( false && this->has_perception_steering && 
+
+        } else if ( !this->emergency_buffer_empty   &&
+                    !is_buffer_empty                &&
+                    !this->getSystemStatus().health_status.localization_failure ) {
+            
+                auto top_control_cmd = std::move(*this->control_buffer.top());
+                this->control_cmd.steering_control_cmd = top_control_cmd.steering_control_cmd;
+
+        } else if ( this->has_perception_steering && 
                     this->now() - this->perception_steering_last_update < rclcpp::Duration(1, 0)) {
             this->control_cmd.steering_control_cmd.data =
                 this->perception_steering_cmd;
+
         } else {
             this->control_cmd.steering_control_cmd.data = 0.0;
         }
@@ -122,7 +134,6 @@ void nif::control::ControlSafetyLayerNode::run() {
         // TODO If override.brake is greater than 0.0, use it
         // TODO If autonomous_mode is disabled, override has full control
         // RE-STAMP
-        this->control_cmd.header.stamp = this->now();
         this->control_cmd.header.frame_id = this->getBodyFrameId();
 
         if (!lat_autonomy_enabled ||
@@ -136,7 +147,7 @@ void nif::control::ControlSafetyLayerNode::run() {
 
         try {
             if (lat_autonomy_enabled || long_autonomy_enabled) {
-                if (!this->control_buffer.empty()) {
+                if (!is_buffer_empty) {
                     auto top_control_cmd = std::move(*this->control_buffer.top());
                     this->buffer_empty_counter = 0;
 
