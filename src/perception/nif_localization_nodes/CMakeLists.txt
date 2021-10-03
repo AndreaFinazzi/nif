@@ -76,6 +76,9 @@ target_link_libraries(${PROJECT_NAME}_exe
         globalmap_loader
 )
 
+ament_auto_add_executable(map_generator_node
+        src/map_generator_node.cpp)
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
