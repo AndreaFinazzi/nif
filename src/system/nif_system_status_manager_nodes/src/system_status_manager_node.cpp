@@ -351,7 +351,7 @@ bool SystemStatusManagerNode::localizationOk() {
     bool bestpos_diff_age_trigger = (this->bestpos_diff_age_s > this->timeout_bestpos_diff_age.seconds() );
     bool bestpos_last_update_trigger = !this->has_bestpos || (( this->now() - this->bestpos_last_update ) > this->timeout_bestpos_last_update );
 
-    bool loc_error_trigger = !this->has_localization_error || ( this->localization_error > this->safeloc_threshold_stop );
+    bool loc_error_trigger = !this->hasLocalizationError() || ( this->localization_error > this->safeloc_threshold_stop );
 
     return (!has_bestpos_trigger && !bestpos_diff_age_trigger && !bestpos_last_update_trigger && !loc_error_trigger);
 }
@@ -428,8 +428,7 @@ SystemStatusManagerNode::parametersCallback(
 
 void SystemStatusManagerNode::processSafelocVelocity(double & max_vel_mps) 
 {
-    if (!this->has_localization_error ||
-        this->now() - this->localization_error_last_update > this->timeout_localization_error)
+    if (!this->hasLocalizationError())
         {
             max_vel_mps = this->velocity_zero;
             RCLCPP_ERROR_THROTTLE(this->get_logger(), *this->get_clock(), 1000, "Data timeout in SystemStatusManagerNode::processSafelocVelocity();");
@@ -445,4 +444,9 @@ void SystemStatusManagerNode::processSafelocVelocity(double & max_vel_mps)
 
     if (max_vel_mps < this->velocity_zero)
         max_vel_mps = this->velocity_zero;
+}
+
+bool SystemStatusManagerNode::hasLocalizationError() {
+    return  (this->has_localization_error &&
+            (this->now() - this->localization_error_last_update <= this->timeout_localization_error));
 }

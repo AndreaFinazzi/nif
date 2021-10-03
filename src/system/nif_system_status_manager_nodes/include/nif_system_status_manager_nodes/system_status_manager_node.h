@@ -74,7 +74,7 @@ private:
 
   double localization_error = 1000.0;
   bool has_localization_error = false;
-  
+
   bool has_bestpos = false;
   rclcpp::Time bestpos_last_update = rclcpp::Time();
   rclcpp::Time localization_error_last_update = rclcpp::Time();
@@ -91,6 +91,7 @@ private:
   double safeloc_velocity_slow_down_max = 0.0;
   double safeloc_velocity_slow_down_min = 0.0;
 
+  bool hasLocalizationError();
 
   /**
    * SystemStatus publisher. Publishes the latest system_status message, after
