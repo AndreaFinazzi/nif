@@ -59,6 +59,9 @@ struct convert<BBox> {
         out.x_max = node[2].as<double>();
         out.y_max = node[3].as<double>();
 
+        assert(out.x_min < out.x_max);
+        assert(out.y_min < out.y_max);
+
         RCLCPP_INFO(LOGGER, "Loaded BBox.");
         return true;
     }

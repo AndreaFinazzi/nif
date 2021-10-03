@@ -114,8 +114,46 @@ MissionStatus::_mission_status_code_type MissionManagerNode::getMissionStatusCod
       break;
 
     case RCFlagSummary::VEH_FLAG_BLACK:
-      return MissionStatus::MISSION_PIT_STANDBY;
-      break;
+        switch (this->rc_flag_summary.track_flag)
+        {
+        case RCFlagSummary::TRACK_FLAG_RED: // TODO ASK TO RC WHAT SHOULD HAPPEN HERE
+            if (is_system_startup)
+            {
+                return MissionStatus::MISSION_DEFAULT; // No missions on startup
+            } else {
+                return MissionStatus::MISSION_COMMANDED_STOP;
+            }
+            break;
+
+        case RCFlagSummary::TRACK_FLAG_ORANGE:
+            if (is_system_startup && this->missionIs(MissionStatus::MISSION_DEFAULT))
+            {
+                return MissionStatus::MISSION_PIT_INIT;
+
+            } else if (this->missionIs(MissionStatus::MISSION_PIT_INIT)) {
+                is_system_startup = false;
+                return MissionStatus::MISSION_PIT_STANDBY;
+    
+            } else if (this->missionIs(MissionStatus::MISSION_INIT)) {
+                is_system_startup = false;
+                return MissionStatus::MISSION_STANDBY;
+
+            } else if ( this->missionIs(MissionStatus::MISSION_STANDBY) ||
+                        this->missionIs(MissionStatus::MISSION_PIT_STANDBY)) {
+                return this->mission_status_msg.mission_status_code;
+
+            } else {
+                return MissionStatus::MISSION_STANDBY;
+            }
+            break;
+          
+        default:
+            return MissionStatus::MISSION_PIT_STANDBY;
+
+        }
+        
+        return MissionStatus::MISSION_PIT_STANDBY;
+        break;
     
     case RCFlagSummary::VEH_FLAG_CHECKERED:
       return MissionStatus::MISSION_PIT_STANDBY;
@@ -177,6 +215,8 @@ MissionStatus::_mission_status_code_type MissionManagerNode::getMissionVehFlagNu
             if (this->missionIs(MissionStatus::MISSION_PIT_STANDBY) || 
                 this->missionIs(MissionStatus::MISSION_PIT_OUT)) {
                 return MissionStatus::MISSION_PIT_TO_TRACK;
+            } else if (this->missionIs(MissionStatus::MISSION_PIT_IN)) {
+                return MissionStatus::MISSION_PIT_STANDBY; 
             } else {
                 return MissionStatus::MISSION_SLOW_DRIVE;
             }

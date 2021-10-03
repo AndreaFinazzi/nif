@@ -379,7 +379,7 @@ def generate_launch_description():
         package='nif_multilayer_planning_nodes',
         executable='nif_multilayer_planning_nodes_exe',
         output={
-            'stdout': 'log',
+            'stdout': 'screen',
             'stderr': 'screen',
         },
         remappings={
