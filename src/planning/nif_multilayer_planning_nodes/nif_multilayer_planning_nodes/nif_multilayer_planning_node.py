@@ -463,125 +463,6 @@ class GraphBasedPlanner(rclpy.node.Node):
             self.local_maptrack_inglobal_pub.publish(pit_in_path_msg)
             return
 
-            # TODO : parameterize this look ahead index
-            # TODO : collision checking will handle by the tracjectory supervisor near soon
-            # look_ahead_ind = 10
-            # idx = None
-            # if nearest_ind + look_ahead_ind < len(self.pit_wpt):
-            #     idx = nearest_ind + look_ahead_ind
-            # else:
-            #     idx = nearest_ind + look_ahead_ind - len(self.pit_wpt)
-            # goal_pt_inglobal_x = self.pit_wpt[idx][0]
-            # goal_pt_inglobal_y = self.pit_wpt[idx][1]
-            # goal_pt_inglobal_yaw_rad = self.pit_wpt[idx][2]
-            # self.gen_local_path_using_global_goal_pt(cur_ego_pose_x= self.current_veh_odom.pose.pose.position.x,
-            #                                         cur_ego_pose_y= self.current_veh_odom.pose.pose.position.y,
-            #                                         cur_ego_pose_yaw_rad=self.current_veh_odom_yaw_rad,
-            #                                         cur_speed_mps=self.vel_est, cur_acc_mpss= 0.0,
-            #                                         goal_pose_x_global=goal_pt_inglobal_x,
-            #                                         goal_pose_y_global=goal_pt_inglobal_y,
-            #                                         goal_pose_yaw_rad_global=goal_pt_inglobal_yaw_rad,
-            #                                         goal_speed_mps=self.vel_est,goal_acc_mpss=0.0) # stored in self.pit_wpt_local
-            #
-            # pit_collision_checked_local_path = Path()
-            # pit_collision_checked_local_path.header.frame_id = "base_link"
-            # # Collision checking with the cost map
-            #
-            # if self.costmap is not None and self.sys_var_track != 'LG_SVL':
-            #     for i in range(len(self.pit_wpt_local)):
-            #         wpt_local_x = self.pit_wpt_local[i][0]
-            #         wpt_local_y = self.pit_wpt_local[i][1]
-            #         wpt_local_yaw_rad = self.pit_wpt_local[i][2]
-            #         # ##################
-            #         #  Body x,y to Grid index
-            #         # ##################
-            #         res = self.costmap.info.resolution.data
-            #         min_x = self.costmap.info.origin.position.x
-            #         min_y = self.costmap.info.origin.position.y
-            #         grid_x = math.floor((wpt_local_x - min_x) / res)
-            #         grid_y = math.floor((wpt_local_y - min_y) / res)
-            #         if (grid_x > self.costmap.info.width or grid_x < 0
-            #                 or grid_y > self.costmap.info.height or grid_y < 0):
-            #             continue
-            #         grid_data_idx = grid_y * self.costmap.info.width + grid_x
-            #         grid_cost = self.costmap.data[grid_data_idx].data
-            #
-            #         if grid_cost < self.blocked_cost_thres:
-            #             pose = PoseStamped()
-            #             pose.pose.position.x = wpt_local_x
-            #             pose.pose.position.y = wpt_local_y
-            #             quat = self.euler_to_quaternion([wpt_local_yaw_rad,0.0,0.0])
-            #             pose.pose.orientation.x = quat[0]
-            #             pose.pose.orientation.y = quat[1]
-            #             pose.pose.orientation.z = quat[2]
-            #             pose.pose.orientation.w = quat[3]
-            #             pit_collision_checked_local_path.poses.append(pose)
-            #         else:
-            #             break
-            #     self.pit_wpt_inbody_pub.publish(pit_collision_checked_local_path)
-
-            # ---------------------------------------------------
-            # ---------------------------------------------------
-            # V2 : Without stitching, publish entire waypoint for pit-in (deprecated, not tested)
-            # ---------------------------------------------------
-            # ---------------------------------------------------
-            # nearest_dist_list, nearest_ind_list = self.pit_tree.query([[self.current_veh_odom.pose.pose.position.x,
-            #                                                          self.current_veh_odom.pose.pose.position.y]], k=1)
-            # nearest_ind = nearest_ind_list[0][0]
-            # self.pit_wpt_msg.header.stamp = self.get_clock().now().to_msg()
-
-            # for i in range(self.pit_maptrack_len):
-            #     if nearest_ind + i < len(self.pit_wpt):
-            #         idx = nearest_ind + i
-            #         self.pit_wpt_msg.poses[i].pose.position.x = self.pit_wpt[idx][0]
-            #         self.pit_wpt_msg.poses[i].pose.position.y = self.pit_wpt[idx][1]
-            #         self.pit_wpt_msg.poses[i].pose.orientation = self.euler_to_quaternion( [ self.pit_wpt[idx][2] , 0.0, 0.0 ] ) # yaw, pitch, roll
-            #     else:
-            #         idx = nearest_ind + i - len(self.pit_wpt)
-            #         self.pit_wpt_msg.poses[i].pose.position.x = self.pit_wpt[idx][0]
-            #         self.pit_wpt_msg.poses[i].pose.position.y = self.pit_wpt[idx][1]
-            #         self.pit_wpt_msg.poses[i].pose.orientation = self.euler_to_quaternion( [ self.pit_wpt[idx][2] , 0.0, 0.0 ] ) # yaw, pitch, roll
-
-            # self.pit_wpt_inglobal_pub.publish(self.pit_wpt_msg)
-            # return
-
-            # ---------------------------------------------------
-            # ---------------------------------------------------
-            # OLD VERSION WHEN WE CONSIDERED ABOUT THE STITCHGING (deprecated)
-            # ---------------------------------------------------
-            # ---------------------------------------------------
-            # if self.pit_in_wpt_gen_first_call:
-            #     self.pit_in_wpt_gen_first_call = False
-            #     self.pit_out_wpt_gen_first_call = True
-
-            #     # cur_ego_yaw_rad = self.yaw_from_ros_quaternion(self.current_veh_odom.pose.pose.orientation)
-            #     # self.stitch_pit_in_waypoint(self.current_veh_odom.pose.pose.position.x,self.current_veh_odom.pose.pose.position.y,cur_ego_yaw_rad,self.vel_est,cur_acc_mpss=0.0,
-            #     #                             goal_pose_x=self.pit_in_wpt[0][0], goal_pose_y=self.pit_in_wpt[0][1], goal_pose_yaw_rad=self.pit_in_wpt[0][2],goal_speed_mps=self.vel_est, goal_acc_mpss = 0.0,
-            #     #                             max_acc_mpss=1.0, max_jerk= 1.0, dt=0.1)
-
-            #     # self.pit_in_tree = KDTree(self.pit_in_wpt_stitched_xy)
-            #     # self.pit_in_wpt_msg.header.stamp = self.get_clock().now().to_msg()
-
-            #     # for i in range(len(self.pit_in_wpt_stitched) - nearest_ind):
-            #     #     self.pit_in_wpt_msg.poses[i].pose.position.x = self.pit_in_wpt[nearest_ind[0][0] + i][0]
-            #     #     self.pit_in_wpt_msg.poses[i].pose.position.y = self.pit_in_wpt[nearest_ind[0][0] + i][1]
-            #     #     self.pit_in_wpt_msg.poses[i].pose.orientation = self.euler_to_quaternion( [ self.pit_in_wpt[nearest_ind[0][0] + i][2] , 0.0, 0.0 ] )
-            #     # self.pit_in_wpt_msg.poses = self.pit_in_wpt_msg.poses[: len(self.pit_in_wpt_stitched) - nearest_ind]
-            #     # self.local_maptrack_inglobal_pub.publish(self.pit_in_wpt_msg)
-            #     # return
-            # else:
-            #     nearest_dist, nearest_ind = self.pit_in_tree.query([[self.current_veh_odom.pose.pose.position.x,
-            #                                                          self.current_veh_odom.pose.pose.position.y]], k=1)
-            #     self.pit_in_wpt_msg.header.stamp = self.get_clock().now().to_msg()
-            #     # for i in range(self.pit_in_maptrack_len):
-            #     for i in range(len(self.pit_in_wpt_stitched) - nearest_ind):
-            #         self.pit_in_wpt_msg.poses[i].pose.position.x = self.pit_in_wpt[nearest_ind[0][0] + i][0]
-            #         self.pit_in_wpt_msg.poses[i].pose.position.y = self.pit_in_wpt[nearest_ind[0][0] + i][1]
-            #         self.pit_in_wpt_msg.poses[i].pose.orientation = self.euler_to_quaternion( [ self.pit_in_wpt[nearest_ind[0][0] + i][2] , 0.0, 0.0 ] )
-            #     self.pit_in_wpt_msg.poses = self.pit_in_wpt_msg.poses[: len(self.pit_in_wpt_stitched) - nearest_ind]
-            #     self.local_maptrack_inglobal_pub.publish(self.pit_in_wpt_msg)
-            #     return
-
         elif self.mission_code == MissionStatus.MISSION_STANDBY:
 
             self.out_of_track_graph = self.ltpl_obj.set_startpos(pos_est=self.pos_est,
@@ -667,24 +548,25 @@ class GraphBasedPlanner(rclpy.node.Node):
                     pose.pose.position.y = maptrack_inglobal[0][idx][2]  # for y
 
                     # TODO implement orientation comp in offline part
-                    # y_dot = (pose.pose.position.y - self.last_pose.pose.position.y) / self.pose_resolution
-                    # x_dot = (pose.pose.position.x - self.last_pose.pose.position.x) / self.pose_resolution
-                    # yaw = math.atan2(y_dot, x_dot)
-                    # pose.pose.orientation.x = 0.
-                    # pose.pose.orientation.z = math.sin(yaw / 2.)
-                    # pose.pose.orientation.y = 0.
-                    # pose.pose.orientation.w = math.cos(yaw / 2.)
+                    y_dot = (pose.pose.position.y - self.last_pose.pose.position.y) / self.pose_resolution
+                    x_dot = (pose.pose.position.x - self.last_pose.pose.position.x) / self.pose_resolution
+                    yaw = math.atan2(y_dot, x_dot)
+                    pose.pose.orientation.x = 0.
+                    pose.pose.orientation.z = math.sin(yaw / 2.)
+                    pose.pose.orientation.y = 0.
+                    pose.pose.orientation.w = math.cos(yaw / 2.)
 
-                    quat = self.euler_to_quaternion([maptrack_inglobal[0][idx][3],0.0,0.0])
-                    pose.pose.orientation.x = quat[0]
-                    pose.pose.orientation.y = quat[1]
-                    pose.pose.orientation.z = quat[2]
-                    pose.pose.orientation.w = quat[3]
+                    # NOTE : Graph planner uses different heading coordinate
+                    # quat = self.euler_to_quaternion([maptrack_inglobal[0][idx][3] - np.pi/2,0.0,0.0])
+                    # pose.pose.orientation.x = quat[0]
+                    # pose.pose.orientation.y = quat[1]
+                    # pose.pose.orientation.z = quat[2]
+                    # pose.pose.orientation.w = quat[3]
 
                     # self.get_logger().debug("%f, %f" % (pose.pose.position.x, pose.pose.position.y))
                     self.last_pose = pose
 
-                # self.msg.poses[0].pose.orientation = self.msg.poses[1].pose.orientation
+                self.msg.poses[0].pose.orientation = self.msg.poses[1].pose.orientation
                 self.local_maptrack_inglobal_pub.publish(self.msg)
 
 
@@ -732,128 +614,6 @@ class GraphBasedPlanner(rclpy.node.Node):
                 pose.pose.orientation.w = quat[3]
                 pit_in_path_msg.poses.append(pose)
             self.local_maptrack_inglobal_pub.publish(pit_in_path_msg)
-
-            
-            # TODO: parameterize this look ahead index
-            # look_ahead_ind = 10
-            # idx = None
-            # if nearest_ind + look_ahead_ind < len(self.pit_wpt):
-            #     idx = nearest_ind + look_ahead_ind
-            # else:
-            #     idx = nearest_ind + look_ahead_ind - len(self.pit_wpt)
-            # goal_pt_inglobal_x = self.pit_wpt[idx][0]
-            # goal_pt_inglobal_y = self.pit_wpt[idx][1]
-            # goal_pt_inglobal_yaw_rad = self.pit_wpt[idx][2]
-            # self.gen_local_path_using_global_goal_pt(cur_ego_pose_x= self.current_veh_odom.pose.pose.position.x,
-            #                                         cur_ego_pose_y= self.current_veh_odom.pose.pose.position.y,
-            #                                         cur_ego_pose_yaw_rad=self.current_veh_odom_yaw_rad,
-            #                                         cur_speed_mps=self.vel_est, cur_acc_mpss= 0.0,
-            #                                         goal_pose_x_global=goal_pt_inglobal_x,
-            #                                         goal_pose_y_global=goal_pt_inglobal_y,
-            #                                         goal_pose_yaw_rad_global=goal_pt_inglobal_yaw_rad,
-            #                                         goal_speed_mps=self.vel_est,goal_acc_mpss=0.0) # stored in self.pit_wpt_local
-            #
-            # pit_collision_checked_local_path = Path()
-            # pit_collision_checked_local_path.header.frame_id = "base_link"
-            # # Collision checking with the cost map
-            #
-            # if self.costmap is not None and self.sys_var_track != 'LG_SVL':
-            #     for i in range(len(self.pit_wpt_local)):
-            #         wpt_local_x = self.pit_wpt_local[i][0]
-            #         wpt_local_y = self.pit_wpt_local[i][1]
-            #         wpt_local_yaw_rad = self.pit_wpt_local[i][2]
-            #         # ##################
-            #         #  Body x,y to Grid index
-            #         # ##################
-            #         res = self.costmap.info.resolution.data
-            #         min_x = self.costmap.info.origin.position.x
-            #         min_y = self.costmap.info.origin.position.y
-            #         grid_x = math.floor((wpt_local_x - min_x) / res)
-            #         grid_y = math.floor((wpt_local_y - min_y) / res)
-            #         if (grid_x > self.costmap.info.width or grid_x < 0
-            #                 or grid_y > self.costmap.info.height or grid_y < 0):
-            #             continue
-            #         grid_data_idx = grid_y * self.costmap.info.width + grid_x
-            #         grid_cost = self.costmap.data[grid_data_idx].data
-            #
-            #         if grid_cost < self.blocked_cost_thres:
-            #             pose = PoseStamped()
-            #             pose.pose.position.x = wpt_local_x
-            #             pose.pose.position.y = wpt_local_y
-            #             quat = self.euler_to_quaternion([wpt_local_yaw_rad,0.0,0.0])
-            #             pose.pose.orientation.x = quat[0]
-            #             pose.pose.orientation.y = quat[1]
-            #             pose.pose.orientation.z = quat[2]
-            #             pose.pose.orientation.w = quat[3]
-            #             pit_collision_checked_local_path.poses.append(pose)
-            #         else:
-            #             break
-            #     self.pit_wpt_inbody_pub.publish(pit_collision_checked_local_path)
-
-
-            # ---------------------------------------------------
-            # ---------------------------------------------------
-            # V2 : Without stitching, publish entire waypoint for pit-in (deprecated, not tested)
-            # ---------------------------------------------------
-            # ---------------------------------------------------
-            # nearest_dist_list, nearest_ind_list = self.pit_tree.query([[self.current_veh_odom.pose.pose.position.x,
-            #                                                          self.current_veh_odom.pose.pose.position.y]], k=1)
-            # nearest_ind = nearest_ind_list[0][0]
-            # self.pit_wpt_msg.header.stamp = self.get_clock().now().to_msg()
-
-            # for i in range(self.pit_maptrack_len):
-            #     if nearest_ind + i < len(self.pit_wpt):
-            #         idx = nearest_ind + i
-            #         self.pit_wpt_msg.poses[i].pose.position.x = self.pit_wpt[idx][0]
-            #         self.pit_wpt_msg.poses[i].pose.position.y = self.pit_wpt[idx][1]
-            #         self.pit_wpt_msg.poses[i].pose.orientation = self.euler_to_quaternion( [ self.pit_wpt[idx][2] , 0.0, 0.0 ] ) # yaw, pitch, roll
-            #     else:
-            #         idx = nearest_ind + i - len(self.pit_wpt)
-            #         self.pit_wpt_msg.poses[i].pose.position.x = self.pit_wpt[idx][0]
-            #         self.pit_wpt_msg.poses[i].pose.position.y = self.pit_wpt[idx][1]
-            #         self.pit_wpt_msg.poses[i].pose.orientation = self.euler_to_quaternion( [ self.pit_wpt[idx][2] , 0.0, 0.0 ] ) # yaw, pitch, roll
-
-            # self.pit_wpt_inglobal_pub.publish(self.pit_wpt_msg)
-            # return
-
-            # ---------------------------------------------------
-            # ---------------------------------------------------
-            # OLD VERSION WHEN WE CONSIDERED ABOUT THE STITCHGING (deprecated)
-            # ---------------------------------------------------
-            # ---------------------------------------------------
-            # if self.pit_out_wpt_gen_first_call:
-            #     self.pit_out_wpt_gen_first_call = False
-            #     self.pit_in_wpt_gen_first_call = True
-
-            #     cur_ego_yaw_rad = self.yaw_from_ros_quaternion(self.current_veh_odom.pose.pose.orientation)
-            #     self.stitch_pit_out_waypoint(self.current_veh_odom.pose.pose.position.x,self.current_veh_odom.pose.pose.position.y,cur_ego_yaw_rad,self.vel_est,cur_acc_mpss=0.0,
-            #                                 goal_pose_x=self.pit_out_wpt[0][0], goal_pose_y=self.pit_out_wpt[0][1], goal_pose_yaw_rad=self.pit_out_wpt[0][2],goal_speed_mps=self.vel_est, goal_acc_mpss = 0.0,
-            #                                 max_acc_mpss=1.0, max_jerk= 1.0, dt=0.1)
-
-            #     self.pit_out_tree = KDTree(self.pit_out_wpt_stitched_xy)
-
-            #     nearest_dist, nearest_ind = self.pit_out_tree.query([[self.current_veh_odom.pose.pose.position.x,
-            #                                                          self.current_veh_odom.pose.pose.position.y]], k=1)
-            #     self.pit_out_wpt_msg.header.stamp = self.get_clock().now().to_msg()
-            #     # for i in range(self.pit_in_maptrack_len):
-            #     for i in range(len(self.pit_out_wpt_stitched) - nearest_ind):
-            #         self.pit_out_wpt_msg.poses[i].pose.position.x = self.pit_out_wpt[nearest_ind[0][0] + i][0]
-            #         self.pit_out_wpt_msg.poses[i].pose.position.y = self.pit_out_wpt[nearest_ind[0][0] + i][1]
-            #         self.pit_out_wpt_msg.poses[i].pose.orientation = self.euler_to_quaternion( [ self.pit_out_wpt[nearest_ind[0][0] + i][2] , 0.0, 0.0 ] )
-            #     self.pit_out_wpt_msg.poses = self.pit_out_wpt_msg.poses[: len(self.pit_out_wpt_stitched) - nearest_ind]
-            #     self.local_maptrack_inglobal_pub.publish(self.pit_out_wpt_msg)
-            #     return
-            # else:
-            #     nearest_dist, nearest_ind = self.pit_out_tree.query([[self.current_veh_odom.pose.pose.position.x,
-            #                                                          self.current_veh_odom.pose.pose.position.y]], k=1)
-            #     self.pit_out_wpt_msg.header.stamp = self.get_clock().now().to_msg()
-            #     for i in range(len(self.pit_out_wpt_stitched) - nearest_ind):
-            #         self.pit_out_wpt_msg.poses[i].pose.position.x = self.pit_out_wpt[nearest_ind[0][0] + i][0]
-            #         self.pit_out_wpt_msg.poses[i].pose.position.y = self.pit_out_wpt[nearest_ind[0][0] + i][1]
-            #         self.pit_out_wpt_msg.poses[i].pose.orientation = self.euler_to_quaternion( [ self.pit_out_wpt[nearest_ind[0][0] + i][2] , 0.0, 0.0 ] )
-            #     self.pit_out_wpt_msg.poses = self.pit_out_wpt_msg.poses[: len(self.pit_out_wpt_stitched) - nearest_ind]
-            #     self.local_maptrack_inglobal_pub.publish(self.pit_out_wpt_msg)
-            #     return
 
         # TODO : Coordinate driving which means that there is no overtaking others. Maximum speed should be handeled in the velocity planner side as well.
         elif self.mission_code == MissionStatus.MISSION_SLOW_DRIVE:
@@ -906,25 +666,26 @@ class GraphBasedPlanner(rclpy.node.Node):
                 pose.header.stamp = self.get_clock().now().to_msg()
                 pose.pose.position.x = maptrack_inglobal[0][idx][1]  # for x
                 pose.pose.position.y = maptrack_inglobal[0][idx][2]  # for y
-                quat = self.euler_to_quaternion([maptrack_inglobal[0][idx][3],0.0,0.0])
-                pose.pose.orientation.x = quat[0]
-                pose.pose.orientation.y = quat[1]
-                pose.pose.orientation.z = quat[2]
-                pose.pose.orientation.w = quat[3]
+                # NOTE : Graph planner uses different heading coordinate
+                # quat = self.euler_to_quaternion([maptrack_inglobal[0][idx][3]- np.pi/2,0.0,0.0])
+                # pose.pose.orientation.x = quat[0]
+                # pose.pose.orientation.y = quat[1]
+                # pose.pose.orientation.z = quat[2]
+                # pose.pose.orientation.w = quat[3]
 
                 # TODO implement orientation comp in offline part
-                # y_dot = (pose.pose.position.y - self.last_pose.pose.position.y) / self.pose_resolution
-                # x_dot = (pose.pose.position.x - self.last_pose.pose.position.x) / self.pose_resolution
-                # yaw = math.atan2(y_dot, x_dot)
-                # pose.pose.orientation.x = 0.
-                # pose.pose.orientation.z = math.sin(yaw / 2.)
-                # pose.pose.orientation.y = 0.
-                # pose.pose.orientation.w = math.cos(yaw / 2.)
+                y_dot = (pose.pose.position.y - self.last_pose.pose.position.y) / self.pose_resolution
+                x_dot = (pose.pose.position.x - self.last_pose.pose.position.x) / self.pose_resolution
+                yaw = math.atan2(y_dot, x_dot)
+                pose.pose.orientation.x = 0.
+                pose.pose.orientation.z = math.sin(yaw / 2.)
+                pose.pose.orientation.y = 0.
+                pose.pose.orientation.w = math.cos(yaw / 2.)
 
                 # self.get_logger().debug("%f, %f" % (pose.pose.position.x, pose.pose.position.y))
                 self.last_pose = pose
 
-            # self.msg.poses[0].pose.orientation = self.msg.poses[1].pose.orientation
+            self.msg.poses[0].pose.orientation = self.msg.poses[1].pose.orientation
             self.local_maptrack_inglobal_pub.publish(self.msg)
         else:
             if planning_graph == False:
@@ -986,25 +747,26 @@ class GraphBasedPlanner(rclpy.node.Node):
                 pose.header.stamp = self.get_clock().now().to_msg()
                 pose.pose.position.x = maptrack_inglobal[0][idx][1]  # for x
                 pose.pose.position.y = maptrack_inglobal[0][idx][2]  # for y
-                quat = self.euler_to_quaternion([maptrack_inglobal[0][idx][3],0.0,0.0])
-                pose.pose.orientation.x = quat[0]
-                pose.pose.orientation.y = quat[1]
-                pose.pose.orientation.z = quat[2]
-                pose.pose.orientation.w = quat[3]
+                # NOTE : Graph planner uses different heading coordinate
+                # quat = self.euler_to_quaternion([maptrack_inglobal[0][idx][3] + np.pi/2,0.0,0.0])
+                # pose.pose.orientation.x = quat[0]
+                # pose.pose.orientation.y = quat[1]
+                # pose.pose.orientation.z = quat[2]
+                # pose.pose.orientation.w = quat[3]
 
                 # TODO implement orientation comp in offline part
-                # y_dot = (pose.pose.position.y - self.last_pose.pose.position.y) / self.pose_resolution
-                # x_dot = (pose.pose.position.x - self.last_pose.pose.position.x) / self.pose_resolution
-                # yaw = math.atan2(y_dot, x_dot)
-                # pose.pose.orientation.x = 0.
-                # pose.pose.orientation.z = math.sin(yaw / 2.)
-                # pose.pose.orientation.y = 0.
-                # pose.pose.orientation.w = math.cos(yaw / 2.)
+                y_dot = (pose.pose.position.y - self.last_pose.pose.position.y) / self.pose_resolution
+                x_dot = (pose.pose.position.x - self.last_pose.pose.position.x) / self.pose_resolution
+                yaw = math.atan2(y_dot, x_dot)
+                pose.pose.orientation.x = 0.
+                pose.pose.orientation.z = math.sin(yaw / 2.)
+                pose.pose.orientation.y = 0.
+                pose.pose.orientation.w = math.cos(yaw / 2.)
 
                 # self.get_logger().debug("%f, %f" % (pose.pose.position.x, pose.pose.position.y))
                 self.last_pose = pose
 
-            # self.msg.poses[0].pose.orientation = self.msg.poses[1].pose.orientation
+            self.msg.poses[0].pose.orientation = self.msg.poses[1].pose.orientation
             self.local_maptrack_inglobal_pub.publish(self.msg)
 
 def main(args=None):
