@@ -59,17 +59,23 @@ private:
 
 public:
   // Functions
+  double CalcTireSlipRatio(double v_front, double v_rear);
   bool CalcDynamicsFeasibility(nav_msgs::msg::Path path, double vx, double ax,
                                double yaw_rate, double current_steer,
                                double dt);
   double ComputeLateralAccelLimit(double a_lon, double a_lat, double yaw_rate,
                                   double current_steer,
                                   double current_velocity);
+  double ComputeLongitudinalAccelLimit(double a_lon, double a_lat);
+
   std::tuple<std::vector<double>, std::vector<double>, std::vector<double>>
   Compute4WheelLateralForceLimit(double a_lon, double a_lat);
+  std::tuple<std::vector<double>, std::vector<double>, std::vector<double>>
+  Compute4WheelLongitudinalForceLimit(double a_lon, double a_lat);
+
   std::tuple<double, double>
-  ComputeLateralForceLimit(double Fz,
-                           std::vector<std::vector<double>> table_FyMaxMin);
+  ComputeForceLimit(double Fz,
+                    std::vector<std::vector<double>> table_ForceMaxMin);
   double LinearInterpolation2D(double input_data,
                                std::vector<double> input_table,
                                std::vector<double> output_table);
@@ -86,6 +92,8 @@ public:
   // Load Tire data
   std::string pkg_install_dir =
       ament_index_cpp::get_package_prefix("nif_vehicle_dynamics_manager");
+
+  // - lateral tire force table w.r.t. tire load
   std::string m_tire_fz_fy_LF_path =
       pkg_install_dir + "/data/tire_fz_fy/Fz_FyMax_FyMin_LF.csv";
   std::string m_tire_fz_fy_RF_path =
@@ -104,28 +112,49 @@ public:
   std::vector<std::vector<double>> m_tire_fz_fy_RR =
       getTireFzFyDataFromCSV(m_tire_fz_fy_RR_path);
 
+  // - longitudinal tire force table w.r.t. tire load
+  std::string m_tire_fz_fx_LF_path =
+      pkg_install_dir + "/data/tire_fz_fx/Fz_FxMax_FxMin_LF.csv";
+  std::string m_tire_fz_fx_RF_path =
+      pkg_install_dir + "/data/tire_fz_fx/Fz_FxMax_FxMin_RF.csv";
+  std::string m_tire_fz_fx_LR_path =
+      pkg_install_dir + "/data/tire_fz_fx/Fz_FxMax_FxMin_LR.csv";
+  std::string m_tire_fz_fx_RR_path =
+      pkg_install_dir + "/data/tire_fz_fx/Fz_FxMax_FxMin_RR.csv";
+  std::vector<std::vector<double>> m_tire_fz_fx_LF =
+      getTireFzFyDataFromCSV(m_tire_fz_fx_LF_path); // [Fz, FxMax, FxMin]
+  std::vector<std::vector<double>> m_tire_fz_fx_RF =
+      getTireFzFyDataFromCSV(m_tire_fz_fx_RF_path);
+  std::vector<std::vector<double>> m_tire_fz_fx_LR =
+      getTireFzFyDataFromCSV(m_tire_fz_fx_LR_path);
+  std::vector<std::vector<double>> m_tire_fz_fx_RR =
+      getTireFzFyDataFromCSV(m_tire_fz_fx_RR_path);
+
   // Parameters
   double g = 9.80665;
   // Safety factor (aggressiveness; belief w.r.t. model parameters)
   double gamma = 0.4;
   // Vehicle Parameters (geometric)
-  double m_uns_f = 29.5;                    // unsprung mass front [kg]
-  double m_uns_r = 36;                      // unsprung mass rear [kg]
-  double m_s = 630;                         // sprung mass (base mass) [kg]
-  double m_total = m_s + m_uns_f + m_uns_r; // total mass [kg]
-  double r_wheel = 0.1905;                  // wheel radius [m]
-  double T_f = 1.638762;                    // track length of front axle [m]
-  double T_r = 1.523969;                    // track length of rear axle [m]
-  double L = 2.9718;                        // wheelbase[m]
-  double lf = L * 0.58;                     // length from front axle to COG [m]
-  double lr = L * 0.42;                     // length from COG to rear axle [m]
+  double m_uns_f = 29.5; // unsprung mass front [kg]
+  double m_uns_r = 36;   // unsprung mass rear [kg]
+  double m_s = 630;      // sprung mass (base mass) [kg]
+  double m_total = m_s + 2 * (m_uns_f + m_uns_r); // total mass [kg]
+  double r_wheel = 0.31;                          // wheel radius [m]
+  double T_f = 1.638762; // track length of front axle [m]
+  double T_r = 1.523969; // track length of rear axle [m]
+  double L = 2.9718;     // wheelbase[m]
+  double lf = L * 0.58;  // length from front axle to COG [m]
+  double lr = L * 0.42;  // length from COG to rear axle [m]
   double h_ms = 0.275;   // height of sprung mass (COG point) [m] 275 mm.
-  double h_rcf = 0.0476; // height of roll axis at front axie.
+  double h_rcf = 0.0775; // height of roll axis at front axie.
                          // assume (r_wheel / 4). [m] 47.6 mm.
-  double h_rcr = 0.0576; // height of roll axis at rear axie.
+  double h_rcr = 0.0875; // height of roll axis at rear axie.
                          // assume (h_rcf + 10 mm). [m] 57.6 mm.
   double steer_ratio =
       9.0; // steering wheel ratio (steer wheel angle : tire angle)
+
+  double scale_wheelspeed = 1.0177; // scale for rear wheel speed
+  double scale_slip_ratio = 0.2323; // scale for slip ratio using model
 
   double CURVATURE_MINIMUM = 0.000001;
 

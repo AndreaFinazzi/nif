@@ -14,8 +14,8 @@ windows:
       # - cd /home/usrg/media/T7/IAC_0928_si/2021_09_21_IMS/VEH8_MIT-PITT-RW #RADAR  
       # - cd /home/usrg/media/IAC/LOR/VEH4_LOR_RUN-graph.aw_2021-09-29 #LOR_0929_aw
       # - cd /home/usrg/media/IAC/LOR/VEH4_LOR_RUN-graph.yaw_2021-09-29 #LOR_0929_yaw_1
-      - cd /home/usrg/media/IAC #MITPIT DATA
-
+      # - cd /home/usrg/media/IAC #MITPIT DATA
+      - cd /home/usrg/media/T7/IAC_0928_si/2021_09_21_IMS/VEH8_MIT-PITT-RW #MITPIT DATA
 
     panes:
     - shell_command:
@@ -37,7 +37,8 @@ windows:
         #  - ros2 bag play sensors_2021-09-21_13-20-18/  --topics /merged/lidar /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /raptor_dbw_interface/wheel_speed_report /novatel_top/bestpos /novatel_top/inspva /novatel_top/bestvel /novatel_top/imu/data /novatel_bottom/insstdev /radar_front/radar_visz_moving /luminar_front_points /luminar_left_points /luminar_right_points
         #  - ros2 bag play sensors_2021-09-29_14-24-45/  --topics /merged/lidar /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /raptor_dbw_interface/wheel_speed_report /novatel_top/bestpos /novatel_top/inspva /novatel_top/bestvel /novatel_top/imu/data /novatel_bottom/insstdev 
         #  - ros2 bag play sensors_2021-09-29_14-57-31/  --topics /merged/lidar /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /novatel_top/bestpos /raptor_dbw_interface/wheel_speed_report /novatel_top/inspva /novatel_top/bestvel /novatel_top/imu/data /novatel_bottom/insstdev /novatel_top/insstdev 
-      - ros2 bag play sensors_2021-09-21_13-20-18/  --topics /luminar_front_points /luminar_left_points /luminar_right_points /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /novatel_top/bestpos /novatel_top/inspva /novatel_top/bestvel /novatel_top/imu/data /novatel_bottom/insstdev /novatel_top/insstdev /radar_front/radar_visz_moving
+      # - ros2 bag play sensors_2021-09-21_13-20-18/  --topics /luminar_front_points /luminar_left_points /luminar_right_points /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /novatel_top/bestpos /novatel_top/inspva /novatel_top/bestvel /novatel_top/imu/data /novatel_bottom/insstdev /novatel_top/insstdev
+      - ros2 bag play sensors_2021-09-21_13-20-18/  --topics /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /novatel_top/bestpos /novatel_top/inspva /novatel_top/bestvel /novatel_top/imu/data /novatel_bottom/insstdev /novatel_top/insstdev
 
     - shell_command:
       - ros2 run plotjuggler plotjuggler
@@ -46,7 +47,7 @@ windows:
     layout: tiled
     shell_command_before:
       - source /home/usrg/nif/install/setup.bash && cd /home/usrg/nif
-      - export ROS_DOMAIN_ID=77
+      - export ROS_DOMAIN_ID=33
       - export TRACK=IMS
       - echo $TRACK
     panes:

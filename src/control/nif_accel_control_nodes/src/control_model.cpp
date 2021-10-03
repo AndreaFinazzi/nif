@@ -20,10 +20,11 @@
 #include <iostream>
 
 namespace control {
-AccelController::AccelController(const double &K_accel, const double &K_accel2,
-                                 const double &K_bias, const double &pedalToCmd,
-                                 const double &dt, const double &cmdMax,
-                                 const double &cmdMin) {
+// ***** Model - ThrottleBrakeProfiler ***** //
+ThrottleBrakeProfiler::ThrottleBrakeProfiler(
+    const double &K_accel, const double &K_accel2, const double &K_bias,
+    const double &pedalToCmd, const double &dt, const double &cmdMax,
+    const double &cmdMin) {
   // Set control parameters
   k_accel_ = K_accel;
   k_accel2_ = K_accel2;
@@ -34,8 +35,8 @@ AccelController::AccelController(const double &K_accel, const double &K_accel2,
   SetCmdBounds(cmdMin, cmdMax);
 }
 
-/******************* AccelController ALGORITHM *******************/
-double AccelController::CurrentControl(double des_accel) {
+/* ThrottleBrakeProfiler ALGORITHM */
+double ThrottleBrakeProfiler::CurrentControl(double des_accel) {
   double cmd = 0.0;
 
   cmd = k_accel_ * std::abs(des_accel) + k_accel2_ * std::pow(des_accel, 2.) +
@@ -44,9 +45,9 @@ double AccelController::CurrentControl(double des_accel) {
 
   return SaturateCmd(cmd);
 }
-/******************************* SETTERS ************************************/
-std::pair<bool, bool> AccelController::SetCmdBounds(const double &min,
-                                                    const double &max) {
+/* SETTERS */
+std::pair<bool, bool> ThrottleBrakeProfiler::SetCmdBounds(const double &min,
+                                                          const double &max) {
   bool isMinSet = false, isMaxSet = false;
   if (min <= 0.0) {
     this->cmdMin_ = min;
@@ -59,8 +60,62 @@ std::pair<bool, bool> AccelController::SetCmdBounds(const double &min,
   return std::make_pair(isMinSet, isMaxSet);
 }
 
-/*********************** PRIVATE METHODS ************************************/
-double AccelController::SaturateCmd(const double &cmd) {
+/* PRIVATE METHODS */
+double ThrottleBrakeProfiler::SaturateCmd(const double &cmd) {
+  return std::min(std::max(cmdMin_, cmd), cmdMax_);
+}
+
+// ***** Model - EngineMapAccelController ***** //
+EngineMapAccelController::EngineMapAccelController(
+    const double &engine_safety_factor, const int &engine_safety_rpm_thres,
+    const double &pedalToCmd, const double &cmdMax, const double &cmdMin) {
+  // Set control parameters
+  pedalToCmd_ = pedalToCmd; // pedalToCmd is 1.0
+  // update engine manager parameters
+  m_engine_manager.m_gamma = engine_safety_factor;
+  m_engine_manager.m_rpm_safe_thres = engine_safety_rpm_thres;
+  // Set valid bounds
+  SetCmdBounds(cmdMin, cmdMax);
+}
+/* EngineMapAccelController ALGORITHM */
+double EngineMapAccelController::CurrentControl(double desired_acceleration,
+                                                int gear_num,
+                                                int engine_speed) {
+  double cmd = 0.0;
+
+  // Compute desired_engine_torque from desired_acceleration
+  // (desired longitudinal tire force)
+  double desired_tire_longitudinal_force = mass * desired_acceleration;
+  double desired_engine_torque = m_engine_manager.computeEngineTorque(
+      desired_tire_longitudinal_force, gear_num);
+
+  // Compute desired_throttle_position from desired_engine_torque
+  double desired_throttle_position =
+      m_engine_manager.inverseEngineModel(engine_speed, desired_engine_torque);
+
+  cmd = pedalToCmd_ * desired_throttle_position; // [0~100]
+  // std::cout << "---------------------------------cmd : " << cmd << std::endl;
+
+  return SaturateCmd(cmd);
+}
+
+/* SETTERS */
+std::pair<bool, bool>
+EngineMapAccelController::SetCmdBounds(const double &min, const double &max) {
+  bool isMinSet = false, isMaxSet = false;
+  if (min <= 0.0) {
+    this->cmdMin_ = min;
+    isMinSet = true;
+  }
+  if (max > 0.0) {
+    this->cmdMax_ = max;
+    isMaxSet = true;
+  }
+  return std::make_pair(isMinSet, isMaxSet);
+}
+
+/* PRIVATE METHODS */
+double EngineMapAccelController::SaturateCmd(const double &cmd) {
   return std::min(std::max(cmdMin_, cmd), cmdMax_);
 }
 

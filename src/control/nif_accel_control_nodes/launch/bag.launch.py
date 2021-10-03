@@ -30,18 +30,12 @@ def get_share_file(package_name, file_name):
 
 
 def generate_launch_description():
-    lqr_config_file = get_share_file(
-        package_name='nif_control_joint_lqr_nodes', file_name='config/lqr/lqr_params.deploy.yaml'
-    )
-
     lqr_control_node = Node(
-        package='nif_control_joint_lqr_nodes',
-        executable='nif_control_joint_lqr_nodes_exe',
+        package='nif_accel_control_nodes',
+        executable='nif_accel_control_nodes_exe',
         parameters=[
             {
-                'lqr_config_file': lqr_config_file,
-                'use_tire_velocity': False,
-                'use_mission_max_vel': False,
+                'engine_based_throttle_enabled': True,
             }
         ],
         output={
@@ -49,9 +43,7 @@ def generate_launch_description():
             'stderr': 'screen',
         },
         remappings=[
-            ('in_control_cmd_prev', '/control_safety_layer/out/control_cmd'),
-            ('out_control_cmd', '/control_pool/control_cmd'),
-            ('in_reference_path', '/planning/graph/path_global'),
+            ('/control_safety_layer/out/desired_accel', '/control_joint_lqr/accel_command'),
         ]
     )
 
