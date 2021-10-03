@@ -61,7 +61,7 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
   // Limit the max change in the des_accel signal over time
   this->declare_parameter("des_accel_max_da_dt", 5.0);
   // Minimum length of the reference path
-  this->declare_parameter("path_min_length_m", 3.0);
+  this->declare_parameter("path_min_length_m", 4.0);
 
   //  Invert steering command for simulation
   this->declare_parameter("invert_steering", false);
