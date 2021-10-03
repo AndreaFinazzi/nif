@@ -224,27 +224,24 @@ class GraphBasedPlanner(rclpy.node.Node):
         self.on_track_msg = Bool
         self.out_bound_msg = Path()
         self.out_bound_msg.header.frame_id = "odom"
-        self.out_bound = (self.ltpl_obj.__oth.__graph_base.refline + self.ltpl_obj.__oth.__graph_base.normvec_normalized
-                        * np.expand_dims(self.ltpl_obj.__oth.__graph_base.track_width_right, 1))
+        # self.out_bound = (self.ltpl_obj.__graph_base.refline + self.ltpl_obj.__graph_base.normvec_normalized
+                        # * np.expand_dims(self.ltpl_obj.__graph_base.track_width_right, 1))
+        self.out_bound = self.ltpl_obj.right_bound()
+
         self.in_bound_msg = Path()
         self.in_bound_msg.header.frame_id = "odom"
-        self.in_bound = (self.ltpl_obj.__oth.__graph_base.refline + self.ltpl_obj.__oth.__graph_base.normvec_normalized
-                        * np.expand_dims(self.ltpl_obj.__oth.__graph_base.track_width_left, 1))
+        # self.in_bound = (self.ltpl_obj.__graph_base.refline + self.ltpl_obj.__graph_base.normvec_normalized
+        #                 * np.expand_dims(self.ltpl_obj.__graph_base.track_width_left, 1))
+        self.in_bound = self.ltpl_obj.left_bound()
         self.ref_line_msg = Path()
         self.ref_line_msg.header.frame_id = "odom"
-        self.refline = self.ltpl_obj.__oth.__graph_base.refline
+        self.refline = self.ltpl_obj.ref_line()
 
-        self.nodes_pos = []
         self.nodes_pos_cloud_msg = PointCloud2()
         self.nodes_pos_cloud_msg.header.frame_id = "odom"
-        for i, node in enumerate(self.ltpl_obj.__graph_base.get_nodes()):
-            pos = self.ltpl_obj.__graph_base.get_node_info(layer=node[0],
-                                                            node_number=node[1],
-                                                            return_child=True,
-                                                            return_parent=True)
-            self.nodes_pos.append(pos)
-            self.nodes_pos_cloud_msg.points.append(Point32(pos[0], pos[1], 0.0))
-
+        # node_poses = self.ltpl_obj.get_nodes()
+        # for i, pos in enumerate(node_poses):
+        #     self.nodes_pos_cloud_msg.points.append(Point32(pos[0], pos[1], 0.0))
 
         for i in range(len(self.out_bound)):
             pose = PoseStamped()
@@ -443,8 +440,8 @@ class GraphBasedPlanner(rclpy.node.Node):
 
     def timer_callback(self):
 
-        self.on_track_msg.data = self.ltpl_obj.check_out_of_track()
-        self.pub_on_track.publish(self.on_track_msg)
+        # self.on_track_msg.data = self.ltpl_obj.check_out_of_track()
+        # self.pub_on_track.publish(self.on_track_msg)
 
         if self.odom_first_call is True:
             planning_graph = False
