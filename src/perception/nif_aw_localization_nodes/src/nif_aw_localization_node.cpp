@@ -861,8 +861,6 @@ void AWLocalizationNode::measurementUpdatePose(rclcpp::Time measurement_time_,
   P_y = P_curr.block(0, 0, dim_y, dim_y);
   P_2by2 = P_curr.block(0, 0, 2, 2);
 
-  double update_ignore_distance = pose_gate_dist_ + m_dVelolcity_X * ekf_dt_;
-
   // if(!GPSIgnoreGate(update_ignore_distance, y_ekf, y, P_y))
   // {
   //   return;
@@ -1152,56 +1150,65 @@ bool AWLocalizationNode::CalculateBestCorrection(
   m_localization_status.bottom_weight = norm_weight_bottom;
   m_localization_status.top_weight = norm_weight_top;
 
-  // if bottom and top is close enough, we regard bottom status is nominal.
-  // output : bypass fusion. return novatel bottom directly.
-  if (diff_top_bottom < 0.5) {
-    BestCorrectionOut.x = BottomDataIn.x;
-    BestCorrectionOut.y = BottomDataIn.y;
-    m_localization_status.status = "BEST STATUS";
-    m_localization_status.localization_status_code =
-        nif_msgs::msg::LocalizationStatus::BEST_STATUS;
-    return true;
-  }
-  else // one of sensor has drift. we should fuse the sensors.
+  double pose_gate_dist_local;
+  if (!bInitConverged)
   {
-    // 1. our top priority strategy is weight-sum.
-    if (bottomError < pose_gate_dist_ && topError < pose_gate_dist_ &&
-        fabs(topError - bottomError) < pose_gate_dist_) {
-      BestCorrectionOut.x =
-          BottomDataIn.x * norm_weight_bottom + TopDataIn.x * norm_weight_top;
-      BestCorrectionOut.y =
-          BottomDataIn.y * norm_weight_bottom + TopDataIn.y * norm_weight_top;
-      m_localization_status.status = "SENSOR FUSION";
-      m_localization_status.localization_status_code =
-          nif_msgs::msg::LocalizationStatus::SENSOR_FUSION;
-      return true;
-    }
-    // 2. if bottom is diverged, and top is nominal, USE NOVATEL TOP
-    else if (bottomError > pose_gate_dist_ && topError < pose_gate_dist_) {
-      BestCorrectionOut.x = TopDataIn.x;
-      BestCorrectionOut.y = TopDataIn.y;
-      m_localization_status.status = "BOTTOM ERROR, USE TOP";
-      m_localization_status.localization_status_code =
-          nif_msgs::msg::LocalizationStatus::ONLY_TOP;
-      return true;
-    }
-    // 3. if top is diverged, and bottom is nominal, USE NOVATEL BOTTOM
-    else if (bottomError < pose_gate_dist_ && topError > pose_gate_dist_) {
+    pose_gate_dist_local = DBL_MAX;
+  }
+  else
+  {
+    pose_gate_dist_local = pose_gate_dist_;
+  }
+
+    // if bottom and top is close enough, we regard bottom status is nominal.
+    // output : bypass fusion. return novatel bottom directly.
+    if (diff_top_bottom < 0.5) {
       BestCorrectionOut.x = BottomDataIn.x;
       BestCorrectionOut.y = BottomDataIn.y;
-      m_localization_status.status = "TOP ERROR, USE BOTTOM";
+      m_localization_status.status = "BEST STATUS";
       m_localization_status.localization_status_code =
-          nif_msgs::msg::LocalizationStatus::ONLY_BOTTOM;
+          nif_msgs::msg::LocalizationStatus::BEST_STATUS;
       return true;
+    } else // one of sensor has drift. we should fuse the sensors.
+    {
+      // 1. our top priority strategy is weight-sum.
+      if (bottomError < pose_gate_dist_local && topError < pose_gate_dist_local &&
+          fabs(topError - bottomError) < pose_gate_dist_local) {
+        BestCorrectionOut.x =
+            BottomDataIn.x * norm_weight_bottom + TopDataIn.x * norm_weight_top;
+        BestCorrectionOut.y =
+            BottomDataIn.y * norm_weight_bottom + TopDataIn.y * norm_weight_top;
+        m_localization_status.status = "SENSOR FUSION";
+        m_localization_status.localization_status_code =
+            nif_msgs::msg::LocalizationStatus::SENSOR_FUSION;
+        return true;
+      }
+      // 2. if bottom is diverged, and top is nominal, USE NOVATEL TOP
+      else if (bottomError > pose_gate_dist_local && topError < pose_gate_dist_local) {
+        BestCorrectionOut.x = TopDataIn.x;
+        BestCorrectionOut.y = TopDataIn.y;
+        m_localization_status.status = "BOTTOM ERROR, USE TOP";
+        m_localization_status.localization_status_code =
+            nif_msgs::msg::LocalizationStatus::ONLY_TOP;
+        return true;
+      }
+      // 3. if top is diverged, and bottom is nominal, USE NOVATEL BOTTOM
+      else if (bottomError < pose_gate_dist_local && topError > pose_gate_dist_local) {
+        BestCorrectionOut.x = BottomDataIn.x;
+        BestCorrectionOut.y = BottomDataIn.y;
+        m_localization_status.status = "TOP ERROR, USE BOTTOM";
+        m_localization_status.localization_status_code =
+            nif_msgs::msg::LocalizationStatus::ONLY_BOTTOM;
+        return true;
+      }
+      // 4. if all the sensors are bad, do not update measurement
+      else {
+        m_localization_status.status = "NO UPDATE, GPS HIGH ERROR";
+        m_localization_status.localization_status_code =
+            nif_msgs::msg::LocalizationStatus::GPS_HIGH_ERROR;
+        return false;
+      }
     }
-    // 4. if all the sensors are bad, do not update measurement
-    else {
-      m_localization_status.status = "NO UPDATE, GPS HIGH ERROR";
-      m_localization_status.localization_status_code =
-          nif_msgs::msg::LocalizationStatus::GPS_HIGH_ERROR;
-      return false;
-    }
-  }
 }
 
 /*
