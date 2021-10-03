@@ -169,7 +169,7 @@ MissionStatus::_mission_status_code_type MissionManagerNode::getMissionVehFlagNu
                 return this->mission_status_msg.mission_status_code;
 
             } else {
-                return MissionStatus::MISSION_COMMANDED_STOP;
+                return MissionStatus::MISSION_STANDBY;
             }
             break;
           
@@ -184,10 +184,13 @@ MissionStatus::_mission_status_code_type MissionManagerNode::getMissionVehFlagNu
 
 
         case RCFlagSummary::TRACK_FLAG_GREEN:
-          // TODO If in pit, PIT_OUT should be set and maintained.
-          // TODO If on track, RACE should be set and maintained.
-          return MissionStatus::MISSION_TEST;
-          break;
+            if (this->missionIs(MissionStatus::MISSION_PIT_IN)) {
+                return MissionStatus::MISSION_PIT_STANDBY;
+            } else {
+                // TODO If on track, RACE should be set and maintained.
+                return MissionStatus::MISSION_TEST;
+            }
+            break;
 
         default:
           return MissionStatus::MISSION_COMMANDED_STOP;

@@ -86,10 +86,6 @@ private:
 
   // Mission and safe localization parameters
   double velocity_zero = 0.0;
-  double velocity_max = 0.0;
-  double velocity_pit_in = 0.0;
-  double velocity_pit_out = 0.0;
-  double velocity_slow_drive = 0.0;
   double safeloc_threshold_stop = 0.0;
   double safeloc_threshold_slow_down = 0.0;
   double safeloc_velocity_slow_down_max = 0.0;
@@ -187,12 +183,6 @@ private:
   bool isSystemHealthy();
 
   /**
-   * Mission Status state machine.
-   * @return the mission encoding.
-   */
-  nif_msgs::msg::MissionStatus::_mission_status_code_type getMissionStatusCode();
-
-  /**
    * System status state machine, with status output code.
    * @return system status code
    */
@@ -208,8 +198,6 @@ private:
 
   rclcpp::Duration timeout_node_inactive = rclcpp::Duration(1, 0);
   OnSetParametersCallbackHandle::SharedPtr parameters_callback_handle;
-
-  double getMissionMaxVelocityMps(nif_msgs::msg::MissionStatus::_mission_status_code_type);
 
   /**
    * Limit the maximum speed according to the current localization error.

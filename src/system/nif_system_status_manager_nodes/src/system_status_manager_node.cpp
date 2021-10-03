@@ -23,11 +23,6 @@ SystemStatusManagerNode::SystemStatusManagerNode(
     this->declare_parameter("insstdev_threshold", 2.0);
 
     this->declare_parameter("velocity.zero", 0.0);
-    this->declare_parameter("velocity.max", 67.0);
-    this->declare_parameter("velocity.pit_in", 8.0);
-    this->declare_parameter("velocity.pit_out", 8.0);
-    // this->declare_parameter("velocity.slow_drive", 15.0);
-    this->declare_parameter("velocity.slow_drive", 8.0);
     this->declare_parameter("safeloc.threshold_stop", 40.0);
     this->declare_parameter("safeloc.threshold_slow_down", 20.0);
     this->declare_parameter("safeloc.velocity_slow_down_max", 22.2);
@@ -63,10 +58,6 @@ SystemStatusManagerNode::SystemStatusManagerNode(
     this->insstdev_threshold = this->get_parameter("insstdev_threshold").as_double();
 
     this->velocity_zero = this->get_parameter("velocity.zero").as_double();
-    this->velocity_max = this->get_parameter("velocity.max").as_double();
-    this->velocity_pit_in = this->get_parameter("velocity.pit_in").as_double();
-    this->velocity_pit_out = this->get_parameter("velocity.pit_out").as_double();
-    this->velocity_slow_drive = this->get_parameter("velocity.slow_drive").as_double();
     this->safeloc_threshold_stop = this->get_parameter("safeloc.threshold_stop").as_double();
     this->safeloc_threshold_slow_down = this->get_parameter("safeloc.threshold_slow_down").as_double();
     this->safeloc_velocity_slow_down_max = this->get_parameter("safeloc.velocity_slow_down_max").as_double();
@@ -178,8 +169,7 @@ void SystemStatusManagerNode::systemStatusTimerCallback() {
         this->now() - this->mission_update_time > this->timeout_mission) {
         this->system_status_msg.mission_status.mission_status_code = MissionStatus::MISSION_EMERGENCY_STOP;
         // Mission velocity check
-        this->system_status_msg.mission_status.max_velocity_mps = static_cast<nif_msgs::msg::MissionStatus::_max_velocity_mps_type>(
-            this->getMissionMaxVelocityMps(this->system_status_msg.mission_status.mission_status_code));
+        this->system_status_msg.mission_status.max_velocity_mps = this->velocity_zero;
     }
 
     this->system_status_pub->publish(this->system_status_msg);
@@ -406,8 +396,7 @@ SystemStatusManagerNode::missionCallback(
     this->system_status_msg.mission_status = std::move(*msg);
 
     // Mission velocity check
-    this->system_status_msg.mission_status.max_velocity_mps = static_cast<nif_msgs::msg::MissionStatus::_max_velocity_mps_type>(
-            this->getMissionMaxVelocityMps(this->system_status_msg.mission_status.mission_status_code));
+    this->processSafelocVelocity(this->system_status_msg.mission_status.max_velocity_mps);
 }
 
 rcl_interfaces::msg::SetParametersResult
@@ -432,67 +421,9 @@ SystemStatusManagerNode::parametersCallback(
                     result.successful = true;
                 }
             }
-        } else if (param.get_name() == "velocity.max") {
-            if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
-                if (param.as_bool() < 100.) {
-                    this->velocity_max = param.as_double();
-                    result.successful = true;
-                }
-            }
         }
         return result;
     }
-}
-
-double nif::system::SystemStatusManagerNode::getMissionMaxVelocityMps(
-        MissionStatus::_mission_status_code_type mission_code) {
-    double max_vel_mps = 0.0;
-    switch (mission_code) {
-        case MissionStatus::MISSION_EMERGENCY_STOP:
-            max_vel_mps = this->velocity_zero;
-            break;
-
-        case MissionStatus::MISSION_COMMANDED_STOP:
-            max_vel_mps = this->velocity_zero;
-            break;
-
-        case MissionStatus::MISSION_STANDBY:
-            max_vel_mps = this->velocity_zero;
-            break;
-
-        case MissionStatus::MISSION_SLOW_DRIVE:
-            max_vel_mps = this->velocity_slow_drive;
-            break;
-
-        case MissionStatus::MISSION_PIT_IN:
-            max_vel_mps = this->velocity_pit_in;
-            break;
-
-        case MissionStatus::MISSION_PIT_STANDBY:
-            max_vel_mps = this->velocity_zero;
-            break;
-
-        case MissionStatus::MISSION_PIT_OUT:
-            max_vel_mps = this->velocity_pit_out;
-            break;
-
-        case MissionStatus::MISSION_RACE:
-            // Race at max speed, if localization is good enough. 
-            max_vel_mps = this->velocity_max;
-            processSafelocVelocity(max_vel_mps);
-            break;
-
-        case MissionStatus::MISSION_TEST:
-            max_vel_mps = this->velocity_max;
-            processSafelocVelocity(max_vel_mps);
-            break;
-
-        default:
-            max_vel_mps = this->velocity_zero;
-            break;
-    }
-
-    return max_vel_mps;
 }
 
 void SystemStatusManagerNode::processSafelocVelocity(double & max_vel_mps) 
@@ -512,6 +443,6 @@ void SystemStatusManagerNode::processSafelocVelocity(double & max_vel_mps)
         max_vel_mps = slope * (this->localization_error - this->safeloc_threshold_slow_down) + this->safeloc_velocity_slow_down_max;
     }
 
-    if (max_vel_mps < this->safeloc_velocity_slow_down_min) 
-        max_vel_mps = this->safeloc_velocity_slow_down_min;
+    if (max_vel_mps < this->velocity_zero)
+        max_vel_mps = this->velocity_zero;
 }

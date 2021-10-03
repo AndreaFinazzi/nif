@@ -91,6 +91,9 @@ missions:
 
   - mission_code: 70 # MISSION_PIT_OUT
     active: true
+    # fallback: # CAN'T BE ACTIVE, IT CLOSES THE LOOP
+    #   active: true
+    #   mission_code: 65 # MISSION_PIT_STANDBY
     activation_area:
       active: false
       bboxes:
