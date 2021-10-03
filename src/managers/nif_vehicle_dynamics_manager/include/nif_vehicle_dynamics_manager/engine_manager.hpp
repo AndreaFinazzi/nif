@@ -83,7 +83,7 @@ public:
 
   // Load data
   std::string pkg_install_dir =
-      ament_index_cpp::get_package_prefix("vehicle_dynamics_manager");
+      ament_index_cpp::get_package_prefix("nif_vehicle_dynamics_manager");
 
   // - engine model data
   std::string m_engine_model_path =
