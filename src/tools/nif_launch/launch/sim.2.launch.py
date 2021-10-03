@@ -135,6 +135,12 @@ def generate_launch_description():
         ),
     )
 
+    nif_aw_localization_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            get_package_share_directory('nif_aw_localization_nodes') + '/launch/deploy.launch.py'
+        ),
+    )
+
     nif_wall_node_launch_bg = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             get_package_share_directory('nif_points_preprocessor_nodes') + '/launch/deploy.launch.py'
@@ -257,7 +263,7 @@ def generate_launch_description():
     elif track == IMS:
         global_params_file = 'params_IMS.sim.global.yaml'
     elif track == LG_SVL:
-        global_params_file = 'params_IMS.sim.global.yaml'
+        global_params_file = 'params.sim.global.yaml'
     else:
         raise RuntimeError("ERROR: invalid track provided: {}".format(track))
 
@@ -289,7 +295,7 @@ def generate_launch_description():
             ('in_joystick_cmd', '/joystick/command'),
             ('in_novatel_bestpos', '/novatel_bottom/bestpos'),
             ('in_novatel_insstdev', '/novatel_bottom/insstdev'),
-            ('in_localization_error', '/aw_localization/ekf/error'),
+            ('in_localization_status', '/aw_localization/ekf/status'),
             ('in_mission_status', '/system/mission'),
             ('out_system_status', '/system/status'),
         ],
@@ -421,6 +427,7 @@ def generate_launch_description():
         nif_system_status_manager_node,
         nif_csl_node,
         # nif_localization_launch,
+        nif_aw_localization_launch,
         nif_wall_node_launch_bg,
         nif_waypoint_manager_node,
         robot_description_launch,

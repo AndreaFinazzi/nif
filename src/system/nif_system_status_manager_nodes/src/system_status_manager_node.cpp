@@ -15,12 +15,9 @@ SystemStatusManagerNode::SystemStatusManagerNode(
     this->system_status_msg.health_status.system_failure = false;
 
     this->declare_parameter("timeout_node_inactive_ms", 1000);
-    this->declare_parameter("timeout_bestpos_msg_ms", 500);
-    this->declare_parameter("timeout_bestpos_diff_age_ms", 60000);
     this->declare_parameter("timeout_mission_ms", 1000);
     this->declare_parameter("lat_autonomy_enabled", false);
     this->declare_parameter("long_autonomy_enabled", false);
-    this->declare_parameter("insstdev_threshold", 2.0);
 
     this->declare_parameter("velocity.zero", 0.0);
     this->declare_parameter("safeloc.threshold_stop", 40.0);
@@ -35,27 +32,19 @@ SystemStatusManagerNode::SystemStatusManagerNode(
             "long_autonomy_enabled").as_bool();
 
     auto timeout_node_inactive_ms = this->get_parameter("timeout_node_inactive_ms").as_int();
-    auto timeout_bestpos_msg_ms = this->get_parameter("timeout_bestpos_msg_ms").as_int();
-    auto timeout_bestpos_diff_age_ms = this->get_parameter("timeout_bestpos_diff_age_ms").as_int();
     auto timeout_mission_ms = this->get_parameter("timeout_mission_ms").as_int();
 
     if (timeout_node_inactive_ms <= 0 ||
-        timeout_bestpos_msg_ms <= 0 ||
-        timeout_bestpos_diff_age_ms <= 0 ||
         timeout_mission_ms <= 0)
     {
         RCLCPP_ERROR(this->get_logger(),
-                     "timeouts must be greater than zero. Got timeout_node_inactive_ms: %d; timeout_bestpos_msg_ms: %d; timeout_bestpos_diff_age_ms: %d; timeout_mission_ms: %d",
-                     timeout_node_inactive_ms, timeout_bestpos_msg_ms, timeout_bestpos_diff_age_ms, timeout_mission_ms);
+                     "timeouts must be greater than zero. Got timeout_node_inactive_ms: %d; timeout_mission_ms: %d",
+                     timeout_node_inactive_ms, timeout_mission_ms);
         throw std::range_error("Parameter out of range.");
     }
 
     this->timeout_node_inactive = rclcpp::Duration(timeout_node_inactive_ms * 1000000);
-    this->timeout_bestpos_last_update = rclcpp::Duration(timeout_bestpos_msg_ms * 1000000);
-    this->timeout_bestpos_diff_age = rclcpp::Duration(timeout_bestpos_diff_age_ms * 1000000);
     this->timeout_mission = rclcpp::Duration(timeout_mission_ms * 1000000);
-
-    this->insstdev_threshold = this->get_parameter("insstdev_threshold").as_double();
 
     this->velocity_zero = this->get_parameter("velocity.zero").as_double();
     this->safeloc_threshold_stop = this->get_parameter("safeloc.threshold_stop").as_double();
@@ -82,20 +71,9 @@ SystemStatusManagerNode::SystemStatusManagerNode(
             "in_mission_status", nif::common::constants::QOS_INTERNAL_STATUS,
             std::bind(&SystemStatusManagerNode::missionCallback, this, std::placeholders::_1));
 
-    this->localization_error_sub = this->create_subscription<std_msgs::msg::Float64>(
-            "in_localization_error", nif::common::constants::QOS_EGO_ODOMETRY,
-            std::bind(&SystemStatusManagerNode::localizationErrorCallback, this, std::placeholders::_1));
-
-    // TODO this is only temporary, as the localization status should be handled in the localization nodes.
-    this->subscriber_bestpos = this->create_subscription<novatel_oem7_msgs::msg::BESTPOS>(
-            "in_novatel_bestpos", 1,
-            std::bind(&SystemStatusManagerNode::receive_bestpos, this, std::placeholders::_1));
-
-    // TODO this is only temporary, as the localization status should be handled in the localization nodes.
-    this->subscriber_insstdev = this->create_subscription<novatel_oem7_msgs::msg::INSSTDEV>(
-            "in_novatel_insstdev", 1,
-            std::bind(&SystemStatusManagerNode::receive_insstdev, this, std::placeholders::_1));
-
+    this->localization_status_sub = this->create_subscription<nif_msgs::msg::LocalizationStatus>(
+            "in_localization_status", nif::common::constants::QOS_INTERNAL_STATUS,
+            std::bind(&SystemStatusManagerNode::localizationStatusCallback, this, std::placeholders::_1));
 
     //  Publishers
     this->system_status_pub = this->create_publisher<nif::common::msgs::SystemStatus>(
@@ -106,9 +84,6 @@ SystemStatusManagerNode::SystemStatusManagerNode(
             "/vehicle/emergency_joystick", 10);
     this->hb_emergency_pub = this->create_publisher<std_msgs::msg::Bool>(
             "/vehicle/emergency_heartbeat", 10);
-
-    auto qos = rclcpp::QoS(rclcpp::QoSInitialization(RMW_QOS_POLICY_HISTORY_KEEP_LAST, 1));
-    qos.best_effort();
 
     // Services
     // TODO make global parameter
@@ -346,14 +321,9 @@ bool SystemStatusManagerNode::heartbeatOk() {
 }
 
 bool SystemStatusManagerNode::localizationOk() {
-    bool has_bestpos_trigger = !this->has_bestpos;
-    
-    bool bestpos_diff_age_trigger = (this->bestpos_diff_age_s > this->timeout_bestpos_diff_age.seconds() );
-    bool bestpos_last_update_trigger = !this->has_bestpos || (( this->now() - this->bestpos_last_update ) > this->timeout_bestpos_last_update );
+    bool loc_error_trigger = !this->hasLocalizationStatus() || ( this->localization_status.localization_status_code >= 200 );
 
-    bool loc_error_trigger = !this->hasLocalizationError() || ( this->localization_error > this->safeloc_threshold_stop );
-
-    return (!has_bestpos_trigger && !bestpos_diff_age_trigger && !bestpos_last_update_trigger && !loc_error_trigger);
+    return !loc_error_trigger;
 }
 
 void SystemStatusManagerNode::recoveryServiceHandler(
@@ -381,11 +351,11 @@ void SystemStatusManagerNode::joystickCallback(const nif::common::msgs::Override
     }
 }
 
-void SystemStatusManagerNode::localizationErrorCallback(const std_msgs::msg::Float64::SharedPtr msg)
+void SystemStatusManagerNode::localizationStatusCallback(const nif_msgs::msg::LocalizationStatus::SharedPtr msg)
 {
-    this->has_localization_error = true;
-    this->localization_error_last_update = this->now();
-    this->localization_error = msg->data;
+    this->has_localization_status = true;
+    this->localization_status_last_update = this->now();
+    this->localization_status = std::move(*msg);
 }
 
 void
@@ -428,25 +398,18 @@ SystemStatusManagerNode::parametersCallback(
 
 void SystemStatusManagerNode::processSafelocVelocity(double & max_vel_mps) 
 {
-    if (!this->hasLocalizationError())
+    if (!this->hasLocalizationStatus())
         {
             max_vel_mps = this->velocity_zero;
             RCLCPP_ERROR_THROTTLE(this->get_logger(), *this->get_clock(), 1000, "Data timeout in SystemStatusManagerNode::processSafelocVelocity();");
             return;
         }
 
-    // Over safeloc_threshold_slow_down, reduce max speed according to the localization error
-    if (this->localization_error > this->safeloc_threshold_slow_down)
-    {
-        auto slope = (this->safeloc_velocity_slow_down_max - this->safeloc_velocity_slow_down_min) / (this->safeloc_threshold_slow_down - this->safeloc_threshold_stop);
-        max_vel_mps = slope * (this->localization_error - this->safeloc_threshold_slow_down) + this->safeloc_velocity_slow_down_max;
-    }
-
-    if (max_vel_mps < this->velocity_zero)
+    if (this->localization_status.localization_status_code >= 200)
         max_vel_mps = this->velocity_zero;
 }
 
-bool SystemStatusManagerNode::hasLocalizationError() {
-    return  (this->has_localization_error &&
-            (this->now() - this->localization_error_last_update <= this->timeout_localization_error));
+bool SystemStatusManagerNode::hasLocalizationStatus() {
+    return  (this->has_localization_status &&
+            (this->now() - this->localization_status_last_update <= this->timeout_localization_status));
 }

@@ -133,7 +133,7 @@ AWLocalizationNode::AWLocalizationNode(const std::string &node_name)
       "out_localization_error", nif::common::constants::QOS_EGO_ODOMETRY);
 
   pub_localization_status = this->create_publisher<nif_msgs::msg::LocalizationStatus>(
-      "out_localization_status", nif::common::constants::QOS_EGO_ODOMETRY);
+      "out_localization_status", nif::common::constants::QOS_INTERNAL_STATUS);
 
   // POSE(X, Y)
   subBESTPOS = this->create_subscription<novatel_oem7_msgs::msg::BESTPOS>(
@@ -310,6 +310,7 @@ void AWLocalizationNode::timerCallback()
       m_localization_status.localization_status_code =
           nif_msgs::msg::LocalizationStatus::GPS_HIGH_ERROR;
       update_pose = false;
+      node_status = nif::common::NODE_ERROR;
     }
 
     if (!bInitConverged) {
@@ -317,6 +318,7 @@ void AWLocalizationNode::timerCallback()
       m_localization_status.localization_status_code =
           nif_msgs::msg::LocalizationStatus::NO_CONVERGED;
       update_pose = true;
+      node_status = nif::common::NODE_ERROR;
     }
 
     /* pose measurement update */
