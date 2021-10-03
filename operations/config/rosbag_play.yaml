@@ -41,7 +41,7 @@ windows:
       - ros2 bag play sensors_2021-09-21_13-20-18/  --topics /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /novatel_top/bestpos /novatel_top/inspva /novatel_top/bestvel /novatel_top/imu/data /novatel_bottom/insstdev /novatel_top/insstdev
 
     - shell_command:
-        # - ros2 run plotjuggler plotjuggler
+      - ros2 run plotjuggler plotjuggler
 
   - window_name: Algorithm Tab
     layout: tiled
@@ -56,7 +56,7 @@ windows:
       - shell_command:
           - ros2 launch nif_points_preprocessor_nodes deploy.launch.py
       - shell_command:
-          # - ros2 launch nif_multilayer_planning_nodes deploy.launch.py
+          - ros2 launch nif_multilayer_planning_nodes deploy.launch.py
       - shell_command:
           - ros2 launch nif_aw_localization_nodes deploy.launch.py
       - shell_command:
@@ -75,33 +75,24 @@ windows:
       - shell_command:
           - rviz2 -d /home/usrg/nif/src/perception/nif_localization_nodes/launch/navi.rviz
 
-  - window_name: tmp
-    layout: tiled
-    shell_command_before:
-      - source /home/usrg/nif/install/setup.bash && cd /home/usrg/nif/src/perception/nif_localization_nodes/launch
-      - export ROS_DOMAIN_ID=33
-    panes:
-      - shell_command:
-          - ros2 topic echo /control_joint_lqr/lqr_error
-          
-  - window_name: pub Tab
+  - window_name: Control Tab
     layout: tiled
     shell_command_before:
       - source /home/usrg/nif/install/setup.bash && cd /home/usrg/nif
       - export ROS_DOMAIN_ID=33
     panes:
       - shell_command:
-          - ros2 run nif_velocity_planning_node nif_velocity_planning_node_exe 
+          - ros2 launch nif_velocity_planning_node bag.launch.py
+      - shell_command:
+          - ros2 launch nif_control_joint_lqr_nodes bag.launch.py
+      - shell_command:
+          - ros2 launch nif_accel_control_nodes bag.launch.py
       - shell_command:
           - ros2 topic echo /velocity_planner/diagnostic
-
       - shell_command:
-
+          - ros2 topic echo /velocity_planner/des_vel
       - shell_command:
-
-      - shell_command:
-
-      - shell_command:
+          - ros2 topic echo /velocity_planner/diagnostic
           
 
   # - window_name: record Tab
