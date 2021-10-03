@@ -98,14 +98,14 @@ AccelControl::AccelControl() : Node("AccelControlNode") {
   this->declare_parameter("throttle.traction_factor", 0.2);
   this->declare_parameter("throttle.traction_rate", 15.0);
 
-  this->declare_parameter("brake.ABS_enabled", true);
-  this->declare_parameter("brake.ABS_brake_cmd_thres", 0.5);
-  this->declare_parameter("brake.ABS_factor", 0.2);
-  this->declare_parameter("brake.ABS_rate", 15.0);
+  this->declare_parameter("brake.abs_enabled", true);
+  this->declare_parameter("brake.abs_brake_cmd_thres", 0.5);
+  this->declare_parameter("brake.abs_factor", 0.2);
+  this->declare_parameter("brake.abs_rate", 15.0);
 
-  this->declare_parameter("TractionABS.velocity_thres_mps", 27.78);
-  this->declare_parameter("TractionABS.sigma_thres", 0.06);
-  this->declare_parameter("TractionABS.control_rate", 100.0);
+  this->declare_parameter("traction_abs.velocity_thres_mps", 27.78);
+  this->declare_parameter("traction_abs.sigma_thres", 0.06);
+  this->declare_parameter("traction_abs.control_rate", 100.0);
 
   // Create Callback Timers
   this->ts_ = this->get_parameter("time_step").as_double();
@@ -172,20 +172,20 @@ AccelControl::AccelControl() : Node("AccelControlNode") {
   double traction_rate =
       this->get_parameter("throttle.traction_rate").as_double(); // 15.
 
-  bool ABS_enabled = this->get_parameter("brake.ABS_enabled").as_bool();
+  bool ABS_enabled = this->get_parameter("brake.abs_enabled").as_bool();
   double ABS_brake_cmd_thres =
-      this->get_parameter("brake.ABS_brake_cmd_thres").as_double(); // 0.5
+      this->get_parameter("brake.abs_brake_cmd_thres").as_double(); // 0.5
   double ABS_factor =
-      this->get_parameter("brake.ABS_factor").as_double();             // 0.2
-  double ABS_rate = this->get_parameter("brake.ABS_rate").as_double(); // 15.
+      this->get_parameter("brake.abs_factor").as_double();             // 0.2
+  double ABS_rate = this->get_parameter("brake.abs_rate").as_double(); // 15.
 
   double velocity_thres_mps =
-      this->get_parameter("TractionABS.velocity_thres_mps")
+      this->get_parameter("traction_abs.velocity_thres_mps")
           .as_double(); // 27.78 mps, 100 kph
   double sigma_thres =
-      this->get_parameter("TractionABS.sigma_thres").as_double(); // 0.06
+      this->get_parameter("traction_abs.sigma_thres").as_double(); // 0.06
   double control_rate =
-      this->get_parameter("TractionABS.control_rate").as_double();
+      this->get_parameter("traction_abs.control_rate").as_double();
 
   this->m_traction_ABS_controller_ = TractionABS(
       traction_enabled, traction_throttle_cmd_thres, traction_factor,
