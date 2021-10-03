@@ -13,11 +13,12 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 find_package(PCL REQUIRED QUIET)
-
+find_package(yaml-cpp REQUIRED)
 
 include_directories(
   include
   ${PCL_INCLUDE_DIRS}
+  ${YAML_CPP_INCLUDEDIR}
 )
 # find dependencies
 find_package(ament_cmake_auto REQUIRED)
@@ -62,4 +63,5 @@ if(BUILD_TESTING)
 endif()
 
 ament_auto_package(INSTALL_TO_SHARE
-        launch)
+        launch
+        config)

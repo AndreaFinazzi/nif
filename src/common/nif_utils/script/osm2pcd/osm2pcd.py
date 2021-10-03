@@ -48,7 +48,7 @@ def write_pcd(points, save_pcd_path):
     n = len(points)
     lines = []
     for i in range(n):
-        print(points[i])
+        # print(points[i])
         x, y, z, i = points[i]
         lines.append('{:.6f} {:.6f} {:.6f} {}'.format(x, y, z, i))
 
@@ -77,15 +77,15 @@ def parse_configs():
     parser.add_argument('--set_topic', type=str, default="/novatel_bottom/bestpos",
                         help='check headers name')
 
-    # lon_0, lat_0 = -86.235148, 39.809786  #indy
-    lon_0, lat_0 = -86.3418060783425, 39.8125900071711  #Lucas Oil Racing
+    lon_0, lat_0 = -86.235148, 39.809786  #indy
+    # lon_0, lat_0 = -86.3418060783425, 39.8125900071711  #Lucas Oil Racing
     
     nedPoints = []
 
     configs = edict(vars(parser.parse_args()))
 
     root_path = './include' 
-    osm_file_name = os.path.join(root_path, 'osm', 'lor' ,configs.filename)
+    osm_file_name = os.path.join(root_path, 'osm', 'ims' ,configs.filename)
     pcd_file_name = osm_file_name[:-3] + "pcd" 
     wpt_file_name = osm_file_name[:-4] + "_wpt.csv" 
 
@@ -100,24 +100,38 @@ def parse_configs():
     ways = root.findall("way")
 
     idx = 0
-
+    node_map = {}
     for node in tqdm(nodes):
 
         lat = float(node.attrib['lat'])
         lon = float(node.attrib['lon'])
 
         ned = geodetic2ned(lat, lon, 0., lat_0, lon_0, 0., deg=True)
-        
+        map_buf = {int(node.attrib['id']): [ned[0], -ned[1], 0.0, 0.0]}        
         # if ((ned[0] - x_prev)**2 + (ned[1] - y_prev)**2) ** 0.5 < 0.5 :
         #     continue 
-
+        node_map.update(map_buf)
         # print("ned: " , ned)
 
-        pointBuf = [ned[0], -ned[1], 0.0, idx]
-        nedPoints.append(pointBuf)
+        # pointBuf = [ned[0], -ned[1], 0.0, idx]
+        # nedPoints.append(pointBuf)
         # print(pointBuf)
-        idx = idx + 1
+
+    for way in ways:
+        nds = way.findall("nd")
+
+        for nd in nds:
+            ref_nd = int(nd.attrib['ref'])
+            
+            pointBuf = node_map[ref_nd]
+            pointBuf[-1] = idx
+            print(pointBuf)
+            nedPoints.append(pointBuf)
     
+            idx = idx + 1
+
+
+    # print(node_map)
     indent(root)
     # dump(root)            
     tree = ElementTree(root)
