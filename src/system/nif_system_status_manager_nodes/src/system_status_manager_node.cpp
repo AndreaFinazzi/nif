@@ -138,7 +138,7 @@ void SystemStatusManagerNode::systemStatusTimerCallback() {
 
     // check safety conditions
     bool hb_ok = heartbeatOk();
-    bool localization_ok = true; // localizationOk(); // gps_health_ok();
+    bool localization_ok = localizationOk(); // gps_health_ok();
 
     if (!hb_ok || !this->recovery_enabled) {
         hb_ok = false;
