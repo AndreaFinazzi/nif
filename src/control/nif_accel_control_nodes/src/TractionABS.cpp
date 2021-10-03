@@ -87,7 +87,7 @@ double TractionABS::ABSControl(double brake_cmd, double current_velocity,
                                double sigma) {
   // Init
   double brake_cmd_new = brake_cmd;
-  m_ABS_activated = 0; // 0 for false
+  m_abs_activated = 0; // 0 for false
   // Tire slip ratio
   // - assume 'vx == free wheel speed'
   // - sigma = (braking_wheelspeed - rolling_wheelspeed) /
@@ -104,7 +104,7 @@ double TractionABS::ABSControl(double brake_cmd, double current_velocity,
       // Release brake command
       brake_cmd_new = ABS_factor_ * brake_cmd;
       // for debugging
-      m_ABS_activated = 1; // 1 for true
+      m_abs_activated = 1; // 1 for true
     }
   }
 

@@ -37,6 +37,7 @@
 #include <std_msgs/msg/string.hpp>
 #include <std_msgs/msg/u_int8.hpp>
 
+#include "nif_msgs/msg/accel_control_status.hpp"
 #include "nif_vehicle_dynamics_manager/kalman.h"
 #include <TractionABS.hpp>
 #include <control_model.hpp>
@@ -72,7 +73,7 @@ public:
 
   // diagnostic data
   double m_traction_activated = 0.; // 0 for false
-  double m_ABS_activated = 0.;      // 0 for false
+  double m_abs_activated = 0.;      // 0 for false
   double m_sigma = 0.;
   double m_desired_engine_torque = 0.;
   double m_max_engine_torque = 0.;
@@ -87,9 +88,10 @@ private:
   void calculateBrakeCmd(double vel_err);
   void setCmdsToZeros();
   void publishThrottleBrake();
-  void publishDiagnostic(double is_traction_activated, double is_ABS_activated,
+  void publishDiagnostic(double is_engine_based, double traction_activated,
+                         double abs_activated, double max_a_lon,
                          double tire_slip_ratio, double desired_engine_torque,
-                         double max_engine_torque, double max_a_lon);
+                         double max_engine_torque);
   void shiftCallback();
   void statusCallback();
   void
@@ -106,7 +108,8 @@ private:
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pubThrottleCmdRaw_;
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pubBrakeCmd_;
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pubBrakeCmdRaw_;
-  rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr pubDiagnostic_;
+  rclcpp::Publisher<nif_msgs::msg::AccelControlStatus>::SharedPtr
+      pubDiagnostic_;
 
   rclcpp::Publisher<std_msgs::msg::UInt8>::SharedPtr pubGearCmd_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr pubControlStatus_;
@@ -139,8 +142,8 @@ private:
   unsigned int shifting_counter_ = 0;
 
   bool kalman_init = false;
-  double m_a_x_kf = 0.0; // longitudinal accel from KF
-  double m_a_y_kf = 0.0; // lateral accel from KF
+  double m_a_lon_kf = 0.0; // longitudinal accel from KF
+  double m_a_lat_kf = 0.0; // lateral accel from KF
 
   bool engine_based_throttle_enabled_ = false;
 
