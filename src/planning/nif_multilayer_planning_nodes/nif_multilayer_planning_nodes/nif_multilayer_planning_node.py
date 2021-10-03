@@ -184,6 +184,7 @@ class GraphBasedPlanner(rclpy.node.Node):
         # self.pit_out_tree = None
 
         self.mission_code = None
+        self.mission_is_changed = True
 
         # TODO pre-load all these info
         self.pit_in_wpt_msg = Path()
@@ -240,7 +241,7 @@ class GraphBasedPlanner(rclpy.node.Node):
             import_globtraj_csv.import_globtraj_csv(import_path=path_dict['globtraj_input_path'])[0]
 
         self.pos_est = self.refline[0, :]
-        self.heading_est = np.arctan2(np.diff(self.refline[0:2, 1]), np.diff(self.refline[0:2, 0])) - np.pi / 2
+        self.heading_est = np.arctan2(np.diff(self.refline[0:2, 1]), np.diff(self.refline[0:2, 0])) - np.pi/2
         self.vel_est = 0.0
 
         # set start pos
@@ -324,6 +325,8 @@ class GraphBasedPlanner(rclpy.node.Node):
         return [qx, qy, qz, qw]
 
     def system_status_callback(self, msg):
+        if self.mission_code != msg.mission_status.mission_status_code:
+            self.mission_is_changed = True
         self.mission_code = msg.mission_status.mission_status_code
 
     def track_inout_callback(self, msg):
@@ -384,10 +387,10 @@ class GraphBasedPlanner(rclpy.node.Node):
         pitch is rotation around y in radians (counterclockwise)
         yaw is rotation around z in radians (counterclockwise)
         """
-        t0 = +2.0 * (quat.w * quat.x + quat.y * quat.z)
-        t1 = +1.0 - 2.0 * (quat.x * quat.x + quat.y * quat.y)
-        roll_x = math.atan2(t0, t1)
-        return roll_x  # in radians
+        t3 = +2.0 * (quat.w * quat.z + quat.x * quat.y)
+        t4 = +1.0 - 2.0 * (quat.y * quat.y + quat.z * quat.z)
+        yaw_z = math.atan2(t3, t4)
+        return yaw_z
 
     def veh_odom_callback(self, msg):
         self.current_veh_odom = msg
@@ -398,7 +401,7 @@ class GraphBasedPlanner(rclpy.node.Node):
         ])
 
         self.current_veh_odom_yaw_rad = self.yaw_from_ros_quaternion(self.current_veh_odom.pose.pose.orientation)
-        self.heading_est = self.current_veh_odom_yaw_rad - np.pi / 2
+        self.heading_est = self.current_veh_odom_yaw_rad - np.pi/2
         # TODO : could use perception instead of this, we gain both accuracy and performance
         self.vel_est = math.sqrt(pow(self.current_veh_odom.twist.twist.linear.x, 2)
                                  + pow(self.current_veh_odom.twist.twist.linear.y, 2))
@@ -427,7 +430,6 @@ class GraphBasedPlanner(rclpy.node.Node):
             planning_graph = False
         else:
             planning_graph = True
-
 
         if self.mission_code == MissionStatus.MISSION_PIT_IN:
             # ---------------------------------------------------
@@ -584,6 +586,103 @@ class GraphBasedPlanner(rclpy.node.Node):
             #     self.local_maptrack_inglobal_pub.publish(self.pit_in_wpt_msg)
             #     return
 
+        elif self.mission_code == MissionStatus.MISSION_STANDBY:
+
+            out_of_track_flg = self.ltpl_obj.set_startpos(pos_est=self.pos_est,
+                                        heading_est=self.heading_est)
+
+            if out_of_track_flg is True:
+                nearest_dist_list_from, nearest_ind_list_form = self.pit_tree.query([[self.current_veh_odom.pose.pose.position.x,
+                                                                        self.current_veh_odom.pose.pose.position.y]], k=1)
+                nearest_ind = nearest_ind_list_form[0][0]
+                pit_in_path_msg = Path()
+                pit_in_path_msg.header.stamp = self.get_clock().now().to_msg()
+                pit_in_path_msg.header.frame_id = "odom"
+
+                if self.sys_var_track == 'LG_SVL':
+                    for i in range(100):
+                        idx = None
+                        if nearest_ind + i < len(self.pit_wpt):
+                            idx = nearest_ind + i
+                        else:
+                            idx = nearest_ind + i - len(self.pit_wpt)
+                        goal_pt_inglobal_x = self.pit_wpt[idx][0]
+                        goal_pt_inglobal_y = self.pit_wpt[idx][1]
+                        goal_pt_inglobal_yaw_rad = self.pit_wpt[idx][2]
+
+                        quat = self.euler_to_quaternion([goal_pt_inglobal_yaw_rad,0.0,0.0])
+
+                        pose = PoseStamped()
+                        pose.pose.position.x = goal_pt_inglobal_x
+                        pose.pose.position.y = goal_pt_inglobal_y
+                        pose.pose.orientation.x = quat[0]
+                        pose.pose.orientation.y = quat[1]
+                        pose.pose.orientation.z = quat[2]
+                        pose.pose.orientation.w = quat[3]
+                        pit_in_path_msg.poses.append(pose)
+                    self.local_maptrack_inglobal_pub.publish(pit_in_path_msg)
+                return
+
+            else:
+                if planning_graph == False:
+                    return
+                # -- SELECT ONE OF THE PROVIDED TRAJECTORIES -----------------------------------------------------------------------
+                # (here: brute-force, replace by sophisticated behavior planner)
+                for sel_action_prev in ["straight", "follow"]:  # try to force 'right', else try next in list
+                    if sel_action_prev in self.traj_set.keys():
+                        break
+
+                # -- CALCULATE PATHS FOR NEXT TIMESTAMP ----------------------------------------------------------------------------
+                self.ltpl_obj.calc_paths(prev_action_id=sel_action_prev,
+                                        object_list=self.obj_list)
+
+                self.traj_set = self.ltpl_obj.calc_vel_profile(pos_est=self.pos_est,
+                                                            vel_est=self.vel_est)[0]
+
+                for sel_action_current in ["straight", "follow"]:  # try to force 'right', else try next in list
+                    if sel_action_current in self.traj_set.keys():
+                        break
+
+                maptrack_inglobal = self.traj_set.get(sel_action_current)
+                mp_len = len(maptrack_inglobal[0])
+                if mp_len < len(self.msg.poses):
+                    for idx in range(mp_len, len(self.msg.poses)):
+                        self.msg.poses.pop()
+                    self.maptrack_len = mp_len
+
+                self.msg.header.stamp = self.get_clock().now().to_msg()
+
+                # TODO pre-load all these info
+                for idx in range(mp_len):
+                    if idx < len(self.msg.poses):
+                        pose = self.msg.poses[idx]
+                    else:
+                        pose = PoseStamped()
+                        pose.header.frame_id = self.pit_in_wpt_msg.header.frame_id
+                        self.msg.poses.append(pose)
+                        self.maptrack_len += 1
+
+                    pose.header.stamp = self.get_clock().now().to_msg()
+                    pose.pose.position.x = maptrack_inglobal[0][idx][1]  # for x
+                    pose.pose.position.y = maptrack_inglobal[0][idx][2]  # for x
+
+                    # TODO implement orientation comp in offline part
+                    y_dot = (pose.pose.position.y - self.last_pose.pose.position.y) / self.pose_resolution
+                    x_dot = (pose.pose.position.x - self.last_pose.pose.position.x) / self.pose_resolution
+                    yaw = math.atan2(y_dot, x_dot)
+                    pose.pose.orientation.x = 0.
+                    pose.pose.orientation.z = math.sin(yaw / 2.)
+                    pose.pose.orientation.y = 0.
+                    pose.pose.orientation.w = math.cos(yaw / 2.)
+
+                    # self.get_logger().debug("%f, %f" % (pose.pose.position.x, pose.pose.position.y))
+                    self.last_pose = pose
+
+                self.msg.poses[0].pose.orientation = self.msg.poses[1].pose.orientation
+                self.local_maptrack_inglobal_pub.publish(self.msg)
+
+
+
         elif self.mission_code == MissionStatus.MISSION_PIT_OUT or self.mission_code == MissionStatus.MISSION_PIT_STANDBY:
             # ---------------------------------------------------
             # ---------------------------------------------------
@@ -591,9 +690,9 @@ class GraphBasedPlanner(rclpy.node.Node):
             # ---------------------------------------------------
             # ---------------------------------------------------
 
-            self.ltpl_obj.set_startpos(pos_est=self.pos_est,
+            out_of_track_flg = self.ltpl_obj.set_startpos(pos_est=self.pos_est,
                                         heading_est=self.heading_est)
-                                        
+
             nearest_dist_list_from, nearest_ind_list_form = self.pit_tree.query([[self.current_veh_odom.pose.pose.position.x,
                                                                      self.current_veh_odom.pose.pose.position.y]], k=1)
             nearest_ind = nearest_ind_list_form[0][0]

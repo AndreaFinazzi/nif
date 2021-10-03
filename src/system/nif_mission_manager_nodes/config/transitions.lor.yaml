@@ -39,10 +39,10 @@ missions:
     activation_area:
       active: true
       bboxes:
-        - - -800.0 # x_min
-          - -50.0 # y_min
-          - -600.0 # x_max
-          - 50.0 # y_max
+        - - -100.0 # x_min
+          - -230.0 # y_min
+          - -30.0 # x_max
+          - -200.0 # y_max
     activation_velocity:
       active: true
       range_mps:
@@ -70,10 +70,10 @@ missions:
     activation_area:
       active: true
       bboxes:
-        - - -70.0 # x_min
-          - 5.0 # y_min
-          - 10.0 # x_max
-          - 50.0 # y_max
+        - - -7.5 # x_min
+          - -30.0 # y_min
+          - 2.5 # x_max
+          - -15.0 # y_max
     activation_velocity:
       active: false
       range_mps:
@@ -108,10 +108,10 @@ missions:
     activation_area:
       active: true
       bboxes:
-        - - -500.0 # x_min
-          - 500.0 # y_min
-          - -300.0 # x_max
-          - 800.0 # y_max
+        - - -125.0 # x_min
+          - -230.0 # y_min
+          - -100.0 # x_max
+          - -200.0 # y_max
     allowed_transitions:
       active: true # ignore
       from:
@@ -144,10 +144,10 @@ missions:
     activation_area:
       active: true
       bboxes:
-        - - -650.0 # x_min
-          - 5.0 # y_min
-          - 260.0 # x_max
-          - 50.0 # y_max
+        - - -80.0 # x_min
+          - -30.0 # y_min
+          - 80.0 # x_max
+          - -15.0 # y_max
     allowed_transitions:
       active: true
       from:
