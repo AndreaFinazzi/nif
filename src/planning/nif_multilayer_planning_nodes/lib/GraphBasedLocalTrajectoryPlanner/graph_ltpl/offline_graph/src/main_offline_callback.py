@@ -90,7 +90,7 @@ def main_offline_callback(globtraj_param_path: str,
         # determine if track is closed or unclosed (check if end and start-point are close together)
         closed = (np.hypot(xy[0, 0] - xy[-1, 0], xy[0, 1] - xy[-1, 1])
                   < graph_config.getfloat('LATTICE', 'closure_detection_dist'))
-        if closed:
+        if closed:cd
             logging.getLogger("local_trajectory_logger").debug("Input line is interpreted as closed track!")
 
             # close line
