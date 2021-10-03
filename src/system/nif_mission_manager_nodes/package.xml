@@ -9,6 +9,7 @@
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
+  <depend>std_srvs</depend>
   <depend>nif_msgs</depend>
   <depend>nif_common</depend>
   <depend>nif_common_nodes</depend>

@@ -7,6 +7,7 @@
 #include "nif_common_nodes/i_base_synchronized_node.h"
 #include "nif_mission_manager/mission_parser.h"
 #include "raptor_dbw_msgs/msg/wheel_speed_report.hpp"
+#include "std_srvs/srv/trigger.hpp"
 
 using nif_msgs::msg::MissionStatus;
 using nif_msgs::msg::MissionStatus;
@@ -69,10 +70,17 @@ private:
   rclcpp::Subscription<nif::common::msgs::RCFlagSummary>::SharedPtr rc_flag_summary_sub;
   rclcpp::Subscription<raptor_dbw_msgs::msg::WheelSpeedReport>::SharedPtr velocity_sub;
 
+  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr recovery_service;
+
   void RCFlagSummaryCallback(const nif::common::msgs::RCFlagSummary::UniquePtr msg);
   void velocityCallback(
     const raptor_dbw_msgs::msg::WheelSpeedReport::SharedPtr msg);
   
+  void recoveryServiceHandler(
+          const std::shared_ptr<rmw_request_id_t> request_header,
+          const std_srvs::srv::Trigger::Request::SharedPtr request,
+          std_srvs::srv::Trigger::Response::SharedPtr response);
+
   /**
    * Mission Status state machine.
    * @return the mission encoding.

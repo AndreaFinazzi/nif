@@ -75,6 +75,14 @@ MissionManagerNode::MissionManagerNode(
             "out_mission_status", nif::common::constants::QOS_INTERNAL_STATUS
     );
 
+    // Services
+    this->recovery_service = this->create_service<std_srvs::srv::Trigger>(
+            "/mission_manager/recover",
+            std::bind(
+                    &MissionManagerNode::recoveryServiceHandler,
+                    this,
+                    std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+
     MissionParser::loadMissionsDescription(missions_file_path, this->missions_description);
     
     this->setNodeStatus(common::NodeStatusCode::NODE_INITIALIZED);
@@ -340,4 +348,27 @@ MissionStatus::_mission_status_code_type MissionManagerNode::validateMissionTran
 
     // Transition rejected, return current state
     return this->mission_status_msg.mission_status_code;
+}
+
+void MissionManagerNode::recoveryServiceHandler(
+        const std::shared_ptr<rmw_request_id_t> request_header,
+        const std_srvs::srv::Trigger::Request::SharedPtr request,
+        std_srvs::srv::Trigger::Response::SharedPtr response) 
+{
+        if (this->missionIs(MissionStatus::MISSION_STANDBY)         ||
+            this->missionIs(MissionStatus::MISSION_PIT_INIT)        ||
+            this->missionIs(MissionStatus::MISSION_EMERGENCY_STOP)  ||
+            this->missionIs(MissionStatus::MISSION_COMMANDED_STOP))
+        {
+            this->is_system_startup = true;
+            this->mission_status_msg.mission_status_code = MissionStatus::MISSION_DEFAULT;
+            response->success = this->is_system_startup;
+            response->message = "is_system_startup set to ";
+            response->message.append(this->is_system_startup ? "true" : "false");
+            // response->message.append(";/tmission_status_code set to %d", this->mission_status_msg.mission_status_code);
+            response->success = true;
+        } else {
+            response->message = "Mission reset not allowed in the current status.";
+            response->success = false;
+        }
 }
