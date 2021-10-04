@@ -16,6 +16,7 @@
     <exec_depend>nif_multilayer_planning_nodes</exec_depend>
     <exec_depend>nif_common_nodes</exec_depend>
     <exec_depend>nif_system_status_manager_nodes</exec_depend>
+    <exec_depend>nif_mission_manager_nodes</exec_depend>
     <exec_depend>nif_points_preprocessor_nodes</exec_depend>
     <exec_depend>av21_description</exec_depend>
     <exec_depend>nif_control_lqr_nodes</exec_depend>

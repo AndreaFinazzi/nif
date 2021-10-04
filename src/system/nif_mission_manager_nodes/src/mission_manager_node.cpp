@@ -91,7 +91,7 @@ void MissionManagerNode::run() {
     auto node_status = common::NodeStatusCode::NODE_ERROR;
     if (!this->isDataOk())
     {
-        RCLCPP_ERROR_THROTTLE(this->get_logger(), *this->get_clock(), 1000, "Data timeout in MissionManagerNode::run();");
+        RCLCPP_ERROR_THROTTLE(this->get_logger(), *this->get_clock(), 60000, "Data timeout in MissionManagerNode::run();");
         this->mission_status_msg.mission_status_code = MissionStatus::MISSION_EMERGENCY_STOP;
         
     } else {

@@ -401,7 +401,7 @@ void SystemStatusManagerNode::processSafelocVelocity(double & max_vel_mps)
     if (!this->hasLocalizationStatus())
         {
             max_vel_mps = this->velocity_zero;
-            RCLCPP_ERROR_THROTTLE(this->get_logger(), *this->get_clock(), 1000, "Data timeout in SystemStatusManagerNode::processSafelocVelocity();");
+            RCLCPP_ERROR_THROTTLE(this->get_logger(), *this->get_clock(), 60000, "Data timeout in SystemStatusManagerNode::processSafelocVelocity();");
             return;
         }
 

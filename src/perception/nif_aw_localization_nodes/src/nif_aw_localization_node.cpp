@@ -591,6 +591,9 @@ void AWLocalizationNode::TOPBESTPOSCallback(
   BestPosTop.x = transform_top_to_bottom_sync.getOrigin().x();
   BestPosTop.y = transform_top_to_bottom_sync.getOrigin().y();
 
+  if((double)msg->lat == 0. && (double)msg->lon == 0.)
+    return;
+  
   bTOP_GPS = true;
   top_gps_update = true;
 }
