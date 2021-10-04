@@ -110,7 +110,7 @@ missions:
       bboxes:
         - - -1800.0 # x_min
           - -500.0 # y_min
-          - -1550.0 # x_max
+          - -1200.0 # x_max
           - -300.0 # y_max
     allowed_transitions:
       active: true # ignore
@@ -145,9 +145,9 @@ missions:
       active: true
       bboxes:
         - - -1950.0 # x_min
-          - 300.0 # y_min
-          - -1650.0 # x_max
-          - 310.0 # y_max
+          - 250.0 # y_min
+          - -1300.0 # x_max
+          - 312.0 # y_max
     allowed_transitions:
       active: true
       from:

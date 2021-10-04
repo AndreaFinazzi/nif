@@ -130,7 +130,7 @@ class GraphVisualizer:
             node_x.append(self.nodes_pos[i][0])
             node_y.append(self.nodes_pos[i][1])
 
-        plt.scatter(node_x, node_y, s = 1.5 )
+        plt.scatter(node_x, node_y, s = 2.5 )
 
 if __name__ == "__main__":
 
