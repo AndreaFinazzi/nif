@@ -257,7 +257,7 @@ def generate_launch_description():
             ('/in_imu_data', '/novatel_bottom/imu/data')
         ],
         parameters=[{
-            'engine_based_throttle_enabled' : False, 
+            'engine_based_throttle_enabled' : True, 
             'gear.track': gear_track,
         }]
     )
