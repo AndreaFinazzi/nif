@@ -61,9 +61,7 @@ void nif::control::ControlSafetyLayerNode::run() {
 
     if (    this->emergency_lane_enabled ||
             this->emergency_buffer_empty ||
-            !this->hasSystemStatus()     ||
-            this->now() - this->getSystemStatusUpdateTime() >
-            rclcpp::Duration::from_seconds(0.5))
+            !this->hasSystemStatus())
     {
 //      TODO EMERGENCY LANE HANDLING
         double velocity_error = emergencyVelocityError();
@@ -108,9 +106,7 @@ void nif::control::ControlSafetyLayerNode::run() {
 
         this->control_pub->publish(this->control_cmd);
         if (this->emergency_buffer_empty ||
-            !this->hasSystemStatus()     ||
-            this->now() - this->getSystemStatusUpdateTime() >
-            rclcpp::Duration::from_seconds(0.5))
+            !this->hasSystemStatus())
         { 
             node_status = common::NODE_ERROR;
         } else {

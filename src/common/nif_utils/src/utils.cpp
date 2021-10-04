@@ -8,6 +8,20 @@
 #include "nif_utils/utils.h"
 #include <math.h>
 
+  /**
+   * Time in seconds
+  **/
+  double nif::common::utils::time::secs(rclcpp::Time t) {
+    return static_cast<double>(t.nanoseconds()) * 1e-9;
+  }
+  
+  /**
+   * Duration in seconds
+  **/
+  double nif::common::utils::time::secs(rclcpp::Duration t) {
+    return static_cast<double>(t.nanoseconds()) * 1e-9;
+  }
+
 double nif::common::utils::geometry::calEuclideanDistance(
     const geometry_msgs::msg::Point& a, const geometry_msgs::msg::Point& b) {
   return sqrt(pow((a.x - b.x), 2) + pow((a.y - b.y), 2) + pow((a.z - b.z), 2));

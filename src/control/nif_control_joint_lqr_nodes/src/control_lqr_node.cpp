@@ -61,7 +61,7 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
   // Limit the max change in the des_accel signal over time
   this->declare_parameter("des_accel_max_da_dt", 5.0);
   // Minimum length of the reference path
-  this->declare_parameter("path_min_length_m", 4.0);
+  this->declare_parameter("path_min_length_m", 30.0);
 
   //  Invert steering command for simulation
   this->declare_parameter("invert_steering", false);
@@ -145,11 +145,12 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
   //  Check whether we have updated data
   bool valid_path =
       this->hasReferencePath() &&
-      this->getReferencePath()->poses.size() > m_path_min_length_m &&
-      secs(now - this->getReferencePathUpdateTime()) < path_timeout_sec_;
+      !this->getReferencePath()->poses.empty() &&
+      this->getReferencePathLastPointDistance() > m_path_min_length_m &&
+      nif::common::utils::time::secs(now - this->getReferencePathUpdateTime()) < path_timeout_sec_;
   bool valid_odom =
       this->hasEgoOdometry() &&
-      secs(now - this->getEgoOdometryUpdateTime()) < odometry_timeout_sec_;
+      nif::common::utils::time::secs(now - this->getEgoOdometryUpdateTime()) < odometry_timeout_sec_;
   bool valid_tracking_result = false;
 
   double steering_angle_deg = 0.0;
@@ -160,7 +161,7 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
 
     // Check whether path is global/local
     bool is_local_path =
-        this->getReferencePath()->header.frame_id == "base_link";
+        this->getReferencePath()->header.frame_id == this->getBodyFrameId();
 
     auto state = joint_lqr::utils::LQRState(this->getEgoOdometry());
     if (use_tire_velocity_)
@@ -220,10 +221,7 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
     //    steering_angle_deg *= nif::common::vehicle_param::STEERING_RATIO;
 
     // Smooth and publish diagnostics
-    std::chrono::milliseconds period_ms =
-        std::chrono::duration_cast<std::chrono::milliseconds>(
-            this->getGclockPeriodNs());
-    double period_double_s = period_ms.count() / 1000.;
+    double period_double_s = nif::common::utils::time::secs(this->getGclockPeriodDuration());
     RCLCPP_DEBUG(this->get_logger(), "Smoothing with dt: [s] %f",
                  period_double_s);
     joint_lqr::utils::smoothSignal(steering_angle_deg, last_steering_command_,

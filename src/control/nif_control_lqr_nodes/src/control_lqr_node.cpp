@@ -2,6 +2,7 @@
 #include <nif_common/vehicle_model.h>
 
 using nif::control::ControlLQRNode;
+using nif::common::utils::time::secs;
 
 ControlLQRNode::ControlLQRNode(const std::string &node_name)
     : IControllerNode(node_name) {
@@ -147,12 +148,11 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
   //  Check whether we have updated data
   bool valid_path =
       this->hasReferencePath() && this->getReferencePath()->poses.size() > 0 &&
-      (secs(now - this->getReferencePathUpdateTime()) < path_timeout_sec_ ||
-       path_timeout_sec_ < 0.0);
+      secs(now - this->getReferencePathUpdateTime()) < path_timeout_sec_;
   bool valid_odom =
       this->hasEgoOdometry() && secs(now - this->getEgoOdometryUpdateTime()) <
-                                    odometry_timeout_sec_ ||
-      odometry_timeout_sec_ < 0.0;
+                                    odometry_timeout_sec_;
+
   bool valid_tracking_result = false;
 
   double steering_angle_deg = 0.0;
@@ -197,10 +197,7 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
     //    steering_angle_deg *= nif::common::vehicle_param::STEERING_RATIO;
 
     // Smooth and publish diagnostics
-    std::chrono::milliseconds period_ms =
-        std::chrono::duration_cast<std::chrono::milliseconds>(
-            this->getGclockPeriodNs());
-    double period_double_s = period_ms.count() / 1000.;
+    double period_double_s = nif::common::utils::time::secs(this->getGclockPeriodDuration());
     RCLCPP_DEBUG(this->get_logger(), "Smoothing with dt: [s] %f",
                  period_double_s);
     bvs_control::utils::smoothSignal(steering_angle_deg, last_steering_command_,

@@ -27,6 +27,7 @@ find_package(deep_orange_msgs REQUIRED)
 find_package(raptor_dbw_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_msgs REQUIRED)
+find_package(nif_utils REQUIRED)
 
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 find_package(yaml-cpp REQUIRED)
@@ -48,7 +49,7 @@ ament_target_dependencies(bvs_control_utils tf2 nav_msgs geometry_msgs)
 # Nodes
 add_executable(path_follower_node src/path_follower_node.cpp)
 target_link_libraries(path_follower_node lqr_control bvs_control_utils Eigen3::Eigen)
-ament_target_dependencies(path_follower_node tf2 rclcpp std_msgs nav_msgs geometry_msgs novatel_oem7_msgs deep_orange_msgs raptor_dbw_msgs)
+ament_target_dependencies(path_follower_node tf2 rclcpp std_msgs nav_msgs geometry_msgs novatel_oem7_msgs deep_orange_msgs raptor_dbw_msgs nif_utils)
 
 install(
   TARGETS path_follower_node

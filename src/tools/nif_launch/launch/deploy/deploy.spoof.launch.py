@@ -60,13 +60,6 @@ def generate_launch_description():
         description='Path to config file for ssc_interface'
     )
 
-    # diagnostics_node = Node(
-    #     package='diagnostics',
-    #     executable='emergency_diagnostics',
-    #     name='emergency_diagnostics',
-    #     output='screen'
-    # )
-
     ssc_interface = Node(
         package='ssc_interface',
         name='ssc_interface_node',
@@ -86,7 +79,7 @@ def generate_launch_description():
             ('vehicle_kinematic_state_cog', '/vehicle/vehicle_kinematic_state'),
             ('state_report_out', '/vehicle/vehicle_state_report'),
             ('state_command', '/vehicle/vehicle_state_command'),
-            ####
+
             ('accelerator_pedal_cmd', '/raptor_dbw_interface/accelerator_pedal_cmd'),
             ('brake_cmd', '/raptor_dbw_interface/brake_cmd'),
             ('steering_cmd', '/raptor_dbw_interface/steering_cmd'),
@@ -153,6 +146,12 @@ def generate_launch_description():
         ),
     )
 
+    nif_aw_localization_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            get_package_share_directory('nif_aw_localization_nodes') + '/launch/deploy.launch.py'
+        ),
+    )
+
     nif_wall_node_launch_bg = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             get_package_share_directory('nif_points_preprocessor_nodes') + '/launch/deploy.launch.py'
@@ -179,6 +178,7 @@ def generate_launch_description():
         remappings=[
             ('in_control_cmd', '/control_pool/control_cmd'),
             ('in_override_control_cmd', '/control_pool/override_cmd'),
+            ('in_perception_steering', '/wall_following_steering_cmd'),
             ('out_control_cmd', '/control_safety_layer/out/control_cmd'),
             ('out_steering_control_cmd', '/joystick/steering_cmd'),
             ('out_accelerator_control_cmd', '/joystick/accelerator_cmd'),
@@ -194,14 +194,17 @@ def generate_launch_description():
         output='screen',
         remappings=[
             ('out_desired_velocity', 'velocity_planner/des_vel'),
-            # ('in_reference_path', 'planning/graph/path_global'),
-            ('in_reference_path', 'planning/path_global'),
-            ('in_ego_odometry', 'localization/ekf/odom'),
+            ('in_reference_path', 'planning/graph/path_global'),
+            # ('in_reference_path', 'planning/path_global'),
+            ('in_ego_odometry', '/aw_localization/ekf/odom'),
             ('in_wheel_speed_report', 'raptor_dbw_interface/wheel_speed_report'),
             ('in_imu_data', 'novatel_bottom/imu/data'),
             ('in_steering_report', 'raptor_dbw_interface/steering_report'),
             ('in_control_error', 'control_joint_lqr/lqr_error')
-        ]
+        ],
+        parameters=[{
+            'lateral_tire_model_factor' : 1.0,
+        }]
     )
 
     lqr_joint_config_file = get_share_file(
@@ -225,6 +228,7 @@ def generate_launch_description():
             LaunchConfiguration('control_joint_lqr_params_file'),
             {
                 'lqr_config_file': lqr_joint_config_file,
+                'use_tire_velocity' : True,
             }
         ],
         output={
@@ -234,25 +238,28 @@ def generate_launch_description():
         remappings=[
             ('in_control_cmd_prev', '/control_safety_layer/out/control_cmd'),
             ('out_control_cmd', '/control_pool/control_cmd'),
-            # ('in_reference_path', '/planning/graph/path_global'),
-            ('in_reference_path', '/planning/path_global'),
+            ('in_reference_path', '/planning/graph/path_global'),
         ]
     )
 
-    nif_accel_control_param = DeclareLaunchArgument(
-        'accel_control_param',
-        default_value=get_share_file(package_name='nif_accel_control_nodes', file_name='config/params.yaml'
-        ),
-        description='Path to config file for nif_accel_control_nodes'
-    )
+    gear_track = None
+
+    if track == LOR:
+        gear_track = 'LOR'
+    elif track == IMS:
+        gear_track = 'IMS'
 
     nif_accel_control_node = Node(
         package='nif_accel_control_nodes',
         executable='nif_accel_control_nodes_exe',
         output='screen',
-        parameters=[
-            LaunchConfiguration('accel_control_param')
-        ]
+        remappings=[
+            ('/in_imu_data', '/novatel_bottom/imu/data')
+        ],
+        parameters=[{
+            'engine_based_throttle_enabled' : False, 
+            'gear.track': gear_track,
+        }]
     )
 
 # NIF LQR + CSL END ###############################################
@@ -307,66 +314,24 @@ def generate_launch_description():
         )
     )
 
-### NIF WAYPOINT MANAGER #############################
-
-    wpt_config_file_lor = (
-        os.path.join(
-            get_package_share_directory("nif_waypoint_manager_nodes"),
-            "config",
-            "lor.pit.yaml",
-        ),
-    )
-
-    wpt_config_file_ims = (
-        os.path.join(
-            get_package_share_directory("nif_waypoint_manager_nodes"),
-            "config",
-            "ims.yaml",
-        ),
-    )
-
-    config_file = None
-
-    if track == LOR:
-        config_file = wpt_config_file_lor
-    elif track == IMS:
-        config_file = wpt_config_file_ims
-    else:
-        raise RuntimeError("ERROR: invalid track provided: {}".format(track))
-
-    nif_wpt_param = DeclareLaunchArgument(
-        'nif_waypoint_manager_param_file',
-        default_value=config_file,
-        description='Path to config file for waypoint manager'
-    )
-
-    nif_waypoint_manager_node = Node(
-        package='nif_waypoint_manager_nodes',
-        executable='nif_waypoint_manager_nodes_exe',
-        output='screen',
-        parameters=[
-            LaunchConfiguration('nif_waypoint_manager_param_file')
-        ],
-        remappings=[
-            ('topic_ego_odometry', 'localization/ekf/odom'),
-            ('wpt_manager/maptrack_path/global', '/planning/path_global'),
-            ('wpt_manager/maptrack_path/body', '/planning/path_body')
-        ]
-    )
-
-### NIF WAYPOINT MANAGER END #############################
-
     nif_multilayer_planning_node = Node(
         package='nif_multilayer_planning_nodes',
         executable='nif_multilayer_planning_nodes_exe',
         output={
-            'stdout': 'log',
+            'stdout': 'screen',
             'stderr': 'screen',
         },
         remappings={
             ('out_local_maptrack_inglobal', '/planning/graph/path_global'),
-            ('in_ego_odometry', '/localization/ekf/odom'),
+            ('in_ego_odometry', '/aw_localization/ekf/odom'),
+            ('in_system_status', '/system/status')
         }
+    )
+
+    nif_mission_manager_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            get_share_file("nif_mission_manager_nodes", 'launch/deploy.spoof.launch.py')
+        )
     )
 
 ### NIF MULTILAYER PLANNER END #############################
@@ -375,9 +340,7 @@ def generate_launch_description():
         ssc_interface_param,
         nif_global_param,
         nif_csl_param,
-        nif_wpt_param,
         nif_joint_lqr_param,
-        nif_accel_control_param,
 
         ssc_interface,
         socketcan_receiver_launch,
@@ -388,12 +351,13 @@ def generate_launch_description():
         nif_global_param_node,
         nif_system_status_manager_node,
         nif_csl_node,
+        nif_aw_localization_launch,
         nif_localization_launch,
         nif_wall_node_launch_bg,
-        nif_waypoint_manager_node,
         robot_description_launch,
         nif_multilayer_planning_node,
         nif_velocity_planning_node,
         nif_joint_lqr_control_node,
         nif_accel_control_node,
+        nif_mission_manager_launch
     ])

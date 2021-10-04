@@ -150,15 +150,6 @@ private:
   bool invert_steering_;
   bool m_use_mission_max_vel_;
 
-  double secs(rclcpp::Time t) {
-    return static_cast<double>(t.seconds()) +
-           static_cast<double>(t.nanoseconds()) * 1e-9;
-  }
-  double secs(rclcpp::Duration t) {
-    return static_cast<double>(t.seconds()) +
-           static_cast<double>(t.nanoseconds()) * 1e-9;
-  }
-
   nif::common::msgs::ControlCmd::SharedPtr solve() override;
 
 }; /* class PathFollowerNode */

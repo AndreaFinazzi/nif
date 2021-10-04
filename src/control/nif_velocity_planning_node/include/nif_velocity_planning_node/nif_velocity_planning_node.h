@@ -135,6 +135,13 @@ public:
     m_lat_tire_factor =
         this->get_parameter("lateral_tire_model_factor").as_double();
 
+    if (m_lat_tire_factor > 1.0) {
+      RCLCPP_ERROR(this->get_logger(),
+                   "Got lateral_tire_model_factor: %f;",
+                   m_lat_tire_factor);
+      throw std::range_error("Parameter lateral_tire_model_factor must be lower or equal than 1.0");
+    }
+
     // Update lateral tire model safety factor
     m_tire_manager.gamma = m_lat_tire_factor;
 
@@ -298,6 +305,8 @@ private:
         this->m_max_vel_mps =
             this->getSystemStatus().mission_status.max_velocity_mps;
       }
+    } else {
+      this->m_max_vel_mps = 0.0;
     }
   }
 
@@ -474,7 +483,7 @@ private:
     }
     // kalman filtering
     auto now = rclcpp::Clock().now();
-    float dt = secs(now - m_imu_update_time);
+    float dt = nif::common::utils::time::secs(now - m_imu_update_time);
     // - prediction
     kf_a_lat.predict(dt);
     kf_a_lon.predict(dt);
@@ -638,15 +647,6 @@ private:
 
   double m_CURVATURE_MINIMUM = 0.000001;
   double m_ERROR_Y_MAX = 4.0; // halving des_vel point. Width of IMS track: 12 m
-
-  double secs(rclcpp::Time t) {
-    return static_cast<double>(t.seconds()) +
-           static_cast<double>(t.nanoseconds()) * 1e-9;
-  }
-  double secs(rclcpp::Duration t) {
-    return static_cast<double>(t.seconds()) +
-           static_cast<double>(t.nanoseconds()) * 1e-9;
-  }
 
 }; /* class VelocityPlannerNode */
 } // namespace control

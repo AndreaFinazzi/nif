@@ -58,8 +58,8 @@ def generate_launch_description():
             "velocity.pit_out": 6.0,
             "velocity.slow_drive": 10.0,
             # RC interface params
-            "listen_to_override": False,
-            "listen_to_nominal": True,
+            "listen_to_override": True,
+            "listen_to_nominal": False,
 
         }],
         remappings=[
