@@ -358,6 +358,6 @@ def generate_launch_description():
         nif_multilayer_planning_node,
         nif_velocity_planning_node,
         nif_joint_lqr_control_node,
-        nif_accel_control_node,
+        # nif_accel_control_node,
         nif_mission_manager_launch
     ])

@@ -411,6 +411,15 @@ void AWLocalizationNode::timerCallback()
 
     /* publish ekf result */
     publishEstimateResult();
+ 
+  if(m_localization_status.uncertainty > 10.0)
+  {
+    m_localization_status.localization_status_code =
+            nif_msgs::msg::LocalizationStatus::UNCERTAINTY_TOO_HIGH;
+    m_localization_status.status = "UNCERTAINTY TOO_HIGH";
+    
+  }
+
 
     pub_localization_status->publish(m_localization_status);
     this->setNodeStatus(node_status);
@@ -1335,6 +1344,10 @@ void AWLocalizationNode::publishEstimateResult()
   current_ekf_odom_.twist.covariance[5] = P(IDX::VX, IDX::WZ);
   current_ekf_odom_.twist.covariance[30] = P(IDX::WZ, IDX::VX);
   current_ekf_odom_.twist.covariance[35] = P(IDX::WZ, IDX::WZ);
+
+
+  double uncertainty = sqrt(P(IDX::X, IDX::X) * P(IDX::X, IDX::X) + P(IDX::Y, IDX::Y) * P(IDX::Y, IDX::Y));
+  m_localization_status.uncertainty = uncertainty; 
 
   pub_odom_->publish(current_ekf_odom_);
 
