@@ -365,7 +365,7 @@ void AWLocalizationNode::timerCallback()
     } else if (bottom_noise_total > 2.0 && 
                bBOTTOM_GPS && !bTOP_GPS)
     {
-      m_localization_status.status = "NO UPDATE, GPS HIGH ERROR";
+      m_localization_status.status = "NO UPDATE, GPS HIGH ERROR, ONLY BOTTOM";
       m_localization_status.localization_status_code =
           nif_msgs::msg::LocalizationStatus::GPS_HIGH_ERROR;
       update_pose = false;
@@ -373,13 +373,15 @@ void AWLocalizationNode::timerCallback()
     } else if (top_noise_total > 2.0 &&
                !bBOTTOM_GPS && bTOP_GPS) 
     {
-      m_localization_status.status = "NO UPDATE, GPS HIGH ERROR";
+      m_localization_status.status = "NO UPDATE, GPS HIGH ERROR, ONLY TOP";
       m_localization_status.localization_status_code =
           nif_msgs::msg::LocalizationStatus::GPS_HIGH_ERROR;
       update_pose = false;
       node_status = nif::common::NODE_ERROR;
     }
 
+    // check convergence has higher priority than "GPS HIGH ERROR"
+    // even though GPS error is high, keep trying to find the converged value.  
     if (!bInitConverged) {
         m_localization_status.status = "NO CONVERGED. WAITING FOR CONVERGENCE";
         m_localization_status.localization_status_code =
@@ -522,6 +524,10 @@ void AWLocalizationNode::BESTPOSCallback
   ltp_odom.pose.covariance.at(35) = BestPosBottom.yaw_noise; //  yaw - yaw
 
   pub_bestpos_odometry->publish(ltp_odom);
+
+
+  if ((double)msg->lat == 0. && (double)msg->lon == 0.)
+    return;
 
   bottom_gps_update = true;
   bBOTTOM_GPS = true;

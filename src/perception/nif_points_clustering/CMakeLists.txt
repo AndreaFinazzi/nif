@@ -13,7 +13,7 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 find_package(PCL REQUIRED QUIET)
-# find_package(CUDA REQUIRED)
+find_package(CUDA REQUIRED)
 find_package(yaml-cpp REQUIRED)
 
 include_directories(
