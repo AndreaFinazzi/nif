@@ -1,76 +1,69 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <root version="2.3.8">
  <tabbed_widget parent="main_window" name="Main Window">
-  <Tab containers="1" tab_name="Velocity_Planner">
+  <Tab tab_name="Velocity_Planner" containers="1">
    <Container>
-    <DockSplitter sizes="0.143373;0.142169;0.143373;0.142169;0.143373;0.142169;0.143373" count="7" orientation="-">
+    <DockSplitter orientation="-" sizes="0.143072;0.143072;0.143072;0.141566;0.143072;0.143072;0.143072" count="7">
      <DockArea name="...">
       <plot style="Lines" mode="TimeSeries">
-       <range right="18.477812" left="8.476678" top="27.675000" bottom="-0.675000"/>
+       <range right="1.000000" top="1.000000" bottom="0.000000" left="0.000000"/>
        <limitY/>
-       <curve color="#f14cc1" name="/velocity_planner/des_vel/data">
-        <transform alias="/velocity_planner/des_vel/data[Scale/Offset]" name="Scale/Offset">
-         <options value_scale="3.6" value_offset="0" time_offset="0"/>
-        </transform>
-       </curve>
-       <curve color="#f14cc1" name="/raptor_dbw_interface/wheel_speed_report/front_left"/>
-       <curve color="#d62728" name="/velocity_planner/des_vel/test/data"/>
       </plot>
      </DockArea>
      <DockArea name="...">
       <plot style="Lines" mode="TimeSeries">
-       <range right="18.478043" left="8.477863" top="153.425000" bottom="-95.425000"/>
+       <range right="1.000000" top="1.000000" bottom="0.000000" left="0.000000"/>
        <limitY/>
-       <curve color="#9467bd" name="/raptor_dbw_interface/steering_report/steering_wheel_angle"/>
-       <curve color="#d62728" name="/control_joint_lqr/lqr_error/data.0"/>
       </plot>
      </DockArea>
      <DockArea name="...">
       <plot style="Lines" mode="TimeSeries">
-       <range right="18.476934" left="8.477832" top="24.128182" bottom="-21.460611"/>
+       <range right="1.000000" top="1.000000" bottom="0.000000" left="0.000000"/>
        <limitY/>
-       <curve color="#1ac938" name="/control_safety_layer/out/control_cmd/steering_control_cmd/data"/>
       </plot>
      </DockArea>
      <DockArea name="...">
       <plot style="Lines" mode="TimeSeries">
-       <range right="18.477318" left="8.478290" top="0.000000" bottom="-0.000000"/>
+       <range right="1.000000" top="1.000000" bottom="0.000000" left="0.000000"/>
        <limitY/>
-       <curve color="#ff7f0e" name="/control_safety_layer/out/desired_accel/data"/>
       </plot>
      </DockArea>
      <DockArea name="...">
       <plot style="Lines" mode="TimeSeries">
-       <range right="18.475980" left="8.476079" top="0.052632" bottom="-2.157895"/>
+       <range right="1.000000" top="1.000000" bottom="0.000000" left="0.000000"/>
        <limitY/>
-       <curve color="#f14cc1" name="/joystick/accelerator_cmd/data"/>
-       <curve color="#9467bd" name="/joystick/accelerator_cmd/raw/data"/>
       </plot>
      </DockArea>
      <DockArea name="...">
       <plot style="Lines" mode="TimeSeries">
-       <range right="18.476549" left="8.477057" top="0.100000" bottom="-0.100000"/>
+       <range right="1.000000" top="1.000000" bottom="0.000000" left="0.000000"/>
        <limitY/>
-       <curve color="#17becf" name="/accel_control/diagnostic/tire_slip_ratio"/>
       </plot>
      </DockArea>
      <DockArea name="...">
       <plot style="Lines" mode="TimeSeries">
-       <range right="18.477960" left="8.479242" top="967.400000" bottom="908.600000"/>
+       <range right="1.000000" top="1.000000" bottom="0.000000" left="0.000000"/>
        <limitY/>
-       <curve color="#bcbd22" name="/raptor_dbw_interface/pt_report/engine_rpm"/>
       </plot>
      </DockArea>
     </DockSplitter>
    </Container>
   </Tab>
-  <Tab containers="1" tab_name="Joint_LQR">
+  <Tab tab_name="Joint_LQR" containers="1">
    <Container>
-    <DockSplitter sizes="1" count="1" orientation="-">
+    <DockSplitter orientation="-" sizes="0.500747;0.499253" count="2">
      <DockArea name="...">
       <plot style="Lines" mode="TimeSeries">
-       <range right="1.000000" left="0.000000" top="1.000000" bottom="0.000000"/>
+       <range right="259.864660" top="6.419913" bottom="0.825201" left="249.868755"/>
        <limitY/>
+       <curve name="/joystick/steering_cmd/data" color="#1f77b4"/>
+      </plot>
+     </DockArea>
+     <DockArea name="...">
+      <plot style="Lines" mode="TimeSeries">
+       <range right="259.863484" top="1.569621" bottom="-0.062021" left="249.867331"/>
+       <limitY/>
+       <curve name="/control_joint_lqr/lqr_error/data.0" color="#d62728"/>
       </plot>
      </DockArea>
     </DockSplitter>
@@ -94,7 +87,7 @@
   <plugin ID="ROS2 Topic Subscriber">
    <use_header_stamp value="false"/>
    <discard_large_arrays value="false"/>
-   <max_array_size value="false"/>
+   <max_array_size value="true"/>
    <selected_topics>
     <topic name="/accel_control/diagnostic"/>
     <topic name="/control_joint_lqr/lqr_error"/>
@@ -108,20 +101,24 @@
     <topic name="/joystick/brake_cmd/raw"/>
     <topic name="/localization/ekf/odom"/>
     <topic name="/novatel_bottom/imu/data"/>
+    <topic name="/raptor_dbw_interface/pt_report"/>
     <topic name="/raptor_dbw_interface/steering_report"/>
     <topic name="/raptor_dbw_interface/wheel_speed_report"/>
     <topic name="/velocity_planner/des_vel"/>
     <topic name="/velocity_planner/des_vel/test"/>
     <topic name="/velocity_planner/diagnostic"/>
     <topic name="/velocity_planner/diagnostic/test"/>
-    <topic name="/raptor_dbw_interface/pt_report"/>
+    <topic name="/joystick/steering_cmd"/>
+    <topic name="/control_joint_lqr/lqr_command"/>
+    <topic name="/control_joint_lqr/accel_command"/>
+    <topic name="/aw_localization/ekf/odom"/>
    </selected_topics>
   </plugin>
   <plugin ID="UDP Server"/>
   <plugin ID="WebSocket Server"/>
   <plugin ID="ZMQ Subscriber"/>
-  <plugin status="idle" ID="CSV Exporter"/>
-  <plugin status="idle" ID="ROS2 Topic Re-Publisher"/>
+  <plugin ID="CSV Exporter" status="idle"/>
+  <plugin ID="ROS2 Topic Re-Publisher" status="idle"/>
  </Plugins>
  <!-- - - - - - - - - - - - - - - -->
  <previouslyLoaded_Datafiles/>
