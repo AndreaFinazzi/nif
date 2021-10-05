@@ -110,7 +110,7 @@ public:
     // - time to collision(arrive) until safe path dist
     this->declare_parameter("ttc_thres", 2.0);
     // - safety factor for lateral tire force model
-    this->declare_parameter("lateral_tire_model_factor", 0.4);
+    this->declare_parameter("lateral_tire_model_factor", 0.6);
 
     // Read in misc. parameters
     m_vel_plan_enabled = this->get_parameter("vel_plan_enabled").as_bool();
