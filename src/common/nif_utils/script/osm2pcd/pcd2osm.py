@@ -55,8 +55,8 @@ def parse_configs():
 
     # lon_0, lat_0 = utm_proj(126.7495693,37.6969797) #any latlon is okay
     # lon_0, lat_0 = utm_proj(126.7495693,37.6969797) #ilsan
-    # lon_0, lat_0 = -86.235148, 39.809786  #indy
-    lon_0, lat_0 = -86.3418060783425, 39.8125900071711  #Lucas Oil Racing
+    lon_0, lat_0 = -86.235148, 39.809786  #indy
+    # lon_0, lat_0 = -86.3418060783425, 39.8125900071711  #Lucas Oil Racing
 
     configs = edict(vars(parser.parse_args()))
 

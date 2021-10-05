@@ -354,11 +354,11 @@ void DbwNode::recvCAN(const can_msgs::msg::Frame::SharedPtr msg)
 
             pub_flags_->publish(out);
 
-//            deep_orange_msgs::msg::RcToCt out2;
-//            out2.stamp = msg->header.stamp;
-//            out2.track_cond = message->GetSignal("track_flag")->GetResult();
-//            out2.rolling_counter = message->GetSignal("base_to_car_heartbeat")->GetResult();
-//            pub_rc_to_ct_->publish(out2);
+           deep_orange_msgs::msg::RcToCt out2;
+           out2.stamp = msg->header.stamp;
+           out2.track_cond = message->GetSignal("track_flag")->GetResult();
+           out2.rolling_counter = message->GetSignal("base_to_car_heartbeat")->GetResult();
+           pub_rc_to_ct_->publish(out2);
 
           }
         }

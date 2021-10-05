@@ -44,7 +44,7 @@ add_definitions(-DQT_NO_KEYWORDS)
 set(SOURCE_FILES
   src/GridMapDisplay.cpp
   src/GridMapVisual.cpp
-        ../../../system/nif_system_status_manager_nodes/include/nif_system_status_manager_nodes/rc_interface_node.h)
+)
 
 ## An rviz plugin is just a shared library, so here we declare the
 ## library to be called ${PROJECT_NAME} and specify the list of

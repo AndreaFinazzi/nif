@@ -76,15 +76,15 @@
 struct LuminarPointXYZIRT {
   PCL_ADD_POINT4D;
   PCL_ADD_INTENSITY;
-  float ring;
-  float time;
+  // float ring;
+  // float time;
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 } EIGEN_ALIGN16;
 POINT_CLOUD_REGISTER_POINT_STRUCT(LuminarPointXYZIRT,
                                   (float, x, x)(float, y, y)(float, z, z)(
-                                      float, intensity,
-                                      intensity)(float, ring, ring)(float, time,
-                                                                    time));
+                                      float, intensity, intensity)); 
+                                      // (float, ring, ring)(float, time,
+                                                                    // time));
 
 namespace nif {
 namespace perception {

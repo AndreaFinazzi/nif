@@ -1,0 +1,162 @@
+# Misison codes are specified in nif_msgs/msg/MissionStatus.msg
+# Velocities are expressed in meter per seconds [m/s]
+# Listed conditions must have an 'active' flag. If false, the condition is ignored.
+# fallback_mission_code is used in case pf rejection
+missions:
+  - mission_code: 0 # MISSION_RACE
+    active: true
+    fallback:
+      active: true
+      mission_code: 128 # MISSION_SLOW_DRIVE
+    allowed_transitions:
+      active: true
+      from:
+        - 0   # MISSION_RACE
+        - 75  # MISSION_PIT_TO_TRACK
+        - 128 # MISSION_SLOW_DRIVE
+        - 200 # MISSION_COMMANDED_STOP
+        - 777 # MISSION_TEST
+
+  - mission_code: 777 # MISSION_TEST
+    active: true
+    fallback:
+      active: true
+      mission_code: 128 # MISSION_SLOW_DRIVE
+    allowed_transitions:
+      active: true
+      from:
+        - 0   # MISSION_RACE
+        - 75  # MISSION_PIT_TO_TRACK
+        - 128 # MISSION_SLOW_DRIVE
+        - 200 # MISSION_COMMANDED_STOP
+        - 777 # MISSION_TEST
+
+  - mission_code: 60 # MISSION_PIT_IN
+    active: true
+    fallback:
+      active: true
+      mission_code: 128 # MISSION_SLOW_DRIVE
+    activation_area:
+      active: true
+      bboxes:
+        - - -1120.0 # x_min
+          - 300.0 # y_min
+          - -1090.0 # x_max
+          - 340.0 # y_max
+    activation_velocity:
+      active: true
+      range_mps:
+        - 0.0 # min m/s
+        - 30.0 # max m/s
+    allowed_transitions:
+      active: true
+      from:
+        - 0   # MISSION_RACE
+        - 50  # MISSION_STANDBY
+        - 60  # MISSION_PIT_IN
+        - 128 # MISSION_SLOW_DRIVE
+        - 200 # MISSION_COMMANDED_STOP
+        - 250 # MISSION_EMERGENCY_STOP
+        - 777 # MISSION_TEST
+    timeout:
+      active: false # ignored
+      duration_ms: 1000
+
+  - mission_code: 65 # MISSION_PIT_STANDBY
+    active: true
+    fallback:
+      active: true
+      mission_code: 60 # MISSION_PIT_IN
+    activation_area:
+      active: true
+      bboxes:
+        - - -1820.0 # x_min
+          - 300.0 # y_min
+          - -1780.0 # x_max
+          - 310.0 # y_max
+    activation_velocity:
+      active: false
+      range_mps:
+        - 0.0 # min m/s
+        - 0.0 # max m/s
+    allowed_transitions:
+      active: true # ignore
+      from:
+        - 60    # MISSION_PIT_IN
+        - 65    # MISSION_PIT_STANDBY
+        - 65000 # MISSION_PIT_INIT
+    timeout:
+      active: false # ignored
+      duration_ms: 0
+
+  - mission_code: 70 # MISSION_PIT_OUT
+    active: true
+    # fallback: # CAN'T BE ACTIVE, IT CLOSES THE LOOP
+    #   active: true
+    #   mission_code: 65 # MISSION_PIT_STANDBY
+    allowed_transitions:
+      active: true
+      from:
+        - 70 # MISSION_PIT_OUT
+        - 65 # MISSION_PIT_STANDBY
+
+  - mission_code: 75 # MISSION_PIT_TO_TRACK
+    active: true
+    fallback:
+      active: true
+      mission_code: 70 # MISSION_PIT_OUT
+    activation_area:
+      active: true
+      bboxes:
+        - - -1800.0 # x_min
+          - -500.0 # y_min
+          - -1200.0 # x_max
+          - -300.0 # y_max
+    allowed_transitions:
+      active: true # ignore
+      from:
+        - 65 # MISSION_PIT_STANDBY
+        - 70 # MISSION_PIT_OUT
+        - 75 # MISSION_PIT_TO_TRACK
+    timeout:
+      active: false # ignored
+      duration_ms: 0
+
+  - mission_code: 128 # MISSION_SLOW_DRIVE
+    active: true
+    fallback:
+      active: true
+      mission_code: 75 # MISSION_PIT_TO_TRACK
+    allowed_transitions:
+      active: true # ignore
+      from:
+        - 0   # MISSION_RACE
+        - 50  # MISSION_STANDBY
+        - 75  # MISSION_PIT_TO_TRACK
+        - 128 # MISSION_SLOW_DRIVE
+        - 777 # MISSION_TEST
+
+  - mission_code: 65000 # MISSION_PIT_INIT
+    active: true
+    fallback:
+      active: true
+      mission_code: 50000 # MISSION_INIT
+    activation_area:
+      active: true
+      bboxes:
+        - - -1950.0 # x_min
+          - 250.0 # y_min
+          - -1300.0 # x_max
+          - 312.0 # y_max
+    allowed_transitions:
+      active: true
+      from:
+        - 65535   # MISSION_DEFAULT
+
+  - mission_code: 50000 # MISSION_INIT
+    active: true
+    allowed_transitions:
+      active: true
+      from:
+        - 65535   # MISSION_DEFAULT
+

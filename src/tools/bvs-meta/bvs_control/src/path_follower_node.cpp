@@ -278,10 +278,10 @@ private:
     double steering_max_ddeg_dt_;
 
     double secs(rclcpp::Time t) {
-        return static_cast<double>(t.seconds()) + static_cast<double>(t.nanoseconds())*1e-9;
+        return static_cast<double>(t.nanoseconds())*1e-9;
     }
     double secs(rclcpp::Duration t) {
-        return static_cast<double>(t.seconds()) + static_cast<double>(t.nanoseconds())*1e-9;
+        return static_cast<double>(t.nanoseconds())*1e-9;
     }
 }; /* class PathFollowerNode */
 

@@ -2,12 +2,6 @@ nif_aw_localization_nodes:
   ros__parameters:
     use_inspva_heading: true
     bestvel_heading_update_velocity_thres : 2.0
-    origin_lat: 39.8125900071711  #LOR
-    origin_lon: -86.3418060783425  #LOR
-    # origin_lat: 39.809786  #IMS
-    # # origin_lon: -86.235148 #IMS   
-    # origin_lat: 39.79312996 # LG_SVL
-    # origin_lon: -86.23524024 # LG_SVL
 
     show_debug_info : false
     predict_frequency : 100.0
@@ -16,12 +10,12 @@ nif_aw_localization_nodes:
     extend_state_step : 20
 
     pose_additional_delay : 0.0
-    pose_measure_uncertainty_time : 0.0
+    pose_measure_uncertainty_time : 0.05
     pose_rate : 20.0
-    pose_gate_dist : 50.0 # this value is margin. mahalanobisGate is updated based on vehicle speed.
-    pose_stddev_x : 0.20
-    pose_stddev_y : 0.20
-    pose_stddev_yaw : 0.035
+    pose_gate_dist : 3.0 # this value is margin. mahalanobisGate is updated based on vehicle speed.
+    pose_stddev_x : 0.050 # this value is replaced by novatel insstdev
+    pose_stddev_y : 0.050 # this value is replaced by novatel insstdev
+    pose_stddev_yaw : 0.005 # this value is replaced by novatel insstdev
     use_pose_with_covariance : false
 
     twist_additional_delay : 0.0
@@ -31,8 +25,11 @@ nif_aw_localization_nodes:
     twist_stddev_wz : 0.03
     use_twist_with_covariance : false
 
-    proc_stddev_yaw_c : 0.005
-    proc_stddev_yaw_bias_c : 0.001
+    proc_stddev_yaw_c : 0.005 #DO NOT TOUCH
+    proc_stddev_yaw_bias_c : 0.001 #DO NOT TOUCH
     proc_stddev_vx_c : 0.15
-    proc_stddev_wz_c : 0.05
+    proc_stddev_wz_c : 0.05 
 
+    top_to_bottom_bias_x : -1.05
+    top_to_bottom_bias_y : 0.62
+    use_bestvel_for_speed : false 

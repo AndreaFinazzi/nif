@@ -27,6 +27,14 @@ def generate_launch_description():
     system_status_manager_node = Node(
         package='nif_system_status_manager_nodes',
         executable='nif_system_status_manager_nodes_exe',
+        remappings=[
+            ('in_joystick_cmd', '/joystick/command'),
+            ('in_novatel_bestpos', '/novatel_bottom/bestpos'),
+            ('in_novatel_insstdev', '/novatel_bottom/insstdev'),
+            ('in_localization_status', '/aw_localization/ekf/status'),
+            ('in_mission_status', '/system/mission'),
+            ('out_system_status', '/system/status'),
+        ]
     )
 
     return LaunchDescription([

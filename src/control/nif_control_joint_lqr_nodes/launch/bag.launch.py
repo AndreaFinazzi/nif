@@ -31,7 +31,7 @@ def get_share_file(package_name, file_name):
 
 def generate_launch_description():
     lqr_config_file = get_share_file(
-        package_name='nif_control_joint_lqr_nodes', file_name='config/lqr_params.yaml'
+        package_name='nif_control_joint_lqr_nodes', file_name='config/lqr/lqr_params.deploy.yaml'
     )
 
     lqr_control_node = Node(
@@ -40,7 +40,8 @@ def generate_launch_description():
         parameters=[
             {
                 'lqr_config_file': lqr_config_file,
-                'use_tire_velocity': False
+                'use_tire_velocity': False,
+                'use_mission_max_vel': False,
             }
         ],
         output={
@@ -50,7 +51,7 @@ def generate_launch_description():
         remappings=[
             ('in_control_cmd_prev', '/control_safety_layer/out/control_cmd'),
             ('out_control_cmd', '/control_pool/control_cmd'),
-            ('in_reference_path', '/bvs_controller/target_path'),
+            ('in_reference_path', '/planning/graph/path_global'),
         ]
     )
 

@@ -47,7 +47,7 @@ int32_t main(int32_t argc, char **argv)
   }
 
   executor.add_node(nd_ssm);
-  executor.add_node(nd_rci);
+  // executor.add_node(nd_rci);
   executor.spin();
 
   rclcpp::shutdown();

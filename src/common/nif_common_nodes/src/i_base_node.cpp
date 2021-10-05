@@ -217,6 +217,10 @@ const rclcpp::Time &IBaseNode::getSystemStatusUpdateTime() const {
   return system_status_update_time;
 }
 bool IBaseNode::hasEgoOdometry() const { return has_ego_odometry; }
+
 bool IBaseNode::hasEgoPowertrainState() const { return has_ego_powertrain_state; }
-bool IBaseNode::hasSystemStatus() const { return has_system_status; }
+
+bool IBaseNode::hasSystemStatus() const { 
+  return has_system_status && (this->now() - this->system_status_update_time <= rclcpp::Duration(1, 0)); 
+  }
 
