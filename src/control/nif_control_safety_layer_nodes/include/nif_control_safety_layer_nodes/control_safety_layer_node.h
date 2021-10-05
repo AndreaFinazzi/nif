@@ -526,18 +526,28 @@ private:
     }
 
     double emergencyVelocityError() {
-        rclcpp::Duration time_diff = this->now() - (has_vel ? this->vel_recv_time_ : this->getGclockNodeInit());
-        double dt = static_cast<double>(time_diff.seconds()) +
-                static_cast<double>(time_diff.nanoseconds()) * 1e-9;
+        double safe_des_velocity = 0.0;
+        auto now = this->now();
+        double vel_error = - 27.78;
 
-        if (dt > 100 * this->ts_) {
-            this->vel_pid_.ResetErrorIntegral();
-        }
+        if (this->has_vel && now - this->vel_recv_time_ < rclcpp::Duration(500000000)) {
+            // NOMINAL
+            rclcpp::Duration time_diff = this->now() - this->vel_recv_time_;
+            double dt = static_cast<double>(time_diff.seconds()) +
+                    static_cast<double>(time_diff.nanoseconds()) * 1e-9;
+
+            if (dt > 100 * this->ts_) {
+                this->vel_pid_.ResetErrorIntegral();
+            }
 
         // Apply safe desired vel profiler for safe braking w.r.t. pose uncertainty
-        auto safe_des_velocity = emergencyDesVelProfiler();
+            safe_des_velocity = emergencyDesVelProfiler();
+            vel_error = safe_des_velocity - this->speed_mps_;
 
-        double vel_error = safe_des_velocity - this->speed_mps_;
+        } else {
+            // Ego speed is too old to be reliable, blind brake.
+            RCLCPP_ERROR_ONCE(this->get_logger(), "Ego velocity is too old, CSL is blindly braking!");
+        }
         return vel_error;
     }
 
@@ -552,7 +562,7 @@ private:
 
     double emergencyBrakeCmd(double vel_err) {
         this->brake_pid_.Update(-vel_err);
-        if(this->speed_mps_ < 6.0)
+        if (this->speed_mps_ < 6.0)
         {
             return this->brakeCmdMax_;
         }

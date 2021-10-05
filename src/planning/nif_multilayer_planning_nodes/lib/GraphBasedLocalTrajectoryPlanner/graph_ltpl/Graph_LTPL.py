@@ -287,6 +287,26 @@ class Graph_LTPL(object):
 
         return in_track
 
+    def right_bound(self):
+        return self.__graph_base.refline + self.__graph_base.normvec_normalized * np.expand_dims(self.__graph_base.track_width_right, 1)
+
+    def left_bound(self):
+        return self.__graph_base.refline - self.__graph_base.normvec_normalized * np.expand_dims(self.__graph_base.track_width_left, 1)
+        
+    def ref_line(self):
+        return self.__graph_base.refline
+
+    def get_nodes(self):
+        nodes_pos = []
+        for i, node in enumerate(self.__graph_base.get_nodes()):
+            pos = self.__graph_base.get_node_info(layer=node[0],
+                                                            node_number=node[1],
+                                                            return_child=True,
+                                                            return_parent=True)
+            nodes_pos.append(pos)
+        return nodes_pos
+
+
     def set_startpos(self,
                      pos_est: np.ndarray,
                      heading_est: float,

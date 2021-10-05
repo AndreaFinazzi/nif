@@ -260,7 +260,7 @@ class LGSVLSubscriberNode(BaseNode):
         return np.random.normal(.0, 0.025)
 
     def random_noise_position(self) -> float:
-        return np.random.normal(.0, .025)
+        return np.random.normal(.0, 5.0)
 
     def callback_ground_truth_state(self, msg: Odometry):
         '''
@@ -386,7 +386,7 @@ class LGSVLSubscriberNode(BaseNode):
         tfs.transform.rotation.y = msg.pose.pose.orientation.y
         tfs.transform.rotation.z = msg.pose.pose.orientation.z
         tfs.transform.rotation.w = msg.pose.pose.orientation.w
-        self._tf_publisher.sendTransform(tfs)
+        # self._tf_publisher.sendTransform(tfs)
 
 def main(args=None):
     rclpy.init(args=args)

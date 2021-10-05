@@ -38,6 +38,7 @@ protected:
   bool hasReferencePath() const;
   bool hasControlCmdPrev() const;  
   bool hasDesiredVelocity() const;
+  double getReferencePathLastPointDistance() const;  
 
 private:
   IControllerNode();
@@ -62,6 +63,11 @@ private:
   * reference_path last update-time.
   */
   rclcpp::Time reference_path_update_time;
+
+  /**
+  * reference_path's last point distance from ego.
+  */
+  double reference_path_last_point_distance;
 
 
   /**

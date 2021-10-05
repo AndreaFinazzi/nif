@@ -53,6 +53,7 @@ struct GPSCorrectionData_t
 {
     double x;
     double y;
+    double yaw;
     double lat_noise;
     double lon_noise;
     double yaw_noise;
@@ -194,8 +195,11 @@ private:
   double m_dGPS_Y;
   double m_dGPS_Z;
   double m_dGPS_Heading;
+  double m_dGPS_TOP_Heading;
   double m_dGPS_roll;
   double m_dGPS_Heading_prev;
+  double m_prevYaw;
+  double m_prevTOPYaw;
 
   double m_d_TOP_GPS_X;
   double m_d_TOP_GPS_Y;
@@ -204,15 +208,19 @@ private:
   bool bBOTTOM_GPS = false;
   bool bTOP_GPS = false;
 
-  bool bGPSHeading = false;
+  bool bBOTTOMGPSHeading = false;
+  bool bTOPGPSHeading = false;
   bool bottom_gps_update = false;
   bool top_gps_update = false;
 
   bool bUseBestVelForSpeed;
+  bool bInitConverged = false;
 
   bool heading_flag = false;
   bool measure_flag = false;
   bool m_inspva_heading_init = false;
+  bool m_top_inspva_heading_init = false;
+
   bool m_use_inspva_heading;
   double m_bestvel_heading_update_thres;
 

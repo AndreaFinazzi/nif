@@ -37,7 +37,7 @@ data_files.extend(
     [(d, [f]) for d, f in to_share('lib')]
 )
 data_files.extend(
-    [(d, [f]) for d, f in to_share('assets')]
+    [(d, [f]) for d, f in to_share('configs')]
 )
 data_files.extend(
     [(d, [f]) for d, f in to_share('inputs')]

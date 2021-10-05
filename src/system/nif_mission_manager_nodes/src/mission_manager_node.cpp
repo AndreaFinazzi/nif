@@ -18,10 +18,9 @@ MissionManagerNode::MissionManagerNode(
     this->declare_parameter("timeout_velocity_ms", 1500);
 
     this->declare_parameter("velocity.zero", 0.0);
-    this->declare_parameter("velocity.max", 67.0);
+    this->declare_parameter("velocity.max", 37.0);
     this->declare_parameter("velocity.pit_in", 8.0);
     this->declare_parameter("velocity.pit_out", 8.0);
-    // this->declare_parameter("velocity.slow_drive", 15.0);
     this->declare_parameter("velocity.slow_drive", 8.0);
     this->declare_parameter("safeloc.threshold_stop", 40.0);
     this->declare_parameter("safeloc.threshold_slow_down", 20.0);
@@ -75,6 +74,14 @@ MissionManagerNode::MissionManagerNode(
             "out_mission_status", nif::common::constants::QOS_INTERNAL_STATUS
     );
 
+    // Services
+    this->recovery_service = this->create_service<std_srvs::srv::Trigger>(
+            "/mission_manager/recover",
+            std::bind(
+                    &MissionManagerNode::recoveryServiceHandler,
+                    this,
+                    std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+
     MissionParser::loadMissionsDescription(missions_file_path, this->missions_description);
     
     this->setNodeStatus(common::NodeStatusCode::NODE_INITIALIZED);
@@ -84,7 +91,7 @@ void MissionManagerNode::run() {
     auto node_status = common::NodeStatusCode::NODE_ERROR;
     if (!this->isDataOk())
     {
-        RCLCPP_ERROR_THROTTLE(this->get_logger(), *this->get_clock(), 1000, "Data timeout in MissionManagerNode::run();");
+        RCLCPP_ERROR_THROTTLE(this->get_logger(), *this->get_clock(), 60000, "Data timeout in MissionManagerNode::run();");
         this->mission_status_msg.mission_status_code = MissionStatus::MISSION_EMERGENCY_STOP;
         
     } else {
@@ -114,8 +121,46 @@ MissionStatus::_mission_status_code_type MissionManagerNode::getMissionStatusCod
       break;
 
     case RCFlagSummary::VEH_FLAG_BLACK:
-      return MissionStatus::MISSION_PIT_STANDBY;
-      break;
+        switch (this->rc_flag_summary.track_flag)
+        {
+        case RCFlagSummary::TRACK_FLAG_RED: // TODO ASK TO RC WHAT SHOULD HAPPEN HERE
+            if (is_system_startup)
+            {
+                return MissionStatus::MISSION_DEFAULT; // No missions on startup
+            } else {
+                return MissionStatus::MISSION_COMMANDED_STOP;
+            }
+            break;
+
+        case RCFlagSummary::TRACK_FLAG_ORANGE:
+            if (is_system_startup && this->missionIs(MissionStatus::MISSION_DEFAULT))
+            {
+                return MissionStatus::MISSION_PIT_INIT;
+
+            } else if (this->missionIs(MissionStatus::MISSION_PIT_INIT)) {
+                is_system_startup = false;
+                return MissionStatus::MISSION_PIT_STANDBY;
+    
+            } else if (this->missionIs(MissionStatus::MISSION_INIT)) {
+                is_system_startup = false;
+                return MissionStatus::MISSION_STANDBY;
+
+            } else if ( this->missionIs(MissionStatus::MISSION_STANDBY) ||
+                        this->missionIs(MissionStatus::MISSION_PIT_STANDBY)) {
+                return this->mission_status_msg.mission_status_code;
+
+            } else {
+                return MissionStatus::MISSION_STANDBY;
+            }
+            break;
+          
+        default:
+            return MissionStatus::MISSION_PIT_STANDBY;
+
+        }
+        
+        return MissionStatus::MISSION_PIT_STANDBY;
+        break;
     
     case RCFlagSummary::VEH_FLAG_CHECKERED:
       return MissionStatus::MISSION_PIT_STANDBY;
@@ -169,7 +214,7 @@ MissionStatus::_mission_status_code_type MissionManagerNode::getMissionVehFlagNu
                 return this->mission_status_msg.mission_status_code;
 
             } else {
-                return MissionStatus::MISSION_COMMANDED_STOP;
+                return MissionStatus::MISSION_STANDBY;
             }
             break;
           
@@ -177,6 +222,8 @@ MissionStatus::_mission_status_code_type MissionManagerNode::getMissionVehFlagNu
             if (this->missionIs(MissionStatus::MISSION_PIT_STANDBY) || 
                 this->missionIs(MissionStatus::MISSION_PIT_OUT)) {
                 return MissionStatus::MISSION_PIT_TO_TRACK;
+            } else if (this->missionIs(MissionStatus::MISSION_PIT_IN)) {
+                return MissionStatus::MISSION_PIT_STANDBY; 
             } else {
                 return MissionStatus::MISSION_SLOW_DRIVE;
             }
@@ -184,10 +231,13 @@ MissionStatus::_mission_status_code_type MissionManagerNode::getMissionVehFlagNu
 
 
         case RCFlagSummary::TRACK_FLAG_GREEN:
-          // TODO If in pit, PIT_OUT should be set and maintained.
-          // TODO If on track, RACE should be set and maintained.
-          return MissionStatus::MISSION_TEST;
-          break;
+            if (this->missionIs(MissionStatus::MISSION_PIT_IN)) {
+                return MissionStatus::MISSION_PIT_STANDBY;
+            } else {
+                // TODO If on track, RACE should be set and maintained.
+                return MissionStatus::MISSION_TEST;
+            }
+            break;
 
         default:
           return MissionStatus::MISSION_COMMANDED_STOP;
@@ -297,4 +347,27 @@ MissionStatus::_mission_status_code_type MissionManagerNode::validateMissionTran
 
     // Transition rejected, return current state
     return this->mission_status_msg.mission_status_code;
+}
+
+void MissionManagerNode::recoveryServiceHandler(
+        const std::shared_ptr<rmw_request_id_t> request_header,
+        const std_srvs::srv::Trigger::Request::SharedPtr request,
+        std_srvs::srv::Trigger::Response::SharedPtr response) 
+{
+        if (this->missionIs(MissionStatus::MISSION_STANDBY)         ||
+            this->missionIs(MissionStatus::MISSION_PIT_INIT)        ||
+            this->missionIs(MissionStatus::MISSION_EMERGENCY_STOP)  ||
+            this->missionIs(MissionStatus::MISSION_COMMANDED_STOP))
+        {
+            this->is_system_startup = true;
+            this->mission_status_msg.mission_status_code = MissionStatus::MISSION_DEFAULT;
+            response->success = this->is_system_startup;
+            response->message = "is_system_startup set to ";
+            response->message.append(this->is_system_startup ? "true" : "false");
+            // response->message.append(";/tmission_status_code set to %d", this->mission_status_msg.mission_status_code);
+            response->success = true;
+        } else {
+            response->message = "Mission reset not allowed in the current status.";
+            response->success = false;
+        }
 }

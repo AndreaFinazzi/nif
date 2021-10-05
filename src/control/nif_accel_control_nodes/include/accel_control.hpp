@@ -44,6 +44,9 @@
 
 namespace control {
 
+const char* TRACK_ID_LOR = "LOR";
+const char* TRACK_ID_IMS = "IMS";
+
 // Gear State
 // Contains: gear_number, downshift speed, upshift speed, pointer to previous
 // gear, pointer to next gear
@@ -80,7 +83,7 @@ public:
   double m_max_a_lon = 0.;
 
 private:
-  void initializeGears();
+  void initializeGears(const std::string & track_id);
   void controlCallback();
   void paramUpdateCallback();
 
@@ -124,7 +127,14 @@ private:
   rclcpp::Time joy_recv_time_;
   rclcpp::Time vel_recv_time_;
   rclcpp::Time des_accel_recv_time_;
-  rclcpp::Time m_imu_update_time = rclcpp::Clock().now();
+  rclcpp::Time pt_report_recv_time_;
+  rclcpp::Time m_imu_update_time;
+
+  bool has_joy_ = false;
+  bool has_vel_ = false;
+  bool has_des_accel_ = false;
+  bool has_pt_report_ = false;
+  bool has_m_imu_ = false;
 
   bool auto_enabled_ = false;
   double speed_ = 0.0;
@@ -174,13 +184,15 @@ private:
   ThrottleBrakeProfiler m_brake_controller_;
   TractionABS m_traction_ABS_controller_;
 
-  double secs(rclcpp::Time t) {
-    return static_cast<double>(t.seconds()) +
-           static_cast<double>(t.nanoseconds()) * 1e-9;
-  }
-  double secs(rclcpp::Duration t) {
-    return static_cast<double>(t.seconds()) +
-           static_cast<double>(t.nanoseconds()) * 1e-9;
+  bool isDataOk() {
+    auto now = this->now();
+
+    bool joy_ok = this->has_joy_ && now - this->joy_recv_time_ <= rclcpp::Duration(1, 0);
+    bool velocity_ok = this->has_vel_ && now - this->vel_recv_time_ <= rclcpp::Duration(1, 0);
+    bool des_acceleration_ok = this->has_des_accel_ && now - this->des_accel_recv_time_ <= rclcpp::Duration(1, 0);
+    bool pt_report_ok = this->has_pt_report_ && now - this->pt_report_recv_time_ <= rclcpp::Duration(1, 0);
+
+    return joy_ok && velocity_ok && des_acceleration_ok && pt_report_ok;
   }
 
 }; // end of class

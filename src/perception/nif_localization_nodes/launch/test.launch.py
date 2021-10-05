@@ -38,38 +38,33 @@ def generate_launch_description():
         raise RuntimeError("ERROR: invalid track provided: {}".format(track))
 
     global_map = os.path.join(
-            get_package_share_directory("nif_localization_nodes"),
-            "map",
-            track_subdir,
-            "full_map.pcd", #IMS
-        )    
+        get_package_share_directory("nif_localization_nodes"),
+        "map",
+        track_subdir,
+        "full_map.pcd", #IMS
+    )
     outer_geofence_map = os.path.join(
-            get_package_share_directory("nif_localization_nodes"),
-            "map",
-            track_subdir,
-            "outer_map.pcd" # IMS
-            # "outer_map.pcd", #LOR
-        )
+        get_package_share_directory("nif_localization_nodes"),
+        "map",
+        track_subdir,
+        "outer_map.pcd" # IMS
+        # "outer_map.pcd", #LOR
+    )
     inner_geofence_map = os.path.join(
-            get_package_share_directory("nif_localization_nodes"),
-            "map",
-            track_subdir,
-            "inner_map.pcd", #IMS
-            # "inner_map.pcd", #LOR
-        )
+        get_package_share_directory("nif_localization_nodes"),
+        "map",
+        track_subdir,
+        "inner_map.pcd", #IMS
+        # "inner_map.pcd", #LOR
+    )
     trajectory_map = os.path.join(
-            get_package_share_directory("nif_localization_nodes"),
-            "map",
-            track_subdir,
-            # "have_to_generate.pcd", #IMS
-            "trajectory.pcd", #LOR
-        )
+        get_package_share_directory("nif_localization_nodes"),
+        "map",
+        track_subdir,
+        # "have_to_generate.pcd", #IMS
+        "trajectory.pcd", #LOR
+    )
     # TOOO +++++ INCLUDE WALL DETECTION (UNWIRED) + TOPICS FOR ROSBAGS
-
-
-    # TOOO +++++ INCLUDE WALL DETECTION (UNWIRED) + TOPICS FOR ROSBAGS
-
-
     base_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             get_package_share_directory('nif_launch') + '/launch/base.launch.py'
@@ -77,50 +72,52 @@ def generate_launch_description():
     )
 
 
+    # TOOO +++++ INCLUDE WALL DETECTION (UNWIRED) + TOPICS FOR ROSBAGS
+
     localization_node = Node(
-                package="nif_localization_nodes",
-                executable="nif_localization_nodes_exe",
-                output="screen",
-                emulate_tty=True,
-                namespace=ns,
-                parameters=[{
-                    # global map loader
-                    'globalmap_file_name' : global_map,
-                    'trajectory_pcd_file' : trajectory_map,
-                    'use_trajectory' : True,
+        package="nif_localization_nodes",
+        executable="nif_localization_nodes_exe",
+        output="screen",
+        emulate_tty=True,
+        namespace=ns,
+        parameters=[{
+            # global map loader
+            'globalmap_file_name' : global_map,
+            'trajectory_pcd_file' : trajectory_map,
+            'use_trajectory' : True,
 
-                    # geofence node
-                    'outer_geofence_filename': outer_geofence_map,
-                    'inner_geofence_filename': inner_geofence_map,
-                    'outer_geofence_bias': -0.5,
-                    'inner_geofence_bias': 0.0,
-                    'distance_low_pass_filter': 0.5,
-                    
-                    # resilient localization node
-                    'thres_for_distance_error_flag' : 1.0,
-                    'thres_for_distance_to_wall' : 2.0,
+            # geofence node
+            'outer_geofence_filename': outer_geofence_map,
+            'inner_geofence_filename': inner_geofence_map,
+            'outer_geofence_bias': -0.5,
+            'inner_geofence_bias': 0.0,
+            'distance_low_pass_filter': 0.5,
 
-                    # EKF node
-                    'use_inspva_heading' : True,
-                    'bestvel_heading_update_velocity_thres' : 2.0, # unit : km/h
-                    # 'origin_lat' : 39.809786,
-                    # 'origin_lon' : -86.235148,
-                    }],
+            # resilient localization node
+            'thres_for_distance_error_flag' : 1.0,
+            'thres_for_distance_to_wall' : 2.0,
 
-                remappings=[
-                    # Current set : Bottom INS Disabled // Top INS Enabled
-                    # /novatel_bottom/bestvel is used to back-up solution when novatel_top/inspva heading is not published.  
-                    ("in_inspva", "novatel_bottom/inspva"), # NOT USED
-                    ("in_top_inspva", "novatel_top/inspva_nouse"), # HEADING
-                    ("in_bestpos", "novatel_bottom/bestpos"), # POSE (X,Y)
-                    ("in_imu", "novatel_bottom/imu/data"), # YAW RATE
-                    ("in_bestvel", "novatel_bottom/bestvel"), #HEADING BACK UP SOLUTION
-                    ("in_wheel_speed_report", "raptor_dbw_interface/wheel_speed_report"), # WHEEL SPEED
+            # EKF node
+            'use_inspva_heading' : True,
+            'bestvel_heading_update_velocity_thres' : 2.0, # unit : km/h
+            # 'origin_lat' : 39.809786,
+            # 'origin_lon' : -86.235148,
+        }],
 
-                    ("out_odometry_ekf_estimated", "/localization/ekf/odom"),
-                    ("out_odometry_bestpos", "/localization/ekf/odom_bestpos")
-                ]
-            )
+        remappings=[
+            # Current set : Bottom INS Disabled // Top INS Enabled
+            # /novatel_bottom/bestvel is used to back-up solution when novatel_top/inspva heading is not published.
+            ("in_inspva", "novatel_bottom/inspva_nouse"), # NOT USED
+            ("in_top_inspva", "novatel_top/inspva"), # HEADING
+            ("in_bestpos", "novatel_bottom/bestpos"), # POSE (X,Y)
+            ("in_imu", "novatel_top/imu/data"), # YAW RATE
+            ("in_bestvel", "novatel_bottom/bestvel"), #HEADING BACK UP SOLUTION
+            ("in_wheel_speed_report", "raptor_dbw_interface/wheel_speed_report"), # WHEEL SPEED
+
+            ("out_odometry_ekf_estimated", "/localization/ekf/odom"),
+            ("out_odometry_bestpos", "/localization/ekf/odom_bestpos")
+        ]
+    )
 
     return LaunchDescription(
         [
@@ -128,6 +125,7 @@ def generate_launch_description():
             localization_node
         ]
     )
+
 
 
 

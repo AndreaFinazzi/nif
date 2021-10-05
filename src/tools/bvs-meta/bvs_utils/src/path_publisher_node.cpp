@@ -103,7 +103,7 @@ private:
     PathUtil path_;
 
     double secs(rclcpp::Duration t) {
-        return static_cast<double>(t.seconds()) + static_cast<double>(t.nanoseconds())*1e-9;
+        return static_cast<double>(t.nanoseconds())*1e-9;
     }
 
 }; /* class PathPublisherNode */

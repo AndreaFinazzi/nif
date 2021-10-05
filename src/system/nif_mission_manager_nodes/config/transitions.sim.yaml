@@ -91,13 +91,9 @@ missions:
 
   - mission_code: 70 # MISSION_PIT_OUT
     active: true
-    activation_area:
-      active: false
-      bboxes:
-        - - -200.0 # x_min
-          - -50.0 # y_min
-          - 600.0 # x_max
-          - 800.0 # y_max
+    # fallback: # CAN'T BE ACTIVE, IT CLOSES THE LOOP
+    #   active: true
+    #   mission_code: 65 # MISSION_PIT_STANDBY
     allowed_transitions:
       active: true
       from:
@@ -114,7 +110,7 @@ missions:
       bboxes:
         - - -500.0 # x_min
           - 500.0 # y_min
-          - -200.0 # x_max
+          - -300.0 # x_max
           - 800.0 # y_max
     allowed_transitions:
       active: true # ignore
@@ -148,9 +144,9 @@ missions:
     activation_area:
       active: true
       bboxes:
-        - - -200.0 # x_min
+        - - -650.0 # x_min
           - 5.0 # y_min
-          - 200.0 # x_max
+          - 260.0 # x_max
           - 50.0 # y_max
     allowed_transitions:
       active: true

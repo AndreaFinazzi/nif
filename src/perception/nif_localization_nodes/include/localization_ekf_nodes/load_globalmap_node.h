@@ -49,7 +49,6 @@
 
 #include <pcl_conversions/pcl_conversions.h>
 
-
 namespace nif {
 namespace localization {
 namespace maploader {
@@ -67,11 +66,13 @@ public:
   downsample(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, double resolution);
 
 private:
+  void Bool_callback(const std_msgs::msg::Bool::SharedPtr msg);
+
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubGlobalmap;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubTrajectory;
+  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr sub_Bool_;
 
   rclcpp::TimerBase::SharedPtr timer_;
-
   pcl::PointCloud<pcl::PointXYZI>::Ptr m_globalmap_ptr;
   pcl::PointCloud<pcl::PointXYZI>::Ptr m_trajectory_ptr;
 
@@ -82,6 +83,8 @@ private:
   bool bTrajectoryReady = false;
   bool bPublishOnce;
   double m_voxel_size;
+  double pub_cnt = 0;
+  bool bLoadmap = true;
 };
 
 } // namespace maploader

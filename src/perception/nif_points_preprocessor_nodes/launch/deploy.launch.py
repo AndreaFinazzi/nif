@@ -20,7 +20,7 @@ def generate_launch_description():
                 package="nif_points_preprocessor_nodes",
                 executable="nif_points_preprocessor_nodes_exe",
                 output={
-                    'stdout': 'log',
+                    'stdout': 'screen',
                     'stderr': 'screen',
                 },
                 emulate_tty=True,

@@ -36,6 +36,7 @@ def generate_launch_description():
         parameters=[
             {
                 'engine_based_throttle_enabled': True,
+                'gear.track': "IMS",
             }
         ],
         output={

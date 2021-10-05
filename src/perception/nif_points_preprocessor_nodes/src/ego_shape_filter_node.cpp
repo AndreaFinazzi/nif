@@ -77,11 +77,17 @@ EgoShapeFilterNode::EgoShapeFilterNode(const std::string &node_name_)
       nif::common::constants::QOS_SENSOR_DATA,
       std::bind(&EgoShapeFilterNode::WheelSpeedCallback, this,
                 std::placeholders::_1));
+  sub_radar_marker_ =
+      this->create_subscription<visualization_msgs::msg::Marker>(
+          "/radar_front/radar_visz_moving",
+          nif::common::constants::QOS_SENSOR_DATA,
+          std::bind(&EgoShapeFilterNode::RadarMarkerCallback, this,
+                    std::placeholders::_1));
 
   using namespace std::chrono_literals; // NOLINT
   // TODO convert period to paramter
   timer_ = this->create_wall_timer(
-      10ms, std::bind(&EgoShapeFilterNode::timer_callback, this));
+      25ms, std::bind(&EgoShapeFilterNode::timer_callback, this));
 
   pub_filtered_points = this->create_publisher<sensor_msgs::msg::PointCloud2>(
       "/merged/ego_filtered", nif::common::constants::QOS_SENSOR_DATA);
@@ -429,12 +435,14 @@ void EgoShapeFilterNode::timer_callback() {
   final_wall_following_path_msg.header.frame_id = BASE_LINK;
   final_wall_following_path_msg.header.stamp = this->now();
 
-//  EstimatePredictivePath(right_wall_plane_coeff, RightPolyCoefficient,
-//                         wall_folllowing_path_msg, m_margin_to_wall);
+
+   EstimatePredictivePath(right_wall_plane_coeff, RightPolyCoefficient,
+                          wall_folllowing_path_msg, m_margin_to_wall);
 
   // changed
-  EstimatePredictivePath(right_wall_plane_coeff, RightPolyCoefficient, right_polynorm_order,
-                         wall_folllowing_path_msg, m_margin_to_wall);
+  // EstimatePredictivePath(right_wall_plane_coeff, RightPolyCoefficient, right_polynorm_order,
+  //                        wall_folllowing_path_msg, m_margin_to_wall);
+
 
   if (right_wall_plane_coeff && !wall_folllowing_path_msg.poses.empty()) {
     final_wall_following_path_msg = wall_folllowing_path_msg;
@@ -449,14 +457,19 @@ void EgoShapeFilterNode::timer_callback() {
     - output : control output
     - output : predictive path on the base_link frame
   */
+
+
   m_KinController.setPath(final_wall_following_path_msg);
   m_KinController.setVelocity(m_vel_speed_x);
   m_KinController.run();
+
+
   double wall_following_steering_cmd;
   m_KinController.getSteering(wall_following_steering_cmd);
   std_msgs::msg::Float32 wall_following_steering_cmd_msg;
   wall_following_steering_cmd_msg.data = wall_following_steering_cmd;
   pub_wall_following_steer_cmd->publish(wall_following_steering_cmd_msg);
+
 }
 
 void EgoShapeFilterNode::mergedPointsCallback(
@@ -495,6 +508,10 @@ void EgoShapeFilterNode::WheelSpeedCallback(const raptor_dbw_msgs::msg::WheelSpe
   m_vel_speed_x = (msg->front_right + msg->front_left) / 2 * nif::common::constants::KPH2MS;
 }
 
+void EgoShapeFilterNode::RadarMarkerCallback(
+    const visualization_msgs::msg::Marker::SharedPtr msg) {
+
+}
 
 void EgoShapeFilterNode::RegisterPointToGrid(
     pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud_ptr, double in_resolution,
@@ -609,7 +626,7 @@ EgoShapeFilterNode::wall_detect(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud,
   pcl::SampleConsensusModelPlane<pcl::PointXYZI>::Ptr model_p(
       new pcl::SampleConsensusModelPlane<pcl::PointXYZI>(cloud));
   pcl::RandomSampleConsensus<pcl::PointXYZI> ransac(model_p);
-  ransac.setDistanceThreshold(0.2);
+  ransac.setDistanceThreshold(m_ransacDistanceThres);
   ransac.computeModel();
 
   pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
@@ -751,6 +768,7 @@ void EgoShapeFilterNode::CubicSpliner(
     ToBeFit.push_back(pointTmp);
   }
 
+
   // For polynomial fitting
   int first_order = 1;
   cv::Mat first_order_poly_coeff = polyfit(ToBeFit, first_order);
@@ -760,6 +778,7 @@ void EgoShapeFilterNode::CubicSpliner(
   int second_order = 2;
   cv::Mat second_order_poly_coeff = polyfit(ToBeFit, second_order);
   double second_order_error = 0.0;
+
 
 
   if (!wall_plane_coeff) {
@@ -777,10 +796,15 @@ void EgoShapeFilterNode::CubicSpliner(
                                         second_order_poly_coeff.at<double>(second_order - 2, 0)),2);
   }
 
-  if(second_order_error > first_order_error)
+
+  if(second_order_error > first_order_error){
     poly_order = first_order;
-  else
+    PolyCoefficientOut = first_order_poly_coeff;
+  }
+  else{
     poly_order = second_order;
+    PolyCoefficientOut = second_order_poly_coeff;
+  }
 
   for (double x = -30; x < 50; x = x + 2.0) {
     geometry_msgs::msg::PoseStamped pose_buf;
@@ -789,7 +813,7 @@ void EgoShapeFilterNode::CubicSpliner(
       pose_buf.pose.position.y =
           second_order_poly_coeff.at<double>(poly_order, 0) * pow(x, poly_order) +
           second_order_poly_coeff.at<double>(poly_order - 1, 0) * pow(x, poly_order - 1) +
-          second_order_poly_coeff.at<double>(poly_order - 2, 0); // Cubic
+          second_order_poly_coeff.at<double>(poly_order - 2, 0);
     } else {
       pose_buf.pose.position.y =
           first_order_poly_coeff.at<double>(poly_order, 0) * pow(x, poly_order) +
@@ -801,6 +825,7 @@ void EgoShapeFilterNode::CubicSpliner(
     pose_buf.pose.orientation.z = 0;
     path_msg_out.poses.push_back(pose_buf);
   }
+
 }
 
 cv::Mat EgoShapeFilterNode::polyfit(std::vector<cv::Point2f> &in_point, int n) {
@@ -842,7 +867,7 @@ void EgoShapeFilterNode::EstimatePredictivePath(
   }
   
   int poly_order = 2;
-  for (double x = -10; x < 30; x = x + 0.5) {
+  for (double x = -10; x < 50; x = x + 0.5) {
     geometry_msgs::msg::PoseStamped pose_buf;
     pose_buf.pose.position.x = x;
     pose_buf.pose.position.y =
@@ -875,13 +900,13 @@ void EgoShapeFilterNode::EstimatePredictivePath(
 
     if (poly_order == 2) {
       pose_buf.pose.position.y =
-          PolyCoefficientIn.at<double>(poly_order, 0) * pow(x, poly_order) +
-          PolyCoefficientIn.at<double>(poly_order - 1, 0) * pow(x, poly_order - 1) +
-          PolyCoefficientIn.at<double>(poly_order - 2, 0);
+          PolyCoefficientIn.at<double>(2, 0) * pow(x, 2) +
+          PolyCoefficientIn.at<double>(1, 0) * pow(x, 1) +
+          target_space_to_wall; // Cubic
     } else {
       pose_buf.pose.position.y =
-          PolyCoefficientIn.at<double>(poly_order, 0) * pow(x, poly_order) +
-          PolyCoefficientIn.at<double>(poly_order - 1, 0);
+          PolyCoefficientIn.at<double>(1, 0) * pow(x, 1) +
+          target_space_to_wall;
     }
 
     pose_buf.pose.orientation.w = 1;

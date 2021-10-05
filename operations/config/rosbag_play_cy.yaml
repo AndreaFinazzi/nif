@@ -7,10 +7,10 @@ windows:
     panes:
       - shell_command:
           - export ROS_DOMAIN_ID=7
-          - ros2 bag play autonomy_2021-09-16_10-23-21
+          - ros2 bag play autonomy_2021-09-16_10-23-21 --topics /bvs_localization/ltp_odom
       - shell_command:
           - export ROS_DOMAIN_ID=7
-          - ros2 bag play sensors_2021-09-16_10-23-21 --topics /novatel_bottom/bestvel /novatel_bottom/bestvel /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_top/bestpos /novatel_top/inspva /novatel_bottom/imu/data /novatel_top/imu/data /raptor_dbw_interface/wheel_speed_report
+          - ros2 bag play sensors_2021-09-16_10-23-21 --topics /bvs_localization/ltp_odom /novatel_bottom/bestvel /novatel_bottom/bestvel /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_top/bestpos /novatel_top/inspva /novatel_bottom/imu/data /novatel_top/imu/data /raptor_dbw_interface/wheel_speed_report
       - shell_command:
           # - ros2 launch nif_launch base.launch.py
 
