@@ -12,6 +12,7 @@
 #include "nif_utils/utils.h"
 #include "gtest/gtest.h"
 #include <chrono>
+#include "rclcpp/rclcpp.hpp"
 
 TEST(UtilsNumericClipTest, ClipTestMin) {
   {
@@ -25,7 +26,7 @@ TEST(UtilsNumericClipTest, ClipTestMax) {
   {
     double min = 0.1, max = 1.1, target = 0.005;
     auto res = nif::common::utils::numeric::clip<double>(min, max, target);
-    ASSERT_DOUBLE_EQ(res, 1.1);
+    ASSERT_DOUBLE_EQ(res, 0.1);
   }
 }
 

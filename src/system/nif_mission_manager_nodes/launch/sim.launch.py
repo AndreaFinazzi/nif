@@ -27,7 +27,6 @@ def generate_launch_description():
             "velocity.max": 67.0,
             "velocity.pit_in": 25.0,
             "velocity.pit_out": 25.0,
-            "velocity.slow_drive": 15.0,
             "velocity.slow_drive": 25.0,
             "safeloc.threshold_stop": 40.0,
             "safeloc.threshold_slow_down": 20.0,

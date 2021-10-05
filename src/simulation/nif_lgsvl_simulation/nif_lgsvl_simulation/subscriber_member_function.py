@@ -260,7 +260,7 @@ class LGSVLSubscriberNode(BaseNode):
         return np.random.normal(.0, 0.025)
 
     def random_noise_position(self) -> float:
-        return np.random.normal(.0, .025)
+        return np.random.normal(.0, 5.0)
 
     def callback_ground_truth_state(self, msg: Odometry):
         '''

@@ -284,6 +284,32 @@ void AWLocalizationNode::timerCallback()
       m_localization_status.bottom_initialized = true;
       m_localization_status.localization_status_code =
           nif_msgs::msg::LocalizationStatus::ONLY_BOTTOM;
+
+      Eigen::MatrixXd P_curr, P_2by2;
+      ekf_.getLatestP(P_curr);
+      P_2by2 = P_curr.block(0, 0, 2, 2);
+
+      Eigen::MatrixXd y_est(2, 1);
+      y_est << CurrentEstimated.x, CurrentEstimated.y;
+
+      Eigen::MatrixXd y_bottom(2, 1);
+      y_bottom << BestPosBottom.x, BestPosBottom.y;
+      double bottomError = GetmahalanobisDistance(y_est, y_bottom, P_2by2);
+
+      double bottom_yaw_error =
+          fabs(BestPosBottom.yaw -
+               (ekf_.getXelement(IDX::YAW) +
+                ekf_.getXelement(IDX::YAWB))); // correction - ekf
+
+      if (bottom_yaw_error > 2 * M_PI)
+        bottom_yaw_error = bottom_yaw_error - 2 * M_PI;
+
+      m_localization_status.bottom_error = bottomError;
+
+      if (bottomError < 5.0 && bottom_yaw_error < 0.1) {
+        bInitConverged = true;
+      }
+
     } else if ((!bBOTTOM_GPS && bTOP_GPS) ||
                (bottom_noise_total > 2.0 && top_noise_total < 2.0)) {
       correction_x = BestPosTop.x;
@@ -294,6 +320,31 @@ void AWLocalizationNode::timerCallback()
       m_localization_status.bottom_initialized = false;
       m_localization_status.localization_status_code =
           nif_msgs::msg::LocalizationStatus::ONLY_TOP;
+
+      Eigen::MatrixXd P_curr, P_2by2;
+      ekf_.getLatestP(P_curr);
+      P_2by2 = P_curr.block(0, 0, 2, 2);
+
+      Eigen::MatrixXd y_est(2, 1);
+      y_est << CurrentEstimated.x, CurrentEstimated.y;
+
+      Eigen::MatrixXd y_top(2, 1);
+      y_top << BestPosTop.x, BestPosTop.y;
+      double topError = GetmahalanobisDistance(y_est, y_top, P_2by2);
+
+      double top_yaw_error =
+          fabs(BestPosTop.yaw -
+               (ekf_.getXelement(IDX::YAW) + ekf_.getXelement(IDX::YAWB)));
+               
+      m_localization_status.top_error = topError;
+
+      if (top_yaw_error > 2 * M_PI)
+        top_yaw_error = top_yaw_error - 2 * M_PI;
+
+      if (topError < 5.0 && top_yaw_error < 0.1) {
+        bInitConverged = true;
+      }
+
     } else {
       // NO SENSOR INITIALIZED
       m_localization_status.status = "NO SENSOR INITIALIZED";
@@ -304,7 +355,23 @@ void AWLocalizationNode::timerCallback()
       node_status = nif::common::NODE_ERROR;
     }
 
-    if ((bottom_noise_total > 2.0 && top_noise_total > 2.0))
+    if (bottom_noise_total > 2.0 && top_noise_total > 2.0 && bBOTTOM_GPS &&
+        bTOP_GPS) {
+      m_localization_status.status = "NO UPDATE, GPS HIGH ERROR";
+      m_localization_status.localization_status_code =
+          nif_msgs::msg::LocalizationStatus::GPS_HIGH_ERROR;
+      update_pose = false;
+      node_status = nif::common::NODE_ERROR;
+    } else if (bottom_noise_total > 2.0 && 
+               bBOTTOM_GPS && !bTOP_GPS)
+    {
+      m_localization_status.status = "NO UPDATE, GPS HIGH ERROR";
+      m_localization_status.localization_status_code =
+          nif_msgs::msg::LocalizationStatus::GPS_HIGH_ERROR;
+      update_pose = false;
+      node_status = nif::common::NODE_ERROR;
+    } else if (top_noise_total > 2.0 &&
+               !bBOTTOM_GPS && bTOP_GPS) 
     {
       m_localization_status.status = "NO UPDATE, GPS HIGH ERROR";
       m_localization_status.localization_status_code =
@@ -314,12 +381,12 @@ void AWLocalizationNode::timerCallback()
     }
 
     if (!bInitConverged) {
-      m_localization_status.status = "NO CONVERGED. WAITING FOR CONVERGENCE";
-      m_localization_status.localization_status_code =
-          nif_msgs::msg::LocalizationStatus::NO_CONVERGED;
-      update_pose = true;
-      node_status = nif::common::NODE_ERROR;
-    }
+        m_localization_status.status = "NO CONVERGED. WAITING FOR CONVERGENCE";
+        m_localization_status.localization_status_code =
+            nif_msgs::msg::LocalizationStatus::NO_CONVERGED;
+        update_pose = true;
+        node_status = nif::common::NODE_ERROR;
+      }
 
     /* pose measurement update */
     if ((bottom_gps_update == true || top_gps_update == true) && update_pose) {
@@ -344,6 +411,15 @@ void AWLocalizationNode::timerCallback()
 
     /* publish ekf result */
     publishEstimateResult();
+ 
+  if(m_localization_status.uncertainty > 10.0)
+  {
+    m_localization_status.localization_status_code =
+            nif_msgs::msg::LocalizationStatus::UNCERTAINTY_TOO_HIGH;
+    m_localization_status.status = "UNCERTAINTY TOO_HIGH";
+    
+  }
+
 
     pub_localization_status->publish(m_localization_status);
     this->setNodeStatus(node_status);
@@ -524,6 +600,9 @@ void AWLocalizationNode::TOPBESTPOSCallback(
   BestPosTop.x = transform_top_to_bottom_sync.getOrigin().x();
   BestPosTop.y = transform_top_to_bottom_sync.getOrigin().y();
 
+  if((double)msg->lat == 0. && (double)msg->lon == 0.)
+    return;
+  
   bTOP_GPS = true;
   top_gps_update = true;
 }
@@ -1265,6 +1344,10 @@ void AWLocalizationNode::publishEstimateResult()
   current_ekf_odom_.twist.covariance[5] = P(IDX::VX, IDX::WZ);
   current_ekf_odom_.twist.covariance[30] = P(IDX::WZ, IDX::VX);
   current_ekf_odom_.twist.covariance[35] = P(IDX::WZ, IDX::WZ);
+
+
+  double uncertainty = sqrt(P(IDX::X, IDX::X) * P(IDX::X, IDX::X) + P(IDX::Y, IDX::Y) * P(IDX::Y, IDX::Y));
+  m_localization_status.uncertainty = uncertainty; 
 
   pub_odom_->publish(current_ekf_odom_);
 

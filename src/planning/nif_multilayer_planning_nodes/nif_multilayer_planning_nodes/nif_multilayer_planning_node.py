@@ -20,6 +20,9 @@ from std_msgs.msg import String
 from rclpy.node import Node
 from sklearn.neighbors import KDTree
 from geometry_msgs.msg import Quaternion
+from visualization_msgs.msg import Marker, MarkerArray
+from sensor_msgs.msg import PointCloud2
+from geometry_msgs.msg import Point32
 
 from nif_multilayer_planning_nodes.quintic_polynomial_planner import quintic_polynomials_planner
 
@@ -123,12 +126,6 @@ class GraphBasedPlanner(rclpy.node.Node):
         self.pit_wpt_local = [] # Locally planned waypoint segment in body frame [x,y,yaw_rad]
         self.num_pit_wpt = 0
 
-        # Cost map
-        # self.costmap = None
-        # # TODO: should be parameterized and tuned.
-        # self.blocked_cost_thres = 50.0 # If the cumulated cost along the path with costmap is over than this threshold, we treat their is a collision.
-        # self.costmap_sub = self.create_subscription(OccupancyGrid, 'todo', self.costmap_callback, 10)
-
         self.pit_in_wpt_gen_first_call = True
         self.pit_out_wpt_gen_first_call = True
 
@@ -167,12 +164,6 @@ class GraphBasedPlanner(rclpy.node.Node):
         self.load_pit_waypoint()
         self.pit_tree = KDTree(self.pit_wpt_xy)
 
-        # self.load_pit_in_waypoint()
-        # self.pit_in_tree = None
-        
-        # self.load_pit_out_waypoint()
-        # self.pit_out_tree = None
-
         self.mission_code = None
         self.mission_is_changed = True
 
@@ -192,14 +183,6 @@ class GraphBasedPlanner(rclpy.node.Node):
             pose.header.frame_id = self.pit_out_wpt_msg.header.frame_id
             self.pit_out_wpt_msg.poses.append(pose)
 
-        # TODO pre-load all these info
-        self.pit_wpt_msg = Path()
-        self.pit_wpt_msg.header.frame_id = "odom" #str(self.get_global_parameter('frames.global'))
-        for idx in range(self.pit_maptrack_len):
-            pose = PoseStamped()
-            pose.header.frame_id = self.pit_wpt_msg.header.frame_id
-            self.pit_wpt_msg.poses.append(pose)
-
         # Subscribers and Publisher
         self.local_maptrack_inglobal_pub = self.create_publisher(Path, 'out_local_maptrack_inglobal', rclpy.qos.qos_profile_sensor_data)
         self.pit_in_entire_inglobal_pub = self.create_publisher(Path, 'pit_in_entire_inglobal', rclpy.qos.qos_profile_sensor_data)
@@ -210,6 +193,13 @@ class GraphBasedPlanner(rclpy.node.Node):
         self.perception_result_sub = self.create_subscription(Perception3DArray, 'in_perception_result', self.perception_result_callback, rclpy.qos.qos_profile_sensor_data)
         self.system_status_sub = self.create_subscription(SystemStatus, 'in_system_status', self.system_status_callback, 10)
 
+        # For visualization
+        self.pub_on_track = self.create_publisher(Bool, 'flg_on_track', rclpy.qos.qos_profile_sensor_data)
+        self.pub_out_bound_path = self.create_publisher(Path, 'outter_bound_path', rclpy.qos.qos_profile_sensor_data)
+        self.pub_in_bound_path = self.create_publisher(Path, 'inner_bound_path', rclpy.qos.qos_profile_sensor_data)
+        self.pub_refline_path = self.create_publisher(Path, 'ref_path', rclpy.qos.qos_profile_sensor_data)
+        self.pub_graph_node = self.create_publisher(PointCloud2, 'graph_nodes', rclpy.qos.qos_profile_sensor_data)
+
         self.out_of_track = None
         self.out_of_track_graph = None
         self.current_veh_odom = None
@@ -217,6 +207,9 @@ class GraphBasedPlanner(rclpy.node.Node):
 
         timer_period = 0.02  # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback)
+        # only for the visualization
+        timer_period_slow = 0.25  # seconds
+        self.timer_slow = self.create_timer(timer_period_slow, self.timer_callback_slow)
 
         # ----------------------------------------------------------------------------------------------------------------------
         # INITIALIZATION AND OFFLINE PART --------------------------------------------------------------------------------------
@@ -227,17 +220,49 @@ class GraphBasedPlanner(rclpy.node.Node):
         # calculate offline graph
         self.ltpl_obj.graph_init()
 
-        # set start pose based on first point in provided reference-line
-        self.refline = graph_ltpl.imp_global_traj.src. \
-            import_globtraj_csv.import_globtraj_csv(import_path=path_dict['globtraj_input_path'])[0]
+        # get track info
+        self.on_track_msg = Bool
+        self.out_bound_msg = Path()
+        self.out_bound_msg.header.frame_id = "odom"
+        # self.out_bound = (self.ltpl_obj.__graph_base.refline + self.ltpl_obj.__graph_base.normvec_normalized
+                        # * np.expand_dims(self.ltpl_obj.__graph_base.track_width_right, 1))
+        self.out_bound = self.ltpl_obj.right_bound()
+
+        self.in_bound_msg = Path()
+        self.in_bound_msg.header.frame_id = "odom"
+        # self.in_bound = (self.ltpl_obj.__graph_base.refline + self.ltpl_obj.__graph_base.normvec_normalized
+        #                 * np.expand_dims(self.ltpl_obj.__graph_base.track_width_left, 1))
+        self.in_bound = self.ltpl_obj.left_bound()
+        self.ref_line_msg = Path()
+        self.ref_line_msg.header.frame_id = "odom"
+        self.refline = self.ltpl_obj.ref_line()
+
+        self.nodes_pos_cloud_msg = PointCloud2()
+        self.nodes_pos_cloud_msg.header.frame_id = "odom"
+        # node_poses = self.ltpl_obj.get_nodes()
+        # for i, pos in enumerate(node_poses):
+        #     self.nodes_pos_cloud_msg.points.append(Point32(pos[0], pos[1], 0.0))
+
+        for i in range(len(self.out_bound)):
+            pose = PoseStamped()
+            pose.pose.position.x = self.out_bound[i][0]
+            pose.pose.position.y = self.out_bound[i][1]
+            self.out_bound_msg.poses.append(pose)
+        for i in range(len(self.in_bound)):
+            pose = PoseStamped()
+            pose.pose.position.x = self.in_bound[i][0]
+            pose.pose.position.y = self.in_bound[i][1]
+            self.in_bound_msg.poses.append(pose)
+        for i in range(len(self.refline)):
+            pose = PoseStamped()
+            pose.pose.position.x = self.refline[i][0]
+            pose.pose.position.y = self.refline[i][1]
+            self.ref_line_msg.poses.append(pose)
 
         self.pos_est = self.refline[0, :]
         self.heading_est = np.arctan2(np.diff(self.refline[0:2, 1]), np.diff(self.refline[0:2, 0])) - np.pi/2
         self.vel_est = 0.0
 
-        # set start pos
-        # self.ltpl_obj.set_startpos(pos_est=self.pos_est,
-        #                            heading_est=self.heading_est)
         self.last_pose = PoseStamped()
         self.last_pose.pose.position.x = 0.
         self.last_pose.pose.position.y = 0.
@@ -249,15 +274,6 @@ class GraphBasedPlanner(rclpy.node.Node):
         self.traj_set = {'straight': None}
         self.obj_list = []
         tic = time.time()
-
-    # TODO : should be handled in the trajecotry supervisor
-    # def costmap_callback(self, msg):
-    #     if (self.mission_code == MissionStatus.MISSION_PIT_IN or
-    #         self.mission_code == MissionStatus.MISSION_PIT_STANDBY or
-    #         self.mission_code == MissionStatus.MISSION_PIT_OUT):
-    #         self.costmap = msg
-    #     else:
-    #         self.costmap = None
 
     def goal_pt_to_body(self, cur_odom_x, cur_odom_y, cur_odom_yaw_rad, 
                         global_pt_x, global_pt_y, global_pt_yaw_rad):
@@ -416,7 +432,24 @@ class GraphBasedPlanner(rclpy.node.Node):
 
             self.obj_list.append(template_dict)
 
+    def timer_callback_slow(self):
+        self.pub_out_bound_path.publish(self.out_bound_msg)
+        self.pub_in_bound_path.publish(self.in_bound_msg)
+        self.pub_refline_path.publish(self.ref_line_msg)
+        self.pub_graph_node.publish(self.nodes_pos_cloud_msg)
+
     def timer_callback(self):
+
+        # self.on_track_msg.data = self.ltpl_obj.check_out_of_track()
+        # self.pub_on_track.publish(self.on_track_msg)
+        # self.obj_list.clear()
+        # template_dict = {'X': -1.27,
+        #                      'Y': 2.58,
+        #                      'theta': np.pi,
+        #                      'type': 'physical', 'id': 0, 'length': 5.0,
+        #                      'v': 0.01}
+
+        # self.obj_list.append(template_dict)
 
         if self.odom_first_call is True:
             planning_graph = False
@@ -637,7 +670,7 @@ class GraphBasedPlanner(rclpy.node.Node):
                 else:
                     return
             except: 
-                self.out_of_track_graph = self. self.ltpl_obj.set_startpos(pos_est=self.pos_est,
+                self.out_of_track_graph = self.ltpl_obj.set_startpos(pos_est=self.pos_est,
                                    heading_est=self.heading_est)
 
             for sel_action_current in ["straight", "follow"]:  # try to force 'right', else try next in list
@@ -718,7 +751,7 @@ class GraphBasedPlanner(rclpy.node.Node):
                 else:
                     return
             except: 
-                self.out_of_track_graph = self. self.ltpl_obj.set_startpos(pos_est=self.pos_est,
+                self.out_of_track_graph = self.ltpl_obj.set_startpos(pos_est=self.pos_est,
                                    heading_est=self.heading_est)
 
             for sel_action_current in ["right", "left", "straight", "follow"]:  # try to force 'right', else try next in list

@@ -70,9 +70,9 @@ missions:
     activation_area:
       active: true
       bboxes:
-        - - -7.5 # x_min
+        - - -50.0 # x_min
           - -30.0 # y_min
-          - 2.5 # x_max
+          - -35.0 # x_max
           - -15.0 # y_max
     activation_velocity:
       active: false
@@ -99,6 +99,7 @@ missions:
       from:
         - 70 # MISSION_PIT_OUT
         - 65 # MISSION_PIT_STANDBY
+        - 65000 # MISSION_PIT_INIT
 
   - mission_code: 75 # MISSION_PIT_TO_TRACK
     active: true

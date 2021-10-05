@@ -102,15 +102,6 @@ private:
   double path_timeout_sec_;
   double steering_max_ddeg_dt_;
 
-  double secs(rclcpp::Time t) {
-    return static_cast<double>(t.seconds()) +
-    static_cast<double>(t.nanoseconds()) * 1e-9;
-  }
-  double secs(rclcpp::Duration t) {
-    return static_cast<double>(t.seconds()) +
-    static_cast<double>(t.nanoseconds()) * 1e-9;
-  }
-
   nif::common::msgs::ControlCmd::SharedPtr solve() override;
 }; /* class PathFollowerNode */
 

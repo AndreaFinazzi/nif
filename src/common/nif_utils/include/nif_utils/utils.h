@@ -14,12 +14,26 @@
 #include "geometry_msgs/msg/quaternion.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 #include "nif_common/constants.h"
+#include "rclcpp/rclcpp.hpp"
 #include <rclcpp/parameter.hpp>
 #include <string>
 
 namespace nif {
 namespace common {
 namespace utils {
+
+namespace time {
+  /**
+   * Time in seconds
+  **/
+  double secs(rclcpp::Time t);
+  
+  /**
+   * Duration in seconds
+  **/
+  double secs(rclcpp::Duration t);
+}
+
 namespace geometry {
 
 const float MPH_TO_KPH_FACTOR = 1.60934;

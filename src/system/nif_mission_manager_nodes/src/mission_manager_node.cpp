@@ -18,10 +18,9 @@ MissionManagerNode::MissionManagerNode(
     this->declare_parameter("timeout_velocity_ms", 1500);
 
     this->declare_parameter("velocity.zero", 0.0);
-    this->declare_parameter("velocity.max", 67.0);
+    this->declare_parameter("velocity.max", 37.0);
     this->declare_parameter("velocity.pit_in", 8.0);
     this->declare_parameter("velocity.pit_out", 8.0);
-    // this->declare_parameter("velocity.slow_drive", 15.0);
     this->declare_parameter("velocity.slow_drive", 8.0);
     this->declare_parameter("safeloc.threshold_stop", 40.0);
     this->declare_parameter("safeloc.threshold_slow_down", 20.0);
@@ -92,7 +91,7 @@ void MissionManagerNode::run() {
     auto node_status = common::NodeStatusCode::NODE_ERROR;
     if (!this->isDataOk())
     {
-        RCLCPP_ERROR_THROTTLE(this->get_logger(), *this->get_clock(), 1000, "Data timeout in MissionManagerNode::run();");
+        RCLCPP_ERROR_THROTTLE(this->get_logger(), *this->get_clock(), 60000, "Data timeout in MissionManagerNode::run();");
         this->mission_status_msg.mission_status_code = MissionStatus::MISSION_EMERGENCY_STOP;
         
     } else {

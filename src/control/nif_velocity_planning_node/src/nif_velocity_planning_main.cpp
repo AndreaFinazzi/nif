@@ -42,7 +42,7 @@ int32_t main(int32_t argc, char **argv)
 
         //  Initialize with default period.
         //  TODO should we abort in these circumstances?
-        nd = std::make_shared<VelocityPlannerNode>(node_name, PERIOD_DEFAULT, options);
+        nd = std::make_shared<VelocityPlannerNode>(node_name, SYNC_PERIOD_DEFAULT_US, options);
 
     } catch (std::exception & e) {
         RCLCPP_FATAL(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
