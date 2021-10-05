@@ -218,8 +218,12 @@ private:
         double path_dist = dist_array[path_len - 1];
 
         // Get Lateral Acceleration Limit using Vehicle dynamics manager
+        // double a_lat_max = m_tire_manager.ComputeLateralAccelLimit(
+        //     m_a_lon_kf, m_a_lat_kf, m_yaw_rate_kf, current_steer_rad,
+        //     current_velocity_mps);
+        // - hyunki 21.10.04, for temporal testing
         double a_lat_max = m_tire_manager.ComputeLateralAccelLimit(
-            m_a_lon_kf, m_a_lat_kf, m_yaw_rate_kf, current_steer_rad,
+            0.0, 0.0, m_yaw_rate_kf, current_steer_rad,
             current_velocity_mps);
         // double a_lat_max = m_tire_manager.ComputeLateralAccelLimit(
         //     a_lon, a_lat, yaw_rate, current_steer_rad,

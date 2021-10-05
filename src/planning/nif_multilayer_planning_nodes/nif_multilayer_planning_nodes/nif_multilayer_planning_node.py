@@ -442,6 +442,14 @@ class GraphBasedPlanner(rclpy.node.Node):
 
         # self.on_track_msg.data = self.ltpl_obj.check_out_of_track()
         # self.pub_on_track.publish(self.on_track_msg)
+        # self.obj_list.clear()
+        # template_dict = {'X': -1.27,
+        #                      'Y': 2.58,
+        #                      'theta': np.pi,
+        #                      'type': 'physical', 'id': 0, 'length': 5.0,
+        #                      'v': 0.01}
+
+        # self.obj_list.append(template_dict)
 
         if self.odom_first_call is True:
             planning_graph = False
@@ -662,7 +670,7 @@ class GraphBasedPlanner(rclpy.node.Node):
                 else:
                     return
             except: 
-                self.out_of_track_graph = self. self.ltpl_obj.set_startpos(pos_est=self.pos_est,
+                self.out_of_track_graph = self.ltpl_obj.set_startpos(pos_est=self.pos_est,
                                    heading_est=self.heading_est)
 
             for sel_action_current in ["straight", "follow"]:  # try to force 'right', else try next in list
@@ -743,7 +751,7 @@ class GraphBasedPlanner(rclpy.node.Node):
                 else:
                     return
             except: 
-                self.out_of_track_graph = self. self.ltpl_obj.set_startpos(pos_est=self.pos_est,
+                self.out_of_track_graph = self.ltpl_obj.set_startpos(pos_est=self.pos_est,
                                    heading_est=self.heading_est)
 
             for sel_action_current in ["right", "left", "straight", "follow"]:  # try to force 'right', else try next in list
