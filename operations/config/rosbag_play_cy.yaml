@@ -3,14 +3,19 @@ windows:
   - window_name: ROSBAG PLAY Tab
     layout: tiled
     shell_command_before:
-      - source /home/usrg/nif/install/setup.bash && cd media/ssd/
+      - source /home/usrg/nif/install/setup.bash && cd media/T7/IAC/rosbag/21.10.04_LOR/VEH4_LOR_RUN-mylaps.accel_2021-10-04/
+      - export ROS_DOMAIN_ID=80
+      - export TRACK=LOR
     panes:
       - shell_command:
-          - export ROS_DOMAIN_ID=7
-          - ros2 bag play autonomy_2021-09-16_10-23-21 --topics /bvs_localization/ltp_odom
+          - ros2 bag play autonomy_2021-10-04_13-15-58/ --read-ahead-queue-size 10000 --remap /planning/graph/path_global:=tmp /graph_nodes:=/tmp33 -r 3
       - shell_command:
-          - export ROS_DOMAIN_ID=7
-          - ros2 bag play sensors_2021-09-16_10-23-21 --topics /bvs_localization/ltp_odom /novatel_bottom/bestvel /novatel_bottom/bestvel /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_top/bestpos /novatel_top/inspva /novatel_bottom/imu/data /novatel_top/imu/data /raptor_dbw_interface/wheel_speed_report
+          - ros2 launch nif_multilayer_planning_nodes default.launch.py
+      - shell_command:
+          - ros2 launch av21_description deploy.launch.py
+          # - export ROS_DOMAIN_ID=80
+          # - export TRACK=LOR
+          # - ros2 bag play sensors_2021-09-16_10-23-21 --topics /bvs_localization/ltp_odom /novatel_bottom/bestvel /novatel_bottom/bestvel /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_top/bestpos /novatel_top/inspva /novatel_bottom/imu/data /novatel_top/imu/data /raptor_dbw_interface/wheel_speed_report
       - shell_command:
           # - ros2 launch nif_launch base.launch.py
 
@@ -18,16 +23,11 @@ windows:
     layout: tiled
     shell_command_before:
       - source /home/usrg/nif/install/setup.bash && cd /home/usrg/nif
+      - export ROS_DOMAIN_ID=80
+      - export TRACK=LOR
     panes:
       - shell_command:
-          - export ROS_DOMAIN_ID=7
-          - ros2 launch nif_localization_nodes test.launch.py
-      - shell_command:
-          - export TRACK=LOR
-          - echo $TRACK
-          - ros2 launch nif_multilayer_planning_nodes deploy.launch.py
-      - shell_command:
-          - ros2 launch nif_aw_localization_nodes default.launch.py
+          # - ros2 launch nif_aw_localization_nodes default.launch.py
       - shell_command:
           # - ros2 bag record /aw_localization/ekf/odom /localization/ekf/odom /localization/ekf/odom_bestpos /bvs_localization/ltp_odom /novatel_bottom/insstdev /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /out_localization_error
 
@@ -35,16 +35,8 @@ windows:
     layout: tiled
     shell_command_before:
       - source /home/usrg/nif/install/setup.bash && cd /home/usrg/nif/src/perception/nif_localization_nodes/launch
+      - export ROS_DOMAIN_ID=80
+      - export TRACK=LOR
     panes:
       - shell_command:
           - rviz2
-
-          
-
-  # - window_name: record Tab
-  #   layout: tiled
-  #   shell_command_before:
-  #     - source /home/usrg/dev_ws/install/setup.bash && cd /home/usrg/dev_ws/src/bag
-  #   panes:
-  #     - shell_command:
-  #         - ros2 bag record /luminar_front_points /luminar_left_points /novatel_bottom/bestpos /novatel_bottom/inspva
