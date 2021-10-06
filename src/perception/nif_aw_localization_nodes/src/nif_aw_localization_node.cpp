@@ -477,6 +477,14 @@ void AWLocalizationNode::setCurrentResult()
           std::cos(-yaw);
 
   current_ekf_twist_.twist.angular.z = ekf_.getXelement(IDX::WZ);
+
+  // delta_x = vx * cos(yaw + yaw_bias)
+  // delta_y = vx * sin(yaw + yaw_bias)
+
+  // m_dGPS_vel_x_onBody = msg->north_velocity * std::cos(-yaw) +
+  //                       msg->east_velocity * std::sin(-yaw);
+  // m_dGPS_vel_y_onBody = msg->north_velocity * std::sin(-yaw) -
+  //                       msg->east_velocity * std::cos(-yaw);
 }
 
 // HOW TO CORRECT HEADING IN EKF

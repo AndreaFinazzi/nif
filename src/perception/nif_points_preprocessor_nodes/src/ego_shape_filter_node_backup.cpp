@@ -8,7 +8,6 @@
 
 #include <nif_points_preprocessor_nodes/ego_shape_filter_node.h>
 #include "nif_frame_id/frame_id.h"
-#include <numeric>
 
 using namespace nif::perception;
 using namespace nif::common::frame_id::localization;
@@ -88,7 +87,7 @@ EgoShapeFilterNode::EgoShapeFilterNode(const std::string &node_name_)
   using namespace std::chrono_literals; // NOLINT
   // TODO convert period to paramter
   timer_ = this->create_wall_timer(
-      50ms, std::bind(&EgoShapeFilterNode::timer_callback, this));
+      25ms, std::bind(&EgoShapeFilterNode::timer_callback, this));
 
   pub_filtered_points = this->create_publisher<sensor_msgs::msg::PointCloud2>(
       "/merged/ego_filtered", nif::common::constants::QOS_SENSOR_DATA);
@@ -535,10 +534,6 @@ void EgoShapeFilterNode::RegisterPointToGrid(
 
   for (int i = 0; i < MAP_HEIGHT + 1; i++) {
     this->map[i].fill(0.0);
-    this->count_map[i].fill(0.0);
-    this->mean_map[i].fill(0.0);
-    this->cov_map[i].fill(0.0);
-    this->points_map[i].fill({});
   }
 
   int x, y;
@@ -550,29 +545,12 @@ void EgoShapeFilterNode::RegisterPointToGrid(
       // std::cout << x << ", " << y << std::endl;
       continue;
     }
-    std::vector<double> points_map_buf = points_map[y][x];
-    points_map_buf.push_back(point_buf.z);
-    count_map[y][x] = count_map[y][x] + 1.f; // count hit
-    points_map[y][x] = points_map_buf;
-    // map[y][x] = map[y][x] + point_buf.z; // accumulate height
-    double sum_of_elems =
-        std::accumulate(points_map_buf.begin(), points_map_buf.end(),
-                        decltype(points_map_buf)::value_type(0));
-
-    if(count_map[y][x] != 0.)
-    {
-      mean_map[y][x] = sum_of_elems / count_map[y][x]; // calculate mean map
-      for(auto z : points_map_buf)
-      {
-        cov_map[y][x] = cov_map[y][x] * count_map[y][x]; 
-        cov_map[y][x] = (cov_map[y][x] + pow((z - mean_map[y][x]),2)) / count_map[y][x];
-      }
-    }
+    map[y][x] = map[y][x] + 1.f; // count hit
   }
 
   for (int i = 0; i < MAP_HEIGHT; i++) {
     for (int j = 0; j < MAP_WIDTH; j++) {
-      if (cov_map[y][x] > count_threshold_) {
+      if (map[i][j] > count_threshold_) {
         // oc_grid_msg.data.push_back((int8_t)(map[i][j]));
         oc_grid_msg.data.push_back((int8_t)(80.));
       } else {
@@ -605,7 +583,7 @@ void EgoShapeFilterNode::InverseMap(
   for (auto point_buf : cloudIn->points) {
     x = std::floor((point_buf.x - min_x) / in_resolution);
     y = std::floor((point_buf.y - min_y) / in_resolution);
-    if (cov_map[y][x] > count_threshold_) {
+    if (map[y][x] > count_threshold_) {
       cloudOut->points.push_back(point_buf);
       if (point_buf.y > 0) {
         cloudLeftOut->points.push_back(point_buf);
@@ -613,7 +591,7 @@ void EgoShapeFilterNode::InverseMap(
         cloudRightOut->points.push_back(point_buf);
       }
     }
-    if (count_map[y][x] > count_threshold_ - 1.) {
+    if (map[y][x] > count_threshold_ - 1.) {
       WeakerThrescloudOut->points.push_back(point_buf);
     }
   }
