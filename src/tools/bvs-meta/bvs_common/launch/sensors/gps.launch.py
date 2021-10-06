@@ -49,7 +49,7 @@ def generate_launch_description():
 
     launch_description = [
         novatel_bottom_launch,
-        # novatel_top_launch,
+        novatel_top_launch,
     ]
 
     return LaunchDescription(launch_description)
