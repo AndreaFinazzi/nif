@@ -12,7 +12,7 @@ def generate_launch_description():
             "config",
             "config.yaml",
         ),
-        )
+    )
 
     return LaunchDescription(
         [

@@ -15,7 +15,7 @@ track = None
 # get which track we are at
 # track_id = os.environ.get('TRACK').strip()
 
-track_id = "IMS"
+track_id = "LOR"
 
 
 if track_id == "IMS":
