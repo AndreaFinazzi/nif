@@ -507,7 +507,7 @@ private:
   void
   steerCallback(const raptor_dbw_msgs::msg::SteeringReport::SharedPtr msg) {
     m_current_steer_rad = msg->steering_wheel_angle *
-                          nif::common::constants::RAD2DEG /
+                          nif::common::constants::DEG2RAD /
                           m_steer_ratio; // tire angle [deg --> rad]
   }
 

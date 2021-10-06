@@ -194,6 +194,7 @@ def generate_launch_description():
         parameters=[{
                 'odometry_timeout_sec' : 0.5,
                 'path_timeout_sec' : 1.0,
+                'lateral_tire_model_factor' : 1.0,
             }]
     )
 
@@ -222,8 +223,8 @@ def generate_launch_description():
                 'path_timeout_sec' : 1.0,
                 'use_tire_velocity' : True,
                 # 'max_steering_angle_deg': 20.0,
-                'pure_pursuit_min_dist_m' : 8.0,
-                'pure_pursuit_max_dist_m' : 16.0,
+                'pure_pursuit_min_dist_m' : 4.0,
+                'pure_pursuit_max_dist_m' : 8.0,
                 'steering_max_ddeg_dt' : 3.0
 
             }
