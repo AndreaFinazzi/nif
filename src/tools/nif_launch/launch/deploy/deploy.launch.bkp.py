@@ -334,12 +334,6 @@ def generate_launch_description():
         )
     )
 
-    nif_points_clustering = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            get_share_file("nif_points_clustering", 'launch/deploy.launch.py')
-        )
-    )
-
 ### NIF MULTILAYER PLANNER END #############################
 
     return LaunchDescription([
@@ -365,6 +359,5 @@ def generate_launch_description():
         nif_velocity_planning_node,
         nif_joint_lqr_control_node,
         # nif_accel_control_node,
-        nif_mission_manager_launch,
-        nif_points_clustering
+        nif_mission_manager_launch
     ])
