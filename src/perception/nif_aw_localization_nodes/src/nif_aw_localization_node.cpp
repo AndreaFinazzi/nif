@@ -4,6 +4,11 @@
 //
 // Created by USRG on 9/14/21.
 //
+// TODO 
+// 1. heading initialization check
+// 2. inspva status check
+// 3. validate high speed localization 
+
 
 #include "ekf_localizer/nif_aw_localization_node.h"
 #include "nif_frame_id/frame_id.h"
@@ -220,6 +225,10 @@ void AWLocalizationNode::timerCallback()
     auto node_status = nif::common::NODE_ERROR;
 
     m_localization_status.stamp = this->now();
+    if(!bBOTTOM_GPS)
+    {
+      this->bestpos_time_last_update = this->top_bestpos_time_last_update;
+    }
 
     // If the geofence data is too old, report error, but keep going.
     if ((this->now().nanoseconds() - bestpos_time_last_update.nanoseconds()) >=
@@ -274,12 +283,18 @@ void AWLocalizationNode::timerCallback()
       m_localization_status.top_initialized = true;
       m_localization_status.bottom_initialized = true;
 
-    } else if ((bBOTTOM_GPS && !bTOP_GPS) ||
-               (bottom_noise_total < 2.0 && top_noise_total > 2.0)) {
+    }
+    // No top, Bottom only mode is validated.
+    // Also, InertialSolutionStatus is integrated/validated on the bottom only mode.
+    else if ((bBOTTOM_GPS && !bTOP_GPS) || // if top is not received, use only bottom. 
+             (bottom_noise_total < 2.0 && top_noise_total > 2.0) || // when top has large noise, but bottom is good, use bottom.
+             (BestPosBottom.novatel_ins_status ==
+                  novatel_oem7_msgs::msg::InertialSolutionStatus::
+                      INS_SOLUTION_GOOD && !bTOP_GPS)) { 
       correction_x = BestPosBottom.x; 
       correction_y = BestPosBottom.y;
       update_pose = true;
-      m_localization_status.status = "TOP IS NOT STARTED. ONLY BOTTOM";
+      m_localization_status.status = "TOP IS BAD. ONLY BOTTOM";
       m_localization_status.top_initialized = false;
       m_localization_status.bottom_initialized = true;
       m_localization_status.localization_status_code =
@@ -306,16 +321,27 @@ void AWLocalizationNode::timerCallback()
 
       m_localization_status.bottom_error = bottomError;
 
-      if (bottomError < 5.0 && bottom_yaw_error < 0.1) {
+      if (bottomError < 5.0 && bottom_yaw_error < 0.1 &&
+          BestPosBottom.novatel_ins_status ==
+              novatel_oem7_msgs::msg::InertialSolutionStatus::
+                  INS_SOLUTION_GOOD) {
         bInitConverged = true;
       }
 
-    } else if ((!bBOTTOM_GPS && bTOP_GPS) ||
-               (bottom_noise_total > 2.0 && top_noise_total < 2.0)) {
+    }
+    // No bottom, TOP only mode is validated.
+    // Also, InertialSolutionStatus is integrated/validated on the top only
+    // mode.
+    else if ((!bBOTTOM_GPS && bTOP_GPS) || // If Bottom is not received, use top
+             (bottom_noise_total > 2.0 &&
+              top_noise_total < 2.0) || // if bottom noise is high
+             (BestPosTop.novatel_ins_status ==
+                  novatel_oem7_msgs::msg::InertialSolutionStatus::
+                      INS_SOLUTION_GOOD && !bBOTTOM_GPS)) {
       correction_x = BestPosTop.x;
       correction_y = BestPosTop.y;
       update_pose = true;
-      m_localization_status.status = "BOTTOM IS NOT STARTED. ONLY TOP";
+      m_localization_status.status = "BOTTOM IS BAD. ONLY TOP";
       m_localization_status.top_initialized = true;
       m_localization_status.bottom_initialized = false;
       m_localization_status.localization_status_code =
@@ -338,10 +364,18 @@ void AWLocalizationNode::timerCallback()
                
       m_localization_status.top_error = topError;
 
+      correction_yaw = BestPosTop.yaw;
+
       if (top_yaw_error > 2 * M_PI)
         top_yaw_error = top_yaw_error - 2 * M_PI;
 
-      if (topError < 5.0 && top_yaw_error < 0.1) {
+      // RCLCPP_INFO(this->get_logger(), "yaw = %f", correction_yaw);
+      // RCLCPP_INFO(this->get_logger(), "yaw error = %f", top_yaw_error);
+
+      if (topError < 5.0 && top_yaw_error < 0.1 &&
+          BestPosTop.novatel_ins_status ==
+              novatel_oem7_msgs::msg::InertialSolutionStatus::
+                  INS_SOLUTION_GOOD) {
         bInitConverged = true;
       }
 
@@ -355,24 +389,37 @@ void AWLocalizationNode::timerCallback()
       node_status = nif::common::NODE_ERROR;
     }
 
-    if (bottom_noise_total > 2.0 && top_noise_total > 2.0 && bBOTTOM_GPS &&
-        bTOP_GPS) {
+    // From here, we state high GPS error status.
+    // 1. check sensor is initialized(started) or not.
+    // 2. see the noise or novatel ins status. 
+    if (((bottom_noise_total > 2.0 && top_noise_total > 2.0) ||
+         (BestPosBottom.novatel_ins_status !=
+              novatel_oem7_msgs::msg::InertialSolutionStatus::
+                  INS_SOLUTION_GOOD &&
+          BestPosTop.novatel_ins_status !=
+              novatel_oem7_msgs::msg::InertialSolutionStatus::
+                  INS_SOLUTION_GOOD)) &&
+        bBOTTOM_GPS && bTOP_GPS) {
       m_localization_status.status = "NO UPDATE, GPS HIGH ERROR";
       m_localization_status.localization_status_code =
           nif_msgs::msg::LocalizationStatus::GPS_HIGH_ERROR;
       update_pose = false;
       node_status = nif::common::NODE_ERROR;
-    } else if (bottom_noise_total > 2.0 && 
-               bBOTTOM_GPS && !bTOP_GPS)
-    {
+    } else if ((bottom_noise_total > 2.0 ||
+                BestPosBottom.novatel_ins_status !=
+                    novatel_oem7_msgs::msg::InertialSolutionStatus::
+                        INS_SOLUTION_GOOD) &&
+               bBOTTOM_GPS && !bTOP_GPS) {
       m_localization_status.status = "NO UPDATE, GPS HIGH ERROR, ONLY BOTTOM";
       m_localization_status.localization_status_code =
           nif_msgs::msg::LocalizationStatus::GPS_HIGH_ERROR;
       update_pose = false;
       node_status = nif::common::NODE_ERROR;
-    } else if (top_noise_total > 2.0 &&
-               !bBOTTOM_GPS && bTOP_GPS) 
-    {
+    } else if ((top_noise_total > 2.0 ||
+                BestPosTop.novatel_ins_status !=
+                    novatel_oem7_msgs::msg::InertialSolutionStatus::
+                        INS_SOLUTION_GOOD) &&
+               !bBOTTOM_GPS && bTOP_GPS) {
       m_localization_status.status = "NO UPDATE, GPS HIGH ERROR, ONLY TOP";
       m_localization_status.localization_status_code =
           nif_msgs::msg::LocalizationStatus::GPS_HIGH_ERROR;
@@ -564,6 +611,8 @@ void AWLocalizationNode::TOPBESTPOSCallback(
   // double stdev = (int)m_testnoise % 10;
   // std::normal_distribution<double> dist(mean, stdev);
 
+  this->top_bestpos_time_last_update = this->now();
+
   nif::localization::utils::GeodeticConverter::GeoRef currentGPS;
   currentGPS.latitude = (double)msg->lat; //+ dist(generator) * 1e-5;
   currentGPS.longitude = (double)msg->lon; //+ dist(generator) * 1e-5;
@@ -651,6 +700,7 @@ void AWLocalizationNode::BOTTOMINSPVACallback(
 
 
   BestPosBottom.yaw = yaw;
+  BestPosBottom.novatel_ins_status = msg->status.status;
 }
 
 void AWLocalizationNode::TOPINSPVACallback(
@@ -663,6 +713,10 @@ void AWLocalizationNode::TOPINSPVACallback(
   if (!m_top_inspva_heading_init) {
     // std::cout << "INSPVA HEADING IS NOT INITIALIZED" << std::endl;
     m_prevTOPYaw = yaw;
+    // RCLCPP_INFO(
+    //     this->get_logger(),
+    //     "TOP INSPVA HEADING IS NOT INITIALIZED , Input yaw: %f, Prev Yaw : %f",
+    //     yaw, m_prevTOPYaw);
     return;
   }
 
@@ -673,11 +727,16 @@ void AWLocalizationNode::TOPINSPVACallback(
     heading_flag = true;
   }
    BestPosTop.yaw = yaw;
+   BestPosTop.novatel_ins_status = msg->status.status;
 }
 
 void AWLocalizationNode::BESTVELCallback(
     const novatel_oem7_msgs::msg::BESTVEL::SharedPtr msg) {
   double yaw = (-msg->trk_gnd) * nif::common::constants::DEG2RAD;
+
+  if (m_top_inspva_heading_init) {
+    return;
+  }
 
   if (!m_inspva_heading_init &&
       m_use_inspva_heading) // INSPVA HEADING BACK UP SOLUTITON
@@ -687,15 +746,16 @@ void AWLocalizationNode::BESTVELCallback(
     bBOTTOMGPSHeading = true;
   }
 
-  // When we don't use INSPVA HEADING, we use bestvel heading
-  // param [use_inspva_heading]
-  //       True :  Use bestvel for only back-up solution
-  //       False : Use bestvel for heading estimation
-  if (!m_use_inspva_heading) {
-    m_dGPS_Heading = yaw;
-    // m_dGPS_roll = msg->roll * nif::common::constants::DEG2RAD;
-    bBOTTOMGPSHeading = true;
-  }
+
+    // When we don't use INSPVA HEADING, we use bestvel heading
+    // param [use_inspva_heading]
+    //       True :  Use bestvel for only back-up solution
+    //       False : Use bestvel for heading estimation
+    if (!m_use_inspva_heading) {
+      m_dGPS_Heading = yaw;
+      // m_dGPS_roll = msg->roll * nif::common::constants::DEG2RAD;
+      bBOTTOMGPSHeading = true;
+    }
 
   if (m_dVelolcity_X > m_bestvel_heading_update_thres) {
     heading_flag = true;
@@ -1233,8 +1293,10 @@ bool AWLocalizationNode::CalculateBestCorrection(
                                                 ekf_.getXelement(IDX::YAWB)));
   if (bottom_yaw_error > 2*M_PI)
     bottom_yaw_error = bottom_yaw_error - 2*M_PI;
-    
-  if ((bottomError < 5.0 || topError < 5.0) && bottom_yaw_error < 0.1) {
+
+  if ((bottomError < 5.0 || topError < 5.0) && bottom_yaw_error < 0.1 &&
+      BestPosBottom.novatel_ins_status ==
+          novatel_oem7_msgs::msg::InertialSolutionStatus::INS_SOLUTION_GOOD) {
     bInitConverged = true;
   }
   // std::cout << "------------" << std::endl;
@@ -1287,7 +1349,14 @@ bool AWLocalizationNode::CalculateBestCorrection(
         return true;
       }
       // 2. if bottom is diverged, and top is nominal, USE NOVATEL TOP
-      else if (bottomError > pose_gate_dist_local && topError < pose_gate_dist_local) {
+      else if ((bottomError > pose_gate_dist_local &&
+                topError < pose_gate_dist_local) ||
+               (BottomDataIn.novatel_ins_status !=
+                    novatel_oem7_msgs::msg::InertialSolutionStatus::
+                        INS_SOLUTION_GOOD &&
+                TopDataIn.novatel_ins_status ==
+                    novatel_oem7_msgs::msg::InertialSolutionStatus::
+                        INS_SOLUTION_GOOD)) {
         BestCorrectionOut.x = TopDataIn.x;
         BestCorrectionOut.y = TopDataIn.y;
         m_localization_status.status = "BOTTOM ERROR, USE TOP";
@@ -1296,15 +1365,35 @@ bool AWLocalizationNode::CalculateBestCorrection(
         return true;
       }
       // 3. if top is diverged, and bottom is nominal, USE NOVATEL BOTTOM
-      else if (bottomError < pose_gate_dist_local && topError > pose_gate_dist_local) {
+      else if ((bottomError < pose_gate_dist_local &&
+                topError > pose_gate_dist_local) ||
+               (BottomDataIn.novatel_ins_status ==
+                    novatel_oem7_msgs::msg::InertialSolutionStatus::
+                        INS_SOLUTION_GOOD &&
+                TopDataIn.novatel_ins_status !=
+                    novatel_oem7_msgs::msg::InertialSolutionStatus::
+                        INS_SOLUTION_GOOD)) {
         BestCorrectionOut.x = BottomDataIn.x;
         BestCorrectionOut.y = BottomDataIn.y;
         m_localization_status.status = "TOP ERROR, USE BOTTOM";
         m_localization_status.localization_status_code =
             nif_msgs::msg::LocalizationStatus::ONLY_BOTTOM;
         return true;
+      } 
+      // 4. if both of ins inertial solution status is not good, GPS HIGH ERROR STATUS
+      else if ((BottomDataIn.novatel_ins_status !=
+                      novatel_oem7_msgs::msg::InertialSolutionStatus::
+                          INS_SOLUTION_GOOD &&
+                  TopDataIn.novatel_ins_status !=
+                      novatel_oem7_msgs::msg::InertialSolutionStatus::
+                          INS_SOLUTION_GOOD))
+      {
+        m_localization_status.status = "NO UPDATE, GPS HIGH ERROR";
+        m_localization_status.localization_status_code =
+            nif_msgs::msg::LocalizationStatus::GPS_HIGH_ERROR;
+        return false;
       }
-      // 4. if all the sensors are bad, do not update measurement
+      // 5. if all the sensors are bad, do not update measurement
       else {
         m_localization_status.status = "NO UPDATE, GPS HIGH ERROR";
         m_localization_status.localization_status_code =
