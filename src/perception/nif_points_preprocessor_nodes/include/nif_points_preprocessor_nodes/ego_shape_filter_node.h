@@ -183,6 +183,13 @@ private:
   std::array<std::array<float, (size_t)(MAP_WIDTH + 1)>,
                                   (size_t)(MAP_HEIGHT + 1)>
       map;
+  std::array<std::array<float, (size_t)(MAP_WIDTH + 1)>,
+             (size_t)(MAP_HEIGHT + 1)>
+      count_map;
+
+  std::array<std::array<float, (size_t)(MAP_WIDTH + 1)>,
+             (size_t)(MAP_HEIGHT + 1)>
+      mean_map;
 
   void EgoShape(pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud_ptr,
                 pcl::PointCloud<pcl::PointXYZI>::Ptr out_cloud_ptr,

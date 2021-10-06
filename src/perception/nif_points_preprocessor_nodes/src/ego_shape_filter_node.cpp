@@ -534,6 +534,8 @@ void EgoShapeFilterNode::RegisterPointToGrid(
 
   for (int i = 0; i < MAP_HEIGHT + 1; i++) {
     this->map[i].fill(0.0);
+    this->count_map[i].fill(0.0);
+    this->mean_map[i].fill(0.0);
   }
 
   int x, y;
@@ -545,7 +547,15 @@ void EgoShapeFilterNode::RegisterPointToGrid(
       // std::cout << x << ", " << y << std::endl;
       continue;
     }
-    map[y][x] = map[y][x] + 1.f; // count hit
+    count_map[y][x] = count_map[y][x] + 1.f; // count hit
+    map[y][x] = map[y][x] + point_buf.z; // accumulate height
+    if(count_map[y][x] != 0.)
+      mean_map[y][x] = map[y][x] / count_map[y][x]; // calculate mean map
+    else
+    {
+      mean_map[y][x] = 0.0;
+    }
+
   }
 
   for (int i = 0; i < MAP_HEIGHT; i++) {

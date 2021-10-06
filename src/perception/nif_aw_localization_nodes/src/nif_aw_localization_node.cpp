@@ -467,6 +467,15 @@ void AWLocalizationNode::setCurrentResult()
   current_ekf_twist_.header.frame_id = nif::common::frame_id::localization::ODOM;
   current_ekf_twist_.header.stamp = this->now();
   current_ekf_twist_.twist.linear.x = ekf_.getXelement(IDX::VX);
+
+  Eigen::MatrixXd X_curr(dim_x_, 1); //  curent state
+  ekf_.getLatestX(X_curr);
+  current_ekf_twist_.twist.linear.y =
+      X_curr(IDX::VX) * sin(X_curr(IDX::YAW) + X_curr(IDX::YAWB)) *
+          std::sin(-yaw) -
+      X_curr(IDX::VX) * cos(X_curr(IDX::YAW) + X_curr(IDX::YAWB)) *
+          std::cos(-yaw);
+
   current_ekf_twist_.twist.angular.z = ekf_.getXelement(IDX::WZ);
 }
 
@@ -632,6 +641,7 @@ void AWLocalizationNode::BOTTOMINSPVACallback(
     heading_flag = true;
   }
 
+
   BestPosBottom.yaw = yaw;
 }
 
@@ -654,8 +664,7 @@ void AWLocalizationNode::TOPINSPVACallback(
   if (m_use_inspva_heading) {
     heading_flag = true;
   }
-
-  BestPosTop.yaw = yaw;
+   BestPosTop.yaw = yaw;
 }
 
 void AWLocalizationNode::BESTVELCallback(
@@ -806,6 +815,7 @@ void AWLocalizationNode::predictKinematicsModel()
   const double vx = X_curr(IDX::VX);
   const double wz = X_curr(IDX::WZ);
   const double dt = ekf_dt_;
+
 
   /* Update for latest state */
   X_next(IDX::X) = X_curr(IDX::X) + vx * cos(yaw + yaw_bias) * dt; //  dx = v * cos(yaw)

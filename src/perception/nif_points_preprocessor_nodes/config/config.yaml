@@ -4,7 +4,6 @@ nif_points_concat_node:
     use_new_luminar_driver : false
     input_topics : "[/luminar_front_points, /luminar_left_points, /luminar_right_points]"
     output_topic : "/merged/lidar"
-    output_frame_id : "center_of_gravity"                 
 
 nif_ego_shape_filter_node:
   ros__parameters:
@@ -20,7 +19,7 @@ nif_ego_shape_filter_node:
     height_lower_distance : -0.5
     height_upper_distance : 1.5
     resolution : 0.25 #0.25
-    count_threshold : 4. #origin 3.
+    count_threshold : 5. #origin 3.
     normal_angle_thres : 70. #50.
     ransac_pts_thresh : 50  # 200
     ransac_distance_thres : 0.2 #0.2
