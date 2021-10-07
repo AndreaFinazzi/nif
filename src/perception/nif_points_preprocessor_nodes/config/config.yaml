@@ -20,6 +20,12 @@ nif_ego_shape_filter_node:
     height_upper_distance : 1.5
     resolution : 0.5 #0.25
     count_threshold : 0.1 #origin 3.
+
+
+nif_wall_detection_node:
+  ros__parameters:
+    rear_upper_distance : 20.0
+    front_upper_distance : 80.0
     normal_angle_thres : 70. #50.
     ransac_pts_thresh : 50  # 200
     ransac_distance_thres : 0.2 #0.2

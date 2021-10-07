@@ -32,12 +32,17 @@ ament_auto_add_library(ego_shape_filter_node SHARED
         src/ego_shape_filter_node.cpp)
 target_link_libraries(ego_shape_filter_node ${PCL_LIBRARIES})
 
+ament_auto_add_library(wall_detection_node SHARED
+        src/wall_detection_node.cpp)
+target_link_libraries(wall_detection_node ${PCL_LIBRARIES})
+
 ament_auto_add_executable(${PROJECT_NAME}_exe
         src/points_preprocessor_main.cpp)
 
 target_link_libraries(${PROJECT_NAME}_exe
         points_concat_filter
         ego_shape_filter_node
+        wall_detection_node
 )
 
 if(BUILD_TESTING)

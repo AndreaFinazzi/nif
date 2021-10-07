@@ -2,11 +2,10 @@
 /*
  * wall_detection_node.cpp
  *
- *  Created on: Oct 7, 2021
+ *  Created on: Oct 6, 2021
  *      Author: Daegyu Lee
  */
-
-#include <nif_points_preprocessor_nodes/ego_shape_filter_node.h>
+#include <nif_points_preprocessor_nodes/wall_detection_node.h>
 #include "nif_frame_id/frame_id.h"
 #include <numeric>
 
@@ -15,20 +14,9 @@ using namespace nif::common::frame_id::localization;
 
 WallDetectionNode::WallDetectionNode(const std::string &node_name_)
     : Node(node_name_) {
-  this->declare_parameter<double>("left_lower_distance", double(0.5));
-  this->declare_parameter<double>("right_lower_distance", double(0.5));
-  this->declare_parameter<double>("rear_lower_distance", double(2.2));
-  this->declare_parameter<double>("front_lower_distance", double(1.5));
-
-  this->declare_parameter<double>("left_upper_distance", double(20.0));
-  this->declare_parameter<double>("right_upper_distance", double(20.0));
   this->declare_parameter<double>("rear_upper_distance", double(50.0));
   this->declare_parameter<double>("front_upper_distance", double(50.0));
 
-  this->declare_parameter<double>("height_lower_distance", double(-0.5));
-  this->declare_parameter<double>("height_upper_distance", double(1.0));
-  this->declare_parameter<double>("resolution", double(0.25));
-  this->declare_parameter<double>("count_threshold", double(3.));
   this->declare_parameter<double>("normal_angle_thres", double(50.));
   this->declare_parameter<int>("ransac_pts_thresh", int(200));
   this->declare_parameter<double>("ransac_distance_thres", double(0.2));
@@ -48,31 +36,25 @@ WallDetectionNode::WallDetectionNode(const std::string &node_name_)
 
   respond();
 
-  RCLCPP_INFO(this->get_logger(), "left_lower_distance_: %f", left_lower_distance_);
-  RCLCPP_INFO(this->get_logger(), "right_lower_distance_: %f", right_lower_distance_);
-  RCLCPP_INFO(this->get_logger(), "rear_lower_distance_: %f", rear_lower_distance_);
-  RCLCPP_INFO(this->get_logger(), "front_lower_distance_: %f", front_lower_distance_);
 
-  RCLCPP_INFO(this->get_logger(), "left_upper_distance_: %f", left_upper_distance_);
-  RCLCPP_INFO(this->get_logger(), "right_upper_distance_: %f", right_upper_distance_);
-  RCLCPP_INFO(this->get_logger(), "rear_upper_distance_: %f", rear_upper_distance_);
-  RCLCPP_INFO(this->get_logger(), "front_upper_distance_: %f", front_upper_distance_);
-
-  RCLCPP_INFO(this->get_logger(), "height_lower_distance: %f", height_lower_distance_);
-  RCLCPP_INFO(this->get_logger(), "height_upper_distance: %f", height_upper_distance_);
-  RCLCPP_INFO(this->get_logger(), "resolution: %f", resolution_);
   RCLCPP_INFO(this->get_logger(), "normal_angle_thres: %f", normal_angle_thres_);
   RCLCPP_INFO(this->get_logger(), "ransac_pts_thresh: %f", ransac_pts_thresh_);
-
   RCLCPP_INFO(this->get_logger(), "x_roi : %f", extract_distance_x_roi);
   RCLCPP_INFO(this->get_logger(), "distance_extract_thres : %f", extract_distance_thres );
   RCLCPP_INFO(this->get_logger(), "distance_low_fass_filter : %f", distance_low_fass_filter );
   RCLCPP_INFO(this->get_logger(), "target_space_to_wall : %f", m_target_space_to_wall );
 
-  sub_points_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
-      "/merged/lidar", nif::common::constants::QOS_SENSOR_DATA,
-      std::bind(&WallDetectionNode::mergedPointsCallback, this,
+  sub_inverse_left_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
+      "/inverse_left_mapped_points",
+      nif::common::constants::QOS_SENSOR_DATA,
+      std::bind(&WallDetectionNode::InverseLeftCallback, this,
                 std::placeholders::_1));
+
+  sub_inverse_right_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
+      "/inverse_right_mapped_points", nif::common::constants::QOS_SENSOR_DATA,
+      std::bind(&WallDetectionNode::InverseRightCallback, this,
+                std::placeholders::_1));
+
   sub_wheel_speed_ = this->create_subscription<raptor_dbw_msgs::msg::WheelSpeedReport>(
       "raptor_dbw_interface/wheel_speed_report",
       nif::common::constants::QOS_SENSOR_DATA,
@@ -90,18 +72,6 @@ WallDetectionNode::WallDetectionNode(const std::string &node_name_)
   timer_ = this->create_wall_timer(
       50ms, std::bind(&WallDetectionNode::timer_callback, this));
 
-  pub_filtered_points = this->create_publisher<sensor_msgs::msg::PointCloud2>(
-      "/merged/ego_filtered", nif::common::constants::QOS_SENSOR_DATA);
-  pub_oc_grid = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
-      "/OccupancyGridMap/map", nif::common::constants::QOS_SENSOR_DATA);
-  pub_forwarding_map_grid =
-      this->create_publisher<nav_msgs::msg::OccupancyGrid>(
-          "/OccupancyGridMap/forwarding_map", nif::common::constants::QOS_SENSOR_DATA);
-
-  pub_inverse_points = this->create_publisher<sensor_msgs::msg::PointCloud2>(
-      "/inverse_mapped_points", nif::common::constants::QOS_SENSOR_DATA);
-  pub_weaker_thres_inverse_points = this->create_publisher<sensor_msgs::msg::PointCloud2>(
-      "/weaker_thres_inverse_mapped_points", nif::common::constants::QOS_SENSOR_DATA);
   pub_left_ransac_filtered_points =
       this->create_publisher<sensor_msgs::msg::PointCloud2>(
           "/ransac_filtered_points/left", nif::common::constants::QOS_SENSOR_DATA);
@@ -128,7 +98,6 @@ WallDetectionNode::WallDetectionNode(const std::string &node_name_)
       "/wall_following_steering_cmd",
       nif::common::constants::QOS_CONTROL_CMD); // TODO
 
-  lidar_timeout = rclcpp::Duration(1, 0);
 
   // kin controller
   SetControllerParams();
@@ -138,21 +107,9 @@ WallDetectionNode::WallDetectionNode(const std::string &node_name_)
 WallDetectionNode::~WallDetectionNode() {}
 
 void WallDetectionNode::respond() {
-  this->get_parameter("left_lower_distance", left_lower_distance_);
-  this->get_parameter("right_lower_distance", right_lower_distance_);
-  this->get_parameter("rear_lower_distance", rear_lower_distance_);
-  this->get_parameter("front_lower_distance", front_lower_distance_);
-
-  this->get_parameter("left_upper_distance", left_upper_distance_);
-  this->get_parameter("right_upper_distance", right_upper_distance_);
   this->get_parameter("rear_upper_distance", rear_upper_distance_);
   this->get_parameter("front_upper_distance", front_upper_distance_);
-
-  this->get_parameter("height_lower_distance", height_lower_distance_);
-  this->get_parameter("height_upper_distance", height_upper_distance_);
-
-  this->get_parameter("resolution", resolution_);
-  this->get_parameter("count_threshold", count_threshold_);
+  
   this->get_parameter("normal_angle_thres", normal_angle_thres_);
   this->get_parameter("ransac_pts_thresh", ransac_pts_thresh_);
   this->get_parameter("ransac_distance_thres",m_ransacDistanceThres);
@@ -173,197 +130,92 @@ void WallDetectionNode::SetControllerParams() {
   m_KinController.ms = this->get_parameter("max_steer_angle").as_double();
 }
 
-void WallDetectionNode::EgoShape(
-    pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud_ptr,
-    pcl::PointCloud<pcl::PointXYZI>::Ptr out_cloud_ptr,
-    double in_left_lower_threshold, double in_right_lower_threshold,
-    double in_front_lower_threshold,
-    double in_rear_lower_threshold, // lower limit
-    double in_left_upper_threshold, double in_right_upper_threshold,
-    double in_front_upper_threshold,
-    double in_rear_upper_threshold, // upper limit
-    double in_height_lower_threshold, double in_height_upper_threshold) {
-  pcl::PointIndices::Ptr far_indices(new pcl::PointIndices);
-  for (unsigned int i = 0; i < in_cloud_ptr->points.size(); i++) {
-    pcl::PointXYZI current_point;
-    current_point.x = in_cloud_ptr->points[i].x;
-    current_point.y = in_cloud_ptr->points[i].y;
-    current_point.z = in_cloud_ptr->points[i].z;
-
-    if (current_point.y > (in_left_upper_threshold)) {
-      far_indices->indices.push_back(i);
-      continue;
-    }
-    if (current_point.y < (-1.0 * in_right_upper_threshold)) {
-      far_indices->indices.push_back(i);
-      continue;
-    }
-
-    if (current_point.x > in_front_upper_threshold ||
-        current_point.x < -in_rear_upper_threshold) {
-      far_indices->indices.push_back(i);
-      continue;
-    }
-
-    if (current_point.z < (in_height_lower_threshold)) {
-      far_indices->indices.push_back(i);
-      continue;
-    }
-    if (current_point.z > (in_height_upper_threshold)) {
-      far_indices->indices.push_back(i);
-      continue;
-    }
-
-    if (current_point.y < (in_left_lower_threshold) &&
-        current_point.y > -1.0 * in_right_lower_threshold) {
-      if (current_point.x < (in_front_lower_threshold) &&
-          current_point.x > -1.0 * in_rear_lower_threshold) {
-        far_indices->indices.push_back(i);
-      }
-    }
-  }
-
-  pcl::ExtractIndices<pcl::PointXYZI> extract;
-  extract.setInputCloud(in_cloud_ptr);
-  extract.setIndices(far_indices);
-  extract.setNegative(
-      true); // true removes the indices, false leaves only the indices
-  extract.filter(*out_cloud_ptr);
-}
 
 void WallDetectionNode::timer_callback() {
-  std::lock_guard<std::mutex> sensor_lock(sensor_mtx);
-
-  if (!bMergedLidar)
-    return;
-
-  if ((this->now() - lidar_time_last_update) >= this->lidar_timeout) {
-    // Set error, but keep going
-    // node_status = common::NODE_ERROR;
-    RCLCPP_WARN_ONCE(this->get_logger(), "No lidar update");
-    RCLCPP_DEBUG(this->get_logger(), "No lidar update");
-    return;
-  } else {
-    // node_status = common::NODE_OK;
-  }
-
-  float min_x = -(front_upper_distance_ + rear_upper_distance_) / 2;
-  float min_y = -(left_upper_distance_ + right_upper_distance_) / 2;
-
-  pcl::PointCloud<pcl::PointXYZI>::Ptr CloudInverseBoth(
-      new pcl::PointCloud<pcl::PointXYZI>);
-  pcl::PointCloud<pcl::PointXYZI>::Ptr CloudInverseLeft(
-      new pcl::PointCloud<pcl::PointXYZI>);
-  pcl::PointCloud<pcl::PointXYZI>::Ptr CloudInverseRight(
-      new pcl::PointCloud<pcl::PointXYZI>);
-  pcl::PointCloud<pcl::PointXYZI>::Ptr CloudInverseWeakerThres(
-      new pcl::PointCloud<pcl::PointXYZI>);
-
-  /* REGISTER POINTS TO GRID 
-  1. Register points on the 2-d grid map for ground-filtering
-  2. Visualize the occupancy grid map
-    - input : ego-shape & voxelized points, grid resolution, origin point of grid
-    - output : 2-D grid map
-  */
-  RegisterPointToGrid(m_CloudShapeFiltered, resolution_, min_x, min_y);
-
-  /* INVERSE MAP
-  1. Find the ground filtered points
-  2. Find the left/right filtered points
-    - input : ego-shape & voxelized points, grid resolution, origin point of grid
-    - output : Inverse mapped filtered points (Both, Left, Right)
-  */
-  InverseMap(m_CloudShapeFiltered, CloudInverseBoth, CloudInverseWeakerThres,
-             CloudInverseLeft, CloudInverseRight, min_x, min_y, resolution_);
-
-  sensor_msgs::msg::PointCloud2 cloud_inverse_msg;
-  pcl::toROSMsg(*CloudInverseBoth, cloud_inverse_msg);
-  cloud_inverse_msg.header.frame_id = BASE_LINK;
-  cloud_inverse_msg.header.stamp = this->now();
-  pub_inverse_points->publish(cloud_inverse_msg);
-
-  sensor_msgs::msg::PointCloud2 cloud_weaker_thres_inverse_msg;
-  pcl::toROSMsg(*CloudInverseWeakerThres, cloud_weaker_thres_inverse_msg);
-  cloud_weaker_thres_inverse_msg.header.frame_id = BASE_LINK;
-  cloud_weaker_thres_inverse_msg.header.stamp = this->now();
-  pub_weaker_thres_inverse_points->publish(cloud_weaker_thres_inverse_msg);
-
-  /* LEFT RANSAC FILTER
-  1. Remove outlier points
-  2. Implement left/right points separately.
-    - input : left ground filtered points
-    - output : distance to the wall, ransac filtered left wall points
-  */
   pcl::PointCloud<pcl::PointXYZI>::Ptr CloudRANSACLeft(
       new pcl::PointCloud<pcl::PointXYZI>);
-  // left wall detection
-  boost::optional<Eigen::Vector4f> left_wall_plane_coeff =
-      wall_detect(CloudInverseLeft, CloudRANSACLeft);
-
-  inner_bound_distance = 0;
-  outer_bound_distance = 0;
-  // detected left_wall_plane_coeff coefficients
-  if (left_wall_plane_coeff && !CloudRANSACLeft->points.empty()) {
-    // for (int i = 0; i < 4; i++) {
-    //   std::cout << "left wall" << (*left_wall_plane_coeff)[i] << std::endl;
-    // }
-    // inner_bound_distance = (*left_wall_plane_coeff)[3];
-    RCLCPP_DEBUG(this->get_logger(), "Left margin : %f", inner_bound_distance);
-
-    ExtractDistanceInCloud(CloudRANSACLeft, extract_distance_x_roi,
-                           extract_distance_thres, inner_bound_distance);
-  }
-  sensor_msgs::msg::PointCloud2 cloud_left_ransac_filtered_msg;
-  pcl::toROSMsg(*CloudRANSACLeft, cloud_left_ransac_filtered_msg);
-  cloud_left_ransac_filtered_msg.header.frame_id = BASE_LINK;
-  cloud_left_ransac_filtered_msg.header.stamp = this->now();
-  pub_left_ransac_filtered_points->publish(cloud_left_ransac_filtered_msg);
-  std_msgs::msg::Float32 inner_bound_distance_msg;
-  inner_bound_distance_msg.data =
-      -1 * ((distance_low_fass_filter)*inner_bound_distance +
-            (1 - distance_low_fass_filter) * prev_inner_bound_distance);
-  pub_inner_wall_distance->publish(inner_bound_distance_msg);
-
-  prev_inner_bound_distance = inner_bound_distance;
-
-  /* RIGHT WALL BASED
-  1. Remove outlier points
-  2. Implement left/right points separately.
-    - input : right ground filtered points
-    - output : distance to the wall, ransac filtered right wall points
-  */
   pcl::PointCloud<pcl::PointXYZI>::Ptr CloudRANSACRight(
       new pcl::PointCloud<pcl::PointXYZI>);
-  // right wall detection
-  boost::optional<Eigen::Vector4f> right_wall_plane_coeff =
-      wall_detect(CloudInverseRight, CloudRANSACRight);
 
-  // detected right_wall_plane_coeff coefficients
-  if (right_wall_plane_coeff && !CloudRANSACRight->points.empty()) {
-    // for (int i = 0; i < 4; i++) {
-    //   std::cout << "right wall" << (*right_wall_plane_coeff)[i] << std::endl;
-    // }
-    // outer_bound_distance = (*right_wall_plane_coeff)[3];
-    RCLCPP_DEBUG(this->get_logger(), "Right margin : %f",
-                 -1 * outer_bound_distance);
-    ExtractDistanceInCloud(CloudRANSACRight, extract_distance_x_roi,
-                           extract_distance_thres, outer_bound_distance);
+  boost::optional<Eigen::Vector4f> left_wall_plane_coeff;
+  boost::optional<Eigen::Vector4f> right_wall_plane_coeff;
+
+      if (bInverseLeftPoints) {
+    /* LEFT RANSAC FILTER
+    1. Remove outlier points
+    2. Implement left/right points separately.
+      - input : left ground filtered points
+      - output : distance to the wall, ransac filtered left wall points
+    */
+    // left wall detection
+    left_wall_plane_coeff =
+        wall_detect(m_InverseLeftPoints, CloudRANSACLeft);
+
+    inner_bound_distance = 0;
+    outer_bound_distance = 0;
+    // detected left_wall_plane_coeff coefficients
+    if (left_wall_plane_coeff && !CloudRANSACLeft->points.empty()) {
+      // for (int i = 0; i < 4; i++) {
+      //   std::cout << "left wall" << (*left_wall_plane_coeff)[i] << std::endl;
+      // }
+      // inner_bound_distance = (*left_wall_plane_coeff)[3];
+      RCLCPP_DEBUG(this->get_logger(), "Left margin : %f", inner_bound_distance);
+
+      ExtractDistanceInCloud(CloudRANSACLeft, extract_distance_x_roi,
+                            extract_distance_thres, inner_bound_distance);
+    }
+    sensor_msgs::msg::PointCloud2 cloud_left_ransac_filtered_msg;
+    pcl::toROSMsg(*CloudRANSACLeft, cloud_left_ransac_filtered_msg);
+    cloud_left_ransac_filtered_msg.header.frame_id = BASE_LINK;
+    cloud_left_ransac_filtered_msg.header.stamp = this->now();
+    pub_left_ransac_filtered_points->publish(cloud_left_ransac_filtered_msg);
+    std_msgs::msg::Float32 inner_bound_distance_msg;
+    inner_bound_distance_msg.data =
+        -1 * ((distance_low_fass_filter)*inner_bound_distance +
+              (1 - distance_low_fass_filter) * prev_inner_bound_distance);
+    pub_inner_wall_distance->publish(inner_bound_distance_msg);
+    prev_inner_bound_distance = inner_bound_distance;
   }
-  sensor_msgs::msg::PointCloud2 cloud_right_ransac_filtered_msg;
-  pcl::toROSMsg(*CloudRANSACRight, cloud_right_ransac_filtered_msg);
-  cloud_right_ransac_filtered_msg.header.frame_id = BASE_LINK;
-  cloud_right_ransac_filtered_msg.header.stamp = this->now();
-  pub_right_ransac_filtered_points->publish(cloud_right_ransac_filtered_msg);
 
-  std_msgs::msg::Float32 outer_bound_distance_msg;
-  // outer_bound_distance_msg.data =
-  //     -1 * ((distance_low_fass_filter)*outer_bound_distance +
-  //           (1 - distance_low_fass_filter) * prev_outer_bound_distance);
-  outer_bound_distance_msg.data = -1 * outer_bound_distance;
+  if (bInverseRightPoints)
+  {
+    /* RIGHT WALL BASED
+    1. Remove outlier points
+    2. Implement left/right points separately.
+      - input : right ground filtered points
+      - output : distance to the wall, ransac filtered right wall points
+    */
+    // right wall detection
+    right_wall_plane_coeff =
+        wall_detect(m_InverseRightPoints, CloudRANSACRight);
 
-  pub_outer_wall_distance->publish(outer_bound_distance_msg);
+    // detected right_wall_plane_coeff coefficients
+    if (right_wall_plane_coeff && !CloudRANSACRight->points.empty()) {
+      // for (int i = 0; i < 4; i++) {
+      //   std::cout << "right wall" << (*right_wall_plane_coeff)[i] << std::endl;
+      // }
+      // outer_bound_distance = (*right_wall_plane_coeff)[3];
+      RCLCPP_DEBUG(this->get_logger(), "Right margin : %f",
+                  -1 * outer_bound_distance);
+      ExtractDistanceInCloud(CloudRANSACRight, extract_distance_x_roi,
+                            extract_distance_thres, outer_bound_distance);
+    }
+    sensor_msgs::msg::PointCloud2 cloud_right_ransac_filtered_msg;
+    pcl::toROSMsg(*CloudRANSACRight, cloud_right_ransac_filtered_msg);
+    cloud_right_ransac_filtered_msg.header.frame_id = BASE_LINK;
+    cloud_right_ransac_filtered_msg.header.stamp = this->now();
+    pub_right_ransac_filtered_points->publish(cloud_right_ransac_filtered_msg);
 
-  prev_outer_bound_distance = outer_bound_distance;
+    std_msgs::msg::Float32 outer_bound_distance_msg;
+    // outer_bound_distance_msg.data =
+    //     -1 * ((distance_low_fass_filter)*outer_bound_distance +
+    //           (1 - distance_low_fass_filter) * prev_outer_bound_distance);
+    outer_bound_distance_msg.data = -1 * outer_bound_distance;
+
+    pub_outer_wall_distance->publish(outer_bound_distance_msg);
+
+    prev_outer_bound_distance = outer_bound_distance;
+  }
 
   /* BOTH OF RANSAC-FILTERED POINTS PUBLISHER
   1. Publish ransac filtered both of wall points
@@ -459,7 +311,6 @@ void WallDetectionNode::timer_callback() {
     - output : predictive path on the base_link frame
   */
 
-
   m_KinController.setPath(final_wall_following_path_msg);
   m_KinController.setVelocity(m_vel_speed_x);
   m_KinController.run();
@@ -473,35 +324,17 @@ void WallDetectionNode::timer_callback() {
 
 }
 
-void WallDetectionNode::mergedPointsCallback(
+void WallDetectionNode::InverseLeftCallback(
     const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
-  std::lock_guard<std::mutex> sensor_lock(sensor_mtx);
-
-  lidar_time_last_update = this->now();
-
-  pcl::PointCloud<pcl::PointXYZI>::Ptr CloudIn(
-          new pcl::PointCloud<pcl::PointXYZI>);
-  pcl::PointCloud<pcl::PointXYZI>::Ptr CloudVoxelized(
-      new pcl::PointCloud<pcl::PointXYZI>);
-  m_CloudShapeFiltered.reset(new pcl::PointCloud<pcl::PointXYZI>());
-
-  RCLCPP_DEBUG(this->get_logger(), "-------------");
-
-  pcl::fromROSMsg(*msg, *CloudIn);
-  CloudVoxelized = downsample(CloudIn, resolution_);
-
-  EgoShape(CloudVoxelized, m_CloudShapeFiltered, left_lower_distance_,
-           right_lower_distance_, front_lower_distance_, rear_lower_distance_,
-           left_upper_distance_, right_upper_distance_, front_upper_distance_,
-           rear_upper_distance_, height_lower_distance_,
-           height_upper_distance_);
-  sensor_msgs::msg::PointCloud2 cloud_msg;
-  pcl::toROSMsg(*m_CloudShapeFiltered, cloud_msg);
-  cloud_msg.header = msg->header;
-  cloud_msg.header.frame_id = BASE_LINK;
-  pub_filtered_points->publish(cloud_msg);
-
-  bMergedLidar = true;
+  m_InverseLeftPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
+  pcl::fromROSMsg(*msg, *m_InverseLeftPoints);
+  bInverseLeftPoints = true;
+}
+void WallDetectionNode::InverseRightCallback(
+    const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
+  m_InverseRightPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
+  pcl::fromROSMsg(*msg, *m_InverseRightPoints);
+  bInverseRightPoints = true;
 }
 
 void WallDetectionNode::WheelSpeedCallback(const raptor_dbw_msgs::msg::WheelSpeedReport::SharedPtr msg)
@@ -514,110 +347,6 @@ void WallDetectionNode::RadarMarkerCallback(
 
 }
 
-void WallDetectionNode::RegisterPointToGrid(
-    pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud_ptr, double in_resolution,
-    float min_x, float min_y) {
-  nav_msgs::msg::OccupancyGrid oc_grid_msg;
-  oc_grid_msg.header.frame_id = BASE_LINK;
-  oc_grid_msg.header.stamp = this->now();
-  oc_grid_msg.info.origin.position.x = min_x;
-  oc_grid_msg.info.origin.position.y = min_y;
-  oc_grid_msg.info.origin.position.z = 0.;
-  oc_grid_msg.info.origin.orientation.x = 0.;
-  oc_grid_msg.info.origin.orientation.y = 0.;
-  oc_grid_msg.info.origin.orientation.z = 0.;
-  oc_grid_msg.info.origin.orientation.w = 1.;
-  oc_grid_msg.info.width = MAP_WIDTH;
-  oc_grid_msg.info.height = MAP_HEIGHT;
-  oc_grid_msg.info.resolution = in_resolution;
-
-  nav_msgs::msg::OccupancyGrid forwarding_map_grid_msg = oc_grid_msg;
-
-  for (int i = 0; i < MAP_HEIGHT + 1; i++) {
-    this->map[i].fill(0.0);
-    this->count_map[i].fill(0.0);
-    this->mean_map[i].fill(0.0);
-    this->cov_map[i].fill(0.0);
-    this->points_map[i].fill({});
-  }
-
-  int x, y;
-  for (auto point_buf : in_cloud_ptr->points) {
-    x = std::floor((point_buf.x - min_x) / in_resolution);
-    y = std::floor((point_buf.y - min_y) / in_resolution);
-
-    if (x > MAP_WIDTH || x < 0 || y > MAP_HEIGHT || y < 0) {
-      // std::cout << x << ", " << y << std::endl;
-      continue;
-    }
-    std::vector<double> points_map_buf = points_map[y][x];
-    points_map_buf.push_back(point_buf.z);
-    count_map[y][x] = count_map[y][x] + 1.f; // count hit
-    points_map[y][x] = points_map_buf;
-    // map[y][x] = map[y][x] + point_buf.z; // accumulate height
-    double sum_of_elems =
-        std::accumulate(points_map_buf.begin(), points_map_buf.end(),
-                        decltype(points_map_buf)::value_type(0));
-
-    if(count_map[y][x] != 0.)
-    {
-      mean_map[y][x] = sum_of_elems / count_map[y][x]; // calculate mean map
-      for(auto z : points_map_buf)
-      {
-        cov_map[y][x] = cov_map[y][x] * count_map[y][x]; 
-        cov_map[y][x] = (cov_map[y][x] + pow((z - mean_map[y][x]),2)) / count_map[y][x];
-      }
-    }
-  }
-
-  for (int i = 0; i < MAP_HEIGHT; i++) {
-    for (int j = 0; j < MAP_WIDTH; j++) {
-      if (cov_map[y][x] > count_threshold_) {
-        // oc_grid_msg.data.push_back((int8_t)(map[i][j]));
-        oc_grid_msg.data.push_back((int8_t)(80.));
-      } else {
-        oc_grid_msg.data.push_back((int8_t)(0.0));
-      }
-
-      // if (i > 1 && i < MAP_HEIGHT - 1 && j < MAP_WIDTH - 3) {
-      //   if (map[i][j] > 0 && map[i][j + 3] > 0) {
-      //     forwarding_map_grid_msg.data.push_back((int8_t)(80.));
-      //   } else {
-      //     forwarding_map_grid_msg.data.push_back((int8_t)(0.));
-      //   }
-      // } else {
-      //   forwarding_map_grid_msg.data.push_back((int8_t)(0.));
-      // }
-    }
-  }
-  pub_oc_grid->publish(oc_grid_msg);
-  // pub_forwarding_map_grid->publish(forwarding_map_grid_msg);
-}
-
-void WallDetectionNode::InverseMap(
-    pcl::PointCloud<pcl::PointXYZI>::Ptr cloudIn,
-    pcl::PointCloud<pcl::PointXYZI>::Ptr cloudOut,
-    pcl::PointCloud<pcl::PointXYZI>::Ptr WeakerThrescloudOut,
-    pcl::PointCloud<pcl::PointXYZI>::Ptr cloudLeftOut,
-    pcl::PointCloud<pcl::PointXYZI>::Ptr cloudRightOut, float min_x,
-    float min_y, float in_resolution) {
-  int x, y;
-  for (auto point_buf : cloudIn->points) {
-    x = std::floor((point_buf.x - min_x) / in_resolution);
-    y = std::floor((point_buf.y - min_y) / in_resolution);
-    if (cov_map[y][x] > count_threshold_) {
-      cloudOut->points.push_back(point_buf);
-      if (point_buf.y > 0) {
-        cloudLeftOut->points.push_back(point_buf);
-      } else {
-        cloudRightOut->points.push_back(point_buf);
-      }
-    }
-    if (count_map[y][x] > count_threshold_ - 1.) {
-      WeakerThrescloudOut->points.push_back(point_buf);
-    }
-  }
-}
 pcl::PointCloud<pcl::PointXYZI>::Ptr
 WallDetectionNode::downsample(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud,
                                double resolution) {
@@ -717,7 +446,9 @@ void WallDetectionNode::CubicSpliner(
         const boost::optional<Eigen::Vector4f> wall_plane_coeff,
         double in_front_upper_threshold, double in_rear_upper_threshold,
         nav_msgs::msg::Path& path_msg_out, cv::Mat& PolyCoefficientOut) {
-        
+  if (cloudIn->points.empty())
+    return;
+
   pcl::PointCloud<pcl::PointXYZI>::Ptr cloudDownSampled(
       new pcl::PointCloud<pcl::PointXYZI>);
 
@@ -768,9 +499,11 @@ void WallDetectionNode::CubicSpliner(
     const boost::optional<Eigen::Vector4f> wall_plane_coeff,
     double in_front_upper_threshold, double in_rear_upper_threshold,
     nav_msgs::msg::Path& path_msg_out, cv::Mat& PolyCoefficientOut, int& poly_order) {
+  if (cloudIn->points.empty())
+    return;
 
   pcl::PointCloud<pcl::PointXYZI>::Ptr cloudDownSampled(
-      new pcl::PointCloud<pcl::PointXYZI>);
+        new pcl::PointCloud<pcl::PointXYZI>);
 
   for (auto point_buf : cloudIn->points) {
     pcl::PointXYZI ground_points;

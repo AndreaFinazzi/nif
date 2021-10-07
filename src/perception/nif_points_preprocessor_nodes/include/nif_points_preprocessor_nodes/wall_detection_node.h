@@ -1,7 +1,7 @@
 /*
  * wall_detection_node.h
  *
- *  Created on: Ocd 7, 2021
+ *  Created on: Oct 6, 2021
  *      Author: Daegyu Lee
  */
 #ifndef WALL_DETECTION_NODE_H
@@ -85,16 +85,6 @@
 #include "nif_wall_following_controller/kin_control_node.hpp" 
 
 
-/**
- * 2-D grid map size for wall detection
- * MAP_WIDTH : longitudinal direction
- * MAP_HEIGHT : longitudinal direction
- */
-const unsigned long MAP_WIDTH =
-    400; //(front_upper_distance + rear_upper_distance) / resolution
-const unsigned long MAP_HEIGHT =
-    240; // (right_upper_distance + left_upper_distance) / resolution
-
 namespace nif {
 namespace perception {
 
@@ -102,7 +92,11 @@ class WallDetectionNode : public rclcpp::Node {
 public:
   WallDetectionNode(const std::string &node_name_);
   ~WallDetectionNode();
-  void mergedPointsCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
+  void InverseLeftCallback(
+      const sensor_msgs::msg::PointCloud2::SharedPtr msg);
+  void InverseRightCallback(
+      const sensor_msgs::msg::PointCloud2::SharedPtr msg);
+
   void WheelSpeedCallback(const raptor_dbw_msgs::msg::WheelSpeedReport::SharedPtr msg);
   void RadarMarkerCallback(const visualization_msgs::msg::Marker::SharedPtr msg);
   void timer_callback();
@@ -113,26 +107,20 @@ private:
   void respond();
   void SetControllerParams();
 
-  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_points_;
+  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr
+      sub_inverse_left_;
+  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr
+      sub_inverse_right_;
   rclcpp::Subscription<raptor_dbw_msgs::msg::WheelSpeedReport>::SharedPtr sub_wheel_speed_;
   rclcpp::Subscription<visualization_msgs::msg::Marker>::SharedPtr sub_radar_marker_;
   rclcpp::TimerBase::SharedPtr timer_;
 
-  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr
-      pub_filtered_points;
-  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr
-      pub_inverse_points;
-  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr
-      pub_weaker_thres_inverse_points;
    rclcpp::Publisher<
       sensor_msgs::msg::PointCloud2>::SharedPtr pub_left_ransac_filtered_points;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr
       pub_right_ransac_filtered_points;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr
       pub_both_ransac_filtered_points;
-  rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr pub_oc_grid;
-  rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr
-      pub_forwarding_map_grid;
 
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_left_wall_line;
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_right_wall_line;
@@ -142,19 +130,9 @@ private:
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pub_outer_wall_distance;
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pub_wall_following_steer_cmd;
 
-  double left_lower_distance_;
-  double right_lower_distance_;
-  double rear_lower_distance_;
-  double front_lower_distance_;
-  double left_upper_distance_;
-  double right_upper_distance_;
   double rear_upper_distance_;
   double front_upper_distance_;
 
-  double height_upper_distance_;
-  double height_lower_distance_;
-  double resolution_;
-  double count_threshold_;
   double normal_angle_thres_;
   int ransac_pts_thresh_;
   double m_ransacDistanceThres;
@@ -171,57 +149,18 @@ private:
   double m_target_space_to_wall;
   double m_margin_to_wall;
 
-  pcl::PointCloud<pcl::PointXYZI>::Ptr m_CloudShapeFiltered;
-  bool bMergedLidar = false;
-  std::mutex sensor_mtx;
-  rclcpp::Duration lidar_timeout = rclcpp::Duration(1, 0);
-  rclcpp::Time lidar_time_last_update;
+  pcl::PointCloud<pcl::PointXYZI>::Ptr m_InverseLeftPoints;
+  pcl::PointCloud<pcl::PointXYZI>::Ptr m_InverseRightPoints;
+  bool bInverseLeftPoints = false;
+  bool bInverseRightPoints = false;
 
   nav_msgs::msg::Path final_wall_following_path_msg;
   nif::control::KinControl m_KinController;
   double m_vel_speed_x;
-  std::array<std::array<float, (size_t)(MAP_WIDTH + 1)>,
-                                  (size_t)(MAP_HEIGHT + 1)>
-      map;
-  std::array<std::array<std::vector<double>, (size_t)(MAP_WIDTH + 1)>,
-             (size_t)(MAP_HEIGHT + 1)>
-      points_map;
-
-  std::array<std::array<float, (size_t)(MAP_WIDTH + 1)>,
-             (size_t)(MAP_HEIGHT + 1)>
-      count_map;
-
-  std::array<std::array<float, (size_t)(MAP_WIDTH + 1)>,
-             (size_t)(MAP_HEIGHT + 1)>
-      mean_map;
-
-  std::array<std::array<float, (size_t)(MAP_WIDTH + 1)>,
-             (size_t)(MAP_HEIGHT + 1)>
-      cov_map;
-
-  void EgoShape(pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud_ptr,
-                pcl::PointCloud<pcl::PointXYZI>::Ptr out_cloud_ptr,
-                double in_left_lower_threshold, double in_right_lower_threshold,
-                double in_front_lower_threshold,
-                double in_rear_lower_threshold, // lower limit
-                double in_left_upper_threshold, double in_right_upper_threshold,
-                double in_front_upper_threshold,
-                double in_rear_upper_threshold, // upper limit
-                double in_height_lower_threshold,
-                double in_height_upper_threshold); // height
-
-  void RegisterPointToGrid(pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud_ptr,
-                           double in_resolution, float min_x, float min_y);
 
   pcl::PointCloud<pcl::PointXYZI>::Ptr
   downsample(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, double resolution);
 
-  void InverseMap(pcl::PointCloud<pcl::PointXYZI>::Ptr cloudIn,
-                  pcl::PointCloud<pcl::PointXYZI>::Ptr cloudOut,
-                  pcl::PointCloud<pcl::PointXYZI>::Ptr WeakerThrescloudOut,
-                  pcl::PointCloud<pcl::PointXYZI>::Ptr cloudLeftOut,
-                  pcl::PointCloud<pcl::PointXYZI>::Ptr cloudRightOut,
-                  float min_x, float min_y, float in_resolution);
   boost::optional<Eigen::Vector4f>
   wall_detect(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud,
               pcl::PointCloud<pcl::PointXYZI>::Ptr cloudOut);
