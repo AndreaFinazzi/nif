@@ -3,6 +3,7 @@
 
 #include "nif_points_preprocessor_nodes/ego_shape_filter_node.h"
 #include "nif_points_preprocessor_nodes/points_concat_node.h"
+#include "nif_points_preprocessor_nodes/points_concat_async_node.h"
 #include "nif_points_preprocessor_nodes/wall_detection_node.h"
 #include "nif_common/constants.h"
 #include "nif_common/types.h"
@@ -22,7 +23,12 @@ int32_t main(int32_t argc, char **argv) {
   const char *node_name_2 = "nif_ego_shape_filter_node";
   const char *node_name_3 = "nif_wall_detection_node";
 
+  // Syncronized version using message filter
   auto PC_FILTER = std::make_shared<PointsConcatFilterNode>(node_name_1);
+  
+  // Asyncronized version using message filter
+  // auto PC_FILTER = std::make_shared<PointsConcatAsyncFilterNode>(node_name_1);
+
   auto EGO_FILTER = std::make_shared<EgoShapeFilterNode>(node_name_2);
   auto WALL_DETECTOR = std::make_shared<WallDetectionNode>(node_name_3);
 

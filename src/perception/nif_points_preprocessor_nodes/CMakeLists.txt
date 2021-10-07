@@ -28,6 +28,11 @@ ament_auto_add_library(points_concat_filter SHARED
         src/points_concat_node.cpp)
 target_link_libraries(points_concat_filter ${YAML_CPP_LIBRARIES} ${PCL_LIBRARIES})
 
+ament_auto_add_library(points_concat_async_filter SHARED
+        src/points_concat_async_node.cpp)
+target_link_libraries(points_concat_async_filter ${YAML_CPP_LIBRARIES} ${PCL_LIBRARIES})
+
+
 ament_auto_add_library(ego_shape_filter_node SHARED
         src/ego_shape_filter_node.cpp)
 target_link_libraries(ego_shape_filter_node ${PCL_LIBRARIES})
@@ -41,6 +46,7 @@ ament_auto_add_executable(${PROJECT_NAME}_exe
 
 target_link_libraries(${PROJECT_NAME}_exe
         points_concat_filter
+        points_concat_async_filter
         ego_shape_filter_node
         wall_detection_node
 )

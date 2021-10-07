@@ -14,21 +14,21 @@ nif_ego_shape_filter_node:
     front_lower_distance : 2.5
     left_upper_distance : 30.0
     right_upper_distance : 30.0
-    rear_upper_distance : 20.0
-    front_upper_distance : 80.0
+    rear_upper_distance : 30.0
+    front_upper_distance : 50.0
     height_lower_distance : -0.5
-    height_upper_distance : 1.5
-    resolution : 0.5 #0.25
-    count_threshold : 0.1 #origin 3.
+    height_upper_distance : 1.0
+    resolution : 0.20 #0.25
+    count_threshold : 3.0 #origin  //cov_map : 0.1 //count_map : 3.
 
 
 nif_wall_detection_node:
   ros__parameters:
-    rear_upper_distance : 20.0
-    front_upper_distance : 80.0
-    normal_angle_thres : 70. #50.
+    rear_upper_distance : 30.0
+    front_upper_distance : 50.0
+    normal_angle_thres : 50. #50.
     ransac_pts_thresh : 50  # 200
-    ransac_distance_thres : 0.2 #0.2
+    ransac_distance_thres : 0.3 #0.2
 
     x_roi : 0.0
     distance_extract_thres : 0.5
@@ -36,6 +36,7 @@ nif_wall_detection_node:
     target_space_to_wall : 3.0 #should be positive value
 
     # control params
+    average_filter_size : 10
     min_lookahead: 4.0
     max_lookahead: 29.0
     lookahead_speed_ratio: 0.75

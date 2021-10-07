@@ -7,6 +7,7 @@ Panels:
         - /Global Options1
         - /Status1
         - /Grid1
+        - /Path1
         - /Path1/Topic1
         - /Odometry1/Topic1
         - /Odometry1/Shape1
@@ -31,7 +32,6 @@ Panels:
         - /Marker1/Topic1
         - /Path9
         - /PointCloud26/Topic1
-        - /PointCloud27
         - /PointCloud27/Topic1
       Splitter Ratio: 0.4676470458507538
     Tree Height: 658
@@ -415,7 +415,7 @@ Visualization Manager:
       Color: 85; 255; 255
       Color Transformer: FlatColor
       Decay Time: 0
-      Enabled: true
+      Enabled: false
       Invert Rainbow: false
       Max Color: 255; 255; 255
       Max Intensity: 0.7039704322814941
@@ -435,7 +435,7 @@ Visualization Manager:
         Value: /ransac_filtered_points/right
       Use Fixed Frame: true
       Use rainbow: true
-      Value: true
+      Value: false
     - Angle Tolerance: 0.10000000149011612
       Class: rviz_default_plugins/Odometry
       Covariance:
@@ -765,7 +765,7 @@ Visualization Manager:
       Enabled: true
       Invert Rainbow: false
       Max Color: 255; 255; 255
-      Max Intensity: 13
+      Max Intensity: 11
       Min Color: 0; 0; 0
       Min Intensity: 0
       Name: PointCloud2
@@ -819,7 +819,7 @@ Visualization Manager:
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
-    Fixed Frame: odom
+    Fixed Frame: base_link
     Frame Rate: 30
   Name: root
   Tools:
@@ -859,25 +859,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/ThirdPersonFollower
-      Distance: 33.679405212402344
+      Distance: 75.71463775634766
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0
-        Y: 0
+        X: -2.7671282291412354
+        Y: -1.6790552139282227
         Z: 0
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.5697963237762451
+      Pitch: 1.5347965955734253
       Target Frame: base_link
       Value: ThirdPersonFollower (rviz_default_plugins)
-      Yaw: 3.2703988552093506
+      Yaw: 3.135396957397461
     Saved: ~
 Window Geometry:
   Displays:

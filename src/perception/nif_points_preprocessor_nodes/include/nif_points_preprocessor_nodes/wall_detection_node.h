@@ -143,11 +143,12 @@ private:
   double prev_outer_bound_distance;
   double distance_low_fass_filter;
 
-
   double extract_distance_x_roi; 
   double extract_distance_thres;
   double m_target_space_to_wall;
   double m_margin_to_wall;
+  int m_average_filter_size;
+  std::deque<double> control_out_que;
 
   pcl::PointCloud<pcl::PointXYZI>::Ptr m_InverseLeftPoints;
   pcl::PointCloud<pcl::PointXYZI>::Ptr m_InverseRightPoints;
@@ -157,6 +158,7 @@ private:
   nav_msgs::msg::Path final_wall_following_path_msg;
   nif::control::KinControl m_KinController;
   double m_vel_speed_x;
+  int average_filter_size;
 
   pcl::PointCloud<pcl::PointXYZI>::Ptr
   downsample(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, double resolution);

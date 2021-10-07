@@ -54,15 +54,12 @@ EgoShapeFilterNode::EgoShapeFilterNode(const std::string &node_name_)
   using namespace std::chrono_literals; // NOLINT
   // TODO convert period to paramter
   timer_ = this->create_wall_timer(
-      50ms, std::bind(&EgoShapeFilterNode::timer_callback, this));
+      30ms, std::bind(&EgoShapeFilterNode::timer_callback, this));
 
   pub_filtered_points = this->create_publisher<sensor_msgs::msg::PointCloud2>(
       "/merged/ego_filtered", nif::common::constants::QOS_SENSOR_DATA);
   pub_oc_grid = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
       "/OccupancyGridMap/map", nif::common::constants::QOS_SENSOR_DATA);
-  pub_forwarding_map_grid =
-      this->create_publisher<nav_msgs::msg::OccupancyGrid>(
-          "/OccupancyGridMap/forwarding_map", nif::common::constants::QOS_SENSOR_DATA);
 
   pub_inverse_points = this->create_publisher<sensor_msgs::msg::PointCloud2>(
       "/inverse_mapped_points", nif::common::constants::QOS_SENSOR_DATA);
@@ -165,7 +162,7 @@ void EgoShapeFilterNode::EgoShape(
 }
 
 void EgoShapeFilterNode::timer_callback() {
-  std::lock_guard<std::mutex> sensor_lock(sensor_mtx);
+  // std::lock_guard<std::mutex> sensor_lock(sensor_mtx);
 
   if (!bMergedLidar)
     return;
@@ -237,7 +234,7 @@ void EgoShapeFilterNode::timer_callback() {
 
 void EgoShapeFilterNode::mergedPointsCallback(
     const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
-  std::lock_guard<std::mutex> sensor_lock(sensor_mtx);
+  // std::lock_guard<std::mutex> sensor_lock(sensor_mtx);
 
   lidar_time_last_update = this->now();
 
@@ -284,8 +281,6 @@ void EgoShapeFilterNode::RegisterPointToGrid(
   oc_grid_msg.info.height = MAP_HEIGHT;
   oc_grid_msg.info.resolution = in_resolution;
 
-  nav_msgs::msg::OccupancyGrid forwarding_map_grid_msg = oc_grid_msg;
-
   for (int i = 0; i < MAP_HEIGHT + 1; i++) {
     this->map[i].fill(0.0);
     this->count_map[i].fill(0.0);
@@ -303,48 +298,39 @@ void EgoShapeFilterNode::RegisterPointToGrid(
       // std::cout << x << ", " << y << std::endl;
       continue;
     }
-    std::vector<double> points_map_buf = points_map[y][x];
-    points_map_buf.push_back(point_buf.z);
-    count_map[y][x] = count_map[y][x] + 1.f; // count hit
-    points_map[y][x] = points_map_buf;
-    // map[y][x] = map[y][x] + point_buf.z; // accumulate height
-    double sum_of_elems =
-        std::accumulate(points_map_buf.begin(), points_map_buf.end(),
-                        decltype(points_map_buf)::value_type(0));
+    // count_map[y][x] = count_map[y][x] + 1.f; // count hit
 
-    if(count_map[y][x] != 0.)
-    {
-      mean_map[y][x] = sum_of_elems / count_map[y][x]; // calculate mean map
-      for(auto z : points_map_buf)
-      {
-        cov_map[y][x] = cov_map[y][x] * count_map[y][x]; 
-        cov_map[y][x] = (cov_map[y][x] + pow((z - mean_map[y][x]),2)) / count_map[y][x];
-      }
-    }
+    // std::vector<double> points_map_buf = points_map[y][x];
+    // points_map_buf.push_back(point_buf.z);
+    count_map[y][x] = count_map[y][x] + 1.f; // count hit
+    // points_map[y][x] = points_map_buf;
+    // map[y][x] = map[y][x] + point_buf.z + 0.5; // accumulate height
+    // double sum_of_elems =
+    //     std::accumulate(points_map_buf.begin(), points_map_buf.end(),
+    //                     decltype(points_map_buf)::value_type(0));
+
+    // if(count_map[y][x] != 0.)
+    // {
+    //   mean_map[y][x] = sum_of_elems / count_map[y][x]; // calculate mean map
+    //   for(auto z : points_map_buf)
+    //   {
+    //     cov_map[y][x] = cov_map[y][x] * count_map[y][x]; 
+    //     cov_map[y][x] = (cov_map[y][x] + pow((z - mean_map[y][x]),2)) / count_map[y][x];
+    //   }
+    // }
   }
 
   for (int i = 0; i < MAP_HEIGHT; i++) {
     for (int j = 0; j < MAP_WIDTH; j++) {
-      if (cov_map[y][x] > count_threshold_) {
+      if (count_map[y][x] > count_threshold_) {
         // oc_grid_msg.data.push_back((int8_t)(map[i][j]));
         oc_grid_msg.data.push_back((int8_t)(80.));
       } else {
         oc_grid_msg.data.push_back((int8_t)(0.0));
       }
-
-      // if (i > 1 && i < MAP_HEIGHT - 1 && j < MAP_WIDTH - 3) {
-      //   if (map[i][j] > 0 && map[i][j + 3] > 0) {
-      //     forwarding_map_grid_msg.data.push_back((int8_t)(80.));
-      //   } else {
-      //     forwarding_map_grid_msg.data.push_back((int8_t)(0.));
-      //   }
-      // } else {
-      //   forwarding_map_grid_msg.data.push_back((int8_t)(0.));
-      // }
     }
   }
   pub_oc_grid->publish(oc_grid_msg);
-  // pub_forwarding_map_grid->publish(forwarding_map_grid_msg);
 }
 
 void EgoShapeFilterNode::InverseMap(
@@ -358,7 +344,7 @@ void EgoShapeFilterNode::InverseMap(
   for (auto point_buf : cloudIn->points) {
     x = std::floor((point_buf.x - min_x) / in_resolution);
     y = std::floor((point_buf.y - min_y) / in_resolution);
-    if (cov_map[y][x] > count_threshold_) {
+    if (count_map[y][x] > count_threshold_) {
       cloudOut->points.push_back(point_buf);
       if (point_buf.y > 0) {
         cloudLeftOut->points.push_back(point_buf);
@@ -371,13 +357,14 @@ void EgoShapeFilterNode::InverseMap(
     }
   }
 }
+
 pcl::PointCloud<pcl::PointXYZI>::Ptr
 EgoShapeFilterNode::downsample(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud,
                                double resolution) {
   pcl::PointCloud<pcl::PointXYZI>::Ptr filtered(
       new pcl::PointCloud<pcl::PointXYZI>);
   pcl::VoxelGrid<pcl::PointXYZI> voxelgrid;
-  voxelgrid.setLeafSize(resolution, resolution, 0.05);
+  voxelgrid.setLeafSize(resolution, resolution, 0.02);
   voxelgrid.setInputCloud(cloud);
   voxelgrid.filter(*filtered);
   return filtered;

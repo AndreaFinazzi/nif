@@ -53,7 +53,7 @@ PointsConcatFilterNode::PointsConcatFilterNode(const std::string &node_name_)
     }
   }
   cloud_synchronizer_ = new message_filters::Synchronizer<SyncPolicyT>(
-      SyncPolicyT(10), *cloud_subscribers_[0], *cloud_subscribers_[1],
+      SyncPolicyT(20), *cloud_subscribers_[0], *cloud_subscribers_[1],
       *cloud_subscribers_[2]);
   cloud_synchronizer_->registerCallback(bind(
       &PointsConcatFilterNode::pointcloud_callback, this, std::placeholders::_1,

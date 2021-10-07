@@ -82,7 +82,8 @@ windows:
       - export ROS_DOMAIN_ID=77
     panes:
       - shell_command:
-          - rviz2 -d /home/usrg/nif/src/perception/nif_localization_nodes/launch/navi.rviz
+          # - rviz2 -d /home/usrg/nif/src/perception/nif_localization_nodes/launch/navi.rviz
+          - rviz2
 
   - window_name: Control Tab
     layout: tiled

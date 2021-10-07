@@ -91,7 +91,7 @@
  * MAP_HEIGHT : longitudinal direction
  */
 const unsigned long MAP_WIDTH =
-    400; //(front_upper_distance + rear_upper_distance) / resolution
+    320; //(front_upper_distance + rear_upper_distance) / resolution
 const unsigned long MAP_HEIGHT =
     240; // (right_upper_distance + left_upper_distance) / resolution
 

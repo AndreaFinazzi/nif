@@ -27,6 +27,7 @@ WallDetectionNode::WallDetectionNode(const std::string &node_name_)
   this->declare_parameter<double>("target_space_to_wall", double(7.));
 
   // Controller Parameters
+  this->declare_parameter<int>("average_filter_size", int(10));
   this->declare_parameter<double>("min_lookahead", double(4.0));
   this->declare_parameter<double>("max_lookahead", double(30.0));
   this->declare_parameter<double>("lookahead_speed_ratio", double(0.75));
@@ -119,6 +120,7 @@ void WallDetectionNode::respond() {
   this->get_parameter("distance_low_fass_filter", distance_low_fass_filter);
   this->get_parameter("target_space_to_wall", m_target_space_to_wall);
 
+  m_average_filter_size = this->get_parameter("average_filter_size").as_int();
 }
 
 void WallDetectionNode::SetControllerParams() {
@@ -140,7 +142,7 @@ void WallDetectionNode::timer_callback() {
   boost::optional<Eigen::Vector4f> left_wall_plane_coeff;
   boost::optional<Eigen::Vector4f> right_wall_plane_coeff;
 
-      if (bInverseLeftPoints) {
+  if (bInverseLeftPoints) {
     /* LEFT RANSAC FILTER
     1. Remove outlier points
     2. Implement left/right points separately.
@@ -275,7 +277,7 @@ void WallDetectionNode::timer_callback() {
   nav_msgs::msg::Path wall_folllowing_path_msg;
   wall_folllowing_path_msg.header.frame_id = BASE_LINK;
   wall_folllowing_path_msg.header.stamp = this->now();
-
+  bool close_to_left = false;
   if (right_wall_plane_coeff && outer_bound_distance != 0.0) {
     if (fabs(outer_bound_distance) < m_target_space_to_wall)
     {
@@ -285,19 +287,35 @@ void WallDetectionNode::timer_callback() {
       m_margin_to_wall = 0.0;
     }
   }
+
+  if (left_wall_plane_coeff && inner_bound_distance != 0.0) {
+    if (fabs(inner_bound_distance) < m_target_space_to_wall) {
+      m_margin_to_wall = inner_bound_distance - m_target_space_to_wall;
+      close_to_left = true;
+    } else {
+      m_margin_to_wall = 0.0;
+    }
+  }
+
+  // if vehicle goes close to the left wall, calculate predictive path from left wall, not from the right wall. 
+  if(close_to_left)
+  {
+    EstimatePredictivePath(left_wall_plane_coeff, LeftPolyCoefficient,
+                           wall_folllowing_path_msg, m_margin_to_wall);
+  }
+  else
+  {
+    EstimatePredictivePath(right_wall_plane_coeff, RightPolyCoefficient,
+                           wall_folllowing_path_msg, m_margin_to_wall);
+  }
+
   final_wall_following_path_msg.header.frame_id = BASE_LINK;
   final_wall_following_path_msg.header.stamp = this->now();
-
-
-   EstimatePredictivePath(right_wall_plane_coeff, RightPolyCoefficient,
-                          wall_folllowing_path_msg, m_margin_to_wall);
-
-  // changed
-  // EstimatePredictivePath(right_wall_plane_coeff, RightPolyCoefficient, right_polynorm_order,
-  //                        wall_folllowing_path_msg, m_margin_to_wall);
-
-
   if (right_wall_plane_coeff && !wall_folllowing_path_msg.poses.empty()) {
+     final_wall_following_path_msg = wall_folllowing_path_msg;
+  }
+  if (left_wall_plane_coeff && !wall_folllowing_path_msg.poses.empty() && close_to_left)
+  {
     final_wall_following_path_msg = wall_folllowing_path_msg;
   }
   pub_wall_following_path->publish(final_wall_following_path_msg);
@@ -316,10 +334,32 @@ void WallDetectionNode::timer_callback() {
   m_KinController.run();
 
 
-  double wall_following_steering_cmd;
+  double wall_following_steering_cmd = 0.0;
   m_KinController.getSteering(wall_following_steering_cmd);
+  
+  control_out_que.push_back(wall_following_steering_cmd);
+  if(control_out_que.size() > m_average_filter_size)
+  {
+    control_out_que.pop_front();
+  }
+  size_t filter_que_size = control_out_que.size();
+
+  double filter_que_sum = 0.0;
+  for(auto cmd : control_out_que)
+  {
+    filter_que_sum += cmd;
+  }
+  double filtered_steering_output = filter_que_sum / filter_que_size;
+  // if vehicle is not close to the outer wall, but steering output is negative, cut steering cmd as zero.
+  // normally false negative output was calculated when vehicle proceeds from straight to curvy road.
+  // However, if vehicle is close to the left wall, this saturator does not work.    
+  if (!close_to_left && filtered_steering_output < 0.)
+  {
+    filtered_steering_output = 0.0 ;
+  }
+
   std_msgs::msg::Float32 wall_following_steering_cmd_msg;
-  wall_following_steering_cmd_msg.data = wall_following_steering_cmd;
+  wall_following_steering_cmd_msg.data = filtered_steering_output;
   pub_wall_following_steer_cmd->publish(wall_following_steering_cmd_msg);
 
 }
