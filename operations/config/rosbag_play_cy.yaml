@@ -3,12 +3,12 @@ windows:
   - window_name: ROSBAG PLAY Tab
     layout: tiled
     shell_command_before:
-      - source /home/usrg/nif/install/setup.bash && cd media/T7/IAC/rosbag/21.10.04_LOR/VEH4_LOR_RUN-mylaps.accel_2021-10-04/
+      - source /home/usrg/nif/install/setup.bash && cd /home/usrg/Downloads/autonomy_2021-10-06_14-37-11/
       - export ROS_DOMAIN_ID=80
       - export TRACK=LOR
     panes:
       - shell_command:
-          - ros2 bag play autonomy_2021-10-04_13-15-58/ --read-ahead-queue-size 10000 --remap /planning/graph/path_global:=tmp /graph_nodes:=/tmp33 -r 3
+          - ros2 bag play autonomy_2021-10-06_14-37-11_44.db3 --read-ahead-queue-size 10000 --remap /planning/graph/path_global:=tmp /graph_nodes:=/tmp33 -r 2
       - shell_command:
           - ros2 launch nif_multilayer_planning_nodes default.launch.py
       - shell_command:

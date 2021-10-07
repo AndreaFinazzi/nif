@@ -239,6 +239,29 @@ class GraphBasedPlanner(rclpy.node.Node):
         self.ref_line_msg.header.frame_id = "odom"
         self.refline = self.ltpl_obj.ref_line()
 
+        # self.nodes_pos_marker_array = MarkerArray()
+        # node_poses = self.ltpl_obj.get_nodes()
+        # for i, pos in enumerate(node_poses):
+        #     marker = Marker()
+        #     marker.header.frame_id = "/odom"
+        #     marker.type = marker.SPHERE
+        #     marker.action = marker.ADD
+        #     marker.scale.x = 0.5
+        #     marker.scale.y = 0.5
+        #     marker.scale.z = 0.5
+        #     marker.color.a = 1.0
+        #     marker.color.r = 1.0
+        #     marker.color.g = 1.0
+        #     marker.color.b = 0.0
+        #     marker.pose.orientation.w = 1.0
+        #     marker.pose.position.x = float(node_poses[i][0][0])
+        #     marker.pose.position.y = float(node_poses[i][0][1])
+        #     marker.pose.position.z = 0.0
+
+        #     self.nodes_pos_marker_array.markers.append(marker)
+
+        # self.get_logger().info(str(len(self.nodes_pos_marker_array.markers)))
+
         self.nodes_pos_marker_array = Path()
         self.nodes_pos_marker_array.header.frame_id = "odom"
         node_poses = self.ltpl_obj.get_nodes()
@@ -284,8 +307,6 @@ class GraphBasedPlanner(rclpy.node.Node):
         self.traj_set = {'straight': None}
         self.obj_list = []
         tic = time.time()
-
-        self.safe_dist = 0.01
 
     def goal_pt_to_body(self, cur_odom_x, cur_odom_y, cur_odom_yaw_rad, 
                         global_pt_x, global_pt_y, global_pt_yaw_rad):
@@ -454,14 +475,15 @@ class GraphBasedPlanner(rclpy.node.Node):
 
         # self.on_track_msg.data = self.ltpl_obj.check_out_of_track()
         # self.pub_on_track.publish(self.on_track_msg)
-        self.obj_list_ = [{'X': -1.27, 'Y': 2.58, 'theta': np.pi, 'type': 'physical',
-                         'id': 1, 'length': 5.0, 'v': 0.0}, 
-                         {'X': -1.24, 'Y': 1.8, 'theta': np.pi, 'type': 'physical',
-                         'id': 2, 'length': 5.0, 'v': 0.0}]
-        # self.obj_list_ = []
+        # self.obj_list_ = [{'X': -1.27, 'Y': 2.58, 'theta': np.pi, 'type': 'physical',
+        #                  'id': 1, 'length': 5.0, 'v': 0.0}, 
+        #                  {'X': -1.24, 'Y': 1.8, 'theta': np.pi, 'type': 'physical',
+        #                  'id': 2, 'length': 5.0, 'v': 0.0}]
+        self.obj_list_ = []
         # planning_graph != self.odom_first_call
 
         if self.mission_code == MissionStatus.MISSION_PIT_IN:
+
             # ---------------------------------------------------
             # ---------------------------------------------------
             # V3 : Using costmap, pass a collision free trajectory only in the pit area
@@ -502,6 +524,7 @@ class GraphBasedPlanner(rclpy.node.Node):
             return
 
         elif self.mission_code == MissionStatus.MISSION_STANDBY:
+
 
             self.out_of_track_graph = self.ltpl_obj.set_startpos(pos_est=self.pos_est,
                                         heading_est=self.heading_est)
@@ -544,14 +567,13 @@ class GraphBasedPlanner(rclpy.node.Node):
                 return
 
             else:
-
                 # if planning_graph == False:
                 #     return
 
                 
                 # -- SELECT ONE OF THE PROVIDED TRAJECTORIES -----------------------------------------------------------------------
                 # (here: brute-force, replace by sophisticated behavior planner)
-                for sel_action_prev in ["straight", "follow", "right", "left", "not init"]:  # try to force 'right', else try next in list
+                for sel_action_prev in ["straight", "follow"]:  # try to force 'right', else try next in list
                     if sel_action_prev in self.traj_set.keys():
                         break
 
@@ -562,34 +584,24 @@ class GraphBasedPlanner(rclpy.node.Node):
                 # self.traj_set = self.ltpl_obj.calc_vel_profile(pos_est=self.pos_est,
                 #                                             vel_est=self.vel_est)[0]
 
-                try:
-                    if self.out_of_track_graph is False and sel_action_prev != "not init":
+                try: 
+                    if self.out_of_track_graph is False:
                         self.ltpl_obj.calc_paths(prev_action_id=sel_action_prev,
                                                 object_list=self.obj_list_)
 
                         self.traj_set = self.ltpl_obj.calc_vel_profile(pos_est=self.pos_est,
-                                                                    vel_est=self.vel_est,
-                                                                    safety_d = self.safe_dist)[0]
-                    elif in_track_flg is True and sel_action_prev is "not init":
-                        self.out_of_track_graph = self.ltpl_obj.set_startpos(pos_est=self.pos_est,
-                                    heading_est=self.heading_est)
-                        return
+                                                                    vel_est=self.vel_est)[0]
                     else:
                         return
                 except: 
                     self.out_of_track_graph = self.ltpl_obj.set_startpos(pos_est=self.pos_est,
-                                                                        heading_est=self.heading_est)
-                    return
+                                    heading_est=self.heading_est)
 
-                for sel_action_current in ["straight", "follow", "right", "left"]:  # try to force 'right', else try next in list
+                for sel_action_current in ["straight", "follow"]:  # try to force 'right', else try next in list
                     if sel_action_current in self.traj_set.keys():
                         break
 
                 maptrack_inglobal = self.traj_set.get(sel_action_current)
-
-                # TODO : here, we can load the centerline which is for the backup plan
-
-
                 mp_len = len(maptrack_inglobal[0])
                 if mp_len < len(self.msg.poses):
                     for idx in range(mp_len, len(self.msg.poses)):
@@ -685,38 +697,30 @@ class GraphBasedPlanner(rclpy.node.Node):
 
         # TODO : Coordinate driving which means that there is no overtaking others. Maximum speed should be handeled in the velocity planner side as well.
         elif self.mission_code == MissionStatus.MISSION_SLOW_DRIVE:
-
+            
             # if planning_graph == False:
             #     return
             # -- SELECT ONE OF THE PROVIDED TRAJECTORIES -----------------------------------------------------------------------
             # (here: brute-force, replace by sophisticated behavior planner)
-            for sel_action_prev in ["straight", "follow", "right", "left", "not init"]:  # try to force 'right', else try next in list
+            for sel_action_prev in ["straight", "follow"]:  # try to force 'right', else try next in list
                 if sel_action_prev in self.traj_set.keys():
                     break
 
             # -- CALCULATE PATHS FOR NEXT TIMESTAMP ----------------------------------------------------------------------------
-            in_track_flg = self.ltpl_obj.check_out_of_track(self.pos_est)
-            try:
-                if in_track_flg is True and sel_action_prev != "not init":
+            try: 
+                if self.out_of_track_graph is False:
                     self.ltpl_obj.calc_paths(prev_action_id=sel_action_prev,
                                             object_list=self.obj_list_)
 
                     self.traj_set = self.ltpl_obj.calc_vel_profile(pos_est=self.pos_est,
-                                                                vel_est=self.vel_est,
-                                                                safety_d = self.safe_dist)[0]
-                elif in_track_flg is True and sel_action_prev is "not init":
-                    self.out_of_track_graph = self.ltpl_obj.set_startpos(pos_est=self.pos_est,
-                                   heading_est=self.heading_est)
-                    return
+                                                                vel_est=self.vel_est)[0]
                 else:
                     return
-            except:
+            except: 
                 self.out_of_track_graph = self.ltpl_obj.set_startpos(pos_est=self.pos_est,
                                    heading_est=self.heading_est)
 
-                return
-
-            for sel_action_current in ["straight", "follow", "right", "left"]:  # try to force 'right', else try next in list
+            for sel_action_current in ["straight", "follow"]:  # try to force 'right', else try next in list
                 if sel_action_current in self.traj_set.keys():
                     break
 
@@ -766,7 +770,7 @@ class GraphBasedPlanner(rclpy.node.Node):
             self.msg.poses[0].pose.orientation = self.msg.poses[1].pose.orientation
             self.local_maptrack_inglobal_pub.publish(self.msg)
         else:
-
+            
             # if planning_graph == False:
             #     return
             # NOMINAL CASE
@@ -775,31 +779,29 @@ class GraphBasedPlanner(rclpy.node.Node):
             # ------------------------------------------------
             # -- SELECT ONE OF THE PROVIDED TRAJECTORIES -----------------------------------------------------------------------
             # (here: brute-force, replace by sophisticated behavior planner)
-            for sel_action_prev in ["right", "left", "straight", "follow", "not init"]:  # try to force 'right', else try next in list
+            for sel_action_prev in ["right", "left", "straight", "follow"]:  # try to force 'right', else try next in list
                 if sel_action_prev in self.traj_set.keys():
                     break
 
-            in_track_flg = self.ltpl_obj.check_out_of_track(self.pos_est)
+            # # -- CALCULATE PATHS FOR NEXT TIMESTAMP ----------------------------------------------------------------------------
+            # self.ltpl_obj.calc_paths(prev_action_id=sel_action_prev,
+            #                         object_list=self.obj_list)
+
+            # self.traj_set = self.ltpl_obj.calc_vel_profile(pos_est=self.pos_est,
+            #                                             vel_est=self.vel_est)[0]
 
             try: 
-                # if self.out_of_track_graph is False:
-                if in_track_flg is True and sel_action_prev != "not init":
+                if self.out_of_track_graph is False:
                     self.ltpl_obj.calc_paths(prev_action_id=sel_action_prev,
                                             object_list=self.obj_list_)
 
                     self.traj_set = self.ltpl_obj.calc_vel_profile(pos_est=self.pos_est,
-                                                                vel_est=self.vel_est,
-                                                                safety_d = self.safe_dist)[0]
-                elif in_track_flg is True and sel_action_prev is "not init":
-                    self.out_of_track_graph = self.ltpl_obj.set_startpos(pos_est=self.pos_est,
-                                   heading_est=self.heading_est)
-                    return
+                                                                vel_est=self.vel_est)[0]
                 else:
                     return
             except: 
                 self.out_of_track_graph = self.ltpl_obj.set_startpos(pos_est=self.pos_est,
                                    heading_est=self.heading_est)
-                return
 
             for sel_action_current in ["right", "left", "straight", "follow"]:  # try to force 'right', else try next in list
                 if sel_action_current in self.traj_set.keys():

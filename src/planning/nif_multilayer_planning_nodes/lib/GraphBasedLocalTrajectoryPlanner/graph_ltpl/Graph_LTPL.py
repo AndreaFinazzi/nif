@@ -271,10 +271,10 @@ class Graph_LTPL(object):
         """
 
         # get bounds
-        bound1 = (self.__oth.__graph_base.refline + self.__oth.__graph_base.normvec_normalized
-                  * np.expand_dims(self.__oth.__graph_base.track_width_right, 1))
-        bound2 = (self.__oth.__graph_base.refline - self.__oth.__graph_base.normvec_normalized
-                  * np.expand_dims(self.__oth.__graph_base.track_width_left, 1))
+        bound1 = (self.__graph_base.refline + self.__graph_base.normvec_normalized
+                  * np.expand_dims(self.__graph_base.track_width_right, 1))
+        bound2 = (self.__graph_base.refline - self.__graph_base.normvec_normalized
+                  * np.expand_dims(self.__graph_base.track_width_left, 1))
         
         in_track = None
         # Validate start position
