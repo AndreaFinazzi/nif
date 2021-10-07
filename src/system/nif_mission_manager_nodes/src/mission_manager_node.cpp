@@ -145,12 +145,13 @@ MissionStatus::_mission_status_code_type MissionManagerNode::getMissionStatusCod
                 is_system_startup = false;
                 return MissionStatus::MISSION_STANDBY;
 
-            } else if ( this->missionIs(MissionStatus::MISSION_STANDBY) ||
-                        this->missionIs(MissionStatus::MISSION_PIT_STANDBY)) {
-                return this->mission_status_msg.mission_status_code;
+            // } else if ( this->missionIs(MissionStatus::MISSION_STANDBY) ||
+                        // this->missionIs(MissionStatus::MISSION_PIT_STANDBY)) {
+                // return this->mission_status_msg.mission_status_code;
 
             } else {
-                return MissionStatus::MISSION_STANDBY;
+                // return MissionStatus::MISSION_STANDBY;
+                return this->mission_status_msg.mission_status_code; // ignore orange flag after startup
             }
             break;
           
@@ -192,7 +193,20 @@ MissionStatus::_mission_status_code_type MissionManagerNode::getMissionVehFlagNu
             {
                 return MissionStatus::MISSION_DEFAULT; // No missions on startup
             } else {
-                return MissionStatus::MISSION_COMMANDED_STOP;
+                if (this->missionIs(MissionStatus::MISSION_PIT_INIT)) {
+                    return MissionStatus::MISSION_PIT_INIT;
+
+                } else if (this->missionIs(MissionStatus::MISSION_INIT)) {
+                    return MissionStatus::MISSION_STANDBY;
+
+                } else if ( this->missionIs(MissionStatus::MISSION_STANDBY) ||
+                            this->missionIs(MissionStatus::MISSION_PIT_STANDBY)) {
+                    return this->mission_status_msg.mission_status_code;
+
+                }
+                
+                return MissionStatus::MISSION_PIT_INIT;
+                // return MissionStatus::MISSION_COMMANDED_STOP;
             }
             break;
 
@@ -213,14 +227,17 @@ MissionStatus::_mission_status_code_type MissionManagerNode::getMissionVehFlagNu
                         this->missionIs(MissionStatus::MISSION_PIT_STANDBY)) {
                 return this->mission_status_msg.mission_status_code;
 
-            } else {
-                return MissionStatus::MISSION_STANDBY;
             }
+            //  else {
+                // return MissionStatus::MISSION_STANDBY;
+            // }
             break;
-          
+
         case RCFlagSummary::TRACK_FLAG_YELLOW:
             if (this->missionIs(MissionStatus::MISSION_PIT_STANDBY) || 
-                this->missionIs(MissionStatus::MISSION_PIT_OUT)) {
+                this->missionIs(MissionStatus::MISSION_PIT_OUT)     ||
+                this->missionIs(MissionStatus::MISSION_PIT_INIT)
+                ) {
                 return MissionStatus::MISSION_PIT_TO_TRACK;
             } else if (this->missionIs(MissionStatus::MISSION_PIT_IN)) {
                 return MissionStatus::MISSION_PIT_STANDBY; 
