@@ -194,8 +194,7 @@ def generate_launch_description():
         output='screen',
         remappings=[
             ('out_desired_velocity', 'velocity_planner/des_vel'),
-            ('in_reference_path', 'planning/graph/path_global'),
-            # ('in_reference_path', 'planning/path_global'),
+            ('in_reference_path', 'planning/path_global'),
             ('in_ego_odometry', '/aw_localization/ekf/odom'),
             ('in_wheel_speed_report', 'raptor_dbw_interface/wheel_speed_report'),
             ('in_imu_data', 'novatel_bottom/imu/data'),
@@ -238,7 +237,7 @@ def generate_launch_description():
         remappings=[
             ('in_control_cmd_prev', '/control_safety_layer/out/control_cmd'),
             ('out_control_cmd', '/control_pool/control_cmd'),
-            ('in_reference_path', '/planning/graph/path_global'),
+            ('in_reference_path', 'planning/path_global'),
         ]
     )
 
@@ -328,9 +327,64 @@ def generate_launch_description():
         }
     )
 
+### NIF WAYPOINT MANAGER #############################
+
+    wpt_config_file_lor = (
+        os.path.join(
+            get_package_share_directory("nif_waypoint_manager_nodes"),
+            "config",
+            "lor.yaml",
+        ),
+    )
+
+    wpt_config_file_ims = (
+        os.path.join(
+            get_package_share_directory("nif_waypoint_manager_nodes"),
+            "config",
+            "ims.yaml",
+        ),
+    )
+
+    config_file = None
+
+    if track == LOR:
+        config_file = wpt_config_file_lor
+    elif track == IMS:
+        config_file = wpt_config_file_ims
+    else:
+        raise RuntimeError("ERROR: invalid track provided: {}".format(track))
+
+    nif_wpt_param = DeclareLaunchArgument(
+        'nif_waypoint_manager_param_file',
+        default_value=config_file,
+        description='Path to config file for waypoint manager'
+    )
+
+    nif_waypoint_manager_node = Node(
+        package='nif_waypoint_manager_nodes',
+        executable='nif_waypoint_manager_nodes_exe',
+        output='screen',
+        parameters=[
+            LaunchConfiguration('nif_waypoint_manager_param_file')
+        ],
+        remappings=[
+            ('topic_ego_odometry', '/aw_localization/ekf/odom'),
+            ('wpt_manager/maptrack_path/global', '/planning/path_global'),
+            ('wpt_manager/maptrack_path/body', '/planning/path_body')
+        ]
+    )
+
+### NIF WAYPOINT MANAGER END #############################
+
     nif_mission_manager_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             get_share_file("nif_mission_manager_nodes", 'launch/deploy.launch.py')
+        )
+    )
+
+    nif_points_clustering = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            get_share_file("nif_points_clustering", 'launch/deploy.launch.py')
         )
     )
 
@@ -341,6 +395,7 @@ def generate_launch_description():
         nif_global_param,
         nif_csl_param,
         nif_joint_lqr_param,
+        nif_wpt_param,
 
         ssc_interface,
         socketcan_receiver_launch,
@@ -359,5 +414,8 @@ def generate_launch_description():
         nif_velocity_planning_node,
         nif_joint_lqr_control_node,
         nif_accel_control_node,
-        nif_mission_manager_launch
-    ])
+        nif_mission_manager_launch,
+        nif_points_clustering,
+
+        nif_waypoint_manager_node,
+])
