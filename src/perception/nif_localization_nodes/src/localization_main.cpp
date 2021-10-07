@@ -61,8 +61,8 @@ int32_t main(int32_t argc, char **argv) {
   executor.spin();
   rclcpp::shutdown();
 
-  RCLCPP_INFO(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
-              "Shutting down %s [LocalizationNode]", node_name_1);
+  // RCLCPP_INFO(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
+  //             "Shutting down %s [LocalizationNode]", node_name_1);
   RCLCPP_INFO(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
               "Shutting down %s [LocalizationNode]", node_name_2);
   RCLCPP_INFO(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),

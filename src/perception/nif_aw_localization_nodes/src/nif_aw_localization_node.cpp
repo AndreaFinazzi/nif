@@ -581,11 +581,11 @@ void AWLocalizationNode::BESTPOSCallback
   quat_ekf_msg = tf2::toMsg(quat_ekf);
   ltp_odom.pose.pose.orientation = quat_ekf_msg;
 
-  ltp_odom.pose.covariance.at(0) = BestPosBottom.lat_noise;  //  x - x
-  ltp_odom.pose.covariance.at(1) = BestPosBottom.lat_noise;  //  x - y
-  ltp_odom.pose.covariance.at(6) = BestPosBottom.lon_noise;  //  y - x
-  ltp_odom.pose.covariance.at(7) = BestPosBottom.lon_noise;  //  y - y
-  ltp_odom.pose.covariance.at(35) = BestPosBottom.yaw_noise; //  yaw - yaw
+  ltp_odom.pose.covariance.at(0) = fabs(BestPosBottom.lat_noise);  //  x - x
+  ltp_odom.pose.covariance.at(1) = fabs(BestPosBottom.lat_noise);  //  x - y
+  ltp_odom.pose.covariance.at(6) = fabs(BestPosBottom.lon_noise);  //  y - x
+  ltp_odom.pose.covariance.at(7) = fabs(BestPosBottom.lon_noise);  //  y - y
+  ltp_odom.pose.covariance.at(35) =fabs(BestPosBottom.yaw_noise); //  yaw - yaw
 
   pub_bestpos_odometry->publish(ltp_odom);
 
@@ -798,7 +798,7 @@ void AWLocalizationNode::MessegefilteringCallback(
   m_dIMU_yaw_rate = imu_msg->angular_velocity.z;
   m_dVelolcity_X =
       (wheel_speed_msg->front_right + wheel_speed_msg->front_left) / 2 *
-      nif::common::constants::KPH2MS;
+      nif::common::constants::KPH2MS * 0.9826;
 
   if (!bImuFirstCall) {
     bImuFirstCall = true;
