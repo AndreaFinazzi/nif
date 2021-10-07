@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+for (( c=1; c<=194; c++ ))
+do  
+    source /home/usrg/nif/install/setup.bash
+    cd /home/usrg/Downloads/autonomy_2021-10-06_14-37-11/
+    ros2 bag play autonomy_2021-10-06_14-37-11_$c.db3 --read-ahead-queue-size 10000 --remap /planning/graph/path_global:=tmp /graph_nodes:=/tmp33 -r 3
+done
