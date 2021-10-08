@@ -217,7 +217,7 @@ MissionStatus::_mission_status_code_type MissionManagerNode::getMissionVehFlagNu
                 return MissionStatus::MISSION_STANDBY;
             }
             break;
-          
+
         case RCFlagSummary::TRACK_FLAG_YELLOW:
             if (this->missionIs(MissionStatus::MISSION_PIT_STANDBY) || 
                 this->missionIs(MissionStatus::MISSION_PIT_OUT)) {

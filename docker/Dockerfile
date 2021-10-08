@@ -18,23 +18,6 @@ RUN apt-get update \
       wget \
   && apt-get clean
 
-# Clone and install dependencies
-RUN apt update && apt install -y python3-vcstool
-RUN cd /opt && \
-    git clone --recurse-submodules https://${GH_TOKEN}@github.com/AndreaFinazzi/nif.git && \
-    cd nif && echo $GL_TOKEN > .secret.gitlab && echo $GH_TOKEN > .secret.github && \
-    ./nifupdate
-
-# GTSAM lib install
-RUN cd /opt && git clone https://github.com/borglab/gtsam.git && \
-    cd /opt/gtsam && \
-    mkdir build && \
-    cd build && \
-    cmake -DGTSAM_INSTALL_GEOGRAPHICLIB=ON -DGTSAM_WITH_EIGEN_MKL=OFF .. && \
-    make install
-
-RUN rm -rf /opt/nif
-  
 RUN ( \
     echo 'LogLevel DEBUG2'; \
     echo 'PermitRootLogin no'; \
@@ -57,5 +40,22 @@ RUN apt-get update \
 RUN apt-get install -y \
       libglm-dev \
   && apt-get clean
+
+# Clone and install dependencies
+RUN apt update && apt install -y python3-vcstool
+RUN cd /opt && \
+    git clone --recurse-submodules https://${GH_TOKEN}@github.com/AndreaFinazzi/nif.git && \
+    cd nif && echo $GL_TOKEN > .secret.gitlab && echo $GH_TOKEN > .secret.github && \
+    ./nifupdate
+
+# GTSAM lib install
+RUN cd /opt && git clone https://github.com/borglab/gtsam.git && \
+    cd /opt/gtsam && \
+    mkdir build && \
+    cd build && \
+    cmake -DGTSAM_INSTALL_GEOGRAPHICLIB=ON -DGTSAM_WITH_EIGEN_MKL=OFF .. && \
+    make install
+
+RUN rm -rf /opt/nif
 
 COPY ./entrypoint /ade_entrypoint
