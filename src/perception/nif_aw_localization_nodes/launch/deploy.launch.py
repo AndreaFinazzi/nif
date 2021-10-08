@@ -51,7 +51,7 @@ def generate_launch_description():
                 package="nif_aw_localization_nodes",
                 executable="nif_aw_localization_nodes_exe",
                 output={
-                    "stderr": "log",
+                    "stderr": "screen",
                     "stdout": "screen"
                 },
                 emulate_tty=True,
@@ -61,12 +61,12 @@ def generate_launch_description():
                 remappings=[
                     # Current set : Bottom INS Disabled // Top INS Enabled
                     # /novatel_bottom/bestvel is used to back-up solution when novatel_top/inspva heading is not published.  
-                    ("in_inspva", "novatel_bottom/inspva"), # NOT USED
-                    ("in_top_inspva", "novatel_top/inspva_nouse"), # HEADING
+                    ("in_inspva", "novatel_bottom/inspva"), # HEADING PRIORITY 1
+                    ("in_top_inspva", "novatel_top/inspva"), # HEADING PRIORITY 2
                     ("in_bestpos", "novatel_bottom/bestpos"), # POSE (X,Y)
                     ("in_top_bestpos", "novatel_top/bestpos"), # POSE (X,Y)
                     ("in_imu", "novatel_bottom/imu/data"), # YAW RATE
-                    ("in_bestvel", "novatel_bottom/bestvel"), #HEADING BACK UP SOLUTION
+                    ("in_bestvel", "novatel_bottom/bestvel"), #HEADING PRIORITY 3(BACK UP SOLUTION)
                     ("in_insstdev", "novatel_bottom/insstdev"), #INS STANDARD DEVIATION
                     ("in_top_insstdev", "novatel_top/insstdev"), #INS STANDARD DEVIATION
                     ("in_wheel_speed_report", "raptor_dbw_interface/wheel_speed_report"), # WHEEL SPEED

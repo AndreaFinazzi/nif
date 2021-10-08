@@ -27,7 +27,7 @@ ResilientLocalization::ResilientLocalization(const std::string &node_name_)
       nif::common::constants::QOS_EGO_ODOMETRY);
 
   subOdometry = this->create_subscription<nav_msgs::msg::Odometry>(
-      "/out_odometry_ekf_estimated", nif::common::constants::QOS_EGO_ODOMETRY,
+      "/in_odometry_ekf_estimated", nif::common::constants::QOS_EGO_ODOMETRY,
       std::bind(&ResilientLocalization::EKFOdometryCallback, this,
                 std::placeholders::_1));
 

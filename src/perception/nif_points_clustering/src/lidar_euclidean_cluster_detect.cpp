@@ -15,22 +15,27 @@ PointsClustering::PointsClustering()
   this->declare_parameter<int>("cluster_size_min", 10);
   this->declare_parameter<int>("cluster_size_max", 2000);
   this->declare_parameter<double>("max_cluster_distance", 0.5);
+  this->declare_parameter<double>("height_filter_thres", -0.2);
 
   this->m_cluster_size_min = this->get_parameter("cluster_size_min").as_int();
   this->m_cluster_size_max = this->get_parameter("cluster_size_max").as_int();
   this->m_max_cluster_distance = this->get_parameter("max_cluster_distance").as_double();
+  this->m_height_filter_thres =
+      this->get_parameter("height_filter_thres").as_double();
 
   pubClusterPoints = this->create_publisher<sensor_msgs::msg::PointCloud2>(
       "out_clustered_points", nif::common::constants::QOS_SENSOR_DATA);
+  pubSimpleheightMap = this->create_publisher<sensor_msgs::msg::PointCloud2>(
+      "out_simple_heightmap_points", nif::common::constants::QOS_SENSOR_DATA);
 
-  subFilteredPoints = this->create_subscription<sensor_msgs::msg::PointCloud2>(
+  subInputPoints = this->create_subscription<sensor_msgs::msg::PointCloud2>(
       "in_lidar_points", nif::common::constants::QOS_SENSOR_DATA,
       std::bind(&PointsClustering::PointsCallback, this,
                 std::placeholders::_1));
 
   using namespace std::chrono_literals; // NOLINT
   sub_timer_ = this->create_wall_timer(
-      10ms, std::bind(&PointsClustering::timer_callback, this));
+      30ms, std::bind(&PointsClustering::timer_callback, this));
 }
 
 PointsClustering::~PointsClustering() {}
@@ -42,9 +47,27 @@ void PointsClustering::timer_callback() {
   if(!bPoints)
     return;
 
-  //start algorithm
-  pcl::PointCloud<pcl::PointXYZI>::Ptr registeredPoints(new pcl::PointCloud<pcl::PointXYZI>);
-  clusterAndColorGpu(inPoints, registeredPoints, m_max_cluster_distance);
+  //simple height map filter
+  m_simpleHeightmapPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
+  for (auto point : m_inPoints->points)
+  {
+    if (point.z > m_height_filter_thres && point.z < 2.0 && fabs(point.y) < 20.0) {
+      m_simpleHeightmapPoints->points.push_back(point);
+    }
+  }
+
+  sensor_msgs::msg::PointCloud2 cloud_simple_heightmap_msg;
+  pcl::toROSMsg(*m_simpleHeightmapPoints, cloud_simple_heightmap_msg);
+  cloud_simple_heightmap_msg.header.frame_id =
+      nif::common::frame_id::localization::BASE_LINK;
+  cloud_simple_heightmap_msg.header.stamp = this->now();
+  pubSimpleheightMap->publish(cloud_simple_heightmap_msg);
+
+  // start algorithm
+  pcl::PointCloud<pcl::PointXYZI>::Ptr registeredPoints(
+      new pcl::PointCloud<pcl::PointXYZI>);
+  clusterAndColorGpu(m_simpleHeightmapPoints, registeredPoints,
+                     m_max_cluster_distance);
 
   sensor_msgs::msg::PointCloud2 cloud_clustered_msg;
   pcl::toROSMsg(*registeredPoints, cloud_clustered_msg);
@@ -57,12 +80,12 @@ void PointsClustering::PointsCallback(
     const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
   std::lock_guard<std::mutex> sensor_lock(sensor_mtx);
 
-  inPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
+  m_inPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
   pcl::PointCloud<pcl::PointXYZI>::Ptr originPoints(
       new pcl::PointCloud<pcl::PointXYZI>);
 
   pcl::fromROSMsg(*msg, *originPoints);
-  inPoints = downsample(originPoints, 0.2);
+  m_inPoints = downsample(originPoints, 0.05);
 
   bPoints = true;
 
@@ -175,8 +198,7 @@ void PointsClustering::SetCloud(
   double width = max_y - min_y;
   double height = max_z - min_z;
 
-  if (length < 7.0 && width < 7.0)
-  {
+  if (length < 7.0 && width < 7.0 && height > 0.5) {
     *register_cloud_ptr = *bufPoints;
   }
 
