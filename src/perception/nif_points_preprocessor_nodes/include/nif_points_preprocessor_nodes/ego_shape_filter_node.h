@@ -91,9 +91,9 @@
  * MAP_HEIGHT : longitudinal direction
  */
 const unsigned long MAP_WIDTH =
-    320; //(front_upper_distance + rear_upper_distance) / resolution
+    400; //(front_upper_distance + rear_upper_distance) / resolution
 const unsigned long MAP_HEIGHT =
-    240; // (right_upper_distance + left_upper_distance) / resolution
+    300; // (right_upper_distance + left_upper_distance) / resolution
 
 namespace nif {
 namespace perception {

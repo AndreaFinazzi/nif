@@ -162,7 +162,7 @@ void EgoShapeFilterNode::EgoShape(
 }
 
 void EgoShapeFilterNode::timer_callback() {
-  // std::lock_guard<std::mutex> sensor_lock(sensor_mtx);
+  std::lock_guard<std::mutex> sensor_lock(sensor_mtx);
 
   if (!bMergedLidar)
     return;
@@ -234,7 +234,7 @@ void EgoShapeFilterNode::timer_callback() {
 
 void EgoShapeFilterNode::mergedPointsCallback(
     const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
-  // std::lock_guard<std::mutex> sensor_lock(sensor_mtx);
+  std::lock_guard<std::mutex> sensor_lock(sensor_mtx);
 
   lidar_time_last_update = this->now();
 
@@ -322,7 +322,7 @@ void EgoShapeFilterNode::RegisterPointToGrid(
 
   for (int i = 0; i < MAP_HEIGHT; i++) {
     for (int j = 0; j < MAP_WIDTH; j++) {
-      if (count_map[y][x] > count_threshold_) {
+      if (count_map[i][j] > count_threshold_) {
         // oc_grid_msg.data.push_back((int8_t)(map[i][j]));
         oc_grid_msg.data.push_back((int8_t)(80.));
       } else {

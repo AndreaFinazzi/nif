@@ -514,15 +514,6 @@ void AWLocalizationNode::setCurrentResult()
   current_ekf_twist_.header.frame_id = nif::common::frame_id::localization::ODOM;
   current_ekf_twist_.header.stamp = this->now();
   current_ekf_twist_.twist.linear.x = ekf_.getXelement(IDX::VX);
-
-  Eigen::MatrixXd X_curr(dim_x_, 1); //  curent state
-  ekf_.getLatestX(X_curr);
-  current_ekf_twist_.twist.linear.y =
-      X_curr(IDX::VX) * sin(X_curr(IDX::YAW) + X_curr(IDX::YAWB)) *
-          std::sin(-yaw) -
-      X_curr(IDX::VX) * cos(X_curr(IDX::YAW) + X_curr(IDX::YAWB)) *
-          std::cos(-yaw);
-
   current_ekf_twist_.twist.angular.z = ekf_.getXelement(IDX::WZ);
 
   // delta_x = vx * cos(yaw + yaw_bias)

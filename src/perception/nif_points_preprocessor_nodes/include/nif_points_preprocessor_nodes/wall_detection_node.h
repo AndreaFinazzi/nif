@@ -143,6 +143,10 @@ private:
   double prev_outer_bound_distance;
   double distance_low_fass_filter;
 
+  int m_cluster_size_min;
+  int m_cluster_size_max;
+  double m_max_cluster_distance;
+  
   double extract_distance_x_roi; 
   double extract_distance_thres;
   double m_target_space_to_wall;
@@ -196,6 +200,13 @@ private:
       const cv::Mat &PolyCoefficient, const int& poly_order,
       nav_msgs::msg::Path &path_msg_out,
       const double &target_space_to_wall);
+  void
+  clusterAndColorGpu(const pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud_ptr,
+                     pcl::PointCloud<pcl::PointXYZI>::Ptr out_cloud_ptr,
+                     double in_max_cluster_distance);
+  void SetCloud(const pcl::PointCloud<pcl::PointXYZI>::Ptr in_origin_cloud_ptr,
+                pcl::PointCloud<pcl::PointXYZI>::Ptr register_cloud_ptr,
+                const std::vector<int> &in_cluster_indices, int ind);
 };
 } // namespace perception
 } // namespace nif

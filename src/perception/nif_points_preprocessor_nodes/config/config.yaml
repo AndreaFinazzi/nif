@@ -30,6 +30,12 @@ nif_wall_detection_node:
     ransac_pts_thresh : 50  # 200
     ransac_distance_thres : 0.3 #0.2
 
+    #cluster params
+    cluster_size_min : 100
+    cluster_size_max : 10000
+    max_cluster_distance : 1.0
+    height_filter_thres : -0.4
+
     x_roi : 0.0
     distance_extract_thres : 0.5
     distance_low_fass_filter : 0.0
