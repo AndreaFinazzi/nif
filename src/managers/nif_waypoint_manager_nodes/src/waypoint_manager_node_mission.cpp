@@ -2,10 +2,10 @@
 // Created by usrg on 7/10/21.
 //
 
+#include "nif_waypoint_manager_nodes/waypoint_manager_node_mission.h"
 #include "nav_msgs/msg/path.hpp"
 #include "nif_common/constants.h"
 #include "nif_utils/utils.h"
-#include "nif_waypoint_manager_nodes/waypoint_manager_node.h"
 #include "rcutils/error_handling.h"
 #include <stdlib.h>
 
@@ -68,18 +68,19 @@ nif::managers::WaypointManagerMissionNode::WaypointManagerMissionNode(
 void nif::managers::WaypointManagerMissionNode::timerCallback() try {
   //  RCLCPP_DEBUG(this->get_logger(), "WaypointManagerMissionNode timer
   //  callback");
+
+  this->wpt_manager->setSystemStatus(this->getSystemStatus());
+  this->wpt_manager->setCurrentOdometry(this->getEgoOdometry());
+
+  nav_msgs::msg::Path path_in_global =
+      this->wpt_manager->getDesiredMapTrackInGlobal();
+  nav_msgs::msg::Path path_in_body =
+      this->wpt_manager->getDesiredMapTrackInBody();
+
   path_in_body.header.stamp = this->now();
   path_in_body.header.frame_id = this->getBodyFrameId();
   path_in_global.header.stamp = this->now();
   path_in_global.header.frame_id = this->getGlobalFrameId();
-
-  this->wpt_manager->setMission(this->getSystemStatus());
-  this->wpt_manager->setCurrentOdometry(this->getEgoOdometry());
-
-  nav_msgs::msg::Path &path_in_global =
-      this->wpt_manager->getDesiredMapTrackInGlobal();
-  nav_msgs::msg::Path &path_in_body =
-      this->wpt_manager->getDesiredMapTrackInBody();
 
   m_map_track_global_publisher->publish(path_in_global);
   m_map_track_body_publisher->publish(path_in_body);
