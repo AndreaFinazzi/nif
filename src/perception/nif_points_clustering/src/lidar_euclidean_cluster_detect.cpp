@@ -198,9 +198,9 @@ void PointsClustering::SetCloud(
   double width = max_y - min_y;
   double height = max_z - min_z;
 
-  // if (length < 7.0 && width < 7.0 && height > 0.5) {
+  if (length < 7.0 && width < 7.0 && height > 0.5) {
     *register_cloud_ptr = *bufPoints;
-  // }
+  }
 
   // bounding_box_.header = in_ros_header;
 

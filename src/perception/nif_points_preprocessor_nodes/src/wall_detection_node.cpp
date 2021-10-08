@@ -81,7 +81,7 @@ WallDetectionNode::WallDetectionNode(const std::string &node_name_)
   using namespace std::chrono_literals; // NOLINT
   // TODO convert period to paramter
   timer_ = this->create_wall_timer(
-      50ms, std::bind(&WallDetectionNode::timer_callback, this));
+      25ms, std::bind(&WallDetectionNode::timer_callback, this));
 
   pub_left_ransac_filtered_points =
       this->create_publisher<sensor_msgs::msg::PointCloud2>(
@@ -149,40 +149,40 @@ void WallDetectionNode::SetControllerParams() {
 
 
 void WallDetectionNode::timer_callback() {
-  pcl::PointCloud<pcl::PointXYZI>::Ptr CloudRANSACLeft(
+  pcl::PointCloud<pcl::PointXYZI>::Ptr CloudLeftWallPoints(
       new pcl::PointCloud<pcl::PointXYZI>);
-  pcl::PointCloud<pcl::PointXYZI>::Ptr CloudRANSACRight(
+  pcl::PointCloud<pcl::PointXYZI>::Ptr CloudRightWallPoints(
       new pcl::PointCloud<pcl::PointXYZI>);
 
-  boost::optional<Eigen::Vector4f> left_wall_plane_coeff;
-  boost::optional<Eigen::Vector4f> right_wall_plane_coeff;
+  bool left_wall_detected = false;
+  bool right_wall_detected = false;
+
+  RCLCPP_INFO(this->get_logger(), "1");
 
   if (bInverseLeftPoints) {
-    /* LEFT RANSAC FILTER
-    1. Remove outlier points
-    2. Implement left/right points separately.
+    /* Wall-clustering FILTER
+    1. Implement left/right points separately.
       - input : left ground filtered points
-      - output : distance to the wall, ransac filtered left wall points
+      - output : distance to the wall, filtered left wall points
     */
     // left wall detection
-    left_wall_plane_coeff =
-        wall_detect(m_InverseLeftPoints, CloudRANSACLeft);
+    RCLCPP_INFO(this->get_logger(), "a");
 
+    wall_detect_with_clustering(m_InverseLeftPoints, CloudLeftWallPoints,
+                       m_max_cluster_distance);
+    RCLCPP_INFO(this->get_logger(), "b");
     inner_bound_distance = 0;
     outer_bound_distance = 0;
     // detected left_wall_plane_coeff coefficients
-    if (left_wall_plane_coeff && !CloudRANSACLeft->points.empty()) {
-      // for (int i = 0; i < 4; i++) {
-      //   std::cout << "left wall" << (*left_wall_plane_coeff)[i] << std::endl;
-      // }
-      // inner_bound_distance = (*left_wall_plane_coeff)[3];
+    if (!CloudLeftWallPoints->points.empty()) {
       RCLCPP_DEBUG(this->get_logger(), "Left margin : %f", inner_bound_distance);
 
-      ExtractDistanceInCloud(CloudRANSACLeft, extract_distance_x_roi,
+      ExtractDistanceInCloud(CloudLeftWallPoints, extract_distance_x_roi,
                             extract_distance_thres, inner_bound_distance);
+      left_wall_detected = true;
     }
     sensor_msgs::msg::PointCloud2 cloud_left_ransac_filtered_msg;
-    pcl::toROSMsg(*CloudRANSACLeft, cloud_left_ransac_filtered_msg);
+    pcl::toROSMsg(*CloudLeftWallPoints, cloud_left_ransac_filtered_msg);
     cloud_left_ransac_filtered_msg.header.frame_id = BASE_LINK;
     cloud_left_ransac_filtered_msg.header.stamp = this->now();
     pub_left_ransac_filtered_points->publish(cloud_left_ransac_filtered_msg);
@@ -193,6 +193,7 @@ void WallDetectionNode::timer_callback() {
     pub_inner_wall_distance->publish(inner_bound_distance_msg);
     prev_inner_bound_distance = inner_bound_distance;
   }
+  RCLCPP_INFO(this->get_logger(), "2");
 
   if (bInverseRightPoints)
   {
@@ -203,22 +204,21 @@ void WallDetectionNode::timer_callback() {
       - output : distance to the wall, ransac filtered right wall points
     */
     // right wall detection
-    right_wall_plane_coeff =
-        wall_detect(m_InverseRightPoints, CloudRANSACRight);
+    RCLCPP_INFO(this->get_logger(), "a");
+    wall_detect_with_clustering(m_InverseRightPoints, CloudRightWallPoints,
+                                m_max_cluster_distance);
+    RCLCPP_INFO(this->get_logger(), "b");
 
     // detected right_wall_plane_coeff coefficients
-    if (right_wall_plane_coeff && !CloudRANSACRight->points.empty()) {
-      // for (int i = 0; i < 4; i++) {
-      //   std::cout << "right wall" << (*right_wall_plane_coeff)[i] << std::endl;
-      // }
-      // outer_bound_distance = (*right_wall_plane_coeff)[3];
+    if (!CloudRightWallPoints->points.empty()) {
       RCLCPP_DEBUG(this->get_logger(), "Right margin : %f",
                   -1 * outer_bound_distance);
-      ExtractDistanceInCloud(CloudRANSACRight, extract_distance_x_roi,
+      ExtractDistanceInCloud(CloudRightWallPoints, extract_distance_x_roi,
                             extract_distance_thres, outer_bound_distance);
+      right_wall_detected = true;
     }
     sensor_msgs::msg::PointCloud2 cloud_right_ransac_filtered_msg;
-    pcl::toROSMsg(*CloudRANSACRight, cloud_right_ransac_filtered_msg);
+    pcl::toROSMsg(*CloudRightWallPoints, cloud_right_ransac_filtered_msg);
     cloud_right_ransac_filtered_msg.header.frame_id = BASE_LINK;
     cloud_right_ransac_filtered_msg.header.stamp = this->now();
     pub_right_ransac_filtered_points->publish(cloud_right_ransac_filtered_msg);
@@ -233,23 +233,25 @@ void WallDetectionNode::timer_callback() {
 
     prev_outer_bound_distance = outer_bound_distance;
   }
+  RCLCPP_INFO(this->get_logger(), "3");
 
   /* BOTH OF RANSAC-FILTERED POINTS PUBLISHER
   1. Publish ransac filtered both of wall points
     - input : left/right ransac filtered points
     - output : both of ransac filtered points
   */
-  pcl::PointCloud<pcl::PointXYZI>::Ptr CloudRANSACBoth(
+  pcl::PointCloud<pcl::PointXYZI>::Ptr CloudWallBoth(
       new pcl::PointCloud<pcl::PointXYZI>);
-  *CloudRANSACBoth += *CloudRANSACRight;
-  *CloudRANSACBoth += *CloudRANSACLeft;
+  *CloudWallBoth += *CloudRightWallPoints;
+  *CloudWallBoth += *CloudLeftWallPoints;
 
   sensor_msgs::msg::PointCloud2 cloud_both_ransac_filtered_msg;
-  pcl::toROSMsg(*CloudRANSACBoth, cloud_both_ransac_filtered_msg);
+  pcl::toROSMsg(*CloudWallBoth, cloud_both_ransac_filtered_msg);
   cloud_both_ransac_filtered_msg.header.frame_id = BASE_LINK;
   cloud_both_ransac_filtered_msg.header.stamp = this->now();
   pub_both_ransac_filtered_points->publish(cloud_both_ransac_filtered_msg);
 
+  RCLCPP_INFO(this->get_logger(), "4");
   /* CUBIC SPLINER & WALL PATH PUBLISHER
   1. Publish left/right wall detected path on the BASE_LINK frame
     - input : left/right ransac-filtered points
@@ -260,13 +262,9 @@ void WallDetectionNode::timer_callback() {
   left_path_msg.header.stamp = this->now();
   cv::Mat LeftPolyCoefficient;
 
-//  CubicSpliner(CloudRANSACLeft, left_wall_plane_coeff, front_upper_distance_,
-//               rear_upper_distance_, left_path_msg, LeftPolyCoefficient);
+  CubicSpliner(CloudLeftWallPoints, left_wall_detected, front_upper_distance_,
+               rear_upper_distance_, left_path_msg, LeftPolyCoefficient);
 
-  // changed
-  int left_polynorm_order = -1;
-  CubicSpliner(CloudRANSACLeft, left_wall_plane_coeff, front_upper_distance_,
-               rear_upper_distance_, left_path_msg, LeftPolyCoefficient, left_polynorm_order);
   pub_left_wall_line->publish(left_path_msg);
 
   nav_msgs::msg::Path right_path_msg;
@@ -274,26 +272,23 @@ void WallDetectionNode::timer_callback() {
   right_path_msg.header.stamp = this->now();
   cv::Mat RightPolyCoefficient;
 
-//  CubicSpliner(CloudRANSACRight, right_wall_plane_coeff, front_upper_distance_,
-//               rear_upper_distance_, right_path_msg, RightPolyCoefficient);
-  // changed
-  int right_polynorm_order = -1;
-  CubicSpliner(CloudRANSACRight, right_wall_plane_coeff, front_upper_distance_,
-               rear_upper_distance_, right_path_msg, RightPolyCoefficient, right_polynorm_order);
+  CubicSpliner(CloudRightWallPoints, right_wall_detected, front_upper_distance_,
+               rear_upper_distance_, right_path_msg, RightPolyCoefficient);
   pub_right_wall_line->publish(right_path_msg);
 
-  /* WALL CURVATURE BASED CONTROLLER 
+  RCLCPP_INFO(this->get_logger(), "5");
+  /* WALL CURVATURE BASED CONTROLLER
   1. Left/Right wall based lateral control output
   2. Estimated curvature / predictive path based on the kinematic model
     - input : coefficient of cubic splined wall
-    - input : feasibility of wall detection result(named as left_wall_plane_coeff/right_wall_plane_coeff)
+    - input : feasibility of wall detection result(named as right_wall_detected/left_wall_detected)
     - output : wall following reference path on the base_link frame
   */
   nav_msgs::msg::Path wall_folllowing_path_msg;
   wall_folllowing_path_msg.header.frame_id = BASE_LINK;
   wall_folllowing_path_msg.header.stamp = this->now();
   bool close_to_left = false;
-  if (right_wall_plane_coeff && outer_bound_distance != 0.0) {
+  if (right_wall_detected && outer_bound_distance != 0.0) {
     if (fabs(outer_bound_distance) < m_target_space_to_wall)
     {
       m_margin_to_wall = outer_bound_distance + m_target_space_to_wall;
@@ -303,7 +298,7 @@ void WallDetectionNode::timer_callback() {
     }
   }
 
-  if (left_wall_plane_coeff && inner_bound_distance != 0.0) {
+  if (left_wall_detected && inner_bound_distance != 0.0) {
     if (fabs(inner_bound_distance) < m_target_space_to_wall) {
       m_margin_to_wall = inner_bound_distance - m_target_space_to_wall;
       close_to_left = true;
@@ -315,26 +310,27 @@ void WallDetectionNode::timer_callback() {
   // if vehicle goes close to the left wall, calculate predictive path from left wall, not from the right wall. 
   if(close_to_left)
   {
-    EstimatePredictivePath(left_wall_plane_coeff, LeftPolyCoefficient,
+    EstimatePredictivePath(left_wall_detected, LeftPolyCoefficient,
                            wall_folllowing_path_msg, m_margin_to_wall);
   }
   else
   {
-    EstimatePredictivePath(right_wall_plane_coeff, RightPolyCoefficient,
+    EstimatePredictivePath(right_wall_detected, RightPolyCoefficient,
                            wall_folllowing_path_msg, m_margin_to_wall);
   }
 
   final_wall_following_path_msg.header.frame_id = BASE_LINK;
   final_wall_following_path_msg.header.stamp = this->now();
-  if (right_wall_plane_coeff && !wall_folllowing_path_msg.poses.empty()) {
-     final_wall_following_path_msg = wall_folllowing_path_msg;
+  if (right_wall_detected && !wall_folllowing_path_msg.poses.empty()) {
+    final_wall_following_path_msg = wall_folllowing_path_msg;
   }
-  if (left_wall_plane_coeff && !wall_folllowing_path_msg.poses.empty() && close_to_left)
-  {
+  if (left_wall_detected && !wall_folllowing_path_msg.poses.empty() &&
+      close_to_left) {
     final_wall_following_path_msg = wall_folllowing_path_msg;
   }
   pub_wall_following_path->publish(final_wall_following_path_msg);
 
+  RCLCPP_INFO(this->get_logger(), "6");
   /* KIN-CONTROLLER 
   1. Calculate Control output using KinController
   2. Calculate predictive path from the vehicle
@@ -381,12 +377,14 @@ void WallDetectionNode::timer_callback() {
 
 void WallDetectionNode::InverseLeftCallback(
     const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
+  std::lock_guard<std::mutex> sensor_lock(mtx_left);
   m_InverseLeftPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
   pcl::fromROSMsg(*msg, *m_InverseLeftPoints);
   bInverseLeftPoints = true;
 }
 void WallDetectionNode::InverseRightCallback(
     const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
+  std::lock_guard<std::mutex> sensor_lock(mtx_right);
   m_InverseRightPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
   pcl::fromROSMsg(*msg, *m_InverseRightPoints);
   bInverseRightPoints = true;
@@ -414,65 +412,6 @@ WallDetectionNode::downsample(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud,
   return filtered;
 }
 
-/**
- * @brief wall_detect the floor plane from a point cloud
- * @param cloud  input cloud
- * @return detected floor plane coefficients
- */
-boost::optional<Eigen::Vector4f>
-WallDetectionNode::wall_detect(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud,
-                                pcl::PointCloud<pcl::PointXYZI>::Ptr cloudOut) {
-
-  // too few points for RANSAC
-  if (cloud->size() < 50) {
-    return boost::none;
-  }
-
-  // RANSAC
-  pcl::SampleConsensusModelPlane<pcl::PointXYZI>::Ptr model_p(
-      new pcl::SampleConsensusModelPlane<pcl::PointXYZI>(cloud));
-  pcl::RandomSampleConsensus<pcl::PointXYZI> ransac(model_p);
-  ransac.setDistanceThreshold(m_ransacDistanceThres);
-  ransac.computeModel();
-
-  pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
-  ransac.getInliers(inliers->indices);
-
-  // too few inliers
-  if (inliers->indices.size() < ransac_pts_thresh_) {
-    return boost::none;
-  }
-
-  // verticality check of the detected wall's normal
-  Eigen::Vector4f reference = Eigen::Vector4f::UnitY();
-
-  Eigen::VectorXf coeffs;
-  ransac.getModelCoefficients(coeffs);
-
-  double dot = coeffs.head<3>().dot(reference.head<3>());
-
-  if (std::fabs(dot) < std::cos(normal_angle_thres_ * M_PI / 180.0)) {
-    // the normal is not vertical
-    return boost::none;
-  }
-
-  // make the normal sideward
-  if (coeffs.head<3>().dot(Eigen::Vector3f::UnitY()) < 0.0f) {
-    coeffs *= -1.0f;
-  }
-
-  pcl::PointCloud<pcl::PointXYZI>::Ptr inlier_cloud(
-      new pcl::PointCloud<pcl::PointXYZI>);
-  pcl::ExtractIndices<pcl::PointXYZI> extract;
-  extract.setInputCloud(cloud);
-  extract.setIndices(inliers);
-  extract.filter(*inlier_cloud);
-
-  *cloudOut = *inlier_cloud;
-
-  return Eigen::Vector4f(coeffs);
-}
-
 void WallDetectionNode::ExtractDistanceInCloud(
     const pcl::PointCloud<pcl::PointXYZI>::Ptr &cloudIn, const double& x_roi_, const double& dist_thres_, double& distance_out)
     {
@@ -498,7 +437,7 @@ void WallDetectionNode::ExtractDistanceInCloud(
 
 void WallDetectionNode::CubicSpliner(
         pcl::PointCloud<pcl::PointXYZI>::Ptr cloudIn,
-        const boost::optional<Eigen::Vector4f> wall_plane_coeff,
+        const bool wall_detected,
         double in_front_upper_threshold, double in_rear_upper_threshold,
         nav_msgs::msg::Path& path_msg_out, cv::Mat& PolyCoefficientOut) {
   if (cloudIn->points.empty())
@@ -529,7 +468,7 @@ void WallDetectionNode::CubicSpliner(
   int poly_order = 2;
   PolyCoefficientOut = polyfit(ToBeFit, poly_order);
 
-  if (!wall_plane_coeff) {
+  if (!wall_detected) {
     return;
   }
 
@@ -549,94 +488,6 @@ void WallDetectionNode::CubicSpliner(
   }
 }
 
-void WallDetectionNode::CubicSpliner(
-    pcl::PointCloud<pcl::PointXYZI>::Ptr cloudIn,
-    const boost::optional<Eigen::Vector4f> wall_plane_coeff,
-    double in_front_upper_threshold, double in_rear_upper_threshold,
-    nav_msgs::msg::Path& path_msg_out, cv::Mat& PolyCoefficientOut, int& poly_order) {
-  if (cloudIn->points.empty())
-    return;
-
-  pcl::PointCloud<pcl::PointXYZI>::Ptr cloudDownSampled(
-        new pcl::PointCloud<pcl::PointXYZI>);
-
-  for (auto point_buf : cloudIn->points) {
-    pcl::PointXYZI ground_points;
-    ground_points.x = point_buf.x;
-    ground_points.y = point_buf.y;
-    cloudDownSampled->points.push_back(ground_points);
-  }
-  cloudDownSampled = downsample(cloudDownSampled, 0.25);
-
-  std::vector<cv::Point2f> ToBeFit;
-  ToBeFit.clear();
-
-  for (auto point_buf : cloudDownSampled->points) {
-    cv::Point2f pointTmp;
-    pointTmp.x = point_buf.x;
-    pointTmp.y = point_buf.y;
-    ToBeFit.push_back(pointTmp);
-  }
-
-
-  // For polynomial fitting
-  int first_order = 1;
-  cv::Mat first_order_poly_coeff = polyfit(ToBeFit, first_order);
-  double first_order_error = 0.0;
-
-  // For polynomial fitting
-  int second_order = 2;
-  cv::Mat second_order_poly_coeff = polyfit(ToBeFit, second_order);
-  double second_order_error = 0.0;
-
-
-
-  if (!wall_plane_coeff) {
-    return;
-  }
-
-  // check which polynorm model is more fitted
-  for(int i =0 ; i < ToBeFit.size(); i++) {
-    first_order_error += pow(ToBeFit[i].y -
-                                       (first_order_poly_coeff.at<double>(first_order, 0) * pow(ToBeFit[i].x, first_order) +
-                                       first_order_poly_coeff.at<double>(first_order - 1, 0)),2);
-    second_order_error += pow(ToBeFit[i].y -
-                                       (second_order_poly_coeff.at<double>(second_order, 0) * pow(ToBeFit[i].x, second_order) +
-                                        second_order_poly_coeff.at<double>(second_order - 1, 0) * pow(ToBeFit[i].x, second_order - 1) +
-                                        second_order_poly_coeff.at<double>(second_order - 2, 0)),2);
-  }
-
-
-  if(second_order_error > first_order_error){
-    poly_order = first_order;
-    PolyCoefficientOut = first_order_poly_coeff;
-  }
-  else{
-    poly_order = second_order;
-    PolyCoefficientOut = second_order_poly_coeff;
-  }
-
-  for (double x = -30; x < 50; x = x + 2.0) {
-    geometry_msgs::msg::PoseStamped pose_buf;
-    pose_buf.pose.position.x = x;
-    if (poly_order == second_order) {
-      pose_buf.pose.position.y =
-          second_order_poly_coeff.at<double>(poly_order, 0) * pow(x, poly_order) +
-          second_order_poly_coeff.at<double>(poly_order - 1, 0) * pow(x, poly_order - 1) +
-          second_order_poly_coeff.at<double>(poly_order - 2, 0);
-    } else {
-      pose_buf.pose.position.y =
-          first_order_poly_coeff.at<double>(poly_order, 0) * pow(x, poly_order) +
-          first_order_poly_coeff.at<double>(poly_order - 1, 0);
-    }
-    pose_buf.pose.orientation.w = 1;
-    pose_buf.pose.orientation.x = 0;
-    pose_buf.pose.orientation.y = 0;
-    pose_buf.pose.orientation.z = 0;
-    path_msg_out.poses.push_back(pose_buf);
-  }
-
-}
 
 cv::Mat WallDetectionNode::polyfit(std::vector<cv::Point2f> &in_point, int n) {
   int size = in_point.size();
@@ -669,10 +520,9 @@ cv::Mat WallDetectionNode::polyfit(std::vector<cv::Point2f> &in_point, int n) {
 }
 
 void WallDetectionNode::EstimatePredictivePath(
-    const boost::optional<Eigen::Vector4f> wall_plane_coeff,
-    const cv::Mat &PolyCoefficientIn, nav_msgs::msg::Path &path_msg_out,
-    const double &target_space_to_wall) {
-  if (!wall_plane_coeff) {
+    const bool wall_detected, const cv::Mat &PolyCoefficientIn,
+    nav_msgs::msg::Path &path_msg_out, const double &target_space_to_wall) {
+  if (!wall_detected) {
     return;
   }
   
@@ -692,46 +542,17 @@ void WallDetectionNode::EstimatePredictivePath(
     pose_buf.pose.orientation.z = 0;
     path_msg_out.poses.push_back(pose_buf);
   }
-
-  // 
 }
 
-void WallDetectionNode::EstimatePredictivePath(
-    const boost::optional<Eigen::Vector4f> wall_plane_coeff,
-    const cv::Mat &PolyCoefficientIn, const int& poly_order,  nav_msgs::msg::Path &path_msg_out,
-    const double &target_space_to_wall) {
-  if (!wall_plane_coeff) {
-    return;
-  }
-
-  for (double x = -10; x < 30; x = x + 0.5) {
-    geometry_msgs::msg::PoseStamped pose_buf;
-    pose_buf.pose.position.x = x;
-
-    if (poly_order == 2) {
-      pose_buf.pose.position.y =
-          PolyCoefficientIn.at<double>(2, 0) * pow(x, 2) +
-          PolyCoefficientIn.at<double>(1, 0) * pow(x, 1) +
-          target_space_to_wall; // Cubic
-    } else {
-      pose_buf.pose.position.y =
-          PolyCoefficientIn.at<double>(1, 0) * pow(x, 1) +
-          target_space_to_wall;
-    }
-
-    pose_buf.pose.orientation.w = 1;
-    pose_buf.pose.orientation.x = 0;
-    pose_buf.pose.orientation.y = 0;
-    pose_buf.pose.orientation.z = 0;
-    path_msg_out.poses.push_back(pose_buf);
-  }
-  //
-}
-
-void WallDetectionNode::clusterAndColorGpu(
+void WallDetectionNode::wall_detect_with_clustering(
     const pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud_ptr,
     pcl::PointCloud<pcl::PointXYZI>::Ptr out_cloud_ptr,
     double in_max_cluster_distance) {
+
+  RCLCPP_INFO(this->get_logger(), "x");
+
+  std::lock_guard<std::mutex> right_lock(mtx_right);
+  std::lock_guard<std::mutex> left_lock(mtx_left);
 
 #ifdef GPU_CLUSTERING
 
@@ -753,35 +574,57 @@ void WallDetectionNode::clusterAndColorGpu(
     tmp_y[i] = tmp_point.y;
     tmp_z[i] = tmp_point.z;
   }
+  RCLCPP_INFO(this->get_logger(), "y");
 
   GpuEuclideanCluster gecl_cluster;
-
+  RCLCPP_INFO(this->get_logger(), "y1");
   gecl_cluster.setInputPoints(tmp_x, tmp_y, tmp_z, size);
+  RCLCPP_INFO(this->get_logger(), "y2");
   gecl_cluster.setThreshold(in_max_cluster_distance);
+  RCLCPP_INFO(this->get_logger(), "y3");
+
   gecl_cluster.setMinClusterPts(m_cluster_size_min);
+  RCLCPP_INFO(this->get_logger(), "y4");
+
   gecl_cluster.setMaxClusterPts(m_cluster_size_max);
+  RCLCPP_INFO(this->get_logger(), "y5");
+
   gecl_cluster.extractClusters();
+  RCLCPP_INFO(this->get_logger(), "y6");
+
   std::vector<GpuEuclideanCluster::GClusterIndex> cluster_indices =
       gecl_cluster.getOutput();
+  RCLCPP_INFO(this->get_logger(), "y7");
 
   unsigned int k = 0;
-
+  double max_length = 0;
+  RCLCPP_INFO(this->get_logger(), "z");
+  pcl::PointCloud<pcl::PointXYZI>::Ptr FinalPoints(new pcl::PointCloud<pcl::PointXYZI>);
   for (auto it = cluster_indices.begin(); it != cluster_indices.end(); it++) {
     pcl::PointCloud<pcl::PointXYZI>::Ptr bufPoints(
         new pcl::PointCloud<pcl::PointXYZI>);
-    SetCloud(in_cloud_ptr, bufPoints, it->points_in_cluster, k);
+    double cur_length;
+    SetCloud(in_cloud_ptr, bufPoints, it->points_in_cluster, k, cur_length);
     //   clusters.push_back(cluster);
-    *out_cloud_ptr += *bufPoints;
     k++;
-    // std::cout << "k: " << k << ", " << it->points_in_cluster.size() <<
-    // std::endl;
+    if (cur_length > max_length)
+    {
+      max_length = cur_length;
+      FinalPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
+      *FinalPoints = *bufPoints;
+    }
   }
+  *out_cloud_ptr  =  *FinalPoints;
+  
+  RCLCPP_INFO(this->get_logger(), "w");
 
   // std::cout << "working" << std::endl;
 
   free(tmp_x);
   free(tmp_y);
   free(tmp_z);
+
+  RCLCPP_INFO(this->get_logger(), "o");
 
 #endif
   // return clusters;
@@ -790,7 +633,8 @@ void WallDetectionNode::clusterAndColorGpu(
 void WallDetectionNode::SetCloud(
     const pcl::PointCloud<pcl::PointXYZI>::Ptr in_origin_cloud_ptr,
     pcl::PointCloud<pcl::PointXYZI>::Ptr register_cloud_ptr,
-    const std::vector<int> &in_cluster_indices, int ind) {
+    const std::vector<int> &in_cluster_indices, int ind,
+    double &cluster_length) {
 
   pcl::PointCloud<pcl::PointXYZI>::Ptr bufPoints(
       new pcl::PointCloud<pcl::PointXYZI>);
@@ -837,28 +681,6 @@ void WallDetectionNode::SetCloud(
 
   // if (length < 7.0 && width < 7.0 && height > 0.5) {
   *register_cloud_ptr = *bufPoints;
+  cluster_length = length;
   // }
-
-  // bounding_box_.header = in_ros_header;
-
-  // bounding_box_.pose.position.x = min_point_.x + length_ / 2;
-  // bounding_box_.pose.position.y = min_point_.y + width_ / 2;
-  // bounding_box_.pose.position.z = min_point_.z + height_ / 2;
-
-  // // Get EigenValues, eigenvectors
-  // if (current_cluster->points.size() > 3) {
-  //   pcl::PCA<pcl::PointXYZI> current_cluster_pca;
-  //   pcl::PointCloud<pcl::PointXYZI>::Ptr current_cluster_mono(
-  //       new pcl::PointCloud<pcl::PointXYZI>);
-
-  //   pcl::copyPointCloud<pcl::PointXYZI, pcl::PointXYZI>(*current_cluster,
-  //                                                        *current_cluster_mono);
-
-  //   current_cluster_pca.setInputCloud(current_cluster_mono);
-  //   eigen_vectors_ = current_cluster_pca.getEigenVectors();
-  //   eigen_values_ = current_cluster_pca.getEigenValues();
-  // }
-
-  // valid_cluster_ = true;
-  // pointcloud_ = current_cluster;
 }

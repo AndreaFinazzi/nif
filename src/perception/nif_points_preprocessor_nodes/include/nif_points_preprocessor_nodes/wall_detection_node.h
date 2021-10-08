@@ -146,13 +146,16 @@ private:
   int m_cluster_size_min;
   int m_cluster_size_max;
   double m_max_cluster_distance;
-  
+
   double extract_distance_x_roi; 
   double extract_distance_thres;
   double m_target_space_to_wall;
   double m_margin_to_wall;
   int m_average_filter_size;
   std::deque<double> control_out_que;
+
+  std::mutex mtx_right;
+  std::mutex mtx_left;
 
   pcl::PointCloud<pcl::PointXYZI>::Ptr m_InverseLeftPoints;
   pcl::PointCloud<pcl::PointXYZI>::Ptr m_InverseRightPoints;
@@ -167,46 +170,32 @@ private:
   pcl::PointCloud<pcl::PointXYZI>::Ptr
   downsample(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, double resolution);
 
-  boost::optional<Eigen::Vector4f>
-  wall_detect(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud,
-              pcl::PointCloud<pcl::PointXYZI>::Ptr cloudOut);
-
   void
   ExtractDistanceInCloud(const pcl::PointCloud<pcl::PointXYZI>::Ptr &cloudIn,
                          const double &x_roi_, const double &dist_thres_,
                          double &distance_out);
 
-  void CubicSpliner(
-                  pcl::PointCloud<pcl::PointXYZI>::Ptr cloudIn,
-                  const boost::optional<Eigen::Vector4f> wall_plane_coeff,
-                  double in_front_upper_threshold, double in_rear_upper_threshold,
-                  nav_msgs::msg::Path& path_msg_out, cv::Mat& PolyCoefficient);
-
-  void CubicSpliner(
-      pcl::PointCloud<pcl::PointXYZI>::Ptr cloudIn,
-      const boost::optional<Eigen::Vector4f> wall_plane_coeff,
-      double in_front_upper_threshold, double in_rear_upper_threshold,
-      nav_msgs::msg::Path& path_msg_out, cv::Mat& PolyCoefficient, int& poly_order);
+  void CubicSpliner(pcl::PointCloud<pcl::PointXYZI>::Ptr cloudIn,
+                    const bool wall_detected, double in_front_upper_threshold,
+                    double in_rear_upper_threshold,
+                    nav_msgs::msg::Path &path_msg_out,
+                    cv::Mat &PolyCoefficient);
 
   cv::Mat polyfit(std::vector<cv::Point2f> &in_point, int n);
 
   void EstimatePredictivePath(
-      const boost::optional<Eigen::Vector4f> wall_plane_coeff,
+      const bool wall_detected,
       const cv::Mat &PolyCoefficient, nav_msgs::msg::Path &path_msg_out,
       const double &target_space_to_wall);
 
-  void EstimatePredictivePath(
-      const boost::optional<Eigen::Vector4f> wall_plane_coeff,
-      const cv::Mat &PolyCoefficient, const int& poly_order,
-      nav_msgs::msg::Path &path_msg_out,
-      const double &target_space_to_wall);
   void
-  clusterAndColorGpu(const pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud_ptr,
+  wall_detect_with_clustering(const pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud_ptr,
                      pcl::PointCloud<pcl::PointXYZI>::Ptr out_cloud_ptr,
                      double in_max_cluster_distance);
   void SetCloud(const pcl::PointCloud<pcl::PointXYZI>::Ptr in_origin_cloud_ptr,
                 pcl::PointCloud<pcl::PointXYZI>::Ptr register_cloud_ptr,
-                const std::vector<int> &in_cluster_indices, int ind);
+                const std::vector<int> &in_cluster_indices, int ind,
+                double &cluster_length);
 };
 } // namespace perception
 } // namespace nif
