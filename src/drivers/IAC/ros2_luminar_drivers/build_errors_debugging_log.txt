@@ -1,0 +1,124 @@
+/** A log of changes made by Stephanie Meyer (swm0022@auburn.edu) to get this code to compile and launch */
+
+Directory structure used:
+
+luminar_ws/
+	src/
+		ros2_luminar_drivers/
+			LuminLib-all-2.16.0
+			ros2_luminar
+
+
+
+//-----------------------------
+//**ISSUE 1: GLM: not found**
+//-----------------------------
+
+Process to repeat:
+run "colcon build" in luminar_ws directory
+
+
+Fix:
+
+Install glm:
+
+sudo apt-get install libglm-dev
+
+
+
+
+Note: the following optional step allows LuminLib and ros2_luminar to not be within the same directory:
+
+Change lines 80 - 83 to the following in LuminLib CMakeLists.txt:
+
+# if(NOT glm_FOUND AND (LIB_DATA OR LIB_ALL))
+    # set(glm_DIR "$ENV{glm_DIR}" CACHE PATH "glm cmake directory")
+    find_package(glm REQUIRED)
+# endif(NOT glm_FOUND AND (LIB_DATA OR LIB_ALL))
+
+
+
+
+//------------------------------------------------------------
+//**ISSUE 2: LuminLib: not found (LUMINLIB_LIBRARY not set)**
+//------------------------------------------------------------
+
+Process to repeat:
+	1. Solve ISSUE 1
+	2. run "colcon bulid" in luminar_ws directory
+
+
+Fix: 
+
+**Neither colcon build nor cmake .. and make in the LuminLib directory produce a .so file as referenced in the readme
+-- This can be fixed by changing line 108 in LuminLib CMakeLists.txt to 
+
+add_library(${PROJECT_NAME} SHARED)
+
+
+Note that colcon build places the .so in the ws/build/LuminLib directory, which isn't given as a hint location to the find library command in ros2_luminar's CMakeLists.txt. If cmake .. make is used within the LuminLib directory prior to colcon building, the .so will now be placed in the ws/src/LuminLib/build/ directory, which ros2_luminar's CMakeLists.txt DOES provide a hint for, so LUMINLIB_LIBRARY error is fixed
+
+in LuminLib-all-2.16.0 directory:
+
+mkdir build; cd build
+cmake ..
+make
+
+
+
+Optional change: 
+
+To make this work with just the colcon build, change line 49 in ros2_luminar CMakeLists.txt to:
+
+find_library(LUMINLIB_LIBRARY NAMES LuminLib HINTS ${PROJECT_SOURCE_DIR}/../../../build/LuminLib ${PROJECT_SOURCE_DIR}/../LuminLib-all-2.16.0/build )
+
+
+
+//--------------------------------------------------
+** ISSUE 3 - Build Error Occurs in ros2_luminar **
+//--------------------------------------------------
+
+Process to repeat:
+	1. Fix ISSUE 1
+	2. Fix ISSUE 2
+	3. run "colcon build" in the luminar_ws directory
+
+
+Error:
+
+/home/atr/devel/luminar_ws/src/ros2_luminar_drivers/ros2_luminar/src/luminar_driver.cpp: In member function ‘virtual void ros2_luminar::LuminarDriver::onConfigure()’:
+/home/atr/devel/luminar_ws/src/ros2_luminar_drivers/ros2_luminar/src/luminar_driver.cpp:254:20: error: too few arguments to function ‘std::multimap<ros2_luminar::ClientState, ros2_luminar::DataProcessorInterface*> ros2_luminar::createProcessors(rclcpp_lifecycle::LifecycleNode::SharedPtr, const string&, const rclcpp::QoS&, uint32_t)’
+  254 |   createProcessors();
+      |                    ^
+In file included from /home/atr/devel/luminar_ws/src/ros2_luminar_drivers/ros2_luminar/src/luminar_driver.cpp:25:
+/home/atr/devel/luminar_ws/src/ros2_luminar_drivers/ros2_luminar/include/ros2_luminar/H3/processor_factories.hpp:81:61: note: declared here
+   81 | inline std::multimap<ClientState, DataProcessorInterface *> createProcessors(
+      |                                                             ^~~~~~~~~~~~~~~~
+/home/atr/devel/luminar_ws/src/ros2_luminar_drivers/ros2_luminar/src/luminar_driver.cpp: At global scope:
+/home/atr/devel/luminar_ws/src/ros2_luminar_drivers/ros2_luminar/src/luminar_driver.cpp:257:6: error: no declaration matches ‘void ros2_luminar::LuminarDriver::createProcessors()’
+  257 | void LuminarDriver::createProcessors() {
+      |      ^~~~~~~~~~~~~
+/home/atr/devel/luminar_ws/src/ros2_luminar_drivers/ros2_luminar/src/luminar_driver.cpp:257:6: note: no functions named ‘void ros2_luminar::LuminarDriver::createProcessors()’
+In file included from /home/atr/devel/luminar_ws/src/ros2_luminar_drivers/ros2_luminar/src/luminar_driver.cpp:21:
+/home/atr/devel/luminar_ws/src/ros2_luminar_drivers/ros2_luminar/include/ros2_luminar/luminar_driver.hpp:37:7: note: ‘class ros2_luminar::LuminarDriver’ defined here
+   37 | class LuminarDriver : public lifecycle_interface::LifecycleInterface
+      |       ^~~~~~~~~~~~~
+make[2]: *** [CMakeFiles/luminar_driver_core.dir/build.make:76: CMakeFiles/luminar_driver_core.dir/src/luminar_driver.cpp.o] Error 1
+make[1]: *** [CMakeFiles/Makefile2:107: CMakeFiles/luminar_driver_core.dir/all] Error 2
+make: *** [Makefile:141: all] Error 2
+---
+Failed   <<< ros2_luminar [2.89s, exited with code 2]
+
+
+Fix:
+
+Add the following line as a protected member declaration (line 130) in luminar_driver.hpp:
+
+void createProcessors();
+
+
+//--------------------------
+//**Build is now successful**
+//--------------------------
+
+**NOTE: might need to do colcon build two times before successfully building in a clean workspace, as it often fails on LUMINLIB_LIBRARY not found on the first build, but finds it the second

@@ -65,4 +65,8 @@ RUN apt-get update \
       ros-${ROS_DISTRO}-plotjuggler-ros \
   && apt-get clean
 
+RUN apt-get install -y \
+      libglm-dev \
+  && apt-get clean
+
 COPY ./entrypoint /ade_entrypoint

@@ -1,0 +1,57 @@
+/**:
+  ros__parameters:                      # <<TYPE>>
+    width: 4096                         # INT
+    height: 4096                        # INT
+    frame_id: "base_link"               # STRING
+    camera_ip_addr: '10.42.0.0'         # STRING
+    acquisition_mode: 'Continuous'      # STRING
+    acquisition_rate: 30.0              # DOUBLE
+    balance_ratio_abs: 1.0              # DOUBLE
+    balance_ratio_selector: 'Red'       # STRING
+    binning_x: 1                        # INT
+    binning_y: 1                        # INT
+    decimation_x: 1                     # INT 
+    decimation_y: 1                     # INT
+    exposure: 20301.0 #5000.0                    # DOUBLE
+    exposure_auto: 'Off'                # STRING
+    exposure_auto_alg: 'FitRange'       # STRING
+    exposure_auto_max: 60000000         # INTEGER
+    exposure_auto_min: 41               # INTEGER
+    exposure_auto_outliers: 0           # INTEGER
+    exposure_auto_rate: 100             # INTEGER
+    exposure_auto_target: 50            # INTEGER
+    exposure_auto_tol: 5                # INTEGER
+    gain: 20.0                          # DOUBLE
+    gain_auto: 'Off'                    # STRING
+    gain_auto_max: 32.0                 # DOUBLE
+    gain_auto_min: 0.0                  # DOUBLE
+    gain_auto_outliers: 0               # INT
+    gain_auto_rate: 100                 # INT
+    gain_auto_target: 50                # INT
+    gain_auto_tol: 5                    # INT
+    pixel_format: 'BGR8Packed'          # STRING
+    ptp_mode: 'Slave'                   # STRING
+    roi_height: 700 #0                       # INT
+    roi_offset_x: 516 #0                     # INT
+    roi_offset_y: 388 #0                     # INT
+    roi_width: 700 #0                        # INT
+    stream_bytes_per_second: 115000000  # INT
+    sync_in_selector: 'SyncIn1'         # STRING
+    sync_out_polarity: 'Normal'         # STRING
+    sync_out_selector: 'SyncOut1'       # STRING
+    sync_out_source: 'GPO'              # STRING
+    trig_timestamp_topic: ''            # STRING
+    trigger_activation: 'RisingEdge'    # STING
+    trigger_delay: 0.0                  # DOUBLE
+    trigger_mode: 'Off'                 # STRING
+    trigger_selector: 'FrameStart'      # STRING
+    trigger_source: 'Freerun'           # STRING
+    use_sim_time: false                 # BOOLEAN
+    use_ros_timestamp: 'False'          # STRING
+    whitebalance_auto: 'Continuous'           # STRING
+    whitebalance_auto_rate: 100         # INT
+    whitebalance_auto_tol: 2.5            # INT
+    # iris_auto_target: 50
+    # iris_mode: 'Off'
+    # iris_video_level_max: 110
+    # iris_video_level_min: 110

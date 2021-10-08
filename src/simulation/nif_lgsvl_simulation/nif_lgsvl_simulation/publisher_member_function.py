@@ -8,7 +8,7 @@
 import rclpy
 import math
 from rclpy.node import Node
-from lgsvl_msgs.msg import VehicleControlData
+from lgsvl_msgs.msg import VehicleControlData, VehicleOdometry
 from std_msgs.msg import Float32, Int8
 from raptor_dbw_msgs.msg import SteeringReport, AcceleratorPedalReport, Brake2Report
 
@@ -32,6 +32,9 @@ class LGSVLPublisherNode(BaseNode):
         # Subscribe desired gear -> publish desired gear
         self.sub_gear = self.create_subscription(Int8, self.namespace + '/joystick/gear_cmd', self.callback_gear, rclpy.qos.qos_profile_sensor_data)
 
+        self.sub_vehicleodometry = self.create_subscription(VehicleOdometry, self.namespace + '/sensor/odometry', self.callback_vehicleodometry, rclpy.qos.qos_profile_sensor_data)
+
+
         self.control_pub = self.create_publisher(VehicleControlData, self.namespace + '/sensor/control', 1)
 
         self.steering_report_pub = self.create_publisher(SteeringReport, self.namespace + '/raptor_dbw_interface/steering_report', rclpy.qos.qos_profile_sensor_data)
@@ -52,6 +55,8 @@ class LGSVLPublisherNode(BaseNode):
         self.prev_steering_cmd = 0.0
         self.prev_steering_cmd_time = 0.
 
+        self.current_front_tires_angle_deg = 0.
+
         self.gear = 1
         self.rolling_counter = 0
 
@@ -69,7 +74,7 @@ class LGSVLPublisherNode(BaseNode):
         steer_report_msg = SteeringReport()
         steer_report_msg.header.stamp = self.get_clock().now().to_msg()
         steer_report_msg.rolling_counter = self.rolling_counter % 256
-        steer_report_msg.steering_wheel_angle = (int(self.steering_wheel_ratio * self.target_wheel_angle_rad * 360 / math.pi)) / 2
+        steer_report_msg.steering_wheel_angle = - self.current_front_tires_angle_deg * self.steering_wheel_ratio
         self.steering_report_pub.publish(steer_report_msg)
 
         accel_pedal_report_msg = AcceleratorPedalReport()
@@ -90,6 +95,9 @@ class LGSVLPublisherNode(BaseNode):
     def callback_accel(self, msg):
         self.acceleration_pct = msg.data
 
+    def callback_vehicleodometry(self, msg : VehicleOdometry):
+        self.current_front_tires_angle_deg = math.degrees(msg.front_wheel_angle)
+
     # Subscribe steering wheel angle in degrees [-600, 600] -> publish wheels' angle in radians
     # IAC car specs:
     # /raptor_dbw_interface/steering_cmd: steering wheel command [-210, 210] corresponds to desired steering angle [-23.333, 23.333] (ratio 9.0).
@@ -105,7 +113,7 @@ class LGSVLPublisherNode(BaseNode):
         # d_wheels_angle_deg = (wheels_angle_deg - self.prev_steering_cmd) / 0.02
         self.prev_steering_cmd = wheels_angle_deg #- 0.2 * d_wheels_angle_deg
         
-        self.target_wheel_angle_rad = 0.1 * self.prev_steering_cmd * math.pi / 180
+        self.target_wheel_angle_rad = 0.3 * self.prev_steering_cmd * math.pi / 180
 
     # Subscribe brake pressure in pascal -> publish braking pedal %
     def callback_brake(self, msg):

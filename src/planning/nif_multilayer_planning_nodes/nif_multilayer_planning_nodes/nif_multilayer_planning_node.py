@@ -38,7 +38,7 @@ for dir_name in os.listdir(lib_path_default):
     dir_path = os.path.join(lib_path_default, dir_name)
     if os.path.isdir(dir_path):
         sys.path.insert(0, dir_path)
-os.environ['OPENBLAS_NUM_THREADS'] = str(3)
+os.environ['OPENBLAS_NUM_THREADS'] = str(1)
 
 # TODO : I don't know why but currently, we have to import the graph library in this order
 from Graph_LTPL import Graph_LTPL
