@@ -12,7 +12,8 @@ lqr::JointLQR::StateMatrix LQRState(const nav_msgs::msg::Odometry &odom) {
   result(0, 0) = odom.pose.pose.position.x;
   result(1, 0) = odom.pose.pose.position.y;
   result(2, 0) = odom.twist.twist.linear.x;
-  result(3, 0) = odom.twist.twist.linear.y;
+  result(3, 0) = 0.0;
+  // result(3, 0) = odom.twist.twist.linear.y;
 
   //! Handle yaw
   tf2::Quaternion q(odom.pose.pose.orientation.x, odom.pose.pose.orientation.y,
