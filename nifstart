@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+
+DOCKER_RUNTIMES=$(docker -D info | grep Runtimes)
+
+# Arg parsing
+POSITIONAL=()
+SIMULATOR=false
+CLION=false
+
+while [[ $# -gt 0 ]]; do
+  key="$1"
+
+  case $key in
+    -s|--with-simulator)
+      SIMULATOR=true
+      shift # past argument
+      shift # past value
+      ;;
+   -c|--clion)
+     CLION=true
+     shift # past argument
+     shift # past value
+     ;;
+   --cuda-host)
+     CUDA="host"
+     shift # past argument
+     shift # past value
+     ;;
+#    --default)
+#      DEFAULT=YES
+#      shift # past argument
+#      ;;
+    *)    # unknown option
+      POSITIONAL+=("$1") # save it in an array for later
+      shift # past argument
+      ;;
+  esac
+done
+
+set -- "${POSITIONAL[@]}" # restore positional parameters
+
+if [[ -n $1 ]]; then
+    echo "Last line of file specified as non-opt/last argument:"
+    tail -1 "$1"
+fi
+
+if [[ "$DOCKER_RUNTIMES" == *"nvidia"* ]];
+then
+    OPTIONS_NVIDIA="--env="NVIDIA_VISIBLE_DEVICES"=all \
+    --env="NVIDIA_DRIVER_CAPABILITIES"=all \
+    --runtime=nvidia"
+else
+    OPTIONS_NVIDIA=""
+fi
+
+if [[ $CUDA == "host" ]] ;
+then
+  ADERC=".aderc-cuda"
+  echo "Starting with .aderc-*-cuda"
+elif $SIMULATOR ;
+then
+  ADERC=".aderc-lgsvl"
+else
+  ADERC=".aderc"
+fi
+
+OPTIONS_CLION=""
+if $CLION ;
+then
+  if [[ $CLION_PATH ]] ; 
+  then
+    OPTIONS_CLION="-v $CLION_PATH:/opt/clion \
+      -v /home/$USER/.config/JetBrains:/home/$USER/.config/JetBrains \
+      -v /home/$USER/.local/share/JetBrains:/home/$USER/.local/share/JetBrains "
+  else
+    echo ""
+    echo "!!!"
+    echo "CLION_PATH not specified, starting without clion volume."
+    echo "To specify a CLION_PATH, run \`export CLION_PATH=</path/to/clion>\` (default to /opt/clion-<version>)."
+    echo "!!!"
+    echo ""
+    OPTIONS_CLION="-v /home/$USER/.config/JetBrains:/home/$USER/.config/JetBrains \
+      -v /home/$USER/.local/share/JetBrains:/home/$USER/.local/share/JetBrains "
+    sleep 2
+  fi
+
+fi  
+
+ade --rc $ADERC \
+    start -f -- \
+    -v /tmp/.X11-unix:/tmp/.X11-unix \
+    -v /etc/localtime:/etc/localtime:ro \
+    -v /media/$USER/:/home/$USER/media \
+    -v /home/$USER/dev_ws/src/bag/:/home/$USER/bag \
+    $OPTIONS_CLION \
+    $OPTIONS_NVIDIA
+
