@@ -58,6 +58,7 @@ missions:
         - 200 # MISSION_COMMANDED_STOP
         - 250 # MISSION_EMERGENCY_STOP
         - 777 # MISSION_TEST
+        - 65000 # MISSION_PIT_INIT
     timeout:
       active: false # ignored
       duration_ms: 1000
@@ -75,10 +76,10 @@ missions:
           - -35.0 # x_max
           - -15.0 # y_max
     activation_velocity:
-      active: false
+      active: true
       range_mps:
-        - 0.0 # min m/s
-        - 0.0 # max m/s
+        - 0.000 # min m/s
+        - 0.001 # max m/s
     allowed_transitions:
       active: true # ignore
       from:
@@ -88,6 +89,20 @@ missions:
     timeout:
       active: false # ignored
       duration_ms: 0
+
+  - mission_code: 50 # MISSION_STANDBY
+    active: true
+    fallback:
+      active: true
+      mission_code: 200 # MISSION_COMMANDED_STOP
+    activation_velocity:
+      active: true
+      range_mps:
+        - 0.000 # min m/s
+        - 0.001 # max m/s
+    allowed_transitions:
+      active: false # ignore
+      from:
 
   - mission_code: 70 # MISSION_PIT_OUT
     active: true
@@ -119,6 +134,7 @@ missions:
         - 65 # MISSION_PIT_STANDBY
         - 70 # MISSION_PIT_OUT
         - 75 # MISSION_PIT_TO_TRACK
+        - 65000 # MISSION_PIT_INIT
     timeout:
       active: false # ignored
       duration_ms: 0
@@ -134,6 +150,7 @@ missions:
         - 0   # MISSION_RACE
         - 50  # MISSION_STANDBY
         - 75  # MISSION_PIT_TO_TRACK
+        - 200 # MISSION_COMMANDED_STOP
         - 128 # MISSION_SLOW_DRIVE
         - 777 # MISSION_TEST
 
@@ -150,14 +167,14 @@ missions:
           - 80.0 # x_max
           - -15.0 # y_max
     allowed_transitions:
-      active: true
+      active: false
       from:
         - 65535   # MISSION_DEFAULT
 
   - mission_code: 50000 # MISSION_INIT
     active: true
     allowed_transitions:
-      active: true
+      active: false
       from:
         - 65535   # MISSION_DEFAULT
 

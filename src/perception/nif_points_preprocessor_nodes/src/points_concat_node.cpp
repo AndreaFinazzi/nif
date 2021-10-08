@@ -19,14 +19,11 @@ PointsConcatFilterNode::PointsConcatFilterNode(const std::string &node_name_)
       std::string("[/luminar_front_points, /luminar_left_points, /luminar_right_points]"));
   this->declare_parameter<std::string>("output_topic",
                                        std::string("/merged/lidar"));
-  this->declare_parameter<std::string>("output_frame_id",
-                                       std::string(BASE_LINK));
 
   this->use_new_luminar_driver_ =
       this->get_parameter("use_new_luminar_driver").as_bool();
   this->input_topics_ = this->get_parameter("input_topics").as_string();
   this->output_topic_ = this->get_parameter("output_topic").as_string();
-  this->output_frame_id_ = this->get_parameter("output_frame_id").as_string();
 
 
   auto rmw_qos_profile =
@@ -36,8 +33,6 @@ PointsConcatFilterNode::PointsConcatFilterNode(const std::string &node_name_)
 
   RCLCPP_INFO(this->get_logger(), "input_topics : '%s'", input_topics_.c_str());
   RCLCPP_INFO(this->get_logger(), "output_topic : '%s'", output_topic_.c_str());
-  RCLCPP_INFO(this->get_logger(), "output_frame_id : '%s'",
-              output_frame_id_.c_str());
 
   YAML::Node topics = YAML::Load(input_topics_);
 
@@ -103,10 +98,10 @@ void PointsConcatFilterNode::pointcloud_callback(
   // publsh points
   sensor_msgs::msg::PointCloud2 MergedCloudMsg;
   // concatenated_points->header = pcl_conversions::toPCL(msgs[0]->header);
-  concatenated_points->header.frame_id = output_frame_id_;
+  concatenated_points->header.frame_id = nif::common::frame_id::localization::BASE_LINK;
   pcl::toROSMsg(*concatenated_points, MergedCloudMsg);
 
-  MergedCloudMsg.header.frame_id = output_frame_id_;
+  MergedCloudMsg.header.frame_id = nif::common::frame_id::localization::BASE_LINK;
   cloud_publisher_->publish(MergedCloudMsg);
 }
 

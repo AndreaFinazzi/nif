@@ -128,7 +128,13 @@ MissionStatus::_mission_status_code_type MissionManagerNode::getMissionStatusCod
             {
                 return MissionStatus::MISSION_DEFAULT; // No missions on startup
             } else {
-                return MissionStatus::MISSION_COMMANDED_STOP;
+                if (this->missionIs(MissionStatus::MISSION_PIT_INIT) || 
+                    this->missionIs(MissionStatus::MISSION_PIT_IN) || 
+                    this->missionIs(MissionStatus::MISSION_PIT_STANDBY)) {
+                    return this->mission_status_msg.mission_status_code;
+                } else {
+                    return MissionStatus::MISSION_COMMANDED_STOP;
+                }
             }
             break;
 
@@ -145,12 +151,13 @@ MissionStatus::_mission_status_code_type MissionManagerNode::getMissionStatusCod
                 is_system_startup = false;
                 return MissionStatus::MISSION_STANDBY;
 
-            } else if ( this->missionIs(MissionStatus::MISSION_STANDBY) ||
-                        this->missionIs(MissionStatus::MISSION_PIT_STANDBY)) {
-                return this->mission_status_msg.mission_status_code;
+            // } else if ( this->missionIs(MissionStatus::MISSION_STANDBY) ||
+                        // this->missionIs(MissionStatus::MISSION_PIT_STANDBY)) {
+                // return this->mission_status_msg.mission_status_code;
 
             } else {
-                return MissionStatus::MISSION_STANDBY;
+                // return MissionStatus::MISSION_STANDBY;
+                return this->mission_status_msg.mission_status_code; // ignore orange flag after startup
             }
             break;
           
@@ -192,35 +199,56 @@ MissionStatus::_mission_status_code_type MissionManagerNode::getMissionVehFlagNu
             {
                 return MissionStatus::MISSION_DEFAULT; // No missions on startup
             } else {
-                return MissionStatus::MISSION_COMMANDED_STOP;
+                if (this->missionIs(MissionStatus::MISSION_PIT_INIT)) {
+                    return MissionStatus::MISSION_PIT_INIT;
+
+                } else if (this->missionIs(MissionStatus::MISSION_INIT)) {
+                    return MissionStatus::MISSION_STANDBY;
+
+                } else if ( this->missionIs(MissionStatus::MISSION_STANDBY) ||
+                            this->missionIs(MissionStatus::MISSION_PIT_STANDBY)) {
+                    return this->mission_status_msg.mission_status_code;
+
+                }     
+                return MissionStatus::MISSION_PIT_INIT;
+                // return MissionStatus::MISSION_COMMANDED_STOP;
             }
             break;
 
         case RCFlagSummary::TRACK_FLAG_ORANGE:
             if (is_system_startup && this->missionIs(MissionStatus::MISSION_DEFAULT))
             {
+                is_system_startup = false;
                 return MissionStatus::MISSION_PIT_INIT;
-
-            } else if (this->missionIs(MissionStatus::MISSION_PIT_INIT)) {
+            } 
+            else if (this->missionIs(MissionStatus::MISSION_PIT_INIT)) {
                 is_system_startup = false;
                 return MissionStatus::MISSION_PIT_STANDBY;
 
-            } else if (this->missionIs(MissionStatus::MISSION_INIT)) {
+            } 
+            else if (this->missionIs(MissionStatus::MISSION_INIT)) {
                 is_system_startup = false;
                 return MissionStatus::MISSION_STANDBY;
 
-            } else if ( this->missionIs(MissionStatus::MISSION_STANDBY) ||
-                        this->missionIs(MissionStatus::MISSION_PIT_STANDBY)) {
-                return this->mission_status_msg.mission_status_code;
+            // } else if ( this->missionIs(MissionStatus::MISSION_STANDBY) ||
+            //             this->missionIs(MissionStatus::MISSION_PIT_STANDBY)) {
+            //     return this->mission_status_msg.mission_status_code;
 
             } else {
                 return MissionStatus::MISSION_STANDBY;
             }
+            // }
+            //  else {
+                // return MissionStatus::MISSION_STANDBY;
+            // }
+            return this->mission_status_msg.mission_status_code;
             break;
-          
+
         case RCFlagSummary::TRACK_FLAG_YELLOW:
             if (this->missionIs(MissionStatus::MISSION_PIT_STANDBY) || 
-                this->missionIs(MissionStatus::MISSION_PIT_OUT)) {
+                this->missionIs(MissionStatus::MISSION_PIT_OUT)     ||
+                this->missionIs(MissionStatus::MISSION_PIT_INIT)
+                ) {
                 return MissionStatus::MISSION_PIT_TO_TRACK;
             } else if (this->missionIs(MissionStatus::MISSION_PIT_IN)) {
                 return MissionStatus::MISSION_PIT_STANDBY; 
@@ -243,7 +271,7 @@ MissionStatus::_mission_status_code_type MissionManagerNode::getMissionVehFlagNu
           return MissionStatus::MISSION_COMMANDED_STOP;
           break;
       }
-}
+    }
 
 void
 MissionManagerNode::RCFlagSummaryCallback(
@@ -269,7 +297,42 @@ MissionManagerNode::parametersCallback(
     result.reason = "";
     for (const auto &param : vector) 
     {
+        if (param.get_name() == "velocity.max") {
+            if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
+                if (param.as_double() >= 0.0 && param.as_double() <= 35.0) // TODO implement switching policy, if needed
+                {
+                    this->velocity_max = param.as_double();
+                    result.successful = true;
+                }
+            }
+        } else if (param.get_name() == "velocity.pit_in") {
+            if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
+                if (param.as_double() >= 0.0 && param.as_double() <= 15.0) // TODO implement switching policy, if needed
+                {
+                    this->velocity_pit_in = param.as_double();
+                    result.successful = true;
+                }
+            }
+        } else if (param.get_name() == "velocity.pit_out") {
+            if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
+                if (param.as_double() >= 0.0 && param.as_double() <= 15.0) // TODO implement switching policy, if needed
+                {
+                    this->velocity_pit_out = param.as_double();
+                    result.successful = true;
+                }
+            }
+        } else if (param.get_name() == "velocity.slow_drive") {
+            if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
+                if (param.as_double() >= 0.0 && param.as_double() <= 20.0) // TODO implement switching policy, if needed
+                {
+                    this->velocity_slow_drive = param.as_double();
+                    result.successful = true;
+                }
+            }
+        }
     }
+
+    return result;
 }
 
 double nif::system::MissionManagerNode::getMissionMaxVelocityMps(

@@ -34,13 +34,12 @@ def generate_launch_description():
     nif_multilayer_planning_node = Node(
         package='nif_multilayer_planning_nodes',
         executable='nif_multilayer_planning_nodes_exe',
-        output='screen',
         output={
             'stdout': 'screen',
             'stderr': 'screen',
         },
         remappings={
-            ('out_local_maptrack_inglobal', '/planning/graph/path_global'),
+            ('out_local_maptrack_inglobal', '/planning/graph/test'),
             ('in_ego_odometry', '/localization/ekf/odom'),
         }
     )

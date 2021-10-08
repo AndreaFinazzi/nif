@@ -6,6 +6,11 @@ if ! [ -f /etc/ros/rosdep/sources.list.d/20-default.list ]; then
 fi
 
 #sudo -u $USER rosdep update && sudo -u $USER rosdep install -y --from . --ignore-src --rosdistro $ROS_DISTRO
-colcon --log-base /opt/nif/log build --base-paths src/* --packages-up-to nif_launch --merge-install --install-base /opt/nif/install --build-base /opt/nif/build --cmake-args -DCMAKE_BUILD_TYPE=Release
+colcon --log-base ~/opt/nif/log build --base-paths src/* --packages-up-to nif_launch --merge-install --install-base ~/opt/nif/install --build-base ~/opt/nif/build --cmake-args -DCMAKE_BUILD_TYPE=Release
 
-rsync -rP /opt/nif user@10.42.4.200:/home/user/.local/opt/
+read -p "Copy to target? " -n 1 -r
+echo    # (optional) move to a new line
+if [[ $REPLY =~ ^[Yy]$ ]]
+then
+    rsync -rP ~/opt/nif user@10.42.4.200:/home/user/.local/opt/
+fi

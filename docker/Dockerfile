@@ -66,7 +66,7 @@ RUN apt-get update \
   && apt-get clean
 
 RUN apt-get install -y \
-      libglm-dev \
+      libglm-dev
   && apt-get clean
 
 COPY ./entrypoint /ade_entrypoint
