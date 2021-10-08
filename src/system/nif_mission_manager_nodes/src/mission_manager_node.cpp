@@ -272,7 +272,6 @@ MissionStatus::_mission_status_code_type MissionManagerNode::getMissionVehFlagNu
           break;
       }
     }
-}
 
 void
 MissionManagerNode::RCFlagSummaryCallback(
