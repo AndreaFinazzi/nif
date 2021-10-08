@@ -5,19 +5,11 @@ windows:
     shell_command_before:
       - source /home/usrg/nif/install/setup.bash 
       - export ROS_DOMAIN_ID=33
-      # - cd /home/usrg/bag/LOR/VEH4_LOR_RUN-manual.01_2021-09-16_for_mapping 
-      # - cd /home/usrg/bag/VEH4_IMS_RUN-ontrack00_2021-09-03 #IMS Full track     
-      # - cd /home/usrg/media/IAC/LOR/VEH4_LOR_RUN-nif.full_2021-09-12 #Large error GPS data 
-      # - cd /home/usrg/media/IAC/LOR/VEH4_LOR_RUN-nif.0_2021-09-12_with_lidar #LOR with origin lidar driver 
-      # - cd /home/usrg/media/IAC/21.09.21_IMS/VEH_4_IMS_0__2021-09-21-09-59-36 #IAC_run_0 
-      # - cd /home/usrg/media/IAC/21.09.21_IMS/VEH4_IMS_RUN-ontrack.1_2021-09-21 #IAC_run_1
-      # - cd /home/usrg/media/T7/IAC_0928_si/2021_09_21_IMS/VEH8_MIT-PITT-RW #RADAR  
-      # - cd /home/usrg/media/IAC/LOR/VEH4_LOR_RUN-graph.aw_2021-09-29 #LOR_0929_aw
-      # - cd /home/usrg/media/IAC/LOR/VEH4_LOR_RUN-graph.yaw_2021-09-29 #LOR_0929_yaw_1
-      # - cd /home/usrg/media/IAC #MITPIT DATA
       # - cd /home/usrg/media/T7/IAC_0928_si/2021_09_21_IMS/VEH8_MIT-PITT-RW #MITPIT DATA
       - cd /home/usrg/media/T7_Touch/IAC/rosbag/2021.10.04_LOR/VEH4_LOR_RUN-mylaps.accel_2021-10-04 # 2021.10.04_LOR 2nd nif data
       # - cd /home/usrg/media/T7_Touch/IAC/rosbag/2021.10.04_LOR/VEH4_LOR_RUN-3rd_2021-10-04 # 2021.10.04_LOR 3rd nif data
+      # - cd /home/usrg/media/T7_Touch/IAC/rosbag/2021.10.06_LOR/VEH4_LOR_RUN-01_2021-10-06
+      # - cd /home/usrg/media/T7_Touch/IAC/rosbag/2021.10.06_LOR/VEH4_LOR_RUN-02_2021-10-06
     panes:
     - shell_command:
         # - ros2 bag play sensors_2021-09-03_10-59-19/ --topics /merged/lidar /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /raptor_dbw_interface/wheel_speed_report /novatel_top/bestpos /novatel_top/inspva /novatel_top/bestvel /novatel_top/imu/data /novatel_bottom/insstdev
@@ -42,6 +34,8 @@ windows:
       # - ros2 bag play sensors_2021-09-21_13-20-18/  --topics /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /novatel_top/bestpos /novatel_top/inspva /novatel_top/bestvel /novatel_top/imu/data /novatel_bottom/insstdev /novatel_top/insstdev
       - ros2 bag play autonomy_2021-10-04_13-15-58/ # 2021.10.04_LOR 2nd nif data
       # - ros2 bag play autonomy_2021-10-04_15-03-58/ # 2021.10.04_LOR 3rd nif data
+      # - ros2 bag play autonomy_2021-10-06_11-15-52/ --read-ahead-queue-size 10000 # 2021.10.06_LOR nif data
+      # - ./multidb3 # 2021.10.06_LOR nif data last
 
     - shell_command:
       - ros2 run plotjuggler plotjuggler
