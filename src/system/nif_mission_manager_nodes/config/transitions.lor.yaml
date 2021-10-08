@@ -150,6 +150,7 @@ missions:
         - 0   # MISSION_RACE
         - 50  # MISSION_STANDBY
         - 75  # MISSION_PIT_TO_TRACK
+        - 200 # MISSION_COMMANDED_STOP
         - 128 # MISSION_SLOW_DRIVE
         - 777 # MISSION_TEST
 

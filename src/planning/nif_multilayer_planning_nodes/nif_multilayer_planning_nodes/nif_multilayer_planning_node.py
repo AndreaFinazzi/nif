@@ -454,10 +454,10 @@ class GraphBasedPlanner(rclpy.node.Node):
 
         # self.on_track_msg.data = self.ltpl_obj.check_out_of_track()
         # self.pub_on_track.publish(self.on_track_msg)
-        self.obj_list_ = [{'X': -1.27, 'Y': 2.58, 'theta': np.pi, 'type': 'physical',
-                         'id': 1, 'length': 5.0, 'v': 0.0}, 
-                         {'X': -1.24, 'Y': 1.8, 'theta': np.pi, 'type': 'physical',
-                         'id': 2, 'length': 5.0, 'v': 0.0}]
+        self.obj_list_ = [{'X': 0.0, 'Y': 0.0, 'theta': np.pi, 'type': 'physical',
+                         'id': 1, 'length': 1.0, 'width': 1.0, 'v': 0.0}, 
+                         {'X': -965.0, 'Y': 520.9, 'theta': np.pi, 'type': 'physical',
+                         'id': 2, 'length': 2.0, 'width': 2.0, 'v': 0.0}]
         # self.obj_list_ = []
         # planning_graph != self.odom_first_call
 
@@ -570,7 +570,7 @@ class GraphBasedPlanner(rclpy.node.Node):
                         self.traj_set = self.ltpl_obj.calc_vel_profile(pos_est=self.pos_est,
                                                                     vel_est=self.vel_est,
                                                                     safety_d = self.safe_dist)[0]
-                    elif in_track_flg is True and sel_action_prev is "not init":
+                    elif in_track_flg is True and sel_action_prev == "not init":
                         self.out_of_track_graph = self.ltpl_obj.set_startpos(pos_est=self.pos_est,
                                     heading_est=self.heading_est)
                         return
@@ -637,7 +637,7 @@ class GraphBasedPlanner(rclpy.node.Node):
 
 
 
-        elif self.mission_code == MissionStatus.MISSION_PIT_OUT or self.mission_code == MissionStatus.MISSION_PIT_STANDBY:
+        elif self.mission_code == MissionStatus.MISSION_PIT_OUT or self.mission_code == MissionStatus.MISSION_PIT_STANDBY or self.mission_code == MissionStatus.MISSION_PIT_INIT:
 
             # ---------------------------------------------------
             # ---------------------------------------------------
@@ -652,8 +652,8 @@ class GraphBasedPlanner(rclpy.node.Node):
                                                                      self.current_veh_odom.pose.pose.position.y]], k=1)
 
             # TODO : just for safety but not very smart
-            if nearest_dist_list[0][0] > self.max_wpt_switch_dist:
-                return
+            # if nearest_dist_list[0][0] > self.max_wpt_switch_dist:
+            #     return
 
             nearest_ind = nearest_ind_list[0][0]
             pit_in_path_msg = Path()
@@ -670,17 +670,25 @@ class GraphBasedPlanner(rclpy.node.Node):
                 goal_pt_inglobal_y = self.pit_wpt[idx][1]
                 goal_pt_inglobal_yaw_rad = self.pit_wpt[idx][2]
 
-                quat = self.euler_to_quaternion([goal_pt_inglobal_yaw_rad,0.0,0.0])
+                # quat = self.euler_to_quaternion([goal_pt_inglobal_yaw_rad,0.0,0.0])
 
                 pose = PoseStamped()
                 pose.header.frame_id = "odom"
                 pose.pose.position.x = goal_pt_inglobal_x
                 pose.pose.position.y = goal_pt_inglobal_y
-                pose.pose.orientation.x = quat[0]
-                pose.pose.orientation.y = quat[1]
-                pose.pose.orientation.z = quat[2]
-                pose.pose.orientation.w = quat[3]
+
+                y_dot = (pose.pose.position.y - self.last_pose.pose.position.y) / self.pose_resolution
+                x_dot = (pose.pose.position.x - self.last_pose.pose.position.x) / self.pose_resolution
+                yaw = math.atan2(y_dot, x_dot)
+                pose.pose.orientation.x = 0.
+                pose.pose.orientation.z = math.sin(yaw / 2.)
+                pose.pose.orientation.y = 0.
+                pose.pose.orientation.w = math.cos(yaw / 2.)
+
+                self.last_pose = pose
                 pit_in_path_msg.poses.append(pose)
+
+            self.msg.poses[0].pose.orientation = self.msg.poses[1].pose.orientation
             self.local_maptrack_inglobal_pub.publish(pit_in_path_msg)
 
         # TODO : Coordinate driving which means that there is no overtaking others. Maximum speed should be handeled in the velocity planner side as well.
@@ -704,7 +712,7 @@ class GraphBasedPlanner(rclpy.node.Node):
                     self.traj_set = self.ltpl_obj.calc_vel_profile(pos_est=self.pos_est,
                                                                 vel_est=self.vel_est,
                                                                 safety_d = self.safe_dist)[0]
-                elif in_track_flg is True and sel_action_prev is "not init":
+                elif in_track_flg is True and sel_action_prev == "not init":
                     self.out_of_track_graph = self.ltpl_obj.set_startpos(pos_est=self.pos_est,
                                    heading_est=self.heading_est)
                     return
@@ -790,7 +798,7 @@ class GraphBasedPlanner(rclpy.node.Node):
                     self.traj_set = self.ltpl_obj.calc_vel_profile(pos_est=self.pos_est,
                                                                 vel_est=self.vel_est,
                                                                 safety_d = self.safe_dist)[0]
-                elif in_track_flg is True and sel_action_prev is "not init":
+                elif in_track_flg is True and sel_action_prev == "not init":
                     self.out_of_track_graph = self.ltpl_obj.set_startpos(pos_est=self.pos_est,
                                    heading_est=self.heading_est)
                     return
