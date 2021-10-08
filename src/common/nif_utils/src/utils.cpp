@@ -8,33 +8,33 @@
 #include "nif_utils/utils.h"
 #include <math.h>
 
-  /**
-   * Time in seconds
-  **/
-  double nif::common::utils::time::secs(rclcpp::Time t) {
-    return static_cast<double>(t.nanoseconds()) * 1e-9;
-  }
-  
-  /**
-   * Duration in seconds
-  **/
-  double nif::common::utils::time::secs(rclcpp::Duration t) {
-    return static_cast<double>(t.nanoseconds()) * 1e-9;
-  }
+/**
+ * Time in seconds
+ **/
+double nif::common::utils::time::secs(rclcpp::Time t) {
+  return static_cast<double>(t.nanoseconds()) * 1e-9;
+}
+
+/**
+ * Duration in seconds
+ **/
+double nif::common::utils::time::secs(rclcpp::Duration t) {
+  return static_cast<double>(t.nanoseconds()) * 1e-9;
+}
 
 double nif::common::utils::geometry::calEuclideanDistance(
-    const geometry_msgs::msg::Point& a, const geometry_msgs::msg::Point& b) {
+    const geometry_msgs::msg::Point &a, const geometry_msgs::msg::Point &b) {
   return sqrt(pow((a.x - b.x), 2) + pow((a.y - b.y), 2) + pow((a.z - b.z), 2));
 }
 
 double nif::common::utils::geometry::calEuclideanDistance(
-    const geometry_msgs::msg::Pose& a, const geometry_msgs::msg::Pose& b) {
+    const geometry_msgs::msg::Pose &a, const geometry_msgs::msg::Pose &b) {
   return calEuclideanDistance(a.position, b.position);
 }
 
 double nif::common::utils::geometry::calEuclideanDistance(
-    const geometry_msgs::msg::PoseStamped& a,
-    const geometry_msgs::msg::PoseStamped& b) {
+    const geometry_msgs::msg::PoseStamped &a,
+    const geometry_msgs::msg::PoseStamped &b) {
   return calEuclideanDistance(a.pose, b.pose);
 }
 
@@ -47,7 +47,7 @@ double nif::common::utils::geometry::kph2mph(const double kph) {
 }
 
 inline double nif::common::utils::coordination::quat2yaw(
-    geometry_msgs::msg::Quaternion& data) {
+    geometry_msgs::msg::Quaternion &data) {
   return atan2(2 * (data.w * data.z + data.x * data.y),
                1 - 2 * (data.y * data.y + data.z * data.z));
 }
@@ -63,15 +63,17 @@ inline double nif::common::utils::coordination::angle_wrap(double diff) {
 
 geometry_msgs::msg::PoseStamped
 nif::common::utils::coordination::getPtBodytoGlobal(
-    nav_msgs::msg::Odometry& current_pose_,
-    geometry_msgs::msg::PoseStamped& point_in_body_) {
+    nav_msgs::msg::Odometry &current_pose_,
+    geometry_msgs::msg::PoseStamped &point_in_body_) {
   double current_yaw_rad = nif::common::utils::coordination::quat2yaw(
       current_pose_.pose.pose.orientation);
   geometry_msgs::msg::PoseStamped point_in_global;
-  point_in_global.pose.position.x = current_pose_.pose.pose.position.x +
+  point_in_global.pose.position.x =
+      current_pose_.pose.pose.position.x +
       point_in_body_.pose.position.x * cos(current_yaw_rad) -
       point_in_body_.pose.position.y * sin(current_yaw_rad);
-  point_in_global.pose.position.y = current_pose_.pose.pose.position.y +
+  point_in_global.pose.position.y =
+      current_pose_.pose.pose.position.y +
       point_in_body_.pose.position.x * sin(current_yaw_rad) +
       point_in_body_.pose.position.y * cos(current_yaw_rad);
   point_in_global.pose.position.z =
@@ -81,23 +83,21 @@ nif::common::utils::coordination::getPtBodytoGlobal(
 
 geometry_msgs::msg::PoseStamped
 nif::common::utils::coordination::getPtGlobaltoBody(
-    nav_msgs::msg::Odometry& current_pose_,
-    geometry_msgs::msg::PoseStamped& point_in_global_) {
+    nav_msgs::msg::Odometry &current_pose_,
+    geometry_msgs::msg::PoseStamped &point_in_global_) {
   double current_yaw_rad = nif::common::utils::coordination::quat2yaw(
       current_pose_.pose.pose.orientation);
   geometry_msgs::msg::PoseStamped point_in_body;
-  point_in_body.pose.position.x = cos(-1 * current_yaw_rad) *
-          (point_in_global_.pose.position.x -
-           current_pose_.pose.pose.position.x) -
-      sin(-1 * current_yaw_rad) *
-          (point_in_global_.pose.position.y -
-           current_pose_.pose.pose.position.y);
-  point_in_body.pose.position.y = sin(-1 * current_yaw_rad) *
-          (point_in_global_.pose.position.x -
-           current_pose_.pose.pose.position.x) +
-      cos(-1 * current_yaw_rad) *
-          (point_in_global_.pose.position.y -
-           current_pose_.pose.pose.position.y);
+  point_in_body.pose.position.x =
+      cos(-1 * current_yaw_rad) * (point_in_global_.pose.position.x -
+                                   current_pose_.pose.pose.position.x) -
+      sin(-1 * current_yaw_rad) * (point_in_global_.pose.position.y -
+                                   current_pose_.pose.pose.position.y);
+  point_in_body.pose.position.y =
+      sin(-1 * current_yaw_rad) * (point_in_global_.pose.position.x -
+                                   current_pose_.pose.pose.position.x) +
+      cos(-1 * current_yaw_rad) * (point_in_global_.pose.position.y -
+                                   current_pose_.pose.pose.position.y);
   point_in_body.pose.position.z =
       point_in_global_.pose.position.z - current_pose_.pose.pose.position.z;
   return point_in_body;
