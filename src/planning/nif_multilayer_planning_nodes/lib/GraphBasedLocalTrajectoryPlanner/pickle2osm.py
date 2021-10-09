@@ -21,6 +21,8 @@ import logging
 # # print(sys.path)
 # import .
 import graph_ltpl
+import trajectory_planning_helpers as tph
+
 
 
 HEADER = '''\
@@ -86,14 +88,14 @@ def parse_configs():
     parser.add_argument('--set_topic', type=str, default="/novatel_bottom/bestpos",
                         help='check headers name')
 
-    lon_0, lat_0 = -86.235148, 39.809786  #indy
-    # lon_0, lat_0 = -86.3418060783425, 39.8125900071711  #Lucas Oil Racing
+    # lon_0, lat_0 = -86.235148, 39.809786  #indy
+    lon_0, lat_0 = -86.3418060783425, 39.8125900071711  #Lucas Oil Racing
     
     nedPoints = []
 
     configs = edict(vars(parser.parse_args()))
 
-    root_path = './pickle_files/IMS' 
+    root_path = './pickle_files/LOR' 
     input_name = configs.filename
     file_name = os.path.join(root_path, input_name)
     osm_file_name = file_name[:-4] + "osm" 
@@ -120,53 +122,99 @@ def parse_configs():
 
     # print(graph_base.get_edges())
     print(graph_base)
+    # tic = time.time()
+    rmv_cnt = 0
+    edge_cnt = 0
     nodes = graph_base.get_nodes()
-    for i, node in enumerate(nodes):
-        # get children and parents of node
-        pos, _, raceline, children, parents = graph_base.get_node_info(layer=node[0],
-                                                                node_number=node[1],
-                                                                return_child=True,
-                                                                return_parent=True)
-        # print(pos)
-        # print(raceline)
-        print(len(graph_base.get_layer_info(node[0])[0]))
 
-        if (node_id == -237278):
-                node_id -= 1
-                continue
+    # way 
+    for i in range(graph_base.num_layers):
+        start_layer = i
+        for s in range(graph_base.nodes_in_layer[start_layer]):
+            pos, psi, raceline, children, _ = graph_base.get_node_info(layer=start_layer,
+                                                                       node_number=s,
+                                                                       return_child=True)
+            # loop over child-nodes
+            for node in children:
+                edge_cnt += 1
 
-        llh = ned2geodetic(pos[0], -pos[1], 0.,lat_0, lon_0, 0.0)
-        lat_buf = llh[0] 
-        lon_buf = llh[1] 
+                end_layer = node[0]
+                e = node[1]
+                spline = graph_base.get_edge(start_layer=start_layer,
+                                             start_node=s,
+                                             end_layer=end_layer,
+                                             end_node=e)[0]
+                x_coeff = np.atleast_2d(spline[0])
+                y_coeff = np.atleast_2d(spline[1])
+                # print(x_coeff, y_coeff)
 
-        height = float(0.)
-        yaw_deg = float(0.) * 180 / math.pi 
-        velocity = float(0.) #km/h
+                spline_sample, inds, t_values, _ = tph.interp_splines.interp_splines(coeffs_x=x_coeff,
+                                                                                     coeffs_y=y_coeff,
+                                                                                     stepsize_approx=1.0,
+                                                                                     incl_last_point=True)
+                # print(spline_sample)
 
-        # print(lat, lon)
-        lat = str(lat_buf)
-        lon = str(lon_buf)
-        alt = str(height) 
-        yaw = str(yaw_deg)
-        speed = str(velocity)
-        # lat = string_values[0]
-        # lon = string_values[1]
-        node = Element('node', id='%d'%node_id, action='modify',lat=lat,lon=lon)
-        tag_alt = Element('tag', k='alt',v=alt)
-        tag_yaw = Element('tag', k='yaw',v=yaw)
-        tag_speed = Element('tag',k='speed',v=speed)
-        node.append(tag_alt)
-        node.append(tag_yaw)
-        node.append(tag_speed)
-        root.append(node)
-        node_id_list.append(node_id)
-        node_id -= 1
+                psi, kappa = tph.calc_head_curv_an.calc_head_curv_an(coeffs_x=x_coeff,
+                                                                     coeffs_y=y_coeff,
+                                                                     ind_spls=inds,
+                                                                     t_spls=t_values)
 
-        pointBuf = [pos[0], pos[1], 0.0, idx]
-        nedPoints.append(pointBuf)
-        # print(pointBuf)
-        idx = idx + 1
-    
+                # print(pos)
+                # print(node[0] , node[1])
+                # print(len(graph_base.get_layer_info(node[0])[0]))
+                node_id_list = []
+                for pos_splined in spline_sample:
+                    if (node_id == -237278):
+                            node_id -= 1
+                            continue
+                    print(pos_splined)
+                    llh = ned2geodetic(pos_splined[0], -pos_splined[1], 0.,lat_0, lon_0, 0.0)
+                    lat_buf = llh[0] 
+                    lon_buf = llh[1] 
+
+                    # print(lat, lon)
+                    lat = str(lat_buf)
+                    lon = str(lon_buf)
+                    
+                    layer_s = str(start_layer)
+                    layer_e = str(end_layer)
+                    start_node = str(s)
+
+                    # lat = string_values[0]
+                    # lon = string_values[1]
+                    node = Element('node', id='%d'%node_id, action='modify',lat=lat,lon=lon)
+                    tag_start_layer = Element('tag', k='start_layer',v=layer_s)
+                    tag_end_layer =   Element('tag', k='end_layer',v=layer_e)
+                    tag_node_number = Element('tag', k='start_node',v=start_node)
+
+                    node.append(tag_start_layer)
+                    node.append(tag_end_layer)
+                    node.append(tag_node_number)
+                    root.append(node)
+                    node_id_list.append(node_id)
+                    node_id -= 1
+
+                    pointBuf = [pos[0], pos[1], 0.0, idx]
+                    nedPoints.append(pointBuf)
+                    # print(pointBuf)
+                    idx = idx + 1
+
+                way = Element('way', id='%d'%way_id, action='modify')
+
+                way_layer_s = str(start_layer)
+                way_layer_e = str(end_layer)
+                way_tag_start_layer = Element('tag', k='start_layer',v=way_layer_s)
+                way_tag_end_layer = Element('tag', k='end_layer',  v=way_layer_e)   
+
+                for node_id_tmp in node_id_list:
+                    nd = Element('nd', ref='%d'%node_id_tmp)
+                    way.append(nd)
+                way.append(way_tag_start_layer)
+                way.append(way_tag_end_layer)                    
+                root.append(way)
+                way_id = way_id + 1
+
+
     indent(root)
     # dump(root)            
     tree = ElementTree(root)
