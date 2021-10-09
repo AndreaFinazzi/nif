@@ -30,7 +30,7 @@ def generate_launch_description():
                     LaunchConfiguration('nif_points_clustering_param_file')
                 ],
                 remappings=[
-                    ("in_lidar_points", "/inverse_mapped_points"), 
+                    ("in_lidar_points", "/luminar_front_points"),
                     ("out_clustered_points", "/clustered_points"), 
                 ]
     )

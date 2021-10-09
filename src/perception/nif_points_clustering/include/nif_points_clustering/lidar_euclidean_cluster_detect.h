@@ -58,13 +58,17 @@ private:
   int m_cluster_size_min;
   int m_cluster_size_max;
   double m_max_cluster_distance;
+  double m_height_filter_thres;
 
-  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubClusterPoints;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr
+          pubClusterPoints;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubSimpleheightMap;
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr
-          subFilteredPoints;
+          subInputPoints;
   rclcpp::TimerBase::SharedPtr sub_timer_;
 
-  pcl::PointCloud<pcl::PointXYZI>::Ptr inPoints;
+  pcl::PointCloud<pcl::PointXYZI>::Ptr m_inPoints;
+  pcl::PointCloud<pcl::PointXYZI>::Ptr m_simpleHeightmapPoints;
   bool bPoints = false;
 
   std::mutex sensor_mtx;
