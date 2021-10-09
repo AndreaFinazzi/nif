@@ -332,7 +332,8 @@ def generate_launch_description():
         os.path.join(
             get_package_share_directory("nif_waypoint_manager_nodes"),
             "config",
-            "svl.yaml",
+            "mission",
+            "lgsvl_new.yaml",   
         ),
     )
 

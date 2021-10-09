@@ -49,6 +49,9 @@ nif::managers::WaypointManagerMissionNode::WaypointManagerMissionNode(
   m_map_track_body_publisher = this->create_publisher<nav_msgs::msg::Path>(
       "wpt_manager/maptrack_path/body", nif::common::constants::QOS_PLANNING);
 
+  this->race_wpt_file_path.insert(0, package_share_directory);
+  this->pit_wpt_file_path.insert(0, package_share_directory);
+
   this->setWaypointManager(std::make_shared<WaypointManagerMission>(
       this->race_wpt_file_path, this->pit_wpt_file_path, this->getBodyFrameId(),
       this->getGlobalFrameId(), this->spline_interval));

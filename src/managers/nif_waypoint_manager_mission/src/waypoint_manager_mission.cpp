@@ -97,7 +97,9 @@ void WaypointManagerMission::calcMapTrack() {
     } else if (m_cur_mission_code.mission_status_code ==
                    m_cur_mission_code.MISSION_PIT_OUT ||
                m_cur_mission_code.mission_status_code ==
-                   m_cur_mission_code.MISSION_PIT_STANDBY) {
+                   m_cur_mission_code.MISSION_PIT_STANDBY ||
+               m_cur_mission_code.mission_status_code ==
+                   m_cur_mission_code.MISSION_PIT_INIT) {
       m_map_track_path_global = m_pit_wpt_manager->getDesiredMapTrackInGlobal();
       m_map_track_path_body = m_pit_wpt_manager->getDesiredMapTrackInBody();
 
