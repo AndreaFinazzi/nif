@@ -134,7 +134,7 @@ private:
   DKGraphPlannerNode();
 
   void SearchGraph(const double &x_in, const double &y_in, int &start_layer_out,
-                   int &end_layer_out, int &node_out);
+                   int &end_layer_out, int &start_node_out, int &end_node_out);
   std::vector<std::pair<std::string, std::vector<double>>> read_csv(std::string filename);
   
   rclcpp::TimerBase::SharedPtr sub_timer_;
@@ -180,7 +180,7 @@ private:
     // int m_closestWayId_goal;
     // int m_closestStartNode;
     // int m_closestGoalNode;
-    std::unordered_map<int, nif_dk_graph_planner_msgs::msg::Way> m_Resister;
+    std::unordered_map<int, std::vector<nif_dk_graph_planner_msgs::msg::Way>> m_WaysResister;
     // // std::unordered_map<int, nif_dk_graph_planner_msgs::msg::Way>
     // m_NextWay;
     // // std::unordered_map<int, nif_dk_graph_planner_msgs::msg::Way>

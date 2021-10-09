@@ -221,11 +221,16 @@ void DKGraphPlannerNode::OsmParcing() {
     m_FullIndexedPoints->points.push_back(current_point);
   }
 
+  for(auto wayRegister : m_OsmParcer.ways) {
+    m_WaysResister[wayRegister.start_layer].push_back(wayRegister);
+  }
+
   RCLCPP_INFO(this->get_logger(),
               "Converting OSM file to the ros system is completed!");
   RCLCPP_INFO(this->get_logger(), "------------------------------------");
   RCLCPP_INFO(this->get_logger(), "node size: %d" , m_OsmParcer.nodes.size());
   RCLCPP_INFO(this->get_logger(), "way size: %d" , m_OsmParcer.ways.size());
+  RCLCPP_INFO(this->get_logger(), "layer size: %d", m_WaysResister.size());
 
   bParcingComplete = true;
 }
@@ -256,8 +261,11 @@ void DKGraphPlannerNode::CallbackOdometry(const nav_msgs::msg::Odometry::SharedP
 {
   double veh_x = msg->pose.pose.position.x;
   double veh_y = msg->pose.pose.position.y;
-  int first_layer, end_layer, start_node;
-  SearchGraph(veh_x, veh_y, first_layer, end_layer, start_node);
+  int first_layer, end_layer, start_node, end_node;
+  SearchGraph(veh_x, veh_y, first_layer, end_layer, start_node, end_node);
+
+  std::cout << first_layer << ", " << end_layer << ", " << start_node << ", " << end_node << std::endl;
+
   //   std::lock_guard<std::mutex> lock(mtx);
   //   m_InitPose = msg.pose.pose;
   //   m_Odometry = msg;
@@ -593,8 +601,7 @@ void DKGraphPlannerNode::MessagePublisher() {
 
 void DKGraphPlannerNode::SearchGraph(const double &x_in, const double &y_in,
                                      int &start_layer_out, int &end_layer_out,
-                                     int &node_out) 
-{
+                                     int &start_node_out, int &end_node_out) {
   if (!bParcingComplete)
     return;
 
@@ -618,7 +625,30 @@ void DKGraphPlannerNode::SearchGraph(const double &x_in, const double &y_in,
       start_layer_out = m_FullIndexedPoints->points[pointIdxNKNSearch[i]].intensity;
     }
   }
-  std::cout << "info : " << start_layer_out << ": " << nearest_x_in_points << ", " << nearest_y_in_points << std::endl;
+  int min_ind = -1;
+  double min_distance = DBL_MAX;
+  int end_layer;
+  int start_node;
+  int end_node;
+  for (auto way : m_WaysResister[start_layer_out])
+  {
+    for(auto node : way.nodes)
+    {
+      double distance = sqrt(pow(node.x - x_in,2) + pow(node.y - y_in,2));
+      if (distance < min_distance)
+      {
+        end_layer = way.end_layer; 
+        start_node = way.start_node; 
+        end_node = way.end_node;
+        min_distance = distance;
+      }
+    }
+  }
+  end_layer_out = end_layer;
+  start_node_out = start_node;
+  end_node_out = end_node;
+
+  // std::cout << "info : " << start_layer_out << ": " << nearest_x_in_points << ", " << nearest_y_in_points << std::endl;
 }
 
 // bool DKGraphPlannerNode::ExistInList(int id, std::vector<int> list)
