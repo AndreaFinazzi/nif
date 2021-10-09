@@ -55,26 +55,25 @@ void WaypointManagerMission::calcMapTrack() {
       m_map_track_path_global = m_pit_wpt_manager->getDesiredMapTrackInGlobal();
       m_map_track_path_body = m_pit_wpt_manager->getDesiredMapTrackInBody();
 
+      // ///////////////////////
       // NOTE : collision check
-      // std::tie(splined_x, splined_y, splined_yaw, cubic_spliner_2D_xy) =
-      //     frenet_path_generator->applyCubicSpliner_2d_ros(m_map_track_path_body,
-      //                                                     1.0);
-      // double cte = -1 * splined_y[0];
-      // double target_vel =
-      //     m_planning_vel_default + m_cur_odom.twist.twist.linear.x; // [m/s]
-
-      // std::tuple<std::shared_ptr<FrenetPath>,
-      //            std::vector<std::shared_ptr<FrenetPath>>>
-      //     frenet_path_generation_result =
-      //         m_frenet_generator->calcOptimalFrenetPathByMode(
-      //             FRENET_GEN_MODE::MULTIPLE_LAT_FPS, cubic_spliner_2D_xy,
-      //             0.0, 0.0, 0.0, m_cur_odom.twist.twist.linear.x, 0.0, 0.0,
-      //             0.0, m_left_side_sampling_width,
-      //             m_right_side_sampling_width, target_vel, 0.0, 0.0,
-      //             m_sampling_width_d, m_planning_t, 0.1);
-
-      // std::vector<std::shared_ptr<FrenetPath>> frenet_paths =
-      //     std::get<1>(frenet_path_generation_result);
+      // ///////////////////////
+      std::tie(splined_x, splined_y, splined_yaw, cubic_spliner_2D_xy) =
+          m_frenet_generator->applyCubicSpliner_2d_ros(m_map_track_path_body,
+                                                       1.0);
+      double cte = -1 * splined_y[0];
+      double target_vel =
+          m_planning_vel_default + m_cur_odom.twist.twist.linear.x; // [m/s]
+      std::tuple<std::shared_ptr<FrenetPath>,
+                 std::vector<std::shared_ptr<FrenetPath>>>
+          frenet_path_generation_result =
+              m_frenet_generator->calcOptimalFrenetPathByMode(
+                  FRENET_GEN_MODE::MULTIPLE_LAT_FPS, cubic_spliner_2D_xy, 0.0,
+                  0.0, 0.0, m_cur_odom.twist.twist.linear.x, 0.0, 0.0, 0.0,
+                  m_left_side_sampling_width, m_right_side_sampling_width,
+                  target_vel, 0.0, 0.0, m_sampling_width_d, m_planning_t, 0.1);
+      std::vector<std::shared_ptr<FrenetPath>> frenet_paths =
+          std::get<1>(frenet_path_generation_result);
 
     } else if (m_cur_mission_code.mission_status_code ==
                m_cur_mission_code.MISSION_STANDBY) {
