@@ -26,6 +26,7 @@
     <exec_depend>nif_velocity_planning_node</exec_depend>
     <exec_depend>nif_control_safety_layer_nodes</exec_depend>
     <exec_depend>nif_lgsvl_simulation</exec_depend>
+    <exec_depend>nif_costmap_generator</exec_depend>
 
     <exec_depend>telemetry</exec_depend>
     <exec_depend>autoware_auto_msgs</exec_depend>

@@ -6,6 +6,8 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
+        - /Grid1
+        - /Path1
         - /Path1/Topic1
         - /Odometry1/Topic1
         - /Odometry1/Shape1
@@ -15,6 +17,7 @@ Panels:
         - /PointCloud22/Autocompute Value Bounds1
         - /PointCloud23/Topic1
         - /PointCloud24/Topic1
+        - /Odometry2
         - /Odometry2/Shape1
         - /PointCloud25/Topic1
         - /Path5/Topic1
@@ -22,13 +25,14 @@ Panels:
         - /Path7
         - /Path7/Topic1
         - /Odometry3/Shape1
+        - /Odometry3/Covariance1
+        - /Odometry3/Covariance1/Position1
         - /Map1/Topic1
         - /Odometry4/Covariance1/Orientation1
         - /Path8
         - /Marker1/Topic1
         - /Path9
         - /PointCloud26/Topic1
-        - /PointCloud27
         - /PointCloud27/Topic1
       Splitter Ratio: 0.4676470458507538
     Tree Height: 658
@@ -463,7 +467,7 @@ Visualization Manager:
           Value: true
         Value: true
       Enabled: true
-      Keep: 100
+      Keep: 2
       Name: Odometry
       Position Tolerance: 0.10000000149011612
       Shape:
@@ -774,7 +778,7 @@ Visualization Manager:
       Enabled: true
       Invert Rainbow: false
       Max Color: 255; 255; 255
-      Max Intensity: 56
+      Max Intensity: 11
       Min Color: 0; 0; 0
       Min Intensity: 0
       Name: PointCloud2
@@ -804,10 +808,10 @@ Visualization Manager:
       Color: 255; 255; 255
       Color Transformer: Intensity
       Decay Time: 0
-      Enabled: true
+      Enabled: false
       Invert Rainbow: false
       Max Color: 255; 255; 255
-      Max Intensity: 1.689453125
+      Max Intensity: 1.99951171875
       Min Color: 0; 0; 0
       Min Intensity: 0
       Name: PointCloud2
@@ -824,7 +828,7 @@ Visualization Manager:
         Value: /merged/lidar
       Use Fixed Frame: true
       Use rainbow: true
-      Value: true
+      Value: false
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -868,25 +872,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/ThirdPersonFollower
-      Distance: 45.59125518798828
+      Distance: 75.71463775634766
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -7.550668716430664
-        Y: -1.2206611633300781
+        X: -2.7671282291412354
+        Y: -1.6790552139282227
         Z: 0
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.7747976183891296
+      Pitch: 1.5347965955734253
       Target Frame: base_link
       Value: ThirdPersonFollower (rviz_default_plugins)
-      Yaw: 2.935397148132324
+      Yaw: 3.135396957397461
     Saved: ~
 Window Geometry:
   Displays:

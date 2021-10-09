@@ -65,7 +65,7 @@ GeoFenceLoader::GeoFenceLoader(const std::string &node_name_)
       "/int/closest_geofence_idx", nif::common::constants::QOS_EGO_ODOMETRY);
 
   subOdometry = this->create_subscription<nav_msgs::msg::Odometry>(
-      "/out_odometry_ekf_estimated", nif::common::constants::QOS_EGO_ODOMETRY,
+      "/in_odometry_ekf_estimated", nif::common::constants::QOS_EGO_ODOMETRY,
       std::bind(&GeoFenceLoader::EKFOdometryCallback, this,
                 std::placeholders::_1));
 

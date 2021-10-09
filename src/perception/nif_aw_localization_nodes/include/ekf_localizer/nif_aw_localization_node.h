@@ -28,6 +28,7 @@
 #include <novatel_oem7_msgs/msg/bestvel.hpp>
 #include <novatel_oem7_msgs/msg/inspva.hpp>
 #include <novatel_oem7_msgs/msg/insstdev.hpp>
+#include <novatel_oem7_msgs/msg/inertial_solution_status.hpp>
 #include <opencv2/opencv.hpp>
 #include <raptor_dbw_msgs/msg/wheel_speed_report.hpp>
 #include <sensor_msgs/msg/imu.hpp>
@@ -57,6 +58,7 @@ struct GPSCorrectionData_t
     double lat_noise;
     double lon_noise;
     double yaw_noise;
+    unsigned int novatel_ins_status;
 };
 
 struct VehPose_t
@@ -254,6 +256,7 @@ private:
 
       rclcpp::Time imu_time_last_update;
   rclcpp::Time bestpos_time_last_update;
+  rclcpp::Time top_bestpos_time_last_update;
   rclcpp::Duration gps_timeout = rclcpp::Duration(1, 0);
 
   enum IDX {

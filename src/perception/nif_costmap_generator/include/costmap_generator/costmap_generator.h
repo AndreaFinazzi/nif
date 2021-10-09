@@ -105,7 +105,9 @@ private:
   bool use_dynamic_trajectories_;
 
   void timer_callback();
-  void sensorPointsCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
+  void wallPointsCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
+  void objectPointsCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
+
   void OdometryCallback(const nav_msgs::msg::Odometry::SharedPtr msg);
   void MessegefilteringCallback(
       const sensor_msgs::msg::PointCloud2::ConstSharedPtr &inner_msg,
@@ -130,9 +132,7 @@ private:
       const std::vector<std::pair<double, double>> &outer_array_in,
       const int &closest_idx, pcl::PointCloud<pcl::PointXYZI>::Ptr &CloudIn,
       pcl::PointCloud<pcl::PointXYZI>::Ptr &CloudOut);
-
-  std::string lidar_frame_;
-  std::string map_frame_;
+      
   double grid_min_value_;
   double grid_max_value_;
   double grid_resolution_;
@@ -152,15 +152,20 @@ private:
 
   int m_closestGeofenceIndex;
   bool bEnablePotential_;
+  double potential_size_;
 
-  std::vector<std::pair<double, double>> m_OuterGeoFence;
+  std::vector<std::pair<double, double>>
+          m_OuterGeoFence;
   std::vector<std::pair<double, double>> m_InnerGeoFence;
   
-  bool bGeoFence;
-  bool bOdometry;
-  bool bPoints;
+  bool bGeoFence = false;
+  bool bOdometry = false;
+  bool bWallPoints = false;
+  bool bObjectPoints = false;
 
-  pcl::PointCloud<pcl::PointXYZI>::Ptr m_in_sensor_points;
+  pcl::PointCloud<pcl::PointXYZI>::Ptr m_in_wall_points;
+  pcl::PointCloud<pcl::PointXYZI>::Ptr m_in_object_points;
+
   pcl::PointCloud<pcl::PointXYZI>::Ptr m_inner_geofence_points;
   pcl::PointCloud<pcl::PointXYZI>::Ptr m_outer_geofence_points;
 
@@ -173,8 +178,9 @@ private:
 
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_points_on_track_;
 
-  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr
-          sub_points_;
+  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_wall_points_;
+  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_object_points_;
+
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr sub_odometry_;
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr sub_closest_geofence_idx_;
   rclcpp::TimerBase::SharedPtr sub_timer_;
@@ -207,23 +213,7 @@ private:
   //   const std::string LASER_2D_COSTMAP_LAYER_;
   const std::string INFLATION_COSTMAP_LAYER_;
   const std::string COMBINED_COSTMAP_LAYER_;
-  //   const std::string LANE_POINTS_COSTMAP_LAYER_;
-  //   const std::string BOUNDING_BOX_COSTMAP_LAYER_;
-  //   const std::string VISUAL_COSTMAP_LAYER_;
 
-  //   void sensorPointsCallback(
-  //       const sensor_msgs::PointCloud2::ConstPtr &in_sensor_points_msg);
-  //   void
-  //   LaserScanCallback(const sensor_msgs::LaserScanConstPtr
-  //   &in_laser_scan_msg); void laneBoundaryCallback(
-  //       const sensor_msgs::PointCloud2::ConstPtr &in_lane_points_msg);
-  //   void OdometryCallback(const nav_msgs::Odometry::ConstPtr &msg);
-  //   void BoundingBoxesCallback(
-  //       const jsk_recognition_msgs::BoundingBoxArray::ConstPtr &in_boxes);
-  //   void VisualCallback(
-  //       const detection_msgs::BoundingBoxArray::ConstPtr &msg);
-
-  //   void LocalWaypointCallback(const nav_msgs::PathConstPtr &msg);
 
   grid_map::GridMap initGridmap();
   void publishRosMsg(grid_map::GridMap *map);
