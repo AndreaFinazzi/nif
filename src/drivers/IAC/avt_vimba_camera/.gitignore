@@ -1,0 +1,43 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+
+# Specific files
+src/VimbaCPP/
+
+# Build objects
+lib/
+bin/
+build/
+docs/
+install/
+log/
+
+# Auto generated code
+cfg/cpp/
+cfg/*.cfgc
+     msg_gen/
+     msg/lisp/
+
+# CMake files
+CMakeCache.txt
+cmake_install.cmake
+CMakeFiles/
+src/*/Makefile
+src/*/cmake_install.cmake
+src/*/CMakeFiles/
+
+# Eclipse temporary files
+.cproject
+.project
+.pydevproject
+
+# ctags
+.tags*
+*/.tags*
+
+# misc
+.vscode
+Vimba_4_1/

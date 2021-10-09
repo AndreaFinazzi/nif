@@ -39,7 +39,7 @@ int32_t main(int32_t argc, char **argv) {
   try {
     RCLCPP_INFO(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
                "Instantiating PointsConcatFilterNode with name: %s",
-               &node_name_1);
+               node_name_1);
     RCLCPP_INFO(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
                 "Instantiating EgoShapeFilterNode with name: %s", &node_name_2);
     RCLCPP_INFO(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
