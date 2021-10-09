@@ -970,7 +970,7 @@ void AWLocalizationNode::measurementUpdatePose(rclcpp::Time measurement_time_,
   }
   int delay_step = std::roundf(delay_time / ekf_dt_);
   if (delay_step > extend_state_step_ - 1) {
-    RCLCPP_WARN(this->get_logger(), 
+    RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 10000,
                 "Pose delay exceeds the compensation limit, ignored. delay: %f[s], "
                 " limit= extend_state_step * ekf_dt : %f [s]", delay_time, extend_state_step_* ekf_dt_);
     return;
@@ -997,7 +997,7 @@ void AWLocalizationNode::measurementUpdatePose(rclcpp::Time measurement_time_,
 
 
   if (isnan(y.array()).any() || isinf(y.array()).any()) {
-    RCLCPP_WARN(this->get_logger(), "[EKF] pose measurement matrix includes NaN of Inf. ignore update. check pose message.");    
+    RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 10000, "[EKF] pose measurement matrix includes NaN of Inf. ignore update. check pose message.");    
     return;
   }
 
@@ -1145,7 +1145,7 @@ void AWLocalizationNode::measurementUpdateTwist(rclcpp::Time measurement_time_,
   }
   int delay_step = std::roundf(delay_time / ekf_dt_);
   if (delay_step > extend_state_step_ - 1) {
-    RCLCPP_WARN(this->get_logger(), 
+    RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 10000,
                 "Twist delay exceeds the compensation limit, ignored. delay: "
                 "%f[s], limit = "
                 "extend_state_step * ekf_dt : %f [s]",
@@ -1228,9 +1228,9 @@ bool AWLocalizationNode::mahalanobisGate(const double& dist_max, const Eigen::Ma
 
   if (mahalanobis_squared(0) > dist_max * dist_max)
   {
-    RCLCPP_WARN(this->get_logger(), "speed : %f, yaw_rate : %f", m_dVelolcity_X,
+    RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 10000, "speed : %f, yaw_rate : %f", m_dVelolcity_X,
                 m_dIMU_yaw_rate);
-    RCLCPP_WARN(this->get_logger(),
+    RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 10000,
                 "[EKF] Pose measurement update, mahalanobis distance is over "
                 "limit.ignore measurement data.");
     return false;
@@ -1411,7 +1411,7 @@ bool AWLocalizationNode::GPSIgnoreGate(
   RCLCPP_INFO(this->get_logger(), "x_delta = %f, y_delta = %f", x_delta, y_delta);
 
   if (x_delta < 0. && atan(fabs(y_delta / x_delta)) > 0.2479) {
-    RCLCPP_WARN(this->get_logger(), "Non-holonomic model cannot move like this");
+    RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 10000, "Non-holonomic model cannot move like this");
     return false;
   }
 
