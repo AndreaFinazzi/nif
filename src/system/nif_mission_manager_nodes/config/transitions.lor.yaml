@@ -1,7 +1,7 @@
 # Misison codes are specified in nif_msgs/msg/MissionStatus.msg
 # Velocities are expressed in meter per seconds [m/s]
 # Listed conditions must have an 'active' flag. If false, the condition is ignored.
-# fallback_mission_code is used in case pf rejection
+# fallback_mission_code is used in case  pf rejection
 missions:
   - mission_code: 0 # MISSION_RACE
     active: true
@@ -76,7 +76,7 @@ missions:
           - -35.0 # x_max
           - -15.0 # y_max
     activation_velocity:
-      active: true
+      active: false
       range_mps:
         - 0.000 # min m/s
         - 0.001 # max m/s
@@ -85,6 +85,7 @@ missions:
       from:
         - 60    # MISSION_PIT_IN
         - 65    # MISSION_PIT_STANDBY
+        - 70    # MISSION_PIT_OUT (Enables pit in from PIT_INIT)
         - 65000 # MISSION_PIT_INIT
     timeout:
       active: false # ignored
@@ -135,6 +136,7 @@ missions:
         - 70 # MISSION_PIT_OUT
         - 75 # MISSION_PIT_TO_TRACK
         - 65000 # MISSION_PIT_INIT
+
     timeout:
       active: false # ignored
       duration_ms: 0

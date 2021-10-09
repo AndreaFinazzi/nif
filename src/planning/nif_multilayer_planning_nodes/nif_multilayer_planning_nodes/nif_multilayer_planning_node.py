@@ -454,11 +454,11 @@ class GraphBasedPlanner(rclpy.node.Node):
 
         # self.on_track_msg.data = self.ltpl_obj.check_out_of_track()
         # self.pub_on_track.publish(self.on_track_msg)
-        self.obj_list_ = [{'X': 0.0, 'Y': 0.0, 'theta': np.pi, 'type': 'physical',
-                         'id': 1, 'length': 1.0, 'width': 1.0, 'v': 0.0}, 
-                         {'X': -965.0, 'Y': 520.9, 'theta': np.pi, 'type': 'physical',
-                         'id': 2, 'length': 2.0, 'width': 2.0, 'v': 0.0}]
-        # self.obj_list_ = []
+        # self.obj_list_ = [{'X': 0.0, 'Y': 0.0, 'theta': np.pi, 'type': 'physical',
+        #                  'id': 1, 'length': 1.0, 'width': 1.0, 'v': 0.0}, 
+        #                  {'X': -965.0, 'Y': 520.9, 'theta': np.pi, 'type': 'physical',
+        #                  'id': 2, 'length': 2.0, 'width': 2.0, 'v': 0.0}]
+        self.obj_list_ = []
         # planning_graph != self.odom_first_call
 
         if self.mission_code == MissionStatus.MISSION_PIT_IN:

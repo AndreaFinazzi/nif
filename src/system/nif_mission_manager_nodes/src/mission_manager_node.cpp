@@ -151,12 +151,7 @@ MissionStatus::_mission_status_code_type MissionManagerNode::getMissionStatusCod
                 is_system_startup = false;
                 return MissionStatus::MISSION_STANDBY;
 
-            // } else if ( this->missionIs(MissionStatus::MISSION_STANDBY) ||
-                        // this->missionIs(MissionStatus::MISSION_PIT_STANDBY)) {
-                // return this->mission_status_msg.mission_status_code;
-
             } else {
-                // return MissionStatus::MISSION_STANDBY;
                 return this->mission_status_msg.mission_status_code; // ignore orange flag after startup
             }
             break;
@@ -211,36 +206,25 @@ MissionStatus::_mission_status_code_type MissionManagerNode::getMissionVehFlagNu
 
                 }     
                 return MissionStatus::MISSION_PIT_INIT;
-                // return MissionStatus::MISSION_COMMANDED_STOP;
             }
             break;
 
         case RCFlagSummary::TRACK_FLAG_ORANGE:
             if (is_system_startup && this->missionIs(MissionStatus::MISSION_DEFAULT))
             {
-                is_system_startup = false;
+                // is_system_startup = false;
                 return MissionStatus::MISSION_PIT_INIT;
             } 
             else if (this->missionIs(MissionStatus::MISSION_PIT_INIT)) {
                 is_system_startup = false;
-                return MissionStatus::MISSION_PIT_STANDBY;
+                return this->mission_status_msg.mission_status_code;
 
             } 
             else if (this->missionIs(MissionStatus::MISSION_INIT)) {
                 is_system_startup = false;
                 return MissionStatus::MISSION_STANDBY;
 
-            // } else if ( this->missionIs(MissionStatus::MISSION_STANDBY) ||
-            //             this->missionIs(MissionStatus::MISSION_PIT_STANDBY)) {
-            //     return this->mission_status_msg.mission_status_code;
-
-            } else {
-                return MissionStatus::MISSION_STANDBY;
             }
-            // }
-            //  else {
-                // return MissionStatus::MISSION_STANDBY;
-            // }
             return this->mission_status_msg.mission_status_code;
             break;
 
