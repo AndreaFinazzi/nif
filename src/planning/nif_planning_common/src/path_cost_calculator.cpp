@@ -13,6 +13,17 @@ costCalculator::costCalculator(double weight_collision_,
       m_weight_ref{weight_ref_},
       m_weight_transient{weight_transient_} {
   m_calc_path_first_called = false;
+  m_occupancy_map_first_called = false;
+}
+
+void costCalculator::setReferencePath(const nav_msgs::msg::Path& ref_path) {
+  m_ref_x_vec.clear();
+  m_ref_y_vec.clear();
+  m_ref_path = ref_path;
+  for(int i = 0; i < ref_path.poses.size(); i++) {
+    m_ref_x_vec.push_back(ref_path.poses[i].pose.position.x);
+    m_ref_y_vec.push_back(ref_path.poses[i].pose.position.y);
+  }
 }
 
 void costCalculator::calcPathCost() {
@@ -39,23 +50,62 @@ void costCalculator::calcPathCost() {
     }
     double last_pt_x = m_path_cadidates_ptr_vec[i]->points_x()[m_path_cadidates_ptr_vec[i]->points_x().size()-1];
     double last_pt_y = m_path_cadidates_ptr_vec[i]->points_x()[m_path_cadidates_ptr_vec[i]->points_x().size()-1];
-    m_cost_ref_vec[i] = this->calculateProjDist(last_pt_x,last_pt_y, m_ref_x_vec, m_ref_y_vec);
     m_cost_curvature_vec[i] = pow(atan2(last_pt_y, last_pt_x), 2);
 
     if(!m_calc_path_first_called) {
       m_cost_transient_vec[i] = 0.0;
+      m_prev_path_lat_displacement = 0.0;
+      m_cur_path_lat_displacement = m_prev_path_lat_displacement;
+      m_cost_ref_vec[i] = this->calculateProjDist(last_pt_x,last_pt_y, m_ref_x_vec, m_ref_y_vec);
     } else {
-
+      m_cur_path_lat_displacement = this->calculateSignedProjDist(last_pt_x,last_pt_y,m_ref_x_vec,m_ref_y_vec);
+      double transient_cost = pow(m_cur_path_lat_displacement - m_prev_path_lat_displacement,2);
+      m_cost_transient_vec[i] = transient_cost;
+      m_cost_ref_vec[i] = abs(m_cur_path_lat_displacement);
     }
-
   }
-
-
   m_calc_path_first_called = true;
+
+  auto max_cost_collision = *max_element(std::begin(m_cost_collision_vec), std::end(m_cost_collision_vec));
+  auto max_cost_curvature = *max_element(std::begin(m_cost_curvature_vec), std::end(m_cost_curvature_vec));
+  auto max_cost_origin = *max_element(std::begin(m_cost_origin_vec), std::end(m_cost_origin_vec));
+  auto max_cost_ref = *max_element(std::begin(m_cost_ref_vec), std::end(m_cost_ref_vec));
+  auto max_cost_transient = *max_element(std::begin(m_cost_transient_vec), std::end(m_cost_transient_vec));
+
+  // normalization
+  if(max_cost_collision < 1.0)
+    max_cost_collision = 1.0;
+  if(max_cost_curvature < 1.0)
+    max_cost_curvature = 1.0;
+  if(max_cost_origin < 1.0)
+    max_cost_origin = 1.0;
+  if(max_cost_ref < 1.0)
+    max_cost_ref = 1.0;
+  if(max_cost_transient < 1.0)
+    max_cost_transient = 1.0;
+
+  m_cost_total_vec.clear();
+  for(int i = 0; i < m_path_cadidates_ptr_vec.size(); i++){
+    double total_cost = m_weight_collision * m_cost_collision_vec[i] / max_cost_collision +
+                        m_weight_ref * m_cost_ref_vec[i] / max_cost_ref +
+                        m_weight_origin * m_cost_origin_vec[i] / max_cost_origin +
+                        m_weight_curvature * m_cost_curvature_vec[i] / max_cost_curvature +
+                        m_weight_transient * m_cost_transient_vec[i] / max_cost_transient;
+    m_cost_total_vec.push_back(total_cost);
+  }
+  int min_cost_frenet_path_idx = std::min_element(m_cost_total_vec.begin(),m_cost_total_vec.end()) - m_cost_total_vec.begin();;
+  if(m_cost_total_vec.size() == 0){
+    m_last_min_cost_path = NULL;
+  }else{
+    m_last_min_cost_path = m_path_cadidates_ptr_vec[min_cost_frenet_path_idx];
+  }
 }
 
 double costCalculator::mapCorrespondingCost(double pt_x, double pt_y) {
   //  TODO : cost map health check
+  if(!m_occupancy_map_first_called){
+    return 0;
+  }
   int pt_in_grid_x = (pt_x) / m_OccupancyGrid.info.resolution - m_OccupancyGrid.info.origin.position.x / m_OccupancyGrid.info.resolution + 1;
   int pt_in_grid_y = (pt_y) / m_OccupancyGrid.info.resolution - m_OccupancyGrid.info.origin.position.y / m_OccupancyGrid.info.resolution + 1;
   double cost;
@@ -75,16 +125,22 @@ void costCalculator::setFrenetPathArray(vector<shared_ptr<Frenet::FrenetPath>> &
   m_cost_origin_vec.clear();
   m_cost_ref_vec.clear();
   m_cost_transient_vec.clear();
-  m_cost_collision_vec.resize(m_path_cadidates_ptr_vec.size(), 0.0);
-  m_cost_curvature_vec.resize(m_path_cadidates_ptr_vec.size(), 0.0);
-  m_cost_origin_vec.resize(m_path_cadidates_ptr_vec.size(), 0.0);
-  m_cost_ref_vec.resize(m_path_cadidates_ptr_vec.size(), 0.0);
-  m_cost_transient_vec.resize(m_path_cadidates_ptr_vec.size(), 0.0);
+  m_cost_total_vec.clear();
+  int vec_size = m_path_cadidates_ptr_vec.size();
+  m_cost_collision_vec.resize(vec_size, 0.0);
+  m_cost_curvature_vec.resize(vec_size, 0.0);
+  m_cost_origin_vec.resize(vec_size, 0.0);
+  m_cost_ref_vec.resize(vec_size, 0.0);
+  m_cost_transient_vec.resize(vec_size, 0.0);
+  m_cost_total_vec.resize(vec_size, 0.0);
   this->calcPathCost();
 }
 
 void costCalculator::setOccupancyMap(const nav_msgs::msg::OccupancyGrid &occupancy_map) {
   m_OccupancyGrid = occupancy_map;
+
+//  TODO : last update time check
+  m_occupancy_map_first_called = true;
 }
 
 double costCalculator::calculateProjDist(double pt_x_, double pt_y_, vector<double> x_vec, vector<double> y_vec) {
@@ -124,7 +180,7 @@ double costCalculator::calculateProjDist(double pt_x_, double pt_y_, vector<doub
 
   return min_distance;
 }
-double costCalculator::CalculateSignedProjDist(double pt_x_, double pt_y_,
+double costCalculator::calculateSignedProjDist(double pt_x_, double pt_y_,
                                                vector<double> x_vec, vector<double> y_vec)
 {
   bool first_node = true;
