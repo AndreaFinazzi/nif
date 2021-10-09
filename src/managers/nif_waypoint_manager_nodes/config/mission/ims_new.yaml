@@ -1,0 +1,8 @@
+/**:
+  ros__parameters:
+    race_wpt_path:
+       - 'maps/IMS_center_line.csv'
+    pit_wpt_path:
+       - 'maps/IMS_center_line.csv'
+    spline_interval: 1.0 # in [m]
+    maptrack_size: 200 # in index level
