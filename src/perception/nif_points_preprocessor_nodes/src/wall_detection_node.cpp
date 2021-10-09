@@ -157,7 +157,7 @@ void WallDetectionNode::timer_callback() {
   bool left_wall_detected = false;
   bool right_wall_detected = false;
 
-  RCLCPP_INFO(this->get_logger(), "1");
+  RCLCPP_DEBUG(this->get_logger(), "1");
 
   if (bInverseLeftPoints) {
     /* Wall-clustering FILTER
@@ -166,11 +166,11 @@ void WallDetectionNode::timer_callback() {
       - output : distance to the wall, filtered left wall points
     */
     // left wall detection
-    RCLCPP_INFO(this->get_logger(), "a");
+    RCLCPP_DEBUG(this->get_logger(), "a");
 
     wall_detect_with_clustering(m_InverseLeftPoints, CloudLeftWallPoints,
                        m_max_cluster_distance);
-    RCLCPP_INFO(this->get_logger(), "b");
+    RCLCPP_DEBUG(this->get_logger(), "b");
     inner_bound_distance = 0;
     outer_bound_distance = 0;
     // detected left_wall_plane_coeff coefficients
@@ -193,7 +193,7 @@ void WallDetectionNode::timer_callback() {
     pub_inner_wall_distance->publish(inner_bound_distance_msg);
     prev_inner_bound_distance = inner_bound_distance;
   }
-  RCLCPP_INFO(this->get_logger(), "2");
+  RCLCPP_DEBUG(this->get_logger(), "2");
 
   if (bInverseRightPoints)
   {
@@ -204,10 +204,10 @@ void WallDetectionNode::timer_callback() {
       - output : distance to the wall, ransac filtered right wall points
     */
     // right wall detection
-    RCLCPP_INFO(this->get_logger(), "a");
+    RCLCPP_DEBUG(this->get_logger(), "a");
     wall_detect_with_clustering(m_InverseRightPoints, CloudRightWallPoints,
                                 m_max_cluster_distance);
-    RCLCPP_INFO(this->get_logger(), "b");
+    RCLCPP_DEBUG(this->get_logger(), "b");
 
     // detected right_wall_plane_coeff coefficients
     if (!CloudRightWallPoints->points.empty()) {
@@ -233,7 +233,7 @@ void WallDetectionNode::timer_callback() {
 
     prev_outer_bound_distance = outer_bound_distance;
   }
-  RCLCPP_INFO(this->get_logger(), "3");
+  RCLCPP_DEBUG(this->get_logger(), "3");
 
   /* BOTH OF RANSAC-FILTERED POINTS PUBLISHER
   1. Publish ransac filtered both of wall points
@@ -251,7 +251,7 @@ void WallDetectionNode::timer_callback() {
   cloud_both_ransac_filtered_msg.header.stamp = this->now();
   pub_both_ransac_filtered_points->publish(cloud_both_ransac_filtered_msg);
 
-  RCLCPP_INFO(this->get_logger(), "4");
+  RCLCPP_DEBUG(this->get_logger(), "4");
   /* CUBIC SPLINER & WALL PATH PUBLISHER
   1. Publish left/right wall detected path on the BASE_LINK frame
     - input : left/right ransac-filtered points
@@ -276,7 +276,7 @@ void WallDetectionNode::timer_callback() {
                rear_upper_distance_, right_path_msg, RightPolyCoefficient);
   pub_right_wall_line->publish(right_path_msg);
 
-  RCLCPP_INFO(this->get_logger(), "5");
+  RCLCPP_DEBUG(this->get_logger(), "5");
   /* WALL CURVATURE BASED CONTROLLER
   1. Left/Right wall based lateral control output
   2. Estimated curvature / predictive path based on the kinematic model
@@ -330,7 +330,7 @@ void WallDetectionNode::timer_callback() {
   }
   pub_wall_following_path->publish(final_wall_following_path_msg);
 
-  RCLCPP_INFO(this->get_logger(), "6");
+  RCLCPP_DEBUG(this->get_logger(), "6");
   /* KIN-CONTROLLER 
   1. Calculate Control output using KinController
   2. Calculate predictive path from the vehicle
@@ -549,7 +549,7 @@ void WallDetectionNode::wall_detect_with_clustering(
     pcl::PointCloud<pcl::PointXYZI>::Ptr out_cloud_ptr,
     double in_max_cluster_distance) {
 
-  RCLCPP_INFO(this->get_logger(), "x");
+  RCLCPP_DEBUG(this->get_logger(), "x");
 
   std::lock_guard<std::mutex> right_lock(mtx_right);
   std::lock_guard<std::mutex> left_lock(mtx_left);
@@ -574,31 +574,31 @@ void WallDetectionNode::wall_detect_with_clustering(
     tmp_y[i] = tmp_point.y;
     tmp_z[i] = tmp_point.z;
   }
-  RCLCPP_INFO(this->get_logger(), "y");
+  RCLCPP_DEBUG(this->get_logger(), "y");
 
   GpuEuclideanCluster gecl_cluster;
-  RCLCPP_INFO(this->get_logger(), "y1");
+  RCLCPP_DEBUG(this->get_logger(), "y1");
   gecl_cluster.setInputPoints(tmp_x, tmp_y, tmp_z, size);
-  RCLCPP_INFO(this->get_logger(), "y2");
+  RCLCPP_DEBUG(this->get_logger(), "y2");
   gecl_cluster.setThreshold(in_max_cluster_distance);
-  RCLCPP_INFO(this->get_logger(), "y3");
+  RCLCPP_DEBUG(this->get_logger(), "y3");
 
   gecl_cluster.setMinClusterPts(m_cluster_size_min);
-  RCLCPP_INFO(this->get_logger(), "y4");
+  RCLCPP_DEBUG(this->get_logger(), "y4");
 
   gecl_cluster.setMaxClusterPts(m_cluster_size_max);
-  RCLCPP_INFO(this->get_logger(), "y5");
+  RCLCPP_DEBUG(this->get_logger(), "y5");
 
   gecl_cluster.extractClusters();
-  RCLCPP_INFO(this->get_logger(), "y6");
+  RCLCPP_DEBUG(this->get_logger(), "y6");
 
   std::vector<GpuEuclideanCluster::GClusterIndex> cluster_indices =
       gecl_cluster.getOutput();
-  RCLCPP_INFO(this->get_logger(), "y7");
+  RCLCPP_DEBUG(this->get_logger(), "y7");
 
   unsigned int k = 0;
   double max_length = 0;
-  RCLCPP_INFO(this->get_logger(), "z");
+  RCLCPP_DEBUG(this->get_logger(), "z");
   pcl::PointCloud<pcl::PointXYZI>::Ptr FinalPoints(new pcl::PointCloud<pcl::PointXYZI>);
   for (auto it = cluster_indices.begin(); it != cluster_indices.end(); it++) {
     pcl::PointCloud<pcl::PointXYZI>::Ptr bufPoints(
@@ -616,7 +616,7 @@ void WallDetectionNode::wall_detect_with_clustering(
   }
   *out_cloud_ptr  =  *FinalPoints;
   
-  RCLCPP_INFO(this->get_logger(), "w");
+  RCLCPP_DEBUG(this->get_logger(), "w");
 
   // std::cout << "working" << std::endl;
 
@@ -624,7 +624,7 @@ void WallDetectionNode::wall_detect_with_clustering(
   free(tmp_y);
   free(tmp_z);
 
-  RCLCPP_INFO(this->get_logger(), "o");
+  RCLCPP_DEBUG(this->get_logger(), "o");
 
 #endif
   // return clusters;

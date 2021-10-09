@@ -417,7 +417,7 @@ def generate_launch_description():
         nif_localization_launch,
         nif_wall_node_launch_bg,
         robot_description_launch,
-        nif_multilayer_planning_node,
+        # nif_multilayer_planning_node,
         nif_velocity_planning_node,
         nif_joint_lqr_control_node,
         nif_accel_control_node,

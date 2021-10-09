@@ -78,10 +78,10 @@ namespace system {
             {
                 if (!this->active) return true;
 
-                bool is_valid = this->active;
+                bool is_valid = false;
                 for (auto &&bbox : bounding_boxes)
                 {
-                    is_valid = is_valid && bbox.isValid(
+                    is_valid = is_valid || bbox.isValid(
                         current_mission, next_mission, ego_odom, ego_velocity_mps);
                 }
                 return is_valid;
