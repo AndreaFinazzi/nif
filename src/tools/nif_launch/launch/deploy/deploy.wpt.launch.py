@@ -313,20 +313,6 @@ def generate_launch_description():
         )
     )
 
-    nif_multilayer_planning_node = Node(
-        package='nif_multilayer_planning_nodes',
-        executable='nif_multilayer_planning_nodes_exe',
-        output={
-            'stdout': 'screen',
-            'stderr': 'screen',
-        },
-        remappings={
-            ('out_local_maptrack_inglobal', '/planning/graph/path_global'),
-            ('in_ego_odometry', '/aw_localization/ekf/odom'),
-            ('in_system_status', '/system/status')
-        }
-    )
-
 ### NIF WAYPOINT MANAGER #############################
 
     wpt_config_file_lor = (
@@ -341,7 +327,8 @@ def generate_launch_description():
         os.path.join(
             get_package_share_directory("nif_waypoint_manager_nodes"),
             "config",
-            "ims.yaml",
+            "mission",
+            "ims_new.yaml", 
         ),
     )
 
@@ -376,6 +363,20 @@ def generate_launch_description():
 
 ### NIF WAYPOINT MANAGER END #############################
 
+    nif_multilayer_planning_node = Node(
+        package='nif_multilayer_planning_nodes',
+        executable='nif_multilayer_planning_nodes_exe',
+        output={
+            'stdout': 'screen',
+            'stderr': 'screen',
+        },
+        remappings={
+            ('out_local_maptrack_inglobal', '/planning/graph/path_global'),
+            ('in_ego_odometry', '/aw_localization/ekf/odom'),
+            ('in_system_status', '/system/status')
+        }
+    )
+
     nif_mission_manager_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             get_share_file("nif_mission_manager_nodes", 'launch/deploy.launch.py')
@@ -388,14 +389,20 @@ def generate_launch_description():
         )
     )
 
+    nif_costmap = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            get_share_file("nif_costmap_generator", 'launch/deploy.launch.py')
+        )
+    )
+
 ### NIF MULTILAYER PLANNER END #############################
 
     return LaunchDescription([
         ssc_interface_param,
         nif_global_param,
         nif_csl_param,
-        nif_joint_lqr_param,
         nif_wpt_param,
+        nif_joint_lqr_param,
 
         ssc_interface,
         socketcan_receiver_launch,
@@ -415,7 +422,7 @@ def generate_launch_description():
         nif_joint_lqr_control_node,
         nif_accel_control_node,
         nif_mission_manager_launch,
-        nif_points_clustering,
-
         nif_waypoint_manager_node,
+        nif_points_clustering,
+        nif_costmap,
 ])
