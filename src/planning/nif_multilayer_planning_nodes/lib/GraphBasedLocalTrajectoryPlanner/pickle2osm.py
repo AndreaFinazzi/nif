@@ -203,14 +203,21 @@ def parse_configs():
 
                 way_layer_s = str(start_layer)
                 way_layer_e = str(end_layer)
+                node_s = str(s)
+                node_e = str(e)                
                 way_tag_start_layer = Element('tag', k='start_layer',v=way_layer_s)
                 way_tag_end_layer = Element('tag', k='end_layer',  v=way_layer_e)   
+                way_tag_node_s = Element('tag', k='start_node',v=node_s)
+                way_tag_node_e = Element('tag', k='end_node',  v=node_e)   
 
                 for node_id_tmp in node_id_list:
                     nd = Element('nd', ref='%d'%node_id_tmp)
                     way.append(nd)
                 way.append(way_tag_start_layer)
                 way.append(way_tag_end_layer)                    
+                way.append(way_tag_node_s)
+                way.append(way_tag_node_e)                    
+
                 root.append(way)
                 way_id = way_id + 1
 

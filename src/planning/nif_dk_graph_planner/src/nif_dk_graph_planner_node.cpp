@@ -151,7 +151,6 @@ void DKGraphPlannerNode::OsmParcing() {
         // std::cout << "yaw: " << tag.attribute("v").as_double() << std::endl;
         nodeTmp.end_layer = tag.attribute("v").as_int();
       }
-
       std::string start_node = "start_node";
       if (tag.attribute("k").as_string() == start_node) {
         // std::cout << "start_node: " << tag.attribute("v").as_double() <<
@@ -193,15 +192,33 @@ void DKGraphPlannerNode::OsmParcing() {
       std::string start_layer = "start_layer";
       // end_layer
       std::string end_layer = "end_layer";
+      // start_node
+      std::string start_node = "start_node";
+      // end_node
+      std::string end_node = "end_node";
 
       if (tag.attribute("k").as_string() == start_layer) {
         wayTmp.start_layer = tag.attribute("v").as_int();
       } else if (tag.attribute("k").as_string() == end_layer) {
         wayTmp.end_layer = tag.attribute("v").as_int();
+      } else if (tag.attribute("k").as_string() == start_node) {
+        wayTmp.start_node = tag.attribute("v").as_int();
+      } else if (tag.attribute("k").as_string() == end_node) {
+        wayTmp.end_node = tag.attribute("v").as_int();
       }
     }
 
     m_OsmParcer.ways.push_back(wayTmp);
+  }
+
+  m_FullIndexedPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
+  for (auto node : m_OsmParcer.nodes) {
+    pcl::PointXYZI current_point;
+    current_point.x = node.x;
+    current_point.y = node.y;
+    current_point.z = node.z;
+    current_point.intensity = node.start_layer;
+    m_FullIndexedPoints->points.push_back(current_point);
   }
 
   RCLCPP_INFO(this->get_logger(),
@@ -237,195 +254,212 @@ void DKGraphPlannerNode::RacingLineParcing()
 
 void DKGraphPlannerNode::CallbackOdometry(const nav_msgs::msg::Odometry::SharedPtr msg) 
 {
-//   std::lock_guard<std::mutex> lock(mtx);
-//   m_InitPose = msg.pose.pose;
-//   m_Odometry = msg;
-//   double minimumDistance = INF;
-//   int closestNodeId = 0;
+  double veh_x = msg->pose.pose.position.x;
+  double veh_y = msg->pose.pose.position.y;
+  int first_layer, end_layer, start_node;
+  SearchGraph(veh_x, veh_y, first_layer, end_layer, start_node);
+  //   std::lock_guard<std::mutex> lock(mtx);
+  //   m_InitPose = msg.pose.pose;
+  //   m_Odometry = msg;
+  //   double minimumDistance = INF;
+  //   int closestNodeId = 0;
 
-//   bInitPose = true;
+  //   bInitPose = true;
 
-//   if (!bReplanRoute)
-//     return;
+  //   if (!bReplanRoute)
+  //     return;
 
-//   if (bParcingComplete) {
-//     double bias, normal_distance;
-//     double min_distance = INF;
-//     int minWayIndex = 0;
-//     int minNodeIndex = 0;
-//     std::string minWayITS;
-//     for (auto way : m_OsmParcer.ways) {
-//       bool first_node = true;
-//       double prev_x, prev_y;
-//       for (auto node : way.nodes) {
-//         // double cost_distance = sqrt(pow(node.x - msg.pose.pose.position.x, 2) +
-//         //                             pow(node.y - msg.pose.pose.position.y, 2));
+  //   if (bParcingComplete) {
+  //     double bias, normal_distance;
+  //     double min_distance = INF;
+  //     int minWayIndex = 0;
+  //     int minNodeIndex = 0;
+  //     std::string minWayITS;
+  //     for (auto way : m_OsmParcer.ways) {
+  //       bool first_node = true;
+  //       double prev_x, prev_y;
+  //       for (auto node : way.nodes) {
+  //         // double cost_distance = sqrt(pow(node.x -
+  //         msg.pose.pose.position.x, 2) +
+  //         //                             pow(node.y -
+  //         msg.pose.pose.position.y, 2));
 
-//         // if (cost_distance > 100) {
-//         //   continue;
-//         // }
+  //         // if (cost_distance > 100) {
+  //         //   continue;
+  //         // }
 
-//         if (first_node) {
-//           prev_x = node.x;
-//           prev_y = node.y;
-//           first_node = false;
-//           continue;
-//         }
+  //         if (first_node) {
+  //           prev_x = node.x;
+  //           prev_y = node.y;
+  //           first_node = false;
+  //           continue;
+  //         }
 
-//         double slope;
-//         if (node.x - prev_x == 0) {
-//           slope = 0;
-//         } else {
-//           slope = (node.y - prev_y) / (node.x - prev_x);
-//         }
-//         bias = node.y - slope * node.x;
-//         normal_distance = fabs(slope * msg.pose.pose.position.x -
-//                                msg.pose.pose.position.y + bias) /
-//                           sqrt(pow(slope, 2) + 1);
+  //         double slope;
+  //         if (node.x - prev_x == 0) {
+  //           slope = 0;
+  //         } else {
+  //           slope = (node.y - prev_y) / (node.x - prev_x);
+  //         }
+  //         bias = node.y - slope * node.x;
+  //         normal_distance = fabs(slope * msg.pose.pose.position.x -
+  //                                msg.pose.pose.position.y + bias) /
+  //                           sqrt(pow(slope, 2) + 1);
 
-//         double prev_distance = sqrt(pow(prev_x - msg.pose.pose.position.x, 2) +
-//                                     pow(prev_y - msg.pose.pose.position.y, 2));
-//         double prev_to_node =
-//             sqrt(pow(node.x - prev_x, 2) + pow(node.y - prev_y, 2));
+  //         double prev_distance = sqrt(pow(prev_x - msg.pose.pose.position.x,
+  //         2) +
+  //                                     pow(prev_y - msg.pose.pose.position.y,
+  //                                     2));
+  //         double prev_to_node =
+  //             sqrt(pow(node.x - prev_x, 2) + pow(node.y - prev_y, 2));
 
-//         double prod1 = (msg.pose.pose.position.x - prev_x) * (node.x - prev_x) +
-//                        (msg.pose.pose.position.y - prev_y) * (node.y - prev_y);
-//         double prod2 = (msg.pose.pose.position.x - node.x) * (prev_x - node.x) +
-//                        (msg.pose.pose.position.y - node.y) * (prev_y - node.y);
+  //         double prod1 = (msg.pose.pose.position.x - prev_x) * (node.x -
+  //         prev_x) +
+  //                        (msg.pose.pose.position.y - prev_y) * (node.y -
+  //                        prev_y);
+  //         double prod2 = (msg.pose.pose.position.x - node.x) * (prev_x -
+  //         node.x) +
+  //                        (msg.pose.pose.position.y - node.y) * (prev_y -
+  //                        node.y);
 
-//         if (prod1 < 0 || prod2 < 0)
-//           continue;
+  //         if (prod1 < 0 || prod2 < 0)
+  //           continue;
 
-//         if (normal_distance < min_distance) {
-//           min_distance = normal_distance;
-//           minWayIndex = way.id;
-//           minWayITS = way.ITScurrentLinkID;
-//           minNodeIndex = node.id;
-//         }
-//         prev_x = node.x;
-//         prev_y = node.y;
-//       }
-//     }
+  //         if (normal_distance < min_distance) {
+  //           min_distance = normal_distance;
+  //           minWayIndex = way.id;
+  //           minWayITS = way.ITScurrentLinkID;
+  //           minNodeIndex = node.id;
+  //         }
+  //         prev_x = node.x;
+  //         prev_y = node.y;
+  //       }
+  //     }
 
-//     m_closestWayId_start = m_Resister[minWayIndex].id;
-//     if(!m_Resister[minWayIndex].nodes.empty())
-//       m_closestStartNode = m_Resister[minWayIndex].nodes[0].id;
+  //     m_closestWayId_start = m_Resister[minWayIndex].id;
+  //     if(!m_Resister[minWayIndex].nodes.empty())
+  //       m_closestStartNode = m_Resister[minWayIndex].nodes[0].id;
 
-//     geometry_msgs::PoseArray StartWayPoseArray;
-//     StartWayPoseArray.header = msg.header;
-//     for (auto node : m_Resister[minWayIndex].nodes) {
-//       geometry_msgs::Pose poseTmp;
-//       poseTmp.position.x = node.x;
-//       poseTmp.position.y = node.y;
-//       poseTmp.position.z = 36.5;
-//       poseTmp.orientation = tf::createQuaternionMsgFromRollPitchYaw(
-//           0.0, 0.0, node.heading * M_PI / 180);
-//       StartWayPoseArray.poses.push_back(poseTmp);
-//     }
-//     pubStartWay.publish(StartWayPoseArray);    
-//     std::cout << "-----------Odom POSE INFO-----------" << std::endl;
-//     std::cout << "minWayITS: "<< minWayITS  << std::endl;
+  //     geometry_msgs::PoseArray StartWayPoseArray;
+  //     StartWayPoseArray.header = msg.header;
+  //     for (auto node : m_Resister[minWayIndex].nodes) {
+  //       geometry_msgs::Pose poseTmp;
+  //       poseTmp.position.x = node.x;
+  //       poseTmp.position.y = node.y;
+  //       poseTmp.position.z = 36.5;
+  //       poseTmp.orientation = tf::createQuaternionMsgFromRollPitchYaw(
+  //           0.0, 0.0, node.heading * M_PI / 180);
+  //       StartWayPoseArray.poses.push_back(poseTmp);
+  //     }
+  //     pubStartWay.publish(StartWayPoseArray);
+  //     std::cout << "-----------Odom POSE INFO-----------" << std::endl;
+  //     std::cout << "minWayITS: "<< minWayITS  << std::endl;
 
-//     bReplanRoute = false;
-//   } else {
-//     ROS_WARN("Map was not loaded yet. please wait for map loading...");
-//   }
-// }
+  //     bReplanRoute = false;
+  //   } else {
+  //     ROS_WARN("Map was not loaded yet. please wait for map loading...");
+  //   }
+  // }
 
-// void DKGraphPlannerNode::CallbackInitPoseRviz(
-//     const geometry_msgs::PoseWithCovarianceStamped &msg) {
-//   std::lock_guard<std::mutex> lock(mtx);
-//   m_InitPose = msg.pose.pose;
-//   bInitPose = true;
+  // void DKGraphPlannerNode::CallbackInitPoseRviz(
+  //     const geometry_msgs::PoseWithCovarianceStamped &msg) {
+  //   std::lock_guard<std::mutex> lock(mtx);
+  //   m_InitPose = msg.pose.pose;
+  //   bInitPose = true;
 
-//   RCLCPP_INFO(this->get_logger(), "New init pose is received! Searching for nearest way");
-//   double minimumDistance = INF;
-//   int closestNodeId = 0;
+  //   RCLCPP_INFO(this->get_logger(), "New init pose is received! Searching for
+  //   nearest way"); double minimumDistance = INF; int closestNodeId = 0;
 
-//   if (bParcingComplete) {
-//     double bias, normal_distance;
-//     double min_distance = INF;
-//     int minWayIndex = 0;
-//     int minNodeIndex = 0;
-//     for (auto way : m_OsmParcer.ways) {
-//       bool first_node = true;
-//       double prev_x, prev_y;
-//       for (auto node : way.nodes) {
-//         double cost_distance = sqrt(pow(node.x - msg.pose.pose.position.x, 2) +
-//                                     pow(node.y - msg.pose.pose.position.y, 2));
+  //   if (bParcingComplete) {
+  //     double bias, normal_distance;
+  //     double min_distance = INF;
+  //     int minWayIndex = 0;
+  //     int minNodeIndex = 0;
+  //     for (auto way : m_OsmParcer.ways) {
+  //       bool first_node = true;
+  //       double prev_x, prev_y;
+  //       for (auto node : way.nodes) {
+  //         double cost_distance = sqrt(pow(node.x - msg.pose.pose.position.x,
+  //         2) +
+  //                                     pow(node.y - msg.pose.pose.position.y,
+  //                                     2));
 
-//         if (cost_distance > 100) {
-//           continue;
-//         }
+  //         if (cost_distance > 100) {
+  //           continue;
+  //         }
 
-//         if (first_node) {
-//           prev_x = node.x;
-//           prev_y = node.y;
-//           first_node = false;
-//           continue;
-//         }
+  //         if (first_node) {
+  //           prev_x = node.x;
+  //           prev_y = node.y;
+  //           first_node = false;
+  //           continue;
+  //         }
 
-//         double slope;
-//         if (node.x - prev_x == 0) {
-//           slope = 0;
-//         } else {
-//           slope = (node.y - prev_y) / (node.x - prev_x);
-//         }
-//         bias = node.y - slope * node.x;
-//         normal_distance = fabs(slope * msg.pose.pose.position.x -
-//                                msg.pose.pose.position.y + bias) /
-//                           sqrt(pow(slope, 2) + 1);
+  //         double slope;
+  //         if (node.x - prev_x == 0) {
+  //           slope = 0;
+  //         } else {
+  //           slope = (node.y - prev_y) / (node.x - prev_x);
+  //         }
+  //         bias = node.y - slope * node.x;
+  //         normal_distance = fabs(slope * msg.pose.pose.position.x -
+  //                                msg.pose.pose.position.y + bias) /
+  //                           sqrt(pow(slope, 2) + 1);
 
-//         double prev_distance = sqrt(pow(prev_x - msg.pose.pose.position.x, 2) +
-//                                     pow(prev_y - msg.pose.pose.position.y, 2));
-//         double prev_to_node =
-//             sqrt(pow(node.x - prev_x, 2) + pow(node.y - prev_y, 2));
+  //         double prev_distance = sqrt(pow(prev_x - msg.pose.pose.position.x,
+  //         2) +
+  //                                     pow(prev_y - msg.pose.pose.position.y,
+  //                                     2));
+  //         double prev_to_node =
+  //             sqrt(pow(node.x - prev_x, 2) + pow(node.y - prev_y, 2));
 
-//         double prod1 = (msg.pose.pose.position.x - prev_x) * (node.x - prev_x) +
-//                        (msg.pose.pose.position.y - prev_y) * (node.y - prev_y);
-//         double prod2 = (msg.pose.pose.position.x - node.x) * (prev_x - node.x) +
-//                        (msg.pose.pose.position.y - node.y) * (prev_y - node.y);
+  //         double prod1 = (msg.pose.pose.position.x - prev_x) * (node.x -
+  //         prev_x) +
+  //                        (msg.pose.pose.position.y - prev_y) * (node.y -
+  //                        prev_y);
+  //         double prod2 = (msg.pose.pose.position.x - node.x) * (prev_x -
+  //         node.x) +
+  //                        (msg.pose.pose.position.y - node.y) * (prev_y -
+  //                        node.y);
 
-//         if (prod1 < 0 || prod2 < 0)
-//           continue;
+  //         if (prod1 < 0 || prod2 < 0)
+  //           continue;
 
-//         if (normal_distance < min_distance) {
-//           min_distance = normal_distance;
-//           minWayIndex = way.id;
-//           minNodeIndex = node.id;
-//         }
-//         prev_x = node.x;
-//         prev_y = node.y;
-//       }
-//     }
+  //         if (normal_distance < min_distance) {
+  //           min_distance = normal_distance;
+  //           minWayIndex = way.id;
+  //           minNodeIndex = node.id;
+  //         }
+  //         prev_x = node.x;
+  //         prev_y = node.y;
+  //       }
+  //     }
 
-//     m_closestWayId_start = m_Resister[minWayIndex].id;
-//     if(!m_Resister[minWayIndex].nodes.empty())
-//       m_closestStartNode = m_Resister[minWayIndex].nodes[0].id;
+  //     m_closestWayId_start = m_Resister[minWayIndex].id;
+  //     if(!m_Resister[minWayIndex].nodes.empty())
+  //       m_closestStartNode = m_Resister[minWayIndex].nodes[0].id;
 
+  //     geometry_msgs::PoseArray StartWayPoseArray;
+  //     StartWayPoseArray.header = msg.header;
+  //     for (auto node : m_Resister[minWayIndex].nodes) {
+  //       geometry_msgs::Pose poseTmp;
+  //       poseTmp.position.x = node.x;
+  //       poseTmp.position.y = node.y;
+  //       poseTmp.position.z = 36.5;
+  //       poseTmp.orientation = tf::createQuaternionMsgFromRollPitchYaw(
+  //           0.0, 0.0, node.heading * M_PI / 180);
+  //       StartWayPoseArray.poses.push_back(poseTmp);
+  //     }
+  //     pubStartWay.publish(StartWayPoseArray);
 
-//     geometry_msgs::PoseArray StartWayPoseArray;
-//     StartWayPoseArray.header = msg.header;
-//     for (auto node : m_Resister[minWayIndex].nodes) {
-//       geometry_msgs::Pose poseTmp;
-//       poseTmp.position.x = node.x;
-//       poseTmp.position.y = node.y;
-//       poseTmp.position.z = 36.5;
-//       poseTmp.orientation = tf::createQuaternionMsgFromRollPitchYaw(
-//           0.0, 0.0, node.heading * M_PI / 180);
-//       StartWayPoseArray.poses.push_back(poseTmp);
-//     }
-//     pubStartWay.publish(StartWayPoseArray);    
- 
-
-//     std::cout << "-----------INIT POSE INFO-----------" << std::endl;
-//     std::cout << "closest node Id : " << minNodeIndex
-//               << ", distance: " << min_distance << std::endl;
-//     std::cout << "closest way Id : " << m_closestWayId_start << "\n"
-//               << std::endl;
-//   } else {
-//     ROS_WARN("Map was not loaded yet. please wait for map loading...");
-//   }
+  //     std::cout << "-----------INIT POSE INFO-----------" << std::endl;
+  //     std::cout << "closest node Id : " << minNodeIndex
+  //               << ", distance: " << min_distance << std::endl;
+  //     std::cout << "closest way Id : " << m_closestWayId_start << "\n"
+  //               << std::endl;
+  //   } else {
+  //     ROS_WARN("Map was not loaded yet. please wait for map loading...");
+  //   }
 }
 
 // void DKGraphPlannerNode::timerCallback(const ros::TimerEvent &event) {}
@@ -543,24 +577,11 @@ void DKGraphPlannerNode::timer_callback() {
 
 void DKGraphPlannerNode::MessagePublisher() {
   // origin node publisher  
-  pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_ptr(
-      new pcl::PointCloud<pcl::PointXYZI>);
-  int count = 0;
-  for (auto node : m_OsmParcer.nodes) {
-    pcl::PointXYZI current_point;
-    current_point.x = node.x;
-    current_point.y = node.y;
-    current_point.z = node.z;
-    current_point.intensity = node.start_layer;
-
-    cloud_ptr->points.push_back(current_point);
-  }
   sensor_msgs::msg::PointCloud2 FullNodeCloudMsg;
-  pcl::toROSMsg(*cloud_ptr, FullNodeCloudMsg);
+  pcl::toROSMsg(*m_FullIndexedPoints, FullNodeCloudMsg);
   FullNodeCloudMsg.header.frame_id = nif::common::frame_id::localization::ODOM;
   FullNodeCloudMsg.header.stamp = this->now();
   pubFullNodePoints->publish(FullNodeCloudMsg);
-
 
   // racing line publisher
   sensor_msgs::msg::PointCloud2 RacingLineCloudMsg;
@@ -570,11 +591,34 @@ void DKGraphPlannerNode::MessagePublisher() {
   pubRacingLinePoints->publish(RacingLineCloudMsg);
 }
 
-void DKGraphPlannerNode::SearchGraph(double &x_in, const double &y_in,
+void DKGraphPlannerNode::SearchGraph(const double &x_in, const double &y_in,
                                      int &start_layer_out, int &end_layer_out,
                                      int &node_out) 
 {
-  
+  if (!bParcingComplete)
+    return;
+
+  pcl::KdTreeFLANN<pcl::PointXYZI> kdtree;
+  kdtree.setInputCloud(m_FullIndexedPoints);
+
+  pcl::PointXYZI searchPoint;
+  searchPoint.x = x_in;
+  searchPoint.y = y_in;
+
+  int K = 1; 
+  std::vector<int> pointIdxNKNSearch(K);
+  std::vector<float> pointNKNSquaredDistance(K);
+
+  double nearest_x_in_points, nearest_y_in_points;
+  if (kdtree.nearestKSearch(searchPoint, K, pointIdxNKNSearch,
+                            pointNKNSquaredDistance) > 0) {
+    for (size_t i = 0; i < pointIdxNKNSearch.size(); ++i) {
+      nearest_x_in_points = m_FullIndexedPoints->points[pointIdxNKNSearch[i]].x;
+      nearest_y_in_points = m_FullIndexedPoints->points[pointIdxNKNSearch[i]].y;
+      start_layer_out = m_FullIndexedPoints->points[pointIdxNKNSearch[i]].intensity;
+    }
+  }
+  std::cout << "info : " << start_layer_out << ": " << nearest_x_in_points << ", " << nearest_y_in_points << std::endl;
 }
 
 // bool DKGraphPlannerNode::ExistInList(int id, std::vector<int> list)

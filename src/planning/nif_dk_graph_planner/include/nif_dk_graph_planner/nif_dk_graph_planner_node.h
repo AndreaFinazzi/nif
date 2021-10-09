@@ -69,13 +69,13 @@
 #include <pcl/ModelCoefficients.h>
 #include <pcl/point_types.h>
 
-#include <pcl/filters/extract_indices.h>
-#include <pcl/filters/voxel_grid.h>
-#include <pcl/filters/conditional_removal.h>
-
+#include <pcl/features/don.h>
 #include <pcl/features/fpfh_omp.h>
 #include <pcl/features/normal_3d_omp.h>
-#include <pcl/features/don.h>
+#include <pcl/filters/conditional_removal.h>
+#include <pcl/filters/extract_indices.h>
+#include <pcl/filters/voxel_grid.h>
+#include <pcl/kdtree/kdtree_flann.h>
 
 #include <pcl/kdtree/kdtree.h>
 #include <pcl/sample_consensus/method_types.h>
@@ -94,6 +94,13 @@ typedef struct Connected
   int id;
   double cost;
 } connected_t;
+
+typedef struct Waymap {
+  int start_layer;
+  int end_layer;
+  int start_node;
+  int end_node;
+} waymap_t;
 
 namespace nif{
 namespace planning{
@@ -125,16 +132,14 @@ public:
 
 private:
   DKGraphPlannerNode();
-  
-  void SearchGraph();
+
+  void SearchGraph(const double &x_in, const double &y_in, int &start_layer_out,
+                   int &end_layer_out, int &node_out);
   std::vector<std::pair<std::string, std::vector<double>>> read_csv(std::string filename);
   
   rclcpp::TimerBase::SharedPtr sub_timer_;
   rclcpp::Publisher<nif_dk_graph_planner_msgs::msg::OsmParcer>::SharedPtr
       pubOsmParcer;
-  // ros::Publisher pubLaneArray, pubFinalLaneArray;
-  // ros::Publisher pubLaneArrayMarker, pubFinalLaneArrayMarker;
-  // ros::Publisher pubStartWay, pubGoalWay;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubFullNodePoints;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubRacingLinePoints;
         // pubCandidatesNodePoints, pubFinalPathPoints; ros::Publisher
@@ -143,14 +148,14 @@ private:
 
             // ros::Subscriber SubInitPose;
             // ros::Subscriber SubGoal;
-            rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr
-                SubOdometry;
+  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr SubOdometry;
     // ros::Subscriber SubGoalXYList;
 
     std::string m_OsmFileName, m_FullFilePath;
     std::string m_RacingTrajectory;
 
     pcl::PointCloud<pcl::PointXYZI>::Ptr m_racingLine_points;
+    pcl::PointCloud<pcl::PointXYZI>::Ptr m_FullIndexedPoints;
 
     nif_dk_graph_planner_msgs::msg::OsmParcer m_OsmParcer;
 
@@ -175,7 +180,7 @@ private:
     // int m_closestWayId_goal;
     // int m_closestStartNode;
     // int m_closestGoalNode;
-    // std::unordered_map<int, nif_dk_graph_planner_msgs::msg::Way> m_Resister;
+    std::unordered_map<int, nif_dk_graph_planner_msgs::msg::Way> m_Resister;
     // // std::unordered_map<int, nif_dk_graph_planner_msgs::msg::Way>
     // m_NextWay;
     // // std::unordered_map<int, nif_dk_graph_planner_msgs::msg::Way>
