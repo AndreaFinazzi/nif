@@ -184,7 +184,6 @@ def generate_launch_description():
         remappings=[
             ('out_desired_velocity', 'velocity_planner/des_vel'),
             ('in_reference_path', 'planning/graph/path_global'),
-            # ('in_reference_path', 'planning/path_global'),
             ('in_ego_odometry', '/aw_localization/ekf/odom'),
             ('in_wheel_speed_report', 'raptor_dbw_interface/wheel_speed_report'),
             ('in_imu_data', 'novatel_bottom/imu/data'),
@@ -194,6 +193,7 @@ def generate_launch_description():
         parameters=[{
                 'odometry_timeout_sec' : 0.5,
                 'path_timeout_sec' : 1.0,
+                'lateral_tire_model_factor' : 1.0,
             }]
     )
 
@@ -222,8 +222,8 @@ def generate_launch_description():
                 'path_timeout_sec' : 1.0,
                 'use_tire_velocity' : True,
                 # 'max_steering_angle_deg': 20.0,
-                'pure_pursuit_min_dist_m' : 8.0,
-                'pure_pursuit_max_dist_m' : 16.0,
+                'pure_pursuit_min_dist_m' : 4.0,
+                'pure_pursuit_max_dist_m' : 8.0,
                 'steering_max_ddeg_dt' : 3.0
 
             }
@@ -404,6 +404,7 @@ def generate_launch_description():
         nif_csl_param,
         nif_wpt_param,
         nif_joint_lqr_param,
+        lgsvl_simulation_launch,
 
         # ssc_interface,
         # socketcan_receiver_launch,
@@ -414,7 +415,7 @@ def generate_launch_description():
         nif_global_param_node,
         nif_system_status_manager_node,
         nif_csl_node,
-        # nif_localization_launch,
+        nif_localization_launch,
         nif_aw_localization_launch,
         nif_wall_node_launch_bg,
         nif_waypoint_manager_node,
@@ -424,5 +425,4 @@ def generate_launch_description():
         nif_joint_lqr_control_node,
         nif_accel_control_node,
         nif_mission_manager_launch,
-        lgsvl_simulation_launch
     ])

@@ -9,6 +9,7 @@
 
 #include "cubic_spliner_2D.h"
 #include "frenet_path.h"
+#include "nav_msgs/msg/path.hpp"
 #include "quartic_polynomial.h"
 #include "quintic_polynomial.h"
 
@@ -23,15 +24,12 @@ enum FRENET_GEN_MODE {
 
 class FrenetPathGenerator {
 public:
-  typedef std::tuple<std::vector<double>,
-                     std::vector<double>,
-                     std::vector<double>,
-                     std::shared_ptr<CubicSpliner2D>>
+  typedef std::tuple<std::vector<double>, std::vector<double>,
+                     std::vector<double>, std::shared_ptr<CubicSpliner2D>>
       CubicSpliner2DResult;
-  typedef std::tuple<std::vector<double>,
-                     std::vector<double>,
-                     std::vector<double>,
-                     std::vector<double>,
+
+  typedef std::tuple<std::vector<double>, std::vector<double>,
+                     std::vector<double>, std::vector<double>,
                      std::shared_ptr<CubicSpliner2D>>
       CubicSpliner3DResult;
 
@@ -46,135 +44,98 @@ public:
 
   std::tuple<std::shared_ptr<FrenetPath>,
              std::vector<std::shared_ptr<FrenetPath>>>
-  calcOptimalFrenetPath(double current_position_d,
-                        double current_position_s,
-                        double current_velocity_d,
-                        double current_velocity_s,
+  calcOptimalFrenetPath(double current_position_d, double current_position_s,
+                        double current_velocity_d, double current_velocity_s,
                         double current_acceleration_d,
-                        std::shared_ptr<CubicSpliner2D>& cubic_spliner_2D,
-                        std::vector<std::tuple<double, double>>& obstacles,
-                        double min_t,
-                        double max_t,
-                        double dt);
+                        std::shared_ptr<CubicSpliner2D> &cubic_spliner_2D,
+                        std::vector<std::tuple<double, double>> &obstacles,
+                        double min_t, double max_t, double dt);
 
   std::tuple<std::shared_ptr<FrenetPath>,
              std::vector<std::shared_ptr<FrenetPath>>>
   calcOptimalFrenetPathByMode(
       FRENET_GEN_MODE gen_mode,
-      std::shared_ptr<CubicSpliner2D>& ref_cubic_spliner_2D,
-      double current_position_d,
-      double current_position_s,
-      double current_velocity_d,
-      double current_velocity_s,
-      double current_acceleration_d,
-      double current_acceleration_s,
+      std::shared_ptr<CubicSpliner2D> &ref_cubic_spliner_2D,
+      double current_position_d, double current_position_s,
+      double current_velocity_d, double current_velocity_s,
+      double current_acceleration_d, double current_acceleration_s,
       // sign convention : left side to the reference path is negative
       double target_position_d,
       double target_position_min_d, // most left side
       double target_position_max_d, // most right side
-      double target_velocity_d,
-      double target_velocity_s,
-      double target_acceleration_d = 0.0,
-      double target_acceleration_s = 0.0,
-      double planning_sampling_d = 1.0,
-      double planning_t = 2.0,
-      double planning_min_t = 2.0,
-      double planning_max_t = 4.0,
-      double planning_sampling_t = 1.0,
-      double dt = 0.2);
+      double target_velocity_d, double target_velocity_s,
+      double target_acceleration_d = 0.0, double target_acceleration_s = 0.0,
+      double planning_sampling_d = 1.0, double planning_t = 2.0,
+      double planning_min_t = 2.0, double planning_max_t = 4.0,
+      double planning_sampling_t = 1.0, double dt = 0.2);
 
-  CubicSpliner2DResult applyCubicSpliner_2d(std::vector<double>& points_x,
-                                            std::vector<double>& points_y,
+  CubicSpliner2DResult applyCubicSpliner_2d(std::vector<double> &points_x,
+                                            std::vector<double> &points_y,
                                             double sampling_interval = 0.1);
-  CubicSpliner3DResult applyCubicSpliner_3d(std::vector<double>& points_x,
-                                            std::vector<double>& points_y,
-                                            std::vector<double>& points_z,
+  CubicSpliner2DResult applyCubicSpliner_2d_ros(nav_msgs::msg::Path &path_body,
+                                                double sampling_interval = 0.1);
+  CubicSpliner3DResult applyCubicSpliner_3d(std::vector<double> &points_x,
+                                            std::vector<double> &points_y,
+                                            std::vector<double> &points_z,
                                             double sampling_interval = 0.1);
 
   std::shared_ptr<FrenetPath>
-  genSingleFrenetPath(double ref_splined_end_s,
-                      double current_position_d,
-                      double current_position_s,
-                      double current_velocity_d,
-                      double current_velocity_s,
-                      double current_acceleration_d,
-                      double current_acceleration_s,
-                      double target_position_d,
-                      double target_velocity_d,
-                      double target_velocity_s,
+  genSingleFrenetPath(double ref_splined_end_s, double current_position_d,
+                      double current_position_s, double current_velocity_d,
+                      double current_velocity_s, double current_acceleration_d,
+                      double current_acceleration_s, double target_position_d,
+                      double target_velocity_d, double target_velocity_s,
                       double target_acceleration_d = 0.0,
                       double target_acceleration_s = 0.0,
-                      double planning_t = 2.0,
-                      double dt = 0.2);
+                      double planning_t = 2.0, double dt = 0.2);
 
-  std::vector<std::shared_ptr<FrenetPath>>
-  genMultipleLongiFrenetPaths(double ref_splined_end_s,
-                              double current_position_d,
-                              double current_position_s,
-                              double current_velocity_d,
-                              double current_velocity_s,
-                              double current_acceleration_d,
-                              double current_acceleration_s,
-                              double target_position_d,
-                              double target_velocity_d,
-                              double target_velocity_s,
-                              double target_acceleration_d = 0.0,
-                              double target_acceleration_s = 0.0,
-                              double planning_min_t = 2.0,
-                              double planning_max_t = 4.0,
-                              double planning_sampling_t = 1.0,
-                              double dt = 0.2);
+  std::vector<std::shared_ptr<FrenetPath>> genMultipleLongiFrenetPaths(
+      double ref_splined_end_s, double current_position_d,
+      double current_position_s, double current_velocity_d,
+      double current_velocity_s, double current_acceleration_d,
+      double current_acceleration_s, double target_position_d,
+      double target_velocity_d, double target_velocity_s,
+      double target_acceleration_d = 0.0, double target_acceleration_s = 0.0,
+      double planning_min_t = 2.0, double planning_max_t = 4.0,
+      double planning_sampling_t = 1.0, double dt = 0.2);
 
   std::vector<std::shared_ptr<FrenetPath>> genMultipleLateralFrenetPaths(
-      double ref_splined_end_s,
-      double current_position_d,
-      double current_position_s,
-      double current_velocity_d,
-      double current_velocity_s,
-      double current_acceleration_d,
+      double ref_splined_end_s, double current_position_d,
+      double current_position_s, double current_velocity_d,
+      double current_velocity_s, double current_acceleration_d,
       double current_acceleration_s,
       // sign convention : left side to the reference path is negative
       double target_position_min_d, // most left side
       double target_position_max_d, // most right side
-      double target_velocity_d,
-      double target_velocity_s,
-      double target_acceleration_d = 0.0,
-      double target_acceleration_s = 0.0,
-      double planning_sampling_d = 1.0,
-      double planning_t = 2.0,
+      double target_velocity_d, double target_velocity_s,
+      double target_acceleration_d = 0.0, double target_acceleration_s = 0.0,
+      double planning_sampling_d = 1.0, double planning_t = 2.0,
       double dt = 0.2);
 
   std::vector<std::shared_ptr<FrenetPath>> genMultipleLateralLongiFrenetPaths(
-      double ref_splined_end_s,
-      double current_position_d,
-      double current_position_s,
-      double current_velocity_d,
-      double current_velocity_s,
-      double current_acceleration_d,
+      double ref_splined_end_s, double current_position_d,
+      double current_position_s, double current_velocity_d,
+      double current_velocity_s, double current_acceleration_d,
       double current_acceleration_s,
       // sign convention : left side to the reference path is negative
       double target_position_min_d, // most left side
       double target_position_max_d, // most right side
-      double target_velocity_d,
-      double target_velocity_s,
-      double target_acceleration_d = 0.0,
-      double target_acceleration_s = 0.0,
-      double planning_sampling_d = 1.0,
-      double planning_min_t = 2.0,
-      double planning_max_t = 4.0,
-      double planning_sampling_t = 1.0,
+      double target_velocity_d, double target_velocity_s,
+      double target_acceleration_d = 0.0, double target_acceleration_s = 0.0,
+      double planning_sampling_d = 1.0, double planning_min_t = 2.0,
+      double planning_max_t = 4.0, double planning_sampling_t = 1.0,
       double dt = 0.2);
 
   void convertFrenetPathsInGlobal(
-      std::vector<std::shared_ptr<FrenetPath>>& frenet_paths,
-      std::shared_ptr<CubicSpliner2D>& cubic_spliner_2D);
-  bool checkCollision(std::shared_ptr<FrenetPath>& frenet_path,
-                      std::vector<std::tuple<double, double>>& obstacles);
+      std::vector<std::shared_ptr<FrenetPath>> &frenet_paths,
+      std::shared_ptr<CubicSpliner2D> &cubic_spliner_2D);
+  bool checkCollision(std::shared_ptr<FrenetPath> &frenet_path,
+                      std::vector<std::tuple<double, double>> &obstacles);
   void checkValidity_w_obstalceMap(
-      std::vector<std::shared_ptr<FrenetPath>>& frenet_paths,
-      std::vector<std::tuple<double, double>>& obstacles);
+      std::vector<std::shared_ptr<FrenetPath>> &frenet_paths,
+      std::vector<std::tuple<double, double>> &obstacles);
   void checkValidity_w_constraint(
-      std::vector<std::shared_ptr<FrenetPath>>& frenet_paths);
+      std::vector<std::shared_ptr<FrenetPath>> &frenet_paths);
 
 protected:
   // path constraints

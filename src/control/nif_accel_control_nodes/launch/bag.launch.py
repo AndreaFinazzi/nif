@@ -45,6 +45,10 @@ def generate_launch_description():
         },
         remappings=[
             ('/control_safety_layer/out/desired_accel', '/control_joint_lqr/accel_command'),
+            ('/joystick/accelerator_cmd', '/joystick/accelerator_cmd_test'),
+            ('/joystick/accelerator_cmd/raw', '/joystick/accelerator_cmd/raw_test'),
+            ('/joystick/brake_cmd', '/joystick/brake_cmd_test'),
+            ('/joystick/brake_cmd/raw', '/joystick/brake_cmd/raw_test'),
         ]
     )
 
