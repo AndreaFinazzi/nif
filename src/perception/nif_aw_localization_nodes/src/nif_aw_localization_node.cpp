@@ -365,7 +365,7 @@ void AWLocalizationNode::timerCallback()
     } else if (bottom_noise_total > 2.0 && 
                bBOTTOM_GPS && !bTOP_GPS)
     {
-      m_localization_status.status = "NO UPDATE, GPS HIGH ERROR";
+      m_localization_status.status = "NO UPDATE, GPS HIGH ERROR, ONLY BOTTOM";
       m_localization_status.localization_status_code =
           nif_msgs::msg::LocalizationStatus::GPS_HIGH_ERROR;
       update_pose = false;
@@ -373,13 +373,15 @@ void AWLocalizationNode::timerCallback()
     } else if (top_noise_total > 2.0 &&
                !bBOTTOM_GPS && bTOP_GPS) 
     {
-      m_localization_status.status = "NO UPDATE, GPS HIGH ERROR";
+      m_localization_status.status = "NO UPDATE, GPS HIGH ERROR, ONLY TOP";
       m_localization_status.localization_status_code =
           nif_msgs::msg::LocalizationStatus::GPS_HIGH_ERROR;
       update_pose = false;
       node_status = nif::common::NODE_ERROR;
     }
 
+    // check convergence has higher priority than "GPS HIGH ERROR"
+    // even though GPS error is high, keep trying to find the converged value.  
     if (!bInitConverged) {
         m_localization_status.status = "NO CONVERGED. WAITING FOR CONVERGENCE";
         m_localization_status.localization_status_code =
@@ -475,6 +477,14 @@ void AWLocalizationNode::setCurrentResult()
       //     std::cos(-yaw);
 
   current_ekf_twist_.twist.angular.z = ekf_.getXelement(IDX::WZ);
+
+  // delta_x = vx * cos(yaw + yaw_bias)
+  // delta_y = vx * sin(yaw + yaw_bias)
+
+  // m_dGPS_vel_x_onBody = msg->north_velocity * std::cos(-yaw) +
+  //                       msg->east_velocity * std::sin(-yaw);
+  // m_dGPS_vel_y_onBody = msg->north_velocity * std::sin(-yaw) -
+  //                       msg->east_velocity * std::cos(-yaw);
 }
 
 // HOW TO CORRECT HEADING IN EKF
@@ -531,6 +541,10 @@ void AWLocalizationNode::BESTPOSCallback
   ltp_odom.pose.covariance.at(35) = BestPosBottom.yaw_noise; //  yaw - yaw
 
   pub_bestpos_odometry->publish(ltp_odom);
+
+
+  if ((double)msg->lat == 0. && (double)msg->lon == 0.)
+    return;
 
   bottom_gps_update = true;
   bBOTTOM_GPS = true;
@@ -635,6 +649,7 @@ void AWLocalizationNode::BOTTOMINSPVACallback(
     heading_flag = true;
   }
 
+
   BestPosBottom.yaw = yaw;
 }
 
@@ -657,8 +672,7 @@ void AWLocalizationNode::TOPINSPVACallback(
   if (m_use_inspva_heading) {
     heading_flag = true;
   }
-
-  BestPosTop.yaw = yaw;
+   BestPosTop.yaw = yaw;
 }
 
 void AWLocalizationNode::BESTVELCallback(
@@ -809,6 +823,7 @@ void AWLocalizationNode::predictKinematicsModel()
   const double vx = X_curr(IDX::VX);
   const double wz = X_curr(IDX::WZ);
   const double dt = ekf_dt_;
+
 
   /* Update for latest state */
   X_next(IDX::X) = X_curr(IDX::X) + vx * cos(yaw + yaw_bias) * dt; //  dx = v * cos(yaw)

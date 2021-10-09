@@ -144,13 +144,14 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
 
   //  Check whether we have updated data
   bool valid_path =
-      this->hasReferencePath() &&
-      !this->getReferencePath()->poses.empty() &&
+      this->hasReferencePath() && !this->getReferencePath()->poses.empty() &&
       this->getReferencePathLastPointDistance() > m_path_min_length_m &&
-      nif::common::utils::time::secs(now - this->getReferencePathUpdateTime()) < path_timeout_sec_;
+      nif::common::utils::time::secs(now - this->getReferencePathUpdateTime()) <
+          path_timeout_sec_;
   bool valid_odom =
       this->hasEgoOdometry() &&
-      nif::common::utils::time::secs(now - this->getEgoOdometryUpdateTime()) < odometry_timeout_sec_;
+      nif::common::utils::time::secs(now - this->getEgoOdometryUpdateTime()) <
+          odometry_timeout_sec_;
   bool valid_tracking_result = false;
 
   double steering_angle_deg = 0.0;
@@ -221,7 +222,8 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
     //    steering_angle_deg *= nif::common::vehicle_param::STEERING_RATIO;
 
     // Smooth and publish diagnostics
-    double period_double_s = nif::common::utils::time::secs(this->getGclockPeriodDuration());
+    double period_double_s =
+        nif::common::utils::time::secs(this->getGclockPeriodDuration());
     RCLCPP_DEBUG(this->get_logger(), "Smoothing with dt: [s] %f",
                  period_double_s);
     joint_lqr::utils::smoothSignal(steering_angle_deg, last_steering_command_,

@@ -57,5 +57,4 @@ RUN cd /opt && git clone https://github.com/borglab/gtsam.git && \
     make install
 
 RUN rm -rf /opt/nif
-
 COPY ./entrypoint /ade_entrypoint
