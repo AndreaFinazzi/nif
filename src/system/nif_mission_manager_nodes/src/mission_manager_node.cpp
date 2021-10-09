@@ -283,7 +283,7 @@ MissionManagerNode::parametersCallback(
     {
         if (param.get_name() == "velocity.max") {
             if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
-                if (param.as_double() >= 0.0 && param.as_double() <= 35.0) // TODO implement switching policy, if needed
+                if (param.as_double() >= 0.0 && param.as_double() <= 67.0) // TODO implement switching policy, if needed
                 {
                     this->velocity_max = param.as_double();
                     result.successful = true;
@@ -291,7 +291,7 @@ MissionManagerNode::parametersCallback(
             }
         } else if (param.get_name() == "velocity.pit_in") {
             if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
-                if (param.as_double() >= 0.0 && param.as_double() <= 15.0) // TODO implement switching policy, if needed
+                if (param.as_double() >= 0.0 && param.as_double() <= 20.0) // TODO implement switching policy, if needed
                 {
                     this->velocity_pit_in = param.as_double();
                     result.successful = true;
@@ -299,7 +299,7 @@ MissionManagerNode::parametersCallback(
             }
         } else if (param.get_name() == "velocity.pit_out") {
             if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
-                if (param.as_double() >= 0.0 && param.as_double() <= 15.0) // TODO implement switching policy, if needed
+                if (param.as_double() >= 0.0 && param.as_double() <= 20.0) // TODO implement switching policy, if needed
                 {
                     this->velocity_pit_out = param.as_double();
                     result.successful = true;
@@ -307,7 +307,7 @@ MissionManagerNode::parametersCallback(
             }
         } else if (param.get_name() == "velocity.slow_drive") {
             if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
-                if (param.as_double() >= 0.0 && param.as_double() <= 20.0) // TODO implement switching policy, if needed
+                if (param.as_double() >= 0.0 && param.as_double() <= 30.0) // TODO implement switching policy, if needed
                 {
                     this->velocity_slow_drive = param.as_double();
                     result.successful = true;
