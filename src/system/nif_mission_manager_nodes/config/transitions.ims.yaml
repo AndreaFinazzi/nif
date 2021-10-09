@@ -164,9 +164,9 @@ missions:
     activation_area:
       active: true
       bboxes:
-        - - -1950.0 # x_min
+        - - -2100.0 # x_min
           - 250.0 # y_min
-          - -1300.0 # x_max
+          - -1200.0 # x_max
           - 312.0 # y_max
     allowed_transitions:
       active: false
