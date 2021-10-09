@@ -15,8 +15,9 @@ windows:
       # - cd /home/usrg/media/IAC/LOR/VEH4_LOR_RUN-graph.aw_2021-09-29 #LOR_0929_aw
       # - cd /home/usrg/media/IAC/LOR/VEH4_LOR_RUN-graph.yaw_2021-09-29 #LOR_0929_yaw_1
       # - cd /home/usrg/media/IAC #MITPIT DATA
-      - cd /home/usrg/media/T7/IAC_0928_si/2021_09_21_IMS/VEH8_MIT-PITT-RW #MITPIT DATA
-
+      # - cd /home/usrg/media/T7/IAC_0928_si/2021_09_21_IMS/VEH8_MIT-PITT-RW #MITPIT DATA
+      - cd /home/usrg/media/T7_Touch/IAC/rosbag/2021.10.04_LOR/VEH4_LOR_RUN-mylaps.accel_2021-10-04 # 2021.10.04_LOR 2nd nif data
+      # - cd /home/usrg/media/T7_Touch/IAC/rosbag/2021.10.04_LOR/VEH4_LOR_RUN-3rd_2021-10-04 # 2021.10.04_LOR 3rd nif data
     panes:
     - shell_command:
         # - ros2 bag play sensors_2021-09-03_10-59-19/ --topics /merged/lidar /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /raptor_dbw_interface/wheel_speed_report /novatel_top/bestpos /novatel_top/inspva /novatel_top/bestvel /novatel_top/imu/data /novatel_bottom/insstdev
@@ -38,7 +39,9 @@ windows:
         #  - ros2 bag play sensors_2021-09-29_14-24-45/  --topics /merged/lidar /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /raptor_dbw_interface/wheel_speed_report /novatel_top/bestpos /novatel_top/inspva /novatel_top/bestvel /novatel_top/imu/data /novatel_bottom/insstdev 
         #  - ros2 bag play sensors_2021-09-29_14-57-31/  --topics /merged/lidar /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /novatel_top/bestpos /raptor_dbw_interface/wheel_speed_report /novatel_top/inspva /novatel_top/bestvel /novatel_top/imu/data /novatel_bottom/insstdev /novatel_top/insstdev 
       # - ros2 bag play sensors_2021-09-21_13-20-18/  --topics /luminar_front_points /luminar_left_points /luminar_right_points /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /novatel_top/bestpos /novatel_top/inspva /novatel_top/bestvel /novatel_top/imu/data /novatel_bottom/insstdev /novatel_top/insstdev
-      - ros2 bag play sensors_2021-09-21_13-20-18/  --topics /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /novatel_top/bestpos /novatel_top/inspva /novatel_top/bestvel /novatel_top/imu/data /novatel_bottom/insstdev /novatel_top/insstdev
+      # - ros2 bag play sensors_2021-09-21_13-20-18/  --topics /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /novatel_top/bestpos /novatel_top/inspva /novatel_top/bestvel /novatel_top/imu/data /novatel_bottom/insstdev /novatel_top/insstdev
+      - ros2 bag play autonomy_2021-10-04_13-15-58/ # 2021.10.04_LOR 2nd nif data
+      # - ros2 bag play autonomy_2021-10-04_15-03-58/ # 2021.10.04_LOR 3rd nif data
 
     - shell_command:
       - ros2 run plotjuggler plotjuggler
@@ -52,19 +55,19 @@ windows:
       - echo $TRACK
     panes:
       - shell_command:
-          - ros2 launch nif_localization_nodes test.launch.py
+          # - ros2 launch nif_localization_nodes test.launch.py
       - shell_command:
-          - ros2 launch nif_points_preprocessor_nodes deploy.launch.py
+          # - ros2 launch nif_points_preprocessor_nodes deploy.launch.py
       - shell_command:
-          - ros2 launch nif_multilayer_planning_nodes deploy.launch.py
+          # - ros2 launch nif_multilayer_planning_nodes deploy.launch.py
       - shell_command:
-          - ros2 launch nif_aw_localization_nodes deploy.launch.py
+          # - ros2 launch nif_aw_localization_nodes deploy.launch.py
       - shell_command:
-          - ros2 launch nif_costmap_generator deploy.launch.py
+          # - ros2 launch nif_costmap_generator deploy.launch.py
       - shell_command:
           # - ros2 bag record /aw_localization/ekf/odom /aw_localization/ekf/error /localization/ekf/odom /localization/ekf/odom_bestpos /bvs_localization/ltp_odom /novatel_bottom/insstdev /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /out_localization_error
       - shell_command:
-          - ros2 topic echo /aw_localization/ekf/status
+          # - ros2 topic echo /aw_localization/ekf/status
 
   - window_name: Monitoring Tab
     layout: tiled
@@ -82,17 +85,17 @@ windows:
       - export ROS_DOMAIN_ID=33
     panes:
       - shell_command:
-          - ros2 launch nif_velocity_planning_node bag.launch.py
+          - ros2 launch nif_launch base_hk.launch.py
+      - shell_command:
+          # - ros2 launch nif_velocity_planning_node bag.launch.py
       - shell_command:
           - ros2 launch nif_control_joint_lqr_nodes bag.launch.py
       - shell_command:
           - ros2 launch nif_accel_control_nodes bag.launch.py
       - shell_command:
-          - ros2 topic echo /velocity_planner/diagnostic
+          # - ros2 topic echo /velocity_planner/des_vel
       - shell_command:
-          - ros2 topic echo /velocity_planner/des_vel
-      - shell_command:
-          - ros2 topic echo /velocity_planner/diagnostic
+          # - ros2 topic echo /velocity_planner/diagnostic
           
 
   # - window_name: record Tab

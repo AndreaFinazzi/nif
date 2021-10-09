@@ -239,6 +239,7 @@ class OnlineTrajectoryHandler(object):
         # extract cartesian information of goal node
         end_pos, end_heading, _, _, _ = self.__graph_base.get_node_info(layer=goal_layer,
                                                                         node_number=goal_node)
+
         heading_diff = abs(start_heading - end_heading)
         if heading_diff > np.pi:
             heading_diff = abs(2 * np.pi - heading_diff)

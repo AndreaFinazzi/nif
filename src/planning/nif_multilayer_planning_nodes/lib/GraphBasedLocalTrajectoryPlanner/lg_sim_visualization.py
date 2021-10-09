@@ -159,7 +159,15 @@ if __name__ == "__main__":
             print(pit_in_box)
 
         elif mission_code_block.get("mission_code") == 65: # pit-standby
-            pit_standby_box = mission_code_block.get("activation_area").get("bboxes")[0]
+            boxes = mission_code_block.get("activation_area").get("bboxes")
+            for box in boxes:
+                pit_standby_box = box
+                pit_standby_box = patches.Rectangle((pit_standby_box[0], pit_standby_box[1]), # x_min, y_min
+                    pit_standby_box[2] - pit_standby_box[0], # x-wise width
+                    pit_standby_box[3] - pit_standby_box[1], # y-wise height
+                    linewidth=1, edgecolor='g', fc=(0,1,0,0.3), label='pit_standby_box [from mission yaml]')
+                ax.add_patch(pit_standby_box)
+
             print(pit_standby_box)
 
         elif mission_code_block.get("mission_code") == 75: # pit-out
@@ -167,7 +175,14 @@ if __name__ == "__main__":
             print(pit_out_box)
 
         elif mission_code_block.get("mission_code") == 65000: # pit-init
-            pit_init_box = mission_code_block.get("activation_area").get("bboxes")[0]
+            boxes = mission_code_block.get("activation_area").get("bboxes")
+            for box in boxes:
+                pit_init_box = box
+                pit_init_box = patches.Rectangle((pit_init_box[0], pit_init_box[1]), # x_min, y_min
+                            pit_init_box[2] - pit_init_box[0], # x-wise width
+                            pit_init_box[3] - pit_init_box[1], # y-wise height
+                            linewidth=1, edgecolor='k', fc=(0.8,0.4,0,0.3), label='pit_init_box [from mission yaml]')
+                ax.add_patch(pit_init_box)
             print(pit_init_box)
 
     pit_in_box = patches.Rectangle((pit_in_box[0], pit_in_box[1]), # x_min, y_min
@@ -175,25 +190,14 @@ if __name__ == "__main__":
                             pit_in_box[3] - pit_in_box[1], # y-wise height
                             linewidth=1, edgecolor='r', fc=(1,0,0,0.3), label='pit_in_box [from mission yaml]')
 
-    pit_standby_box = patches.Rectangle((pit_standby_box[0], pit_standby_box[1]), # x_min, y_min
-                            pit_standby_box[2] - pit_standby_box[0], # x-wise width
-                            pit_standby_box[3] - pit_standby_box[1], # y-wise height
-                            linewidth=1, edgecolor='g', fc=(0,1,0,0.3), label='pit_standby_box [from mission yaml]')
 
     pit_out_box = patches.Rectangle((pit_out_box[0], pit_out_box[1]), # x_min, y_min
                             pit_out_box[2] - pit_out_box[0], # x-wise width
                             pit_out_box[3] - pit_out_box[1], # y-wise height
                             linewidth=1, edgecolor='b', fc=(0,0,1,0.3), label='pit_out_box [from mission yaml]')
 
-    pit_init_box = patches.Rectangle((pit_init_box[0], pit_init_box[1]), # x_min, y_min
-                            pit_init_box[2] - pit_init_box[0], # x-wise width
-                            pit_init_box[3] - pit_init_box[1], # y-wise height
-                            linewidth=1, edgecolor='k', fc=(0.8,0.4,0,0.3), label='pit_init_box [from mission yaml]')
-
     ax.add_patch(pit_in_box)
-    ax.add_patch(pit_standby_box)
     ax.add_patch(pit_out_box)
-    ax.add_patch(pit_init_box)
 
     WPTFileVisualizer(pit_wpt, "pit-entire")
     RaceLineFileVisualizer(raceline, "race-line")

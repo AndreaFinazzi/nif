@@ -184,7 +184,6 @@ def generate_launch_description():
         remappings=[
             ('out_desired_velocity', 'velocity_planner/des_vel'),
             ('in_reference_path', 'planning/graph/path_global'),
-            # ('in_reference_path', 'planning/path_global'),
             ('in_ego_odometry', '/aw_localization/ekf/odom'),
             ('in_wheel_speed_report', 'raptor_dbw_interface/wheel_speed_report'),
             ('in_imu_data', 'novatel_bottom/imu/data'),
@@ -405,6 +404,7 @@ def generate_launch_description():
         nif_csl_param,
         nif_wpt_param,
         nif_joint_lqr_param,
+        lgsvl_simulation_launch,
 
         # ssc_interface,
         # socketcan_receiver_launch,
@@ -415,7 +415,7 @@ def generate_launch_description():
         nif_global_param_node,
         nif_system_status_manager_node,
         nif_csl_node,
-        # nif_localization_launch,
+        nif_localization_launch,
         nif_aw_localization_launch,
         nif_wall_node_launch_bg,
         nif_waypoint_manager_node,
@@ -425,5 +425,4 @@ def generate_launch_description():
         nif_joint_lqr_control_node,
         nif_accel_control_node,
         nif_mission_manager_launch,
-        lgsvl_simulation_launch
     ])

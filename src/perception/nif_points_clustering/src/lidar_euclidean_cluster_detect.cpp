@@ -1,3 +1,5 @@
+#include <nif_points_clustering/lidar_euclidean_cluster_detect.h>
+
 #ifdef GPU_CLUSTERING
 
 #include "nif_points_clustering/gpu_euclidean_clustering.h"
@@ -6,65 +8,9 @@
 
 #define __APP_NAME__ "euclidean_clustering"
 
-// ROS
-#include "rclcpp/clock.hpp"
-#include <chrono>
-#include <rclcpp/rclcpp.hpp>
-
-// PCL library
-#include <pcl/common/common.h>
-#include <pcl/common/transforms.h>
-#include <pcl/filters/approximate_voxel_grid.h>
-#include <pcl/filters/extract_indices.h>
-#include <pcl/filters/filter.h>
-#include <pcl/filters/voxel_grid.h>
-#include <pcl/kdtree/kdtree_flann.h>
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
-#include <pcl/range_image/range_image.h>
-#include <pcl/registration/icp.h>
-#include <pcl_conversions/pcl_conversions.h>
-
-#include <sensor_msgs/msg/point_cloud2.hpp>
-
-#include <mutex>
-#include <thread>
-#include <algorithm>
-
-class PointsClustering : public rclcpp::Node {
-public:
-  PointsClustering();
-  ~PointsClustering();
-  void clusterAndColorGpu(const pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud_ptr,
-                          pcl::PointCloud<pcl::PointXYZI>::Ptr out_cloud_ptr,
-                          double in_max_cluster_distance);
-  void PointsCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
-  void timer_callback();
-
-private:
-  void SetCloud(const pcl::PointCloud<pcl::PointXYZI>::Ptr in_origin_cloud_ptr,
-                pcl::PointCloud<pcl::PointXYZI>::Ptr register_cloud_ptr,
-                const std::vector<int> &in_cluster_indices, int ind);
-  pcl::PointCloud<pcl::PointXYZI>::Ptr
-  downsample(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud,
-             double resolution);
-  int m_cluster_size_min;
-  int m_cluster_size_max;
-  double m_max_cluster_distance;
-
-  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubClusterPoints;
-  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr
-          subFilteredPoints;
-  rclcpp::TimerBase::SharedPtr sub_timer_;
-
-  pcl::PointCloud<pcl::PointXYZI>::Ptr inPoints;
-  bool bPoints = false;
-
-  std::mutex sensor_mtx;
-};
 // Constructor
 PointsClustering::PointsClustering()
-    : Node("indy_costmap_generator")
+    : Node("nif_points_clustering")
 {
   this->declare_parameter<int>("cluster_size_min", 10);
   this->declare_parameter<int>("cluster_size_max", 2000);
@@ -75,15 +21,16 @@ PointsClustering::PointsClustering()
   this->m_max_cluster_distance = this->get_parameter("max_cluster_distance").as_double();
 
   pubClusterPoints = this->create_publisher<sensor_msgs::msg::PointCloud2>(
-      "/clustered_points", 10);
+      "out_clustered_points", nif::common::constants::QOS_SENSOR_DATA);
 
   subFilteredPoints = this->create_subscription<sensor_msgs::msg::PointCloud2>(
-      "/luminar_right_points", 10,
+      "in_lidar_points", nif::common::constants::QOS_SENSOR_DATA,
       std::bind(&PointsClustering::PointsCallback, this,
                 std::placeholders::_1));
+
   using namespace std::chrono_literals; // NOLINT
   sub_timer_ = this->create_wall_timer(
-      25ms, std::bind(&PointsClustering::timer_callback, this));
+      10ms, std::bind(&PointsClustering::timer_callback, this));
 }
 
 PointsClustering::~PointsClustering() {}
@@ -101,7 +48,7 @@ void PointsClustering::timer_callback() {
 
   sensor_msgs::msg::PointCloud2 cloud_clustered_msg;
   pcl::toROSMsg(*registeredPoints, cloud_clustered_msg);
-  cloud_clustered_msg.header.frame_id = "luminar_right";
+  cloud_clustered_msg.header.frame_id = nif::common::frame_id::localization::BASE_LINK;
   cloud_clustered_msg.header.stamp = this->now();
   pubClusterPoints->publish(cloud_clustered_msg);
 }
@@ -118,6 +65,9 @@ void PointsClustering::PointsCallback(
   inPoints = downsample(originPoints, 0.2);
 
   bPoints = true;
+
+  // std::cout << "callback" << std::endl;
+
 }
 
 void PointsClustering::clusterAndColorGpu(
@@ -165,10 +115,10 @@ void PointsClustering::clusterAndColorGpu(
     //   clusters.push_back(cluster);
     *out_cloud_ptr += *bufPoints;
     k++;
-    std::cout << "k: " << k << ", " << it->points_in_cluster.size() << std::endl;
+    // std::cout << "k: " << k << ", " << it->points_in_cluster.size() << std::endl;
   }
 
-  std::cout << "working" << std::endl;
+  // std::cout << "working" << std::endl;
 
   free(tmp_x);
   free(tmp_y);
@@ -264,15 +214,4 @@ PointsClustering::downsample(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud,
   voxelgrid.setInputCloud(cloud);
   voxelgrid.filter(*filtered);
   return filtered;
-}
-
-int main(int argc, char **argv) {
-  rclcpp::init(argc, argv);
-
-  auto node = std::make_shared<PointsClustering>();
-
-  rclcpp::spin(node);
-  rclcpp::shutdown();
-
-  return 0;
 }

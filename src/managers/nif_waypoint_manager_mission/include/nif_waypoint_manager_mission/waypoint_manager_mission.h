@@ -53,7 +53,7 @@ private:
   double m_spline_interval;
 
   bool m_odom_first_callbacked;
-  bool m_on_track_flg;
+  bool m_on_track_flg = true;
 
   double m_planning_vel_default;      // in [m/s]
   double m_left_side_sampling_width;  // in [m]

@@ -9,8 +9,7 @@ vcs import < nif.foxy.repos.tmp --workers=1 --recursive
 rm nif.foxy.repos.tmp
 
 # Install python dependencies
-pip install -r central-requirements.txt
-
+pip3 install -r central-requirements.txt
 
 rosdep update
 rosdep install -ir -y --from-path src/ --rosdistro $ROS_DISTRO
