@@ -26,11 +26,11 @@ public:
   void setOccupancyMap(const nav_msgs::msg::OccupancyGrid &occupancy_map);
   double calculateProjDist(double pt_x_, double pt_y_,
                            vector<double> x_vec, vector<double> y_vec );
-  double CalculateSignedProjDist(double pt_x_, double pt_y_,
+  double calculateSignedProjDist(double pt_x_, double pt_y_,
                                  vector<double> x_vec, vector<double> y_vec);
   void calcPathCost();
-
   double mapCorrespondingCost(double x_,double y_);
+
 
 private:
   double m_weight_collision;
@@ -40,6 +40,7 @@ private:
   double m_weight_transient;
 
   bool m_calc_path_first_called;
+  bool m_occupancy_map_first_called;
 
   vector<shared_ptr<Frenet::FrenetPath>> m_path_cadidates_ptr_vec;
   vector<double> m_cost_collision_vec;
@@ -47,6 +48,7 @@ private:
   vector<double> m_cost_origin_vec;
   vector<double> m_cost_ref_vec;
   vector<double> m_cost_transient_vec;
+  vector<double> m_cost_total_vec;
   shared_ptr<Frenet::FrenetPath> m_last_min_cost_path;
   nav_msgs::msg::OccupancyGrid m_OccupancyGrid;
   nav_msgs::msg::Path m_ref_path;
@@ -54,6 +56,7 @@ private:
   vector<double> m_ref_y_vec;
 
   double m_prev_path_lat_displacement;
+  double m_cur_path_lat_displacement;
 
 public:
   void setWeightCollision(double weight_collision_) {
@@ -82,9 +85,7 @@ public:
   double getWeightRef(){return m_weight_ref;}
   double getWeightTransient(){return m_weight_transient;}
   shared_ptr<Frenet::FrenetPath> getMincostFrenetPath(){return m_last_min_cost_path;}
-
-  void setReferencePath(const nav_msgs::msg::Path ref_path);
-
+  void setReferencePath(const nav_msgs::msg::Path& ref_path);
 };
 } // namespace cost_calculator
 
