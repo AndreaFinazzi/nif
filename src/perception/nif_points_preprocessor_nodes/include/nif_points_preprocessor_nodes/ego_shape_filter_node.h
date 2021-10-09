@@ -91,7 +91,7 @@
  * MAP_HEIGHT : longitudinal direction
  */
 const unsigned long MAP_WIDTH =
-    560; //(front_upper_distance + rear_upper_distance) / resolution
+    400; //(front_upper_distance + rear_upper_distance) / resolution
 const unsigned long MAP_HEIGHT =
     240; // (right_upper_distance + left_upper_distance) / resolution
 
@@ -183,6 +183,21 @@ private:
   std::array<std::array<float, (size_t)(MAP_WIDTH + 1)>,
                                   (size_t)(MAP_HEIGHT + 1)>
       map;
+  std::array<std::array<std::vector<double>, (size_t)(MAP_WIDTH + 1)>,
+             (size_t)(MAP_HEIGHT + 1)>
+      points_map;
+
+  std::array<std::array<float, (size_t)(MAP_WIDTH + 1)>,
+             (size_t)(MAP_HEIGHT + 1)>
+      count_map;
+
+  std::array<std::array<float, (size_t)(MAP_WIDTH + 1)>,
+             (size_t)(MAP_HEIGHT + 1)>
+      mean_map;
+
+  std::array<std::array<float, (size_t)(MAP_WIDTH + 1)>,
+             (size_t)(MAP_HEIGHT + 1)>
+      cov_map;
 
   void EgoShape(pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud_ptr,
                 pcl::PointCloud<pcl::PointXYZI>::Ptr out_cloud_ptr,

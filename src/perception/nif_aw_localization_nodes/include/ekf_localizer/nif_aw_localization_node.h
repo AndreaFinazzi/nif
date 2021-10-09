@@ -226,6 +226,11 @@ private:
 
   double m_dIMU_yaw_rate;
   double m_dVelolcity_X;
+  double m_BOTTOM_VEL_X;
+  double m_BOTTOM_VEL_Y;
+  double m_TOP_VEL_X;
+  double m_TOP_VEL_Y;
+  double m_final_INSPVA_Vel_Y;
 
   bool bImuFirstCall;
   double ImuTimeDouble;

@@ -110,7 +110,7 @@ public:
     // - time to collision(arrive) until safe path dist
     this->declare_parameter("ttc_thres", 2.0);
     // - safety factor for lateral tire force model
-    this->declare_parameter("lateral_tire_model_factor", 0.4);
+    this->declare_parameter("lateral_tire_model_factor", 0.6);
 
     // Read in misc. parameters
     m_vel_plan_enabled = this->get_parameter("vel_plan_enabled").as_bool();
@@ -136,10 +136,10 @@ public:
         this->get_parameter("lateral_tire_model_factor").as_double();
 
     if (m_lat_tire_factor > 1.0) {
-      RCLCPP_ERROR(this->get_logger(),
-                   "Got lateral_tire_model_factor: %f;",
+      RCLCPP_ERROR(this->get_logger(), "Got lateral_tire_model_factor: %f;",
                    m_lat_tire_factor);
-      throw std::range_error("Parameter lateral_tire_model_factor must be lower or equal than 1.0");
+      throw std::range_error("Parameter lateral_tire_model_factor must be "
+                             "lower or equal than 1.0");
     }
 
     // Update lateral tire model safety factor
@@ -218,13 +218,13 @@ private:
         double path_dist = dist_array[path_len - 1];
 
         // Get Lateral Acceleration Limit using Vehicle dynamics manager
-        // double a_lat_max = m_tire_manager.ComputeLateralAccelLimit(
-        //     m_a_lon_kf, m_a_lat_kf, m_yaw_rate_kf, current_steer_rad,
-        //     current_velocity_mps);
-        // - hyunki 21.10.04, for temporal testing
         double a_lat_max = m_tire_manager.ComputeLateralAccelLimit(
-            0.0, 0.0, m_yaw_rate_kf, current_steer_rad,
+            m_a_lon_kf, m_a_lat_kf, m_yaw_rate_kf, current_steer_rad,
             current_velocity_mps);
+        // // - hyunki 21.10.04, for temporal testing
+        // double a_lat_max = m_tire_manager.ComputeLateralAccelLimit(
+        //     0.0, 0.0, m_yaw_rate_kf, current_steer_rad,
+        //     current_velocity_mps);
         // double a_lat_max = m_tire_manager.ComputeLateralAccelLimit(
         //     a_lon, a_lat, yaw_rate, current_steer_rad,
         //     current_velocity_mps);

@@ -21,11 +21,11 @@ while [[ $# -gt 0 ]]; do
      shift # past argument
      shift # past value
      ;;
-#    -l|--lib)
-#      LIBPATH="$2"
-#      shift # past argument
-#      shift # past value
-#      ;;
+   --cuda-host)
+     CUDA="host"
+     shift # past argument
+     shift # past value
+     ;;
 #    --default)
 #      DEFAULT=YES
 #      shift # past argument
@@ -53,7 +53,11 @@ else
     OPTIONS_NVIDIA=""
 fi
 
-if $SIMULATOR ;
+if [[ $CUDA == "host" ]] ;
+then
+  ADERC=".aderc-cuda"
+  echo "Starting with .aderc-*-cuda"
+elif $SIMULATOR ;
 then
   ADERC=".aderc-lgsvl"
 else
