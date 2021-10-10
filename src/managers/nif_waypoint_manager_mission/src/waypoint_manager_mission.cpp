@@ -18,7 +18,13 @@ WaypointManagerMission::WaypointManagerMission(const string &rl_wpt_file_path_,
       m_global_frame_id_str(global_frame_id_),
       m_spline_interval(spline_interval_) {
 
+  m_map_track_path_global.header.frame_id = m_global_frame_id_str;
+  m_map_track_path_body.header.frame_id = m_body_frame_id_str;
+  m_collision_avoidance_path_body.header.frame_id = m_body_frame_id_str;
+
   m_frenet_generator = std::make_shared<FrenetPathGenerator>();
+  m_frenet_cost_calculator =
+      std::make_shared<nif::planning::cost_calculator::costCalculator>();
 
   vector<string> rl_file_path_vec_tmp{m_rl_wpt_file_path};
   vector<string> pit_file_path_vec_tmp{m_pit_wpt_file_path};
@@ -57,23 +63,31 @@ void WaypointManagerMission::calcMapTrack() {
 
       // ///////////////////////
       // NOTE : collision check
+      // NOTE : Need to load frenet generator default params. it can cause an
+      // error.
       // ///////////////////////
-      // std::tie(splined_x, splined_y, splined_yaw, cubic_spliner_2D_xy) =
-      //     m_frenet_generator->applyCubicSpliner_2d_ros(m_map_track_path_body,
-      //                                                  1.0);
-      // double cte = -1 * splined_y[0];
-      // double target_vel =
-      //     m_planning_vel_default + m_cur_odom.twist.twist.linear.x; // [m/s]
-      // std::tuple<std::shared_ptr<FrenetPath>,
-      //            std::vector<std::shared_ptr<FrenetPath>>>
-      //     frenet_path_generation_result =
-      //         m_frenet_generator->calcOptimalFrenetPathByMode(
-      //             FRENET_GEN_MODE::MULTIPLE_LAT_FPS, cubic_spliner_2D_xy, 0.0,
-      //             0.0, 0.0, m_cur_odom.twist.twist.linear.x, 0.0, 0.0, 0.0,
-      //             m_left_side_sampling_width, m_right_side_sampling_width,
-      //             target_vel, 0.0, 0.0, m_sampling_width_d, m_planning_t, 0.1);
-      // std::vector<std::shared_ptr<FrenetPath>> frenet_paths =
-      //     std::get<1>(frenet_path_generation_result);
+      std::tie(splined_x, splined_y, splined_yaw, cubic_spliner_2D_xy) =
+          m_frenet_generator->applyCubicSpliner_2d_ros(m_map_track_path_body,
+                                                       1.0);
+      double cte = -1 * splined_y[0];
+      double target_vel =
+          m_planning_vel_default + m_cur_odom.twist.twist.linear.x; // [m/s]
+      std::tuple<std::shared_ptr<FrenetPath>,
+                 std::vector<std::shared_ptr<FrenetPath>>>
+          frenet_path_generation_result =
+              m_frenet_generator->calcOptimalFrenetPathByMode(
+                  FRENET_GEN_MODE::MULTIPLE_LAT_FPS, cubic_spliner_2D_xy, 0.0,
+                  0.0, 0.0, m_cur_odom.twist.twist.linear.x, 0.0, 0.0, 0.0,
+                  m_left_side_sampling_width, m_right_side_sampling_width,
+                  target_vel, 0.0, 0.0, m_sampling_width_d, m_planning_t, 0.1);
+      std::vector<std::shared_ptr<FrenetPath>> frenet_paths =
+          std::get<1>(frenet_path_generation_result);
+      // NOTE : must call the function "setReferencePath" beforehand
+      // "setFrenetPathArray"
+      this->m_frenet_cost_calculator->setReferencePath(m_map_track_path_body);
+      this->m_frenet_cost_calculator->setFrenetPathArray(frenet_paths);
+      m_collision_avoidance_fp_body_ptr =
+          this->m_frenet_cost_calculator->getMincostFrenetPath();
 
     } else if (m_cur_mission_code.mission_status_code ==
                m_cur_mission_code.MISSION_STANDBY) {

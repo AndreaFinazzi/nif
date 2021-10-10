@@ -16,6 +16,7 @@
   <depend>nif_common</depend>
   <depend>nif_common_nodes</depend>
   <depend>nif_waypoint_manager_common</depend>
+  <depend>nif_planning_common</depend>
 
   <depend>std_msgs</depend>
   <depend>nif_msgs</depend>

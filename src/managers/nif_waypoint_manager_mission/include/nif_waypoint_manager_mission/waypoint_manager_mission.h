@@ -15,6 +15,7 @@
 #include <vector>
 
 #include "nif_common_nodes/i_base_node.h"
+#include "nif_planning_common/path_cost_calculator.hpp"
 #include "nif_utils/frenet_path_generator.h"
 #include "nif_waypoint_manager_common/i_waypoint_manager.h"
 
@@ -68,12 +69,16 @@ private:
 
   nav_msgs::msg::Path m_map_track_path_global;
   nav_msgs::msg::Path m_map_track_path_body;
+  nav_msgs::msg::Path m_collision_avoidance_path_body;
+  std::shared_ptr<FrenetPath> m_collision_avoidance_fp_body_ptr;
 
   std::shared_ptr<IWaypointManager> m_rl_wpt_manager;
   std::shared_ptr<IWaypointManager> m_pit_wpt_manager;
 
   // NOTE : only working in the body coordinate
   std::shared_ptr<FrenetPathGenerator> m_frenet_generator;
+  std::shared_ptr<nif::planning::cost_calculator::costCalculator>
+      m_frenet_cost_calculator;
 
   std::vector<double> splined_x, splined_y, splined_yaw;
   std::shared_ptr<CubicSpliner2D> cubic_spliner_2D_xy;

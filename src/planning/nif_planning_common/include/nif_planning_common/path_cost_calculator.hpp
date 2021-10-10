@@ -1,10 +1,10 @@
-#include "nav_msgs/msg/path.hpp"
 #include "nav_msgs/msg/occupancy_grid.hpp"
+#include "nav_msgs/msg/path.hpp"
+#include "nif_common/constants.h"
+#include "nif_utils/frenet_path_generator.h"
+#include "vector"
 #include <assert.h>
 #include <string>
-#include "vector"
-#include "nif_utils/frenet_path_generator.h"
-#include "nif_common/constants.h"
 
 #define WEIGHT_COLLISION 10
 #define WEIGHT_CURVATURE 1
@@ -17,20 +17,20 @@ namespace planning {
 namespace cost_calculator {
 class costCalculator {
 public:
-  costCalculator(double weight_collision_,
-                 double weight_curvature_,
-                 double weight_origin_,
-                 double weight_ref_,
+  costCalculator();
+  costCalculator(double weight_collision_, double weight_curvature_,
+                 double weight_origin_, double weight_ref_,
                  double weight_transient_);
-  void setFrenetPathArray(vector<shared_ptr<Frenet::FrenetPath>>& path_cadidates_ptr_vec);
+  void setFrenetPathArray(
+      vector<shared_ptr<Frenet::FrenetPath>> &path_cadidates_ptr_vec);
   void setOccupancyMap(const nav_msgs::msg::OccupancyGrid &occupancy_map);
-  double calculateProjDist(double pt_x_, double pt_y_,
-                           vector<double> x_vec, vector<double> y_vec );
-  double calculateSignedProjDist(double pt_x_, double pt_y_,
-                                 vector<double> x_vec, vector<double> y_vec);
+  double calculateProjDist(double &pt_x_, double &pt_y_, vector<double> &x_vec,
+                           vector<double> &y_vec);
+  double calculateSignedProjDist(double &pt_x_, double &pt_y_,
+                                 vector<double> &x_vec, vector<double> &y_vec);
   void calcPathCost();
-  double mapCorrespondingCost(double x_,double y_);
-
+  double mapCorrespondingCost(double x_, double y_);
+  void setReferencePath(const nav_msgs::msg::Path &ref_path);
 
 private:
   double m_weight_collision;
@@ -79,13 +79,14 @@ public:
     if (weight_transient_ > 0)
       m_weight_transient = weight_transient_;
   }
-  double getWeightCollision(){return m_weight_collision;}
-  double getWeightCurvature(){return m_weight_curvature;}
-  double getWeightOrigin(){return m_weight_origin;}
-  double getWeightRef(){return m_weight_ref;}
-  double getWeightTransient(){return m_weight_transient;}
-  shared_ptr<Frenet::FrenetPath> getMincostFrenetPath(){return m_last_min_cost_path;}
-  void setReferencePath(const nav_msgs::msg::Path& ref_path);
+  double getWeightCollision() { return m_weight_collision; }
+  double getWeightCurvature() { return m_weight_curvature; }
+  double getWeightOrigin() { return m_weight_origin; }
+  double getWeightRef() { return m_weight_ref; }
+  double getWeightTransient() { return m_weight_transient; }
+  shared_ptr<Frenet::FrenetPath> getMincostFrenetPath() {
+    return m_last_min_cost_path;
+  }
 };
 } // namespace cost_calculator
 
