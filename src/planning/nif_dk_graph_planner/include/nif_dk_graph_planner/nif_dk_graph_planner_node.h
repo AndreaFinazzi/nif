@@ -133,29 +133,44 @@ public:
 private:
   DKGraphPlannerNode();
 
-  void SearchGraph(const double &x_in, const double &y_in, int &start_layer_out,
-                   int &end_layer_out, int &start_node_out, int &end_node_out);
-  std::vector<std::pair<std::string, std::vector<double>>> read_csv(std::string filename);
-  
+  void BuildGraph();
+
+  void SearchGraph(const double &x_in, const double &y_in,
+                    pcl::PointCloud<pcl::PointXYZI>::Ptr in_points,
+                    int &start_layer_out, int &end_layer_out,
+                    int &start_node_out, int &end_node_out,
+                    double &distance_out);
+  void GetIntensityInfo(const double &x_in, const double &y_in,
+                        pcl::PointCloud<pcl::PointXYZI>::Ptr in_points,
+                        int &intensity_out);
+  double getClosestDistance(const double &x_in,
+                            const double &y_in,
+                            pcl::PointCloud<pcl::PointXYZI>::Ptr points_in);
+
+  std::vector<std::pair<std::string, std::vector<double>>> read_csv(
+          std::string filename);
+
   rclcpp::TimerBase::SharedPtr sub_timer_;
   rclcpp::Publisher<nif_dk_graph_planner_msgs::msg::OsmParcer>::SharedPtr
       pubOsmParcer;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubFullNodePoints;
-  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubRacingLinePoints;
-        // pubCandidatesNodePoints, pubFinalPathPoints; ros::Publisher
-        // pubFullLink, pubFinalLink; ros::Publisher pubFinalNodes,
-        // pubFinalITSIds; ros::Publisher pubWptNodeCloud;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubRacingLineRefPoints;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubFirstNodeContainPoints;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubCandidatesNodePoints;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubFinalPathPoints;
 
-            // ros::Subscriber SubInitPose;
-            // ros::Subscriber SubGoal;
+  // ros::Subscriber SubInitPose;
+  // ros::Subscriber SubGoal;
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr SubOdometry;
     // ros::Subscriber SubGoalXYList;
 
     std::string m_OsmFileName, m_FullFilePath;
     std::string m_RacingTrajectory;
 
-    pcl::PointCloud<pcl::PointXYZI>::Ptr m_racingLine_points;
+    pcl::PointCloud<pcl::PointXYZI>::Ptr m_racingLineRefPoints;
     pcl::PointCloud<pcl::PointXYZI>::Ptr m_FullIndexedPoints;
+    pcl::PointCloud<pcl::PointXYZI>::Ptr m_FullNodeIDPoints;
+    pcl::PointCloud<pcl::PointXYZI>::Ptr m_FirstNodeContainPoints;
 
     nif_dk_graph_planner_msgs::msg::OsmParcer m_OsmParcer;
 
@@ -170,6 +185,7 @@ private:
 
     bool bParcingComplete = false;
     bool bRacingLine = false;
+    bool bBuildGraph = false;
     // bool bInitPose;
     // bool bGoalPose;
     // bool bBothDirection, bCCW;
@@ -178,9 +194,14 @@ private:
 
     // int m_closestWayId_start;
     // int m_closestWayId_goal;
-    // int m_closestStartNode;
-    // int m_closestGoalNode;
+    int m_closestStartNode;
+    int m_closestGoalNode;
     std::unordered_map<int, std::vector<nif_dk_graph_planner_msgs::msg::Way>> m_WaysResister;
+    std::unordered_map<int, std::vector<nif_dk_graph_planner_msgs::msg::Way>> m_FirstNodeBasedResister;
+
+    std::vector<std::pair<int, std::pair<int, int>>>
+        m_RacingLineGraphArray; // pair layer, node
+
     // // std::unordered_map<int, nif_dk_graph_planner_msgs::msg::Way>
     // m_NextWay;
     // // std::unordered_map<int, nif_dk_graph_planner_msgs::msg::Way>
@@ -191,11 +212,10 @@ private:
     double m_originLon;
     // double m_YawBias;
 
-    // std::unordered_map<int, std::vector<Connected>> m_graph;
-    // std::unordered_map<int, int> m_PredSuccMap;
-    // std::deque<int> m_PlanningPathNodes, m_PlanningPathNodesForCSV;
-    // std::vector<int> m_FinalNodes;
-    // std::vector<int> m_GoalXY_to_way_id_List;
+    std::unordered_map<int, std::vector<Connected>> m_graph;
+    std::unordered_map<int, int> m_PredSuccMap;
+    std::deque<int> m_PlanningPathNodes;
+    std::vector<int> m_FinalNodes;
 
     std::mutex mtx;
 };
