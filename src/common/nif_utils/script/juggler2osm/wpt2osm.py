@@ -158,6 +158,21 @@ def parse_configs():
             # print(pointBuf)
             idx = idx + 1
     
+    way = Element('way', id='%d'%way_id, action='modify')
+    for node_id_tmp in node_id_list:
+        nd = Element('nd', ref='%d'%node_id_tmp)
+        way.append(nd)
+        count +=1
+        # if(count%20 == 0):
+        #     way = Element('way', id='%d'%way_id, action='modify')
+        #     way.append(nd)
+        #     next_way_id = way_id+1
+            # tag_way_id = Element('tag', k='this_id',v='%d'%way_id)
+            # tag_next_id = Element('tag',k='next_id',v='%d'%next_way_id)
+            # way.append(tag_way_id)
+            # way.append(tag_next_id)
+            # way_id +=1
+    root.append(way)
     indent(root)
     # dump(root)            
     tree = ElementTree(root)

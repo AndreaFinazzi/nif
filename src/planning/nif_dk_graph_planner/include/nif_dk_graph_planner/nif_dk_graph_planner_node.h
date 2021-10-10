@@ -93,7 +93,15 @@ typedef struct Connected
 {
   int id;
   double cost;
+  double additional_cost;
+
 } connected_t;
+
+typedef struct Obstacle {
+  double x;
+  double y;
+  double cost;
+} obstacle_t;
 
 typedef struct Waymap {
   int start_layer;
@@ -126,6 +134,8 @@ public:
   // void CallbackInitPoseRviz(const geometry_msgs::PoseWithCovarianceStamped& msg);  
   // void CallbackGoalRviz(const geometry_msgs::PoseStamped& msg);
   void CallbackOdometry(const nav_msgs::msg::Odometry::SharedPtr msg);
+  void CallbackOccupancyGrid(const nav_msgs::msg::OccupancyGrid::SharedPtr msg);
+  
   // void timerCallback(const ros::TimerEvent& event);
   // void CallbackGoalXYList(const sensor_msgs::msg::PointCloud2ConstPtr& msg);
   
@@ -134,91 +144,110 @@ private:
   DKGraphPlannerNode();
 
   void BuildGraph();
+  void UpdateGraph();
+  void ReleaseGraph();
 
-  void SearchGraph(const double &x_in, const double &y_in,
-                    pcl::PointCloud<pcl::PointXYZI>::Ptr in_points,
-                    int &start_layer_out, int &end_layer_out,
-                    int &start_node_out, int &end_node_out,
-                    double &distance_out);
   void GetIntensityInfo(const double &x_in, const double &y_in,
                         pcl::PointCloud<pcl::PointXYZI>::Ptr in_points,
                         int &intensity_out);
-  double getClosestDistance(const double &x_in,
-                            const double &y_in,
+  double getClosestDistance(const double &x_in, const double &y_in,
                             pcl::PointCloud<pcl::PointXYZI>::Ptr points_in);
+  double CorrespondingCost(const double pt_x, const double pt_y,
+                            const nav_msgs::msg::OccupancyGrid &gridmap);
+  void getNearbyNodesFromLayer(const double &x_in, const double &y_in,
+                      const int &search_num_idx_in,
+                      pcl::PointCloud<pcl::PointXYZI>::Ptr points_in,
+                      int &current_layer_out,
+                      std::vector<int> &nearby_indice_out);
 
   std::vector<std::pair<std::string, std::vector<double>>> read_csv(
-          std::string filename);
+      std::string filename);
+  void removeDuplicated(std::vector<int> &v);
 
   rclcpp::TimerBase::SharedPtr sub_timer_;
   rclcpp::Publisher<nif_dk_graph_planner_msgs::msg::OsmParcer>::SharedPtr
       pubOsmParcer;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubFullNodePoints;
-  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubRacingLineRefPoints;
-  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubFirstNodeContainPoints;
-  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubCandidatesNodePoints;
-  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubFinalPathPoints;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr
+      pubRacingLineRefPoints;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr
+      pubFirstNodeContainPoints;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr
+      pubCandidatesNodePoints;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr
+      pubFinalPathPoints;
 
   // ros::Subscriber SubInitPose;
   // ros::Subscriber SubGoal;
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr SubOdometry;
-    // ros::Subscriber SubGoalXYList;
+  rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr
+      SubOccupancyGrid;
 
-    std::string m_OsmFileName, m_FullFilePath;
-    std::string m_RacingTrajectory;
+  // ros::Subscriber SubGoalXYList;
 
-    pcl::PointCloud<pcl::PointXYZI>::Ptr m_racingLineRefPoints;
-    pcl::PointCloud<pcl::PointXYZI>::Ptr m_FullIndexedPoints;
-    pcl::PointCloud<pcl::PointXYZI>::Ptr m_FullNodeIDPoints;
-    pcl::PointCloud<pcl::PointXYZI>::Ptr m_FirstNodeContainPoints;
+  std::string m_OsmFileName, m_FullFilePath;
+  std::string m_RacingTrajectory;
 
-    nif_dk_graph_planner_msgs::msg::OsmParcer m_OsmParcer;
+  pcl::PointCloud<pcl::PointXYZI>::Ptr m_racingLineRefPoints;
+  pcl::PointCloud<pcl::PointXYZI>::Ptr m_FullIndexedPoints;
+  pcl::PointCloud<pcl::PointXYZI>::Ptr m_FullNodeIDPoints;
+  pcl::PointCloud<pcl::PointXYZI>::Ptr m_FirstNodeContainPoints;
 
-    // autoware_msgs::LaneArray m_LaneArray;
-    // autoware_msgs::LaneArray m_FinalLaneArray;
+  nif_dk_graph_planner_msgs::msg::OsmParcer m_OsmParcer;
 
-    // geometry_msgs::Pose m_InitPose;
-    // nav_msgs::Odometry m_Odometry;
-    // geometry_msgs::Pose m_GoalPose;
-    // geometry_msgs::Pose m_PrevGoalPose;
-    // std::vector<geometry_msgs::Pose> m_GoalXYList;
+  // autoware_msgs::LaneArray m_LaneArray;
+  // autoware_msgs::LaneArray m_FinalLaneArray;
 
-    bool bParcingComplete = false;
-    bool bRacingLine = false;
-    bool bBuildGraph = false;
-    // bool bInitPose;
-    // bool bGoalPose;
-    // bool bBothDirection, bCCW;
-    // bool bReplanRoute;
-    // bool bCSVGoalList;
+  // geometry_msgs::Pose m_InitPose;
+  // nav_msgs::Odometry m_Odometry;
+  // geometry_msgs::Pose m_GoalPose;
+  // geometry_msgs::Pose m_PrevGoalPose;
+  // std::vector<geometry_msgs::Pose> m_GoalXYList;
 
-    // int m_closestWayId_start;
-    // int m_closestWayId_goal;
-    int m_closestStartNode;
-    int m_closestGoalNode;
-    std::unordered_map<int, std::vector<nif_dk_graph_planner_msgs::msg::Way>> m_WaysResister;
-    std::unordered_map<int, std::vector<nif_dk_graph_planner_msgs::msg::Way>> m_FirstNodeBasedResister;
+  bool bParcingComplete = false;
+  bool bRacingLine = false;
+  bool bBuildGraph = false;
+  bool bOccupancyGrid = false;
+  // bool bInitPose;
+  // bool bGoalPose;
+  // bool bBothDirection, bCCW;
+  // bool bReplanRoute;
+  // bool bCSVGoalList;
 
-    std::vector<std::pair<int, std::pair<int, int>>>
-        m_RacingLineGraphArray; // pair layer, node
+  // int m_closestWayId_start;
+  // int m_closestWayId_goal;
+  int m_closestStartNode;
+  int m_closestGoalNode;
+  int m_currentLayer;
+  std::unordered_map<int, std::vector<nif_dk_graph_planner_msgs::msg::Way>>
+      m_WaysResister;
+  std::unordered_map<int, std::vector<nif_dk_graph_planner_msgs::msg::Way>>
+      m_FirstNodeBasedResister;
 
-    // // std::unordered_map<int, nif_dk_graph_planner_msgs::msg::Way>
-    // m_NextWay;
-    // // std::unordered_map<int, nif_dk_graph_planner_msgs::msg::Way>
-    // m_PrevWay;
+  std::vector<std::pair<int, std::pair<int, int>>>
+      m_RacingLineGraphArray; // pair layer, node
 
-    nif::localization::utils::GeodeticConverter conv_;
-    double m_originLat;
-    double m_originLon;
-    // double m_YawBias;
+  std::vector<Obstacle> m_obstacle;
+  std::vector<int> m_nearbyFirstNodes;
+  nav_msgs::msg::OccupancyGrid m_OccupancyGrid;
 
-    std::unordered_map<int, std::vector<Connected>> m_graph;
-    std::unordered_map<int, int> m_PredSuccMap;
-    std::deque<int> m_PlanningPathNodes;
-    std::vector<int> m_FinalNodes;
+  // // std::unordered_map<int, nif_dk_graph_planner_msgs::msg::Way>
+  // m_NextWay;
+  // // std::unordered_map<int, nif_dk_graph_planner_msgs::msg::Way>
+  // m_PrevWay;
 
-    std::mutex mtx;
-};
+  nif::localization::utils::GeodeticConverter conv_;
+  double m_originLat;
+  double m_originLon;
+  // double m_YawBias;
+
+  std::unordered_map<int, std::vector<Connected>> m_graph;
+  std::unordered_map<int, int> m_PredSuccMap;
+  std::deque<int> m_PlanningPathNodes;
+  std::vector<int> m_FinalNodes;
+
+  std::mutex mtx;
+  };
 } // namespace planning
 } // namespace nif
 

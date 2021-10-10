@@ -19,8 +19,9 @@ int32_t main(int32_t argc, char **argv) {
   const char *node_name_1 = "nif_dk_graph_planner_nodes";
   auto PLANNER = std::make_shared<DKGraphPlannerNode>(node_name_1);
 
-  // Use 2 threads
-  rclcpp::executors::SingleThreadedExecutor executor;
+  // rclcpp::executors::SingleThreadedExecutor executor;
+  rclcpp::executors::MultiThreadedExecutor executor(
+      rclcpp::executor::create_default_executor_arguments(), 2);
   try {
     RCLCPP_INFO(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
                 "Instantiating DKGraphPlannerNode with name: %s", &node_name_1);

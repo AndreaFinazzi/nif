@@ -70,6 +70,10 @@ DKGraphPlannerNode::DKGraphPlannerNode(const std::string &node_name_)
       "in_ekf_odometry", nif::common::constants::QOS_EGO_ODOMETRY,
       std::bind(&DKGraphPlannerNode::CallbackOdometry, this,
                 std::placeholders::_1));
+  SubOccupancyGrid = this->create_subscription<nav_msgs::msg::OccupancyGrid>(
+      "in_oc_grid", nif::common::constants::QOS_EGO_ODOMETRY,
+      std::bind(&DKGraphPlannerNode::CallbackOccupancyGrid, this,
+                std::placeholders::_1));
 
   OsmParcing();
   RacingLineParcing();
@@ -252,10 +256,6 @@ void DKGraphPlannerNode::RacingLineParcing()
     point_buf.intensity = i;
     m_racingLineRefPoints->points.push_back(point_buf);
 
-    // // find a racing line in the graph.
-    // SearchGraph(point_buf.x, point_buf.y, start_layer, end_layer, start_node,
-    //             end_node, distance);
-
     // if (distance < 0.2)
     // {
     //   std::pair<int, std::pair<int, int>> layer_node; //layer - (start_node , end_node)
@@ -319,9 +319,28 @@ void DKGraphPlannerNode::CallbackOdometry(const nav_msgs::msg::Odometry::SharedP
     target_y = m_racingLineRefPoints->points[target_idx].y;
     GetIntensityInfo(target_x, target_y, m_FirstNodeContainPoints, target_node_id);
     m_closestGoalNode = target_node_id;
+
+    m_nearbyFirstNodes.clear();
+    int search_num_idx = 10;
+    int current_layer;
+    getNearbyNodesFromLayer(veh_x, veh_y, search_num_idx, m_FullIndexedPoints,
+                            current_layer, m_nearbyFirstNodes);
+
+    m_currentLayer = current_layer;
+
+    std::cout << "m_currentLayer : "
+              << std::endl;
+
+    std::cout << "m_nearbyFirstNodes.size() : " << m_nearbyFirstNodes.size()
+              << std::endl;
   }
 }
 
+void DKGraphPlannerNode::CallbackOccupancyGrid(const nav_msgs::msg::OccupancyGrid::SharedPtr msg) 
+{
+  m_OccupancyGrid = *msg;
+  bOccupancyGrid = true;
+}
 
 void DKGraphPlannerNode::timer_callback() {
   if (bRacingLine && bParcingComplete && bBuildGraph) {
@@ -352,61 +371,6 @@ void DKGraphPlannerNode::MessagePublisher() {
   FirstNodeInfoCloudMsg.header.frame_id = nif::common::frame_id::localization::ODOM;
   FirstNodeInfoCloudMsg.header.stamp = this->now();
   pubFirstNodeContainPoints->publish(FirstNodeInfoCloudMsg);
-}
-
-void DKGraphPlannerNode::SearchGraph(const double &x_in, const double &y_in,
-                                     pcl::PointCloud<pcl::PointXYZI>::Ptr in_points,
-                                     int &start_layer_out, int &end_layer_out,
-                                     int &start_node_out, int &end_node_out,
-                                     double &distance_out) {
-  if (!bParcingComplete)
-    return;
-
-  pcl::KdTreeFLANN<pcl::PointXYZI> kdtree;
-  kdtree.setInputCloud(in_points);
-
-  pcl::PointXYZI searchPoint;
-  searchPoint.x = x_in;
-  searchPoint.y = y_in;
-
-  int K = 1; 
-  std::vector<int> pointIdxNKNSearch(K);
-  std::vector<float> pointNKNSquaredDistance(K);
-
-  double nearest_x_in_points, nearest_y_in_points;
-  if (kdtree.nearestKSearch(searchPoint, K, pointIdxNKNSearch,
-                            pointNKNSquaredDistance) > 0) {
-    for (size_t i = 0; i < pointIdxNKNSearch.size(); ++i) {
-      nearest_x_in_points = in_points->points[pointIdxNKNSearch[i]].x;
-      nearest_y_in_points = in_points->points[pointIdxNKNSearch[i]].y;
-      start_layer_out = in_points->points[pointIdxNKNSearch[i]].intensity;
-    }
-  }
-  int min_ind = -1;
-  double min_distance = DBL_MAX;
-  int end_layer;
-  int start_node;
-  int end_node;
-  for (auto way : m_WaysResister[start_layer_out])
-  {
-    for(auto node : way.nodes)
-    {
-      double distance = sqrt(pow(node.x - x_in,2) + pow(node.y - y_in,2));
-      if (distance < min_distance)
-      {
-        end_layer = way.end_layer; 
-        start_node = way.start_node; 
-        end_node = way.end_node;
-        min_distance = distance;
-      }
-    }
-  }
-  end_layer_out = end_layer;
-  start_node_out = start_node;
-  end_node_out = end_node;
-  distance_out = min_distance;
-
-  // std::cout << "info : " << start_layer_out << ": " << nearest_x_in_points << ", " << nearest_y_in_points << std::endl;
 }
 
 void DKGraphPlannerNode::GetIntensityInfo(
@@ -463,6 +427,49 @@ double DKGraphPlannerNode::getClosestDistance(
   return distance;
 }
 
+void DKGraphPlannerNode::getNearbyNodesFromLayer(
+    const double &x_in, const double &y_in, const int &search_num_idx_in,
+    pcl::PointCloud<pcl::PointXYZI>::Ptr points_in,
+    int &current_layer_out, std::vector<int> &nearby_indice_out) {
+
+  if (!bParcingComplete)
+    return;
+
+  pcl::KdTreeFLANN<pcl::PointXYZI> kdtree;
+  kdtree.setInputCloud(points_in);
+
+  pcl::PointXYZI searchPoint;
+  searchPoint.x = x_in;
+  searchPoint.y = y_in;
+
+  int K = 1;
+  std::vector<int> pointIdxNKNSearch(K);
+  std::vector<float> pointNKNSquaredDistance(K);
+  double nearest_x_in_points, nearest_y_in_points;
+  if (kdtree.nearestKSearch(searchPoint, K, pointIdxNKNSearch,
+                            pointNKNSquaredDistance) > 0) {
+    for (size_t i = 0; i < pointIdxNKNSearch.size(); ++i) {
+      nearest_x_in_points = points_in->points[pointIdxNKNSearch[i]].x;
+      nearest_y_in_points = points_in->points[pointIdxNKNSearch[i]].y;
+      current_layer_out = points_in->points[pointIdxNKNSearch[i]].intensity;
+    }
+  }
+
+  int layer_size = m_WaysResister.size();
+  for(int i = 0; i < search_num_idx_in; i++)
+  {
+    int layer_idx = current_layer_out + i;
+    if(layer_idx > layer_size)
+      layer_idx = layer_idx % layer_size;
+
+    for (auto way : m_WaysResister[layer_idx]) {
+      nearby_indice_out.push_back(way.first_node_id);
+    }
+  }
+
+  removeDuplicated(nearby_indice_out);
+}
+
 void DKGraphPlannerNode::BuildGraph()
 {
   int V, E;
@@ -475,15 +482,61 @@ void DKGraphPlannerNode::BuildGraph()
     Connected connected_;
     connected_.id = way.last_node_id;
     connected_.cost = way.cost;
+    connected_.additional_cost = 0;
     m_graph[way.first_node_id].push_back(connected_);
   }
   bBuildGraph = true;
 }
 
+void DKGraphPlannerNode::UpdateGraph()
+{
+  if(!bOccupancyGrid)
+    return;
+
+  int count = 0;
+  for (auto nearbyNode : m_nearbyFirstNodes) {
+    for (auto way : m_FirstNodeBasedResister[nearbyNode])
+    {
+      double cost_accumulated = 0;
+      for (auto node : way.nodes) {
+        double pt_x = node.x;
+        double pt_y = node.y;
+
+        double cost = CorrespondingCost(pt_x, pt_y, m_OccupancyGrid);
+        cost_accumulated += cost;
+        count++;
+      }
+      for (int i = 0; i < m_graph[nearbyNode].size(); i++) {
+        if (m_graph[nearbyNode][i].id == way.last_node_id) {
+          m_graph[nearbyNode][i].additional_cost = cost_accumulated;
+        }
+      }
+    }
+  }
+  std::cout << "count" << count << std::endl;
+}
+
+void DKGraphPlannerNode::ReleaseGraph()
+{
+  if (!bOccupancyGrid)
+    return;
+
+  for (auto nearbyNode : m_nearbyFirstNodes) {
+    for (auto way : m_FirstNodeBasedResister[nearbyNode])
+      for (int i = 0; i < m_graph[nearbyNode].size(); i++) {
+        if (m_graph[nearbyNode][i].id == way.last_node_id) {
+          // m_graph[nearbyNode][i].cost = way.cost;
+          m_graph[nearbyNode][i].additional_cost = 0;
+      }
+    }
+  }
+}
+
 void DKGraphPlannerNode::Planning() {
 
-  m_PlanningPathNodes.clear();
+  UpdateGraph();
 
+  m_PlanningPathNodes.clear();
   // Initialize the dist array with infinite values.
   std::unordered_map<int, double> dist;
   int path_index = 0;
@@ -491,12 +544,12 @@ void DKGraphPlannerNode::Planning() {
     dist[node.id] = INF;
   }
 
-    std::priority_queue<std::pair<int, int>, std::vector<std::pair<int, int>>,
-                        std::greater<std::pair<int, int>>>
+    std::priority_queue<std::pair<double, int>, std::vector<std::pair<double, int>>,
+                        std::greater<std::pair<double, int>>>
         qu;
 
-    qu.push({0, m_closestStartNode}); //Put init node in the que
-    dist[m_closestStartNode] = 0; // Update value of start point as 0
+    qu.push({0., m_closestStartNode}); //Put init node in the que
+    dist[m_closestStartNode] = 0.; // Update value of start point as 0
     // for(auto id : m_PlanningPat hNodes)
     //   std::cout << "m_PredSuccMap: " <<m_PredSuccMap[id] << std::endl;
     // std::cout << m_graph[m_closestStartNode].size() << std::endl;
@@ -504,7 +557,7 @@ void DKGraphPlannerNode::Planning() {
     m_PredSuccMap.clear();
     while (!qu.empty()) {
 
-      int cost = qu.top().first;  // cost : distance to next node
+      double cost = qu.top().first;  // cost : distance to next node
       int here = qu.top().second; // here : current node Id
       // std::cout << here << "," << cost << std::endl;
 
@@ -520,7 +573,7 @@ void DKGraphPlannerNode::Planning() {
 
       for (auto connected : m_graph[here]) {
         int next = connected.id;
-        int nextcost = connected.cost;
+        double nextcost = connected.cost; // + connected.additional_cost;
         // std::cout << "next id: " << next << std::endl;
         // std::cout << "nextcost : " << nextcost << std::endl;
         // std::cout << "next_cost " << dist[next] << std::endl;
@@ -562,11 +615,13 @@ void DKGraphPlannerNode::Planning() {
     std::reverse(m_FinalNodes.begin(), m_FinalNodes.end());
 
     // //test
-    std::cout << "m_FinalNodes : "<< m_FinalNodes.size() << std::endl;
-    for (auto final_node : m_FinalNodes)
-    {
-      std::cout << final_node << "\n";
-    }
+    // std::cout << "m_FinalNodes : "<< m_FinalNodes.size() << std::endl;
+    // for (auto final_node : m_FinalNodes)
+    // {
+    //   std::cout << final_node << "\n";
+    // }
+
+    ReleaseGraph();
 }
 
 void DKGraphPlannerNode::ToPathMsg() {
@@ -635,6 +690,7 @@ bool DKGraphPlannerNode::ExistInList(int id, std::vector<int> list) {
   }
   return exist;
 }
+
 std::vector<std::pair<std::string, std::vector<double>>>
 DKGraphPlannerNode::read_csv(std::string filename) {
   // Reads a CSV file into a vector of <string, vector<int>> pairs where
@@ -697,4 +753,32 @@ DKGraphPlannerNode::read_csv(std::string filename) {
   // Close file
   CSVInput.close();
   return result;
+}
+
+double DKGraphPlannerNode::CorrespondingCost(
+    const double pt_x, const double pt_y,
+    const nav_msgs::msg::OccupancyGrid &gridmap) {
+  int pt_in_grid_x = (pt_x) / gridmap.info.resolution -
+                     gridmap.info.origin.position.x / gridmap.info.resolution + 1;
+  int pt_in_grid_y = (pt_y) / gridmap.info.resolution -
+                     gridmap.info.origin.position.y / gridmap.info.resolution + 1;
+
+  double cost;
+  if (pt_in_grid_x > gridmap.info.width || pt_in_grid_y > gridmap.info.height) {
+    cost = 100;
+    return cost;
+  }
+
+  cost = gridmap.data[pt_in_grid_y * gridmap.info.width + pt_in_grid_x];
+
+  return cost;
+}
+
+void DKGraphPlannerNode::removeDuplicated(std::vector<int> &v) {
+  auto end = v.end();
+  for (auto it = v.begin(); it != end; ++it) {
+    end = std::remove(it + 1, end, *it);
+  }
+
+  v.erase(end, v.end());
 }
