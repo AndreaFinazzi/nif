@@ -13,6 +13,7 @@ c_wpt::c_wpt(string wpt_file_path_,
   m_wpt_splined_y.clear();
   m_wpt_raw_z.clear();
   m_wpt_splined_z.clear();
+  m_wpt_raw_yaw.clear();
 
   m_wpt_file_path = wpt_file_path_;
   m_wpt_alias = wpt_alias_;
@@ -97,10 +98,15 @@ c_wpt::c_wpt(string wpt_file_path_,
     }
   } else {
     m_wpt_xy = load2DWPTFile(m_wpt_file_path);
-    m_wpt_size = m_wpt_xy.size();
+    m_wpt_xyyaw = load2DWPTFileWithYaw(m_wpt_file_path);
+//    m_wpt_size = m_wpt_xy.size();
+    m_wpt_size = m_wpt_xyyaw.size();
     for (int wpt_idx = 0; wpt_idx < m_wpt_xy.size(); wpt_idx++) {
-      m_wpt_raw_x.push_back(get<0>(m_wpt_xy[wpt_idx]));
-      m_wpt_raw_y.push_back(get<1>(m_wpt_xy[wpt_idx]));
+//      m_wpt_raw_x.push_back(get<0>(m_wpt_xy[wpt_idx]));
+//      m_wpt_raw_y.push_back(get<1>(m_wpt_xy[wpt_idx]));
+      m_wpt_raw_x.push_back(get<0>(m_wpt_xyyaw[wpt_idx]));
+      m_wpt_raw_y.push_back(get<1>(m_wpt_xyyaw[wpt_idx]));
+      m_wpt_raw_yaw.push_back(get<2>(m_wpt_xyyaw[wpt_idx]));
 
       geometry_msgs::msg::PoseStamped wpt_pt;
       wpt_pt.header.frame_id = m_wpt_inglobal.header.frame_id;
@@ -108,6 +114,10 @@ c_wpt::c_wpt(string wpt_file_path_,
       wpt_pt.pose.position.y = m_wpt_raw_y[wpt_idx];
       wpt_pt.pose.position.z = 0.0;
 
+      wpt_pt.pose.orientation.x = 0.;
+      wpt_pt.pose.orientation.y = 0.;
+      wpt_pt.pose.orientation.z = std::sin(m_wpt_raw_yaw[wpt_idx] / 2.);
+      wpt_pt.pose.orientation.w = std::cos(m_wpt_raw_yaw[wpt_idx] / 2.);
       m_wpt_inglobal.poses.push_back(wpt_pt);
     }
     if (m_spline_flg) {
@@ -198,6 +208,50 @@ vector<tuple<double, double>> c_wpt::load2DWPTFile(string wpt_2d_file_path_,
         if (nan_flg == false)
           data.push_back(record);
       }
+    }
+  }
+  if (!inputFile.eof()) {
+    cerr << "Could not read file " << wpt_2d_file_path_ << "\n";
+    __throw_invalid_argument("File not found.");
+  }
+  return data;
+}
+
+vector<tuple<double, double, double>> c_wpt::load2DWPTFileWithYaw(string wpt_2d_file_path_) {
+  vector<tuple<double, double, double>> data;
+  ifstream inputFile(wpt_2d_file_path_);
+  int l = 0;
+  while (inputFile) {
+    l++;
+    string s;
+    if (!getline(inputFile, s))
+      break;
+    if (s[0] != '#') {
+        istringstream ss(s);
+        tuple<double, double, double> record(0.0, 0.0, 0.0);
+        int cnt = 0;
+        bool nan_flg = false;
+        while (ss) {
+          string line;
+          if (!getline(ss, line, ','))
+            break;
+          try {
+            if (cnt == 0)
+              get<0>(record) = stof(line);
+            else if (cnt == 1)
+              get<1>(record) = stof(line);
+            else if (cnt == 2)
+              get<2>(record) = stof(line);
+          } catch (const invalid_argument e) {
+            cout << "NaN found in file " << wpt_2d_file_path_ << " line " << l
+                 << endl;
+            e.what();
+            nan_flg = true;
+          }
+          cnt++;
+        }
+        if (nan_flg == false)
+          data.push_back(record);
     }
   }
   if (!inputFile.eof()) {

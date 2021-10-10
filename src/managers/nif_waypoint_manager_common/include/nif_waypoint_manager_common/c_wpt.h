@@ -27,6 +27,8 @@ public:
   load2DWPTFile(string wpt_2d_file_path_,
                 int wpt_sampling_interval = 2); // load 2d wpt from the file
   vector<tuple<double, double, double>>
+  load2DWPTFileWithYaw(string wpt_2d_file_path_); // load 2d wpt with yaw value from the file
+  vector<tuple<double, double, double>>
   load3DWPTFile(string wpt_3d_file_path_,
                 int wpt_sampling_interval = 2); // load 3d wpt from the file
 
@@ -92,8 +94,9 @@ private:
 
   nav_msgs::msg::Path m_wpt_inglobal;
   vector<tuple<double, double>> m_wpt_xy;
+  vector<tuple<double, double, double>> m_wpt_xyyaw;
   vector<tuple<double, double, double>> m_wpt_xyz;
-  vector<double> m_wpt_raw_x, m_wpt_raw_y, m_wpt_raw_z;
+  vector<double> m_wpt_raw_x, m_wpt_raw_y, m_wpt_raw_z, m_wpt_raw_yaw;
   vector<double> m_wpt_splined_x, m_wpt_splined_y, m_wpt_splined_z,
       m_wpt_splined_yaw, m_wpt_splined_curvature;
 };
