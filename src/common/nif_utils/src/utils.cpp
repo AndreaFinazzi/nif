@@ -107,7 +107,7 @@ nif::common::utils::coordination::getPtGlobaltoBody(
   point_in_body.pose.orientation.x = 0.0;
   point_in_body.pose.orientation.y = 0.0;
   // TODO : should be tested
-  point_in_body.pose.orientation.z = sin((current_yaw_rad - target_yaw) / 2.0);
-  point_in_body.pose.orientation.w = cos((current_yaw_rad - target_yaw) / 2.0);
+  point_in_body.pose.orientation.z = sin((target_yaw - current_yaw_rad) / 2.0);
+  point_in_body.pose.orientation.w = cos((target_yaw - current_yaw_rad) / 2.0);
   return point_in_body;
 }

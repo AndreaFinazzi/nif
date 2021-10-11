@@ -103,7 +103,10 @@ void WaypointManagerMission::calcMapTrack() {
       if (!splined_y.empty())
         current_position_d = -1 * splined_y[cur_idx];
 
-      vector<double> target_speed_vector_in{10.0};
+      // vector<double> target_speed_vector_in{10.0};
+      vector<double> target_speed_vector_in;
+      // target_speed_vector_in.push_back(m_cur_odom.twist.twist.linear.x);
+      target_speed_vector_in.push_back(45);
       std::vector<double> lat_width_left_vector{LEFT_WIDTH_MARGIN};
       std::vector<double> lat_width_right_vector{RIGHT_WIDTH_MARGIN};
       std::vector<double> lat_width_d_vector{WIDTH_DELTA};
@@ -116,7 +119,7 @@ void WaypointManagerMission::calcMapTrack() {
             frenet_path_generation_result =
                 m_frenet_generator->calc_frenet_paths_v2(
                     current_position_d, 0.1 * cur_idx, 0.0,
-                    (target_speed_vector_in[target_vel_idx] / 3.6), 0,
+                    (target_speed_vector_in[target_vel_idx]), 0,
                     cubic_spliner_2D_xy, LONGI_MIN_T, LONGI_MAX_T, LONGI_DT,
                     (lat_width_left_vector[target_vel_idx]),
                     (lat_width_right_vector[target_vel_idx]),
