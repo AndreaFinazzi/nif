@@ -88,6 +88,24 @@ void WaypointManagerMission::calcMapTrack() {
       this->m_frenet_cost_calculator->setFrenetPathArray(frenet_paths);
       m_collision_avoidance_fp_body_ptr =
           this->m_frenet_cost_calculator->getMincostFrenetPath();
+      this->frenetPathsToPointCloud(frenet_paths);
+
+      m_collision_avoidance_path_body.poses.clear();
+      m_collision_avoidance_path_body.header.frame_id = "base_link";
+      for (int i = 0; i < m_collision_avoidance_fp_body_ptr->points_x().size();
+           i++) {
+        geometry_msgs::msg::PoseStamped ps;
+        ps.pose.position.x = m_collision_avoidance_fp_body_ptr->points_x()[i];
+        ps.pose.position.y = m_collision_avoidance_fp_body_ptr->points_y()[i];
+        ps.pose.position.z = 0.0;
+        ps.pose.orientation.x = 0.0;
+        ps.pose.orientation.y = 0.0;
+        ps.pose.orientation.z =
+            sin(m_collision_avoidance_fp_body_ptr->yaw()[i] / 2.0);
+        ps.pose.orientation.w =
+            sin(m_collision_avoidance_fp_body_ptr->yaw()[i] / 2.0);
+        m_collision_avoidance_path_body.poses.push_back(ps);
+      }
 
     } else if (m_cur_mission_code.mission_status_code ==
                m_cur_mission_code.MISSION_STANDBY) {
@@ -145,4 +163,28 @@ void WaypointManagerMission::calcMapTrack() {
   } else {
     // odom is not setted yet
   }
+}
+
+void WaypointManagerMission::frenetPathsToPointCloud(
+    std::vector<std::shared_ptr<FrenetPath>> &frenet_paths) {
+
+  pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_ptr(
+      new pcl::PointCloud<pcl::PointXYZI>);
+
+  for (int i = 0; i < frenet_paths.size(); i++) {
+    int count = 0;
+    for (int j = 0; j < int(frenet_paths[i]->points_x().size() - 1); j++) {
+      std::shared_ptr<FrenetPath> &frenet_path = frenet_paths[i];
+
+      pcl::PointXYZI current_point;
+      current_point.x = frenet_path->points_x()[j];
+      current_point.y = frenet_path->points_y()[j];
+      current_point.z = 0;
+      current_point.intensity = count;
+      cloud_ptr->points.push_back(current_point);
+      count++;
+    }
+  }
+  pcl::toROSMsg(*cloud_ptr, m_frenet_candidates_pc);
+  m_frenet_candidates_pc.header.frame_id = "base_link";
 }

@@ -19,6 +19,8 @@ void FrenetPathGenerator::loadPathConstraints(
   // constraint_param_max_accel
   // constraint_param_max_curvature
   // constraint_param_robot_radius
+  constraint_param_max_speed = 10000000000.0; // currently set up large number
+  constraint_param_max_accel = 10000000000.0; // currently set up large number
 }
 
 void FrenetPathGenerator::loadCostParam(string cost_param_yaml_file_path_) {
@@ -29,6 +31,13 @@ void FrenetPathGenerator::loadCostParam(string cost_param_yaml_file_path_) {
   // cost_param_k_d
   // cost_param_k_lat
   // cost_param_k_lon
+
+  // currently, set to zero.
+   cost_param_k_j = 0.0;
+   cost_param_k_t = 0.0;
+   cost_param_k_d = 0.0;
+   cost_param_k_lat = 0.0;
+   cost_param_k_lon = 0.0;
 }
 
 FrenetPathGenerator::FrenetPathGenerator(string path_contraints_yaml_file_path,

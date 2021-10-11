@@ -33,6 +33,7 @@ int main(int argc, char *argv[]) {
                 node_name);
 
     nd = std::make_shared<WaypointManagerMissionNode>(node_name);
+//    nd = std::make_shared<WaypointManagerNode>(node_name);
   } catch (std::exception &e) {
     RCLCPP_FATAL(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
                  "FATAL ERROR during node initialization: ABORTING.\n%s",

@@ -48,6 +48,12 @@ nif::managers::WaypointManagerMissionNode::WaypointManagerMissionNode(
       "wpt_manager/maptrack_path/global", nif::common::constants::QOS_PLANNING);
   m_map_track_body_publisher = this->create_publisher<nav_msgs::msg::Path>(
       "wpt_manager/maptrack_path/body", nif::common::constants::QOS_PLANNING);
+  m_frenet_candidates_publisher =
+      this->create_publisher<sensor_msgs::msg::PointCloud2>(
+          "wpt_manager/frenet_candidates/body",
+          nif::common::constants::QOS_PLANNING);
+  m_frenet_min_cost_publisher = this->create_publisher<nav_msgs::msg::Path>(
+      "wpt_manager/mincost_frenet/body", nif::common::constants::QOS_PLANNING);
 
   this->race_wpt_file_path.insert(0, package_share_directory);
   this->pit_wpt_file_path.insert(0, package_share_directory);
@@ -75,11 +81,17 @@ void nif::managers::WaypointManagerMissionNode::timerCallback() try {
   this->wpt_manager->setSystemStatus(this->getSystemStatus());
   this->wpt_manager->setCurrentOdometry(this->getEgoOdometry());
 
+  // TODO : for visualiztion - test
+  this->wpt_manager->calcMapTrack();
+  m_frenet_candidates_publisher->publish(
+      this->wpt_manager->getFrenetCandidatesAsPc());
+  m_frenet_min_cost_publisher->publish(
+      this->wpt_manager->getMinCostFrenetPath());
+
   nav_msgs::msg::Path path_in_global =
       this->wpt_manager->getDesiredMapTrackInGlobal();
   nav_msgs::msg::Path path_in_body =
       this->wpt_manager->getDesiredMapTrackInBody();
-
   path_in_body.header.stamp = this->now();
   path_in_body.header.frame_id = this->getBodyFrameId();
   path_in_global.header.stamp = this->now();

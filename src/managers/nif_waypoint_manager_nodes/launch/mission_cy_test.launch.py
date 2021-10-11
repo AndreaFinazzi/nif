@@ -30,7 +30,8 @@ def generate_launch_description():
         os.path.join(
             get_package_share_directory("nif_waypoint_manager_nodes"),
             "config",
-            "lor.yaml",
+            "mission",
+            "lor_new.yaml",
         ),
     )
 
@@ -38,7 +39,14 @@ def generate_launch_description():
         os.path.join(
             get_package_share_directory("nif_waypoint_manager_nodes"),
             "config",
-            "ims.yaml",
+            "mission",
+            "ims_new.yaml",
+        ),
+    )
+
+    nif_base_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            get_package_share_directory('nif_launch') + '/launch/deploy/nif_base.launch.py'
         ),
     )
 
@@ -73,6 +81,7 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
+        nif_base_launch,
         param_file_argument,
         waypoint_manager_node
     ])

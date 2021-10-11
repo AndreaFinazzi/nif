@@ -14,6 +14,12 @@
 #include <string>
 #include <vector>
 
+#include <pcl/common/common.h>
+#include <pcl/common/transforms.h>
+#include <pcl/io/pcd_io.h>
+#include <pcl/point_types.h>
+#include <pcl_conversions/pcl_conversions.h>
+
 #include "nif_common_nodes/i_base_node.h"
 #include "nif_planning_common/path_cost_calculator.hpp"
 #include "nif_utils/frenet_path_generator.h"
@@ -34,6 +40,10 @@ public:
   void setSystemStatus(const nif_msgs::msg::SystemStatus &sys_status);
   void calcMapTrack();
 
+  // from dk
+  void frenetPathsToPointCloud(
+      std::vector<std::shared_ptr<FrenetPath>> &frenet_paths);
+
   void genCandidates();
   nav_msgs::msg::Path getDesiredMapTrackInGlobal() {
     calcMapTrack();
@@ -42,6 +52,14 @@ public:
   nav_msgs::msg::Path getDesiredMapTrackInBody() {
     calcMapTrack();
     return m_map_track_path_body;
+  }
+
+  sensor_msgs::msg::PointCloud2 getFrenetCandidatesAsPc() {
+    return m_frenet_candidates_pc;
+  }
+
+  nav_msgs::msg::Path getMinCostFrenetPath() {
+    return m_collision_avoidance_path_body;
   }
 
 private:
@@ -71,6 +89,7 @@ private:
   nav_msgs::msg::Path m_map_track_path_body;
   nav_msgs::msg::Path m_collision_avoidance_path_body;
   std::shared_ptr<FrenetPath> m_collision_avoidance_fp_body_ptr;
+  sensor_msgs::msg::PointCloud2 m_frenet_candidates_pc;
 
   std::shared_ptr<IWaypointManager> m_rl_wpt_manager;
   std::shared_ptr<IWaypointManager> m_pit_wpt_manager;

@@ -54,6 +54,11 @@ private:
       m_map_track_global_publisher;
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr m_map_track_body_publisher;
 
+  // frenet path candidates visualization
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr
+      m_frenet_candidates_publisher;
+  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr m_frenet_min_cost_publisher;
+
   unsigned short int maptrack_size_safety_threshold = 1;
 };
 
