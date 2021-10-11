@@ -202,7 +202,7 @@ def generate_launch_description():
             ('in_control_error', 'control_joint_lqr/lqr_error')
         ],
         parameters=[{
-            'lateral_tire_model_factor' : 0.5,
+            'lateral_tire_model_factor' : 0.7,
         }]
     )
 

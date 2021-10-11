@@ -60,7 +60,7 @@ receiver_init_commands:
 #    * RBV (rotation from IMU body to vehcile) should be entered if the IMU is not aligned y-forward with the vehicle 
 #       or calibrated even if it is for small rotational offsets
 #- "SETINSROTATION RBV <x> <y> <z> <std. x> <std. y> <std. z>
-- "SETINITAZIMUTH 180 5"
+#- "SETINITAZIMUTH 175 5"
 
 
 #- ... etc.
