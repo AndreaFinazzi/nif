@@ -28,6 +28,13 @@
 using namespace std;
 using namespace Frenet;
 
+#define LONGI_MIN_T 4.4         // in sec
+#define LONGI_MAX_T 4.51        // 3.81 //in sec
+#define LONGI_DT 0.1            // in sec
+#define LEFT_WIDTH_MARGIN -5.5  // meter
+#define RIGHT_WIDTH_MARGIN 5.51 // meter
+#define WIDTH_DELTA 1.25        // meter
+
 class WaypointManagerMission {
 public:
   WaypointManagerMission(const string &rl_wpt_file_path_,
@@ -74,10 +81,10 @@ private:
   bool m_odom_first_callbacked;
   bool m_on_track_flg = true;
 
-  double m_planning_vel_default;      // in [m/s]
-  double m_left_side_sampling_width;  // in [m]
-  double m_right_side_sampling_width; // in [m]
-  double m_sampling_width_d;          // in [m]
+  double m_planning_vel_default = 15.0;     // in [m/s]
+  double m_left_side_sampling_width = -5.0; // in [m]
+  double m_right_side_sampling_width = 5.0; // in [m]
+  double m_sampling_width_d = 1.0;          // in [m]
 
   double m_planning_t = 4.4;
 

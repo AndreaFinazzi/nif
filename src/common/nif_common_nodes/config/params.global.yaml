@@ -2,7 +2,7 @@
   ros__parameters:
     frames:
       body: "base_link"
-      global: "map"
+      global: "odom"
 
       gps_top: "gps_top"
       gps_bottom: "gps_bottom"
@@ -24,7 +24,8 @@
       radar_rear: "radar_rear"
 
     topics:
-      ego_odometry: /sensor/odom_ground_truth
+      # ego_odometry: /sensor/odom_ground_truth
+      ego_odometry: /aw_localization/ekf/odom
       #     localization/ego_odom
       system_status: system/status
       race_control_status: /raptor_dbw_interface/rc_to_ct
@@ -48,7 +49,4 @@
 
       ecef_ref_lat: 39.809786
       ecef_ref_lon: -86.235148
-
-      # ecef_ref_lat: 39.79312996
-      # ecef_ref_lon: -86.23524024
       ecef_ref_hgt: -0.170035537

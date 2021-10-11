@@ -42,7 +42,7 @@ nif::managers::WaypointManagerMissionNode::WaypointManagerMissionNode(
   // Could also inherit from IBaseSynchronizedNode
   //  TODO convert to parameter
   m_timer = this->create_wall_timer(
-      10ms, std::bind(&WaypointManagerMissionNode::timerCallback, this));
+      20ms, std::bind(&WaypointManagerMissionNode::timerCallback, this));
 
   m_map_track_global_publisher = this->create_publisher<nav_msgs::msg::Path>(
       "wpt_manager/maptrack_path/global", nif::common::constants::QOS_PLANNING);
@@ -58,9 +58,12 @@ nif::managers::WaypointManagerMissionNode::WaypointManagerMissionNode(
   this->race_wpt_file_path.insert(0, package_share_directory);
   this->pit_wpt_file_path.insert(0, package_share_directory);
 
+  // this->setWaypointManager(std::make_shared<WaypointManagerMission>(
+  //     this->race_wpt_file_path, this->pit_wpt_file_path, this->getBodyFrameId(),
+  //     this->getGlobalFrameId(), this->spline_interval));
   this->setWaypointManager(std::make_shared<WaypointManagerMission>(
-      this->race_wpt_file_path, this->pit_wpt_file_path, this->getBodyFrameId(),
-      this->getGlobalFrameId(), this->spline_interval));
+      this->race_wpt_file_path, this->pit_wpt_file_path, "base_link",
+      "odom", this->spline_interval));
 
   this->setNodeStatus(common::NODE_INITIALIZED);
 }
@@ -93,12 +96,15 @@ void nif::managers::WaypointManagerMissionNode::timerCallback() try {
   nav_msgs::msg::Path path_in_body =
       this->wpt_manager->getDesiredMapTrackInBody();
   path_in_body.header.stamp = this->now();
-  path_in_body.header.frame_id = this->getBodyFrameId();
+  path_in_body.header.frame_id = "base_link";
   path_in_global.header.stamp = this->now();
-  path_in_global.header.frame_id = this->getGlobalFrameId();
+  path_in_global.header.frame_id = "odom";
 
   m_map_track_global_publisher->publish(path_in_global);
   m_map_track_body_publisher->publish(path_in_body);
+
+  m_frenet_candidates_publisher->publish(
+      this->wpt_manager->getFrenetCandidatesAsPc());
 
   if (path_in_body.poses.size() >= this->maptrack_size_safety_threshold &&
       path_in_global.poses.size() >= this->maptrack_size_safety_threshold) {
