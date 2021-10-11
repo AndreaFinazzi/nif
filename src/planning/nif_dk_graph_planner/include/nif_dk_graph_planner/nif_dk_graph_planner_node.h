@@ -26,6 +26,10 @@
 #include <sensor_msgs/msg/laser_scan.hpp>
 #include <std_msgs/msg/float32.hpp>
 #include <std_msgs/msg/header.hpp>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_ros/static_transform_broadcaster.h>
+#include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 
 // headers in STL
@@ -176,14 +180,11 @@ private:
       pubCandidatesNodePoints;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr
       pubFinalPathPoints;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubCostPoints;
 
-  // ros::Subscriber SubInitPose;
-  // ros::Subscriber SubGoal;
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr SubOdometry;
   rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr
       SubOccupancyGrid;
-
-  // ros::Subscriber SubGoalXYList;
 
   std::string m_OsmFileName, m_FullFilePath;
   std::string m_RacingTrajectory;
@@ -192,30 +193,20 @@ private:
   pcl::PointCloud<pcl::PointXYZI>::Ptr m_FullIndexedPoints;
   pcl::PointCloud<pcl::PointXYZI>::Ptr m_FullNodeIDPoints;
   pcl::PointCloud<pcl::PointXYZI>::Ptr m_FirstNodeContainPoints;
+  pcl::PointCloud<pcl::PointXYZI>::Ptr m_CostPoints;
 
   nif_dk_graph_planner_msgs::msg::OsmParcer m_OsmParcer;
-
-  // autoware_msgs::LaneArray m_LaneArray;
-  // autoware_msgs::LaneArray m_FinalLaneArray;
-
-  // geometry_msgs::Pose m_InitPose;
-  // nav_msgs::Odometry m_Odometry;
-  // geometry_msgs::Pose m_GoalPose;
-  // geometry_msgs::Pose m_PrevGoalPose;
-  // std::vector<geometry_msgs::Pose> m_GoalXYList;
 
   bool bParcingComplete = false;
   bool bRacingLine = false;
   bool bBuildGraph = false;
   bool bOccupancyGrid = false;
-  // bool bInitPose;
-  // bool bGoalPose;
-  // bool bBothDirection, bCCW;
-  // bool bReplanRoute;
-  // bool bCSVGoalList;
+  bool bOdometry = false;
 
-  // int m_closestWayId_start;
-  // int m_closestWayId_goal;
+  double m_veh_x;
+  double m_veh_y;
+  double m_veh_roll, m_veh_pitch, m_veh_yaw;
+
   int m_closestStartNode;
   int m_closestGoalNode;
   int m_currentLayer;
@@ -230,11 +221,6 @@ private:
   std::vector<Obstacle> m_obstacle;
   std::vector<int> m_nearbyFirstNodes;
   nav_msgs::msg::OccupancyGrid m_OccupancyGrid;
-
-  // // std::unordered_map<int, nif_dk_graph_planner_msgs::msg::Way>
-  // m_NextWay;
-  // // std::unordered_map<int, nif_dk_graph_planner_msgs::msg::Way>
-  // m_PrevWay;
 
   nif::localization::utils::GeodeticConverter conv_;
   double m_originLat;

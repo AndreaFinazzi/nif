@@ -39,30 +39,23 @@ def generate_launch_description():
     else:
         raise RuntimeError("ERROR: invalid track provided: {}".format(track))
 
-    map_file_path = os.path.join(
-                    get_package_share_directory("nif_dk_graph_planner"),
+    fake_obstacle_path = os.path.join(
+                    get_package_share_directory("nif_dk_fake_obstacle_node"),
                     "map", directory,
-                    map_file
-    )  
-
-    racing_traj_path = os.path.join(
-                    get_package_share_directory("nif_dk_graph_planner"),
-                    "map", directory,
-                    'traj_race_cl.csv'
+                    'fake_obstacle.osm'
     )  
 
 
     dk_planner_node =  Node(
-                package="nif_dk_graph_planner",
-                executable="nif_dk_graph_planner_exe",
+                package="nif_dk_fake_obstacle_node",
+                executable="nif_dk_fake_obstacle_node_exe",
                 output={
                     "stderr": "screen",
                     "stdout": "screen"
                 },
                 emulate_tty=True,
                 parameters=[{
-                    'osm_name' : map_file_path,
-                    'racing_trajectory' : racing_traj_path,
+                    'fake_obs_osm_name': fake_obstacle_path,
                     # IMS
                     # 'origin_lat' : 39.809786,
                     # 'origin_lon' : -86.235148,
@@ -72,10 +65,7 @@ def generate_launch_description():
                     'origin_lon' : -86.3418060783425,
 
                 }],
-                remappings=[ 
-                    ("in_ekf_odometry", "/aw_localization/ekf/odom"),
-                    ("in_oc_grid", "/semantics/costmap_generator/occupancy_grid"),
-                ]
+                remappings=[]
     )
 
     return LaunchDescription(

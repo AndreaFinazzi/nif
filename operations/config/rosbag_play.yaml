@@ -30,7 +30,7 @@ windows:
         # - ros2 bag play autonomy_2021-09-21_14-53-58/ --topics /raptor_dbw_interface/wheel_speed_report /bvs_localization/ltp_odom #IAC_run_1
         # - ros2 bag play autonomy_2021-09-29_14-24-45/ --topics /raptor_dbw_interface/wheel_speed_report /bvs_localization/ltp_odom #LOR_0929_aw
         # - ros2 bag play autonomy_2021-09-29_14-57-31/ --topics /bvs_localization/ltp_odom /system/status /raptor_dbw_interface/wheel_speed_report /planning/graph/path_global /control_joint_lqr/lqr_error #LOR_0929_yaw_1
-        - ros2 bag play autonomy_2021-10-04/_11-22-34/ --topics /raptor_dbw_interface/wheel_speed_report /bvs_localization/ltp_odom #LOR_1004
+        - ros2 bag play autonomy_2021-10-04_11-22-34/ --topics /raptor_dbw_interface/wheel_speed_report /bvs_localization/ltp_odom #LOR_1004
         # - ros2 bag play autonomy_2021-10-06_11-15-52/ --topics /raptor_dbw_interface/wheel_speed_report /bvs_localization/ltp_odom #LOR_1006
         # - ros2 bag play 21.10.08_mit-pit-data/
 

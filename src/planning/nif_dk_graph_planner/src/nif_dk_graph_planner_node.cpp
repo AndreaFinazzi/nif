@@ -47,14 +47,6 @@ DKGraphPlannerNode::DKGraphPlannerNode(const std::string &node_name_)
   pubOsmParcer =
       this->create_publisher<nif_dk_graph_planner_msgs::msg::OsmParcer>(
           "/graph_planner/OsmParcer", nif::common::constants::QOS_EGO_ODOMETRY);
-  // pubLaneArray = this->create_publisher<autoware_msgs::LaneArray>(
-  //     "/graph_planner/origin_lane_waypoints_array", nif::common::constants::QOS_SENSOR_DATA);
-  // pubFullLink = this->create_publisher<visualization_msgs::MarkerArray>(
-  //     "/graph_planner/full_link", nif::common::constants::QOS_SENSOR_DATA);
-  // pubFinalLink = this->create_publisher<visualization_msgs::MarkerArray>(
-  //     "/graph_planner/final_link", nif::common::constants::QOS_SENSOR_DATA);
-  // pubFinalLaneArray = this->create_publisher<autoware_msgs::LaneArray>(
-  //     "/graph_planner/final_lane_waypoints_array", nif::common::constants::QOS_SENSOR_DATA);
 
   pubFullNodePoints = this->create_publisher<sensor_msgs::msg::PointCloud2>(
       "/graph_planner/full_nodes", nif::common::constants::QOS_SENSOR_DATA);
@@ -66,6 +58,9 @@ DKGraphPlannerNode::DKGraphPlannerNode(const std::string &node_name_)
       "/graph_planner/final_path_points", nif::common::constants::QOS_SENSOR_DATA);
   pubCandidatesNodePoints = this->create_publisher<sensor_msgs::msg::PointCloud2>(
       "/graph_planner/cadidates_points", nif::common::constants::QOS_SENSOR_DATA);
+  pubCostPoints = this->create_publisher<sensor_msgs::msg::PointCloud2>(
+      "/graph_planner/cost", nif::common::constants::QOS_SENSOR_DATA);
+
   SubOdometry =  this->create_subscription<nav_msgs::msg::Odometry>(
       "in_ekf_odometry", nif::common::constants::QOS_EGO_ODOMETRY,
       std::bind(&DKGraphPlannerNode::CallbackOdometry, this,
@@ -298,16 +293,21 @@ void DKGraphPlannerNode::CallbackOdometry(const nav_msgs::msg::Odometry::SharedP
 {
   if (bRacingLine && bParcingComplete) {
 
-    double veh_x = msg->pose.pose.position.x;
-    double veh_y = msg->pose.pose.position.y;
+    m_veh_x = msg->pose.pose.position.x;
+    m_veh_y = msg->pose.pose.position.y;
+    tf2::Quaternion tf_quat;
+    tf2::convert(msg->pose.pose.orientation, tf_quat);
+    tf2::Matrix3x3 mat(tf_quat);
+    mat.getRPY(m_veh_roll, m_veh_pitch, m_veh_yaw);
+
     int current_node_id;
     // get node id for planing
-    GetIntensityInfo(veh_x, veh_y, m_FirstNodeContainPoints, current_node_id);
+    GetIntensityInfo(m_veh_x, m_veh_y, m_FirstNodeContainPoints, current_node_id);
     m_closestStartNode = current_node_id;
 
     // // get target index from reference racing points
     int current_idx;
-    GetIntensityInfo(veh_x, veh_y, m_racingLineRefPoints, current_idx);
+    GetIntensityInfo(m_veh_x, m_veh_y, m_racingLineRefPoints, current_idx);
 
     double target_x, target_y;
     int target_idx = current_idx + 100;
@@ -323,16 +323,19 @@ void DKGraphPlannerNode::CallbackOdometry(const nav_msgs::msg::Odometry::SharedP
     m_nearbyFirstNodes.clear();
     int search_num_idx = 10;
     int current_layer;
-    getNearbyNodesFromLayer(veh_x, veh_y, search_num_idx, m_FullIndexedPoints,
+    getNearbyNodesFromLayer(m_veh_x, m_veh_y, search_num_idx, m_FullIndexedPoints,
                             current_layer, m_nearbyFirstNodes);
 
     m_currentLayer = current_layer;
 
-    std::cout << "m_currentLayer : "
-              << std::endl;
+    // std::cout << "m_currentLayer : "
+    //           << std::endl;
 
-    std::cout << "m_nearbyFirstNodes.size() : " << m_nearbyFirstNodes.size()
-              << std::endl;
+    // std::cout << "m_nearbyFirstNodes.size() : " << m_nearbyFirstNodes.size()
+    //           << std::endl;
+
+    bOdometry = true;
+    
   }
 }
 
@@ -493,27 +496,51 @@ void DKGraphPlannerNode::UpdateGraph()
   if(!bOccupancyGrid)
     return;
 
+  if (!bOdometry)
+    return;
+
   int count = 0;
+  m_CostPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
   for (auto nearbyNode : m_nearbyFirstNodes) {
-    for (auto way : m_FirstNodeBasedResister[nearbyNode])
+    for (int i =0; i < m_FirstNodeBasedResister[nearbyNode].size(); i++)
     {
+      auto way = m_FirstNodeBasedResister[nearbyNode][i];
       double cost_accumulated = 0;
       for (auto node : way.nodes) {
-        double pt_x = node.x;
-        double pt_y = node.y;
+        double pt_x_global = node.x;
+        double pt_y_global = node.y;
 
-        double cost = CorrespondingCost(pt_x, pt_y, m_OccupancyGrid);
+        //global to local
+        double pt_x_body = (pt_x_global - m_veh_x) * cos(m_veh_yaw) +
+                           (pt_y_global - m_veh_y) * sin(m_veh_yaw);
+        double pt_y_body = -(pt_x_global - m_veh_x) * sin(m_veh_yaw) +
+                           (pt_y_global - m_veh_y) * cos(m_veh_yaw);
+
+        double cost = CorrespondingCost(pt_x_body, pt_y_body, m_OccupancyGrid);
         cost_accumulated += cost;
         count++;
+
+        pcl::PointXYZI pointbuf;
+        pointbuf.x = pt_x_body;
+        pointbuf.y = pt_y_body;
+        pointbuf.intensity = cost;
+        m_CostPoints->points.push_back(pointbuf);
       }
-      for (int i = 0; i < m_graph[nearbyNode].size(); i++) {
-        if (m_graph[nearbyNode][i].id == way.last_node_id) {
-          m_graph[nearbyNode][i].additional_cost = cost_accumulated;
-        }
+      // std::cout << "cost_accumulated : " << cost_accumulated << std::endl;
+      std::cout << "nearbyNode : " << nearbyNode
+                << ", id : " << m_graph[nearbyNode][i].id << std::endl;
+
+      if (m_graph[nearbyNode][i].id == way.last_node_id) {
+        m_graph[nearbyNode][i].additional_cost = cost_accumulated;
       }
     }
   }
-  std::cout << "count" << count << std::endl;
+
+  sensor_msgs::msg::PointCloud2 CostCloudMsg;
+  pcl::toROSMsg(*m_CostPoints, CostCloudMsg);
+  CostCloudMsg.header.frame_id = nif::common::frame_id::localization::BASE_LINK;
+  CostCloudMsg.header.stamp = this->now();
+  pubCostPoints->publish(CostCloudMsg);
 }
 
 void DKGraphPlannerNode::ReleaseGraph()
@@ -573,11 +600,10 @@ void DKGraphPlannerNode::Planning() {
 
       for (auto connected : m_graph[here]) {
         int next = connected.id;
-        double nextcost = connected.cost; // + connected.additional_cost;
-        // std::cout << "next id: " << next << std::endl;
-        // std::cout << "nextcost : " << nextcost << std::endl;
-        // std::cout << "next_cost " << dist[next] << std::endl;
-        // std::cout << "here_cost " << dist[here] << std::endl;
+        double nextcost = connected.cost + connected.additional_cost;
+        // std::cout << "connected.cost: " << connected.cost << std::endl;
+        // std::cout << "connected.additional_cost : " << connected.additional_cost << std::endl;
+
         if (dist[next] > dist[here] + nextcost) {
           dist[next] = dist[here] + nextcost;
           qu.push({dist[next], next});

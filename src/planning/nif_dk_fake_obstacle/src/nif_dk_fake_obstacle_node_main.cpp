@@ -3,7 +3,7 @@
 
 #include "nif_common/constants.h"
 #include "nif_common/types.h"
-#include "nif_dk_graph_planner/nif_dk_graph_planner_node.h"
+#include "nif_dk_fake_obstacle/nif_dk_fake_obstacle_node.h"
 #include "rclcpp/rclcpp.hpp"
 #include "rcutils/error_handling.h"
 #include <cstdio>
@@ -16,18 +16,16 @@ using namespace nif::planning;
 int32_t main(int32_t argc, char **argv) {
   rclcpp::init(argc, argv);
 
-  const char *node_name_1 = "nif_dk_graph_planner_nodes";
+  const char *node_name_1 = "nif_dk_fake_obstacle_node";
 
-  auto PLANNER = std::make_shared<DKGraphPlannerNode>(node_name_1);
+  auto FAKE_OBS = std::make_shared<FakeObsNode>(node_name_1);
 
-  // rclcpp::executors::SingleThreadedExecutor executor;
-  rclcpp::executors::MultiThreadedExecutor executor(
-      rclcpp::executor::create_default_executor_arguments(), 2);
+  rclcpp::executors::SingleThreadedExecutor executor;
   try {
     RCLCPP_INFO(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
                 "Instantiating DKGraphPlannerNode with name: %s", &node_name_1);
 
-    executor.add_node(PLANNER);
+    executor.add_node(FAKE_OBS);
 
   } catch (std::exception &e) {
     RCLCPP_FATAL(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),

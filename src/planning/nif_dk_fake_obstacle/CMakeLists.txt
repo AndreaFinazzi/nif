@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(nif_dk_graph_planner)
+project(nif_dk_fake_obstacle_node)
 
 # Default to C++14
 if(NOT CMAKE_CXX_STANDARD)
@@ -43,23 +43,20 @@ ament_auto_find_build_dependencies()
 ament_auto_add_library(geodetic_util SHARED
         lib/geodetic_conv.cpp)
 
-ament_auto_add_library(nif_dk_graph_planner_node SHARED
-        src/nif_dk_graph_planner_node.cpp)
+ament_auto_add_library(nif_dk_fake_obstacle_node SHARED
+        src/nif_dk_fake_obstacle_node.cpp)
 
-target_link_libraries(nif_dk_graph_planner_node
+target_link_libraries(nif_dk_fake_obstacle_node
   geodetic_util
   ${PUGIXML_LIBRARIES}
   ${PCL_LIBRARIES}
 )
 
 ament_auto_add_executable(${PROJECT_NAME}_exe
-    src/nif_dk_graph_planner_nodes_main.cpp)
+    src/nif_dk_fake_obstacle_node_main.cpp)
 target_link_libraries(${PROJECT_NAME}_exe
-    nif_dk_graph_planner_node
+    nif_dk_fake_obstacle_node
 )
-
-
-
 
 
 if(BUILD_TESTING)
@@ -75,7 +72,7 @@ if(BUILD_TESTING)
           )
 
   target_include_directories(${PROJECT_NAME}_test PRIVATE "include")
-  target_link_libraries(${PROJECT_NAME}_test nif_dk_graph_planner_node)
+  target_link_libraries(${PROJECT_NAME}_test nif_dk_fake_obstacle_node)
   ament_target_dependencies(${PROJECT_NAME}_test "rclcpp")
 endif()
 
