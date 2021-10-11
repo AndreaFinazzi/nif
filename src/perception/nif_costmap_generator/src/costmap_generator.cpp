@@ -141,7 +141,7 @@ void CostmapGenerator::run() {
   // }
   pcl::PointCloud<pcl::PointXYZI>::Ptr PointsWallAndObject(new pcl::PointCloud<pcl::PointXYZI>);
   if (bWallPoints)
-    *PointsWallAndObject += *m_in_wall_points;
+    // *PointsWallAndObject += *m_in_wall_points;
   if (bObjectPoints)
     *PointsWallAndObject += *m_in_object_points;
   if (bFakeObstaclePoints)

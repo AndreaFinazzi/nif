@@ -46,6 +46,7 @@ for node in nodes:
     id_ = int(node.attrib['id'])
     lat = float(node.attrib['lat'])
     lon = float(node.attrib['lon'])
+    tags = node.findall("tag")
     # lat = node.attrib['lat']
     # lon = node.attrib['lon']
 
@@ -85,6 +86,7 @@ for node in nodes:
     id_ = int(node.attrib['id'])
     lat = float(node.attrib['lat'])
     lon = float(node.attrib['lon'])
+    tags = node.findall("tag")
     
     if id_ in removed_ids:
         idx = removed_ids.index(id_)
@@ -93,6 +95,9 @@ for node in nodes:
         continue
 
     new_node = Element('node', id=node.attrib['id'], lat=node.attrib['lat'],lon=node.attrib['lon'])
+    for tag_tmp in tags:
+        new_nd = Element('tag', k=tag_tmp.attrib['k'], v=tag_tmp.attrib['v'])
+        new_node.append(new_nd)
     new_root.append(new_node)
 
 

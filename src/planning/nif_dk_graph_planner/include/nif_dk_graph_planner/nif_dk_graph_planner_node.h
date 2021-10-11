@@ -131,7 +131,7 @@ public:
   void ToPathMsg();
   int HeuristicFunc(int _next_id, Connected connected);
   // void aStarPlanning();
-  bool ExistInList(int id, std::vector<int> list);
+  bool ExistInList(int id, std::deque<int> list);
   void timer_callback();
   void run();
 
@@ -153,6 +153,10 @@ private:
 
   void GetIntensityInfo(const double &x_in, const double &y_in,
                         pcl::PointCloud<pcl::PointXYZI>::Ptr in_points,
+                        int &intensity_out);
+  void GetIntensityInfo(const double &x_in, const double &y_in,
+                        pcl::PointCloud<pcl::PointXYZI>::Ptr in_points, 
+                        double &nearest_x_in_points_out, double &nearest_y_in_points_out,
                         int &intensity_out);
   double getClosestDistance(const double &x_in, const double &y_in,
                             pcl::PointCloud<pcl::PointXYZI>::Ptr points_in);
@@ -206,12 +210,18 @@ private:
   double m_veh_x;
   double m_veh_y;
   double m_veh_roll, m_veh_pitch, m_veh_yaw;
-
-  int m_closestStartNode;
+  double prev_time, current_time;
+  int m_closestStartNode; 
   int m_closestGoalNode;
   int m_currentLayer;
+  int m_prevBestFirstNodeInLayer = -1;
+  int m_prevBestEndNodeInLayer = -1;
+  int m_prevFirstLayer;
+  int m_prevStartFirstNodeId = -1;
+  int m_UsePrevStartFirstNodeAfter2 = 0;
+
   std::unordered_map<int, std::vector<nif_dk_graph_planner_msgs::msg::Way>>
-      m_WaysResister;
+          m_WaysResister;
   std::unordered_map<int, std::vector<nif_dk_graph_planner_msgs::msg::Way>>
       m_FirstNodeBasedResister;
 
@@ -230,7 +240,7 @@ private:
   std::unordered_map<int, std::vector<Connected>> m_graph;
   std::unordered_map<int, int> m_PredSuccMap;
   std::deque<int> m_PlanningPathNodes;
-  std::vector<int> m_FinalNodes;
+  std::deque<int> m_FinalNodes;
 
   std::mutex mtx;
   };

@@ -64,6 +64,7 @@ windows:
           - ros2 launch nif_points_preprocessor_nodes deploy.launch.py
       - shell_command:
           # - ros2 launch nif_multilayer_planning_nodes deploy.launch.py
+          - ros2 launch nif_dk_fake_obstacle_node deploy.launch.py
       - shell_command:
           - ros2 launch nif_aw_localization_nodes deploy.launch.py
       - shell_command:
@@ -75,6 +76,8 @@ windows:
           - ros2 topic echo /aw_localization/ekf/status
       - shell_command:
           - ros2 launch nif_dk_graph_planner deploy.launch.py
+      - shell_command:
+          - rviz2
 
   - window_name: Monitoring Tab
     layout: tiled

@@ -34,7 +34,7 @@ FakeObsNode::FakeObsNode(const std::string &node_name_)
 
   using namespace std::chrono_literals; // NOLINT
   sub_timer_ = this->create_wall_timer(
-      10ms, std::bind(&FakeObsNode::timer_callback, this));
+      200ms, std::bind(&FakeObsNode::timer_callback, this));
           
   pubFakeObsPoints = this->create_publisher<sensor_msgs::msg::PointCloud2>(
       "/graph_planner/fake_obs", nif::common::constants::QOS_SENSOR_DATA);
