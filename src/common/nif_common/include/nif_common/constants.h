@@ -58,6 +58,11 @@ const std::chrono::microseconds SYNC_PERIOD_MIN(10000);
 const std::chrono::microseconds SYNC_PERIOD_MAX(50000);
 
 /**
+ * Default period for communication heartbeat.
+ */
+const std::chrono::microseconds COMMS_HEARTBEAT_PERIOD_US(33000);
+
+/**
  * Default QoS parameter.
  * TODO look into details and take proper decision
  */
