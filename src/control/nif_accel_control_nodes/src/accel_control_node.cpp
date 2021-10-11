@@ -352,10 +352,10 @@ void AccelControl::publishThrottleBrake() {
   pubThrottleCmdRaw_->publish(this->throttle_cmd);
   pubBrakeCmdRaw_->publish(this->brake_cmd);
 
-  if (this->throttle_cmd.data > this->max_throttle_) {
-    RCLCPP_DEBUG(this->get_logger(), "%s\n", "Throttle Limit Max Reached");
-    this->throttle_cmd.data = this->max_throttle_;
-  }
+  // if (this->throttle_cmd.data > this->max_throttle_) {
+  //   RCLCPP_DEBUG(this->get_logger(), "%s\n", "Throttle Limit Max Reached");
+  //   this->throttle_cmd.data = this->max_throttle_;
+  // }
 
   this->throttle_cmd.data =
       (this->brake_cmd.data > 0.0) ? 0.0 : this->throttle_cmd.data;
