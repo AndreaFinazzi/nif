@@ -105,8 +105,9 @@ void WaypointManagerMission::calcMapTrack() {
 
       // vector<double> target_speed_vector_in{10.0};
       vector<double> target_speed_vector_in;
-      // target_speed_vector_in.push_back(m_cur_odom.twist.twist.linear.x);
-      target_speed_vector_in.push_back(45);
+      double clipped_speed = nif::common::utils::numeric::clip(5.0, 40.0,
+                                                               m_cur_odom.twist.twist.linear.x);
+      target_speed_vector_in.push_back(m_cur_odom.twist.twist.linear.x);
       std::vector<double> lat_width_left_vector{LEFT_WIDTH_MARGIN};
       std::vector<double> lat_width_right_vector{RIGHT_WIDTH_MARGIN};
       std::vector<double> lat_width_d_vector{WIDTH_DELTA};
