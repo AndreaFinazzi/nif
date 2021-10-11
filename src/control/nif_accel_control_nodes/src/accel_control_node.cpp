@@ -74,7 +74,7 @@ AccelControl::AccelControl() : Node("AccelControlNode") {
   this->declare_parameter("throttle.k_bias", 0.09998);
   this->declare_parameter("throttle.pedalToCmd", 100.0);
 
-  this->declare_parameter("throttle.cmd_max", 30.0);
+  this->declare_parameter("throttle.cmd_max", 40.0);
   this->declare_parameter("throttle.cmd_min", 0.0);
   this->declare_parameter("throttle.des_accel_deadband", 0.05);
 
@@ -115,7 +115,7 @@ AccelControl::AccelControl() : Node("AccelControlNode") {
   // Create Callback Timers
   this->ts_ = this->get_parameter("time_step").as_double();
 
-  int timer_gear_ms_ = static_cast<int>(ts_ * 10000);
+  int timer_gear_ms_ = static_cast<int>(ts_ * 1000);
   this->gear_timer_ =
       this->create_wall_timer(std::chrono::milliseconds(timer_gear_ms_),
                               std::bind(&AccelControl::shiftCallback, this));
@@ -418,7 +418,7 @@ void AccelControl::shiftCallback() {
 
   // Determine if a shift is required
   if (curr_speed > upshift_speed && this->throttle_cmd.data > 0.0 &&
-      curr_gear_num < 4) {
+      curr_gear_num < 6) {
     // change to next gear if not in 4th
     curr_gear_ptr_ = this->gear_states[curr_gear_num + 1];
     this->gear_cmd.data = curr_gear_num + 1;
@@ -438,7 +438,7 @@ void AccelControl::shiftCallback() {
     this->shifting_counter_ = 0;
   }
 
-  //  pubGearCmd_->publish(this->gear_cmd); // send gear command
+   pubGearCmd_->publish(this->gear_cmd); // send gear command
 }
 
 void AccelControl::receiveJoystick(
@@ -478,7 +478,7 @@ void AccelControl::receiveDesAccel(
   calculateBrakeCmd(current_des_accel);
 
   publishThrottleBrake();
-  pubGearCmd_->publish(this->gear_cmd); // send gear command
+  // pubGearCmd_->publish(this->gear_cmd); // send gear command
 
   // publish diagnostic message
   publishDiagnostic(engine_based_throttle_enabled_, m_traction_activated,
