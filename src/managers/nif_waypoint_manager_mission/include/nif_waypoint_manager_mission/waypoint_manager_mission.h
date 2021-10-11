@@ -28,12 +28,17 @@
 using namespace std;
 using namespace Frenet;
 
-#define LONGI_MIN_T 4.4         // in sec
-#define LONGI_MAX_T 4.51        // 3.81 //in sec
+// #define LONGI_MIN_T 4.4         // in sec
+// #define LONGI_MAX_T 4.51        // 3.81 //in sec
+// #define LONGI_DT 0.1            // in sec
+
+#define LONGI_MIN_T 2.4         // in sec
+#define LONGI_MAX_T 2.49        // 3.81 //in sec
 #define LONGI_DT 0.1            // in sec
+
 #define LEFT_WIDTH_MARGIN -5.5  // meter
 #define RIGHT_WIDTH_MARGIN 5.51 // meter
-#define WIDTH_DELTA 1.25        // meter
+#define WIDTH_DELTA 1.0        // meter
 
 class WaypointManagerMission {
 public:
