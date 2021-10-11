@@ -24,6 +24,7 @@ IWaypointManager::IWaypointManager(const vector<string>& wpt_file_path_list_,
 
   bool wpt_3d_flg = false;
   bool spline_flg = true;
+  // bool spline_flg = false;
 
   for (const auto& wpt_file_idx : wpt_file_path_list_) {
     c_wpt obj(wpt_file_idx,
