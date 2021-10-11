@@ -65,6 +65,9 @@ class Telemetry : public rclcpp::Node
         "/joystick/gear_cmd", nif::common::constants::QOS_SENSOR_DATA, std::bind(&Telemetry::command_gear_callback, this, std::placeholders::_1));
         // sub_perception_result
 
+      sub_reference_path = this->create_subscription<nav_msgs::msg::Path>(
+        "/planning/graph/path_global", nif::common::constants::QOS_SENSOR_DATA, std::bind(&Telemetry::reference_path_callback, this, std::placeholders::_1));
+
       timer_ = this->create_wall_timer(
         100ms, std::bind(&Telemetry::timer_callback, this));
     }
@@ -74,6 +77,22 @@ class Telemetry : public rclcpp::Node
     {
       pub_system_status->publish(msg_system_status);
       pub_telemetry->publish(msg_telemetry);
+
+      if (!in_reference_path.poses.empty()) {
+        nav_msgs::msg::Path path_sampled{};
+
+        path_sampled.header = std::move(in_reference_path.header);
+        unsigned int step_size =  floor(this->in_reference_path.poses.size() / 10);
+
+        for (int i = 0; i < this->in_reference_path.poses.size(); i += step_size) 
+        {
+          path_sampled.poses.push_back(this->in_reference_path.poses[i]);
+        }
+        // Always include last point
+        path_sampled.poses.push_back(this->in_reference_path.poses[this->in_reference_path.poses.size() - 1]);
+
+        pub_reference_path->publish(path_sampled);
+      }
     }
     void ct_report_callback(const deep_orange_msgs::msg::CtReport::SharedPtr msg)
     {
@@ -143,7 +162,10 @@ class Telemetry : public rclcpp::Node
     {
       msg_telemetry.control.gear_cmd = msg->data;
     }
-
+    void reference_path_callback(const nav_msgs::msg::Path::SharedPtr msg)
+    {
+      in_reference_path = std::move(*msg);
+    }
     rclcpp::TimerBase::SharedPtr timer_;
 
     rclcpp::Publisher<nif_msgs::msg::SystemStatus>::SharedPtr pub_system_status;
@@ -153,9 +175,11 @@ class Telemetry : public rclcpp::Node
     rclcpp::Subscription<deep_orange_msgs::msg::CtReport>::SharedPtr sub_ct_report;
     rclcpp::Subscription<deep_orange_msgs::msg::PtReport>::SharedPtr sub_pt_report;
     rclcpp::Subscription<deep_orange_msgs::msg::MiscReport>::SharedPtr sub_misc_report_do;
+    rclcpp::Subscription<nif_msgs::msg::SystemStatus>::SharedPtr sub_system_status;
+
     rclcpp::Subscription<raptor_dbw_msgs::msg::WheelSpeedReport>::SharedPtr sub_wheel_speed_report;
     rclcpp::Subscription<raptor_dbw_msgs::msg::SteeringReport>::SharedPtr sub_steeering_report;
-    rclcpp::Subscription<nif_msgs::msg::SystemStatus>::SharedPtr sub_system_status;
+
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr sub_ego_odometry;
     rclcpp::Subscription<nif_msgs::msg::LocalizationStatus>::SharedPtr sub_localization_status;
 
@@ -165,8 +189,13 @@ class Telemetry : public rclcpp::Node
     rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr sub_command_desired_velocity;
     rclcpp::Subscription<std_msgs::msg::UInt8>::SharedPtr sub_command_gear;
 
+    rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr sub_reference_path;
+
     nif_msgs::msg::SystemStatus msg_system_status;
     nif_msgs::msg::Telemetry msg_telemetry;
+
+    nav_msgs::msg::Path in_reference_path;
+    nav_msgs::msg::Path msg_reference_path;
 };
 
 int main(int argc, char * argv[])
