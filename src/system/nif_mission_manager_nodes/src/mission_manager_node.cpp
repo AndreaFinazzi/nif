@@ -19,6 +19,7 @@ MissionManagerNode::MissionManagerNode(
 
     this->declare_parameter("velocity.zero", 0.0);
     this->declare_parameter("velocity.max", 37.0);
+    this->declare_parameter("velocity.avoidance", 20.0);
     this->declare_parameter("velocity.pit_in", 8.0);
     this->declare_parameter("velocity.pit_out", 8.0);
     this->declare_parameter("velocity.slow_drive", 8.0);
@@ -44,6 +45,7 @@ MissionManagerNode::MissionManagerNode(
 
     this->velocity_zero = this->get_parameter("velocity.zero").as_double();
     this->velocity_max = this->get_parameter("velocity.max").as_double();
+    this->velocity_avoidance = this->get_parameter("velocity.avoidance").as_double();
     this->velocity_pit_in = this->get_parameter("velocity.pit_in").as_double();
     this->velocity_pit_out = this->get_parameter("velocity.pit_out").as_double();
     this->velocity_slow_drive = this->get_parameter("velocity.slow_drive").as_double();
@@ -81,6 +83,14 @@ MissionManagerNode::MissionManagerNode(
                     &MissionManagerNode::recoveryServiceHandler,
                     this,
                     std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+
+    this->avoidance_service = this->create_service<std_srvs::srv::Trigger>(
+            "/mission_manager/avoidance",
+            std::bind(
+                    &MissionManagerNode::avoidanceServiceHandler,
+                    this,
+                    std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+
 
     MissionParser::loadMissionsDescription(missions_file_path, this->missions_description);
     
@@ -247,7 +257,9 @@ MissionStatus::_mission_status_code_type MissionManagerNode::getMissionVehFlagNu
                 return MissionStatus::MISSION_PIT_STANDBY;
             } else {
                 // TODO If on track, RACE should be set and maintained.
-                return MissionStatus::MISSION_TEST;
+                if (this->is_avoidance_enabled)
+                    return MissionStatus::MISSION_COLLISION_AVOIDNACE;
+                return MissionStatus::MISSION_RACE;
             }
             break;
 
@@ -313,6 +325,14 @@ MissionManagerNode::parametersCallback(
                     result.successful = true;
                 }
             }
+        } else if (param.get_name() == "velocity.avoidance") {
+            if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
+                if (param.as_double() >= 0.0 && param.as_double() <= 67.0) // TODO implement switching policy, if needed
+                {
+                    this->velocity_avoidance = param.as_double();
+                    result.successful = true;
+                }
+            }
         }
     }
 
@@ -360,6 +380,11 @@ double nif::system::MissionManagerNode::getMissionMaxVelocityMps(
             max_vel_mps = this->velocity_max;
             break;
             
+        case MissionStatus::MISSION_COLLISION_AVOIDNACE:
+            max_vel_mps = this->velocity_avoidance;
+            break;
+            
+        
         default:
             max_vel_mps = this->velocity_zero;
             break;
@@ -418,3 +443,14 @@ void MissionManagerNode::recoveryServiceHandler(
             response->success = false;
         }
 }
+
+  void MissionManagerNode::avoidanceServiceHandler(
+          const std::shared_ptr<rmw_request_id_t> request_header,
+          const std_srvs::srv::Trigger::Request::SharedPtr request,
+          std_srvs::srv::Trigger::Response::SharedPtr response)
+          {
+            this->is_avoidance_enabled = !this->is_avoidance_enabled;
+            response->message = "is_avoidance_enabled set to ";
+            response->message.append(this->is_avoidance_enabled ? "true" : "false");
+            response->success = true;
+          }

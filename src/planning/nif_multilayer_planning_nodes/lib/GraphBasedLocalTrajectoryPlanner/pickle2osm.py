@@ -2,7 +2,7 @@ from xml.etree.ElementTree import Element, SubElement, ElementTree, dump
 from xml.etree.ElementTree import parse
 import glob
 import os
-from lxml import etree
+# from lxml import etree
 import pandas as pd
 import argparse
 import numpy as np

@@ -12,6 +12,7 @@
 #include "deep_orange_msgs/msg/misc_report.hpp"
 #include "std_msgs/msg/float32.hpp"
 #include "std_msgs/msg/u_int8.hpp"
+#include "std_msgs/msg/float32_multi_array.hpp"
 #include "nif_msgs/msg/system_status.hpp"
 #include "nif_msgs/msg/telemetry.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
@@ -64,6 +65,10 @@ class Telemetry : public rclcpp::Node
       sub_command_gear = this->create_subscription<std_msgs::msg::UInt8>(
         "/joystick/gear_cmd", nif::common::constants::QOS_SENSOR_DATA, std::bind(&Telemetry::command_gear_callback, this, std::placeholders::_1));
         // sub_perception_result
+
+      sub_control_lqr_error = this->create_subscription<std_msgs::msg::Float32MultiArray>(
+        "/control_joint_lqr/lqr_error", nif::common::constants::QOS_SENSOR_DATA, std::bind(&Telemetry::control_lqr_error_callback, this, std::placeholders::_1));
+
 
       sub_reference_path = this->create_subscription<nav_msgs::msg::Path>(
         "/planning/graph/path_global", nif::common::constants::QOS_SENSOR_DATA, std::bind(&Telemetry::reference_path_callback, this, std::placeholders::_1));
@@ -161,6 +166,11 @@ class Telemetry : public rclcpp::Node
     void command_gear_callback(const std_msgs::msg::UInt8::SharedPtr msg)
     {
       msg_telemetry.control.gear_cmd = msg->data;
+    }    
+    void control_lqr_error_callback(const std_msgs::msg::Float32MultiArray::SharedPtr msg)
+    {
+      if (!msg->data.empty())
+        msg_telemetry.control.crosstrack_error = msg->data[0];
     }
     void reference_path_callback(const nav_msgs::msg::Path::SharedPtr msg)
     {
@@ -188,6 +198,7 @@ class Telemetry : public rclcpp::Node
     rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr sub_command_brake;
     rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr sub_command_desired_velocity;
     rclcpp::Subscription<std_msgs::msg::UInt8>::SharedPtr sub_command_gear;
+    rclcpp::Subscription<std_msgs::msg::Float32MultiArray>::SharedPtr sub_control_lqr_error;
 
     rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr sub_reference_path;
 

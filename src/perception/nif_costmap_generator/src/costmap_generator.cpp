@@ -106,7 +106,7 @@ CostmapGenerator::~CostmapGenerator(){}
 
 void CostmapGenerator::run() {
 
-  if ((bWallPoints || bObjectPoints)) {
+  if ((bWallPoints || bObjectPoints || bFakeObstaclePoints)) {
   //   pcl::PointCloud<pcl::PointXYZI>::Ptr PointsOnGlobal(
   //       new pcl::PointCloud<pcl::PointXYZI>);
   //   TransformPointsToGlobal(m_in_object_points, PointsOnGlobal, m_veh_x, m_veh_y, m_veh_yaw);
@@ -293,7 +293,7 @@ void CostmapGenerator::TransformPointsToBody(
 
 void CostmapGenerator::MakeInflationWithPoints()
 {
-  if (bWallPoints || bObjectPoints)
+  if (bWallPoints || bObjectPoints || bFakeObstaclePoints)
   {
     costmap_[INFLATION_COSTMAP_LAYER_].setConstant(grid_min_value_);
     obstacleArray.clear();

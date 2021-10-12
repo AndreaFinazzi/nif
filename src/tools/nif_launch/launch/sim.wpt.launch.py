@@ -123,7 +123,7 @@ def generate_launch_description():
     )
 
     telemetry_node = Node(
-        package='telemetry',
+        package='nif_telemetry',
         executable='telemetry',
         output='screen',
     )
@@ -420,7 +420,7 @@ def generate_launch_description():
         nif_wall_node_launch_bg,
         nif_waypoint_manager_node,
         robot_description_launch,
-        nif_multilayer_planning_node,
+        # nif_multilayer_planning_node,
         nif_velocity_planning_node,
         nif_joint_lqr_control_node,
         nif_accel_control_node,

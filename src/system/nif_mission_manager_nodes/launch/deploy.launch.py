@@ -54,6 +54,7 @@ def generate_launch_description():
             "missions_file_path": mm_param_default_file,
             "velocity.zero": 0.0,
             "velocity.max": 30.0,
+            "velocity.avoidance": 15.0,
             "velocity.pit_in": 10.0,
             "velocity.pit_out": 10.0,
             "velocity.slow_drive": 15.0,
