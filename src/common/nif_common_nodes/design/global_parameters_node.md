@@ -34,7 +34,7 @@ For instance, to the following `.yaml` structure:
   ros__parameters:
     frames:
       body: "base_link"
-      global: "map"
+      global: "odom"
 ```
 
 Corresponds the following constants:
