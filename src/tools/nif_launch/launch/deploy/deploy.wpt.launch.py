@@ -133,8 +133,8 @@ def generate_launch_description():
         ],
     )
 
-    telemetry_node = Node(
-        package='telemetry',
+    nif_telemetry_node = Node(
+        package='nif_telemetry',
         executable='telemetry',
         output='screen',
     )
@@ -401,12 +401,6 @@ def generate_launch_description():
         )
     )
 
-    nif_dk_obstacles_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            get_share_file("nif_dk_fake_obstacle", 'launch/deploy.launch.py')
-        )
-    )
-
 ### NIF MULTILAYER PLANNER END #############################
 
     return LaunchDescription([
@@ -420,7 +414,7 @@ def generate_launch_description():
         socketcan_receiver_launch,
         socketcan_sender_launch,
         raptor_node,
-        telemetry_node,
+        nif_telemetry_node,
 
         nif_global_param_node,
         nif_system_status_manager_node,
