@@ -25,10 +25,10 @@ public:
 
   vector<tuple<double, double>>
   load2DWPTFile(string wpt_2d_file_path_,
-                int wpt_sampling_interval = 50); // load 2d wpt from the file
+                int wpt_sampling_interval = 2); // load 2d wpt from the file
   vector<tuple<double, double, double>>
   load3DWPTFile(string wpt_3d_file_path_,
-                int wpt_sampling_interval = 50); // load 3d wpt from the file
+                int wpt_sampling_interval = 2); // load 3d wpt from the file
 
   string getWPTFilePath() {
     return m_wpt_file_path;

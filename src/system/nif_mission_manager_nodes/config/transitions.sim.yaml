@@ -76,7 +76,7 @@ missions:
           - 10.0 # x_max
           - 50.0 # y_max
     activation_velocity:
-      active: true
+      active: false
       range_mps:
         - 0.000 # min m/s
         - 0.001 # max m/s
@@ -85,6 +85,7 @@ missions:
       from:
         - 60    # MISSION_PIT_IN
         - 65    # MISSION_PIT_STANDBY
+        - 70    # MISSION_PIT_OUT (Enables pit in from PIT_INIT)
         - 65000 # MISSION_PIT_INIT
     timeout:
       active: false # ignored

@@ -99,6 +99,10 @@ SystemStatusManagerNode::SystemStatusManagerNode(
             nif::common::constants::SYNC_PERIOD_DEFAULT_US,
             [this] { systemStatusTimerCallback(); });
 
+    this->comms_heartbeat_timer = this->create_wall_timer(
+            nif::common::constants::COMMS_HEARTBEAT_PERIOD_US,
+            [this] { commsHeartbeatTimerCallback(); });
+
     this->recovery_service = this->create_service<std_srvs::srv::Trigger>(
             "/system_status_manager/recover",
             std::bind(
@@ -106,13 +110,12 @@ SystemStatusManagerNode::SystemStatusManagerNode(
                     this,
                     std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 }
-
 void SystemStatusManagerNode::systemStatusTimerCallback() {
     // Check for passed out topics
     nodeStatusesAgeCheck();
 
     // check safety conditions
-    bool hb_ok = heartbeatOk();
+    bool hb_ok = this->comms_heartbeat_ok;
     bool localization_ok = localizationOk(); // gps_health_ok();
 
     if (!hb_ok || !this->recovery_enabled) {
@@ -148,6 +151,11 @@ void SystemStatusManagerNode::systemStatusTimerCallback() {
     }
 
     this->system_status_pub->publish(this->system_status_msg);
+}
+
+void SystemStatusManagerNode::commsHeartbeatTimerCallback()
+{
+    this->comms_heartbeat_ok =  commsHeartbeatOk();
 }
 
 void SystemStatusManagerNode::subscribeNodeStatus(
@@ -262,7 +270,7 @@ nif::common::types::t_node_id SystemStatusManagerNode::newStatusRecord(
     node_status_short.node_name = request->node_name;
     node_status_short.node_status_code = common::NODE_INACTIVE;
 
-    this->system_status_msg.health_status.node_list.push_back(request->node_name);
+    // this->system_status_msg.health_status.node_list.push_back(request->node_name);
     auto it = this->system_status_msg.health_status.node_statuses_list.begin();
     this->system_status_msg.health_status.node_statuses_list.insert(it + node_index, std::move(node_status_short));
 
@@ -296,7 +304,7 @@ nif::common::types::t_node_id SystemStatusManagerNode::newStatusRecord(
     return node_id;
 }
 
-bool SystemStatusManagerNode::heartbeatOk() {
+bool SystemStatusManagerNode::commsHeartbeatOk() {
     // check for timeouts
     if (counter_joy_prev != counter_joy) {
         // received new message, heartbeat ok

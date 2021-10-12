@@ -72,7 +72,7 @@ windows:
       - shell_command:
           - ros2 topic echo /aw_localization/ekf/status
       - shell_command:
-          - ros2 topic hz /clustered_points
+          - ros2 launch nif_dk_graph_planner deploy.launch.py
 
 
   - window_name: Monitoring Tab
