@@ -12,6 +12,7 @@ endif()
 
 # find dependencies
 find_package(ament_cmake_auto REQUIRED)
+find_package(Boost REQUIRED COMPONENTS system) 
 ament_auto_find_build_dependencies()
 
 # Library
