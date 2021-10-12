@@ -82,6 +82,7 @@ target_fs/
 ## large_size map files in the navigation
 #*.pcd
 #*.osm
+src/planning/nif_dk_graph_planner/map/
 src/perception/nif_localization_nodes/map/ims/full_map.pcd
 
 core

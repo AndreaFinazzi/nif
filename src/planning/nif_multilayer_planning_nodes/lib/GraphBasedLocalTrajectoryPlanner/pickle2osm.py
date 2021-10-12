@@ -89,13 +89,14 @@ def parse_configs():
                         help='check headers name')
 
     # lon_0, lat_0 = -86.235148, 39.809786  #indy
-    lon_0, lat_0 = -86.3418060783425, 39.8125900071711  #Lucas Oil Racing
-    
+    # lon_0, lat_0 = -86.3418060783425, 39.8125900071711  #Lucas Oil Racing
+    lon_0, lat_0 = -86.23524024, 39.79312996 #LG SIM
+
     nedPoints = []
 
     configs = edict(vars(parser.parse_args()))
 
-    root_path = './pickle_files/LOR' 
+    root_path = './pickle_files/LG_SIM' 
     input_name = configs.filename
     file_name = os.path.join(root_path, input_name)
     osm_file_name = file_name[:-4] + "osm" 

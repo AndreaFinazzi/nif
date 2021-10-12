@@ -70,6 +70,11 @@ CostmapGenerator::CostmapGenerator()
       std::bind(&CostmapGenerator::objectPointsCallback, this,
                 std::placeholders::_1));
 
+  sub_fake_obs_points_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
+      "in_fake_obs_points", nif::common::constants::QOS_SENSOR_DATA,
+      std::bind(&CostmapGenerator::fakeObstacleCallback, this,
+                std::placeholders::_1));
+
   sub_odometry_ = this->create_subscription<nav_msgs::msg::Odometry>(
       "in_odometry_ekf_estimated", nif::common::constants::QOS_EGO_ODOMETRY,
       std::bind(&CostmapGenerator::OdometryCallback, this,
@@ -136,12 +141,14 @@ void CostmapGenerator::run() {
   // }
   pcl::PointCloud<pcl::PointXYZI>::Ptr PointsWallAndObject(new pcl::PointCloud<pcl::PointXYZI>);
   if (bWallPoints)
-    *PointsWallAndObject += *m_in_wall_points;
+    // *PointsWallAndObject += *m_in_wall_points;
   if (bObjectPoints)
     *PointsWallAndObject += *m_in_object_points;
+  if (bFakeObstaclePoints)
+    *PointsWallAndObject += *m_in_fake_obstacle_points;
 
   costmap_[SENSOR_POINTS_COSTMAP_LAYER_] =
-      generateSensorPointsCostmap(PointsWallAndObject);
+        generateSensorPointsCostmap(PointsWallAndObject);
 
   if(bEnablePotential_)
     MakeInflationWithPoints();
@@ -174,6 +181,18 @@ void CostmapGenerator::objectPointsCallback(
   m_in_object_points.reset(new pcl::PointCloud<pcl::PointXYZI>());
   pcl::fromROSMsg(*msg, *m_in_object_points);
   bObjectPoints = true;
+}
+
+void CostmapGenerator::fakeObstacleCallback(
+    const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
+
+  m_in_fake_obstacle_points.reset(new pcl::PointCloud<pcl::PointXYZI>());
+  pcl::PointCloud<pcl::PointXYZI>::Ptr in_points(new pcl::PointCloud<pcl::PointXYZI>);
+  pcl::fromROSMsg(*msg, *in_points);
+  TransformPointsToBody(in_points, m_in_fake_obstacle_points, 
+                        m_veh_x, m_veh_y, m_veh_yaw);
+
+  bFakeObstaclePoints = true;
 }
 
 void CostmapGenerator::OdometryCallback(
@@ -259,16 +278,16 @@ void CostmapGenerator::TransformPointsToGlobal(
 }
 
 void CostmapGenerator::TransformPointsToBody(
-    const pcl::PointCloud<pcl::PointXYZI>::Ptr &CloudIn,
-    pcl::PointCloud<pcl::PointXYZI>::Ptr &CloudOut, const double &veh_x_,
+    const pcl::PointCloud<pcl::PointXYZI>::Ptr CloudIn,
+    pcl::PointCloud<pcl::PointXYZI>::Ptr CloudOut, const double &veh_x_,
     const double &veh_y_, const double &veh_yaw_) {
 
   for (auto point : CloudIn->points) {
-    pcl::PointXYZI pointOnGlobal;
-    pointOnGlobal.x = (point.x - veh_x_) * cos(veh_yaw_) + (point.y -veh_y_) * sin(veh_yaw_);
-    pointOnGlobal.y = -(point.x - veh_x_) * sin(veh_yaw_) + (point.y -  veh_y_) * cos(veh_yaw_);
-    pointOnGlobal.z = point.z;
-    CloudOut->points.push_back(pointOnGlobal);
+    pcl::PointXYZI pointOnBody;
+    pointOnBody.x = (point.x - veh_x_) * cos(veh_yaw_) + (point.y -veh_y_) * sin(veh_yaw_);
+    pointOnBody.y = -(point.x - veh_x_) * sin(veh_yaw_) + (point.y -  veh_y_) * cos(veh_yaw_);
+    pointOnBody.z = point.z;
+    CloudOut->points.push_back(pointOnBody);
   }
 }
 
