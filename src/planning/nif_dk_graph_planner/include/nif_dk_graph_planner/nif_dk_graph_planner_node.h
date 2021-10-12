@@ -98,6 +98,8 @@ typedef struct Connected
   int id;
   double cost;
   double additional_cost;
+  int best_node;
+  double transient_cost;
 
 } connected_t;
 
@@ -185,8 +187,9 @@ private:
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr
       pubFinalPathPoints;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubCostPoints;
+  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pubFinalPath;
 
-  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr SubOdometry;
+      rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr SubOdometry;
   rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr
       SubOccupancyGrid;
 
@@ -220,6 +223,7 @@ private:
   int m_prevStartFirstNodeId = -1;
   int m_UsePrevStartFirstNodeAfter2 = 0;
 
+  std::unordered_map<int, int> m_BestLayerArray;  //first node id , layer's node
   std::unordered_map<int, std::vector<nif_dk_graph_planner_msgs::msg::Way>>
           m_WaysResister;
   std::unordered_map<int, std::vector<nif_dk_graph_planner_msgs::msg::Way>>

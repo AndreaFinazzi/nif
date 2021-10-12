@@ -34,8 +34,8 @@ def generate_launch_description():
         map_file = 'IMS.osm'
         directory = 'IMS'
     elif track == LG_SVL:
-        map_file = 'LG_SVL.osm'
-        directory = 'LG_SVL'    
+        map_file = 'LG_SIM.osm'
+        directory = 'LG_SIM'    
     else:
         raise RuntimeError("ERROR: invalid track provided: {}".format(track))
 
@@ -68,9 +68,12 @@ def generate_launch_description():
                     # 'origin_lon' : -86.235148,
 
                     #LOR
-                    'origin_lat' : 39.8125900071711,
-                    'origin_lon' : -86.3418060783425,
+                    # 'origin_lat' : 39.8125900071711,
+                    # 'origin_lon' : -86.3418060783425,
 
+                    #LG SIM
+                    'origin_lat' : 39.79312996,
+                    'origin_lon' : -86.23524024,
                 }],
                 remappings=[ 
                     ("in_ekf_odometry", "/aw_localization/ekf/odom"),

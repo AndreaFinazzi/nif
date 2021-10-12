@@ -46,20 +46,21 @@ DKGraphPlannerNode::DKGraphPlannerNode(const std::string &node_name_)
 
   pubOsmParcer =
       this->create_publisher<nif_dk_graph_planner_msgs::msg::OsmParcer>(
-          "/graph_planner/OsmParcer", nif::common::constants::QOS_EGO_ODOMETRY);
-
+          "/graph_planner/OsmParcer", nif::common::constants::QOS_PLANNING);
   pubFullNodePoints = this->create_publisher<sensor_msgs::msg::PointCloud2>(
-      "/graph_planner/full_nodes", nif::common::constants::QOS_SENSOR_DATA);
+      "/graph_planner/full_nodes", nif::common::constants::QOS_PLANNING);
   pubRacingLineRefPoints = this->create_publisher<sensor_msgs::msg::PointCloud2>(
-      "/graph_planner/racing_line", nif::common::constants::QOS_SENSOR_DATA);
+      "/graph_planner/racing_line", nif::common::constants::QOS_PLANNING);
   pubFirstNodeContainPoints = this->create_publisher<sensor_msgs::msg::PointCloud2>(
-          "/graph_planner/first_node_info", nif::common::constants::QOS_SENSOR_DATA);
+          "/graph_planner/first_node_info", nif::common::constants::QOS_PLANNING);
   pubFinalPathPoints = this->create_publisher<sensor_msgs::msg::PointCloud2>(
-      "/graph_planner/final_path_points", nif::common::constants::QOS_SENSOR_DATA);
+      "/graph_planner/final_path_points", nif::common::constants::QOS_PLANNING);
   pubCandidatesNodePoints = this->create_publisher<sensor_msgs::msg::PointCloud2>(
-      "/graph_planner/cadidates_points", nif::common::constants::QOS_SENSOR_DATA);
+      "/graph_planner/cadidates_points", nif::common::constants::QOS_PLANNING);
   pubCostPoints = this->create_publisher<sensor_msgs::msg::PointCloud2>(
-      "/graph_planner/cost", nif::common::constants::QOS_SENSOR_DATA);
+      "/graph_planner/cost", nif::common::constants::QOS_PLANNING);
+  pubFinalPath = this->create_publisher<nav_msgs::msg::Path>(
+      "/graph_planner/final_path", nif::common::constants::QOS_PLANNING);
 
   SubOdometry =  this->create_subscription<nav_msgs::msg::Odometry>(
       "in_ekf_odometry", nif::common::constants::QOS_EGO_ODOMETRY,
@@ -317,7 +318,10 @@ void DKGraphPlannerNode::CallbackOdometry(const nav_msgs::msg::Odometry::SharedP
                      current_idx);
     int current_node_id;
     // get node id for planing
+    // Path from vehicle
     // GetIntensityInfo(m_veh_x, m_veh_y, m_FirstNodeContainPoints, current_node_id);
+    
+    // Path from racing line
     GetIntensityInfo(m_closest_x_in_racing_line, m_closest_y_in_racing_line,
                      m_FirstNodeContainPoints, current_node_id);
     
@@ -355,8 +359,9 @@ void DKGraphPlannerNode::CallbackOdometry(const nav_msgs::msg::Odometry::SharedP
     m_nearbyFirstNodes.clear();
     int search_num_idx = 10;
     int current_layer;
-    getNearbyNodesFromLayer(m_veh_x, m_veh_y, search_num_idx, m_FullIndexedPoints,
-                            current_layer, m_nearbyFirstNodes);
+    getNearbyNodesFromLayer(
+        m_closest_x_in_racing_line, m_closest_y_in_racing_line, search_num_idx,
+        m_FullIndexedPoints, current_layer, m_nearbyFirstNodes);
 
     m_currentLayer = current_layer;
 
@@ -580,6 +585,7 @@ void DKGraphPlannerNode::UpdateGraph()
     {
       auto way = m_FirstNodeBasedResister[nearbyNode][i];
       double cost_accumulated = 0;
+      double cost_transient = abs(way.end_node - m_BestLayerArray[way.start_layer]) * 0.4;
       for (auto node : way.nodes) {
         double pt_x_global = node.x;
         double pt_y_global = node.y;
@@ -597,21 +603,19 @@ void DKGraphPlannerNode::UpdateGraph()
         pcl::PointXYZI pointbuf;
         pointbuf.x = pt_x_global;
         pointbuf.y = pt_y_global;
-        pointbuf.intensity = cost;
+        pointbuf.intensity = cost + cost_transient;
         m_CostPoints->points.push_back(pointbuf);
       }
-      // std::cout << "cost_accumulated : " << cost_accumulated << std::endl;
+
+      // std::cout << "cost_accumulated : " << cost_accumulated <<
+      // std::endl;
+
       int j = 0;
       for (auto graph : m_graph[nearbyNode])
       {         
         if (graph.id == way.last_node_id) {
           m_graph[nearbyNode][j].additional_cost = cost_accumulated;
-          if (m_graph[nearbyNode][j].additional_cost != 0.0)
-          {
-            // std::cout << "cost: " << m_graph[nearbyNode][j].cost
-                      // << ", add : " << m_graph[nearbyNode][j].additional_cost
-                      // << std::endl;
-          }
+          m_graph[nearbyNode][j].transient_cost = cost_transient;
         }
         j++;
       }
@@ -623,6 +627,7 @@ void DKGraphPlannerNode::UpdateGraph()
   CostCloudMsg.header.frame_id = nif::common::frame_id::localization::ODOM;
   CostCloudMsg.header.stamp = this->now();
   pubCostPoints->publish(CostCloudMsg);
+
 }
 
 void DKGraphPlannerNode::ReleaseGraph()
@@ -635,7 +640,8 @@ void DKGraphPlannerNode::ReleaseGraph()
       for (int i = 0; i < m_graph[nearbyNode].size(); i++) {
         if (m_graph[nearbyNode][i].id == way.last_node_id) {
           // m_graph[nearbyNode][i].cost = way.cost;
-          m_graph[nearbyNode][i].additional_cost = 0;
+          m_graph[nearbyNode][i].additional_cost = 0.;
+          m_graph[nearbyNode][i].transient_cost = 0.;
       }
     }
   }
@@ -690,7 +696,8 @@ void DKGraphPlannerNode::Planning() {
 
       for (auto connected : m_graph[here]) {
         int next = connected.id;
-        double nextcost = connected.cost + connected.additional_cost;
+        double nextcost = connected.cost + connected.additional_cost +
+                          connected.transient_cost;
         // std::cout << "connected.cost: " << connected.cost << std::endl;
         // std::cout << "connected.additional_cost : " << connected.additional_cost << std::endl;
 
@@ -774,6 +781,8 @@ void DKGraphPlannerNode::ToPathMsg() {
 
   // Final Nodes
   int cnt = 0;
+  m_BestLayerArray.clear();
+  nav_msgs::msg::Path FinalPath;
   for (auto node_id : m_FinalNodes) {
     for (auto final_id : m_FirstNodeBasedResister[node_id]) {
       if (!ExistInList(final_id.last_node_id, m_FinalNodes))
@@ -807,7 +816,14 @@ void DKGraphPlannerNode::ToPathMsg() {
         point_buf.intensity = cnt;
         finalcloud_ptr->points.push_back(point_buf);
         cnt++;
+
+        geometry_msgs::msg::PoseStamped pose_buf;
+        pose_buf.pose.position.x = nd.x;
+        pose_buf.pose.position.y = nd.y;
+        pose_buf.pose.orientation.w = 1.0;
+        FinalPath.poses.push_back(pose_buf);
       }
+      m_BestLayerArray[final_id.start_layer] = final_id.end_node;
     }
   }
   sensor_msgs::msg::PointCloud2 FinalPathCloudMsg;
@@ -816,6 +832,10 @@ void DKGraphPlannerNode::ToPathMsg() {
   FinalPathCloudMsg.header.frame_id = nif::common::frame_id::localization::ODOM;
   FinalPathCloudMsg.header.stamp = this->now();
   pubFinalPathPoints->publish(FinalPathCloudMsg);
+
+  FinalPath.header.frame_id = nif::common::frame_id::localization::ODOM;
+  FinalPath.header.stamp = this->now();
+  pubFinalPath->publish(FinalPath);
 }
 
 bool DKGraphPlannerNode::ExistInList(int id, std::deque<int> list) {
