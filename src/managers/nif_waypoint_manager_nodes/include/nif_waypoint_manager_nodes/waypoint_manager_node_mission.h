@@ -11,57 +11,73 @@
 
 #include "rclcpp/rclcpp.hpp"
 
-namespace nif {
-namespace managers {
+namespace nif
+{
+  namespace managers
+  {
 
-class WaypointManagerMissionNode : public nif::common::IBaseNode {
-public:
-  /**
+    class WaypointManagerMissionNode : public nif::common::IBaseNode
+    {
+    public:
+      /**
    *
    * Using default WaypointManager -> WaypointManagerMission
    *
    **/
 
-  // TODO  wpt_file_path_list_, body_frame_id_ and global_frame_id_ could be
-  // passed as rosparams
-  explicit WaypointManagerMissionNode(const std::string &node_name_);
+      // TODO  wpt_file_path_list_, body_frame_id_ and global_frame_id_ could be
+      // passed as rosparams
+      explicit WaypointManagerMissionNode(const std::string &node_name_);
 
-  WaypointManagerMissionNode(
-      const std::string &node_name_,
-      const std::shared_ptr<WaypointManagerMission> wpt_manager_ptr);
+      WaypointManagerMissionNode(
+          const std::string &node_name_,
+          const std::shared_ptr<WaypointManagerMission> wpt_manager_ptr);
 
-private:
-  WaypointManagerMissionNode();
-  void timerCallback();
+      void occupancyCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr occupancy_map_msg);
+      void graphCallback(const nav_msgs::msg::Path::SharedPtr graph_path_msg);
 
-  void missionStatusCallback(const nif_msgs::msg::SystemStatus &sys_status);
+    private:
+      WaypointManagerMissionNode();
+      void timerCallback();
 
-  void setWaypointManager(
-      const std::shared_ptr<WaypointManagerMission> wpt_manager_ptr) {
-    this->wpt_manager = wpt_manager_ptr;
-  }
+      void missionStatusCallback(const nif_msgs::msg::SystemStatus &sys_status);
 
-  std::string race_wpt_file_path = "";
-  std::string pit_wpt_file_path = "";
-  double spline_interval = 1.0;
-  int maptrack_size = 100;
+      void setWaypointManager(
+          const std::shared_ptr<WaypointManagerMission> wpt_manager_ptr)
+      {
+        this->wpt_manager = wpt_manager_ptr;
+      }
 
-  std::shared_ptr<WaypointManagerMission> wpt_manager;
+      std::string race_wpt_file_path = "";
+      std::string pit_wpt_file_path = "";
+      double spline_interval = 1.0;
+      int maptrack_size = 100;
 
-  rclcpp::TimerBase::SharedPtr m_timer;
+      std::shared_ptr<WaypointManagerMission> wpt_manager;
 
-  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr
-      m_map_track_global_publisher;
-  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr m_map_track_body_publisher;
+      rclcpp::TimerBase::SharedPtr m_timer;
 
-  // frenet path candidates visualization
-  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr
-      m_frenet_candidates_publisher;
-  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr m_frenet_min_cost_publisher;
+      rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr
+          m_map_track_global_publisher;
+      rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr m_map_track_body_publisher;
 
-  unsigned short int maptrack_size_safety_threshold = 1;
-};
+      // frenet path candidates visualization
+      rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr
+          m_frenet_candidates_publisher;
+      rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr m_frenet_min_cost_publisher;
 
-} // namespace managers
+      // Potential map subscribe
+      rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr m_occu_map_subscriber;
+
+      // graph planner
+      rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr
+          m_graph_planner;
+
+      unsigned short int maptrack_size_safety_threshold = 1;
+
+      nav_msgs::msg::Path m_graph_path_in_global;
+    };
+
+  } // namespace managers
 } // namespace nif
 #endif // ROS2MASTER_WAYPOINT_MANAGER_NODE_MISSION_H

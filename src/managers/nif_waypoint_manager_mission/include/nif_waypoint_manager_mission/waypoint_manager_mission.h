@@ -32,15 +32,16 @@ using namespace Frenet;
 // #define LONGI_MAX_T 4.51        // 3.81 //in sec
 // #define LONGI_DT 0.1            // in sec
 
-#define LONGI_MIN_T 2.4         // in sec
-#define LONGI_MAX_T 2.49        // 3.81 //in sec
-#define LONGI_DT 0.1            // in sec
+#define LONGI_MIN_T 2.4  // in sec
+#define LONGI_MAX_T 2.49 // 3.81 //in sec
+#define LONGI_DT 0.1     // in sec
 
 #define LEFT_WIDTH_MARGIN -5.5  // meter
 #define RIGHT_WIDTH_MARGIN 5.51 // meter
-#define WIDTH_DELTA 1.0        // meter
+#define WIDTH_DELTA 1.0         // meter
 
-class WaypointManagerMission {
+class WaypointManagerMission
+{
 public:
   WaypointManagerMission(const string &rl_wpt_file_path_,
                          const string &pit_wpt_file_path_,
@@ -50,27 +51,34 @@ public:
 
   void setCurrentOdometry(const nav_msgs::msg::Odometry &ego_vehicle_odom);
   void setSystemStatus(const nif_msgs::msg::SystemStatus &sys_status);
+  void setOccupancyGridMap(const nav_msgs::msg::OccupancyGrid &occupancy_map);
   void calcMapTrack();
+
+  void setCollisionAvoidanceGraphPath(const nav_msgs::msg::Path &coll_free_msg);
 
   // from dk
   void frenetPathsToPointCloud(
       std::vector<std::shared_ptr<FrenetPath>> &frenet_paths);
 
   void genCandidates();
-  nav_msgs::msg::Path getDesiredMapTrackInGlobal() {
+  nav_msgs::msg::Path getDesiredMapTrackInGlobal()
+  {
     calcMapTrack();
     return m_map_track_path_global;
   }
-  nav_msgs::msg::Path getDesiredMapTrackInBody() {
+  nav_msgs::msg::Path getDesiredMapTrackInBody()
+  {
     calcMapTrack();
     return m_map_track_path_body;
   }
 
-  sensor_msgs::msg::PointCloud2 getFrenetCandidatesAsPc() {
+  sensor_msgs::msg::PointCloud2 getFrenetCandidatesAsPc()
+  {
     return m_frenet_candidates_pc;
   }
 
-  nav_msgs::msg::Path getMinCostFrenetPath() {
+  nav_msgs::msg::Path getMinCostFrenetPath()
+  {
     return m_collision_avoidance_path_body;
   }
 
@@ -102,6 +110,8 @@ private:
   nav_msgs::msg::Path m_collision_avoidance_path_body;
   std::shared_ptr<FrenetPath> m_collision_avoidance_fp_body_ptr;
   sensor_msgs::msg::PointCloud2 m_frenet_candidates_pc;
+
+  nav_msgs::msg::Path m_graph_based_path;
 
   std::shared_ptr<IWaypointManager> m_rl_wpt_manager;
   std::shared_ptr<IWaypointManager> m_pit_wpt_manager;
