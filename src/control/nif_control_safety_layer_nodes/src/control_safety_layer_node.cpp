@@ -205,7 +205,8 @@ void nif::control::ControlSafetyLayerNode::run() {
             //      TODO handle critical error in the safest way
             RCLCPP_ERROR(this->get_logger(),
                          "ControlSafetyLayerNode caught an exception, enabling emergency lane control");
-            //    Notify the SystemStatusManager of the change.
+            // Notify the SystemStatusManager of the change.
+            // Proceed in emergency mode from the next iteration
             this->emergency_lane_enabled = true;
             this->setNodeStatus(common::NodeStatusCode::NODE_FATAL_ERROR);
         }
