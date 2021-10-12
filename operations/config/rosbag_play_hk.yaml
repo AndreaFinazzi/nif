@@ -6,10 +6,12 @@ windows:
       - source /home/usrg/nif/install/setup.bash 
       - export ROS_DOMAIN_ID=33
       # - cd /home/usrg/media/T7/IAC_0928_si/2021_09_21_IMS/VEH8_MIT-PITT-RW #MITPIT DATA
-      - cd /home/usrg/media/T7_Touch/IAC/rosbag/2021.10.04_LOR/VEH4_LOR_RUN-mylaps.accel_2021-10-04 # 2021.10.04_LOR 2nd nif data
+      # - cd /home/usrg/media/T7_Touch/IAC/rosbag/2021.10.04_LOR/VEH4_LOR_RUN-mylaps.accel_2021-10-04 # 2021.10.04_LOR 2nd nif data
       # - cd /home/usrg/media/T7_Touch/IAC/rosbag/2021.10.04_LOR/VEH4_LOR_RUN-3rd_2021-10-04 # 2021.10.04_LOR 3rd nif data
       # - cd /home/usrg/media/T7_Touch/IAC/rosbag/2021.10.06_LOR/VEH4_LOR_RUN-01_2021-10-06
       # - cd /home/usrg/media/T7_Touch/IAC/rosbag/2021.10.06_LOR/VEH4_LOR_RUN-02_2021-10-06
+      # - cd /home/usrg/media/T7/iac/VEH4_IMS_RUN-01_2021-10-09
+      - cd /home/usrg/media/T7_Touch/IAC/rosbag/2021.10.10_IMS/VEH4_IMS_RUN-0_2021-10-10
     panes:
     - shell_command:
         # - ros2 bag play sensors_2021-09-03_10-59-19/ --topics /merged/lidar /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /raptor_dbw_interface/wheel_speed_report /novatel_top/bestpos /novatel_top/inspva /novatel_top/bestvel /novatel_top/imu/data /novatel_bottom/insstdev
@@ -32,13 +34,15 @@ windows:
         #  - ros2 bag play sensors_2021-09-29_14-57-31/  --topics /merged/lidar /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /novatel_top/bestpos /raptor_dbw_interface/wheel_speed_report /novatel_top/inspva /novatel_top/bestvel /novatel_top/imu/data /novatel_bottom/insstdev /novatel_top/insstdev 
       # - ros2 bag play sensors_2021-09-21_13-20-18/  --topics /luminar_front_points /luminar_left_points /luminar_right_points /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /novatel_top/bestpos /novatel_top/inspva /novatel_top/bestvel /novatel_top/imu/data /novatel_bottom/insstdev /novatel_top/insstdev
       # - ros2 bag play sensors_2021-09-21_13-20-18/  --topics /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /novatel_top/bestpos /novatel_top/inspva /novatel_top/bestvel /novatel_top/imu/data /novatel_bottom/insstdev /novatel_top/insstdev
-      - ros2 bag play autonomy_2021-10-04_13-15-58/ # 2021.10.04_LOR 2nd nif data
+      # - ros2 bag play autonomy_2021-10-09_10-33-58/ # 2021.10.04_LOR 2nd nif data
       # - ros2 bag play autonomy_2021-10-04_15-03-58/ # 2021.10.04_LOR 3rd nif data
       # - ros2 bag play autonomy_2021-10-06_11-15-52/ --read-ahead-queue-size 10000 # 2021.10.06_LOR nif data
       # - ./multidb3 # 2021.10.06_LOR nif data last
+      # - ./multidb3 # 2021.10.06_LOR nif data last
+      - ros2 bag play autonomy_2021-10-10_10-35-17/ --read-ahead-queue-size 10000 -l # 2021.10.06_LOR nif data
 
     - shell_command:
-      - ros2 run plotjuggler plotjuggler
+      - ros2 run plotjuggler plotjuggler -l /home/usrg/nif/operations/config/plotjuggler_config_control_hk.xml
 
   - window_name: Algorithm Tab
     layout: tiled
@@ -81,7 +85,7 @@ windows:
       - shell_command:
           - ros2 launch nif_launch base_hk.launch.py
       - shell_command:
-          # - ros2 launch nif_velocity_planning_node bag.launch.py
+          - ros2 launch nif_velocity_planning_node bag.launch.py
       - shell_command:
           - ros2 launch nif_control_joint_lqr_nodes bag.launch.py
       - shell_command:

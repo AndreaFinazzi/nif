@@ -59,7 +59,7 @@ def generate_launch_description():
             'stderr': 'screen',
         },
         remappings=[
-            ('in_reference_path', '/planning/graph/path_global'),
+            ('in_reference_path', '/planning/path_global'),
             ('in_control_cmd_prev', '/control_safety_layer/out/control_cmd'),
             ('out_control_cmd', '/control_pool/control_cmd_test'),
             ('control_joint_lqr/tracking_valid', 'control_joint_lqr/tracking_valid_test'),
