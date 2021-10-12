@@ -45,9 +45,13 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
   // convert from degress to steering units (should be 1 - 1 ?)
   this->declare_parameter("steering_units_multiplier", 1.0);
   // Minimum pure pursuit tracking distance
-  this->declare_parameter("pure_pursuit_min_dist_m", 4.0);
+  this->declare_parameter("pure_pursuit_min_dist_m", 3.0);
   // Maximimum pure pursuit tracking distance
   this->declare_parameter("pure_pursuit_max_dist_m", 8.);
+  // pure_pursuit lookahead distance 1st velocity theshold (65 kph)
+  this->declare_parameter("pure_pursuit_1st_vel_m", 20.0);
+  // Maximimum pure pursuit tracking distance
+  this->declare_parameter("pure_pursuit_max_max_dist_m", 20.);
   // Factor to increase the pure pursuit tracking distance as a function of
   // speed (m/s)
   this->declare_parameter("pure_pursuit_k_vel_m_ms", 0.75);
@@ -88,6 +92,10 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
       this->get_parameter("pure_pursuit_min_dist_m").as_double();
   pure_pursuit_max_dist_m_ =
       this->get_parameter("pure_pursuit_max_dist_m").as_double();
+  pure_pursuit_1st_vel_m_ =
+      this->get_parameter("pure_pursuit_1st_vel_m").as_double();
+  pure_pursuit_max_max_dist_m_ =
+      this->get_parameter("pure_pursuit_max_max_dist_m").as_double();
   pure_pursuit_k_vel_m_ms_ =
       this->get_parameter("pure_pursuit_k_vel_m_ms").as_double();
   use_tire_velocity_ = this->get_parameter("use_tire_velocity").as_bool();
@@ -177,10 +185,19 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
     // Compute the tracking distance (and ensure it is within a valid range)
     double track_distance =
         pure_pursuit_min_dist_m_ + pure_pursuit_k_vel_m_ms_ * state(2, 0);
-    if (track_distance > pure_pursuit_max_dist_m_)
-      track_distance = pure_pursuit_max_dist_m_;
+    if (track_distance > pure_pursuit_max_dist_m_) {
+      if (state(2, 0) < pure_pursuit_1st_vel_m_) {
+        track_distance = pure_pursuit_max_dist_m_;
+      } else {
+        track_distance =
+            pure_pursuit_max_dist_m_ +
+            pure_pursuit_k_vel_m_ms_ * (state(2, 0) - pure_pursuit_1st_vel_m_);
+      }
+    }
     if (track_distance < pure_pursuit_min_dist_m_)
       track_distance = pure_pursuit_min_dist_m_;
+    if (track_distance > pure_pursuit_max_max_dist_m_)
+      track_distance = pure_pursuit_max_max_dist_m_;
 
     // Track on the trajectory
     double target_distance = 0.0;
