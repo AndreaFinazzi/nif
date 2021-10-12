@@ -53,11 +53,11 @@ def generate_launch_description():
         parameters=[{
             "missions_file_path": mm_param_default_file,
             "velocity.zero": 0.0,
-            "velocity.max": 30.0,
-            "velocity.avoidance": 15.0,
-            "velocity.pit_in": 10.0,
-            "velocity.pit_out": 10.0,
-            "velocity.slow_drive": 15.0,
+            "velocity.max": 15.0,
+            "velocity.avoidance": 12.0,
+            "velocity.pit_in": 8.0,
+            "velocity.pit_out": 8.0,
+            "velocity.slow_drive": 10.0,
             # RC interface params
             "listen_to_override": False,
             "listen_to_nominal": True,

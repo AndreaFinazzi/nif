@@ -9,7 +9,7 @@ import csv
 import pickle
 import sys
 import logging
-import graph_ltpl
+# import graph_ltpl
 import yaml
 import matplotlib.patches as patches
 
@@ -139,11 +139,11 @@ if __name__ == "__main__":
 
     dir = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', '..'))
     dir_two_up = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', '..', '..', '..'))
-    pit_wpt = os.path.join(dir,'params',TRACK_NAME,'pit_lane.csv',)
-    raceline = os.path.join(dir,'inputs/traj_ltpl_cl',TRACK_NAME,'traj_race_cl.csv',)
+    pit_wpt = os.path.join(dir,'nif_waypoint_manager_nodes','maps',TRACK_NAME,'pit_lane.csv',)
+    raceline = os.path.join(dir,'nif_waypoint_manager_nodes','maps',TRACK_NAME,'race_line.csv',)
     graph = os.path.join(dir,'inputs/track_offline_graphs',TRACK_NAME,'stored_graph.pckl',)
 
-    mission_yaml_file = os.path.join(dir_two_up,'system','nif_mission_manager_nodes','config', 'transitions.lor.yaml')
+    mission_yaml_file = os.path.join(dir_two_up, 'src', 'system','nif_mission_manager_nodes','config', 'transitions.lor.yaml')
     with open(mission_yaml_file) as f:
         mission_bbox = yaml.safe_load(f)
 
@@ -196,8 +196,8 @@ if __name__ == "__main__":
 
 
     WPTFileVisualizer(pit_wpt, "pit-in-entire")
-    RaceLineFileVisualizer(raceline, "race-line")
-    GraphVisualizer(graph, "graph_node")
+    WPTFileVisualizer(raceline, "race-line")
+    # GraphVisualizer(graph, "graph_node")
     plt.grid()
     plt.show()
 
