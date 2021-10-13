@@ -2,7 +2,7 @@ from xml.etree.ElementTree import Element, SubElement, ElementTree, dump
 from xml.etree.ElementTree import parse
 import glob
 import os
-from lxml import etree
+# from lxml import etree
 import pandas as pd
 import argparse
 import numpy as np
@@ -89,14 +89,14 @@ def parse_configs():
                         help='check headers name')
 
     # lon_0, lat_0 = -86.235148, 39.809786  #indy
-    # lon_0, lat_0 = -86.3418060783425, 39.8125900071711  #Lucas Oil Racing
-    lon_0, lat_0 = -86.23524024, 39.79312996 #LG SIM
+    lon_0, lat_0 = -86.3418060783425, 39.8125900071711  #Lucas Oil Racing
+    # lon_0, lat_0 = -86.23524024, 39.79312996 #LG SIM
 
     nedPoints = []
 
     configs = edict(vars(parser.parse_args()))
 
-    root_path = './pickle_files/LG_SIM' 
+    root_path = './pickle_files/LOR' 
     input_name = configs.filename
     file_name = os.path.join(root_path, input_name)
     osm_file_name = file_name[:-4] + "osm" 
@@ -122,14 +122,14 @@ def parse_configs():
     idx = 0
 
     # print(graph_base.get_edges())
-    print(graph_base)
+    # print(graph_base)
     # tic = time.time()
     rmv_cnt = 0
     edge_cnt = 0
     nodes = graph_base.get_nodes()
 
     # way 
-    for i in range(graph_base.num_layers):
+    for i in tqdm(range(graph_base.num_layers)):
         start_layer = i
         for s in range(graph_base.nodes_in_layer[start_layer]):
             pos, psi, raceline, children, _ = graph_base.get_node_info(layer=start_layer,
@@ -163,12 +163,15 @@ def parse_configs():
                 # print(pos)
                 # print(node[0] , node[1])
                 # print(len(graph_base.get_layer_info(node[0])[0]))
+                # print('psi : ' , psi)
+                # print('kappa : ' , kappa)
+
                 node_id_list = []
-                for pos_splined in spline_sample:
+                for pos_splined, psi_buf, kappa_buf in zip(spline_sample, psi, kappa):
                     if (node_id == -237278):
                             node_id -= 1
                             continue
-                    print(pos_splined)
+                    # print(pos_splined)
                     llh = ned2geodetic(pos_splined[0], -pos_splined[1], 0.,lat_0, lon_0, 0.0)
                     lat_buf = llh[0] 
                     lon_buf = llh[1] 
@@ -180,6 +183,8 @@ def parse_configs():
                     layer_s = str(start_layer)
                     layer_e = str(end_layer)
                     start_node = str(s)
+                    psi_str = str(psi_buf)
+                    kappa_str = str(kappa_buf)
 
                     # lat = string_values[0]
                     # lon = string_values[1]
@@ -187,10 +192,15 @@ def parse_configs():
                     tag_start_layer = Element('tag', k='start_layer',v=layer_s)
                     tag_end_layer =   Element('tag', k='end_layer',v=layer_e)
                     tag_node_number = Element('tag', k='start_node',v=start_node)
+                    tag_psi = Element('tag', k='psi',v=psi_str)
+                    tag_kappa = Element('tag', k='kappa',v=kappa_str)
 
                     node.append(tag_start_layer)
                     node.append(tag_end_layer)
                     node.append(tag_node_number)
+                    node.append(tag_psi)
+                    node.append(tag_kappa)
+
                     root.append(node)
                     node_id_list.append(node_id)
                     node_id -= 1

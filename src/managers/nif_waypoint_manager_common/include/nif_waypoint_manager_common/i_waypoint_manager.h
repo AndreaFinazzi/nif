@@ -10,6 +10,7 @@
 
 #include "nav_msgs/msg/odometry.hpp"
 #include "nav_msgs/msg/path.hpp"
+#include "nif_utils/utils.h"
 #include "tf2/LinearMath/Matrix3x3.h"
 #include "tf2/LinearMath/Quaternion.h"
 
@@ -18,37 +19,32 @@
 class IWaypointManager {
 public:
   IWaypointManager() {}
-  IWaypointManager(const vector<string>& wpt_file_path_list_,
-                   const string& body_frame_id_,
-                   const string& global_frame_id_,
-                   const int& spline_interval_);
+  IWaypointManager(const vector<string> &wpt_file_path_list_,
+                   const string &body_frame_id_, const string &global_frame_id_,
+                   const int &spline_interval_);
 
-  vector<c_wpt>& getListOfWPT() {
-    return m_wpt_list;
-  }
-  c_wpt& getDesiredWPT() {
-    return c_desired_wpt;
-  }
-  nav_msgs::msg::Path& getDesiredWPTInNavMsg() {
+  vector<c_wpt> &getListOfWPT() { return m_wpt_list; }
+  c_wpt &getDesiredWPT() { return c_desired_wpt; }
+  nav_msgs::msg::Path &getDesiredWPTInNavMsg() {
     return m_desired_wpt_in_nav_path;
   }
-  nav_msgs::msg::Path& getDesiredMapTrackInBody() {
+  nav_msgs::msg::Path &getDesiredMapTrackInBody() {
     return m_desired_maptrack_in_body;
   }
-  nav_msgs::msg::Path& getDesiredMapTrackInGlobal() {
+  nav_msgs::msg::Path &getDesiredMapTrackInGlobal() {
     return m_desired_maptrack_in_global;
   }
   geometry_msgs::msg::PoseStamped
-  getPtBodytoGlobal(geometry_msgs::msg::PoseStamped& point_in_body_);
+  getPtBodytoGlobal(geometry_msgs::msg::PoseStamped &point_in_body_);
 
-  nav_msgs::msg::Path getPathBodytoGlobal(nav_msgs::msg::Path& path_in_body_);
+  nav_msgs::msg::Path getPathBodytoGlobal(nav_msgs::msg::Path &path_in_body_);
 
   geometry_msgs::msg::PoseStamped getPtGlobaltoBody(
-      const geometry_msgs::msg::PoseStamped& point_in_global_) const;
+      const geometry_msgs::msg::PoseStamped &point_in_global_) const;
 
-  nav_msgs::msg::Path getPathGlobaltoBody(nav_msgs::msg::Path& path_in_global_);
+  nav_msgs::msg::Path getPathGlobaltoBody(nav_msgs::msg::Path &path_in_global_);
 
-  void setCurrentOdometry(const nav_msgs::msg::Odometry& ego_vehicle_odom);
+  void setCurrentOdometry(const nav_msgs::msg::Odometry &ego_vehicle_odom);
 
   void setSizeOfMapTrack(int size_of_map_track_) {
     m_size_of_map_track = size_of_map_track_;
@@ -56,21 +52,21 @@ public:
 
   void resetDesiredWPT();
 
-  void setCurrentIdx(const nav_msgs::msg::Path& reference_path,
-                     const nav_msgs::msg::Odometry& ego_vehicle_odom);
+  void setCurrentIdx(const nav_msgs::msg::Path &reference_path,
+                     const nav_msgs::msg::Odometry &ego_vehicle_odom);
 
-  unsigned int getCurrentIdx(const nav_msgs::msg::Path& reference_path,
-                             const nav_msgs::msg::Odometry& ego_vehicle_odom);
+  unsigned int getCurrentIdx(const nav_msgs::msg::Path &reference_path,
+                             const nav_msgs::msg::Odometry &ego_vehicle_odom);
 
-  int getWPTIdx(nav_msgs::msg::Path& reference_path,
-                geometry_msgs::msg::PoseStamped& target_pose);
+  int getWPTIdx(nav_msgs::msg::Path &reference_path,
+                geometry_msgs::msg::PoseStamped &target_pose);
 
-  nav_msgs::msg::Path calcMapTrackInGlobal(nav_msgs::msg::Path& reference_path_,
+  nav_msgs::msg::Path calcMapTrackInGlobal(nav_msgs::msg::Path &reference_path_,
                                            unsigned int current_idx_) const;
 
-  nav_msgs::msg::Path calcMapTrackInBody(nav_msgs::msg::Path& reference_path_);
+  nav_msgs::msg::Path calcMapTrackInBody(nav_msgs::msg::Path &reference_path_);
 
-  virtual void updateDesiredWPT(nav_msgs::msg::Path& local_path_in_body);
+  virtual void updateDesiredWPT(nav_msgs::msg::Path &local_path_in_body);
 
 private:
   vector<c_wpt> m_wpt_list;

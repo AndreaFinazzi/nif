@@ -3,7 +3,7 @@ nif_costmap_generator_node:
     lidar_frame : "center_of_gravity"
     grid_min_value : 0.0
     grid_max_value : 1.0
-    grid_resolution : 0.5
+    grid_resolution : 1.0
     grid_length_x : 75.
     grid_length_y : 30.
     grid_position_x : 25.

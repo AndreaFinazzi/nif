@@ -13,6 +13,7 @@
   <depend>deep_orange_msgs</depend>
   <depend>nif_msgs</depend>
   <depend>nif_common</depend>
+  <depend>nav_msgs</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>

@@ -17,25 +17,28 @@ velocity_brackets:
   r_trace: [250., 100.]
 - velocity: 20
   q_trace: [4.0, 1.0, 0.1, 0.0, 5.0]
-  r_trace: [250., 100.]
-- velocity: 30
-  q_trace: [3.0, 1.0, 0.1, 0.0, 5.0]
-  r_trace: [250., 100.]
-- velocity: 35
-  q_trace: [3.0, 1.0, 0.1, 0.0, 5.0]
-  r_trace: [250., 100.]
-- velocity: 40
-  q_trace: [3.0, 1.0, 0.1, 0.0, 5.0]
-  r_trace: [250., 100.]
-- velocity: 45
-  q_trace: [3.0, 1.0, 0.1, 0.0, 5.0]
-  r_trace: [250., 100.]
-- velocity: 50
+  r_trace: [350., 100.]
+- velocity: 25
   q_trace: [2.5, 1.0, 0.1, 0.0, 5.0]
-  r_trace: [250., 100.]
+  r_trace: [800., 100.]
+- velocity: 30
+  q_trace: [1.0, 1.0, 0.1, 0.0, 5.0]
+  r_trace: [950., 100.]
+- velocity: 35
+  q_trace: [1.0, 1.0, 0.1, 0.0, 5.0]
+  r_trace: [950., 100.]
+- velocity: 40
+  q_trace: [1.0, 1.0, 0.1, 0.0, 5.0]
+  r_trace: [950., 100.]
+- velocity: 45
+  q_trace: [1.0, 1.0, 0.1, 0.0, 5.0]
+  r_trace: [950., 100.]
+- velocity: 50
+  q_trace: [1.0, 1.0, 0.1, 0.0, 5.0]
+  r_trace: [950., 100.]
 - velocity: 55
-  q_trace: [2.0, 1.0, 0.1, 0.0, 5.0]
-  r_trace: [250., 100.]
+  q_trace: [1.0, 1.0, 0.1, 0.0, 5.0]
+  r_trace: [950., 100.]
 - velocity: 60
   q_trace: [1.0, 1.0, 0.1, 0.0, 5.0]
-  r_trace: [250., 100.]
+  r_trace: [950., 100.]

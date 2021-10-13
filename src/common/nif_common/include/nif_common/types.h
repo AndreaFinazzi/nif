@@ -207,6 +207,7 @@ static bool isMissionCodeInRange(nif::common::msgs::MissionStatus::_mission_stat
             mission_code == MissionStatus::MISSION_SLOW_DRIVE       ||
             mission_code == MissionStatus::MISSION_COMMANDED_STOP   ||
             mission_code == MissionStatus::MISSION_EMERGENCY_STOP   ||
+            mission_code == MissionStatus::MISSION_COLLISION_AVOIDNACE ||
             mission_code == MissionStatus::MISSION_TEST             ||
             mission_code == MissionStatus::MISSION_INIT             ||
             mission_code == MissionStatus::MISSION_PIT_INIT         ||

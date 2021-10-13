@@ -23,6 +23,7 @@ IWaypointManager::IWaypointManager(const vector<string> &wpt_file_path_list_,
 
   bool wpt_3d_flg = false;
   bool spline_flg = true;
+  // bool spline_flg = false;
 
   for (const auto &wpt_file_idx : wpt_file_path_list_) {
     c_wpt obj(wpt_file_idx, "", m_global_frame_id, wpt_3d_flg, spline_flg,
@@ -55,6 +56,9 @@ void IWaypointManager::setCurrentOdometry(
                               m_current_yaw_rad);
 
   int current_idx = getCurrentIdx(m_desired_wpt_in_nav_path, ego_vehicle_odom);
+  m_desired_maptrack_in_global.header.frame_id = m_global_frame_id;
+  m_desired_maptrack_in_body.header.frame_id = m_body_frame_id;
+
   m_desired_maptrack_in_global =
       calcMapTrackInGlobal(m_desired_wpt_in_nav_path, current_idx);
   m_desired_maptrack_in_body =
@@ -186,6 +190,7 @@ geometry_msgs::msg::PoseStamped IWaypointManager::getPtGlobaltoBody(
                                      m_current_pose.pose.pose.position.y);
   point_in_body.pose.position.z =
       point_in_global_.pose.position.z - m_current_pose.pose.pose.position.z;
+
   return point_in_body;
 }
 
@@ -202,9 +207,12 @@ IWaypointManager::getPathBodytoGlobal(nav_msgs::msg::Path &path_in_body_) {
 nav_msgs::msg::Path
 IWaypointManager::getPathGlobaltoBody(nav_msgs::msg::Path &path_in_global_) {
   nav_msgs::msg::Path path_in_body;
-  path_in_body.header.frame_id = m_body_frame_id;
+  path_in_body.header.frame_id = "base_link";
   for (auto &pose : path_in_global_.poses) {
-    path_in_body.poses.push_back(getPtGlobaltoBody(pose));
+    // path_in_body.poses.push_back(getPtGlobaltoBody(pose));
+    path_in_body.poses.push_back(
+        nif::common::utils::coordination::getPtGlobaltoBody(m_current_pose,
+                                                            pose));
   }
   return path_in_body;
 }

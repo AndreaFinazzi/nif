@@ -140,6 +140,8 @@ private:
   double steering_units_multiplier_;
   double pure_pursuit_min_dist_m_;
   double pure_pursuit_max_dist_m_;
+  double pure_pursuit_1st_vel_m_;
+  double pure_pursuit_max_max_dist_m_;
   double pure_pursuit_k_vel_m_ms_;
   bool use_tire_velocity_;
   double odometry_timeout_sec_;

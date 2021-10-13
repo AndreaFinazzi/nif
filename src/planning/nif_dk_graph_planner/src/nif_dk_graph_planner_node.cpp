@@ -95,7 +95,7 @@ void DKGraphPlannerNode::OsmParcing() {
     std::cout << "Parse result: " << parcer.description()
               << ", character pos= " << parcer.offset << std::endl;
     std::cout << "Tried to open .. \n" << m_FullFilePath.c_str() << std::endl;
-    RCLCPP_INFO(this->get_logger(), "Vaild file!");
+    RCLCPP_INFO(this->get_logger(), "Valid file!");
   }
 
 
@@ -781,6 +781,8 @@ void DKGraphPlannerNode::ToPathMsg() {
 
   // Final Nodes
   int cnt = 0;
+  double prev_x = 0.;
+  double prev_y = 0.;
   m_BestLayerArray.clear();
   nav_msgs::msg::Path FinalPath;
   for (auto node_id : m_FinalNodes) {
@@ -818,10 +820,29 @@ void DKGraphPlannerNode::ToPathMsg() {
         cnt++;
 
         geometry_msgs::msg::PoseStamped pose_buf;
+        if(prev_x == 0. && prev_y == 0.)
+        {
+          prev_x = nd.x;
+          prev_y = nd.y;
+          continue;          
+        }
+        if(prev_x == nd.x || prev_y == nd.y)
+          continue;
+        
         pose_buf.pose.position.x = nd.x;
         pose_buf.pose.position.y = nd.y;
-        pose_buf.pose.orientation.w = 1.0;
+        double yaw = atan2(nd.y - prev_y, nd.x - prev_x);
+        tf2::Quaternion quat_;
+        geometry_msgs::msg::Quaternion quat_msg;
+        quat_.setRPY(0., 0., yaw);
+        quat_.normalize();
+        quat_msg = tf2::toMsg(quat_);
+        pose_buf.pose.orientation = quat_msg;
         FinalPath.poses.push_back(pose_buf);
+
+        prev_x = nd.x;
+        prev_y = nd.y;
+
       }
       m_BestLayerArray[final_id.start_layer] = final_id.end_node;
     }

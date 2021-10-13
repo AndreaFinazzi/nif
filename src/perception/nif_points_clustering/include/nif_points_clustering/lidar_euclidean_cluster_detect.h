@@ -33,6 +33,7 @@
 #include <pcl_conversions/pcl_conversions.h>
 
 #include <sensor_msgs/msg/point_cloud2.hpp>
+#include <visualization_msgs/msg/marker_array.hpp>
 
 #include <mutex>
 #include <thread>
@@ -42,16 +43,20 @@ class PointsClustering : public rclcpp::Node {
 public:
   PointsClustering();
   ~PointsClustering();
-  void clusterAndColorGpu(const pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud_ptr,
-                          pcl::PointCloud<pcl::PointXYZI>::Ptr out_cloud_ptr,
-                          double in_max_cluster_distance);
+  void
+  clusterAndColorGpu(const pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud_ptr,
+                     pcl::PointCloud<pcl::PointXYZI>::Ptr out_cloud_ptr,
+                     visualization_msgs::msg::MarkerArray &out_clustered_array,
+                     double in_max_cluster_distance);
   void PointsCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
   void timer_callback();
 
 private:
   void SetCloud(const pcl::PointCloud<pcl::PointXYZI>::Ptr in_origin_cloud_ptr,
                 pcl::PointCloud<pcl::PointXYZI>::Ptr register_cloud_ptr,
-                const std::vector<int> &in_cluster_indices, int ind);
+                const std::vector<int> &in_cluster_indices, 
+                visualization_msgs::msg::MarkerArray &out_clustered_array,
+                int ind);
   pcl::PointCloud<pcl::PointXYZI>::Ptr
   downsample(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud,
              double resolution);
@@ -63,6 +68,9 @@ private:
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr
           pubClusterPoints;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubSimpleheightMap;
+  rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr
+      pubClusteredArray;
+
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr
           subInputPoints;
   rclcpp::TimerBase::SharedPtr sub_timer_;
