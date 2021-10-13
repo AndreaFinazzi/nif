@@ -14,6 +14,7 @@
 #include "nif_utils/utils.h"
 #include "nif_waypoint_manager_nodes/waypoint_manager_node.h"
 #include "nif_waypoint_manager_nodes/waypoint_manager_node_mission.h"
+#include "nif_waypoint_manager_nodes/waypoint_manager_node_mission_selective.h"
 #include "rcutils/error_handling.h"
 
 int main(int argc, char *argv[]) {

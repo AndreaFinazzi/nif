@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(nif_waypoint_manager_nodes)
+project(nif_waypoint_manager_mission_selective)
 
 # Default to C++14
 if(NOT CMAKE_CXX_STANDARD)
@@ -16,14 +16,11 @@ ament_auto_find_build_dependencies()
 
 # Library
 ament_auto_add_library(${PROJECT_NAME} SHARED
-        src/waypoint_manager_node.cpp
-        src/waypoint_manager_node_mission.cpp
-        src/waypoint_manager_node_mission_selective.cpp
-        )
+        src/waypoint_manager_mission_selective.cpp)
 
-ament_auto_add_executable(${PROJECT_NAME}_exe
-  src/waypoint_manager_main.cpp)
-
+target_include_directories(${PROJECT_NAME} PUBLIC ${YAML_CPP_INCLUDE_DIR})
+target_link_libraries(${PROJECT_NAME} yaml-cpp)
+ament_target_dependencies(${PROJECT_NAME} yaml-cpp)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -39,8 +36,4 @@ if(BUILD_TESTING)
           "rclcpp")
 endif()
 
-ament_auto_package(INSTALL_TO_SHARE
-        maps
-        launch
-        config
-        )
+ament_auto_package()
