@@ -27,7 +27,8 @@ PointsClustering::PointsClustering()
       "out_clustered_points", nif::common::constants::QOS_SENSOR_DATA);
   pubSimpleheightMap = this->create_publisher<sensor_msgs::msg::PointCloud2>(
       "out_simple_heightmap_points", nif::common::constants::QOS_SENSOR_DATA);
-
+  pubClusteredArray = this->create_publisher<visualization_msgs::msg::MarkerArray>(
+      "out_clustered_array", nif::common::constants::QOS_SENSOR_DATA);
   subInputPoints = this->create_subscription<sensor_msgs::msg::PointCloud2>(
       "in_lidar_points", nif::common::constants::QOS_SENSOR_DATA,
       std::bind(&PointsClustering::PointsCallback, this,
@@ -66,14 +67,18 @@ void PointsClustering::timer_callback() {
   // start algorithm
   pcl::PointCloud<pcl::PointXYZI>::Ptr registeredPoints(
       new pcl::PointCloud<pcl::PointXYZI>);
+  m_clustered_array.markers.clear();
+
   clusterAndColorGpu(m_simpleHeightmapPoints, registeredPoints,
-                     m_max_cluster_distance);
+                     m_clustered_array, m_max_cluster_distance);
 
   sensor_msgs::msg::PointCloud2 cloud_clustered_msg;
   pcl::toROSMsg(*registeredPoints, cloud_clustered_msg);
   cloud_clustered_msg.header.frame_id = nif::common::frame_id::localization::BASE_LINK;
   cloud_clustered_msg.header.stamp = this->now();
   pubClusterPoints->publish(cloud_clustered_msg);
+
+  pubClusteredArray->publish(m_clustered_array);
 }
 
 void PointsClustering::PointsCallback(
@@ -96,6 +101,7 @@ void PointsClustering::PointsCallback(
 void PointsClustering::clusterAndColorGpu(
     const pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud_ptr,
     pcl::PointCloud<pcl::PointXYZI>::Ptr out_cloud_ptr,
+    visualization_msgs::msg::MarkerArray& out_clustered_array,
     double in_max_cluster_distance) {
 
 #ifdef GPU_CLUSTERING
@@ -130,11 +136,12 @@ void PointsClustering::clusterAndColorGpu(
       gecl_cluster.getOutput();
 
   unsigned int k = 0;
-
+  
   for (auto it = cluster_indices.begin(); it != cluster_indices.end(); it++) {
     pcl::PointCloud<pcl::PointXYZI>::Ptr bufPoints(
         new pcl::PointCloud<pcl::PointXYZI>);
-    SetCloud(in_cloud_ptr, bufPoints, it->points_in_cluster, k);
+    SetCloud(in_cloud_ptr, bufPoints, it->points_in_cluster,
+             out_clustered_array, k);
     //   clusters.push_back(cluster);
     *out_cloud_ptr += *bufPoints;
     k++;
@@ -154,7 +161,8 @@ void PointsClustering::clusterAndColorGpu(
 void PointsClustering::SetCloud(
     const pcl::PointCloud<pcl::PointXYZI>::Ptr in_origin_cloud_ptr,
     pcl::PointCloud<pcl::PointXYZI>::Ptr register_cloud_ptr,
-    const std::vector<int> &in_cluster_indices, int ind) {
+    const std::vector<int> &in_cluster_indices,
+    visualization_msgs::msg::MarkerArray &out_clustered_array, int ind) {
 
   pcl::PointCloud<pcl::PointXYZI>::Ptr bufPoints(new pcl::PointCloud<pcl::PointXYZI>);
   // extract pointcloud using the indices
@@ -198,9 +206,29 @@ void PointsClustering::SetCloud(
   double width = max_y - min_y;
   double height = max_z - min_z;
 
+  visualization_msgs::msg::Marker marker_buf;
+  marker_buf.header.frame_id = nif::common::frame_id::localization::BASE_LINK;
+  marker_buf.header.stamp = this->now();
+  marker_buf.id = ind;
+  marker_buf.type = visualization_msgs::msg::Marker::CUBE;
+  marker_buf.action = visualization_msgs::msg::Marker::ADD;
+  marker_buf.lifetime = rclcpp::Duration(1/30, 0);
+  marker_buf.pose.position.x = min_x + length / 2;
+  marker_buf.pose.position.y = min_y + width / 2;
+  marker_buf.pose.position.z = min_z + height / 2;
+  marker_buf.pose.orientation.w = 1.0;
+  marker_buf.scale.x = length;
+  marker_buf.scale.y = width;
+  marker_buf.scale.z = height;
+  marker_buf.color.r = 1.0;
+  marker_buf.color.g = 1.0;
+  marker_buf.color.b = 1.0;
+  marker_buf.color.a = 1.0;
+
   if (length < 7.0 && width < 7.0 && height > 0.5) {
     *register_cloud_ptr = *bufPoints;
-  }
+    out_clustered_array.markers.push_back(marker_buf);
+    }
 
   // bounding_box_.header = in_ros_header;
 
