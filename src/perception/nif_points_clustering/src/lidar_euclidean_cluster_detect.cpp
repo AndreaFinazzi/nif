@@ -64,13 +64,13 @@ void PointsClustering::timer_callback() {
   cloud_simple_heightmap_msg.header.stamp = this->now();
   pubSimpleheightMap->publish(cloud_simple_heightmap_msg);
 
-  // start algorithm
+  
   pcl::PointCloud<pcl::PointXYZI>::Ptr registeredPoints(
       new pcl::PointCloud<pcl::PointXYZI>);
-  m_clustered_array.markers.clear();
 
+  visualization_msgs::msg::MarkerArray clustered_array;
   clusterAndColorGpu(m_simpleHeightmapPoints, registeredPoints,
-                     m_clustered_array, m_max_cluster_distance);
+                     clustered_array, m_max_cluster_distance);
 
   sensor_msgs::msg::PointCloud2 cloud_clustered_msg;
   pcl::toROSMsg(*registeredPoints, cloud_clustered_msg);
@@ -78,7 +78,7 @@ void PointsClustering::timer_callback() {
   cloud_clustered_msg.header.stamp = this->now();
   pubClusterPoints->publish(cloud_clustered_msg);
 
-  pubClusteredArray->publish(m_clustered_array);
+  pubClusteredArray->publish(clustered_array);
 }
 
 void PointsClustering::PointsCallback(
@@ -212,7 +212,7 @@ void PointsClustering::SetCloud(
   marker_buf.id = ind;
   marker_buf.type = visualization_msgs::msg::Marker::CUBE;
   marker_buf.action = visualization_msgs::msg::Marker::ADD;
-  marker_buf.lifetime = rclcpp::Duration(1/30, 0);
+  marker_buf.lifetime = rclcpp::Duration(0, 5);
   marker_buf.pose.position.x = min_x + length / 2;
   marker_buf.pose.position.y = min_y + width / 2;
   marker_buf.pose.position.z = min_z + height / 2;

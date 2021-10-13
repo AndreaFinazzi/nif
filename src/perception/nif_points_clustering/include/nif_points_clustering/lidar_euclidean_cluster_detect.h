@@ -77,7 +77,6 @@ private:
 
   pcl::PointCloud<pcl::PointXYZI>::Ptr m_inPoints;
   pcl::PointCloud<pcl::PointXYZI>::Ptr m_simpleHeightmapPoints;
-  visualization_msgs::msg::MarkerArray m_clustered_array;
   bool bPoints = false;
 
   std::mutex sensor_mtx;
