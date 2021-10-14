@@ -54,13 +54,20 @@ def generate_launch_description():
             "missions_file_path": mm_param_default_file,
             "velocity.zero": 0.0,
             "velocity.max": 15.0,
-            "velocity.avoidance": 12.0,
+            "velocity.avoidance": 15.0,
             "velocity.pit_in": 8.0,
             "velocity.pit_out": 8.0,
-            "velocity.slow_drive": 10.0,
+            "velocity.slow_drive": 12.0,
             # RC interface params
             "listen_to_override": False,
             "listen_to_nominal": True,
+
+            # Mission avoidance auto switch
+            "mission.avoidance.auto_switch": False,
+            "mission.avoidance.lap_count": 0,
+            "mission.avoidance.previous_track_flag": 1,
+            "mission.avoidance.lap_distance_min": 0,
+            "mission.avoidance.lap_distance_max": 0,
 
         }],
         remappings=[

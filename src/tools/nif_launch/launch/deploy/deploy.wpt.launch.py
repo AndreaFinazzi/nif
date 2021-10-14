@@ -51,7 +51,7 @@ def generate_launch_description():
     )
 
     dbc_file_path = get_share_file(
-        package_name='raptor_dbw_can', file_name='launch/CAN1_INDY_V4.dbc'
+        package_name='raptor_dbw_can', file_name='launch/CAN1_INDY_V6.dbc'
     )
 
     ssc_interface_param = DeclareLaunchArgument(
@@ -125,7 +125,10 @@ def generate_launch_description():
         output='screen',
         namespace='raptor_dbw_interface',
         parameters=[
-            {'dbw_dbc_file': dbc_file_path}
+            {
+                'dbw_dbc_file': dbc_file_path,
+                'veh_number': 4
+            }
         ],
         remappings=[
             ('/raptor_dbw_interface/can_rx', '/from_can_bus'),
@@ -398,7 +401,7 @@ def generate_launch_description():
 
     nif_dk_planner_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            get_share_file("nif_dk_graph_planner", 'launch/deploy.launch.py')
+            get_share_file("nif_dk_graph_planner", 'launch/deploy_narrow.launch.py')
         )
     )
 

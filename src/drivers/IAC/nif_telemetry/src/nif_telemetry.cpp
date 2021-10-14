@@ -71,7 +71,7 @@ class Telemetry : public rclcpp::Node
 
 
       sub_reference_path = this->create_subscription<nav_msgs::msg::Path>(
-        "/planning/graph/path_global", nif::common::constants::QOS_SENSOR_DATA, std::bind(&Telemetry::reference_path_callback, this, std::placeholders::_1));
+        "/planning/path_global", nif::common::constants::QOS_SENSOR_DATA, std::bind(&Telemetry::reference_path_callback, this, std::placeholders::_1));
 
       timer_ = this->create_wall_timer(
         100ms, std::bind(&Telemetry::timer_callback, this));

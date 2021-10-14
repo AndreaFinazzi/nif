@@ -52,6 +52,7 @@ typedef enum
 enum
 {
   ID_BASE_TO_CAR_SUMMARY        = 0x04B0,
+  ID_CT_REPORT                  = 0x057c,
   ID_BRAKE_CMD                  = 0x2F04,
   ID_BRAKE_REPORT               = 0x1F04,
   ID_ACCELERATOR_PEDAL_CMD      = 0x2F01,

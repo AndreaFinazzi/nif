@@ -602,17 +602,6 @@ void SscInterface::flag_summary_callback(const deep_orange_msgs::msg::BaseToCarS
         case 255:
             m_rec_track_cond = TrackCondition::TC_DEFAULT;
             break;
-
-            // case 4:     // Pit Entry
-            //   race_mode_command = RaceFlag::CHECKERED;
-            //   break;
-            // case 5:     // ShutOff engine
-            //   race_mode_command = RaceFlag::PURPLE;
-            //   break;
-
-            // case 7:     // Penalty - enter the pit and stay
-            //   race_mode_command = RaceFlag::BLACK;
-            //   break;
         default:
             RCLCPP_ERROR(m_logger, "Incorrect RC Mode (track_flag) Command Received.");
             // m_ct_to_rc_data = m_dbw_state_state_machine->ct_mode_transition(race_mode_command)
@@ -862,6 +851,7 @@ void SscInterface::misc_report_callback(const deep_orange_msgs::msg::MiscReport:
   m_ct_report_data = m_dbw_state_machine->ct_mode_transition(
     raptor_mode, m_rec_track_cond, vehicle_vel, m_rec_veh_signal, emergency_joy_flag, emergency_confirmation, diag_hb_failure);
   m_ct_report_data.track_cond_ack = flag_summary_data.track_flag;
+  m_ct_report_data.veh_sig_ack = flag_summary_data.veh_flag;
   m_ct_report_data.rolling_counter = counter_ct;
   stop_msg = std_msgs::msg::Bool();
   if (emergency_hb_flag == true){

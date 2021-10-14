@@ -508,12 +508,10 @@ private:
             const raptor_dbw_msgs::msg::WheelSpeedReport::SharedPtr msg) {
         const double kphToMps = 1.0 / 3.6;
         // front left wheel speed (kph)
-        // double front_left = msg->front_left;
-        // double front_right = msg->front_right;
-        double rear_left = msg->rear_left;
-        double rear_right = msg->rear_right;
+        double front_left = msg->front_left;
+        double front_right = msg->front_right;
         // average wheel speeds (kph) and convert to m/s
-        this->speed_mps_ = (rear_left + rear_right) * 0.5 * kphToMps;
+        this->speed_mps_ = (front_left + front_right) * 0.5 * kphToMps;
         this->has_vel = true;
         this->vel_recv_time_ = this->now();
     }
