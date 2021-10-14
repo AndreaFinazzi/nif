@@ -38,8 +38,8 @@ PointsToCostmap::fetchGridIndexFromPoint(const pcl::PointXYZI &point) {
   double mapped_y =
       (grid_length_y_ - origin_y_offset - point.y) / grid_resolution_;
 
-  int mapped_x_ind = std::ceil(mapped_x);
-  int mapped_y_ind = std::ceil(mapped_y);
+  int mapped_x_ind = std::floor(mapped_x);
+  int mapped_y_ind = std::floor(mapped_y);
   grid_map::Index index(mapped_x_ind, mapped_y_ind);
   return index;
 }

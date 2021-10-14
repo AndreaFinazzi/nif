@@ -35,9 +35,16 @@
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
 
+#include <algorithm>
+#include <bits/stdc++.h>
+#include <math.h>
 #include <mutex>
 #include <thread>
-#include <algorithm>
+#include <unordered_map>
+
+struct AnalyticalFunctions {
+  std::function<double(double, double)> f_;
+};
 
 class PointsClustering : public rclcpp::Node {
 public:
@@ -60,6 +67,9 @@ private:
   pcl::PointCloud<pcl::PointXYZI>::Ptr
   downsample(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud,
              double resolution);
+  void createGaussianWorld(visualization_msgs::msg::MarkerArray& marker_array_in, double inflation_x,
+                           double inflation_y, pcl::PointCloud<pcl::PointXYZI>::Ptr &points_out) ;
+
   int m_cluster_size_min;
   int m_cluster_size_max;
   double m_max_cluster_distance;
@@ -68,8 +78,10 @@ private:
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr
           pubClusterPoints;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubSimpleheightMap;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubInflationPoints;
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr
       pubClusteredArray;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubClusteredCenterPoints;
 
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr
           subInputPoints;

@@ -78,7 +78,10 @@ def generate_launch_description():
                 }],
                 remappings=[ 
                     ("in_ekf_odometry", "/aw_localization/ekf/odom"),
-                    # ("in_oc_grid", "/semantics/costmap_generator/occupancy_grid"),
+                    ("in_inflated_points", "/inflated_points"),
+                    ("in_cluster_center_points", "/cluster_center_points"),
+                    ("in_wall_points", "/ransac_filtered_points/right_no_use"),
+                
                 ]
     )
 
