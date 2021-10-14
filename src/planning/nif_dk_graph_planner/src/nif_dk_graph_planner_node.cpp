@@ -104,13 +104,11 @@ void DKGraphPlannerNode::OsmParcing() {
   // file opening result
   if (!parcer) {
     RCLCPP_ERROR(this->get_logger(), "Invalid file path.. ");
-    std::cout << "Parse error: " << parcer.description()
-              << ", character pos= " << parcer.offset << std::endl;
-    std::cout << "Tried to open .. \n" << m_FullFilePath.c_str() << std::endl;
+    RCLCPP_ERROR(this->get_logger(), "Parse error: %s; \t character pos =  %d", parcer.description(), parcer.offset);
+    RCLCPP_ERROR(this->get_logger(), "Tried to open .. \n %s", m_FullFilePath.c_str());
   } else {
-    std::cout << "Parse result: " << parcer.description()
-              << ", character pos= " << parcer.offset << std::endl;
-    std::cout << "Tried to open .. \n" << m_FullFilePath.c_str() << std::endl;
+    RCLCPP_INFO(this->get_logger(), "Parse result: %s; \t character pos =  %d", parcer.description(), parcer.offset);
+    RCLCPP_INFO(this->get_logger(), "Tried to open .. \n %s", m_FullFilePath.c_str());
     RCLCPP_INFO(this->get_logger(), "Valid file!");
   }
 
@@ -307,7 +305,7 @@ void DKGraphPlannerNode::RacingLineParcing()
   // normalize cost : distance from the racing line
   for (int i = 0; i < m_OsmParcer.ways.size(); i++) {
     m_OsmParcer.ways[i].cost = m_OsmParcer.ways[i].cost / max_cost;
-    std::cout << m_OsmParcer.ways[i].cost << ", " << max_cost << std::endl;
+    // std::cout << m_OsmParcer.ways[i].cost << ", " << max_cost << std::endl;
   }
   // std::cout << cost_sum << std::endl;
 
@@ -357,7 +355,7 @@ void DKGraphPlannerNode::CallbackOdometry(const nav_msgs::msg::Odometry::SharedP
       if(way.start_node == 2)
         current_node_id= way.first_node_id;
     }
-    std::cout << current_node_id << std::endl;
+    // std::cout << current_node_id << std::endl;
 
     // GetIntensityInfo(m_veh_x, m_veh_y, m_FirstNodeContainPoints, current_node_id); // to get current first node id
     
@@ -381,13 +379,13 @@ void DKGraphPlannerNode::CallbackOdometry(const nav_msgs::msg::Odometry::SharedP
     // }
     // // std::cout << "after : " << current_node_id << std::endl;
 
-    if(m_prevStartFirstNodeId != -1)
-      current_node_id = m_prevStartFirstNodeId;
+    // if(m_prevStartFirstNodeId != -1)
+    //   current_node_id = m_prevStartFirstNodeId;
 
     m_closestStartNode = current_node_id;
 
     double target_x_in_racing_line, target_y_in_racing_line;
-    int target_idx = current_idx + 100;
+    int target_idx = current_idx + 60;
     int target_node_id;
     size_t racingLineRefSize = m_racingLineRefPoints->points.size();
     target_idx = target_idx % racingLineRefSize;
@@ -943,7 +941,7 @@ void DKGraphPlannerNode::ToPathMsg() {
       if (m_prevFirstLayer != m_currentLayer)
       {
         m_prevFirstLayer = m_currentLayer;
-        std::cout << "layer changed!" << std::endl;
+        RCLCPP_DEBUG(this->get_logger(), "layer changed!" );
         if(m_UsePrevStartFirstNodeAfter2 < 2)
         {
           m_prevStartFirstNodeId = final_id.first_node_id;
@@ -1053,7 +1051,7 @@ DKGraphPlannerNode::read_csv(std::string filename) {
       result.push_back({colname, std::vector<double>{}});
     }
   } else {
-    std::cout << "Check CSV file" << std::endl;
+    RCLCPP_ERROR(this->get_logger(), "Check CSV file");
   }
 
   // Read data, line by line
