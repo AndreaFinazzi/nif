@@ -78,8 +78,8 @@ missions:
     activation_velocity:
       active: false
       range_mps:
-        - 0.0 # min m/s
-        - 0.0 # max m/s
+        - 0.000 # min m/s
+        - 0.001 # max m/s
     allowed_transitions:
       active: true # ignore
       from:

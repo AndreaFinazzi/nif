@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<presets xmlns="http://josm.openstreetmap.de/tagging-preset-1.0" author="DaegyuLee" version="1.0" shortdescription="Eurecar route planning presets file" description="JOSM based route planning system">
+<group name="Eurecar">
+    <group name="Node">
+        <item name="set_node_info" type="node">
+            <label text="Node Info"/>
+            <label text="---------------------------"/>
+            <text key="speed" text="Velocity profile[km/h]" default="5" delete_if_empty="true"/>
+            <text key="yaw" text="Heading[deg]" default="0" delete_if_empty="true"/>
+            <text key="alt" text="Altitude[m]" default="0" delete_if_empty="true"/>
+            <label text="---------------------------"/>
+        </item>
+    </group>
+    <group name="Way">
+        <item name="set_way_info" type="way">
+            <label text="Way Info"/>
+            <label text="---------------------------"/>
+            <text key="info" text="WayInformation" default="" delete_if_empty="true"/>
+            <text key="ID"   text="Set way ID" default="0" delete_if_empty="true"/>
+            <text key="R_LinkID" text="Right Link ID" default="" delete_if_empty="true"/>
+            <text key="L_LinKID"   text="Left Link ID" default="" delete_if_empty="true"/>
+            <text key="MaxSpeed" text="Max speed" default="" delete_if_empty="true"/>
+            <text key="RoadRank"   text="Rand" default="" delete_if_empty="true"/>
+            <text key="RoadType"   text="RoadType" default="" delete_if_empty="true"/>
+            <text key="LinkType"   text="LinkType" default="" delete_if_empty="true"/>
+            <label text="---------------------------"/>
+        </item>
+        <item name="set_next_way" type="way">
+            <label text="Set Next Way ID"/>
+            <label text="---------------------------"/>
+            <text key="next_id" text="Next Way ID" default="0" delete_if_empty="true"/>
+            <label text="---------------------------"/>
+        </item>
+    </group>
+    <group name="Relation">
+        <item name="set_relations" type="relation">
+            <key key="type" value="relations"/>
+            <roles>
+                <role key="adjacent" text="adjacent" requisite="optional" type="way" />
+            </roles>
+        </item>
+        <item name="set_next_Way" type="relation">
+            <key key="type" value="relations"/>
+            <roles>
+                <role key="next_id" text="Next Way ID" requisite="optional" type="way" />
+            </roles>
+        </item>
+        <item name="set_left_boundary" type="relation">
+            <key key="type" value="relations"/>
+            <roles>
+                <role key="left_boundary" text="Connect continuous boundaries" requisite="optional" type="way" />
+            </roles>
+        </item>
+        <item name="set_right_boundary" type="relation">
+            <key key="type" value="relations"/>
+            <roles>
+                <role key="right_boundary" text="Connect continuous boundaries" requisite="optional" type="way" />
+            </roles>
+        </item>
+    </group>
+</group>
+</presets>
+
+
+

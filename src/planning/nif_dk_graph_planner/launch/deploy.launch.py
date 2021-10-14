@@ -26,16 +26,26 @@ def generate_launch_description():
 
     map_file = None
     directory = None
+    origin_lat = 0.0
+    origin_lon = 0.0
 
     if track == LOR:
         map_file = 'LOR.osm'
         directory = 'LOR'
+        origin_lat = 39.8125900071711
+        origin_lon = -86.3418060783425
+
     elif track == IMS:
         map_file = 'IMS.osm'
         directory = 'IMS'
+        origin_lat = 39.809786
+        origin_lon = -86.235148
+
     elif track == LG_SVL:
-        map_file = 'LG_SVL.osm'
-        directory = 'LG_SVL'    
+        map_file = 'LG_SIM.osm'
+        directory = 'LG_SIM'
+        origin_lat = 39.79312996
+        origin_lon = -86.23524024
     else:
         raise RuntimeError("ERROR: invalid track provided: {}".format(track))
 
@@ -51,6 +61,7 @@ def generate_launch_description():
                     'traj_race_cl.csv'
     )  
 
+
     dk_planner_node =  Node(
                 package="nif_dk_graph_planner",
                 executable="nif_dk_graph_planner_exe",
@@ -62,17 +73,12 @@ def generate_launch_description():
                 parameters=[{
                     'osm_name' : map_file_path,
                     'racing_trajectory' : racing_traj_path,
-                    # IMS
-                    # 'origin_lat' : 39.809786,
-                    # 'origin_lon' : -86.235148,
-
-                    #LOR
-                    'origin_lat' : 39.8125900071711,
-                    'origin_lon' : -86.3418060783425,
-
+                    'origin_lat' : origin_lat,
+                    'origin_lon' : origin_lon,
                 }],
                 remappings=[ 
                     ("in_ekf_odometry", "/aw_localization/ekf/odom"),
+                    # ("in_oc_grid", "/semantics/costmap_generator/occupancy_grid"),
                 ]
     )
 

@@ -1,0 +1,14 @@
+canvas {
+    background-color: #ffffff;
+    text-color: #ffffff;
+    error-color: #ffffff;
+}
+
+relation >[adjacent] way::relation_adjacent {
+    text: eval("-------------- adjacent --------------------");
+    text-offset: -15;
+}
+
+relation >[adjacent] way::relation_adjacent {
+    color: green;
+}

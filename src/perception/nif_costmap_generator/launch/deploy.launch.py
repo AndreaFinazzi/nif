@@ -33,8 +33,8 @@ def generate_launch_description():
                     ("in_odometry_ekf_estimated", "/aw_localization/ekf/odom"), 
                     ("in_wall_points", "/ransac_filtered_points/both"), 
                     ("in_object_points", "/clustered_points"), 
+                    ("in_fake_obs_points", "/graph_planner/fake_obs"),
                     ("out_occupancy_map", "/semantics/costmap_generator/occupancy_grid"), 
-
                 ]
     )
 

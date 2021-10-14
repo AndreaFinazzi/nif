@@ -64,9 +64,6 @@ void WaypointManagerMission::setOccupancyGridMap(const nav_msgs::msg::OccupancyG
 
 void WaypointManagerMission::calcMapTrack()
 {
-  // test
-  m_odom_first_callbacked = true;
-  m_cur_mission_code.mission_status_code = m_cur_mission_code.MISSION_PIT_IN;
 
   if (m_odom_first_callbacked)
   {
@@ -332,7 +329,25 @@ void WaypointManagerMission::calcMapTrack()
       //         sin(m_collision_avoidance_fp_body_ptr->yaw()[i] / 2.0);
       //     m_collision_avoidance_path_body.poses.push_back(ps);
       //   }
-      m_map_track_path_global = m_graph_based_path;
+
+      // m_map_track_path_global = m_graph_based_path;
+      int cur_idx = m_rl_wpt_manager->getCurrentIdx(m_graph_based_path, m_cur_odom);
+
+      m_map_track_path_global.poses.clear();
+      for(int i = cur_idx; i < m_graph_based_path.poses.size(); i++) {
+        geometry_msgs::msg::PoseStamped ps;
+        ps.pose.position.x = m_graph_based_path.poses[i].pose.position.x;
+        ps.pose.position.y = m_graph_based_path.poses[i].pose.position.y;
+        ps.pose.position.z = m_graph_based_path.poses[i].pose.position.z;
+
+        ps.pose.orientation.x = m_graph_based_path.poses[i].pose.orientation.x;
+        ps.pose.orientation.y = m_graph_based_path.poses[i].pose.orientation.y;
+        ps.pose.orientation.z = m_graph_based_path.poses[i].pose.orientation.z;
+        ps.pose.orientation.w = m_graph_based_path.poses[i].pose.orientation.w;
+
+        m_map_track_path_global.poses.push_back(ps);
+      }
+
       m_map_track_path_body.poses.clear();
       m_map_track_path_body = nif::common::utils::coordination::getPathGlobaltoBody(m_cur_odom, m_map_track_path_global);
     }
