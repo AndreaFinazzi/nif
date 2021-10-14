@@ -30,6 +30,13 @@ MissionManagerNode::MissionManagerNode(
 
     this->declare_parameter("missions_file_path", "");
 
+    this->declare_parameter("mission.avoidance.auto_switch", false);
+    this->declare_parameter("mission.avoidance.lap_count", 0);
+    this->declare_parameter("mission.avoidance.previous_track_flag", 1);
+    this->declare_parameter("mission.avoidance.lap_distance_min", 0);
+    this->declare_parameter("mission.avoidance.lap_distance_max", 0);
+
+
     long int timeout_rc_flag_summary_s = this->get_parameter("timeout_rc_flag_summary_s").as_int();
     long int timeout_velocity_ms = this->get_parameter("timeout_velocity_ms").as_int();
     if (timeout_rc_flag_summary_s <= 0 ||
@@ -55,6 +62,25 @@ MissionManagerNode::MissionManagerNode(
     this->safeloc_velocity_slow_down_min = this->get_parameter("safeloc.velocity_slow_down_min").as_double();
 
     auto missions_file_path = this->get_parameter("missions_file_path").as_string();
+
+    this->mission_avoidance_auto_switch = this->get_parameter("mission.avoidance.auto_switch").as_bool();
+    this->mission_avoidance_lap_count = this->get_parameter("mission.avoidance.lap_count").as_int();
+    this->mission_avoidance_previous_track_flag = this->get_parameter("mission.avoidance.previous_track_flag").as_int();
+    this->mission_avoidance_lap_distance_min = this->get_parameter("mission.avoidance.lap_distance_min").as_int();
+    this->mission_avoidance_lap_distance_max = this->get_parameter("mission.avoidance.lap_distance_max").as_int();    
+
+    if (!nif::common::msgs::isTrackFlagInRange(this->mission_avoidance_previous_track_flag))
+    {
+        throw std::runtime_error("parameter mission.avoidance.previous_track_flag does not represent a valid track flag.");
+    }
+
+    if (this->mission_avoidance_lap_distance_max == 0)
+        this->mission_avoidance_lap_distance_max = std::numeric_limits<decltype(this->mission_avoidance_lap_distance_max)>().max();
+
+    if (this->mission_avoidance_lap_distance_min > this->mission_avoidance_lap_distance_max)
+    {
+        throw std::runtime_error("parameter mission.avoidance.lap_distance_min cannot be greater than mission.avoidance.lap_distance_max");
+    }
 
     this->parameters_callback_handle = this->add_on_set_parameters_callback(
             std::bind(&MissionManagerNode::parametersCallback, this, std::placeholders::_1));
@@ -271,7 +297,24 @@ MissionStatus::_mission_status_code_type MissionManagerNode::getMissionVehFlagNu
 
 void
 MissionManagerNode::RCFlagSummaryCallback(
-        const nif::common::msgs::RCFlagSummary::UniquePtr msg) {
+        const nif::common::msgs::RCFlagSummary::UniquePtr msg) 
+{
+    // TODO Remove this stuff
+    this->lap_count = msg->lap_count;
+    this->lap_distance = msg->lap_distance;
+
+    // Auto transition to collision avoidance mode
+    if (
+        !this->is_system_startup    &&
+        this->mission_avoidance_auto_switch && 
+        this->mission_avoidance_lap_count == this->lap_count  &&
+        this->mission_avoidance_previous_track_flag == this->rc_flag_summary.track_flag  &&
+        this->mission_avoidance_lap_distance_min <= this->lap_distance &&     
+        this->mission_avoidance_lap_distance_max >= this->lap_distance  )
+    {
+        this->is_avoidance_enabled = true;
+    }
+
     this->rc_flag_summary = std::move(*msg);
     this->rc_flag_summary_update_time = this->now();
     this->has_rc_flag_summary = true;
@@ -280,7 +323,7 @@ MissionManagerNode::RCFlagSummaryCallback(
 void 
 MissionManagerNode::velocityCallback(
       const raptor_dbw_msgs::msg::WheelSpeedReport::SharedPtr msg) {
-    this->current_velocity_mps = (msg->rear_left + msg->rear_right) * 0.5 * nif::common::constants::KPH2MS;
+    this->current_velocity_mps = (msg->front_left + msg->front_right) * 0.5 * nif::common::constants::KPH2MS;
     this->current_velocity_update_time = this->now();
     this->has_current_velocity = true;
   }

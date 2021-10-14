@@ -25,6 +25,7 @@ def generate_launch_description():
             "missions_file_path": mm_param_default_file,
             "velocity.zero": 0.0,
             "velocity.max": 67.0,
+            "velocity.avoidance": 20.0,
             "velocity.pit_in": 25.0,
             "velocity.pit_out": 25.0,
             "velocity.slow_drive": 25.0,
@@ -32,6 +33,14 @@ def generate_launch_description():
             "safeloc.threshold_slow_down": 20.0,
             "safeloc.velocity_slow_down_max": 22.2,
             "safeloc.velocity_slow_down_min": 8.0,
+
+            # Mission avoidance auto switch
+            "mission.avoidance.auto_switch": True,
+            "mission.avoidance.lap_count": 0,
+            "mission.avoidance.previous_track_flag": 1,
+            "mission.avoidance.lap_distance_min": 0,
+            "mission.avoidance.lap_distance_max": 0,
+
         }],
         remappings=[
             ('out_mission_status', '/system/mission'),

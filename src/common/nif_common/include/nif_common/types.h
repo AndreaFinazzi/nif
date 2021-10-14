@@ -110,6 +110,18 @@ using TerrainState = nif_msgs::msg::TerrainStatus;
 using RCFlagSummary = deep_orange_msgs::msg::BaseToCarSummary;
 using OverrideRCFlagSummary = deep_orange_msgs::msg::BaseToCarSummary;
 
+static bool isTrackFlagInRange(nif::common::msgs::RCFlagSummary::_track_flag_type track_flag)
+{
+    if (
+            track_flag == RCFlagSummary::TRACK_FLAG_NULL    ||
+            track_flag == RCFlagSummary::TRACK_FLAG_RED     ||
+            track_flag == RCFlagSummary::TRACK_FLAG_ORANGE  ||
+            track_flag == RCFlagSummary::TRACK_FLAG_YELLOW  ||
+            track_flag == RCFlagSummary::TRACK_FLAG_GREEN
+            ) return true;
+    return false;
+}
+
 /**
  * This message contains the autonomy status information which should updated
  * in the ??.

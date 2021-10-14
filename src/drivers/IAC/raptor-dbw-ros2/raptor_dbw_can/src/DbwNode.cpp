@@ -64,12 +64,14 @@ DbwNode::DbwNode(const rclcpp::NodeOptions & options)
   gear_warned_ = false;
 
   // Frame ID
-  frame_id_ = "base_footprint";
-  this->declare_parameter<std::string>("frame_id", frame_id_);
+  this->frame_id_ = "base_footprint";
+  this->declare_parameter<std::string>("frame_id", this->frame_id_);
+  this->declare_parameter<int>("veh_number", this->veh_number_);
 
   // Buttons (enable/disable)
   buttons_ = true;
   this->declare_parameter<bool>("buttons", buttons_);
+  
 
 
   // Ackermann steering parameters
@@ -349,8 +351,8 @@ void DbwNode::recvCAN(const can_msgs::msg::Frame::SharedPtr msg)
             out.track_flag = message->GetSignal("track_flag")->GetResult();
             out.veh_flag = message->GetSignal("veh_flag")->GetResult();
             out.veh_rank = message->GetSignal("veh_rank")->GetResult();
-            out.lap_status_whole = message->GetSignal("lap_status_whole")->GetResult();
-            out.lap_status_fraction = message->GetSignal("lap_status_fraction")->GetResult();
+            out.lap_count = message->GetSignal("lap_count")->GetResult();
+            out.lap_distance = message->GetSignal("lap_distance")->GetResult();
 
             pub_flags_->publish(out);
 
@@ -1216,6 +1218,7 @@ void DbwNode::recvCAN(const can_msgs::msg::Frame::SharedPtr msg)
   message->GetSignal("veh_sig_ack")->SetResult(msg->veh_sig_ack);
   message->GetSignal("ct_state")->SetResult(msg->ct_state);
   message->GetSignal("ct_state_rolling_counter")->SetResult(msg->rolling_counter);
+  message->GetSignal("veh_num")->SetResult(this->veh_number_);
 
   can_msgs::msg::Frame frame = message->GetFrame();
 

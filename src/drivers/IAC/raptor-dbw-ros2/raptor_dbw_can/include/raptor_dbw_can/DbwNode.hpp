@@ -207,6 +207,8 @@ private:
 
   // Frame ID
   std::string frame_id_;
+  
+  short int veh_number_ = 4;
 
   // Buttons (enable/disable)
   bool buttons_;
