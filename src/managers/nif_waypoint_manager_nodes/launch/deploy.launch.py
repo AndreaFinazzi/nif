@@ -30,7 +30,8 @@ def generate_launch_description():
         os.path.join(
             get_package_share_directory("nif_waypoint_manager_nodes"),
             "config",
-            "lor.yaml",
+            "mission",
+            "lor_new.yaml",
         ),
     )
 
@@ -38,7 +39,8 @@ def generate_launch_description():
         os.path.join(
             get_package_share_directory("nif_waypoint_manager_nodes"),
             "config",
-            "ims.yaml",
+            "mission",
+            "ims_new.yaml",
         ),
     )
 
@@ -66,7 +68,7 @@ def generate_launch_description():
         ],
         remappings=[
             # ('topic_ego_odometry', '/bvs_localization/ltp_odom'),
-            ('topic_ego_odometry', 'localization/ekf/odom'),
+            ('topic_ego_odometry', '/aw_localization/ekf/odom'),
             ('wpt_manager/maptrack_path/global', '/planning/path_global'),
             ('wpt_manager/maptrack_path/body', '/planning/path_body')
         ]

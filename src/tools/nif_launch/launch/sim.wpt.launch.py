@@ -40,7 +40,7 @@ def generate_launch_description():
     )
 
     dbc_file_path = get_share_file(
-        package_name='raptor_dbw_can', file_name='launch/CAN1_INDY_V4.dbc'
+        package_name='raptor_dbw_can', file_name='launch/CAN1_INDY_V6.dbc'
     )
 
     ssc_interface_param = DeclareLaunchArgument(
@@ -114,7 +114,10 @@ def generate_launch_description():
         output='screen',
         namespace='raptor_dbw_interface',
         parameters=[
-            {'dbw_dbc_file': dbc_file_path}
+            {
+                'dbw_dbc_file': dbc_file_path,
+                'veh_number': 4
+            }
         ],
         remappings=[
             ('/raptor_dbw_interface/can_rx', '/from_can_bus'),
@@ -122,8 +125,8 @@ def generate_launch_description():
         ],
     )
 
-    telemetry_node = Node(
-        package='telemetry',
+    nif_telemetry_node = Node(
+        package='nif_telemetry',
         executable='telemetry',
         output='screen',
     )
@@ -235,7 +238,7 @@ def generate_launch_description():
         remappings=[
             ('in_control_cmd_prev', '/control_safety_layer/out/control_cmd'),
             ('out_control_cmd', '/control_pool/control_cmd'),
-            ('in_reference_path', '/planning/path_global'),
+            ('in_reference_path', 'planning/path_global'),
         ]
     )
 
@@ -316,7 +319,8 @@ def generate_launch_description():
         os.path.join(
             get_package_share_directory("nif_waypoint_manager_nodes"),
             "config",
-            "lor.yaml",
+            "mission",
+            "lor_new.yaml",
         ),
     )
 
@@ -324,7 +328,8 @@ def generate_launch_description():
         os.path.join(
             get_package_share_directory("nif_waypoint_manager_nodes"),
             "config",
-            "ims.yaml",
+            "mission",
+            "ims_new.yaml", 
         ),
     )
 
@@ -362,7 +367,6 @@ def generate_launch_description():
             LaunchConfiguration('nif_waypoint_manager_param_file')
         ],
         remappings=[
-            # ('topic_ego_odometry', '/bvs_localization/ltp_odom'),
             ('topic_ego_odometry', '/aw_localization/ekf/odom'),
             ('wpt_manager/maptrack_path/global', '/planning/path_global'),
             ('wpt_manager/maptrack_path/body', '/planning/path_body')
@@ -371,19 +375,19 @@ def generate_launch_description():
 
 ### NIF WAYPOINT MANAGER END #############################
 
-    nif_multilayer_planning_node = Node(
-        package='nif_multilayer_planning_nodes',
-        executable='nif_multilayer_planning_nodes_exe',
-        output={
-            'stdout': 'screen',
-            'stderr': 'screen',
-        },
-        remappings={
-            ('out_local_maptrack_inglobal', '/planning/graph/path_global'),
-            ('in_ego_odometry', '/aw_localization/ekf/odom'),
-            ('in_system_status', '/system/status')
-        }
-    )
+    # nif_multilayer_planning_node = Node(
+    #     package='nif_multilayer_planning_nodes',
+    #     executable='nif_multilayer_planning_nodes_exe',
+    #     output={
+    #         'stdout': 'screen',
+    #         'stderr': 'screen',
+    #     },
+    #     remappings={
+    #         ('out_local_maptrack_inglobal', '/planning/graph/path_global'),
+    #         ('in_ego_odometry', '/aw_localization/ekf/odom'),
+    #         ('in_system_status', '/system/status')
+    #     }
+    # )
 
     nif_mission_manager_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -410,17 +414,15 @@ def generate_launch_description():
         # socketcan_receiver_launch,
         # socketcan_sender_launch,
         # raptor_node,
-        telemetry_node,
+        nif_telemetry_node,
 
         nif_global_param_node,
         nif_system_status_manager_node,
         nif_csl_node,
-        # nif_localization_launch,
         nif_aw_localization_launch,
         nif_wall_node_launch_bg,
         nif_waypoint_manager_node,
         robot_description_launch,
-        nif_multilayer_planning_node,
         nif_velocity_planning_node,
         nif_joint_lqr_control_node,
         nif_accel_control_node,

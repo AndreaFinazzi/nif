@@ -69,6 +69,16 @@ CostmapGenerator::CostmapGenerator()
       nif::common::constants::QOS_SENSOR_DATA,
       std::bind(&CostmapGenerator::objectPointsCallback, this,
                 std::placeholders::_1));
+  sub_ground_filtered_points_ =
+      this->create_subscription<sensor_msgs::msg::PointCloud2>(
+          "in_ground_filtered_points", nif::common::constants::QOS_SENSOR_DATA,
+          std::bind(&CostmapGenerator::groundFilteredCallback, this,
+                    std::placeholders::_1));
+
+  sub_fake_obs_points_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
+      "in_fake_obs_points", nif::common::constants::QOS_SENSOR_DATA,
+      std::bind(&CostmapGenerator::fakeObstacleCallback, this,
+                std::placeholders::_1));
 
   sub_odometry_ = this->create_subscription<nav_msgs::msg::Odometry>(
       "in_odometry_ekf_estimated", nif::common::constants::QOS_EGO_ODOMETRY,
@@ -101,55 +111,70 @@ CostmapGenerator::~CostmapGenerator(){}
 
 void CostmapGenerator::run() {
 
-  if ((bWallPoints || bObjectPoints)) {
-  //   pcl::PointCloud<pcl::PointXYZI>::Ptr PointsOnGlobal(
-  //       new pcl::PointCloud<pcl::PointXYZI>);
-  //   TransformPointsToGlobal(m_in_object_points, PointsOnGlobal, m_veh_x, m_veh_y, m_veh_yaw);
+  if ((bWallPoints || bObjectPoints || bFakeObstaclePoints ||
+       bGroundFilteredPoints)) {
+    //   pcl::PointCloud<pcl::PointXYZI>::Ptr PointsOnGlobal(
+    //       new pcl::PointCloud<pcl::PointXYZI>);
+    //   TransformPointsToGlobal(m_in_object_points, PointsOnGlobal, m_veh_x,
+    //   m_veh_y, m_veh_yaw);
 
-  //   sensor_msgs::msg::PointCloud2 points_on_global_msg;
-  //   pcl::toROSMsg(*PointsOnGlobal, points_on_global_msg);
-  //   points_on_global_msg.header.stamp = this->now();
-  //   points_on_global_msg.header.frame_id = ODOM;
-  //   pub_points_on_global_->publish(points_on_global_msg);
-  //   // std::cout << "points size : " << PointsOnGlobal->points.size() << std::endl;
+    //   sensor_msgs::msg::PointCloud2 points_on_global_msg;
+    //   pcl::toROSMsg(*PointsOnGlobal, points_on_global_msg);
+    //   points_on_global_msg.header.stamp = this->now();
+    //   points_on_global_msg.header.frame_id = ODOM;
+    //   pub_points_on_global_->publish(points_on_global_msg);
+    //   // std::cout << "points size : " << PointsOnGlobal->points.size() <<
+    //   std::endl;
 
-  //   pcl::PointCloud<pcl::PointXYZI>::Ptr PointsOnTrackGlobal(
-  //       new pcl::PointCloud<pcl::PointXYZI>);
-  //   SearchPointsOntrack(m_InnerGeoFence, m_OuterGeoFence,
-  //                       m_closestGeofenceIndex, PointsOnGlobal, PointsOnTrackGlobal);
-                        
-  //   // std::cout << "tarck points size : " << PointsOnTrackGlobal->points.size() << std::endl;
+    //   pcl::PointCloud<pcl::PointXYZI>::Ptr PointsOnTrackGlobal(
+    //       new pcl::PointCloud<pcl::PointXYZI>);
+    //   SearchPointsOntrack(m_InnerGeoFence, m_OuterGeoFence,
+    //                       m_closestGeofenceIndex, PointsOnGlobal,
+    //                       PointsOnTrackGlobal);
 
-  //   // std::cout << "m_InnerGeoFence: " << m_InnerGeoFence.size() << std::endl; 
-  //   // std::cout << "m_OuterGeoFence: " << m_OuterGeoFence.size() << std::endl;
+    //   // std::cout << "tarck points size : " <<
+    //   PointsOnTrackGlobal->points.size() << std::endl;
 
-  //   sensor_msgs::msg::PointCloud2 points_on_track_msg;
-  //   pcl::toROSMsg(*PointsOnTrackGlobal, points_on_track_msg);
-  //   points_on_track_msg.header.stamp = this->now();
-  //   points_on_track_msg.header.frame_id = ODOM;
-  //   pub_points_on_track_->publish(points_on_track_msg);
+    //   // std::cout << "m_InnerGeoFence: " << m_InnerGeoFence.size() <<
+    //   std::endl;
+    //   // std::cout << "m_OuterGeoFence: " << m_OuterGeoFence.size() <<
+    //   std::endl;
 
-  //   pcl::PointCloud<pcl::PointXYZI>::Ptr PointsOnTrackBody(
-  //       new pcl::PointCloud<pcl::PointXYZI>);
-  //   TransformPointsToBody(PointsOnTrackGlobal, PointsOnTrackBody,
-  //                         m_veh_x, m_veh_y, m_veh_yaw);
-  // }
-  pcl::PointCloud<pcl::PointXYZI>::Ptr PointsWallAndObject(new pcl::PointCloud<pcl::PointXYZI>);
-  if (bWallPoints)
-    *PointsWallAndObject += *m_in_wall_points;
-  if (bObjectPoints)
-    *PointsWallAndObject += *m_in_object_points;
+    //   sensor_msgs::msg::PointCloud2 points_on_track_msg;
+    //   pcl::toROSMsg(*PointsOnTrackGlobal, points_on_track_msg);
+    //   points_on_track_msg.header.stamp = this->now();
+    //   points_on_track_msg.header.frame_id = ODOM;
+    //   pub_points_on_track_->publish(points_on_track_msg);
 
-  costmap_[SENSOR_POINTS_COSTMAP_LAYER_] =
-      generateSensorPointsCostmap(PointsWallAndObject);
+    //   pcl::PointCloud<pcl::PointXYZI>::Ptr PointsOnTrackBody(
+    //       new pcl::PointCloud<pcl::PointXYZI>);
+    //   TransformPointsToBody(PointsOnTrackGlobal, PointsOnTrackBody,
+    //                         m_veh_x, m_veh_y, m_veh_yaw);
+    // }
+    pcl::PointCloud<pcl::PointXYZI>::Ptr PointsWallAndObject(
+        new pcl::PointCloud<pcl::PointXYZI>);
+    // if (bWallPoints)
+      // *PointsWallAndObject += *m_in_wall_points;
+    if (bObjectPoints)
+      *PointsWallAndObject += *m_in_object_points;
 
-  if(bEnablePotential_)
-    MakeInflationWithPoints();
+    // too noisy
+    // if (bGroundFilteredPoints)
+    //   *PointsWallAndObject += *m_in_ground_filtered_points;
 
-  generateCombinedCostmap();
-  publishRosMsg(&costmap_);
-  // publishRoadBoundaryMsg(&RoadBoundarycostmap_);
-}
+    if (bFakeObstaclePoints)
+      *PointsWallAndObject += *m_in_fake_obstacle_points;
+
+    costmap_[SENSOR_POINTS_COSTMAP_LAYER_] =
+        generateSensorPointsCostmap(PointsWallAndObject);
+
+    if (bEnablePotential_)
+      MakeInflationWithPoints();
+
+    generateCombinedCostmap();
+    publishRosMsg(&costmap_);
+    // publishRoadBoundaryMsg(&RoadBoundarycostmap_);
+  }
 }
 
 void CostmapGenerator::timer_callback() {
@@ -174,6 +199,34 @@ void CostmapGenerator::objectPointsCallback(
   m_in_object_points.reset(new pcl::PointCloud<pcl::PointXYZI>());
   pcl::fromROSMsg(*msg, *m_in_object_points);
   bObjectPoints = true;
+}
+
+void CostmapGenerator::groundFilteredCallback(
+    const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
+  //only for vehicle front-close area 
+  m_in_ground_filtered_points.reset(new pcl::PointCloud<pcl::PointXYZI>());
+  pcl::PointCloud<pcl::PointXYZI>::Ptr in_points(
+      new pcl::PointCloud<pcl::PointXYZI>);
+  pcl::fromROSMsg(*msg, *in_points);
+  for(auto point : in_points->points)
+  {
+    if (point.x < 50.0 && point.x >-10.0 && fabs(point.y) < 3.0)
+      m_in_ground_filtered_points->points.push_back(point);
+  }
+
+  bGroundFilteredPoints = true;
+}
+
+void CostmapGenerator::fakeObstacleCallback(
+    const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
+
+  m_in_fake_obstacle_points.reset(new pcl::PointCloud<pcl::PointXYZI>());
+  pcl::PointCloud<pcl::PointXYZI>::Ptr in_points(new pcl::PointCloud<pcl::PointXYZI>);
+  pcl::fromROSMsg(*msg, *in_points);
+  TransformPointsToBody(in_points, m_in_fake_obstacle_points, 
+                        m_veh_x, m_veh_y, m_veh_yaw);
+
+  bFakeObstaclePoints = true;
 }
 
 void CostmapGenerator::OdometryCallback(
@@ -259,23 +312,23 @@ void CostmapGenerator::TransformPointsToGlobal(
 }
 
 void CostmapGenerator::TransformPointsToBody(
-    const pcl::PointCloud<pcl::PointXYZI>::Ptr &CloudIn,
-    pcl::PointCloud<pcl::PointXYZI>::Ptr &CloudOut, const double &veh_x_,
+    const pcl::PointCloud<pcl::PointXYZI>::Ptr CloudIn,
+    pcl::PointCloud<pcl::PointXYZI>::Ptr CloudOut, const double &veh_x_,
     const double &veh_y_, const double &veh_yaw_) {
 
   for (auto point : CloudIn->points) {
-    pcl::PointXYZI pointOnGlobal;
-    pointOnGlobal.x = (point.x - veh_x_) * cos(veh_yaw_) + (point.y -veh_y_) * sin(veh_yaw_);
-    pointOnGlobal.y = -(point.x - veh_x_) * sin(veh_yaw_) + (point.y -  veh_y_) * cos(veh_yaw_);
-    pointOnGlobal.z = point.z;
-    CloudOut->points.push_back(pointOnGlobal);
+    pcl::PointXYZI pointOnBody;
+    pointOnBody.x = (point.x - veh_x_) * cos(veh_yaw_) + (point.y -veh_y_) * sin(veh_yaw_);
+    pointOnBody.y = -(point.x - veh_x_) * sin(veh_yaw_) + (point.y -  veh_y_) * cos(veh_yaw_);
+    pointOnBody.z = point.z;
+    CloudOut->points.push_back(pointOnBody);
   }
 }
 
 void CostmapGenerator::MakeInflationWithPoints()
 {
-  if (bWallPoints || bObjectPoints)
-  {
+  if (bWallPoints || bObjectPoints || bFakeObstaclePoints ||
+      bGroundFilteredPoints) {
     costmap_[INFLATION_COSTMAP_LAYER_].setConstant(grid_min_value_);
     obstacleArray.clear();
     int idx = 0;

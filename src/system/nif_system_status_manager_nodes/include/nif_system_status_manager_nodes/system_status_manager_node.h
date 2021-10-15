@@ -54,7 +54,7 @@ private:
 
   unsigned int mode = 255;
 //  TODO make parameter
-  const int max_counter_drop = 50;
+  const int max_counter_drop = 20;
   int t = 0;
 
   const int default_counter = 502;
@@ -62,6 +62,7 @@ private:
   int counter_joy = default_counter;
   bool joy_emergency_stop = false;
   bool recovery_enabled = true;
+  bool comms_heartbeat_ok = false;
 
   // double localization_error = 1000.0;
   nif_msgs::msg::LocalizationStatus localization_status;
@@ -99,6 +100,7 @@ private:
 
 
   rclcpp::TimerBase::SharedPtr system_status_timer;
+  rclcpp::TimerBase::SharedPtr comms_heartbeat_timer;
 
   rclcpp::Service<nif_msgs::srv::RegisterNodeStatus>::SharedPtr
       register_node_service;
@@ -127,6 +129,7 @@ private:
   void nodeStatusUpdate(const nif::common::msgs::NodeStatus::SharedPtr msg);
 
   void systemStatusTimerCallback();
+  void commsHeartbeatTimerCallback();
 
   void joystickCallback(const nif::common::msgs::OverrideControlCmd::SharedPtr msg);
   void localizationStatusCallback(const nif_msgs::msg::LocalizationStatus::SharedPtr msg);
@@ -150,7 +153,7 @@ private:
   common::SystemStatusCode getSystemStatusCode();
   void nodeStatusesAgeCheck();
 
-  bool heartbeatOk();
+  bool commsHeartbeatOk();
   bool localizationOk();
 
   rcl_interfaces::msg::SetParametersResult

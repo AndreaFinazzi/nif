@@ -1,0 +1,109 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<root version="2.3.8">
+ <tabbed_widget parent="main_window" name="Main Window">
+  <Tab containers="1" tab_name="tab1">
+   <Container>
+    <DockSplitter count="5" orientation="-" sizes="0.199726;0.199726;0.201094;0.199726;0.199726">
+     <DockArea name="...">
+      <plot mode="TimeSeries" style="Lines">
+       <range top="29.329999" left="2.440604" right="22.436980" bottom="28.070000"/>
+       <limitY/>
+       <curve name="/raptor_dbw_interface/wheel_speed_report/front_left" color="#f14cc1"/>
+      </plot>
+     </DockArea>
+     <DockArea name="...">
+      <plot mode="TimeSeries" style="Lines">
+       <range top="4.816107" left="2.444457" right="22.438311" bottom="-2.182350"/>
+       <limitY/>
+       <curve name="/control_joint_lqr/lqr_command/data" color="#1f77b4"/>
+       <curve name="/control_joint_lqr/lqr_command_test/data" color="#d62728"/>
+      </plot>
+     </DockArea>
+     <DockArea name="...">
+      <plot mode="TimeSeries" style="Lines">
+       <range top="0.233515" left="2.440970" right="22.436962" bottom="-0.286812"/>
+       <limitY/>
+       <curve name="/control_joint_lqr/lqr_error/data.0" color="#1ac938"/>
+      </plot>
+     </DockArea>
+     <DockArea name="...">
+      <plot mode="TimeSeries" style="Lines">
+       <range top="0.076208" left="2.440970" right="22.436962" bottom="-0.374637"/>
+       <limitY/>
+       <curve name="/control_joint_lqr/lqr_error/data.1" color="#ff7f0e"/>
+      </plot>
+     </DockArea>
+     <DockArea name="...">
+      <plot mode="TimeSeries" style="Lines">
+       <range top="10.100000" left="2.442986" right="22.440901" bottom="9.900000"/>
+       <limitY/>
+       <curve name="/velocity_planner/des_vel/data" color="#9467bd"/>
+       <curve name="/velocity_planner/des_vel/test/data" color="#17becf"/>
+      </plot>
+     </DockArea>
+    </DockSplitter>
+   </Container>
+  </Tab>
+  <currentTabIndex index="0"/>
+ </tabbed_widget>
+ <use_relative_time_offset enabled="1"/>
+ <!-- - - - - - - - - - - - - - - -->
+ <!-- - - - - - - - - - - - - - - -->
+ <Plugins>
+  <plugin ID="DataLoad CSV">
+   <default time_axis=""/>
+  </plugin>
+  <plugin ID="DataLoad ROS2 bags">
+   <use_header_stamp value="false"/>
+   <discard_large_arrays value="true"/>
+   <max_array_size value="100"/>
+  </plugin>
+  <plugin ID="DataLoad ULog"/>
+  <plugin ID="ROS2 Topic Subscriber">
+   <use_header_stamp value="false"/>
+   <discard_large_arrays value="false"/>
+   <max_array_size value="true"/>
+   <selected_topics>
+    <topic name="/accel_control/diagnostic"/>
+    <topic name="/aw_localization/ekf/odom"/>
+    <topic name="/aw_localization/ekf/odom_bestpos"/>
+    <topic name="/aw_localization/ekf/top_bestpos"/>
+    <topic name="/control_joint_lqr/accel_command"/>
+    <topic name="/control_joint_lqr/accel_command_test"/>
+    <topic name="/control_joint_lqr/lqr_command"/>
+    <topic name="/control_joint_lqr/lqr_command_test"/>
+    <topic name="/control_joint_lqr/lqr_error"/>
+    <topic name="/control_joint_lqr/lqr_error_test"/>
+    <topic name="/control_safety_layer/out/control_cmd"/>
+    <topic name="/joystick/accelerator_cmd"/>
+    <topic name="/joystick/accelerator_cmd/raw"/>
+    <topic name="/joystick/accelerator_cmd/raw_test"/>
+    <topic name="/joystick/brake_cmd"/>
+    <topic name="/joystick/brake_cmd/raw"/>
+    <topic name="/joystick/brake_cmd/raw_test"/>
+    <topic name="/joystick/steering_cmd"/>
+    <topic name="/localization/ekf/odom"/>
+    <topic name="/raptor_dbw_interface/pt_report"/>
+    <topic name="/raptor_dbw_interface/wheel_speed_report"/>
+    <topic name="/system/status"/>
+    <topic name="/velocity_planner/des_vel"/>
+    <topic name="/velocity_planner/des_vel/test"/>
+    <topic name="/velocity_planner/diagnostic"/>
+    <topic name="/velocity_planner/diagnostic/test"/>
+   </selected_topics>
+  </plugin>
+  <plugin ID="UDP Server"/>
+  <plugin ID="WebSocket Server"/>
+  <plugin ID="ZMQ Subscriber"/>
+  <plugin ID="CSV Exporter" status="idle"/>
+  <plugin ID="ROS2 Topic Re-Publisher" status="idle"/>
+ </Plugins>
+ <!-- - - - - - - - - - - - - - - -->
+ <previouslyLoaded_Datafiles/>
+ <previouslyLoaded_Streamer name="ROS2 Topic Subscriber"/>
+ <!-- - - - - - - - - - - - - - - -->
+ <customMathEquations/>
+ <snippets/>
+ <!-- - - - - - - - - - - - - - - -->
+</root>
+

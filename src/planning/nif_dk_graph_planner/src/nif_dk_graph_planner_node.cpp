@@ -46,52 +46,50 @@ DKGraphPlannerNode::DKGraphPlannerNode(const std::string &node_name_)
 
   pubOsmParcer =
       this->create_publisher<nif_dk_graph_planner_msgs::msg::OsmParcer>(
-          "/graph_planner/OsmParcer", nif::common::constants::QOS_EGO_ODOMETRY);
-  // pubLaneArray = this->create_publisher<autoware_msgs::LaneArray>(
-  //     "/graph_planner/origin_lane_waypoints_array", nif::common::constants::QOS_SENSOR_DATA);
-  // pubFullLink = this->create_publisher<visualization_msgs::MarkerArray>(
-  //     "/graph_planner/full_link", nif::common::constants::QOS_SENSOR_DATA);
-  // pubFinalLink = this->create_publisher<visualization_msgs::MarkerArray>(
-  //     "/graph_planner/final_link", nif::common::constants::QOS_SENSOR_DATA);
-  // pubFinalLaneArray = this->create_publisher<autoware_msgs::LaneArray>(
-  //     "/graph_planner/final_lane_waypoints_array", nif::common::constants::QOS_SENSOR_DATA);
-
+          "/graph_planner/OsmParcer", nif::common::constants::QOS_PLANNING);
   pubFullNodePoints = this->create_publisher<sensor_msgs::msg::PointCloud2>(
-      "/graph_planner/full_nodes", nif::common::constants::QOS_SENSOR_DATA);
-  pubRacingLinePoints = this->create_publisher<sensor_msgs::msg::PointCloud2>(
-      "/graph_planner/racing_line", nif::common::constants::QOS_SENSOR_DATA);
-  // pubFinalNodePoints = this->create_publisher<sensor_msgs::msg::PointCloud2>(
-  //     "/graph_planner/final_node_points", nif::common::constants::QOS_SENSOR_DATA);
-  // pubFinalPathPoints = this->create_publisher<sensor_msgs::msg::PointCloud2>(
-  //     "/graph_planner/final_path_points", nif::common::constants::QOS_SENSOR_DATA);
-  // pubCandidatesNodePoints = this->create_publisher<sensor_msgs::msg::PointCloud2>(
-  //     "/graph_planner/cadidates_points", nif::common::constants::QOS_SENSOR_DATA);
-  // pubFinalNodes = this->create_publisher<std_msgs::Int32MultiArray>(
-  //     "/graph_planner/final_node_array", nif::common::constants::QOS_SENSOR_DATA);
-  // pubFinalITSIds = this->create_publisher<nif_dk_graph_planner_msgs::msg::FinalPathIDArray>(
-  //     "/graph_planner/final_path_id_array", nif::common::constants::QOS_SENSOR_DATA);
+      "/graph_planner/full_nodes", nif::common::constants::QOS_PLANNING);
+  pubRacingLineRefPoints = this->create_publisher<sensor_msgs::msg::PointCloud2>(
+      "/graph_planner/racing_line", nif::common::constants::QOS_PLANNING);
+  pubFirstNodeContainPoints = this->create_publisher<sensor_msgs::msg::PointCloud2>(
+          "/graph_planner/first_node_info", nif::common::constants::QOS_PLANNING);
+  pubFinalPathPoints = this->create_publisher<sensor_msgs::msg::PointCloud2>(
+      "/graph_planner/final_path_points", nif::common::constants::QOS_PLANNING);
+  pubCandidatesNodePoints = this->create_publisher<sensor_msgs::msg::PointCloud2>(
+      "/graph_planner/cadidates_points", nif::common::constants::QOS_PLANNING);
+  pubCostPoints = this->create_publisher<sensor_msgs::msg::PointCloud2>(
+      "/graph_planner/cost", nif::common::constants::QOS_PLANNING);
+  pubFinalPath = this->create_publisher<nav_msgs::msg::Path>(
+      "/graph_planner/final_path", nif::common::constants::QOS_PLANNING);
+  pubWallInflatedPoints = this->create_publisher<sensor_msgs::msg::PointCloud2>(
+          "/graph_planner/wall_inflated", nif::common::constants::QOS_PLANNING);
 
-  // pubStartWay = this->create_publisher<geometry_msgs::PoseArray>(
-  //     "/graph_planner/start_way", nif::common::constants::QOS_SENSOR_DATA);
-  // pubGoalWay = this->create_publisher<geometry_msgs::PoseArray>(
-  //     "/graph_planner/goal_way", nif::common::constants::QOS_SENSOR_DATA);
-
-  // pubWptNodeCloud = this->create_publisher<sensor_msgs::msg::PointCloud2>("/route_planner/goal_xy_nodes", 10, true);
-
-  // SubInitPose = nh_.subscribe("/initialpose", 1,
-  //                             &DKGraphPlannerNode::CallbackInitPoseRviz, this);
-  // SubGoal = nh_.subscribe("/move_base_simple/goal", 1,
-  //                         &DKGraphPlannerNode::CallbackGoalRviz, this);
-
-  SubOdometry =  this->create_subscription<nav_msgs::msg::Odometry>(
-      "in_ekf_odometry", nif::common::constants::QOS_EGO_ODOMETRY,
-      std::bind(&DKGraphPlannerNode::CallbackOdometry, this,
+  SubOdometry = this->create_subscription<nav_msgs::msg::Odometry>(
+          "in_ekf_odometry", nif::common::constants::QOS_EGO_ODOMETRY,
+          std::bind(&DKGraphPlannerNode::CallbackOdometry, this,
+                    std::placeholders::_1));
+  SubOccupancyGrid = this->create_subscription<nav_msgs::msg::OccupancyGrid>(
+      "/semantics/costmap_generator/occupancy_grid",
+      nif::common::constants::QOS_SENSOR_DATA,
+      std::bind(&DKGraphPlannerNode::CallbackOccupancyGrid, this,
                 std::placeholders::_1));
-  // SubGoalXYList = nh_.subscribe("/route_planner/goal_xy_list", 1,
-  //                             &DKGraphPlannerNode::CallbackGoalXYList, this);
+  SubCostPoints = this->create_subscription<sensor_msgs::msg::PointCloud2>(
+      "in_inflated_points", nif::common::constants::QOS_SENSOR_DATA,
+      std::bind(&DKGraphPlannerNode::CallbackCostPoints, this,
+                std::placeholders::_1));
+  SubClusterCenterPoints = this->create_subscription<sensor_msgs::msg::PointCloud2>(
+      "in_cluster_center_points", nif::common::constants::QOS_SENSOR_DATA,
+      std::bind(&DKGraphPlannerNode::CallbackClusterCenterPoints, this,
+                std::placeholders::_1));
+  SubWallPoints =
+      this->create_subscription<sensor_msgs::msg::PointCloud2>(
+          "in_wall_points", nif::common::constants::QOS_SENSOR_DATA,
+          std::bind(&DKGraphPlannerNode::CallbackWallPoints, this,
+                    std::placeholders::_1));
 
   OsmParcing();
   RacingLineParcing();
+  BuildGraph();
 }
 
 DKGraphPlannerNode::~DKGraphPlannerNode() {}
@@ -106,14 +104,12 @@ void DKGraphPlannerNode::OsmParcing() {
   // file opening result
   if (!parcer) {
     RCLCPP_ERROR(this->get_logger(), "Invalid file path.. ");
-    std::cout << "Parse error: " << parcer.description()
-              << ", character pos= " << parcer.offset << std::endl;
-    std::cout << "Tried to open .. \n" << m_FullFilePath.c_str() << std::endl;
+    RCLCPP_ERROR(this->get_logger(), "Parse error: %s; \t character pos =  %d", parcer.description(), parcer.offset);
+    RCLCPP_ERROR(this->get_logger(), "Tried to open .. \n %s", m_FullFilePath.c_str());
   } else {
-    std::cout << "Parse result: " << parcer.description()
-              << ", character pos= " << parcer.offset << std::endl;
-    std::cout << "Tried to open .. \n" << m_FullFilePath.c_str() << std::endl;
-    RCLCPP_INFO(this->get_logger(), "Vaild file!");
+    RCLCPP_INFO(this->get_logger(), "Parse result: %s; \t character pos =  %d", parcer.description(), parcer.offset);
+    RCLCPP_INFO(this->get_logger(), "Tried to open .. \n %s", m_FullFilePath.c_str());
+    RCLCPP_INFO(this->get_logger(), "Valid file!");
   }
 
 
@@ -182,9 +178,7 @@ void DKGraphPlannerNode::OsmParcing() {
     }
     wayTmp.first_node_id = wayTmp.nodes[0].id;
     wayTmp.last_node_id = wayTmp.nodes[wayTmp.nodes.size() - 1].id;
-    wayTmp.cost = sqrt(
-        pow(wayTmp.nodes[0].x - wayTmp.nodes[wayTmp.nodes.size() - 1].x, 2) +
-        pow(wayTmp.nodes[0].y - wayTmp.nodes[wayTmp.nodes.size() - 1].y, 2));
+    wayTmp.cost = INF;
 
     // Tags
     for (pugi::xml_node tag : way.children("tag")) {
@@ -207,371 +201,278 @@ void DKGraphPlannerNode::OsmParcing() {
         wayTmp.end_node = tag.attribute("v").as_int();
       }
     }
-
     m_OsmParcer.ways.push_back(wayTmp);
   }
 
   m_FullIndexedPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
+  m_FullNodeIDPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
   for (auto node : m_OsmParcer.nodes) {
     pcl::PointXYZI current_point;
     current_point.x = node.x;
     current_point.y = node.y;
-    current_point.z = node.z;
     current_point.intensity = node.start_layer;
     m_FullIndexedPoints->points.push_back(current_point);
+
+    pcl::PointXYZI node_id_point;
+    node_id_point.x = node.x;
+    node_id_point.y = node.y;
+    node_id_point.intensity = node.id;
+    m_FullNodeIDPoints->points.push_back(node_id_point);
   }
+
+  m_FirstNodeContainPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
+  for (auto wayTmp : m_OsmParcer.ways) {
+    for (auto node : wayTmp.nodes)
+    {
+      pcl::PointXYZI node_id_point;
+      node_id_point.x = node.x;
+      node_id_point.y = node.y;
+      node_id_point.intensity = wayTmp.first_node_id;
+      m_FirstNodeContainPoints->points.push_back(node_id_point);
+    }
+  }
+
+  for(auto wayRegister : m_OsmParcer.ways) {
+    m_WaysResister[wayRegister.start_layer].push_back(wayRegister);
+    m_FirstNodeBasedResister[wayRegister.first_node_id].push_back(wayRegister);
+  }
+
 
   RCLCPP_INFO(this->get_logger(),
               "Converting OSM file to the ros system is completed!");
   RCLCPP_INFO(this->get_logger(), "------------------------------------");
   RCLCPP_INFO(this->get_logger(), "node size: %d" , m_OsmParcer.nodes.size());
   RCLCPP_INFO(this->get_logger(), "way size: %d" , m_OsmParcer.ways.size());
+  RCLCPP_INFO(this->get_logger(), "layer size: %d", m_WaysResister.size());
 
   bParcingComplete = true;
 }
 
 void DKGraphPlannerNode::RacingLineParcing()
 {
-  m_racingLine_points.reset(new pcl::PointCloud<pcl::PointXYZI>());
+  m_racingLineRefPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
 
   std::vector<std::pair<std::string, std::vector<double>>> result = read_csv(m_RacingTrajectory);
 
-  for (int i = 0; i < result[0].second.size(); i++) {
+  int start_layer, end_layer, start_node, end_node;
+  double distance;
+
+  int layer_start = -1;
+  for (int i = 0; i < result[0].second.size()-1; i++) {
     pcl::PointXYZI point_buf;
     point_buf.x = result[1].second[i];
-    point_buf.y = result[2].second[i];
+    point_buf.y = result[2].second[i];        
     point_buf.intensity = i;
-    m_racingLine_points->points.push_back(point_buf);
+    m_racingLineRefPoints->points.push_back(point_buf);
+
+    // if (distance < 0.2)
+    // {
+    //   std::pair<int, std::pair<int, int>> layer_node; //layer - (start_node , end_node)
+    //   layer_node.first = start_layer; 
+
+    //   std::pair<int, int> node_pair;
+    //   node_pair.first = start_node;
+    //   node_pair.second = end_node;
+    //   layer_node.second = node_pair;  
+
+    //   if(layer_start != start_layer)
+    //   {
+    //     m_RacingLineGraphArray.push_back(layer_node);
+    //     layer_start = start_layer;
+    //   }
+    // }
   }
+  double max_cost = 0.0;
+  for(int i = 0; i < m_OsmParcer.ways.size(); i++)
+  {
+    auto way = m_OsmParcer.ways[i];
+    double cost_sum = 0.0;
+    for(auto node : way.nodes)
+    {
+      double dist = getClosestDistance(node.x, node.y, m_racingLineRefPoints);
+      cost_sum += dist;
+    }
+    // size_t node_size = way.nodes.size(); 
+    // double first_node_dist = getClosestDistance(way.nodes[0].x, way.nodes[0].y, m_racingLineRefPoints);
+    // double last_node_dist = getClosestDistance(way.nodes[node_size-1].x, way.nodes[node_size-1].y,
+    //                                             m_racingLineRefPoints);
+
+    // cost_sum = first_node_dist + last_node_dist;
+    m_OsmParcer.ways[i].cost = cost_sum;
+    if (max_cost < cost_sum)
+      max_cost = cost_sum;
+  }
+  // normalize cost : distance from the racing line
+  for (int i = 0; i < m_OsmParcer.ways.size(); i++) {
+    m_OsmParcer.ways[i].cost = m_OsmParcer.ways[i].cost / max_cost;
+    // std::cout << m_OsmParcer.ways[i].cost << ", " << max_cost << std::endl;
+  }
+  // std::cout << cost_sum << std::endl;
 
   RCLCPP_INFO(this->get_logger(), "------------------------------------");
   RCLCPP_INFO(this->get_logger(),
               "Racing line is loaded!");
-  RCLCPP_INFO(this->get_logger(), "racing line size: %d" , m_racingLine_points->points.size());
+  RCLCPP_INFO(this->get_logger(), "racing line size: %d" , m_racingLineRefPoints->points.size());
 
   bRacingLine = true;
 }
 
 void DKGraphPlannerNode::CallbackOdometry(const nav_msgs::msg::Odometry::SharedPtr msg) 
 {
-  double veh_x = msg->pose.pose.position.x;
-  double veh_y = msg->pose.pose.position.y;
-  int first_layer, end_layer, start_node;
-  SearchGraph(veh_x, veh_y, first_layer, end_layer, start_node);
-  //   std::lock_guard<std::mutex> lock(mtx);
-  //   m_InitPose = msg.pose.pose;
-  //   m_Odometry = msg;
-  //   double minimumDistance = INF;
-  //   int closestNodeId = 0;
+  std::lock_guard<std::mutex> lock(mtx);
 
-  //   bInitPose = true;
+  if (bRacingLine && bParcingComplete) {
 
-  //   if (!bReplanRoute)
-  //     return;
+    m_veh_x = msg->pose.pose.position.x;
+    m_veh_y = msg->pose.pose.position.y;
+    tf2::Quaternion tf_quat;
+    tf2::convert(msg->pose.pose.orientation, tf_quat);
+    tf2::Matrix3x3 mat(tf_quat);
+    mat.getRPY(m_veh_roll, m_veh_pitch, m_veh_yaw);
 
-  //   if (bParcingComplete) {
-  //     double bias, normal_distance;
-  //     double min_distance = INF;
-  //     int minWayIndex = 0;
-  //     int minNodeIndex = 0;
-  //     std::string minWayITS;
-  //     for (auto way : m_OsmParcer.ways) {
-  //       bool first_node = true;
-  //       double prev_x, prev_y;
-  //       for (auto node : way.nodes) {
-  //         // double cost_distance = sqrt(pow(node.x -
-  //         msg.pose.pose.position.x, 2) +
-  //         //                             pow(node.y -
-  //         msg.pose.pose.position.y, 2));
+    double m_closest_x_in_racing_line, m_closest_y_in_racing_line;
+  
+    // // get target index from reference racing points
+    int current_idx;
+    GetIntensityInfo(m_veh_x, m_veh_y, m_racingLineRefPoints,
+                     m_closest_x_in_racing_line,
+                     m_closest_y_in_racing_line, 
+                     current_idx);
+    int current_node_id;
+    // get node id for planing
+    // Path from vehicle
+    int current_layer_for_starting_node;
+    GetIntensityInfo(m_veh_x, m_veh_y, m_FullIndexedPoints,
+                     current_layer_for_starting_node); // to get current layer
+    int prev_layer_for_starting_node = current_layer_for_starting_node -1 + m_WaysResister.size();
+    prev_layer_for_starting_node = prev_layer_for_starting_node % m_WaysResister.size();
+    // for (int i = 0; i < search_num_idx_in; i++) {
+    //   int layer_idx = current_layer_out + i;
+    //   if (layer_idx > layer_size)
+    //     layer_idx = layer_idx % layer_size;
 
-  //         // if (cost_distance > 100) {
-  //         //   continue;
-  //         // }
+    for (auto way : m_WaysResister[prev_layer_for_starting_node]) {
+      if(way.start_node == 2)
+        current_node_id= way.first_node_id;
+    }
+    // std::cout << current_node_id << std::endl;
 
-  //         if (first_node) {
-  //           prev_x = node.x;
-  //           prev_y = node.y;
-  //           first_node = false;
-  //           continue;
-  //         }
+    // GetIntensityInfo(m_veh_x, m_veh_y, m_FirstNodeContainPoints, current_node_id); // to get current first node id
+    
+    // Path from racing line
+    // GetIntensityInfo(m_closest_x_in_racing_line, m_closest_y_in_racing_line,
+    //                  m_FirstNodeContainPoints, current_node_id);
+    
+    // put prev best first node as closest start node
+    // std::cout << "original : " << current_node_id << std::endl;
+    // for (auto ways_with_same_first_node_id : m_FirstNodeBasedResister[current_node_id])
+    // {
+    //   int layer_id = ways_with_same_first_node_id.start_layer;
+    //   for (auto ways_with_same_layer : m_WaysResister[layer_id])
+    //   {
+    //     if (ways_with_same_layer.end_node == m_prevBestEndNodeInLayer)
+    //     {
+    //       current_node_id = ways_with_same_layer.first_node_id;
+    //       break;
+    //     }
+    //   }
+    // }
+    // // std::cout << "after : " << current_node_id << std::endl;
 
-  //         double slope;
-  //         if (node.x - prev_x == 0) {
-  //           slope = 0;
-  //         } else {
-  //           slope = (node.y - prev_y) / (node.x - prev_x);
-  //         }
-  //         bias = node.y - slope * node.x;
-  //         normal_distance = fabs(slope * msg.pose.pose.position.x -
-  //                                msg.pose.pose.position.y + bias) /
-  //                           sqrt(pow(slope, 2) + 1);
+    // if(m_prevStartFirstNodeId != -1)
+    //   current_node_id = m_prevStartFirstNodeId;
 
-  //         double prev_distance = sqrt(pow(prev_x - msg.pose.pose.position.x,
-  //         2) +
-  //                                     pow(prev_y - msg.pose.pose.position.y,
-  //                                     2));
-  //         double prev_to_node =
-  //             sqrt(pow(node.x - prev_x, 2) + pow(node.y - prev_y, 2));
+    m_closestStartNode = current_node_id;
 
-  //         double prod1 = (msg.pose.pose.position.x - prev_x) * (node.x -
-  //         prev_x) +
-  //                        (msg.pose.pose.position.y - prev_y) * (node.y -
-  //                        prev_y);
-  //         double prod2 = (msg.pose.pose.position.x - node.x) * (prev_x -
-  //         node.x) +
-  //                        (msg.pose.pose.position.y - node.y) * (prev_y -
-  //                        node.y);
+    double target_x_in_racing_line, target_y_in_racing_line;
+    int target_idx = current_idx + 60;
+    int target_node_id;
+    size_t racingLineRefSize = m_racingLineRefPoints->points.size();
+    target_idx = target_idx % racingLineRefSize;
 
-  //         if (prod1 < 0 || prod2 < 0)
-  //           continue;
+    target_x_in_racing_line = m_racingLineRefPoints->points[target_idx].x;
+    target_y_in_racing_line = m_racingLineRefPoints->points[target_idx].y;
+    GetIntensityInfo(target_x_in_racing_line, target_y_in_racing_line, m_FirstNodeContainPoints, target_node_id);
+    m_closestGoalNode = target_node_id;
 
-  //         if (normal_distance < min_distance) {
-  //           min_distance = normal_distance;
-  //           minWayIndex = way.id;
-  //           minWayITS = way.ITScurrentLinkID;
-  //           minNodeIndex = node.id;
-  //         }
-  //         prev_x = node.x;
-  //         prev_y = node.y;
-  //       }
-  //     }
+    m_nearbyFirstNodes.clear();
+    int search_num_idx = 10;
+    int current_layer;
+    getNearbyNodesFromLayer(
+        m_veh_x, m_veh_y, search_num_idx, m_FullIndexedPoints, current_layer,
+        m_nearbyFirstNodes);
 
-  //     m_closestWayId_start = m_Resister[minWayIndex].id;
-  //     if(!m_Resister[minWayIndex].nodes.empty())
-  //       m_closestStartNode = m_Resister[minWayIndex].nodes[0].id;
+    m_currentLayer = current_layer;
 
-  //     geometry_msgs::PoseArray StartWayPoseArray;
-  //     StartWayPoseArray.header = msg.header;
-  //     for (auto node : m_Resister[minWayIndex].nodes) {
-  //       geometry_msgs::Pose poseTmp;
-  //       poseTmp.position.x = node.x;
-  //       poseTmp.position.y = node.y;
-  //       poseTmp.position.z = 36.5;
-  //       poseTmp.orientation = tf::createQuaternionMsgFromRollPitchYaw(
-  //           0.0, 0.0, node.heading * M_PI / 180);
-  //       StartWayPoseArray.poses.push_back(poseTmp);
-  //     }
-  //     pubStartWay.publish(StartWayPoseArray);
-  //     std::cout << "-----------Odom POSE INFO-----------" << std::endl;
-  //     std::cout << "minWayITS: "<< minWayITS  << std::endl;
+    // std::cout << "------\n" ;
+    // std::cout << "m_currentLayer : " << m_currentLayer << std::endl;
+    // std::cout << "m_prevFirstLayer : " << m_prevFirstLayer << std::endl;
+    // std::cout << "m_prevBestFirstNodeInLayer : " << m_prevBestFirstNodeInLayer << std::endl;
+    // std::cout << "m_prevBestEndNodeInLayer : "<< m_prevBestEndNodeInLayer << std::endl;
 
-  //     bReplanRoute = false;
-  //   } else {
-  //     ROS_WARN("Map was not loaded yet. please wait for map loading...");
-  //   }
-  // }
+    // for (auto node : m_nearbyFirstNodes)
+    //   std::cout << node << std::endl;
+    // std::cout << "m_nearbyFirstNodes.size() : " <<
+    // m_nearbyFirstNodes.size()
+    //           << std::endl;
 
-  // void DKGraphPlannerNode::CallbackInitPoseRviz(
-  //     const geometry_msgs::PoseWithCovarianceStamped &msg) {
-  //   std::lock_guard<std::mutex> lock(mtx);
-  //   m_InitPose = msg.pose.pose;
-  //   bInitPose = true;
-
-  //   RCLCPP_INFO(this->get_logger(), "New init pose is received! Searching for
-  //   nearest way"); double minimumDistance = INF; int closestNodeId = 0;
-
-  //   if (bParcingComplete) {
-  //     double bias, normal_distance;
-  //     double min_distance = INF;
-  //     int minWayIndex = 0;
-  //     int minNodeIndex = 0;
-  //     for (auto way : m_OsmParcer.ways) {
-  //       bool first_node = true;
-  //       double prev_x, prev_y;
-  //       for (auto node : way.nodes) {
-  //         double cost_distance = sqrt(pow(node.x - msg.pose.pose.position.x,
-  //         2) +
-  //                                     pow(node.y - msg.pose.pose.position.y,
-  //                                     2));
-
-  //         if (cost_distance > 100) {
-  //           continue;
-  //         }
-
-  //         if (first_node) {
-  //           prev_x = node.x;
-  //           prev_y = node.y;
-  //           first_node = false;
-  //           continue;
-  //         }
-
-  //         double slope;
-  //         if (node.x - prev_x == 0) {
-  //           slope = 0;
-  //         } else {
-  //           slope = (node.y - prev_y) / (node.x - prev_x);
-  //         }
-  //         bias = node.y - slope * node.x;
-  //         normal_distance = fabs(slope * msg.pose.pose.position.x -
-  //                                msg.pose.pose.position.y + bias) /
-  //                           sqrt(pow(slope, 2) + 1);
-
-  //         double prev_distance = sqrt(pow(prev_x - msg.pose.pose.position.x,
-  //         2) +
-  //                                     pow(prev_y - msg.pose.pose.position.y,
-  //                                     2));
-  //         double prev_to_node =
-  //             sqrt(pow(node.x - prev_x, 2) + pow(node.y - prev_y, 2));
-
-  //         double prod1 = (msg.pose.pose.position.x - prev_x) * (node.x -
-  //         prev_x) +
-  //                        (msg.pose.pose.position.y - prev_y) * (node.y -
-  //                        prev_y);
-  //         double prod2 = (msg.pose.pose.position.x - node.x) * (prev_x -
-  //         node.x) +
-  //                        (msg.pose.pose.position.y - node.y) * (prev_y -
-  //                        node.y);
-
-  //         if (prod1 < 0 || prod2 < 0)
-  //           continue;
-
-  //         if (normal_distance < min_distance) {
-  //           min_distance = normal_distance;
-  //           minWayIndex = way.id;
-  //           minNodeIndex = node.id;
-  //         }
-  //         prev_x = node.x;
-  //         prev_y = node.y;
-  //       }
-  //     }
-
-  //     m_closestWayId_start = m_Resister[minWayIndex].id;
-  //     if(!m_Resister[minWayIndex].nodes.empty())
-  //       m_closestStartNode = m_Resister[minWayIndex].nodes[0].id;
-
-  //     geometry_msgs::PoseArray StartWayPoseArray;
-  //     StartWayPoseArray.header = msg.header;
-  //     for (auto node : m_Resister[minWayIndex].nodes) {
-  //       geometry_msgs::Pose poseTmp;
-  //       poseTmp.position.x = node.x;
-  //       poseTmp.position.y = node.y;
-  //       poseTmp.position.z = 36.5;
-  //       poseTmp.orientation = tf::createQuaternionMsgFromRollPitchYaw(
-  //           0.0, 0.0, node.heading * M_PI / 180);
-  //       StartWayPoseArray.poses.push_back(poseTmp);
-  //     }
-  //     pubStartWay.publish(StartWayPoseArray);
-
-  //     std::cout << "-----------INIT POSE INFO-----------" << std::endl;
-  //     std::cout << "closest node Id : " << minNodeIndex
-  //               << ", distance: " << min_distance << std::endl;
-  //     std::cout << "closest way Id : " << m_closestWayId_start << "\n"
-  //               << std::endl;
-  //   } else {
-  //     ROS_WARN("Map was not loaded yet. please wait for map loading...");
-  //   }
+    bOdometry = true;
+  }
 }
 
-// void DKGraphPlannerNode::timerCallback(const ros::TimerEvent &event) {}
+void DKGraphPlannerNode::CallbackOccupancyGrid(const nav_msgs::msg::OccupancyGrid::SharedPtr msg) 
+{
+  m_OccupancyGrid = *msg;
+  bOccupancyGrid = true;
+}
 
-// void DKGraphPlannerNode::CallbackGoalRviz(const geometry_msgs::PoseStamped &msg) {
-//   m_GoalPose = msg.pose;
-//   bGoalPose = true;
+void DKGraphPlannerNode::CallbackCostPoints(
+    const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
+  m_InflatedCostPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
+  pcl::fromROSMsg(*msg, *m_InflatedCostPoints);
+  bInflatedPoints = true;
+}
 
-//   RCLCPP_INFO(this->get_logger(), "New goal pose is received! Navigating to the goal pose.");
-//   double minimumDistance = INF;
-//   int closestNodeId = 0;
+void DKGraphPlannerNode::CallbackClusterCenterPoints(
+    const sensor_msgs::msg::PointCloud2::SharedPtr msg)
+{
+  m_ClusterCenterPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
+  pcl::fromROSMsg(*msg, *m_ClusterCenterPoints);
+  bCenteredPoints = true;
+}
 
-//   if (m_PrevGoalPose.position == msg.pose.position) {
-//     return;
-//   } else {
-//     bReplanRoute = true;
-//     RCLCPP_INFO(this->get_logger(), "New goal point!, X: %f, Y: %f", msg.pose.position.x,
-//              msg.pose.position.y);
-//   }
-//   if (bParcingComplete) {
-//     double bias, normal_distance;
-//     double min_distance = INF;
-//     int minWayIndex = 0;
-//     int minNodeIndex = 0;
-//     for (auto way : m_OsmParcer.ways) {
-//       bool first_node = true;
-//       double prev_x, prev_y;
-//       for (auto node : way.nodes) {
+void DKGraphPlannerNode::CallbackWallPoints(
+    const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
+  m_WallPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
+  pcl::PointCloud<pcl::PointXYZI>::Ptr in_points(new pcl::PointCloud<pcl::PointXYZI>);
+  pcl::PointCloud<pcl::PointXYZI>::Ptr projected_points(
+      new pcl::PointCloud<pcl::PointXYZI>);
 
-//         if (first_node) {
-//           prev_x = node.x;
-//           prev_y = node.y;
-//           first_node = false;
-//           continue;
-//         }
+  pcl::fromROSMsg(*msg, *in_points);
+  for(auto point : in_points->points)
+  {
+    pcl::PointXYZI point_buf;
+    point_buf.x = point.x;
+    point_buf.y = point.y;
+    projected_points->points.push_back(point_buf);
+  }
+  m_WallPoints = downsample(projected_points, 1.0);
 
-//         double slope;
-//         if (node.x - prev_x == 0) {
-//           slope = 0;
-//         } else {
-//           slope = (node.y - prev_y) / (node.x - prev_x);
-//         }
-//         bias = node.y - slope * node.x;
-//         normal_distance =
-//             fabs(slope * msg.pose.position.x - msg.pose.position.y + bias) /
-//             sqrt(pow(slope, 2) + 1);
-
-//         double prev_distance = sqrt(pow(prev_x - msg.pose.position.x, 2) +
-//                                     pow(prev_y - msg.pose.position.y, 2));
-//         double prev_to_node =
-//             sqrt(pow(node.x - prev_x, 2) + pow(node.y - prev_y, 2));
-
-//         double prod1 = (msg.pose.position.x - prev_x) * (node.x - prev_x) +
-//                        (msg.pose.position.y - prev_y) * (node.y - prev_y);
-//         double prod2 = (msg.pose.position.x - node.x) * (prev_x - node.x) +
-//                        (msg.pose.position.y - node.y) * (prev_y - node.y);
-
-//         if (prod1 < 0 || prod2 < 0)
-//           continue;
-
-//         if (normal_distance < min_distance) {
-//           min_distance = normal_distance;
-//           minWayIndex = way.id;
-//           minNodeIndex = node.id;
-//         }
-//         prev_x = node.x;
-//         prev_y = node.y;
-//       }
-//     }
-
-//     m_closestWayId_goal = minWayIndex; //m_Resister[minWayIndex].id;
-//     if(!m_Resister[minWayIndex].nodes.empty())
-//       m_closestGoalNode = m_Resister[minWayIndex].nodes[m_Resister[minWayIndex].nodes.size()-1].id;
-
-//     geometry_msgs::PoseArray GoalWayPoseArray;
-//     GoalWayPoseArray.header = msg.header;
-//     for (auto node : m_Resister[minWayIndex].nodes) {
-//       geometry_msgs::Pose poseTmp;
-//       poseTmp.position.x = node.x;
-//       poseTmp.position.y = node.y;
-//       poseTmp.position.z = 36.5;
-//       poseTmp.orientation = tf::createQuaternionMsgFromRollPitchYaw(
-//           0.0, 0.0, node.heading * M_PI / 180);
-//       GoalWayPoseArray.poses.push_back(poseTmp);
-
-//     }
-//     pubGoalWay.publish(GoalWayPoseArray);
-
-//     std::cout << "-----------GOAL POSE INFO-----------" << std::endl;
-//     std::cout << "closest node Id : " << minNodeIndex
-//               << ", distance: " << min_distance << std::endl;
-//     std::cout << "closest way Id : " << m_closestWayId_goal << "\n"
-//               << std::endl;
-
-//     m_PrevGoalPose = msg.pose;
-
-//   } else {
-//     ROS_WARN("Map was not loaded yet. please wait for map loading...");
-//   }
-// }
+  bWallPoints = true;
+}
 
 void DKGraphPlannerNode::timer_callback() {
-  if (bRacingLine && bParcingComplete)
-  {
+  if (bRacingLine && bParcingComplete && bBuildGraph) {
 
-    //   m_OsmParcer.header.frame_id = "map";
-    //   m_OsmParcer.header.stamp = ros::Time::now();
-    //   pubOsmParcer.publish(m_OsmParcer);
-    //   Planning();
+    // if (bWallPoints) {
+    //   m_WallInflatedCostPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
+    //   createGaussianWorld(m_WallPoints, 5.0, 5.0, m_WallInflatedCostPoints);
+    //   bWallInflated = true;
+    // }
 
     MessagePublisher();
-  //   ToPathMsg();
+    Planning();
+    ToPathMsg();
   }
 }
 
@@ -585,27 +486,42 @@ void DKGraphPlannerNode::MessagePublisher() {
 
   // racing line publisher
   sensor_msgs::msg::PointCloud2 RacingLineCloudMsg;
-  pcl::toROSMsg(*m_racingLine_points, RacingLineCloudMsg);
+  pcl::toROSMsg(*m_racingLineRefPoints, RacingLineCloudMsg);
   RacingLineCloudMsg.header.frame_id = nif::common::frame_id::localization::ODOM;
   RacingLineCloudMsg.header.stamp = this->now();
-  pubRacingLinePoints->publish(RacingLineCloudMsg);
+  pubRacingLineRefPoints->publish(RacingLineCloudMsg);
+
+  // first node info publisher
+  sensor_msgs::msg::PointCloud2 FirstNodeInfoCloudMsg;
+  pcl::toROSMsg(*m_FirstNodeContainPoints, FirstNodeInfoCloudMsg);
+  FirstNodeInfoCloudMsg.header.frame_id = nif::common::frame_id::localization::ODOM;
+  FirstNodeInfoCloudMsg.header.stamp = this->now();
+  pubFirstNodeContainPoints->publish(FirstNodeInfoCloudMsg);
+
+  if (bWallInflated) {
+    sensor_msgs::msg::PointCloud2 WallInflatedCloudMsg;
+    pcl::toROSMsg(*m_WallInflatedCostPoints, WallInflatedCloudMsg);
+    WallInflatedCloudMsg.header.frame_id =
+        nif::common::frame_id::localization::BASE_LINK;
+    WallInflatedCloudMsg.header.stamp = this->now();
+    pubWallInflatedPoints->publish(WallInflatedCloudMsg);
+  }
 }
 
-void DKGraphPlannerNode::SearchGraph(const double &x_in, const double &y_in,
-                                     int &start_layer_out, int &end_layer_out,
-                                     int &node_out) 
-{
-  if (!bParcingComplete)
+void DKGraphPlannerNode::GetIntensityInfo(
+    const double &x_in, const double &y_in,
+    pcl::PointCloud<pcl::PointXYZI>::Ptr in_points, int &intensity_out) {
+  if (in_points->points.empty())
     return;
 
   pcl::KdTreeFLANN<pcl::PointXYZI> kdtree;
-  kdtree.setInputCloud(m_FullIndexedPoints);
+  kdtree.setInputCloud(in_points);
 
   pcl::PointXYZI searchPoint;
   searchPoint.x = x_in;
   searchPoint.y = y_in;
 
-  int K = 1; 
+  int K = 1;
   std::vector<int> pointIdxNKNSearch(K);
   std::vector<float> pointNKNSquaredDistance(K);
 
@@ -613,813 +529,494 @@ void DKGraphPlannerNode::SearchGraph(const double &x_in, const double &y_in,
   if (kdtree.nearestKSearch(searchPoint, K, pointIdxNKNSearch,
                             pointNKNSquaredDistance) > 0) {
     for (size_t i = 0; i < pointIdxNKNSearch.size(); ++i) {
-      nearest_x_in_points = m_FullIndexedPoints->points[pointIdxNKNSearch[i]].x;
-      nearest_y_in_points = m_FullIndexedPoints->points[pointIdxNKNSearch[i]].y;
-      start_layer_out = m_FullIndexedPoints->points[pointIdxNKNSearch[i]].intensity;
+      nearest_x_in_points = in_points->points[pointIdxNKNSearch[i]].x;
+      nearest_y_in_points = in_points->points[pointIdxNKNSearch[i]].y;
+      intensity_out = in_points->points[pointIdxNKNSearch[i]].intensity;
     }
   }
-  std::cout << "info : " << start_layer_out << ": " << nearest_x_in_points << ", " << nearest_y_in_points << std::endl;
 }
 
-// bool DKGraphPlannerNode::ExistInList(int id, std::vector<int> list)
-// {
-//   bool exist = false;
-//   for(auto scan : list)
-//   {
-//     if(scan == id)
-//     {
-//       exist = true;
-//       break;
-//     }
-//   }
-//   // bool checkWpt = ExistInList(way.id, m_GoalXY_to_way_id_List);
+void DKGraphPlannerNode::GetIntensityInfo(
+    const double &x_in, const double &y_in,
+    pcl::PointCloud<pcl::PointXYZI>::Ptr in_points, double &intensity_out) {
+  if(in_points->points.empty())
+    return;
 
-//   return exist;
-// }
+  pcl::KdTreeFLANN<pcl::PointXYZI> kdtree;
+  kdtree.setInputCloud(in_points);
 
-// void DKGraphPlannerNode::Planning() {
-//   if (bInitPose && bGoalPose) {
-//     int V, E;
+  pcl::PointXYZI searchPoint;
+  searchPoint.x = x_in;
+  searchPoint.y = y_in;
 
-//     V = m_OsmParcer.nodes.size(); // the number of node
-//     E = m_OsmParcer.ways.size();  // the number of way
-//     m_graph.clear();
-//     m_PlanningPathNodes.clear();
-//     // Build a graph.
-//     for (auto way : m_OsmParcer.ways) {
+  int K = 1;
+  std::vector<int> pointIdxNKNSearch(K);
+  std::vector<float> pointNKNSquaredDistance(K);
+
+  double nearest_x_in_points, nearest_y_in_points;
+  if (kdtree.nearestKSearch(searchPoint, K, pointIdxNKNSearch,
+                            pointNKNSquaredDistance) > 0) {
+    for (size_t i = 0; i < pointIdxNKNSearch.size(); ++i) {
+      nearest_x_in_points = in_points->points[pointIdxNKNSearch[i]].x;
+      nearest_y_in_points = in_points->points[pointIdxNKNSearch[i]].y;
+      intensity_out = in_points->points[pointIdxNKNSearch[i]].intensity;
+    }
+  }
+}
+
+void DKGraphPlannerNode::GetIntensityInfo(
+    const double &x_in, const double &y_in,
+    pcl::PointCloud<pcl::PointXYZI>::Ptr in_points,
+    double &nearest_x_in_points_out, double &nearest_y_in_points_out,
+    int &intensity_out) {
+  if (in_points->points.empty())
+    return;
+
+  pcl::KdTreeFLANN<pcl::PointXYZI> kdtree;
+  kdtree.setInputCloud(in_points);
+
+  pcl::PointXYZI searchPoint;
+  searchPoint.x = x_in;
+  searchPoint.y = y_in;
+
+  int K = 1;
+  std::vector<int> pointIdxNKNSearch(K);
+  std::vector<float> pointNKNSquaredDistance(K);
+
+  double nearest_x_in_points, nearest_y_in_points;
+  if (kdtree.nearestKSearch(searchPoint, K, pointIdxNKNSearch,
+                            pointNKNSquaredDistance) > 0) {
+    for (size_t i = 0; i < pointIdxNKNSearch.size(); ++i) {
+      nearest_x_in_points = in_points->points[pointIdxNKNSearch[i]].x;
+      nearest_y_in_points = in_points->points[pointIdxNKNSearch[i]].y;
+      intensity_out = in_points->points[pointIdxNKNSearch[i]].intensity;
+    }
+  }
+  nearest_x_in_points_out = nearest_x_in_points;
+  nearest_y_in_points_out = nearest_y_in_points;
+}
+
+double DKGraphPlannerNode::getClosestDistance(
+    const double &x_in, const double &y_in,
+    pcl::PointCloud<pcl::PointXYZI>::Ptr points_in) {
+
+  if (points_in->points.empty())
+    return 0.;
+
+  pcl::KdTreeFLANN<pcl::PointXYZI> kdtree;
+  kdtree.setInputCloud(points_in);
+
+  pcl::PointXYZI searchPoint;
+  searchPoint.x = x_in;
+  searchPoint.y = y_in;
+
+  int K = 1;
+  std::vector<int> pointIdxNKNSearch(K);
+  std::vector<float> pointNKNSquaredDistance(K);
+
+  double nearest_x_in_points, nearest_y_in_points;
+  if (kdtree.nearestKSearch(searchPoint, K, pointIdxNKNSearch,
+                            pointNKNSquaredDistance) > 0) {
+    for (size_t i = 0; i < pointIdxNKNSearch.size(); ++i) {
+      nearest_x_in_points = points_in->points[pointIdxNKNSearch[i]].x;
+      nearest_y_in_points = points_in->points[pointIdxNKNSearch[i]].y;
+    }
+  }
+  double distance = sqrt(pow(nearest_x_in_points - x_in, 2) +
+                         pow(nearest_y_in_points - y_in, 2));
+  
+  return distance;
+}
+
+void DKGraphPlannerNode::getNearbyNodesFromLayer(
+    const double &x_in, const double &y_in, const int &search_num_idx_in,
+    pcl::PointCloud<pcl::PointXYZI>::Ptr points_in,
+    int& current_layer_out, std::vector<int> &nearby_indice_out) {
+
+  if (!bParcingComplete)
+    return;
+
+  if (points_in->points.empty())
+    return;
+
+  pcl::KdTreeFLANN<pcl::PointXYZI> kdtree;
+  kdtree.setInputCloud(points_in);
+
+  pcl::PointXYZI searchPoint;
+  searchPoint.x = x_in;
+  searchPoint.y = y_in;
+
+  int K = 1;
+  int current_layer;
+  std::vector<int> pointIdxNKNSearch(K);
+  std::vector<float> pointNKNSquaredDistance(K);
+  double nearest_x_in_points, nearest_y_in_points;
+  if (kdtree.nearestKSearch(searchPoint, K, pointIdxNKNSearch,
+                            pointNKNSquaredDistance) > 0) {
+    for (size_t i = 0; i < pointIdxNKNSearch.size(); ++i) {
+      nearest_x_in_points = points_in->points[pointIdxNKNSearch[i]].x;
+      nearest_y_in_points = points_in->points[pointIdxNKNSearch[i]].y;
+      current_layer = points_in->points[pointIdxNKNSearch[i]].intensity;
+    }
+  }
+  current_layer_out = current_layer;
+
+  int layer_size = m_WaysResister.size();
+  for(int i = 0; i < search_num_idx_in; i++)
+  {
+    int layer_idx = current_layer_out + i;
+    if(layer_idx > layer_size)
+      layer_idx = layer_idx % layer_size;
+
+    for (auto way : m_WaysResister[layer_idx]) {
+      nearby_indice_out.push_back(way.first_node_id);
+    }
+  }
+
+  removeDuplicated(nearby_indice_out);
+}
+
+void DKGraphPlannerNode::BuildGraph()
+{
+  int V, E;
+  V = m_OsmParcer.nodes.size(); // the number of node
+  E = m_OsmParcer.ways.size();  // the number of way
+  m_graph.clear();
+
+  // Build a graph.
+  for (auto way : m_OsmParcer.ways) {
+    Connected connected_;
+    connected_.id = way.last_node_id;
+    connected_.cost = way.cost;
+    connected_.additional_cost = 0;
+    m_graph[way.first_node_id].push_back(connected_);
+  }
+  bBuildGraph = true;
+
+  RCLCPP_INFO(this->get_logger(), "------------------------------------");
+  RCLCPP_INFO(this->get_logger(), "Graph is build!");
+  RCLCPP_INFO(this->get_logger(), "graph size: %d", m_graph.size());
+}
+
+void DKGraphPlannerNode::UpdateGraph()
+{
+  if(!bInflatedPoints || !bCenteredPoints)
+    return;
+
+  if (!bOdometry)
+    return;
+
+  // std::cout << "--------update graph----------\n";
+  int count = 0;
+  m_CostPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
+  for (auto nearbyNode : m_nearbyFirstNodes) {
+    // std::cout << "----------------------\n";
+    for (int i =0; i < m_FirstNodeBasedResister[nearbyNode].size(); i++)
+    {
+      auto way = m_FirstNodeBasedResister[nearbyNode][i];
+      double cost_accumulated = 0;
+      double cost_transient = abs(way.end_node - m_BestLayerArray[way.start_layer]) * 0.4;
+      for (auto node : way.nodes) {
+        double pt_x_global = node.x;
+        double pt_y_global = node.y;
+
+        //global to local
+        double pt_x_body = (pt_x_global - m_veh_x) * cos(m_veh_yaw) +
+                           (pt_y_global - m_veh_y) * sin(m_veh_yaw);
+        double pt_y_body = -(pt_x_global - m_veh_x) * sin(m_veh_yaw) +
+                           (pt_y_global - m_veh_y) * cos(m_veh_yaw);
+
+        // double cost = CorrespondingCost(pt_x_body, pt_y_body, m_OccupancyGrid);
+        double cost =
+            CorrespondingCost(pt_x_body, pt_y_body, 3.0, m_ClusterCenterPoints,
+                              m_InflatedCostPoints) * 10;
+
+        double wall_cost = 0.;
+        // if (bWallInflated)
+        // {
+        //   wall_cost = CorrespondingCost(pt_x_body, pt_y_body, 5.0, m_WallPoints,
+        //                                 m_WallInflatedCostPoints);
+        // }
+        cost_accumulated += cost + wall_cost;
+        count++;
+
+        pcl::PointXYZI pointbuf;
+        pointbuf.x = pt_x_global;
+        pointbuf.y = pt_y_global;
+        pointbuf.intensity = cost + cost_transient;
+        m_CostPoints->points.push_back(pointbuf);
+      }
+
+      // std::cout << "cost_accumulated : " << cost_accumulated <<
+      // std::endl;
+      // if (cost_accumulated != 0.)
+      // {
+        // std::cout << "cost :" << way.cost << std::endl;
+        // std::cout << "cost_accumulated : " << cost_accumulated << std::endl;
+        // std::cout << "cost_transient : " << cost_transient << std::endl;
+      // }
       
-      
-//       Connected connected_;
-//       connected_.id = way.lastNodeId;
-//       connected_.cost = way.cost;
-//       m_graph[way.firstNodeId].push_back(connected_);
+      int j = 0;
+      for (auto graph : m_graph[nearbyNode])
+      {         
+        if (graph.id == way.last_node_id) {
+          m_graph[nearbyNode][j].additional_cost = cost_accumulated;
+          m_graph[nearbyNode][j].transient_cost = cost_transient;
+        }
+        j++;
+      }
+    }
+  }
 
-//       if (way.leftWayLastNodeId != 0) {
-//         Connected left;
-//         left.id = way.leftWayLastNodeId;
-//         left.cost = way.cost + 15;
-//         m_graph[way.firstNodeId].push_back(left);
-//       }
+  sensor_msgs::msg::PointCloud2 CostCloudMsg;
+  pcl::toROSMsg(*m_CostPoints, CostCloudMsg);
+  CostCloudMsg.header.frame_id = nif::common::frame_id::localization::ODOM;
+  CostCloudMsg.header.stamp = this->now();
+  pubCostPoints->publish(CostCloudMsg);
 
-//       if (way.rightWayLastNodeId != 0) {
-//         Connected right;
-//         right.id = way.rightWayLastNodeId;
-//         right.cost = way.cost + 15;
-//         m_graph[way.firstNodeId].push_back(right);
-//       }
-//     }
+}
 
-//     // Initialize the dist array with infinite values.
-//     std::unordered_map<int, double> dist;
-//     int path_index = 0;
-//     for (auto node : m_OsmParcer.nodes) {
-//       dist[node.id] = INF;
-//     }
-//     std::priority_queue<std::pair<int, int>, std::vector<std::pair<int, int>>,
-//                         std::greater<std::pair<int, int>>>
-//         qu;
+void DKGraphPlannerNode::ReleaseGraph()
+{
+  if (!bInflatedPoints || !bCenteredPoints)
+    return;
 
-//     qu.push({0, m_closestStartNode}); //우선순위 큐에 시작점을 넣어줍니다.
-//     dist[m_closestStartNode] = 0; // Update value of start point as 0
+  for (auto nearbyNode : m_nearbyFirstNodes) {
+    for (auto way : m_FirstNodeBasedResister[nearbyNode])
+      for (int i = 0; i < m_graph[nearbyNode].size(); i++) {
+        if (m_graph[nearbyNode][i].id == way.last_node_id) {
+          // m_graph[nearbyNode][i].cost = way.cost;
+          m_graph[nearbyNode][i].additional_cost = 0.;
+          m_graph[nearbyNode][i].transient_cost = 0.;
+      }
+    }
+  }
+}
 
-//     m_PredSuccMap.clear();
-//     while (!qu.empty()) {
+void DKGraphPlannerNode::Planning() {
+  std::lock_guard<std::mutex> lock(mtx);
 
-//       int cost = qu.top().first;  // cost : distance to next node
-//       int here = qu.top().second; // here : current node Id
+  // std::cout << "-----Planning----- " << std::endl;
+  current_time = static_cast<double>(this->now().seconds()) +
+                 static_cast<double>(this->now().nanoseconds()) * 1e-9;
+  // std::cout << "Time[sec] : " << current_time - prev_time << std::endl;
+  // std::cout << "Received Occupancy : " << bOccupancyGrid << std::endl;
+  // std::cout << "Received Oodmetry : " << bOdometry << std::endl;
 
-//       qu.pop();
+  UpdateGraph();
 
-//       m_PlanningPathNodes.push_back(here);
+  m_PlanningPathNodes.clear();
+  // Initialize the dist array with infinite values.
+  std::unordered_map<int, double> dist;
+  int path_index = 0;
+  for (auto node : m_OsmParcer.nodes) {
+    dist[node.id] = INF;
+  }
 
-//       if (here == m_closestGoalNode) {
-//         // std::cout << "path finding!" << std::endl;
-//         // m_PlanningPathNodes.pop_back();
-//         break;
-//       }
+    std::priority_queue<std::pair<double, int>, std::vector<std::pair<double, int>>,
+                        std::greater<std::pair<double, int>>>
+        qu;
 
-//       for (auto connected : m_graph[here]) {
-//         int next = connected.id;
-//         int nextcost = connected.cost;
+    qu.push({0., m_closestStartNode}); //Put init node in the que
+    dist[m_closestStartNode] = 0.; // Update value of start point as 0
+    // for(auto id : m_PlanningPat hNodes)
+    //   std::cout << "m_PredSuccMap: " <<m_PredSuccMap[id] << std::endl;
+    // std::cout << m_graph[m_closestStartNode].size() << std::endl;
 
-//         if (dist[next] > dist[here] + nextcost) {
-//           dist[next] = dist[here] + nextcost;
-//           qu.push({dist[next], next});
-//           m_PredSuccMap[next] = here;
-//         }
-//       }
-//     }
-//     // if(!m_PlanningPathNodes.empty())
-//     //   m_PlanningPathNodes.pop_front();
-//     // for(auto id : m_PlanningPathNodes)
-//     //   std::cout << "m_PredSuccMap: " <<m_PredSuccMap[id] << std::endl;
-//     std::deque<int> FinalPathQue;
-//     auto next = m_PredSuccMap[m_closestGoalNode];
-//     // std::cout <<"m_closestGoalNode: " << m_closestGoalNode << std::endl;
-//     // std::cout << "next: "<<next << std::endl;
-//     FinalPathQue.push_back(m_closestGoalNode);
-//     FinalPathQue.push_back(next);
-//     for (int i = 0; i < m_PlanningPathNodes.size(); i++) { // m_PredSuccMap
-//       next = m_PredSuccMap[next];
-//       FinalPathQue.push_back(next);
-//     }
-//     m_FinalNodes.clear();
-//     for (auto final : FinalPathQue) {
-//       m_FinalNodes.push_back(final);
-//     }
-//     std::reverse(m_FinalNodes.begin(), m_FinalNodes.end());
+    m_PredSuccMap.clear();
+    while (!qu.empty()) {
+
+      double cost = qu.top().first;  // cost : distance to next node
+      int here = qu.top().second; // here : current node Id
+      // std::cout << here << "," << cost << std::endl;
+
+      qu.pop();
+
+      m_PlanningPathNodes.push_back(here);
+
+      if (here == m_closestGoalNode) {
+        // std::cout << "path finding!" << std::endl;
+        // m_PlanningPathNodes.pop_back();
+        break;
+      }
+
+      for (auto connected : m_graph[here]) {
+        int next = connected.id;
+        double nextcost = connected.cost + connected.additional_cost;
+                          // connected.transient_cost;
+
+        // std::cout << "connected.cost: " << connected.cost << std::endl;
+        // std::cout << "connected.additional_cost : " << connected.additional_cost << std::endl;
+        // std::cout << "connected.transient_cost : " << connected.transient_cost << std::endl;
+
+        if (dist[next] > dist[here] + nextcost) {
+          dist[next] = dist[here] + nextcost;
+          qu.push({dist[next], next});
+          m_PredSuccMap[next] = here;
+        }
+      }
+    }
+    // if(!m_PlanningPathNodes.empty())
+      // m_PlanningPathNodes.pop_front();
+
+    // std::cout << "--------------" << std::endl;
+    // for(auto id : m_PlanningPathNodes)
+    //   std::cout << "m_PredSuccMap: " <<m_PredSuccMap[id] << std::endl;
     
+    std::deque<int> FinalPathQue;
+    auto next = m_PredSuccMap[m_closestGoalNode];
 
-//     // //test
-//     // std::cout << "m_FinalNodes : "<< m_FinalNodes.size() << std::endl;
-//     // bGoalPose = false;
-//   }
-// }
+    // std::cout << "graph size: "<< m_graph.size() << std::endl;
+    // std::cout << "m_closestStartNode: " << m_closestStartNode << std::endl;
+    // std::cout <<"m_closestGoalNode: " << m_closestGoalNode << std::endl;
+    // std::cout << "next: "<<next << std::endl;
+    FinalPathQue.push_back(m_closestGoalNode);
+    FinalPathQue.push_back(next);
+    for (int i = 0; i < m_PlanningPathNodes.size(); i++) { // m_PredSuccMap
+      next = m_PredSuccMap[next];
+      FinalPathQue.push_back(next);
+    }
+    m_FinalNodes.clear();
+    for (auto final : FinalPathQue) {
+      if(final == 0)
+        continue;
 
-// void DKGraphPlannerNode::ToPathMsg() {
-//   pcl::PointCloud<pcl::PointXYZI>::Ptr final_node_cloud_ptr(
-//       new pcl::PointCloud<pcl::PointXYZI>);
-//   pcl::PointCloud<pcl::PointXYZI>::Ptr candidates_ptr(
-//       new pcl::PointCloud<pcl::PointXYZI>);
+      m_FinalNodes.push_back(final);
+    }
+    std::reverse(m_FinalNodes.begin(), m_FinalNodes.end());
 
-//   int count = 0;
-//   int cnt = 0;
-//   // Candidates Nodes
-//   for (auto node_id : m_PlanningPathNodes) {
-//     for (auto node : m_OsmParcer.nodes) {
-//       if (node.id != node_id) {
-//         continue;
-//       }
-//       pcl::PointXYZI current_point;
-//       current_point.x = node.x;
-//       current_point.y = node.y;
-//       current_point.z = node.z;
-//       current_point.intensity = count;
-//       candidates_ptr->points.push_back(current_point);
-//       count++;
-//     }
-//   }
-//   sensor_msgs::msg::PointCloud2 CandidatesNodeCloudMsg;
-//   if(!candidates_ptr->points.empty())
-//     pcl::toROSMsg(*candidates_ptr, CandidatesNodeCloudMsg);
-//   CandidatesNodeCloudMsg.header.frame_id = "map";
-//   CandidatesNodeCloudMsg.header.stamp = ros::Time::now();
-//   pubCandidatesNodePoints.publish(CandidatesNodeCloudMsg);
+    // //test
+    // std::cout << "m_FinalNodes : "<< m_FinalNodes.size() << std::endl;
+    // for (auto final_node : m_FinalNodes)
+    // {
+    //   std::cout << final_node << "\n";
+    // }
 
-//   // Final Nodes
-//   for (auto node_id : m_FinalNodes) {
-//     for (auto node : m_OsmParcer.nodes) {
-//       if (node.id != node_id) {
-//         continue;
-//       }
+    ReleaseGraph();
 
-//       pcl::PointXYZI current_point;
-//       current_point.x = node.x;
-//       current_point.y = node.y;
-//       current_point.z = node.z;
-//       current_point.intensity = count;
-//       final_node_cloud_ptr->points.push_back(current_point);
-//       count++;
-//     }
-//   }
-//   sensor_msgs::msg::PointCloud2 FinalNodeCloudMsg;
-//   if(!final_node_cloud_ptr->points.empty())
-//     pcl::toROSMsg(*final_node_cloud_ptr, FinalNodeCloudMsg);
-//   FinalNodeCloudMsg.header.frame_id = "map";
-//   FinalNodeCloudMsg.header.stamp = ros::Time::now();
-//   pubFinalNodePoints.publish(FinalNodeCloudMsg);
+    prev_time = current_time;
+}
 
-//   std_msgs::Int32MultiArray FinalNodeArray;
-//   FinalNodeArray.data.clear();
-//   for (auto node : m_FinalNodes)
-//     FinalNodeArray.data.push_back(node);
-//   pubFinalNodes.publish(FinalNodeArray);
+void DKGraphPlannerNode::ToPathMsg() {
+  pcl::PointCloud<pcl::PointXYZI>::Ptr candidates_ptr(
+      new pcl::PointCloud<pcl::PointXYZI>);
+  pcl::PointCloud<pcl::PointXYZI>::Ptr finalcloud_ptr(
+      new pcl::PointCloud<pcl::PointXYZI>);
 
-//   nif_dk_graph_planner_msgs::msg::FinalPathIDArray FinalPathIDArrayMsg;
-//   FinalPathIDArrayMsg.ids.clear();
-//   FinalPathIDArrayMsg.ITSids.clear();
+  int count = 0;
+  // Candidates Nodes
+  for (auto node_id : m_PlanningPathNodes) {
+    for (auto candidates : m_FirstNodeBasedResister[node_id]) {
+      for(auto nd : candidates.nodes)
+      {
+        pcl::PointXYZI current_point;
+        current_point.x = nd.x;
+        current_point.y = nd.y;
+        current_point.z = nd.z;
+        current_point.intensity = count;
+        candidates_ptr->points.push_back(current_point);
+        count++;
+      }
+    }
+  }
+  sensor_msgs::msg::PointCloud2 CandidatesNodeCloudMsg;
+  if(!candidates_ptr->points.empty())
+    pcl::toROSMsg(*candidates_ptr, CandidatesNodeCloudMsg);
+  CandidatesNodeCloudMsg.header.frame_id =
+      nif::common::frame_id::localization::ODOM;
+  CandidatesNodeCloudMsg.header.stamp = this->now();
+  pubCandidatesNodePoints->publish(CandidatesNodeCloudMsg);
 
-//   // //For full link
-//   if(m_FinalNodes.empty())
-//     return;
-
-//   visualization_msgs::MarkerArray finalLink;
-//   for (int i = 0; i < m_FinalNodes.size() - 1; i++) {
-
-//     bool NeedToChangeLane = true;
-//     for (auto way : m_OsmParcer.ways) {
-//       if (m_FinalNodes[i] == way.firstNodeId &&
-//           m_FinalNodes[i + 1] == way.lastNodeId) {
-//         visualization_msgs::Marker link;
-//         link.header.frame_id = "map";
-//         link.header.stamp = ros::Time::now();
-//         link.id = way.id;
-//         link.type = visualization_msgs::Marker::LINE_STRIP;
-//         link.action = visualization_msgs::Marker::ADD;
-//         link.scale.x = 0.5, link.scale.y = 0.5, link.scale.z = 0.1;
-//         link.color.r = 0, link.color.g = 1, link.color.b = 0,
-//         link.color.a = 0.8;
-//         for (auto nodeInWay : way.nodes) {
-//           geometry_msgs::Point pointTmp;
-//           pointTmp.x = nodeInWay.x;
-//           pointTmp.y = nodeInWay.y;
-//           pointTmp.z = way.speedLimit;
-//           link.points.push_back(pointTmp);
-
-//           std_msgs::ColorRGBA colorTmp;
-//           colorTmp.a = 0.8;
-//           colorTmp.r = 0.0;
-//           colorTmp.g = 1.0;
-//           colorTmp.b = 0.0;
-//           link.colors.push_back(colorTmp);
-
-//           NeedToChangeLane = false;
-//         }
-//         finalLink.markers.push_back(link);
-
-//         FinalPathIDArrayMsg.ids.push_back(way.id);
-//         FinalPathIDArrayMsg.ITSids.push_back(way.ITScurrentLinkID);
-//       }
-//     }
-
-//     if (NeedToChangeLane) {
-//       for (auto way : m_OsmParcer.ways) {
-//         // Lane Change To Left
-//         if (m_FinalNodes[i] == way.firstNodeId &&
-//             m_FinalNodes[i + 1] == way.leftWayLastNodeId) {
-//           visualization_msgs::Marker link;
-//           link.header.frame_id = "map";
-//           link.header.stamp = ros::Time::now();
-//           link.id = way.id;
-//           link.type = visualization_msgs::Marker::LINE_STRIP;
-//           link.action = visualization_msgs::Marker::ADD;
-//           link.scale.x = 0.5, link.scale.y = 0.5, link.scale.z = 0.1;
-//           link.color.r = 1.0, link.color.g = 0.0, link.color.b = 0.0,
-//           link.color.a = 0.8;
-//           link.text = std::to_string(way.speedLimit);
-//           for (auto node : m_OsmParcer.nodes) {
-//             if (node.id == way.firstNodeId) {
-//               geometry_msgs::Point pointTmp;
-//               pointTmp.x = node.x;
-//               pointTmp.y = node.y;
-//               pointTmp.z = way.speedLimit;
-//               link.points.push_back(pointTmp);
-
-//               std_msgs::ColorRGBA colorTmp;
-//               colorTmp.a = 0.8;
-//               colorTmp.r = 1.0;
-//               colorTmp.g = 0.0;
-//               colorTmp.b = 0.0;
-//               link.colors.push_back(colorTmp);
-//             } else if (node.id == way.leftWayLastNodeId) {
-//               geometry_msgs::Point pointTmp;
-//               pointTmp.x = node.x;
-//               pointTmp.y = node.y;
-//               pointTmp.z = way.speedLimit;
-//               link.points.push_back(pointTmp);
-
-//               std_msgs::ColorRGBA colorTmp;
-//               colorTmp.a = 0.8;
-//               colorTmp.r = 1.0;
-//               colorTmp.g = 0.0;
-//               colorTmp.b = 0.0;
-//               link.colors.push_back(colorTmp);
-//             }
-//           }
-//           finalLink.markers.push_back(link);
-
-//           FinalPathIDArrayMsg.ids.push_back(way.id);
-//           FinalPathIDArrayMsg.ITSids.push_back(way.ITScurrentLinkID);
-//         }
-//         // Lane Change To Right
-//         if (m_FinalNodes[i] == way.firstNodeId &&
-//             m_FinalNodes[i + 1] == way.rightWayLastNodeId) {
-//           visualization_msgs::Marker link;
-//           link.header.frame_id = "map";
-//           link.header.stamp = ros::Time::now();
-//           link.id = way.id;
-//           link.type = visualization_msgs::Marker::LINE_STRIP;
-//           link.action = visualization_msgs::Marker::ADD;
-//           link.scale.x = 0.5, link.scale.y = 0.5, link.scale.z = 0.1;
-//           link.color.r = 1, link.color.g = 0, link.color.b = 0,
-//           link.color.a = 0.8;
-//           for (auto node : m_OsmParcer.nodes) {
-//             if (node.id == way.firstNodeId) {
-//               geometry_msgs::Point pointTmp;
-//               pointTmp.x = node.x;
-//               pointTmp.y = node.y;
-//               pointTmp.z = way.speedLimit;
-//               link.points.push_back(pointTmp);
-
-//               std_msgs::ColorRGBA colorTmp;
-//               colorTmp.a = 0.8;
-//               colorTmp.r = 0.0;
-//               colorTmp.g = 0.0;
-//               colorTmp.b = 1.0;
-//               link.colors.push_back(colorTmp);
-//             } else if (node.id == way.rightWayLastNodeId) {
-//               geometry_msgs::Point pointTmp;
-//               pointTmp.x = node.x;
-//               pointTmp.y = node.y;
-//               pointTmp.z = way.speedLimit;
-//               link.points.push_back(pointTmp);
-
-//               std_msgs::ColorRGBA colorTmp;
-//               colorTmp.a = 0.8;
-//               colorTmp.r = 0.0;
-//               colorTmp.g = 0.0;
-//               colorTmp.b = 1.0;
-//               link.colors.push_back(colorTmp);
-//             }
-//           }
-//           finalLink.markers.push_back(link);
-
-//           FinalPathIDArrayMsg.ids.push_back(way.id);
-//           FinalPathIDArrayMsg.ITSids.push_back(way.ITScurrentLinkID);
-//         }
-//       }
-//     }
-//   }
-//   pubFinalLink.publish(finalLink); // MarkerArray
-//   pubFinalITSIds.publish(FinalPathIDArrayMsg);
-
-//   // Calculate Lane using nodes
-//   pcl::PointCloud<pcl::PointXYZI>::Ptr final_path_cloud_ptr(
-//       new pcl::PointCloud<pcl::PointXYZI>);
-//   autoware_msgs::Lane FinalLaneTmp;
-//   m_FinalLaneArray.lanes.clear();
-//   std::vector<std::pair<geometry_msgs::Pose, std::string>> FinalPathBuf;
-//   geometry_msgs::Point prevPoint;
-//   int link_index = 0;
-//   for (auto link : finalLink.markers) {
-//     for (int i =0; i < link.points.size(); i++) {
-//       auto point = link.points[i];
-//       auto color = link.colors[i];
-//       bool exist = false;
-//       std::pair<geometry_msgs::Pose, std::string> PoseBuf;
-//       PoseBuf.first.position.x = point.x;
-//       PoseBuf.first.position.y = point.y;
-//       PoseBuf.first.position.z = point.z; // speed limit
-//       // PoseBuf.first.orientation.w = 1;
-//       double delta_x, delta_y, yaw;
-//       if(link_index == 0 && link.points.size() > 1)
-//       {
-//         delta_x = link.points[link.points.size() -1].x - link.points[0].x;
-//         delta_y = link.points[link.points.size() -1].y - link.points[0].y;
-//       }
-//       else
-//       {
-//         delta_x = point.x - prevPoint.x;
-//         delta_y = point.y - prevPoint.y;
-//       }
-//       if(point.x - prevPoint.x == 0)
-//         delta_x = 0.0001;
-//       yaw = atan2(delta_y, delta_x);      
-//       PoseBuf.first.orientation = tf::createQuaternionMsgFromRollPitchYaw(0.0, 0.0, yaw);        
-//       prevPoint = point;
+  // Final Nodes
+  int cnt = 0;
+  double prev_x = 0.;
+  double prev_y = 0.;
+  m_BestLayerArray.clear();
+  nav_msgs::msg::Path FinalPath;
+  for (auto node_id : m_FinalNodes) {
+    for (auto final_id : m_FirstNodeBasedResister[node_id]) {
+      if (!ExistInList(final_id.last_node_id, m_FinalNodes))
+        continue;
       
-//       if(color.r == 1.0)
-//         PoseBuf.second = "left";
-//       else if(color.b == 1.0)
-//         PoseBuf.second = "right";
-//       else
-//       {
-//         PoseBuf.second= "";
-//       }
-      
-//       for (auto check : FinalPathBuf) {
-//         if (check.first.position.x == point.x && check.first.position.y == point.y)
-//           exist = true;
-//       }
-//       if (!exist)
-//         FinalPathBuf.push_back(PoseBuf);
+      if (m_prevFirstLayer != m_currentLayer)
+      {
+        m_prevFirstLayer = m_currentLayer;
+        RCLCPP_DEBUG(this->get_logger(), "layer changed!" );
+        if(m_UsePrevStartFirstNodeAfter2 < 2)
+        {
+          m_prevStartFirstNodeId = final_id.first_node_id;
+        }
+        else
+        {
+          m_prevStartFirstNodeId = m_FinalNodes[1];
+        }
 
-//       // std::cout << PoseBuf << std::endl;
-//     }
-//     link_index ++;
-//   }
+        m_UsePrevStartFirstNodeAfter2 ++;
+        if (cnt == 0) {
+          m_prevBestFirstNodeInLayer = final_id.start_node;
+          m_prevBestEndNodeInLayer = final_id.end_node;
+        }
+      }
 
-//   if (!FinalPathBuf.empty()) {
-//     FinalLaneTmp.header.frame_id = "map";
-//     for (int i = 0; i < FinalPathBuf.size() - 1; i++) {
-//       double BetweenPointsDist = sqrt(
-//           pow(FinalPathBuf[i + 1].first.position.x - FinalPathBuf[i].first.position.x, 2) +
-//           pow(FinalPathBuf[i + 1].first.position.y - FinalPathBuf[i].first.position.y, 2));
-//       double step_thres = 1;
-//       int step_number = BetweenPointsDist / step_thres;
-//       if (BetweenPointsDist < step_thres) {
-//         autoware_msgs::Waypoint WaypointTmp;
-//         WaypointTmp.pose.pose.position.x = FinalPathBuf[i].first.position.x;
-//         WaypointTmp.pose.pose.position.y = FinalPathBuf[i].first.position.y;
-//         WaypointTmp.pose.pose.position.z = 0;
-//         WaypointTmp.twist.twist.linear.x = FinalPathBuf[i].first.position.z;
-//         WaypointTmp.pose.pose.orientation= FinalPathBuf[i].first.orientation;
+      for (auto nd : final_id.nodes) {
+        pcl::PointXYZI point_buf;
+        point_buf.x = nd.x;
+        point_buf.y = nd.y;
+        point_buf.z = nd.z;
+        point_buf.intensity = cnt;
+        finalcloud_ptr->points.push_back(point_buf);
+        cnt++;
 
-//         if(FinalPathBuf[i+1].second == "left")
-//         {
-//           WaypointTmp.twist.twist.linear.y = 1;
-//         }
-//         else if(FinalPathBuf[i+1].second == "right")
-//         {
-//           WaypointTmp.twist.twist.linear.y = 2;
-//         }
-//         else
-//         {
-//           WaypointTmp.twist.twist.linear.y = 0;
-//         }
+        geometry_msgs::msg::PoseStamped pose_buf;
+        if(prev_x == 0. && prev_y == 0.)
+        {
+          prev_x = nd.x;
+          prev_y = nd.y;
+          continue;          
+        }
+        if(prev_x == nd.x || prev_y == nd.y)
+          continue;
         
+        pose_buf.pose.position.x = nd.x;
+        pose_buf.pose.position.y = nd.y;
+        double yaw = atan2(nd.y - prev_y, nd.x - prev_x);
+        tf2::Quaternion quat_;
+        geometry_msgs::msg::Quaternion quat_msg;
+        quat_.setRPY(0., 0., yaw);
+        quat_.normalize();
+        quat_msg = tf2::toMsg(quat_);
+        pose_buf.pose.orientation = quat_msg;
+        FinalPath.poses.push_back(pose_buf);
 
-//         // WaypointTmp.pose.pose.orientation = FinalPathBuf[i].first.orientation;
-//         // WaypointTmp.twist.twist.linear.x = std::stod(link.text); //km/h
-//         FinalLaneTmp.waypoints.push_back(WaypointTmp);
+        prev_x = nd.x;
+        prev_y = nd.y;
 
-//         pcl::PointXYZI current_point;
-//         current_point.x = WaypointTmp.pose.pose.position.x;
-//         current_point.y = WaypointTmp.pose.pose.position.y;
-//         current_point.z = cnt * 0.1; // 0;
-//         current_point.intensity = cnt;
-//         final_path_cloud_ptr->points.push_back(current_point);
-//         cnt++;
-//       } else {
-//         for (int j = 0; j < step_number; j++) {
-//           autoware_msgs::Waypoint WaypointTmp;
-//           WaypointTmp.pose.pose.position.x =
-//               FinalPathBuf[i].first.position.x +
-//               (FinalPathBuf[i + 1].first.position.x - FinalPathBuf[i].first.position.x) *
-//                   j / step_number;
-//           WaypointTmp.pose.pose.position.y =
-//               FinalPathBuf[i].first.position.y +
-//               (FinalPathBuf[i + 1].first.position.y - FinalPathBuf[i].first.position.y) *
-//                   j / step_number;
-//           WaypointTmp.pose.pose.position.z = 0;
-//           WaypointTmp.pose.pose.orientation = FinalPathBuf[i].first.orientation;
+      }
+      m_BestLayerArray[final_id.start_layer] = final_id.end_node;
+    }
+  }
+  sensor_msgs::msg::PointCloud2 FinalPathCloudMsg;
+  if(!finalcloud_ptr->points.empty())
+    pcl::toROSMsg(*finalcloud_ptr, FinalPathCloudMsg);
+  FinalPathCloudMsg.header.frame_id = nif::common::frame_id::localization::ODOM;
+  FinalPathCloudMsg.header.stamp = this->now();
+  pubFinalPathPoints->publish(FinalPathCloudMsg);
 
-//           if(FinalPathBuf[i].first.position.z == FinalPathBuf[i + 1].first.position.z)
-//             WaypointTmp.twist.twist.linear.x = FinalPathBuf[i].first.position.z;
-          
-//           if(FinalPathBuf[i+1].second == "left")
-//           {
-//             WaypointTmp.twist.twist.linear.y = 1;
-//           }
-//           else if(FinalPathBuf[i+1].second == "right")
-//           {
-//             WaypointTmp.twist.twist.linear.y = 2;
-//           }
-//           else
-//           {
-//             WaypointTmp.twist.twist.linear.y = 0;
-//           }          
-//           WaypointTmp.pose.pose.orientation = FinalPathBuf[i].first.orientation;
-//           // WaypointTmp.twist.twist.linear.x = std::stod(link.text); //km/h
-//           FinalLaneTmp.waypoints.push_back(WaypointTmp);
+  FinalPath.header.frame_id = nif::common::frame_id::localization::ODOM;
+  FinalPath.header.stamp = this->now();
+  pubFinalPath->publish(FinalPath);
+}
 
-//           pcl::PointXYZI current_point;
-//           current_point.x = WaypointTmp.pose.pose.position.x;
-//           current_point.y = WaypointTmp.pose.pose.position.y;
-//           current_point.z = cnt * 0.1; // WaypointTmp.pose.pose.position.z;
-//           current_point.intensity = cnt;
-//           final_path_cloud_ptr->points.push_back(current_point);
-//           cnt++;
-//         }
-//       }
-//     }
-//   } else {
-//     ROS_WARN("No Path");
-//   }
-
-//   if (FinalLaneTmp.waypoints.empty())
-//     return;
-
-//   m_FinalLaneArray.lanes.push_back(FinalLaneTmp);
-//   pubFinalLaneArray.publish(m_FinalLaneArray);
-
-//   sensor_msgs::msg::PointCloud2 FinalPathCloudMsg;
-//   pcl::toROSMsg(*final_path_cloud_ptr, FinalPathCloudMsg);
-//   FinalPathCloudMsg.header.frame_id = "map";
-//   FinalPathCloudMsg.header.stamp = ros::Time::now();
-//   pubFinalPathPoints.publish(FinalPathCloudMsg);
-// }
-
-
-
-// void DKGraphPlannerNode::CallbackGoalXYList(const sensor_msgs::msg::PointCloud2ConstPtr& msg)
-// {
-//   pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_ptr(new pcl::PointCloud<pcl::PointXYZI>);  
-//   pcl::fromROSMsg(*msg, *cloud_ptr);
-
-//   if(!bParcingComplete)
-//     return;
-
-//   m_GoalXY_to_way_id_List.clear();
-//   m_GoalXYList.clear();
-
-//   for(auto point : cloud_ptr->points)
-//   {
-//     // std::cout << point.x << ", " << point.y << std::endl;
-
-//     double bias, normal_distance;
-//     double min_distance = INF;
-//     int minWayIndex = 0;
-//     int minNodeIndex = 0;
-//     std::string minWayITS;
-//     for (auto way : m_OsmParcer.ways) {
-//       bool first_node = true;
-//       double prev_x, prev_y;
-//       for (auto node : way.nodes) {
-
-//         if (first_node) {
-//           prev_x = node.x;
-//           prev_y = node.y;
-//           first_node = false;
-//           continue;
-//         }
-
-//         double slope;
-//         if (node.x - prev_x == 0) {
-//           slope = 0;
-//         } else {
-//           slope = (node.y - prev_y) / (node.x - prev_x);
-//         }
-//         bias = node.y - slope * node.x;
-//         normal_distance = fabs(slope * point.x -
-//                               point.y + bias) /
-//                           sqrt(pow(slope, 2) + 1);
-
-//         double prev_distance = sqrt(pow(prev_x - point.x, 2) +
-//                                     pow(prev_y - point.y, 2));
-//         double prev_to_node =
-//             sqrt(pow(node.x - prev_x, 2) + pow(node.y - prev_y, 2));
-
-//         double prod1 = (point.x - prev_x) * (node.x - prev_x) +
-//                       (point.y - prev_y) * (node.y - prev_y);
-//         double prod2 = (point.x - node.x) * (prev_x - node.x) +
-//                       (point.y - node.y) * (prev_y - node.y);
-
-//         if (prod1 < 0 || prod2 < 0)
-//           continue;
-
-//         if (normal_distance < min_distance) {
-//           min_distance = normal_distance;
-//           minWayIndex = way.id;
-//           minWayITS = way.ITScurrentLinkID;
-//           minNodeIndex = node.id;
-//         }
-//         prev_x = node.x;
-//         prev_y = node.y;
-//       }
-//     }
-
-//     if(!ExistInList(minWayIndex, m_GoalXY_to_way_id_List))
-//     {
-//       geometry_msgs::Pose PoseBuf;
-//       PoseBuf.position.x = point.x;
-//       PoseBuf.position.y = point.y;
-//       m_GoalXY_to_way_id_List.push_back(minWayIndex);
-//       m_GoalXYList.push_back(PoseBuf);
-//     }
-//   }
-
-//   // m_closestWayId_start = m_Resister[m_GoalXY_to_way_id_List[0]].id;
-//   // if(!m_Resister[m_GoalXY_to_way_id_List[0]].nodes.empty())
-//   //   m_closestStartNode = m_Resister[m_GoalXY_to_way_id_List[0]].nodes[0].id;
-  
-//   // int listsize = m_GoalXY_to_way_id_List.size();
-//   // m_closestWayId_goal = m_Resister[m_GoalXY_to_way_id_List[listsize - 1]].id;
-//   // int lastNodesize = m_Resister[m_GoalXY_to_way_id_List[listsize - 1]].nodes.size();
-//   // if(!m_Resister[m_GoalXY_to_way_id_List[listsize - 1]].nodes.empty())
-//   //   m_closestGoalNode = m_Resister[m_GoalXY_to_way_id_List[listsize - 1]].nodes[lastNodesize - 1].id;
-
-
-//   std::vector<std::vector<int>> StackFinalNodes;
-//   StackFinalNodes.clear();
-
-//   bCSVGoalList = true;
-
-//   m_graph.clear();
-//   //  Build a graph.
-//   for (auto way : m_OsmParcer.ways) {
-
-//     bool exist = ExistInList(way.id, m_GoalXY_to_way_id_List);
-
-//     Connected connected_;
-//     connected_.id = way.lastNodeId;
-//     connected_.cost = way.cost;
-//     if(exist)
-//     {
-//       // connected_.cost = way.cost - 20;
-//     }
-      
-//     m_graph[way.firstNodeId].push_back(connected_);
-    
-//     if (way.leftWayLastNodeId != 0) {
-//       Connected left;
-//       left.id = way.leftWayLastNodeId;
-//       left.cost = way.cost + 15;
-//       m_graph[way.firstNodeId].push_back(left);
-//     }
-
-//     if (way.rightWayLastNodeId != 0) {
-//       Connected right;
-//       right.id = way.rightWayLastNodeId;
-//       right.cost = way.cost + 15;
-//       m_graph[way.firstNodeId].push_back(right);
-//     }
-//   }
-
-//   pcl::PointCloud<pcl::PointXYZI>::Ptr node_cloud_ptr(new pcl::PointCloud<pcl::PointXYZI>);  
-
-//   int cnt_node =0;
-//   for(auto id : m_GoalXY_to_way_id_List)
-//   {
-//     // for(auto node : m_Resister[id].nodes)
-//     // {
-//     int size_ = m_Resister[id].nodes.size() - 1;
-//     pcl::PointXYZI current_point;
-//     current_point.x = m_Resister[id].nodes[0].x;
-//     current_point.y = m_Resister[id].nodes[0].y;
-//     current_point.intensity = cnt_node;
-//     cnt_node++;
-//     node_cloud_ptr->points.push_back(current_point);
-//     // }
-//   }
-
-//   m_PlanningPathNodes.clear();
-//   if(m_GoalXY_to_way_id_List.size() > 2)
-//   {
-//     // std::cout << "-----\n";
-//     int start = m_Resister[m_GoalXY_to_way_id_List[0]].firstNodeId;
-    
-//     for(int i = 0; i < m_GoalXY_to_way_id_List.size()-1; i++)
-//     {
-//       int goal_id = m_GoalXY_to_way_id_List[i+1];
-//       double ref_x = m_GoalXYList[i].position.x;
-//       double ref_y = m_GoalXYList[i].position.y;
-
-//       int current_id = m_GoalXY_to_way_id_List[i];
-//       double ref_to_start = sqrt(pow(m_Resister[current_id].nodes[0].x - ref_x , 2) + 
-//                                  pow(m_Resister[current_id].nodes[0].y - ref_y , 2));
-//       double ref_to_goal = sqrt(pow(m_Resister[current_id].nodes[m_Resister[current_id].nodes.size()-1].x - ref_x , 2) + 
-//                                 pow(m_Resister[current_id].nodes[m_Resister[current_id].nodes.size()-1].y - ref_y , 2));
-//       double next;
-
-
-//       pcl::PointXYZI current_point;
-//       current_point.intensity = cnt_node;
-//       if(ref_to_start < ref_to_goal)
-//       {
-//         next = m_Resister[goal_id].firstNodeId;
-//         // std::cout << "first: " << ref_to_start << ", "<< ref_to_goal <<std::endl;
-//         current_point.x = m_Resister[current_id].nodes[0].x;
-//         current_point.y = m_Resister[current_id].nodes[0].y;
-//       }
-//       else
-//       {
-//         next = m_Resister[goal_id].lastNodeId;
-//         // std::cout << "last: "  << ref_to_start << ", "<< ref_to_goal << std::endl;
-//         int size_ = m_Resister[current_id].nodes.size() - 1;
-//         current_point.x = m_Resister[current_id].nodes[size_].x;
-//         current_point.y = m_Resister[current_id].nodes[size_].y;
-//       }
-      
-//       if(PlanningWithCSV(start, next).size() > 10)
-//       {
-//         next = m_Resister[goal_id].lastNodeId;
-//         // std::cout << "first: " << ref_to_start << ", "<< ref_to_goal <<std::endl;
-//         current_point.x = m_Resister[current_id].nodes[0].x;
-//         current_point.y = m_Resister[current_id].nodes[0].y;
-//       }
-
-
-//       cnt_node++;
-//       node_cloud_ptr->points.push_back(current_point);
-
-//       if(i == m_GoalXY_to_way_id_List.size()-2)
-//         next = m_Resister[goal_id].lastNodeId;
- 
-//       // std::cout << "step: " << PlanningWithCSV(start, next).size() << std::endl;
-//       // std::cout << "m_Resister[goal_id].ITScurrentLinkID: \n"; // << PlanningWithCSV(start, next).size()  << std::endl;
-//       // // if(m_Resister[start_id].lastNodeId == m_Resister[goal_id].firstNodeId)
-//       // //   std::cout << "yes" << std::endl;
-//       // // else
-//       // // {
-//       //   // std::cout << "no" << std::endl;
-//       StackFinalNodes.push_back(PlanningWithCSV(start, next));
-
-//       start = next;
-//       // }
-//       for(auto id : m_PlanningPathNodesForCSV)
-//       {
-//         m_PlanningPathNodes.push_back(id);
-//       }  
-    
-//       sensor_msgs::msg::PointCloud2 WptNodeCloudMsg;
-//       pcl::toROSMsg(*node_cloud_ptr, WptNodeCloudMsg);
-//       WptNodeCloudMsg.header.frame_id = "map";
-//       WptNodeCloudMsg.header.stamp = ros::Time::now();
-//       pubWptNodeCloud.publish(WptNodeCloudMsg);      
-//     }
-
-
-//     m_FinalNodes.clear();
-
-//     for(auto FinalNodes : StackFinalNodes)
-//     {
-//       for(auto final : FinalNodes)
-//       {
-//         m_FinalNodes.push_back(final);
-//       }
-//     }
-  
-//   }
-
-// }
-
-
-// std::vector<int> DKGraphPlannerNode::PlanningWithCSV(const int start, const int goal) { 
-
-//   std::vector<int> FinalNodesForCSV;
-//   FinalNodesForCSV.clear();
-//   if (bCSVGoalList) {
-
-//     m_PlanningPathNodesForCSV.clear();
- 
-//     // Initialize the dist array with infinite values.
-//     std::unordered_map<int, double> dist;
-//     int path_index = 0;
-//     for (auto node : m_OsmParcer.nodes) {
-//       dist[node.id] = INF;
-//     }
-//     std::priority_queue<std::pair<int, int>, std::vector<std::pair<int, int>>,
-//                         std::greater<std::pair<int, int>>>
-//         qu;
-
-//     qu.push({0, start}); //우선순위 큐에 시작점을 넣어줍니다.
-//     dist[start] = 0; // Update value of start point as 0
-
-//     m_PredSuccMap.clear();
-//     while (!qu.empty()) {
-
-//       int cost = qu.top().first;  // cost : distance to next node
-//       int here = qu.top().second; // here : current node Id
-
-//       qu.pop();
-
-//       m_PlanningPathNodesForCSV.push_back(here);
-//       // std::cout << here << std::endl;
-
-//       if (here == goal) {
-//         // std::cout << "path finding!" << std::endl;
-//         // m_PlanningPathNodesForCSV.pop_back();
-//         break;
-//       }
-
-//       for (auto connected : m_graph[here]) {
-//         int next = connected.id;
-//         int nextcost = connected.cost;
-
-//         if (dist[next] > dist[here] + nextcost) {
-//           dist[next] = dist[here] + nextcost;
-//           qu.push({dist[next], next});
-//           m_PredSuccMap[next] = here;
-//         }
-//       }
-//     }
-
-//     if(!m_PlanningPathNodesForCSV.empty())
-//       m_PlanningPathNodesForCSV.pop_front();
-//     // for(auto id : m_PlanningPathNodesForCSV)
-//     //   std::cout << "m_PredSuccMap: " <<m_PredSuccMap[id] << std::endl;
-//     std::deque<int> FinalPathQue;
-//     auto next = m_PredSuccMap[goal];
-    
-//     // std::cout << "goal: " << goal << ", next: " << next << std::endl;
-//     FinalPathQue.push_back(goal);
-//     FinalPathQue.push_back(next);
-//     for (int i = 0; i < m_PredSuccMap.size(); i++) { // m_PredSuccMap
-//       next = m_PredSuccMap[next];
-//       FinalPathQue.push_back(next);
-//     }
-
-//     // std::cout << "\n";
-//     FinalNodesForCSV.clear();
-//     for (auto final : FinalPathQue) {
-//       if(final != 0)
-//       {
-//         FinalNodesForCSV.push_back(final);
-//         // std::cout << final << ", ";
-//       }
-        
-//     }
-//     std::reverse(FinalNodesForCSV.begin(), FinalNodesForCSV.end());
-    
-//   }
-//   else
-//   {
-//     FinalNodesForCSV.clear();
-//   }
-  
-//   return FinalNodesForCSV;
-// }
+bool DKGraphPlannerNode::ExistInList(int id, std::deque<int> list) {
+  bool exist = false;
+  for (auto scan : list) {
+    if (scan == id) {
+      exist = true;
+      break;
+    }
+  }
+  return exist;
+}
 
 std::vector<std::pair<std::string, std::vector<double>>>
 DKGraphPlannerNode::read_csv(std::string filename) {
@@ -1454,7 +1051,7 @@ DKGraphPlannerNode::read_csv(std::string filename) {
       result.push_back({colname, std::vector<double>{}});
     }
   } else {
-    std::cout << "Check CSV file" << std::endl;
+    RCLCPP_ERROR(this->get_logger(), "Check CSV file");
   }
 
   // Read data, line by line
@@ -1483,4 +1080,126 @@ DKGraphPlannerNode::read_csv(std::string filename) {
   // Close file
   CSVInput.close();
   return result;
+}
+
+double DKGraphPlannerNode::CorrespondingCost(
+    const double pt_x, const double pt_y,
+    const nav_msgs::msg::OccupancyGrid &gridmap) {
+  int pt_in_grid_x = (pt_x) / gridmap.info.resolution -
+                     gridmap.info.origin.position.x / gridmap.info.resolution + 1;
+  int pt_in_grid_y = (pt_y) / gridmap.info.resolution -
+                     gridmap.info.origin.position.y / gridmap.info.resolution + 1;
+
+  double cost;
+  if (pt_in_grid_x > gridmap.info.width || pt_in_grid_y > gridmap.info.height) {
+    cost = 0.;
+    return cost;
+  }
+
+  cost = gridmap.data[pt_in_grid_y * gridmap.info.width + pt_in_grid_x];
+
+  return cost;
+}
+
+double DKGraphPlannerNode::CorrespondingCost(
+    const double pt_x, const double pt_y, double inflation,
+    pcl::PointCloud<pcl::PointXYZI>::Ptr & in_centered_points, 
+    pcl::PointCloud<pcl::PointXYZI>::Ptr& in_inflated_points) {
+  
+  double cost = 0.0;
+  double max_cost = 0.0;
+  for (auto center_point : in_centered_points->points) {
+    double dist = sqrt(pow(pt_x - center_point.x, 2) + pow(pt_y - center_point.y, 2));
+    if (dist > inflation)
+      continue;
+    else
+    {
+      GetIntensityInfo(pt_x, pt_y, in_inflated_points, cost);
+      if (max_cost < cost)
+      {
+        max_cost = cost;
+      }
+    }
+  }
+
+  return max_cost;
+}
+
+void DKGraphPlannerNode::removeDuplicated(std::vector<int> &v) {
+  auto end = v.end();
+  for (auto it = v.begin(); it != end; ++it) {
+    end = std::remove(it + 1, end, *it);
+  }
+
+  v.erase(end, v.end());
+}
+
+pcl::PointCloud<pcl::PointXYZI>::Ptr
+DKGraphPlannerNode::downsample(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud,
+                               double resolution) {
+  pcl::PointCloud<pcl::PointXYZI>::Ptr filtered(
+      new pcl::PointCloud<pcl::PointXYZI>);
+  pcl::VoxelGrid<pcl::PointXYZI> voxelgrid;
+  voxelgrid.setLeafSize(resolution, resolution, resolution);
+  voxelgrid.setInputCloud(cloud);
+  voxelgrid.filter(*filtered);
+  return filtered;
+}
+
+// Calculate gaussian interpolation.
+void DKGraphPlannerNode::createGaussianWorld(
+    pcl::PointCloud<pcl::PointXYZI>::Ptr& points_in, double inflation_x,
+    double inflation_y, pcl::PointCloud<pcl::PointXYZI>::Ptr &points_out) {
+
+  struct Gaussian {
+    double x0, y0;
+    double varX, varY;
+    double s;
+  };
+
+  AnalyticalFunctions func;
+  std::vector<std::pair<double, double>> vars;
+  std::vector<std::pair<double, double>> means;
+  std::vector<double> scales;
+  std::vector<Gaussian> g;
+
+  for (auto point : points_in->points) {
+    Gaussian gaussian_tmp;
+    gaussian_tmp.x0 = point.x;
+    gaussian_tmp.y0 = point.y;
+    gaussian_tmp.varX = inflation_x;
+    gaussian_tmp.varY = inflation_y;
+    gaussian_tmp.s = 1 / inflation_x;
+    g.push_back(gaussian_tmp);
+  }
+
+  func.f_ = [g](double x, double y) {
+    double value = 0.0;
+    for (int i = 0; i < g.size(); ++i) {
+      const double x0 = g.at(i).x0;
+      const double y0 = g.at(i).y0;
+      const double varX = g.at(i).varX;
+      const double varY = g.at(i).varY;
+      const double s = g.at(i).s;
+      value += s * std::exp(-(x - x0) * (x - x0) / (2.0 * varX) -
+                            (y - y0) * (y - y0) / (2.0 * varY));
+    }
+    return value;
+  };
+
+  for (auto point : points_in->points) {
+    for (double i = -inflation_x;
+         i < inflation_x; i = i + 2.5) {
+      for (double j = -inflation_y;
+           j < inflation_y; j = j + 2.5) {
+        pcl::PointXYZI point_buf;
+        point_buf.x = point.x + i;
+        point_buf.y = point.y + j;
+        point_buf.intensity = func.f_(point_buf.x, point_buf.y);
+        if (point_buf.intensity < fabs(1.0))
+          points_out->points.push_back(point_buf);
+      }
+    }
+  }
+  // return output;
 }

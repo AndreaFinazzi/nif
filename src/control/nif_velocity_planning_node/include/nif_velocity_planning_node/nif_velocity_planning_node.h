@@ -24,6 +24,7 @@
 #include "nif_common/types.h"
 #include "nif_common/vehicle_model.h"
 #include "nif_common_nodes/i_base_synchronized_node.h"
+#include "nif_msgs/msg/system_status.hpp"
 #include "nif_msgs/msg/velocity_planner_status.hpp"
 #include "nif_vehicle_dynamics_manager/kalman.h"
 #include "nif_vehicle_dynamics_manager/tire_manager.hpp"
@@ -111,6 +112,9 @@ public:
     this->declare_parameter("ttc_thres", 2.0);
     // - safety factor for lateral tire force model
     this->declare_parameter("lateral_tire_model_factor", 0.6);
+    // - smoothing desired velocity change // mps increase per sec
+    this->declare_parameter("max_ddes_vel_dt_default", 5.0);
+    this->declare_parameter("max_ddes_vel_dt_green_flag", 10.0);
 
     // Read in misc. parameters
     m_vel_plan_enabled = this->get_parameter("vel_plan_enabled").as_bool();
@@ -134,6 +138,10 @@ public:
     m_ttc_thres = this->get_parameter("ttc_thres").as_double();
     m_lat_tire_factor =
         this->get_parameter("lateral_tire_model_factor").as_double();
+    m_max_ddes_vel_dt_default =
+        this->get_parameter("max_ddes_vel_dt_default").as_double();
+    m_max_ddes_vel_dt_green_flag =
+        this->get_parameter("max_ddes_vel_dt_green_flag").as_double();
 
     if (m_lat_tire_factor > 1.0) {
       RCLCPP_ERROR(this->get_logger(), "Got lateral_tire_model_factor: %f;",
@@ -297,9 +305,33 @@ private:
     // Maximum velocity limit
     desired_velocity_mps = std::min(desired_velocity_mps, m_max_vel_mps);
 
+    // Smooth desired velocity
+    double period_double_s =
+        nif::common::utils::time::secs(this->getGclockPeriodDuration());
+    RCLCPP_DEBUG(this->get_logger(), "Smoothing with dt: [s] %f",
+                 period_double_s);
+    // - mission specific step limiter
+    auto mission_code = this->getSystemStatus().mission_status;
+
+    if (mission_code.mission_status_code == mission_code.MISSION_RACE ||
+        mission_code.mission_status_code ==
+            mission_code.MISSION_COLLISION_AVOIDNACE ||
+        mission_code.mission_status_code == mission_code.MISSION_TEST) {
+      desired_velocity_mps =
+          smoothSignal(desired_velocity_prev_mps, desired_velocity_mps,
+                       m_max_ddes_vel_dt_green_flag, period_double_s);
+    } else {
+      desired_velocity_mps =
+          smoothSignal(desired_velocity_prev_mps, desired_velocity_mps,
+                       m_max_ddes_vel_dt_default, period_double_s);
+    }
+
     // Publish planned desired velocity
     publishPlannedVelocity(desired_velocity_mps);
     this->setNodeStatus(node_status);
+
+    // update previous des vel
+    desired_velocity_prev_mps = desired_velocity_mps;
   }
 
   void afterSystemStatusCallback() override {
@@ -312,6 +344,16 @@ private:
     } else {
       this->m_max_vel_mps = 0.0;
     }
+  }
+
+  double smoothSignal(double current_signal, double target_signal,
+                      double delta_dt, double dt) {
+    // Only care when target signal > current signal
+    if (target_signal > current_signal &&
+        target_signal > current_signal + delta_dt * dt) {
+      return current_signal + delta_dt * dt;
+    }
+    return target_signal;
   }
 
   void getCurvatureArray(std::vector<double> &curvature_array) {
@@ -463,7 +505,7 @@ private:
 
   void velocityCallback(
       const raptor_dbw_msgs::msg::WheelSpeedReport::SharedPtr msg) {
-    m_current_speed_mps = (msg->rear_left + msg->rear_right) * 0.5 *
+    m_current_speed_mps = (msg->front_left + msg->front_right) * 0.5 *
                           nif::common::constants::KPH2MS;
   }
 
@@ -619,6 +661,8 @@ private:
   double m_a_lat_kf = 0.0;    // lateral accel from KF
   double m_yaw_rate_kf = 0.0; // yaw rate from KF
 
+  double desired_velocity_prev_mps = 0.0;
+
   //! Params for Velocity planning
   std::vector<double> m_velocity_profile;
   std::vector<double> m_SpeedProfile;
@@ -648,6 +692,8 @@ private:
   double m_path_dist_max;
   double m_ttc_thres;
   double m_lat_tire_factor;
+  double m_max_ddes_vel_dt_default;
+  double m_max_ddes_vel_dt_green_flag;
 
   double m_CURVATURE_MINIMUM = 0.000001;
   double m_ERROR_Y_MAX = 4.0; // halving des_vel point. Width of IMS track: 12 m

@@ -47,7 +47,7 @@ public:
 
   void velocityCallback(
       const raptor_dbw_msgs::msg::WheelSpeedReport::SharedPtr msg) {
-    current_speed_ms_ = (msg->rear_left + msg->rear_right) * 0.5 *
+    current_speed_ms_ = (msg->front_left + msg->front_right) * 0.5 *
                         nif::common::constants::KPH2MS;
   }
 
@@ -140,6 +140,8 @@ private:
   double steering_units_multiplier_;
   double pure_pursuit_min_dist_m_;
   double pure_pursuit_max_dist_m_;
+  double pure_pursuit_1st_vel_m_;
+  double pure_pursuit_max_max_dist_m_;
   double pure_pursuit_k_vel_m_ms_;
   bool use_tire_velocity_;
   double odometry_timeout_sec_;

@@ -6,9 +6,13 @@
     steering_units_multiplier: 1.0
     pure_pursuit_min_dist_m: 3.0
     pure_pursuit_max_dist_m: 8.0
+    pure_pursuit_1st_vel_m: 20.0
+    pure_pursuit_max_max_dist_m: 20.0
     pure_pursuit_k_vel_m_ms: 0.75
     use_tire_velocity: true
     odometry_timeout_sec: 0.1
     path_timeout_sec: 0.5
     steering_max_ddeg_dt: 3.0
     invert_steering: false
+    pure_pursuit_1st_vel_m: 20.0
+    pure_pursuit_max_max_dist_m: 20.0

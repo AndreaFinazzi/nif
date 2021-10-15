@@ -293,8 +293,8 @@ private:
   void flag_summary_callback(const deep_orange_msgs::msg::BaseToCarSummary::SharedPtr & msg);
 
   SysState raptor_mode;
-  TrackCondition m_rec_track_cond; //Recevied track track condition
-  VehicleSignal m_rec_veh_signal; //Received Race flag
+  TrackCondition m_rec_track_cond; //Recevied track flag
+  VehicleSignal m_rec_veh_signal; //Received veh flag
   raptor_dbw_msgs::msg::AcceleratorPedalCmd m_acc_cmd;
   raptor_dbw_msgs::msg::BrakeCmd m_brake_cmd;
   // raptor_dbw_msgs::msg::GearCmd m_gear_cmd;
