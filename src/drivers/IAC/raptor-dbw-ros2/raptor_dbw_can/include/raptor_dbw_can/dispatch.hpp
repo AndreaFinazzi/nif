@@ -52,6 +52,7 @@ typedef enum
 enum
 {
   ID_BASE_TO_CAR_SUMMARY        = 0x04B0,
+  ID_LAP_TIME_REPORT            = 0x04B8,
   ID_CT_REPORT                  = 0x057c,
   ID_BRAKE_CMD                  = 0x2F04,
   ID_BRAKE_REPORT               = 0x1F04,
@@ -109,6 +110,8 @@ enum
   ID_POSITION_HEADING_HIL       = 0x05DC,
   ID_PT_REPORT_1                = 0x053C,
   ID_PT_REPORT_2                = 0x053D,
+  ID_DIAG_REPORT                = 0x053E,
+  ID_PT_REPORT_3                = 0x053F,
 };
 
 }  // namespace raptor_dbw_can
