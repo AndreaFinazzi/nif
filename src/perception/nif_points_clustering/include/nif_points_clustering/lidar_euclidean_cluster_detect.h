@@ -57,6 +57,8 @@ public:
                      double in_max_cluster_distance);
   void PointsCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
   void timer_callback();
+  void LeftPointsCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
+  void RightPointsCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
 
 private:
   void SetCloud(const pcl::PointCloud<pcl::PointXYZI>::Ptr in_origin_cloud_ptr,
@@ -83,13 +85,22 @@ private:
       pubClusteredArray;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubClusteredCenterPoints;
 
-  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr
-          subInputPoints;
+  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr subInputPoints;
+  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr subLeftPoints;
+  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr subRightPoints;
+  
   rclcpp::TimerBase::SharedPtr sub_timer_;
 
   pcl::PointCloud<pcl::PointXYZI>::Ptr m_inPoints;
+  pcl::PointCloud<pcl::PointXYZI>::Ptr m_LeftPoints;
+  pcl::PointCloud<pcl::PointXYZI>::Ptr m_RightPoints;
+
   pcl::PointCloud<pcl::PointXYZI>::Ptr m_simpleHeightmapPoints;
+
   bool bPoints = false;
+  bool bRightPoints = false;
+  bool bLeftPoints = false;
+
 
   std::mutex sensor_mtx;
 };

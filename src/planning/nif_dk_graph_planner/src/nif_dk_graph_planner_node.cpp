@@ -307,7 +307,7 @@ void DKGraphPlannerNode::RacingLineParcing()
   // normalize cost : distance from the racing line
   for (int i = 0; i < m_OsmParcer.ways.size(); i++) {
     m_OsmParcer.ways[i].cost = m_OsmParcer.ways[i].cost / max_cost;
-    std::cout << m_OsmParcer.ways[i].cost << ", " << max_cost << std::endl;
+    // std::cout << m_OsmParcer.ways[i].cost << ", " << max_cost << std::endl;
   }
   // std::cout << cost_sum << std::endl;
 
@@ -381,13 +381,13 @@ void DKGraphPlannerNode::CallbackOdometry(const nav_msgs::msg::Odometry::SharedP
     // }
     // // std::cout << "after : " << current_node_id << std::endl;
 
-    if(m_prevStartFirstNodeId != -1)
-      current_node_id = m_prevStartFirstNodeId;
+    // if(m_prevStartFirstNodeId != -1)
+    //   current_node_id = m_prevStartFirstNodeId;
 
     m_closestStartNode = current_node_id;
 
     double target_x_in_racing_line, target_y_in_racing_line;
-    int target_idx = current_idx + 100;
+    int target_idx = current_idx + 60;
     int target_node_id;
     size_t racingLineRefSize = m_racingLineRefPoints->points.size();
     target_idx = target_idx % racingLineRefSize;
@@ -997,6 +997,9 @@ void DKGraphPlannerNode::ToPathMsg() {
       m_BestLayerArray[final_id.start_layer] = final_id.end_node;
     }
   }
+  if (FinalPath->poses.empty())
+    RCLCPP_WARN(this->get_logger(), "Empty poses in the fianl path.");
+
   sensor_msgs::msg::PointCloud2 FinalPathCloudMsg;
   if(!finalcloud_ptr->points.empty())
     pcl::toROSMsg(*finalcloud_ptr, FinalPathCloudMsg);

@@ -1,0 +1,32 @@
+session_name: nif_bag_play
+windows: 
+  - window_name: ROSBAG PLAY Tab
+    layout: tiled
+    shell_command_before:
+      - source /home/usrg/nif/install/setup.bash 
+      - export ROS_DOMAIN_ID=77
+
+      - cd /home/usrg/media/ssd/VEH4_LOR_RUN-03.b_2021-10-14/ 
+
+    panes:
+    - shell_command:
+        - ros2 bag play autonomy_2021-10-14_15-54-47/ --remap /graph_planner/cost:=/origin/graph_planner/cost /graph_planner/final_path:=/origin/graph_planner/final_path /graph_planner/final_path_points:=/origin/graph_planner/final_path_points /graph_planner/wall_inflated:=/origin/graph_planner/wall_inflated
+    - shell_command:
+      # - ros2 run plotjuggler plotjuggler
+
+  - window_name: Algorithm Tab
+    layout: tiled
+    shell_command_before:
+      - source /home/usrg/nif/install/setup.bash && cd /home/usrg/nif
+      - export ROS_DOMAIN_ID=77
+      - export TRACK=LOR
+      - echo $TRACK
+    panes:
+      - shell_command:
+          # - ros2 launch nif_localization_nodes test.launch.py
+      - shell_command:
+          # - ros2 launch nif_points_preprocessor_nodes deploy.launch.py
+      - shell_command:
+          - ros2 launch nif_dk_graph_planner deploy.launch.py
+      - shell_command:
+          - rviz2

@@ -39,6 +39,14 @@ PointsClustering::PointsClustering()
       "in_lidar_points", nif::common::constants::QOS_SENSOR_DATA,
       std::bind(&PointsClustering::PointsCallback, this,
                 std::placeholders::_1));
+  subLeftPoints = this->create_subscription<sensor_msgs::msg::PointCloud2>(
+      "in_left_points", nif::common::constants::QOS_SENSOR_DATA,
+      std::bind(&PointsClustering::LeftPointsCallback, this,
+                std::placeholders::_1));
+  subRightPoints = this->create_subscription<sensor_msgs::msg::PointCloud2>(
+      "in_right_points", nif::common::constants::QOS_SENSOR_DATA,
+      std::bind(&PointsClustering::RightPointsCallback, this,
+                std::placeholders::_1));
 
   using namespace std::chrono_literals; // NOLINT
   sub_timer_ = this->create_wall_timer(
@@ -62,6 +70,36 @@ void PointsClustering::timer_callback() {
       m_simpleHeightmapPoints->points.push_back(point);
     }
   }
+  pcl::PointCloud<pcl::PointXYZI>::Ptr RightToMergedPoints(
+      new pcl::PointCloud<pcl::PointXYZI>);
+  if(bRightPoints)
+  {
+    pcl::PointCloud<pcl::PointXYZI>::Ptr RightDownsampledPoints(
+        new pcl::PointCloud<pcl::PointXYZI>);
+    RightDownsampledPoints = downsample(m_RightPoints, 0.05);
+    for (auto point : RightDownsampledPoints->points) {
+      if (fabs(point.y) < 2.0 && point.z > m_height_filter_thres &&
+          point.z < 0.5 && point.x > -5.0 && point.x < 0.5) {
+        RightToMergedPoints->points.push_back(point);
+      }
+    }
+    *m_simpleHeightmapPoints += *RightToMergedPoints;
+  }
+  pcl::PointCloud<pcl::PointXYZI>::Ptr LeftToMergedPoints(
+      new pcl::PointCloud<pcl::PointXYZI>);
+  if (bLeftPoints) {
+    pcl::PointCloud<pcl::PointXYZI>::Ptr LeftDownsampledPoints(
+        new pcl::PointCloud<pcl::PointXYZI>);
+    LeftDownsampledPoints = downsample(m_LeftPoints, 0.05);
+    for (auto point : LeftDownsampledPoints->points) {
+      if (fabs(point.y) < 2.0 && point.z > m_height_filter_thres &&
+          point.z < 0.5 && point.x > -5.0 && point.x < 0.5) {
+        LeftToMergedPoints->points.push_back(point);
+      }
+    }
+    *m_simpleHeightmapPoints += *LeftToMergedPoints;
+  }
+
 
   sensor_msgs::msg::PointCloud2 cloud_simple_heightmap_msg;
   pcl::toROSMsg(*m_simpleHeightmapPoints, cloud_simple_heightmap_msg);
@@ -128,7 +166,22 @@ void PointsClustering::PointsCallback(
   bPoints = true;
 
   // std::cout << "callback" << std::endl;
+}
 
+void PointsClustering::LeftPointsCallback(
+    const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
+
+  m_LeftPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
+  pcl::fromROSMsg(*msg, *m_LeftPoints);
+  bLeftPoints = true;
+}
+
+void PointsClustering::RightPointsCallback(
+    const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
+
+  m_RightPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
+  pcl::fromROSMsg(*msg, *m_RightPoints);
+  bRightPoints = true;
 }
 
 void PointsClustering::clusterAndColorGpu(
