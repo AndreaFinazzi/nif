@@ -97,9 +97,11 @@ typedef struct Connected
 {
   int id;
   double cost;
-  double additional_cost;
+  double collision_cost;
   int best_node;
   double transient_cost;
+  double curvature_cost;
+  double cost_close_to_vehicle;
 
 } connected_t;
 
@@ -119,6 +121,14 @@ typedef struct Waymap {
 struct AnalyticalFunctions {
   std::function<double(double, double)> f_;
 };
+
+struct duplication_comparator {
+  bool operator()(const std::pair<int, int> &a,
+                  const std::pair<int, int> &b) const {
+    return a.first != b.first;
+  }
+};
+
 namespace nif{
 namespace planning{
 
@@ -178,12 +188,15 @@ private:
                       const int &search_num_idx_in,
                       pcl::PointCloud<pcl::PointXYZI>::Ptr points_in,
                       int &current_layer_out,
-                      std::vector<int> &nearby_indice_out);
+                      std::vector<std::pair<int, int>> &nearby_indice_out);
 
+  void TransformPointsToBody(const pcl::PointCloud<pcl::PointXYZI>::Ptr CloudIn,
+                             pcl::PointCloud<pcl::PointXYZI>::Ptr CloudOut, 
+                             const double &veh_x_, const double &veh_y_, const double &veh_yaw_);
 
   std::vector<std::pair<std::string, std::vector<double>>> read_csv(
           std::string filename);
-  void removeDuplicated(std::vector<int> &v);
+  void removeDuplicated(std::vector<std::pair<int, int>> &v);
   pcl::PointCloud<pcl::PointXYZI>::Ptr
   downsample(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, double resolution);
 
@@ -206,6 +219,7 @@ private:
       pubFinalPathPoints;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubCostPoints;
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pubFinalPath;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubFinalPathOnBody;
 
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubWallInflatedPoints;
 
@@ -240,17 +254,20 @@ private:
   bool bCenteredPoints = false;
   bool bWallPoints = false;
   bool bWallInflated = false;
+  bool bDebug;
 
-      double m_veh_x;
+  double m_veh_x;
   double m_veh_y;
   double m_veh_roll, m_veh_pitch, m_veh_yaw;
   double prev_time, current_time;
-  int m_closestStartNode; 
+  int m_ClosestFirstNodeId;
+  int m_StartNode; 
   int m_closestGoalNode;
   int m_currentLayer;
   int m_prevBestFirstNodeInLayer = -1;
   int m_prevBestEndNodeInLayer = -1;
   int m_prevFirstLayer;
+  int m_LayerSize;
   int m_prevStartFirstNodeId = -1;
   int m_UsePrevStartFirstNodeAfter2 = 0;
 
@@ -264,8 +281,9 @@ private:
       m_RacingLineGraphArray; // pair layer, node
 
   std::vector<Obstacle> m_obstacle;
-  std::vector<int> m_nearbyFirstNodes;
+  std::vector<std::pair<int, int>> m_nearbyFirstNodes;
   nav_msgs::msg::OccupancyGrid m_OccupancyGrid;
+
 
   nif::localization::utils::GeodeticConverter conv_;
   double m_originLat;

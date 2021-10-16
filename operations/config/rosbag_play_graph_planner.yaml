@@ -5,14 +5,18 @@ windows:
     shell_command_before:
       - source /home/usrg/nif/install/setup.bash 
       - export ROS_DOMAIN_ID=77
-
-      - cd /home/usrg/media/ssd/VEH4_LOR_RUN-03.b_2021-10-14/ 
+      # - cd /home/usrg/media/ssd/VEH4_LOR_RUN-03.b_2021-10-14/ 
+      - cd /home/usrg/media/ssd/VEH4_LOR_RUN-01_2021-10-14/ 
 
     panes:
     - shell_command:
-        - ros2 bag play autonomy_2021-10-14_15-54-47/ --remap /graph_planner/cost:=/origin/graph_planner/cost /graph_planner/final_path:=/origin/graph_planner/final_path /graph_planner/final_path_points:=/origin/graph_planner/final_path_points /graph_planner/wall_inflated:=/origin/graph_planner/wall_inflated
+        # - ros2 bag play autonomy_2021-10-14_15-54-47/ --remap /graph_planner/cost:=/origin/graph_planner/cost /graph_planner/final_path:=/origin/graph_planner/final_path /graph_planner/final_path_points:=/origin/graph_planner/final_path_points /graph_planner/wall_inflated:=/origin/graph_planner/wall_inflated
+        - ros2 bag play autonomy_2021-10-14_10-16-00/ --remap /graph_planner/cost:=/origin/graph_planner/cost /graph_planner/final_path:=/origin/graph_planner/final_path /graph_planner/final_path_points:=/origin/graph_planner/final_path_points /graph_planner/wall_inflated:=/origin/graph_planner/wall_inflated --topics /aw_localization/ekf/odom /graph_planner/final_path_points -r 3
     - shell_command:
-      # - ros2 run plotjuggler plotjuggler
+        # - ros2 bag play autonomy_2021-10-14_15-54-47/ --remap /graph_planner/cost:=/origin/graph_planner/cost /graph_planner/final_path:=/origin/graph_planner/final_path /graph_planner/final_path_points:=/origin/graph_planner/final_path_points /graph_planner/wall_inflated:=/origin/graph_planner/wall_inflated
+        - ros2 bag play sensors_2021-10-14_10-16-00/ --topics  /luminar_front_points  --read-ahead-queue-size 10000 -r 3
+    - shell_command:
+        - ros2 launch av21_description deploy.launch.py
 
   - window_name: Algorithm Tab
     layout: tiled
@@ -23,10 +27,15 @@ windows:
       - echo $TRACK
     panes:
       - shell_command:
-          # - ros2 launch nif_localization_nodes test.launch.py
+          - ros2 launch nif_points_clustering deploy.launch.py
       - shell_command:
-          # - ros2 launch nif_points_preprocessor_nodes deploy.launch.py
+          - ros2 launch nif_points_preprocessor_nodes deploy.launch.py
       - shell_command:
           - ros2 launch nif_dk_graph_planner deploy.launch.py
       - shell_command:
           - rviz2
+      - shell_command:
+
+      - shell_command:
+
+      - shell_command:

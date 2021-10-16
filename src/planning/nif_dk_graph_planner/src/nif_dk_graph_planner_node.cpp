@@ -63,6 +63,8 @@ DKGraphPlannerNode::DKGraphPlannerNode(const std::string &node_name_)
       "/graph_planner/final_path", nif::common::constants::QOS_PLANNING);
   pubWallInflatedPoints = this->create_publisher<sensor_msgs::msg::PointCloud2>(
           "/graph_planner/wall_inflated", nif::common::constants::QOS_PLANNING);
+  pubFinalPathOnBody = this->create_publisher<sensor_msgs::msg::PointCloud2>(
+      "/graph_planner/on_body_final_points", nif::common::constants::QOS_PLANNING);
 
   SubOdometry = this->create_subscription<nav_msgs::msg::Odometry>(
           "in_ekf_odometry", nif::common::constants::QOS_EGO_ODOMETRY,
@@ -155,10 +157,22 @@ void DKGraphPlannerNode::OsmParcing() {
         // std::endl;
         nodeTmp.start_node = tag.attribute("v").as_int();
       }
+      std::string psi = "psi";
+      if (tag.attribute("k").as_string() == psi) {
+        // std::cout << "psi: " << tag.attribute("v").as_double() <<
+        // std::endl;
+        nodeTmp.psi = tag.attribute("v").as_double();
+      }
+      std::string kappa = "kappa";
+      if (tag.attribute("k").as_string() == kappa) {
+        // std::cout << "kappa: " << tag.attribute("v").as_double() <<
+        // std::endl;
+        nodeTmp.kappa = tag.attribute("v").as_double();
+      }
     }
     m_OsmParcer.nodes.push_back(nodeTmp);
   }
-  
+
   // // Way data
   nif_dk_graph_planner_msgs::msg::OsmParcer WayParcer;
   for (pugi::xml_node way : doc.child("osm").children("way")) {
@@ -167,6 +181,8 @@ void DKGraphPlannerNode::OsmParcing() {
     // std::cout << "way id: " << way.attribute("id").value() << std::endl;
     nif_dk_graph_planner_msgs::msg::Way wayTmp;
     wayTmp.id = way.attribute("id").as_int();
+    double kappa_sum = 0.;
+    double psi_sum = 0.;
     // attribute of way data : Node IDs
     for (pugi::xml_node way_data : way.children("nd")) {
       nif_dk_graph_planner_msgs::msg::Node nodeRef; // Node Ids in the each way
@@ -174,6 +190,8 @@ void DKGraphPlannerNode::OsmParcing() {
       for (auto node : m_OsmParcer.nodes) {
         if (node.id == nodeRef.id) {
           nodeRef = node;
+          kappa_sum += fabs(node.kappa);
+          psi_sum += fabs(node.psi);
         }
       }
       wayTmp.nodes.push_back(nodeRef);
@@ -181,6 +199,10 @@ void DKGraphPlannerNode::OsmParcing() {
     wayTmp.first_node_id = wayTmp.nodes[0].id;
     wayTmp.last_node_id = wayTmp.nodes[wayTmp.nodes.size() - 1].id;
     wayTmp.cost = INF;
+    wayTmp.kappa = kappa_sum;
+    wayTmp.psi = psi_sum;
+
+    // std::cout << psi_sum << ", " << kappa_sum << std::endl;
 
     // Tags
     for (pugi::xml_node tag : way.children("tag")) {
@@ -234,11 +256,12 @@ void DKGraphPlannerNode::OsmParcing() {
     }
   }
 
+  m_WaysResister.clear();
+  m_FirstNodeBasedResister.clear();
   for(auto wayRegister : m_OsmParcer.ways) {
     m_WaysResister[wayRegister.start_layer].push_back(wayRegister);
     m_FirstNodeBasedResister[wayRegister.first_node_id].push_back(wayRegister);
   }
-
 
   RCLCPP_INFO(this->get_logger(),
               "Converting OSM file to the ros system is completed!");
@@ -246,6 +269,7 @@ void DKGraphPlannerNode::OsmParcing() {
   RCLCPP_INFO(this->get_logger(), "node size: %d" , m_OsmParcer.nodes.size());
   RCLCPP_INFO(this->get_logger(), "way size: %d" , m_OsmParcer.ways.size());
   RCLCPP_INFO(this->get_logger(), "layer size: %d", m_WaysResister.size());
+  m_LayerSize = m_WaysResister.size();
 
   bParcingComplete = true;
 }
@@ -346,48 +370,38 @@ void DKGraphPlannerNode::CallbackOdometry(const nav_msgs::msg::Odometry::SharedP
     int current_layer_for_starting_node;
     GetIntensityInfo(m_veh_x, m_veh_y, m_FullIndexedPoints,
                      current_layer_for_starting_node); // to get current layer
-    int prev_layer_for_starting_node = current_layer_for_starting_node -1 + m_WaysResister.size();
-    prev_layer_for_starting_node = prev_layer_for_starting_node % m_WaysResister.size();
-    // for (int i = 0; i < search_num_idx_in; i++) {
-    //   int layer_idx = current_layer_out + i;
-    //   if (layer_idx > layer_size)
-    //     layer_idx = layer_idx % layer_size;
+    int prev_layer_for_starting_node = current_layer_for_starting_node -1;
+    if(prev_layer_for_starting_node < 0)
+      prev_layer_for_starting_node = prev_layer_for_starting_node + m_LayerSize;
+
+    prev_layer_for_starting_node = prev_layer_for_starting_node % m_LayerSize;
 
     for (auto way : m_WaysResister[prev_layer_for_starting_node]) {
       if(way.start_node == 2)
         current_node_id= way.first_node_id;
     }
-    std::cout << current_node_id << std::endl;
 
-    // GetIntensityInfo(m_veh_x, m_veh_y, m_FirstNodeContainPoints, current_node_id); // to get current first node id
+    GetIntensityInfo(m_veh_x, m_veh_y, m_FirstNodeContainPoints,
+                     m_ClosestFirstNodeId); // to get current first node id
+    if(current_node_id == 0)
+    {
+      current_node_id = m_ClosestFirstNodeId;
+    }
+    // std::cout << m_ClosestFirstNodeId << std::endl;
+
     
-    // Path from racing line
-    // GetIntensityInfo(m_closest_x_in_racing_line, m_closest_y_in_racing_line,
-    //                  m_FirstNodeContainPoints, current_node_id);
-    
-    // put prev best first node as closest start node
-    // std::cout << "original : " << current_node_id << std::endl;
-    // for (auto ways_with_same_first_node_id : m_FirstNodeBasedResister[current_node_id])
-    // {
-    //   int layer_id = ways_with_same_first_node_id.start_layer;
-    //   for (auto ways_with_same_layer : m_WaysResister[layer_id])
-    //   {
-    //     if (ways_with_same_layer.end_node == m_prevBestEndNodeInLayer)
-    //     {
-    //       current_node_id = ways_with_same_layer.first_node_id;
-    //       break;
-    //     }
-    //   }
-    // }
-    // // std::cout << "after : " << current_node_id << std::endl;
+      // Path from racing line
+      // GetIntensityInfo(m_closest_x_in_racing_line,
+      // m_closest_y_in_racing_line,
+      //                  m_FirstNodeContainPoints, current_node_id);
 
-    // if(m_prevStartFirstNodeId != -1)
-    //   current_node_id = m_prevStartFirstNodeId;
+      // if(m_prevStartFirstNodeId != -1)
+      //   current_node_id = m_prevStartFirstNodeId;
 
-    m_closestStartNode = current_node_id;
+    m_StartNode = current_node_id;
 
     double target_x_in_racing_line, target_y_in_racing_line;
-    int target_idx = current_idx + 60;
+    int target_idx = current_idx + 100;
     int target_node_id;
     size_t racingLineRefSize = m_racingLineRefPoints->points.size();
     target_idx = target_idx % racingLineRefSize;
@@ -398,26 +412,14 @@ void DKGraphPlannerNode::CallbackOdometry(const nav_msgs::msg::Odometry::SharedP
     m_closestGoalNode = target_node_id;
 
     m_nearbyFirstNodes.clear();
-    int search_num_idx = 10;
+    int search_num_idx = 20;
     int current_layer;
     getNearbyNodesFromLayer(
         m_veh_x, m_veh_y, search_num_idx, m_FullIndexedPoints, current_layer,
         m_nearbyFirstNodes);
 
     m_currentLayer = current_layer;
-
-    // std::cout << "------\n" ;
-    // std::cout << "m_currentLayer : " << m_currentLayer << std::endl;
-    // std::cout << "m_prevFirstLayer : " << m_prevFirstLayer << std::endl;
-    // std::cout << "m_prevBestFirstNodeInLayer : " << m_prevBestFirstNodeInLayer << std::endl;
-    // std::cout << "m_prevBestEndNodeInLayer : "<< m_prevBestEndNodeInLayer << std::endl;
-
-    // for (auto node : m_nearbyFirstNodes)
-    //   std::cout << node << std::endl;
-    // std::cout << "m_nearbyFirstNodes.size() : " <<
-    // m_nearbyFirstNodes.size()
-    //           << std::endl;
-
+    
     bOdometry = true;
   }
 }
@@ -633,7 +635,7 @@ double DKGraphPlannerNode::getClosestDistance(
 void DKGraphPlannerNode::getNearbyNodesFromLayer(
     const double &x_in, const double &y_in, const int &search_num_idx_in,
     pcl::PointCloud<pcl::PointXYZI>::Ptr points_in,
-    int& current_layer_out, std::vector<int> &nearby_indice_out) {
+    int& current_layer_out, std::vector<std::pair<int, int>> &nearby_indice_out) {
 
   if (!bParcingComplete)
     return;
@@ -663,18 +665,19 @@ void DKGraphPlannerNode::getNearbyNodesFromLayer(
   }
   current_layer_out = current_layer;
 
-  int layer_size = m_WaysResister.size();
   for(int i = 0; i < search_num_idx_in; i++)
   {
     int layer_idx = current_layer_out + i;
-    if(layer_idx > layer_size)
-      layer_idx = layer_idx % layer_size;
+    if(layer_idx > m_LayerSize - 1)
+      layer_idx = layer_idx % m_LayerSize;
 
     for (auto way : m_WaysResister[layer_idx]) {
-      nearby_indice_out.push_back(way.first_node_id);
+      std::pair<int, int> first_node_and_layer_pair;
+      first_node_and_layer_pair.first = way.first_node_id;
+      first_node_and_layer_pair.second = way.start_layer;
+      nearby_indice_out.push_back(first_node_and_layer_pair);
     }
   }
-
   removeDuplicated(nearby_indice_out);
 }
 
@@ -690,7 +693,8 @@ void DKGraphPlannerNode::BuildGraph()
     Connected connected_;
     connected_.id = way.last_node_id;
     connected_.cost = way.cost;
-    connected_.additional_cost = 0;
+    connected_.curvature_cost = way.kappa * 2.0;
+    connected_.collision_cost = 0;
     m_graph[way.first_node_id].push_back(connected_);
   }
   bBuildGraph = true;
@@ -713,11 +717,19 @@ void DKGraphPlannerNode::UpdateGraph()
   m_CostPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
   for (auto nearbyNode : m_nearbyFirstNodes) {
     // std::cout << "----------------------\n";
-    for (int i =0; i < m_FirstNodeBasedResister[nearbyNode].size(); i++)
-    {
-      auto way = m_FirstNodeBasedResister[nearbyNode][i];
+    auto first_node_in_nearby = nearbyNode.first;
+    auto start_layer_in_nearby = nearbyNode.second;
+    for (int i = 0; i < m_FirstNodeBasedResister[first_node_in_nearby].size();
+         i++) {
+      auto way = m_FirstNodeBasedResister[first_node_in_nearby][i];
       double cost_accumulated = 0;
-      double cost_transient = abs(way.end_node - m_BestLayerArray[way.start_layer]) * 0.4;
+      double cost_transient = abs(way.start_node - m_BestLayerArray[way.start_layer]) * 0.5;
+      double cost_close_to_vehicle;
+      if(m_currentLayer == start_layer_in_nearby)
+      {
+        cost_close_to_vehicle = abs(way.start_node - m_FirstNodeBasedResister[m_ClosestFirstNodeId][0].start_node);
+      }
+
       for (auto node : way.nodes) {
         double pt_x_global = node.x;
         double pt_y_global = node.y;
@@ -728,7 +740,6 @@ void DKGraphPlannerNode::UpdateGraph()
         double pt_y_body = -(pt_x_global - m_veh_x) * sin(m_veh_yaw) +
                            (pt_y_global - m_veh_y) * cos(m_veh_yaw);
 
-        // double cost = CorrespondingCost(pt_x_body, pt_y_body, m_OccupancyGrid);
         double cost =
             CorrespondingCost(pt_x_body, pt_y_body, 3.0, m_ClusterCenterPoints,
                               m_InflatedCostPoints) * 10;
@@ -739,7 +750,7 @@ void DKGraphPlannerNode::UpdateGraph()
         //   wall_cost = CorrespondingCost(pt_x_body, pt_y_body, 5.0, m_WallPoints,
         //                                 m_WallInflatedCostPoints);
         // }
-        cost_accumulated += cost + wall_cost;
+        cost_accumulated += cost; // + wall_cost;
         count++;
 
         pcl::PointXYZI pointbuf;
@@ -759,11 +770,12 @@ void DKGraphPlannerNode::UpdateGraph()
       // }
       
       int j = 0;
-      for (auto graph : m_graph[nearbyNode])
-      {         
+      for (auto graph : m_graph[first_node_in_nearby]) {
         if (graph.id == way.last_node_id) {
-          m_graph[nearbyNode][j].additional_cost = cost_accumulated;
-          m_graph[nearbyNode][j].transient_cost = cost_transient;
+          m_graph[first_node_in_nearby][j].collision_cost = cost_accumulated * 5.0;
+          m_graph[first_node_in_nearby][j].transient_cost = cost_transient;
+          m_graph[first_node_in_nearby][j].cost_close_to_vehicle =
+              cost_close_to_vehicle;
         }
         j++;
       }
@@ -784,12 +796,14 @@ void DKGraphPlannerNode::ReleaseGraph()
     return;
 
   for (auto nearbyNode : m_nearbyFirstNodes) {
-    for (auto way : m_FirstNodeBasedResister[nearbyNode])
-      for (int i = 0; i < m_graph[nearbyNode].size(); i++) {
-        if (m_graph[nearbyNode][i].id == way.last_node_id) {
-          // m_graph[nearbyNode][i].cost = way.cost;
-          m_graph[nearbyNode][i].additional_cost = 0.;
-          m_graph[nearbyNode][i].transient_cost = 0.;
+    auto first_node_in_nearby = nearbyNode.first;
+    for (auto way : m_FirstNodeBasedResister[first_node_in_nearby])
+      for (int i = 0; i < m_graph[first_node_in_nearby].size(); i++) {
+        if (m_graph[first_node_in_nearby][i].id == way.last_node_id) {
+          // m_graph[first_node_in_nearby][i].cost = way.cost;
+          m_graph[first_node_in_nearby][i].collision_cost = 0.;
+          m_graph[first_node_in_nearby][i].transient_cost = 0.;
+          m_graph[first_node_in_nearby][i].cost_close_to_vehicle = 0.;
       }
     }
   }
@@ -819,11 +833,11 @@ void DKGraphPlannerNode::Planning() {
                         std::greater<std::pair<double, int>>>
         qu;
 
-    qu.push({0., m_closestStartNode}); //Put init node in the que
-    dist[m_closestStartNode] = 0.; // Update value of start point as 0
+    qu.push({0., m_StartNode}); //Put init node in the que
+    dist[m_StartNode] = 0.; // Update value of start point as 0
     // for(auto id : m_PlanningPat hNodes)
     //   std::cout << "m_PredSuccMap: " <<m_PredSuccMap[id] << std::endl;
-    // std::cout << m_graph[m_closestStartNode].size() << std::endl;
+    // std::cout << m_graph[m_StartNode].size() << std::endl;
 
     m_PredSuccMap.clear();
     while (!qu.empty()) {
@@ -844,11 +858,12 @@ void DKGraphPlannerNode::Planning() {
 
       for (auto connected : m_graph[here]) {
         int next = connected.id;
-        double nextcost = connected.cost + connected.additional_cost;
-                          // connected.transient_cost;
+        double nextcost = connected.cost + connected.collision_cost +
+                          connected.curvature_cost + connected.transient_cost + 
+                          connected.cost_close_to_vehicle;  
 
         // std::cout << "connected.cost: " << connected.cost << std::endl;
-        // std::cout << "connected.additional_cost : " << connected.additional_cost << std::endl;
+        // std::cout << "connected.collision_cost : " << connected.collision_cost << std::endl;
         // std::cout << "connected.transient_cost : " << connected.transient_cost << std::endl;
 
         if (dist[next] > dist[here] + nextcost) {
@@ -869,7 +884,7 @@ void DKGraphPlannerNode::Planning() {
     auto next = m_PredSuccMap[m_closestGoalNode];
 
     // std::cout << "graph size: "<< m_graph.size() << std::endl;
-    // std::cout << "m_closestStartNode: " << m_closestStartNode << std::endl;
+    // std::cout << "m_StartNode: " << m_StartNode << std::endl;
     // std::cout <<"m_closestGoalNode: " << m_closestGoalNode << std::endl;
     // std::cout << "next: "<<next << std::endl;
     FinalPathQue.push_back(m_closestGoalNode);
@@ -944,20 +959,6 @@ void DKGraphPlannerNode::ToPathMsg() {
       {
         m_prevFirstLayer = m_currentLayer;
         std::cout << "layer changed!" << std::endl;
-        if(m_UsePrevStartFirstNodeAfter2 < 2)
-        {
-          m_prevStartFirstNodeId = final_id.first_node_id;
-        }
-        else
-        {
-          m_prevStartFirstNodeId = m_FinalNodes[1];
-        }
-
-        m_UsePrevStartFirstNodeAfter2 ++;
-        if (cnt == 0) {
-          m_prevBestFirstNodeInLayer = final_id.start_node;
-          m_prevBestEndNodeInLayer = final_id.end_node;
-        }
       }
 
       for (auto nd : final_id.nodes) {
@@ -994,11 +995,16 @@ void DKGraphPlannerNode::ToPathMsg() {
         prev_y = nd.y;
 
       }
-      m_BestLayerArray[final_id.start_layer] = final_id.end_node;
+      m_BestLayerArray[final_id.start_layer] = final_id.start_node;
     }
   }
-  if (FinalPath->poses.empty())
+
+  if (FinalPath.poses.empty()) {
+    // std::cout << "planning node size : " << m_FinalNodes.size() << std::endl;
+    // std::cout << "m_currentLayer : " << m_currentLayer << std::endl;
+    // std::cout << "start node id : " << m_StartNode << std::endl;
     RCLCPP_WARN(this->get_logger(), "Empty poses in the fianl path.");
+  }
 
   sensor_msgs::msg::PointCloud2 FinalPathCloudMsg;
   if(!finalcloud_ptr->points.empty())
@@ -1010,6 +1016,19 @@ void DKGraphPlannerNode::ToPathMsg() {
   FinalPath.header.frame_id = nif::common::frame_id::localization::ODOM;
   FinalPath.header.stamp = this->now();
   pubFinalPath->publish(FinalPath);
+
+  pcl::PointCloud<pcl::PointXYZI>::Ptr finalOnBodyPoints(
+      new pcl::PointCloud<pcl::PointXYZI>);
+  sensor_msgs::msg::PointCloud2 FinalOnBodyCloudMsg;
+  if (!finalcloud_ptr->points.empty())
+  {
+    TransformPointsToBody(finalcloud_ptr, finalOnBodyPoints, 
+                          m_veh_x, m_veh_y, m_veh_yaw);
+    pcl::toROSMsg(*finalOnBodyPoints, FinalOnBodyCloudMsg);
+  }
+  FinalOnBodyCloudMsg.header.frame_id = nif::common::frame_id::localization::BASE_LINK;
+  FinalOnBodyCloudMsg.header.stamp = this->now();
+  pubFinalPathOnBody->publish(FinalOnBodyCloudMsg);
 }
 
 bool DKGraphPlannerNode::ExistInList(int id, std::deque<int> list) {
@@ -1130,13 +1149,20 @@ double DKGraphPlannerNode::CorrespondingCost(
   return max_cost;
 }
 
-void DKGraphPlannerNode::removeDuplicated(std::vector<int> &v) {
-  auto end = v.end();
-  for (auto it = v.begin(); it != end; ++it) {
-    end = std::remove(it + 1, end, *it);
-  }
+void DKGraphPlannerNode::removeDuplicated(std::vector<std::pair<int,int>> &v) {
 
-  v.erase(end, v.end());
+  std::set<std::pair<int, int>, duplication_comparator> unique;
+
+  // Fill the set
+  for (const auto &p : v) {
+    unique.insert(p);
+  }
+  v.clear();
+  
+  for (const auto &p : unique) {
+    // std::cout << p.first << ", " << p.second << "\n";
+    v.push_back(p);
+  }
 }
 
 pcl::PointCloud<pcl::PointXYZI>::Ptr
@@ -1207,4 +1233,21 @@ void DKGraphPlannerNode::createGaussianWorld(
     }
   }
   // return output;
+}
+
+void DKGraphPlannerNode::TransformPointsToBody(
+    const pcl::PointCloud<pcl::PointXYZI>::Ptr CloudIn,
+    pcl::PointCloud<pcl::PointXYZI>::Ptr CloudOut, const double &veh_x_,
+    const double &veh_y_, const double &veh_yaw_) {
+
+  for (auto point : CloudIn->points) {
+    pcl::PointXYZI pointOnBody;
+    pointOnBody.x =
+        (point.x - veh_x_) * cos(veh_yaw_) + (point.y - veh_y_) * sin(veh_yaw_);
+    pointOnBody.y = -(point.x - veh_x_) * sin(veh_yaw_) +
+                    (point.y - veh_y_) * cos(veh_yaw_);
+    pointOnBody.z = point.z;
+    pointOnBody.intensity = point.intensity;
+    CloudOut->points.push_back(pointOnBody);
+  }
 }
