@@ -93,6 +93,10 @@
 #include <pcl/search/kdtree.h>
 #include <pcl/segmentation/extract_clusters.h>
 
+struct AnalyticalFunctions {
+  std::function<double(double, double)> f_;
+};
+
 namespace nif{
 namespace planning{
 
@@ -105,14 +109,34 @@ public:
 
   void MessagePublisher();
   void timer_callback();
-  
+  void OdometryCallback(const nav_msgs::msg::Odometry::SharedPtr msg);
+  void TransformPointsToBody(const pcl::PointCloud<pcl::PointXYZI>::Ptr CloudIn,
+                             pcl::PointCloud<pcl::PointXYZI>::Ptr CloudOut,
+                             const double &veh_x_, const double &veh_y_,
+                             const double &veh_yaw_);
+  void TransformPointsToGlobal(const pcl::PointCloud<pcl::PointXYZI>::Ptr &CloudIn,
+                               pcl::PointCloud<pcl::PointXYZI>::Ptr &CloudOut, 
+                               const double &veh_x_, const double &veh_y_, 
+                               const double &veh_yaw_);
+  void createGaussianWorld(pcl::PointCloud<pcl::PointXYZI>::Ptr &points_in,
+                           double inflation_x, double inflation_y,
+                           pcl::PointCloud<pcl::PointXYZI>::Ptr &points_out);
 
 private:
   FakeObsNode();
 
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubFakeObsPoints;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr
+      pubFakeInflatedPoints;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr 
+      pubFakeCenterPoints;
+
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubGlobalFakeInflatedPoints;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubGlobalFakeCenterPoints;
+
   pcl::PointCloud<pcl::PointXYZI>::Ptr m_FakeObsPoints;
   rclcpp::TimerBase::SharedPtr sub_timer_;
+  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr sub_odometry_;
 
   bool bParcingComplete = false;
   std::string m_OsmFileName, m_FullFilePath;
@@ -120,6 +144,11 @@ private:
   nif::localization::utils::GeodeticConverter conv_;
   double m_originLat;
   double m_originLon;
+
+  double m_veh_x;
+  double m_veh_y;
+  double m_veh_roll, m_veh_pitch, m_veh_yaw;
+  bool bOdometry = false;
   };
 } // namespace planning
 } // namespace nif

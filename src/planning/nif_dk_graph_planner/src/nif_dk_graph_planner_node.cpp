@@ -402,7 +402,7 @@ void DKGraphPlannerNode::CallbackOdometry(const nav_msgs::msg::Odometry::SharedP
 
 
     for (auto way : m_WaysResister[prev_layer_for_starting_node]) {
-      if (way.start_node == 2)
+      if (way.start_node == 4)
         current_node_id = way.first_node_id;
 
       if(current_node_id == 0)
@@ -432,7 +432,7 @@ void DKGraphPlannerNode::CallbackOdometry(const nav_msgs::msg::Odometry::SharedP
     m_StartNode = current_node_id;
 
     double target_x_in_racing_line, target_y_in_racing_line;
-    int target_idx = current_idx + 100;
+    int target_idx = current_idx + 150;
     int target_node_id;
     size_t racingLineRefSize = m_racingLineRefPoints->points.size();
     target_idx = target_idx % racingLineRefSize;
@@ -443,7 +443,7 @@ void DKGraphPlannerNode::CallbackOdometry(const nav_msgs::msg::Odometry::SharedP
     m_closestGoalNode = target_node_id;
 
     m_nearbyFirstNodes.clear();
-    int search_num_idx = 20;
+    int search_num_idx = 30;
     int current_layer;
     getNearbyNodesFromLayer(
         m_veh_x, m_veh_y, search_num_idx, m_FullIndexedPoints, current_layer,
@@ -804,7 +804,7 @@ void DKGraphPlannerNode::UpdateGraph()
             CorrespondingCost(pt_x_body, pt_y_body, m_inflation_size, m_ClusterCenterPoints,
                               m_InflatedCostPoints);
 
-        double wall_cost = 0.;
+        // double wall_cost = 0.;
         // if (bWallInflated)
         // {
         //   wall_cost = CorrespondingCost(pt_x_body, pt_y_body, 5.0, m_WallPoints,
@@ -818,7 +818,7 @@ void DKGraphPlannerNode::UpdateGraph()
         pcl::PointXYZI pointbuf;
         pointbuf.x = pt_x_global;
         pointbuf.y = pt_y_global;
-        pointbuf.intensity = way.cost + collision_cost + cost_transient; ; 
+        pointbuf.intensity = way.cost + collision_cost; // + cost_transient; ; 
         m_CostPoints->points.push_back(pointbuf);
       }
 
@@ -1014,7 +1014,7 @@ void DKGraphPlannerNode::ToPathMsg() {
       if (m_prevFirstLayer != m_currentLayer)
       {
         m_prevFirstLayer = m_currentLayer;
-        std::cout << "layer changed!" << std::endl;
+        // std::cout << "layer changed!" << std::endl;
       }
 
       for (auto nd : final_id.nodes) {
@@ -1105,9 +1105,9 @@ void DKGraphPlannerNode::ToPathMsg() {
   }
 
   if (FinalPath.poses.empty()) {
-    // std::cout << "planning node size : " << m_FinalNodes.size() << std::endl;
-    // std::cout << "m_currentLayer : " << m_currentLayer << std::endl;
-    // std::cout << "start node id : " << m_StartNode << std::endl;
+    std::cout << "planning node size : " << m_FinalNodes.size() << std::endl;
+    std::cout << "m_currentLayer : " << m_currentLayer << std::endl;
+    std::cout << "start node id : " << m_StartNode << std::endl;
     RCLCPP_WARN(this->get_logger(), "Empty poses in the fianl path.");
   }
 

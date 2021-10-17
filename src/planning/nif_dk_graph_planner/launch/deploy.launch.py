@@ -83,7 +83,7 @@ def generate_launch_description():
 
                     'inflation_size' : 3.0,
                     'collision_check_radius' : 2.2,
-                    'final_path_update_dist' : 170.0,
+                    'final_path_update_dist' : 170., # 170.0,
                 }],
                 remappings=[ 
                     ("in_ekf_odometry", "/aw_localization/ekf/odom"),

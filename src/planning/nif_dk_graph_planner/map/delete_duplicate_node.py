@@ -20,10 +20,9 @@ def indent(elem, level=0):
         if level and (not elem.tail or not elem.tail.strip()):
             elem.tail = i
 
-
 ### READ xml file ###
-osm_file_path = '/home/usrg/adehome/nif/src/planning/nif_dk_graph_planner/map/LOR/stored_graph_fc.osm' # original
-new_osm_file_path = '/home/usrg/adehome/nif/src/planning/nif_dk_graph_planner/map/LOR/LOR_FC_modified.osm' # modified
+osm_file_path = '/home/usrg/adehome/nif/src/planning/nif_dk_graph_planner/map/IMS/IMS_fc.osm' # original
+new_osm_file_path = '/home/usrg/adehome/nif/src/planning/nif_dk_graph_planner/map/IMS/IMS_fc_modified.osm' # modified
 
 
 tree = parse(osm_file_path)

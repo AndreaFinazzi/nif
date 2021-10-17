@@ -48,7 +48,7 @@ def generate_launch_description():
     fake_obstacle_path = os.path.join(
                     get_package_share_directory("nif_dk_fake_obstacle_node"),
                     "map", directory,
-                    'fake_obstacle_2.osm'
+                    'fake_obstacle.osm'
     )  
 
 
@@ -66,7 +66,7 @@ def generate_launch_description():
                     'origin_lon' : origin_lon,
                 }],
                 remappings=[ 
-                    ("in_ekf_odometry", "/aw_localization/ekf/odom"),
+                    # ("in_ekf_odometry", "/aw_localization/ekf/odom"),
                     # ("in_oc_grid", "/semantics/costmap_generator/occupancy_grid"),
                 ]
     )
