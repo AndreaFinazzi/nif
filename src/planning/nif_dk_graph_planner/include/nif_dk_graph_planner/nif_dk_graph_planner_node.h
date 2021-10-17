@@ -222,6 +222,7 @@ private:
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubFinalPathOnBody;
 
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubWallInflatedPoints;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubBestLayerXYPoints;
 
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr SubOdometry;
   rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr
@@ -260,6 +261,12 @@ private:
   double m_veh_y;
   double m_veh_roll, m_veh_pitch, m_veh_yaw;
   double prev_time, current_time;
+
+  double m_ref_gain;
+  double m_collision_gain;
+  double m_curvature_gain;
+  double m_transient_gain;
+
   int m_ClosestFirstNodeId;
   int m_StartNode; 
   int m_closestGoalNode;
@@ -271,7 +278,8 @@ private:
   int m_prevStartFirstNodeId = -1;
   int m_UsePrevStartFirstNodeAfter2 = 0;
 
-  std::unordered_map<int, int> m_BestLayerArray;  //first node id , layer's node
+  std::unordered_map<int, int> m_BestLayerArray;  //first node id , layer's way
+  std::unordered_map<int, std::pair<double, double>> m_BestLayerXYArray;
   std::unordered_map<int, std::vector<nif_dk_graph_planner_msgs::msg::Way>>
           m_WaysResister;
   std::unordered_map<int, std::vector<nif_dk_graph_planner_msgs::msg::Way>>

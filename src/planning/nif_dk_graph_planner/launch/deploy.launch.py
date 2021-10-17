@@ -75,6 +75,11 @@ def generate_launch_description():
                     'racing_trajectory' : racing_traj_path,
                     'origin_lat' : origin_lat,
                     'origin_lon' : origin_lon,
+                    
+                    'ref_gain' : 0.5,
+                    'collision_gain' : 15.0,
+                    'curvature_gain' : 4.0,
+                    'transient_gain' : 2.0,
                 }],
                 remappings=[ 
                     ("in_ekf_odometry", "/aw_localization/ekf/odom"),

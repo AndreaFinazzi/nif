@@ -16,6 +16,7 @@ def generate_launch_description():
         )
         
     param_file_launch_arg = DeclareLaunchArgument(
+        
         'nif_points_clustering_param_file',
         default_value=params_file,
         description='nif_points_clustering_param_file'
