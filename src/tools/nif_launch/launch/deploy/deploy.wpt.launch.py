@@ -393,11 +393,11 @@ def generate_launch_description():
         )
     )
 
-    nif_costmap = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            get_share_file("nif_costmap_generator", 'launch/deploy.launch.py')
-        )
-    )
+    # nif_costmap = IncludeLaunchDescription(
+    #     PythonLaunchDescriptionSource(
+    #         get_share_file("nif_costmap_generator", 'launch/deploy.launch.py')
+    #     )
+    # )
 
     nif_dk_planner_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -433,6 +433,6 @@ def generate_launch_description():
         nif_mission_manager_launch,
         nif_waypoint_manager_node,
         nif_points_clustering,
-        nif_costmap,
+        # nif_costmap,
         nif_dk_planner_launch
 ])

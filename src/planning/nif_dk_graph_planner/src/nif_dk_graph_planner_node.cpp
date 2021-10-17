@@ -61,16 +61,32 @@ DKGraphPlannerNode::DKGraphPlannerNode(const std::string &node_name_)
       "/graph_planner/cost", nif::common::constants::QOS_PLANNING);
   pubFinalPath = this->create_publisher<nav_msgs::msg::Path>(
       "/graph_planner/final_path", nif::common::constants::QOS_PLANNING);
+  pubWallInflatedPoints = this->create_publisher<sensor_msgs::msg::PointCloud2>(
+          "/graph_planner/wall_inflated", nif::common::constants::QOS_PLANNING);
 
-  SubOdometry =  this->create_subscription<nav_msgs::msg::Odometry>(
-      "in_ekf_odometry", nif::common::constants::QOS_EGO_ODOMETRY,
-      std::bind(&DKGraphPlannerNode::CallbackOdometry, this,
-                std::placeholders::_1));
+  SubOdometry = this->create_subscription<nav_msgs::msg::Odometry>(
+          "in_ekf_odometry", nif::common::constants::QOS_EGO_ODOMETRY,
+          std::bind(&DKGraphPlannerNode::CallbackOdometry, this,
+                    std::placeholders::_1));
   SubOccupancyGrid = this->create_subscription<nav_msgs::msg::OccupancyGrid>(
       "/semantics/costmap_generator/occupancy_grid",
       nif::common::constants::QOS_SENSOR_DATA,
       std::bind(&DKGraphPlannerNode::CallbackOccupancyGrid, this,
                 std::placeholders::_1));
+  SubCostPoints = this->create_subscription<sensor_msgs::msg::PointCloud2>(
+      "in_inflated_points", nif::common::constants::QOS_SENSOR_DATA,
+      std::bind(&DKGraphPlannerNode::CallbackCostPoints, this,
+                std::placeholders::_1));
+  SubClusterCenterPoints = this->create_subscription<sensor_msgs::msg::PointCloud2>(
+      "in_cluster_center_points", nif::common::constants::QOS_SENSOR_DATA,
+      std::bind(&DKGraphPlannerNode::CallbackClusterCenterPoints, this,
+                std::placeholders::_1));
+  SubWallPoints =
+      this->create_subscription<sensor_msgs::msg::PointCloud2>(
+          "in_wall_points", nif::common::constants::QOS_SENSOR_DATA,
+          std::bind(&DKGraphPlannerNode::CallbackWallPoints, this,
+                    std::placeholders::_1));
+
   OsmParcing();
   RacingLineParcing();
   BuildGraph();
@@ -88,13 +104,11 @@ void DKGraphPlannerNode::OsmParcing() {
   // file opening result
   if (!parcer) {
     RCLCPP_ERROR(this->get_logger(), "Invalid file path.. ");
-    std::cout << "Parse error: " << parcer.description()
-              << ", character pos= " << parcer.offset << std::endl;
-    std::cout << "Tried to open .. \n" << m_FullFilePath.c_str() << std::endl;
+    RCLCPP_ERROR(this->get_logger(), "Parse error: %s; \t character pos =  %d", parcer.description(), parcer.offset);
+    RCLCPP_ERROR(this->get_logger(), "Tried to open .. \n %s", m_FullFilePath.c_str());
   } else {
-    std::cout << "Parse result: " << parcer.description()
-              << ", character pos= " << parcer.offset << std::endl;
-    std::cout << "Tried to open .. \n" << m_FullFilePath.c_str() << std::endl;
+    RCLCPP_INFO(this->get_logger(), "Parse result: %s; \t character pos =  %d", parcer.description(), parcer.offset);
+    RCLCPP_INFO(this->get_logger(), "Tried to open .. \n %s", m_FullFilePath.c_str());
     RCLCPP_INFO(this->get_logger(), "Valid file!");
   }
 
@@ -244,10 +258,10 @@ void DKGraphPlannerNode::RacingLineParcing()
   double distance;
 
   int layer_start = -1;
-  for (int i = 0; i < result[0].second.size(); i++) {
+  for (int i = 0; i < result[0].second.size()-1; i++) {
     pcl::PointXYZI point_buf;
     point_buf.x = result[1].second[i];
-    point_buf.y = result[2].second[i];
+    point_buf.y = result[2].second[i];        
     point_buf.intensity = i;
     m_racingLineRefPoints->points.push_back(point_buf);
 
@@ -278,6 +292,12 @@ void DKGraphPlannerNode::RacingLineParcing()
       double dist = getClosestDistance(node.x, node.y, m_racingLineRefPoints);
       cost_sum += dist;
     }
+    // size_t node_size = way.nodes.size(); 
+    // double first_node_dist = getClosestDistance(way.nodes[0].x, way.nodes[0].y, m_racingLineRefPoints);
+    // double last_node_dist = getClosestDistance(way.nodes[node_size-1].x, way.nodes[node_size-1].y,
+    //                                             m_racingLineRefPoints);
+
+    // cost_sum = first_node_dist + last_node_dist;
     m_OsmParcer.ways[i].cost = cost_sum;
     if (max_cost < cost_sum)
       max_cost = cost_sum;
@@ -285,7 +305,9 @@ void DKGraphPlannerNode::RacingLineParcing()
   // normalize cost : distance from the racing line
   for (int i = 0; i < m_OsmParcer.ways.size(); i++) {
     m_OsmParcer.ways[i].cost = m_OsmParcer.ways[i].cost / max_cost;
+    // std::cout << m_OsmParcer.ways[i].cost << ", " << max_cost << std::endl;
   }
+  // std::cout << cost_sum << std::endl;
 
   RCLCPP_INFO(this->get_logger(), "------------------------------------");
   RCLCPP_INFO(this->get_logger(),
@@ -319,11 +341,27 @@ void DKGraphPlannerNode::CallbackOdometry(const nav_msgs::msg::Odometry::SharedP
     int current_node_id;
     // get node id for planing
     // Path from vehicle
-    // GetIntensityInfo(m_veh_x, m_veh_y, m_FirstNodeContainPoints, current_node_id);
+    int current_layer_for_starting_node;
+    GetIntensityInfo(m_veh_x, m_veh_y, m_FullIndexedPoints,
+                     current_layer_for_starting_node); // to get current layer
+    int prev_layer_for_starting_node = current_layer_for_starting_node -1 + m_WaysResister.size();
+    prev_layer_for_starting_node = prev_layer_for_starting_node % m_WaysResister.size();
+    // for (int i = 0; i < search_num_idx_in; i++) {
+    //   int layer_idx = current_layer_out + i;
+    //   if (layer_idx > layer_size)
+    //     layer_idx = layer_idx % layer_size;
+
+    for (auto way : m_WaysResister[prev_layer_for_starting_node]) {
+      if(way.start_node == 2)
+        current_node_id= way.first_node_id;
+    }
+    // std::cout << current_node_id << std::endl;
+
+    // GetIntensityInfo(m_veh_x, m_veh_y, m_FirstNodeContainPoints, current_node_id); // to get current first node id
     
     // Path from racing line
-    GetIntensityInfo(m_closest_x_in_racing_line, m_closest_y_in_racing_line,
-                     m_FirstNodeContainPoints, current_node_id);
+    // GetIntensityInfo(m_closest_x_in_racing_line, m_closest_y_in_racing_line,
+    //                  m_FirstNodeContainPoints, current_node_id);
     
     // put prev best first node as closest start node
     // std::cout << "original : " << current_node_id << std::endl;
@@ -340,28 +378,29 @@ void DKGraphPlannerNode::CallbackOdometry(const nav_msgs::msg::Odometry::SharedP
     //   }
     // }
     // // std::cout << "after : " << current_node_id << std::endl;
-    if(m_prevStartFirstNodeId != -1)
-      current_node_id = m_prevStartFirstNodeId;
+
+    // if(m_prevStartFirstNodeId != -1)
+    //   current_node_id = m_prevStartFirstNodeId;
 
     m_closestStartNode = current_node_id;
 
-    double target_x, target_y;
-    int target_idx = current_idx + 100;
+    double target_x_in_racing_line, target_y_in_racing_line;
+    int target_idx = current_idx + 60;
     int target_node_id;
     size_t racingLineRefSize = m_racingLineRefPoints->points.size();
     target_idx = target_idx % racingLineRefSize;
 
-    target_x = m_racingLineRefPoints->points[target_idx].x;
-    target_y = m_racingLineRefPoints->points[target_idx].y;
-    GetIntensityInfo(target_x, target_y, m_FirstNodeContainPoints, target_node_id);
+    target_x_in_racing_line = m_racingLineRefPoints->points[target_idx].x;
+    target_y_in_racing_line = m_racingLineRefPoints->points[target_idx].y;
+    GetIntensityInfo(target_x_in_racing_line, target_y_in_racing_line, m_FirstNodeContainPoints, target_node_id);
     m_closestGoalNode = target_node_id;
 
     m_nearbyFirstNodes.clear();
     int search_num_idx = 10;
     int current_layer;
     getNearbyNodesFromLayer(
-        m_closest_x_in_racing_line, m_closest_y_in_racing_line, search_num_idx,
-        m_FullIndexedPoints, current_layer, m_nearbyFirstNodes);
+        m_veh_x, m_veh_y, search_num_idx, m_FullIndexedPoints, current_layer,
+        m_nearbyFirstNodes);
 
     m_currentLayer = current_layer;
 
@@ -387,8 +426,50 @@ void DKGraphPlannerNode::CallbackOccupancyGrid(const nav_msgs::msg::OccupancyGri
   bOccupancyGrid = true;
 }
 
+void DKGraphPlannerNode::CallbackCostPoints(
+    const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
+  m_InflatedCostPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
+  pcl::fromROSMsg(*msg, *m_InflatedCostPoints);
+  bInflatedPoints = true;
+}
+
+void DKGraphPlannerNode::CallbackClusterCenterPoints(
+    const sensor_msgs::msg::PointCloud2::SharedPtr msg)
+{
+  m_ClusterCenterPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
+  pcl::fromROSMsg(*msg, *m_ClusterCenterPoints);
+  bCenteredPoints = true;
+}
+
+void DKGraphPlannerNode::CallbackWallPoints(
+    const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
+  m_WallPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
+  pcl::PointCloud<pcl::PointXYZI>::Ptr in_points(new pcl::PointCloud<pcl::PointXYZI>);
+  pcl::PointCloud<pcl::PointXYZI>::Ptr projected_points(
+      new pcl::PointCloud<pcl::PointXYZI>);
+
+  pcl::fromROSMsg(*msg, *in_points);
+  for(auto point : in_points->points)
+  {
+    pcl::PointXYZI point_buf;
+    point_buf.x = point.x;
+    point_buf.y = point.y;
+    projected_points->points.push_back(point_buf);
+  }
+  m_WallPoints = downsample(projected_points, 1.0);
+
+  bWallPoints = true;
+}
+
 void DKGraphPlannerNode::timer_callback() {
   if (bRacingLine && bParcingComplete && bBuildGraph) {
+
+    // if (bWallPoints) {
+    //   m_WallInflatedCostPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
+    //   createGaussianWorld(m_WallPoints, 5.0, 5.0, m_WallInflatedCostPoints);
+    //   bWallInflated = true;
+    // }
+
     MessagePublisher();
     Planning();
     ToPathMsg();
@@ -416,11 +497,51 @@ void DKGraphPlannerNode::MessagePublisher() {
   FirstNodeInfoCloudMsg.header.frame_id = nif::common::frame_id::localization::ODOM;
   FirstNodeInfoCloudMsg.header.stamp = this->now();
   pubFirstNodeContainPoints->publish(FirstNodeInfoCloudMsg);
+
+  if (bWallInflated) {
+    sensor_msgs::msg::PointCloud2 WallInflatedCloudMsg;
+    pcl::toROSMsg(*m_WallInflatedCostPoints, WallInflatedCloudMsg);
+    WallInflatedCloudMsg.header.frame_id =
+        nif::common::frame_id::localization::BASE_LINK;
+    WallInflatedCloudMsg.header.stamp = this->now();
+    pubWallInflatedPoints->publish(WallInflatedCloudMsg);
+  }
 }
 
 void DKGraphPlannerNode::GetIntensityInfo(
     const double &x_in, const double &y_in,
     pcl::PointCloud<pcl::PointXYZI>::Ptr in_points, int &intensity_out) {
+  if (in_points->points.empty())
+    return;
+
+  pcl::KdTreeFLANN<pcl::PointXYZI> kdtree;
+  kdtree.setInputCloud(in_points);
+
+  pcl::PointXYZI searchPoint;
+  searchPoint.x = x_in;
+  searchPoint.y = y_in;
+
+  int K = 1;
+  std::vector<int> pointIdxNKNSearch(K);
+  std::vector<float> pointNKNSquaredDistance(K);
+
+  double nearest_x_in_points, nearest_y_in_points;
+  if (kdtree.nearestKSearch(searchPoint, K, pointIdxNKNSearch,
+                            pointNKNSquaredDistance) > 0) {
+    for (size_t i = 0; i < pointIdxNKNSearch.size(); ++i) {
+      nearest_x_in_points = in_points->points[pointIdxNKNSearch[i]].x;
+      nearest_y_in_points = in_points->points[pointIdxNKNSearch[i]].y;
+      intensity_out = in_points->points[pointIdxNKNSearch[i]].intensity;
+    }
+  }
+}
+
+void DKGraphPlannerNode::GetIntensityInfo(
+    const double &x_in, const double &y_in,
+    pcl::PointCloud<pcl::PointXYZI>::Ptr in_points, double &intensity_out) {
+  if(in_points->points.empty())
+    return;
+
   pcl::KdTreeFLANN<pcl::PointXYZI> kdtree;
   kdtree.setInputCloud(in_points);
 
@@ -448,6 +569,9 @@ void DKGraphPlannerNode::GetIntensityInfo(
     pcl::PointCloud<pcl::PointXYZI>::Ptr in_points,
     double &nearest_x_in_points_out, double &nearest_y_in_points_out,
     int &intensity_out) {
+  if (in_points->points.empty())
+    return;
+
   pcl::KdTreeFLANN<pcl::PointXYZI> kdtree;
   kdtree.setInputCloud(in_points);
 
@@ -475,6 +599,9 @@ void DKGraphPlannerNode::GetIntensityInfo(
 double DKGraphPlannerNode::getClosestDistance(
     const double &x_in, const double &y_in,
     pcl::PointCloud<pcl::PointXYZI>::Ptr points_in) {
+
+  if (points_in->points.empty())
+    return 0.;
 
   pcl::KdTreeFLANN<pcl::PointXYZI> kdtree;
   kdtree.setInputCloud(points_in);
@@ -507,6 +634,9 @@ void DKGraphPlannerNode::getNearbyNodesFromLayer(
     int& current_layer_out, std::vector<int> &nearby_indice_out) {
 
   if (!bParcingComplete)
+    return;
+
+  if (points_in->points.empty())
     return;
 
   pcl::KdTreeFLANN<pcl::PointXYZI> kdtree;
@@ -570,7 +700,7 @@ void DKGraphPlannerNode::BuildGraph()
 
 void DKGraphPlannerNode::UpdateGraph()
 {
-  if(!bOccupancyGrid)
+  if(!bInflatedPoints || !bCenteredPoints)
     return;
 
   if (!bOdometry)
@@ -596,8 +726,18 @@ void DKGraphPlannerNode::UpdateGraph()
         double pt_y_body = -(pt_x_global - m_veh_x) * sin(m_veh_yaw) +
                            (pt_y_global - m_veh_y) * cos(m_veh_yaw);
 
-        double cost = CorrespondingCost(pt_x_body, pt_y_body, m_OccupancyGrid);
-        cost_accumulated += cost;
+        // double cost = CorrespondingCost(pt_x_body, pt_y_body, m_OccupancyGrid);
+        double cost =
+            CorrespondingCost(pt_x_body, pt_y_body, 3.0, m_ClusterCenterPoints,
+                              m_InflatedCostPoints) * 10;
+
+        double wall_cost = 0.;
+        // if (bWallInflated)
+        // {
+        //   wall_cost = CorrespondingCost(pt_x_body, pt_y_body, 5.0, m_WallPoints,
+        //                                 m_WallInflatedCostPoints);
+        // }
+        cost_accumulated += cost + wall_cost;
         count++;
 
         pcl::PointXYZI pointbuf;
@@ -609,7 +749,13 @@ void DKGraphPlannerNode::UpdateGraph()
 
       // std::cout << "cost_accumulated : " << cost_accumulated <<
       // std::endl;
-
+      // if (cost_accumulated != 0.)
+      // {
+        // std::cout << "cost :" << way.cost << std::endl;
+        // std::cout << "cost_accumulated : " << cost_accumulated << std::endl;
+        // std::cout << "cost_transient : " << cost_transient << std::endl;
+      // }
+      
       int j = 0;
       for (auto graph : m_graph[nearbyNode])
       {         
@@ -632,7 +778,7 @@ void DKGraphPlannerNode::UpdateGraph()
 
 void DKGraphPlannerNode::ReleaseGraph()
 {
-  if (!bOccupancyGrid)
+  if (!bInflatedPoints || !bCenteredPoints)
     return;
 
   for (auto nearbyNode : m_nearbyFirstNodes) {
@@ -696,10 +842,12 @@ void DKGraphPlannerNode::Planning() {
 
       for (auto connected : m_graph[here]) {
         int next = connected.id;
-        double nextcost = connected.cost + connected.additional_cost +
-                          connected.transient_cost;
+        double nextcost = connected.cost + connected.additional_cost;
+                          // connected.transient_cost;
+
         // std::cout << "connected.cost: " << connected.cost << std::endl;
         // std::cout << "connected.additional_cost : " << connected.additional_cost << std::endl;
+        // std::cout << "connected.transient_cost : " << connected.transient_cost << std::endl;
 
         if (dist[next] > dist[here] + nextcost) {
           dist[next] = dist[here] + nextcost;
@@ -793,7 +941,7 @@ void DKGraphPlannerNode::ToPathMsg() {
       if (m_prevFirstLayer != m_currentLayer)
       {
         m_prevFirstLayer = m_currentLayer;
-        std::cout << "layer changed!" << std::endl;
+        RCLCPP_DEBUG(this->get_logger(), "layer changed!" );
         if(m_UsePrevStartFirstNodeAfter2 < 2)
         {
           m_prevStartFirstNodeId = final_id.first_node_id;
@@ -903,7 +1051,7 @@ DKGraphPlannerNode::read_csv(std::string filename) {
       result.push_back({colname, std::vector<double>{}});
     }
   } else {
-    std::cout << "Check CSV file" << std::endl;
+    RCLCPP_ERROR(this->get_logger(), "Check CSV file");
   }
 
   // Read data, line by line
@@ -953,6 +1101,30 @@ double DKGraphPlannerNode::CorrespondingCost(
   return cost;
 }
 
+double DKGraphPlannerNode::CorrespondingCost(
+    const double pt_x, const double pt_y, double inflation,
+    pcl::PointCloud<pcl::PointXYZI>::Ptr & in_centered_points, 
+    pcl::PointCloud<pcl::PointXYZI>::Ptr& in_inflated_points) {
+  
+  double cost = 0.0;
+  double max_cost = 0.0;
+  for (auto center_point : in_centered_points->points) {
+    double dist = sqrt(pow(pt_x - center_point.x, 2) + pow(pt_y - center_point.y, 2));
+    if (dist > inflation)
+      continue;
+    else
+    {
+      GetIntensityInfo(pt_x, pt_y, in_inflated_points, cost);
+      if (max_cost < cost)
+      {
+        max_cost = cost;
+      }
+    }
+  }
+
+  return max_cost;
+}
+
 void DKGraphPlannerNode::removeDuplicated(std::vector<int> &v) {
   auto end = v.end();
   for (auto it = v.begin(); it != end; ++it) {
@@ -960,4 +1132,74 @@ void DKGraphPlannerNode::removeDuplicated(std::vector<int> &v) {
   }
 
   v.erase(end, v.end());
+}
+
+pcl::PointCloud<pcl::PointXYZI>::Ptr
+DKGraphPlannerNode::downsample(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud,
+                               double resolution) {
+  pcl::PointCloud<pcl::PointXYZI>::Ptr filtered(
+      new pcl::PointCloud<pcl::PointXYZI>);
+  pcl::VoxelGrid<pcl::PointXYZI> voxelgrid;
+  voxelgrid.setLeafSize(resolution, resolution, resolution);
+  voxelgrid.setInputCloud(cloud);
+  voxelgrid.filter(*filtered);
+  return filtered;
+}
+
+// Calculate gaussian interpolation.
+void DKGraphPlannerNode::createGaussianWorld(
+    pcl::PointCloud<pcl::PointXYZI>::Ptr& points_in, double inflation_x,
+    double inflation_y, pcl::PointCloud<pcl::PointXYZI>::Ptr &points_out) {
+
+  struct Gaussian {
+    double x0, y0;
+    double varX, varY;
+    double s;
+  };
+
+  AnalyticalFunctions func;
+  std::vector<std::pair<double, double>> vars;
+  std::vector<std::pair<double, double>> means;
+  std::vector<double> scales;
+  std::vector<Gaussian> g;
+
+  for (auto point : points_in->points) {
+    Gaussian gaussian_tmp;
+    gaussian_tmp.x0 = point.x;
+    gaussian_tmp.y0 = point.y;
+    gaussian_tmp.varX = inflation_x;
+    gaussian_tmp.varY = inflation_y;
+    gaussian_tmp.s = 1 / inflation_x;
+    g.push_back(gaussian_tmp);
+  }
+
+  func.f_ = [g](double x, double y) {
+    double value = 0.0;
+    for (int i = 0; i < g.size(); ++i) {
+      const double x0 = g.at(i).x0;
+      const double y0 = g.at(i).y0;
+      const double varX = g.at(i).varX;
+      const double varY = g.at(i).varY;
+      const double s = g.at(i).s;
+      value += s * std::exp(-(x - x0) * (x - x0) / (2.0 * varX) -
+                            (y - y0) * (y - y0) / (2.0 * varY));
+    }
+    return value;
+  };
+
+  for (auto point : points_in->points) {
+    for (double i = -inflation_x;
+         i < inflation_x; i = i + 2.5) {
+      for (double j = -inflation_y;
+           j < inflation_y; j = j + 2.5) {
+        pcl::PointXYZI point_buf;
+        point_buf.x = point.x + i;
+        point_buf.y = point.y + j;
+        point_buf.intensity = func.f_(point_buf.x, point_buf.y);
+        if (point_buf.intensity < fabs(1.0))
+          points_out->points.push_back(point_buf);
+      }
+    }
+  }
+  // return output;
 }

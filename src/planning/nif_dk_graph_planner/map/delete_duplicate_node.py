@@ -22,8 +22,8 @@ def indent(elem, level=0):
 
 
 ### READ xml file ###
-osm_file_path = '/home/usrg/adehome/nif/src/planning/nif_dk_graph_planner/map/LG_SIM/LG_SIM.osm' # original
-new_osm_file_path = '/home/usrg/adehome/nif/src/planning/nif_dk_graph_planner/map/LG_SIM/LG_modified_2.osm' # modified
+osm_file_path = '/home/usrg/adehome/nif/src/planning/nif_dk_graph_planner/map/LOR/LOR_kappa.osm' # original
+new_osm_file_path = '/home/usrg/adehome/nif/src/planning/nif_dk_graph_planner/map/LOR/LOR_kappa_modified.osm' # modified
 
 
 tree = parse(osm_file_path)

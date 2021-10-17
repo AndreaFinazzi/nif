@@ -205,7 +205,7 @@ def generate_launch_description():
     )
 
     nif_joint_lqr_rosparams_file = get_share_file(
-        package_name='nif_control_joint_lqr_nodes', file_name='config/deploy.params.yaml'
+        package_name='nif_control_joint_lqr_nodes', file_name='config/sim.params.yaml'
     )
 
     nif_joint_lqr_param = DeclareLaunchArgument(
@@ -225,8 +225,8 @@ def generate_launch_description():
                 'path_timeout_sec' : 1.0,
                 'use_tire_velocity' : True,
                 # 'max_steering_angle_deg': 20.0,
-                'pure_pursuit_min_dist_m' : 4.0,
-                'pure_pursuit_max_dist_m' : 8.0,
+                'pure_pursuit_min_dist_m' : 20.0,
+                'pure_pursuit_max_dist_m' : 80.0,
                 'steering_max_ddeg_dt' : 3.0
 
             }
@@ -401,6 +401,13 @@ def generate_launch_description():
         )
     )
 
+    nif_dk_planner_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            get_share_file("nif_dk_graph_planner", 'launch/deploy_narrow.launch.py')
+        )
+    )
+
+
 ### NIF MULTILAYER PLANNER END #############################
 
     return LaunchDescription([
@@ -421,11 +428,12 @@ def generate_launch_description():
         nif_csl_node,
         nif_aw_localization_launch,
         nif_wall_node_launch_bg,
-        nif_waypoint_manager_node,
         robot_description_launch,
         nif_velocity_planning_node,
         nif_joint_lqr_control_node,
         nif_accel_control_node,
         nif_mission_manager_launch,
-        lgsvl_simulation_launch
+        nif_waypoint_manager_node,
+        lgsvl_simulation_launch,
+        nif_dk_planner_launch
     ])

@@ -107,6 +107,7 @@ private:
   void timer_callback();
   void wallPointsCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
   void objectPointsCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
+  void groundFilteredCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
   void fakeObstacleCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
 
   void OdometryCallback(const nav_msgs::msg::Odometry::SharedPtr msg);
@@ -163,11 +164,13 @@ private:
   bool bOdometry = false;
   bool bWallPoints = false;
   bool bObjectPoints = false;
+  bool bGroundFilteredPoints = false;
   bool bFakeObstaclePoints = false;
 
   pcl::PointCloud<pcl::PointXYZI>::Ptr m_in_wall_points;
   pcl::PointCloud<pcl::PointXYZI>::Ptr m_in_object_points;
   pcl::PointCloud<pcl::PointXYZI>::Ptr m_in_fake_obstacle_points;
+  pcl::PointCloud<pcl::PointXYZI>::Ptr m_in_ground_filtered_points;
 
   pcl::PointCloud<pcl::PointXYZI>::Ptr m_inner_geofence_points;
   pcl::PointCloud<pcl::PointXYZI>::Ptr m_outer_geofence_points;
@@ -184,6 +187,7 @@ private:
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_wall_points_;
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_object_points_;
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_fake_obs_points_;
+  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_ground_filtered_points_;
 
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr
       sub_odometry_;

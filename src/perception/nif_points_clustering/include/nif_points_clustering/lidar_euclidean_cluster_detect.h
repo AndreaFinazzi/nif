@@ -33,28 +33,43 @@
 #include <pcl_conversions/pcl_conversions.h>
 
 #include <sensor_msgs/msg/point_cloud2.hpp>
+#include <visualization_msgs/msg/marker_array.hpp>
 
+#include <algorithm>
+#include <bits/stdc++.h>
+#include <math.h>
 #include <mutex>
 #include <thread>
-#include <algorithm>
+#include <unordered_map>
+
+struct AnalyticalFunctions {
+  std::function<double(double, double)> f_;
+};
 
 class PointsClustering : public rclcpp::Node {
 public:
   PointsClustering();
   ~PointsClustering();
-  void clusterAndColorGpu(const pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud_ptr,
-                          pcl::PointCloud<pcl::PointXYZI>::Ptr out_cloud_ptr,
-                          double in_max_cluster_distance);
+  void
+  clusterAndColorGpu(const pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud_ptr,
+                     pcl::PointCloud<pcl::PointXYZI>::Ptr out_cloud_ptr,
+                     visualization_msgs::msg::MarkerArray &out_clustered_array,
+                     double in_max_cluster_distance);
   void PointsCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
   void timer_callback();
 
 private:
   void SetCloud(const pcl::PointCloud<pcl::PointXYZI>::Ptr in_origin_cloud_ptr,
                 pcl::PointCloud<pcl::PointXYZI>::Ptr register_cloud_ptr,
-                const std::vector<int> &in_cluster_indices, int ind);
+                const std::vector<int> &in_cluster_indices, 
+                visualization_msgs::msg::MarkerArray &out_clustered_array,
+                int ind);
   pcl::PointCloud<pcl::PointXYZI>::Ptr
   downsample(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud,
              double resolution);
+  void createGaussianWorld(visualization_msgs::msg::MarkerArray& marker_array_in, double inflation_x,
+                           double inflation_y, pcl::PointCloud<pcl::PointXYZI>::Ptr &points_out) ;
+
   int m_cluster_size_min;
   int m_cluster_size_max;
   double m_max_cluster_distance;
@@ -63,6 +78,11 @@ private:
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr
           pubClusterPoints;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubSimpleheightMap;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubInflationPoints;
+  rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr
+      pubClusteredArray;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubClusteredCenterPoints;
+
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr
           subInputPoints;
   rclcpp::TimerBase::SharedPtr sub_timer_;

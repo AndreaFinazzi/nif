@@ -40,7 +40,7 @@ def generate_launch_description():
     )
 
     dbc_file_path = get_share_file(
-        package_name='raptor_dbw_can', file_name='launch/CAN1_INDY_V4.dbc'
+        package_name='raptor_dbw_can', file_name='launch/CAN1_INDY_V6.dbc'
     )
 
     ssc_interface_param = DeclareLaunchArgument(
@@ -114,7 +114,10 @@ def generate_launch_description():
         output='screen',
         namespace='raptor_dbw_interface',
         parameters=[
-            {'dbw_dbc_file': dbc_file_path}
+            {
+                'dbw_dbc_file': dbc_file_path,
+                'veh_number': 4
+            }
         ],
         remappings=[
             ('/raptor_dbw_interface/can_rx', '/from_can_bus'),
@@ -122,8 +125,8 @@ def generate_launch_description():
         ],
     )
 
-    telemetry_node = Node(
-        package='telemetry',
+    nif_telemetry_node = Node(
+        package='nif_telemetry',
         executable='telemetry',
         output='screen',
     )
@@ -183,7 +186,7 @@ def generate_launch_description():
         output='screen',
         remappings=[
             ('out_desired_velocity', 'velocity_planner/des_vel'),
-            ('in_reference_path', 'planning/graph/path_global'),
+            ('in_reference_path', 'planning/path_global'),
             ('in_ego_odometry', '/aw_localization/ekf/odom'),
             ('in_wheel_speed_report', 'raptor_dbw_interface/wheel_speed_report'),
             ('in_imu_data', 'novatel_bottom/imu/data'),

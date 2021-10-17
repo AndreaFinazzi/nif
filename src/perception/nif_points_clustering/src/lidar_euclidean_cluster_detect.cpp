@@ -27,6 +27,13 @@ PointsClustering::PointsClustering()
       "out_clustered_points", nif::common::constants::QOS_SENSOR_DATA);
   pubSimpleheightMap = this->create_publisher<sensor_msgs::msg::PointCloud2>(
       "out_simple_heightmap_points", nif::common::constants::QOS_SENSOR_DATA);
+  pubInflationPoints = this->create_publisher<sensor_msgs::msg::PointCloud2>(
+      "out_inflation_points", nif::common::constants::QOS_SENSOR_DATA);
+  pubClusteredArray =
+      this->create_publisher<visualization_msgs::msg::MarkerArray>(
+          "out_clustered_array", nif::common::constants::QOS_SENSOR_DATA);
+  pubClusteredCenterPoints = this->create_publisher<sensor_msgs::msg::PointCloud2>(
+      "out_clustered_center_points", nif::common::constants::QOS_SENSOR_DATA);
 
   subInputPoints = this->create_subscription<sensor_msgs::msg::PointCloud2>(
       "in_lidar_points", nif::common::constants::QOS_SENSOR_DATA,
@@ -63,17 +70,48 @@ void PointsClustering::timer_callback() {
   cloud_simple_heightmap_msg.header.stamp = this->now();
   pubSimpleheightMap->publish(cloud_simple_heightmap_msg);
 
-  // start algorithm
+  
   pcl::PointCloud<pcl::PointXYZI>::Ptr registeredPoints(
       new pcl::PointCloud<pcl::PointXYZI>);
+  pcl::PointCloud<pcl::PointXYZI>::Ptr inflationedPoints(
+      new pcl::PointCloud<pcl::PointXYZI>);
+  pcl::PointCloud<pcl::PointXYZI>::Ptr centerPoints(
+      new pcl::PointCloud<pcl::PointXYZI>);
+
+  visualization_msgs::msg::MarkerArray clustered_array;
   clusterAndColorGpu(m_simpleHeightmapPoints, registeredPoints,
-                     m_max_cluster_distance);
+                     clustered_array, m_max_cluster_distance);
+
+  for (auto marker : clustered_array.markers)
+  {
+    pcl::PointXYZI point_buf;
+    point_buf.x = marker.pose.position.x;
+    point_buf.y = marker.pose.position.y;
+    centerPoints->points.push_back(point_buf);
+  }
+
+  createGaussianWorld(clustered_array, 3.0, 3.0, inflationedPoints);
 
   sensor_msgs::msg::PointCloud2 cloud_clustered_msg;
   pcl::toROSMsg(*registeredPoints, cloud_clustered_msg);
   cloud_clustered_msg.header.frame_id = nif::common::frame_id::localization::BASE_LINK;
   cloud_clustered_msg.header.stamp = this->now();
   pubClusterPoints->publish(cloud_clustered_msg);
+
+  sensor_msgs::msg::PointCloud2 cloud_inflated_msg;
+  pcl::toROSMsg(*inflationedPoints, cloud_inflated_msg);
+  cloud_inflated_msg.header.frame_id = nif::common::frame_id::localization::BASE_LINK;
+  cloud_inflated_msg.header.stamp = this->now();
+  pubInflationPoints->publish(cloud_inflated_msg);
+
+  sensor_msgs::msg::PointCloud2 cloud_cluster_center_msg;
+  pcl::toROSMsg(*centerPoints, cloud_cluster_center_msg);
+  cloud_cluster_center_msg.header.frame_id =
+      nif::common::frame_id::localization::BASE_LINK;
+  cloud_cluster_center_msg.header.stamp = this->now();
+  pubClusteredCenterPoints->publish(cloud_cluster_center_msg);
+
+  pubClusteredArray->publish(clustered_array);
 }
 
 void PointsClustering::PointsCallback(
@@ -96,6 +134,7 @@ void PointsClustering::PointsCallback(
 void PointsClustering::clusterAndColorGpu(
     const pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud_ptr,
     pcl::PointCloud<pcl::PointXYZI>::Ptr out_cloud_ptr,
+    visualization_msgs::msg::MarkerArray& out_clustered_array,
     double in_max_cluster_distance) {
 
 #ifdef GPU_CLUSTERING
@@ -130,11 +169,12 @@ void PointsClustering::clusterAndColorGpu(
       gecl_cluster.getOutput();
 
   unsigned int k = 0;
-
+  
   for (auto it = cluster_indices.begin(); it != cluster_indices.end(); it++) {
     pcl::PointCloud<pcl::PointXYZI>::Ptr bufPoints(
         new pcl::PointCloud<pcl::PointXYZI>);
-    SetCloud(in_cloud_ptr, bufPoints, it->points_in_cluster, k);
+    SetCloud(in_cloud_ptr, bufPoints, it->points_in_cluster,
+             out_clustered_array, k);
     //   clusters.push_back(cluster);
     *out_cloud_ptr += *bufPoints;
     k++;
@@ -154,7 +194,8 @@ void PointsClustering::clusterAndColorGpu(
 void PointsClustering::SetCloud(
     const pcl::PointCloud<pcl::PointXYZI>::Ptr in_origin_cloud_ptr,
     pcl::PointCloud<pcl::PointXYZI>::Ptr register_cloud_ptr,
-    const std::vector<int> &in_cluster_indices, int ind) {
+    const std::vector<int> &in_cluster_indices,
+    visualization_msgs::msg::MarkerArray &out_clustered_array, int ind) {
 
   pcl::PointCloud<pcl::PointXYZI>::Ptr bufPoints(new pcl::PointCloud<pcl::PointXYZI>);
   // extract pointcloud using the indices
@@ -198,9 +239,29 @@ void PointsClustering::SetCloud(
   double width = max_y - min_y;
   double height = max_z - min_z;
 
-  if (length < 7.0 && width < 7.0 && height > 0.5) {
+  visualization_msgs::msg::Marker marker_buf;
+  marker_buf.header.frame_id = nif::common::frame_id::localization::BASE_LINK;
+  marker_buf.header.stamp = this->now();
+  marker_buf.id = ind;
+  marker_buf.type = visualization_msgs::msg::Marker::CUBE;
+  marker_buf.action = visualization_msgs::msg::Marker::ADD;
+  marker_buf.lifetime = rclcpp::Duration(0, 5);
+  marker_buf.pose.position.x = min_x + length / 2;
+  marker_buf.pose.position.y = min_y + width / 2;
+  marker_buf.pose.position.z = min_z + height / 2;
+  marker_buf.pose.orientation.w = 1.0;
+  marker_buf.scale.x = length;
+  marker_buf.scale.y = width;
+  marker_buf.scale.z = height;
+  marker_buf.color.r = 1.0;
+  marker_buf.color.g = 1.0;
+  marker_buf.color.b = 1.0;
+  marker_buf.color.a = 1.0;
+
+  if (length < 7.0 && width < 7.0 && height > 0.1) {
     *register_cloud_ptr = *bufPoints;
-  }
+    out_clustered_array.markers.push_back(marker_buf);
+    }
 
   // bounding_box_.header = in_ros_header;
 
@@ -236,4 +297,63 @@ PointsClustering::downsample(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud,
   voxelgrid.setInputCloud(cloud);
   voxelgrid.filter(*filtered);
   return filtered;
+}
+
+// Calculate gaussian interpolation.
+void PointsClustering::createGaussianWorld(
+    visualization_msgs::msg::MarkerArray& marker_array_in, double inflation_x,
+    double inflation_y, pcl::PointCloud<pcl::PointXYZI>::Ptr &points_out) {
+
+  struct Gaussian {
+    double x0, y0;
+    double varX, varY;
+    double s;
+  };
+
+  AnalyticalFunctions func;
+  std::vector<std::pair<double, double>> vars;
+  std::vector<std::pair<double, double>> means;
+  std::vector<double> scales;
+  std::vector<Gaussian> g;
+
+  for (auto marker : marker_array_in.markers) {
+    Gaussian gaussian_tmp;
+    gaussian_tmp.x0 = marker.pose.position.x;
+    gaussian_tmp.y0 = marker.pose.position.y;
+    gaussian_tmp.varX = inflation_x;
+    gaussian_tmp.varY = inflation_y;
+    gaussian_tmp.s = 1 / inflation_x;
+    g.push_back(gaussian_tmp);
+  }
+
+  func.f_ = [g](double x, double y) {
+    double value = 0.0;
+    for (int i = 0; i < g.size(); ++i) {
+      const double x0 = g.at(i).x0;
+      const double y0 = g.at(i).y0;
+      const double varX = g.at(i).varX;
+      const double varY = g.at(i).varY;
+      const double s = g.at(i).s;
+      value += s * std::exp(-(x - x0) * (x - x0) / (2.0 * varX) -
+                            (y - y0) * (y - y0) / (2.0 * varY));
+    }
+    return value;
+  };
+
+  for (auto marker : marker_array_in.markers) {
+    for (double i = -inflation_x - marker.scale.x / 2;
+         i < inflation_x + marker.scale.x / 2; i = i + 0.5) {
+      for (double j = -inflation_y - marker.scale.y / 2;
+           j < inflation_y + marker.scale.y / 2; j = j + 0.5) {
+        pcl::PointXYZI point_buf;
+        point_buf.x = marker.pose.position.x + i;
+        point_buf.y = marker.pose.position.y + j;
+        point_buf.intensity = func.f_(point_buf.x, point_buf.y);
+        if(point_buf.intensity < fabs(1.0))      
+          points_out->points.push_back(point_buf);
+      }
+    }
+  }
+
+  // return output;
 }

@@ -116,6 +116,9 @@ typedef struct Waymap {
   int end_node;
 } waymap_t;
 
+struct AnalyticalFunctions {
+  std::function<double(double, double)> f_;
+};
 namespace nif{
 namespace planning{
 
@@ -141,11 +144,10 @@ public:
   // void CallbackGoalRviz(const geometry_msgs::PoseStamped& msg);
   void CallbackOdometry(const nav_msgs::msg::Odometry::SharedPtr msg);
   void CallbackOccupancyGrid(const nav_msgs::msg::OccupancyGrid::SharedPtr msg);
+  void CallbackCostPoints(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
+  void CallbackClusterCenterPoints(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
+  void CallbackWallPoints(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
   
-  // void timerCallback(const ros::TimerEvent& event);
-  // void CallbackGoalXYList(const sensor_msgs::msg::PointCloud2ConstPtr& msg);
-  
-
 private:
   DKGraphPlannerNode();
 
@@ -157,6 +159,9 @@ private:
                         pcl::PointCloud<pcl::PointXYZI>::Ptr in_points,
                         int &intensity_out);
   void GetIntensityInfo(const double &x_in, const double &y_in,
+                        pcl::PointCloud<pcl::PointXYZI>::Ptr in_points,
+                        double &intensity_out);
+  void GetIntensityInfo(const double &x_in, const double &y_in,
                         pcl::PointCloud<pcl::PointXYZI>::Ptr in_points, 
                         double &nearest_x_in_points_out, double &nearest_y_in_points_out,
                         int &intensity_out);
@@ -164,17 +169,30 @@ private:
                             pcl::PointCloud<pcl::PointXYZI>::Ptr points_in);
   double CorrespondingCost(const double pt_x, const double pt_y,
                             const nav_msgs::msg::OccupancyGrid &gridmap);
+  double
+  CorrespondingCost(const double pt_x, const double pt_y, double inflation,
+                    pcl::PointCloud<pcl::PointXYZI>::Ptr &in_centered_points,
+                    pcl::PointCloud<pcl::PointXYZI>::Ptr &in_inflated_points);
+
   void getNearbyNodesFromLayer(const double &x_in, const double &y_in,
                       const int &search_num_idx_in,
                       pcl::PointCloud<pcl::PointXYZI>::Ptr points_in,
                       int &current_layer_out,
                       std::vector<int> &nearby_indice_out);
 
-  std::vector<std::pair<std::string, std::vector<double>>> read_csv(
-      std::string filename);
-  void removeDuplicated(std::vector<int> &v);
 
+  std::vector<std::pair<std::string, std::vector<double>>> read_csv(
+          std::string filename);
+  void removeDuplicated(std::vector<int> &v);
+  pcl::PointCloud<pcl::PointXYZI>::Ptr
+  downsample(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, double resolution);
+
+  void createGaussianWorld(
+      pcl::PointCloud<pcl::PointXYZI>::Ptr &points_in, double inflation_x,
+      double inflation_y, pcl::PointCloud<pcl::PointXYZI>::Ptr &points_out);
+  
   rclcpp::TimerBase::SharedPtr sub_timer_;
+  
   rclcpp::Publisher<nif_dk_graph_planner_msgs::msg::OsmParcer>::SharedPtr
       pubOsmParcer;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubFullNodePoints;
@@ -189,9 +207,14 @@ private:
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubCostPoints;
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pubFinalPath;
 
-      rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr SubOdometry;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubWallInflatedPoints;
+
+  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr SubOdometry;
   rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr
       SubOccupancyGrid;
+  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr SubCostPoints;
+  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr SubClusterCenterPoints;
+  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr SubWallPoints;
 
   std::string m_OsmFileName, m_FullFilePath;
   std::string m_RacingTrajectory;
@@ -201,6 +224,10 @@ private:
   pcl::PointCloud<pcl::PointXYZI>::Ptr m_FullNodeIDPoints;
   pcl::PointCloud<pcl::PointXYZI>::Ptr m_FirstNodeContainPoints;
   pcl::PointCloud<pcl::PointXYZI>::Ptr m_CostPoints;
+  pcl::PointCloud<pcl::PointXYZI>::Ptr m_InflatedCostPoints;
+  pcl::PointCloud<pcl::PointXYZI>::Ptr m_ClusterCenterPoints;
+  pcl::PointCloud<pcl::PointXYZI>::Ptr m_WallPoints;
+  pcl::PointCloud<pcl::PointXYZI>::Ptr m_WallInflatedCostPoints;
 
   nif_dk_graph_planner_msgs::msg::OsmParcer m_OsmParcer;
 
@@ -209,8 +236,12 @@ private:
   bool bBuildGraph = false;
   bool bOccupancyGrid = false;
   bool bOdometry = false;
+  bool bInflatedPoints = false;
+  bool bCenteredPoints = false;
+  bool bWallPoints = false;
+  bool bWallInflated = false;
 
-  double m_veh_x;
+      double m_veh_x;
   double m_veh_y;
   double m_veh_roll, m_veh_pitch, m_veh_yaw;
   double prev_time, current_time;
