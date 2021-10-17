@@ -27,6 +27,7 @@ def generate_launch_description():
             ('in_imu_data', 'novatel_bottom/imu/data'),
             ('in_steering_report', 'raptor_dbw_interface/steering_report'),
             ('in_control_error', 'control_joint_lqr/lqr_error_test'),
+            ('/control_joint_lqr/track_idx', '/control_joint_lqr/track_idx_test'),
         ],
         parameters=[{
                 'odometry_timeout_sec' : 0.5,

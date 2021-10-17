@@ -68,6 +68,7 @@ def generate_launch_description():
             ('control_joint_lqr/lqr_command', 'control_joint_lqr/lqr_command_test'),
             ('control_joint_lqr/accel_command', 'control_joint_lqr/accel_command_test'),
             ('control_joint_lqr/track_distance', 'control_joint_lqr/track_distance_test'),
+            ('control_joint_lqr/track_idx', 'control_joint_lqr/track_idx_test'),
             ('control_joint_lqr/track_point', 'control_joint_lqr/track_point_test'),
             ('control_joint_lqr/lqr_error', 'control_joint_lqr/lqr_error_test'),
         ]
