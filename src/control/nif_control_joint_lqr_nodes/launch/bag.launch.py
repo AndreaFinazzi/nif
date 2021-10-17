@@ -60,9 +60,11 @@ def generate_launch_description():
         },
         remappings=[
             ('in_reference_path', '/planning/path_global'),
+            ('velocity_planner/des_vel', 'velocity_planner/des_vel_test'),
             ('in_control_cmd_prev', '/control_safety_layer/out/control_cmd'),
             ('out_control_cmd', '/control_pool/control_cmd_test'),
             ('control_joint_lqr/tracking_valid', 'control_joint_lqr/tracking_valid_test'),
+            ('control_joint_lqr/valid_conditions', 'control_joint_lqr/valid_conditions_test'),
             ('control_joint_lqr/lqr_command', 'control_joint_lqr/lqr_command_test'),
             ('control_joint_lqr/accel_command', 'control_joint_lqr/accel_command_test'),
             ('control_joint_lqr/track_distance', 'control_joint_lqr/track_distance_test'),
