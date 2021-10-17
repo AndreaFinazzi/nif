@@ -21,14 +21,28 @@
 
 #include "visualization_msgs/msg/marker.hpp"
 #include "visualization_msgs/msg/marker_array.hpp"
+#include <ament_index_cpp/get_package_share_directory.hpp>
 
 using namespace std;
 using namespace Frenet;
 
-class WaypointManagerMissionSelective {
-public:
+struct collide_info
+{
+  bool collision_flg = false;
+  int collision_idx = INFINITY;
+};
 
+class WaypointManagerMissionSelective
+{
+public:
   WaypointManagerMissionSelective(const string &config_wpt_file_path_,
+                                  const string &body_frame_id_,
+                                  const string &global_frame_id_,
+                                  const double &spline_interval_);
+
+  WaypointManagerMissionSelective(const string &race_line_path_,
+                                  const string &center_line_path_,
+                                  const string &pitlane_line_path_,
                                   const string &body_frame_id_,
                                   const string &global_frame_id_,
                                   const double &spline_interval_);
@@ -36,16 +50,18 @@ public:
   void setCurrentOdometry(const nav_msgs::msg::Odometry &ego_vehicle_odom);
   void setSystemStatus(const nif_msgs::msg::SystemStatus &sys_status);
   void setObstacle(const visualization_msgs::msg::MarkerArray &obj_array);
-  bool checkCollision(const visualization_msgs::msg::Marker &obj,
-                      const nav_msgs::msg::Path &path_in_body) const;
+  collide_info checkCollision(const visualization_msgs::msg::Marker &obj,
+                              const nav_msgs::msg::Path &path_in_body) const;
   void calcMapTrack();
 
   void genCandidates();
-  nav_msgs::msg::Path getDesiredMapTrackInGlobal() {
+  nav_msgs::msg::Path getDesiredMapTrackInGlobal()
+  {
     calcMapTrack();
     return m_map_track_path_global;
   }
-  nav_msgs::msg::Path getDesiredMapTrackInBody() {
+  nav_msgs::msg::Path getDesiredMapTrackInBody()
+  {
     calcMapTrack();
     return m_map_track_path_body;
   }

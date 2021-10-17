@@ -5,8 +5,8 @@
 // Created by usrg on 7/6/21.
 //
 
-#ifndef NIF_WAYPOINT_MANAGER_MISSION_H
-#define NIF_WAYPOINT_MANAGER_MISSION_H
+#ifndef NIF_WAYPOINT_MANAGER_MISSION_V2_H
+#define NIF_WAYPOINT_MANAGER_MISSION_V2_H
 
 #include "memory"
 #include "nav_msgs/msg/odometry.hpp"
@@ -40,13 +40,14 @@ using namespace Frenet;
 #define RIGHT_WIDTH_MARGIN 5.51 // meter
 #define WIDTH_DELTA 1.0         // meter
 
-class WaypointManagerMission {
+class WaypointManagerMissionV2 {
 public:
-  WaypointManagerMission(const string &rl_wpt_file_path_,
-                         const string &pit_wpt_file_path_,
-                         const string &body_frame_id_,
-                         const string &global_frame_id_,
-                         const double &spline_interval_);
+  WaypointManagerMissionV2(const string &rl_wpt_file_path_,
+                           const string &warm_up_wpt_file_path_,
+                           const string &pit_wpt_file_path_,
+                           const string &body_frame_id_,
+                           const string &global_frame_id_,
+                           const double &spline_interval_);
 
   void setCurrentOdometry(const nav_msgs::msg::Odometry &ego_vehicle_odom);
   void setSystemStatus(const nif_msgs::msg::SystemStatus &sys_status);
@@ -78,9 +79,10 @@ public:
   }
 
 private:
-  WaypointManagerMission() {}
+  WaypointManagerMissionV2() {}
 
   string m_rl_wpt_file_path;
+  string m_warmup_wpt_file_path;
   string m_pit_wpt_file_path;
   string m_body_frame_id_str;
   string m_global_frame_id_str;
@@ -109,6 +111,7 @@ private:
   nav_msgs::msg::Path m_graph_based_path;
 
   std::shared_ptr<IWaypointManager> m_rl_wpt_manager;
+  std::shared_ptr<IWaypointManager> m_warmup_wpt_manager;
   std::shared_ptr<IWaypointManager> m_pit_wpt_manager;
 
   // NOTE : only working in the body coordinate
@@ -120,4 +123,4 @@ private:
   std::shared_ptr<CubicSpliner2D> cubic_spliner_2D_xy;
 };
 
-#endif // NIF_WAYPOINT_MANAGER_MISSION_H
+#endif // NIF_WAYPOINT_MANAGER_MISSION_V2_H

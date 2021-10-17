@@ -12,6 +12,7 @@ using namespace std;
 WaypointManagerMissionSelective::WaypointManagerMissionSelective(
     const string &config_wpt_file_path_, const string &body_frame_id_,
     const string &global_frame_id_, const double &spline_interval_) {
+
   YAML::Node config = YAML::LoadFile(config_wpt_file_path_);
 
   if (!config["racine_lines_file_paths"]) {
@@ -46,12 +47,56 @@ WaypointManagerMissionSelective::WaypointManagerMissionSelective(
   m_origin_rl_wpt_manager = std::make_shared<IWaypointManager>(
       origin_rl_file_path_vec_tmp, m_body_frame_id_str, m_global_frame_id_str,
       int(m_spline_interval));
+
   m_outter_rl_wpt_manager = std::make_shared<IWaypointManager>(
       outter_rl_file_path_vec_tmp, m_body_frame_id_str, m_global_frame_id_str,
       int(m_spline_interval));
+
   m_center_rl_wpt_manager = std::make_shared<IWaypointManager>(
       center_rl_file_path_vec_tmp, m_body_frame_id_str, m_global_frame_id_str,
       int(m_spline_interval));
+
+  m_inner_rl_wpt_manager = std::make_shared<IWaypointManager>(
+      inner_rl_file_path_vec_tmp, m_body_frame_id_str, m_global_frame_id_str,
+      int(m_spline_interval));
+
+  m_wpt_manager_vec.push_back(m_origin_rl_wpt_manager);
+  m_wpt_manager_vec.push_back(m_center_rl_wpt_manager);
+  m_wpt_manager_vec.push_back(m_inner_rl_wpt_manager);
+  m_wpt_manager_vec.push_back(m_center_rl_wpt_manager);
+  m_wpt_manager_vec.push_back(m_origin_rl_wpt_manager);
+  m_wpt_manager_vec.push_back(m_outter_rl_wpt_manager);
+
+  m_cur_wpt_manager_idx = 0;
+
+  m_pit_wpt_manager = std::make_shared<IWaypointManager>(
+      pit_file_path_vec_tmp, m_body_frame_id_str, m_global_frame_id_str,
+      int(m_spline_interval));
+}
+
+WaypointManagerMissionSelective::WaypointManagerMissionSelective(
+    const string &race_line_path_, const string &center_line_path_,
+    const string &pitlane_line_path_, const string &body_frame_id_,
+    const string &global_frame_id_, const double &spline_interval_) {
+
+  vector<string> origin_rl_file_path_vec_tmp{race_line_path_};
+  vector<string> outter_rl_file_path_vec_tmp{race_line_path_};
+  vector<string> center_rl_file_path_vec_tmp{center_line_path_};
+  vector<string> inner_rl_file_path_vec_tmp{center_line_path_};
+  vector<string> pit_file_path_vec_tmp{pitlane_line_path_};
+
+  m_origin_rl_wpt_manager = std::make_shared<IWaypointManager>(
+      origin_rl_file_path_vec_tmp, m_body_frame_id_str, m_global_frame_id_str,
+      int(m_spline_interval));
+
+  m_outter_rl_wpt_manager = std::make_shared<IWaypointManager>(
+      outter_rl_file_path_vec_tmp, m_body_frame_id_str, m_global_frame_id_str,
+      int(m_spline_interval));
+
+  m_center_rl_wpt_manager = std::make_shared<IWaypointManager>(
+      center_rl_file_path_vec_tmp, m_body_frame_id_str, m_global_frame_id_str,
+      int(m_spline_interval));
+
   m_inner_rl_wpt_manager = std::make_shared<IWaypointManager>(
       inner_rl_file_path_vec_tmp, m_body_frame_id_str, m_global_frame_id_str,
       int(m_spline_interval));
@@ -77,6 +122,7 @@ void WaypointManagerMissionSelective::setCurrentOdometry(
   // m_wpt_manager_vec[m_cur_wpt_manager_idx]->setCurrentOdometry(
   //     ego_vehicle_odom);
   // m_pit_wpt_manager->setCurrentOdometry(ego_vehicle_odom);
+  calcMapTrack();
   if (!m_odom_first_callbacked)
     m_odom_first_callbacked = true;
 }
@@ -92,46 +138,57 @@ void WaypointManagerMissionSelective::setObstacle(
   m_obstacles = obj_array;
 }
 
-bool WaypointManagerMissionSelective::checkCollision(
+collide_info WaypointManagerMissionSelective::checkCollision(
     const visualization_msgs::msg::Marker &obj,
     const nav_msgs::msg::Path &path_in_body) const {
+  collide_info output;
+  output.collision_flg = false;
+  output.collision_idx = INFINITY;
   if (obj.pose.position.x < 0.0) {
-    return false;
+    return output;
   } else {
+    int cnt = 0;
     for (const auto &pose : path_in_body.poses) {
       double dist = sqrt(pow(pose.pose.position.x - obj.pose.position.x, 2) +
                          pow(pose.pose.position.y - obj.pose.position.y, 2));
 
+      cnt++;
       if (dist < m_collision_check_dist) {
         // TODO : decide later
         // if object is close to the vehicle,
         // check heading term??
-        return true;
+        output.collision_flg = true;
+        output.collision_idx = cnt;
+        return output;
       }
     }
   }
+  return output;
 }
 
 void WaypointManagerMissionSelective::calcMapTrack() {
+
+  int before_idx = m_cur_wpt_manager_idx;
+
   if (m_odom_first_callbacked) {
     if (m_cur_mission_code.mission_status_code ==
         m_cur_mission_code.MISSION_PIT_IN) {
       m_pit_wpt_manager->setCurrentOdometry(m_cur_odom);
       m_map_track_path_global = m_pit_wpt_manager->getDesiredMapTrackInGlobal();
       m_map_track_path_body = m_pit_wpt_manager->getDesiredMapTrackInBody();
-
     } else if (m_cur_mission_code.mission_status_code ==
                m_cur_mission_code.MISSION_STANDBY) {
       // NOTE : check out of track
       if (m_on_track_flg) {
         // if the vehicle is on the track
         bool collision_free_path_exist = false;
-        for (int cnt = 0; cnt < m_wpt_manager_vec.size(); cnt++) {
-          bool collision = false;
+        std::vector<int> progress_vec;
+        progress_vec.resize(m_wpt_manager_vec.size());
+
+        for (int wpt_idx = 0; wpt_idx < m_wpt_manager_vec.size(); wpt_idx++) {
           int wpt_manager_idx =
-              (m_cur_wpt_manager_idx + cnt) % m_wpt_manager_vec.size();
-          m_wpt_manager_vec[wpt_manager_idx]->setCurrentOdometry(
-              m_cur_odom);
+              (m_cur_wpt_manager_idx + wpt_idx) % m_wpt_manager_vec.size();
+          m_wpt_manager_vec[wpt_manager_idx]->setCurrentOdometry(m_cur_odom);
           m_map_track_path_global =
               m_wpt_manager_vec[wpt_manager_idx]->getDesiredMapTrackInGlobal();
           m_map_track_path_body =
@@ -139,25 +196,48 @@ void WaypointManagerMissionSelective::calcMapTrack() {
 
           // collision check
           // pylon scale : 1m
+          int min_progree_idx = 10000000;
+          bool collision = false;
           for (auto &marker : m_obstacles.markers) {
-            if (checkCollision(marker, m_map_track_path_body)) {
+            collide_info out = checkCollision(marker, m_map_track_path_body);
+            if (out.collision_flg) {
               collision = true;
-              break;
+              if (min_progree_idx > out.collision_idx) {
+                min_progree_idx = out.collision_idx;
+              }
             }
           }
+
           if (!collision) {
-            m_cur_wpt_manager_idx = wpt_manager_idx;
+            // collision free path exist
             collision_free_path_exist = true;
+            m_cur_wpt_manager_idx = wpt_idx;
             break;
           }
+          progress_vec.push_back(min_progree_idx);
         }
+
         if (!collision_free_path_exist) {
           // no collision free path, stop the car
-          nav_msgs::msg::Path empty_path;
-          m_map_track_path_global = empty_path;
-          m_map_track_path_global.header.frame_id = "odom";
-          m_map_track_path_body = empty_path;
-          m_map_track_path_body.header.frame_id = "base_link";
+
+          int max_progress_wpt_idx =
+              std::max_element(progress_vec.begin(), progress_vec.end()) -
+              progress_vec.begin();
+
+          int max_progess =
+              *max_element(std::begin(progress_vec), std::end(progress_vec));
+          int cur_wpt_progress = progress_vec[m_cur_wpt_manager_idx];
+
+          // TODO : should be tuned
+          if (abs(max_progess - cur_wpt_progress) > 10) {
+            m_cur_wpt_manager_idx = max_progress_wpt_idx;
+          } else {
+            // no lane change
+          }
+          m_map_track_path_global = m_wpt_manager_vec[m_cur_wpt_manager_idx]
+                                        ->getDesiredMapTrackInGlobal();
+          m_map_track_path_body = m_wpt_manager_vec[m_cur_wpt_manager_idx]
+                                      ->getDesiredMapTrackInBody();
         } else {
           m_map_track_path_global = m_wpt_manager_vec[m_cur_wpt_manager_idx]
                                         ->getDesiredMapTrackInGlobal();
@@ -180,16 +260,16 @@ void WaypointManagerMissionSelective::calcMapTrack() {
       m_pit_wpt_manager->setCurrentOdometry(m_cur_odom);
       m_map_track_path_global = m_pit_wpt_manager->getDesiredMapTrackInGlobal();
       m_map_track_path_body = m_pit_wpt_manager->getDesiredMapTrackInBody();
-
     } else if (m_cur_mission_code.mission_status_code ==
                m_cur_mission_code.MISSION_SLOW_DRIVE) {
       bool collision_free_path_exist = false;
-      for (int cnt = 0; cnt < m_wpt_manager_vec.size(); cnt++) {
-        bool collision = false;
+      std::vector<int> progress_vec;
+      progress_vec.resize(m_wpt_manager_vec.size());
+
+      for (int wpt_idx = 0; wpt_idx < m_wpt_manager_vec.size(); wpt_idx++) {
         int wpt_manager_idx =
-            (m_cur_wpt_manager_idx + cnt) % m_wpt_manager_vec.size();
-        m_wpt_manager_vec[wpt_manager_idx]->setCurrentOdometry(
-            m_cur_odom);
+            (m_cur_wpt_manager_idx + wpt_idx) % m_wpt_manager_vec.size();
+        m_wpt_manager_vec[wpt_manager_idx]->setCurrentOdometry(m_cur_odom);
         m_map_track_path_global =
             m_wpt_manager_vec[wpt_manager_idx]->getDesiredMapTrackInGlobal();
         m_map_track_path_body =
@@ -197,25 +277,52 @@ void WaypointManagerMissionSelective::calcMapTrack() {
 
         // collision check
         // pylon scale : 1m
+        int min_progree_idx = 10000000;
+        bool collision = false;
         for (auto &marker : m_obstacles.markers) {
-          if (checkCollision(marker, m_map_track_path_body)) {
+          collide_info out = checkCollision(marker, m_map_track_path_body);
+          if (out.collision_flg) {
             collision = true;
-            break;
+            if (min_progree_idx > out.collision_idx) {
+              min_progree_idx = out.collision_idx;
+            }
           }
         }
         if (!collision) {
-          m_cur_wpt_manager_idx = wpt_manager_idx;
+          // collision free path exist
           collision_free_path_exist = true;
+          m_cur_wpt_manager_idx = wpt_idx;
           break;
+        } else {
+          if (wpt_idx == 0) {
+            std::cout << "current wpt has collision" << std::endl;
+          }
         }
+        progress_vec.push_back(min_progree_idx);
       }
+
       if (!collision_free_path_exist) {
         // no collision free path, stop the car
-        nav_msgs::msg::Path empty_path;
-        m_map_track_path_global = empty_path;
-        m_map_track_path_global.header.frame_id = "odom";
-        m_map_track_path_body = empty_path;
-        m_map_track_path_body.header.frame_id = "base_link";
+        std::cout << "no collision free path, stop the car" << std::endl;
+
+        int max_progress_wpt_idx =
+            std::max_element(progress_vec.begin(), progress_vec.end()) -
+            progress_vec.begin();
+
+        int max_progess =
+            *max_element(std::begin(progress_vec), std::end(progress_vec));
+        int cur_wpt_progress = progress_vec[m_cur_wpt_manager_idx];
+
+        // TODO : should be tuned
+        if (abs(max_progess - cur_wpt_progress) > 10) {
+          m_cur_wpt_manager_idx = max_progress_wpt_idx;
+        } else {
+          // no lane change
+        }
+        m_map_track_path_global = m_wpt_manager_vec[m_cur_wpt_manager_idx]
+                                      ->getDesiredMapTrackInGlobal();
+        m_map_track_path_body = m_wpt_manager_vec[m_cur_wpt_manager_idx]
+                                    ->getDesiredMapTrackInBody();
       } else {
         m_map_track_path_global = m_wpt_manager_vec[m_cur_wpt_manager_idx]
                                       ->getDesiredMapTrackInGlobal();
@@ -223,14 +330,16 @@ void WaypointManagerMissionSelective::calcMapTrack() {
                                     ->getDesiredMapTrackInBody();
       }
     } else {
-      // nominal case
+      // if the vehicle is on the track
       bool collision_free_path_exist = false;
-      for (int cnt = 0; cnt < m_wpt_manager_vec.size(); cnt++) {
+      std::vector<int> progress_vec;
+      progress_vec.resize(m_wpt_manager_vec.size());
+
+      for (int wpt_idx = 0; wpt_idx < m_wpt_manager_vec.size(); wpt_idx++) {
         bool collision = false;
         int wpt_manager_idx =
-            (m_cur_wpt_manager_idx + cnt) % m_wpt_manager_vec.size();
-        m_wpt_manager_vec[wpt_manager_idx]->setCurrentOdometry(
-            m_cur_odom);
+            (m_cur_wpt_manager_idx + wpt_idx) % m_wpt_manager_vec.size();
+        m_wpt_manager_vec[wpt_manager_idx]->setCurrentOdometry(m_cur_odom);
         m_map_track_path_global =
             m_wpt_manager_vec[wpt_manager_idx]->getDesiredMapTrackInGlobal();
         m_map_track_path_body =
@@ -238,25 +347,46 @@ void WaypointManagerMissionSelective::calcMapTrack() {
 
         // collision check
         // pylon scale : 1m
+        int min_progree_idx = 10000000;
         for (auto &marker : m_obstacles.markers) {
-          if (checkCollision(marker, m_map_track_path_body)) {
+          collide_info out = checkCollision(marker, m_map_track_path_body);
+          if (out.collision_flg) {
             collision = true;
-            break;
+            if (min_progree_idx > out.collision_idx) {
+              min_progree_idx = out.collision_idx;
+            }
           }
         }
         if (!collision) {
-          m_cur_wpt_manager_idx = wpt_manager_idx;
+          // collision free path exist
           collision_free_path_exist = true;
+          m_cur_wpt_manager_idx = wpt_idx;
           break;
         }
+        progress_vec.push_back(min_progree_idx);
       }
+
       if (!collision_free_path_exist) {
         // no collision free path, stop the car
-        nav_msgs::msg::Path empty_path;
-        m_map_track_path_global = empty_path;
-        m_map_track_path_global.header.frame_id = "odom";
-        m_map_track_path_body = empty_path;
-        m_map_track_path_body.header.frame_id = "base_link";
+
+        int max_progress_wpt_idx =
+            std::max_element(progress_vec.begin(), progress_vec.end()) -
+            progress_vec.begin();
+
+        int max_progess =
+            *max_element(std::begin(progress_vec), std::end(progress_vec));
+        int cur_wpt_progress = progress_vec[m_cur_wpt_manager_idx];
+
+        // TODO : should be tuned
+        if (abs(max_progess - cur_wpt_progress) > 10) {
+          m_cur_wpt_manager_idx = max_progress_wpt_idx;
+        } else {
+          // no lane change
+        }
+        m_map_track_path_global = m_wpt_manager_vec[m_cur_wpt_manager_idx]
+                                      ->getDesiredMapTrackInGlobal();
+        m_map_track_path_body = m_wpt_manager_vec[m_cur_wpt_manager_idx]
+                                    ->getDesiredMapTrackInBody();
       } else {
         m_map_track_path_global = m_wpt_manager_vec[m_cur_wpt_manager_idx]
                                       ->getDesiredMapTrackInGlobal();
@@ -264,8 +394,19 @@ void WaypointManagerMissionSelective::calcMapTrack() {
                                     ->getDesiredMapTrackInBody();
       }
     }
-
   } else {
     // odom is not setted yet
+  }
+
+  if (m_cur_wpt_manager_idx - before_idx != 0) {
+    std::cout << "----------------" << std::endl;
+    std::cout << "wapoint changed" << std::endl;
+    std::cout << "before_idx : " << before_idx << std::endl;
+    std::cout << "m_cur_wpt_manager_idx : " << m_cur_wpt_manager_idx
+              << std::endl;
+    std::cout << "mission status : " << m_cur_mission_code.mission_status_code
+              << std::endl;
+  } else {
+    // std::cout << "-" << std::endl;
   }
 }

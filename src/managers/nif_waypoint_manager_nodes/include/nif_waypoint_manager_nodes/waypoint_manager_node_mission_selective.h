@@ -34,7 +34,8 @@ public:
 private:
   WaypointManagerMissionSelectiveNode();
   void timerCallback();
-  void obstacleCallback(const visualization_msgs::msg::MarkerArray::SharedPtr obj_array);
+  void obstacleCallback(
+      const visualization_msgs::msg::MarkerArray::SharedPtr obj_array);
 
   void setWaypointManager(
       const std::shared_ptr<WaypointManagerMissionSelective> wpt_manager_ptr) {

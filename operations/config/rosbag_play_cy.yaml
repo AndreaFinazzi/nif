@@ -3,28 +3,29 @@ windows:
   - window_name: ROSBAG PLAY Tab
     layout: tiled
     shell_command_before:
-      - source /home/usrg/nif/install/setup.bash && cd /home/usrg/Downloads/VEH4_IMS_RUN-0_2021-10-10
+      - source /home/usrg/nif/install/setup.bash && cd /home/usrg/Downloads/VEH4_LOR_RUN-nochase.dk.narrow_2021-10-12
       - export ROS_DOMAIN_ID=80
-      - export TRACK=IMS
+      - export TRACK=LOR
     panes:
       - shell_command:
           # - ros2 bag play autonomy_2021-10-10_10-35-17 --read-ahead-queue-size 10000 --remap /planning/path_global:=tmp /planning/path_body:=tmp1 -r 1
           # - ros2 bag play autonomy_2021-10-10_10-35-17 --read-ahead-queue-size 10000 
-          - ros2 bag play autonomy_2021-10-10_10-35-17 --remap /planning/path_global:=tmp /planning/path_body:=tmp1 -r 0.5
+          - ros2 bag play autonomy_2021-10-12_13-59-52 --remap /planning/path_global:=tmp /planning/path_body:=tmp1 /aw_localization/ekf/odom:=tmp3 
       - shell_command:
-          - ros2 launch nif_costmap_generator deploy.launch.py
+          - ros2 bag play sensors_2021-10-12_13-59-52
       - shell_command:
-          # - ros2 launch nif_waypoint_manager_nodes deploy.launch.py
-          - ros2 launch nif_waypoint_manager_nodes mission_cy_test.launch.py
-          - ros2 launch nif_launch base.launch.py
+          - ros2 launch nif_points_clustering deploy.launch.py
 
       - shell_command:
-          - ros2 launch nif_points_preprocessor_nodes deploy.launch.py
+          - ros2 launch nif_waypoint_manager_nodes mission_cy_test.launch.py
+
+      - shell_command:
+          # - ros2 launch nif_points_preprocessor_nodes deploy.launch.py
           # - ros2 launch nif_costmap_generator deploy.launch.py
           # - ros2 launch av21_description deploy.launch.py
-          # - ros2 launch nif_aw_localization_nodes deploy.launch.py
+          - ros2 launch nif_aw_localization_nodes deploy.launch.py
           # - export ROS_DOMAIN_ID=80
-          # - export TRACK=IMS
+          # - export TRACK=LOR
           # - ros2 bag play sensors_2021-09-16_10-23-21 --topics /bvs_localization/ltp_odom /novatel_bottom/bestvel /novatel_bottom/bestvel /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_top/bestpos /novatel_top/inspva /novatel_bottom/imu/data /novatel_top/imu/data /raptor_dbw_interface/wheel_speed_report
 
   - window_name: Algorithm Tab
@@ -32,7 +33,7 @@ windows:
     shell_command_before:
       - source /home/usrg/nif/install/setup.bash && cd /home/usrg/nif
       - export ROS_DOMAIN_ID=80
-      - export TRACK=IMS
+      - export TRACK=LOR
     panes:
       - shell_command:
           # - ros2 launch nif_aw_localization_nodes default.launch.py
@@ -44,7 +45,7 @@ windows:
     shell_command_before:
       - source /home/usrg/nif/install/setup.bash && cd /home/usrg/nif/src/perception/nif_localization_nodes/launch
       - export ROS_DOMAIN_ID=80
-      - export TRACK=IMS
+      - export TRACK=LOR
     panes:
       - shell_command:
           - rviz2
