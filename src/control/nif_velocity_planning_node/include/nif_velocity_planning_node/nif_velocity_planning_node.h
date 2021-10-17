@@ -194,7 +194,8 @@ private:
     // Variables
     double desired_velocity_mps = 0.0;                 // [m/s]
     double current_velocity_mps = m_current_speed_mps; // [m/s]
-    double current_steer_rad = m_current_steer_rad;    // [rad]
+    double m_bank_angle_rad = 0.0;
+    double current_steer_rad = m_current_steer_rad; // [rad]
 
     // Perform Velocity Planning if path is good
     if (m_vel_plan_enabled) {
@@ -228,14 +229,7 @@ private:
         // Get Lateral Acceleration Limit using Vehicle dynamics manager
         double a_lat_max = m_tire_manager.ComputeLateralAccelLimit(
             m_a_lon_kf, m_a_lat_kf, m_yaw_rate_kf, current_steer_rad,
-            current_velocity_mps);
-        // // - hyunki 21.10.04, for temporal testing
-        // double a_lat_max = m_tire_manager.ComputeLateralAccelLimit(
-        //     0.0, 0.0, m_yaw_rate_kf, current_steer_rad,
-        //     current_velocity_mps);
-        // double a_lat_max = m_tire_manager.ComputeLateralAccelLimit(
-        //     a_lon, a_lat, yaw_rate, current_steer_rad,
-        //     current_velocity_mps);
+            current_velocity_mps, m_bank_angle_rad);
 
         // Compute maximum velocity
         if (abs(kappa) <= m_CURVATURE_MINIMUM) {
@@ -251,8 +245,10 @@ private:
         // Decrease desired velocity w.r.t. lateral error
         double error_ratio = 0.0;
         if (abs(m_error_y_lpf) > m_lateral_error_deadband_m) {
-          error_ratio = std::min(abs(m_error_y_lpf), m_ERROR_Y_MAX) /
-                        m_ERROR_Y_MAX; // [0.0~1.0] ratio
+          error_ratio =
+              std::min(abs(m_error_y_lpf) - m_lateral_error_deadband_m,
+                       m_ERROR_Y_MAX) /
+              m_ERROR_Y_MAX; // [0.0~1.0] ratio
         }
         double error_gain = 1.0 - 0.5 * error_ratio; // [1.0~0.5] gain
 
