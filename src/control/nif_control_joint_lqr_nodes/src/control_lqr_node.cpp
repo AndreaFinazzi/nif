@@ -21,6 +21,8 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
       "control_joint_lqr/accel_command", nif::common::constants::QOS_DEFAULT);
   track_distance_pub_ = this->create_publisher<std_msgs::msg::Float32>(
       "control_joint_lqr/track_distance", nif::common::constants::QOS_DEFAULT);
+  lqr_tracking_idx_pub_ = this->create_publisher<std_msgs::msg::Int32>(
+      "control_joint_lqr/track_idx", nif::common::constants::QOS_DEFAULT);
   lqr_tracking_point_pub_ =
       this->create_publisher<geometry_msgs::msg::PoseStamped>(
           "control_joint_lqr/track_point", nif::common::constants::QOS_DEFAULT);
@@ -126,7 +128,8 @@ void ControlLQRNode::publishSteerAccelDiagnostics(
     bool lqr_command_valid, bool valid_path, bool valid_odom,
     bool valid_wpt_distance, bool valid_target_position,
     double lqr_steering_command, double lqr_accel_command,
-    double track_distance, geometry_msgs::msg::PoseStamped lqr_track_point,
+    double track_distance, unsigned int lqr_tracking_idx,
+    geometry_msgs::msg::PoseStamped lqr_track_point,
     joint_lqr::lqr::JointLQR::ErrorMatrix lqr_err_cog,
     joint_lqr::lqr::JointLQR::ErrorMatrix lqr_err) {
   std_msgs::msg::Bool command_valid_msg;
@@ -152,6 +155,10 @@ void ControlLQRNode::publishSteerAccelDiagnostics(
   std_msgs::msg::Float32 track_distance_msg;
   track_distance_msg.data = track_distance;
   track_distance_pub_->publish(track_distance_msg);
+
+  std_msgs::msg::Int32 lqr_tracking_idx_msg;
+  lqr_tracking_idx_msg.data = lqr_tracking_idx;
+  lqr_tracking_idx_pub_->publish(lqr_tracking_idx_msg);
 
   lqr_track_point.header.frame_id = "odom";
   lqr_tracking_point_pub_->publish(lqr_track_point);
@@ -296,8 +303,8 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
     publishSteerAccelDiagnostics(
         valid_tracking_result, valid_path, valid_odom, valid_wpt_distance,
         valid_target_position, steering_angle_deg, desired_accel,
-        track_distance, this->getReferencePath()->poses[lqr_tracking_idx_],
-        error_COG, error);
+        track_distance, lqr_tracking_idx_,
+        this->getReferencePath()->poses[lqr_tracking_idx_], error_COG, error);
   }
 
   if (!this->hasSystemStatus() ||

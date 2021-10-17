@@ -16,6 +16,7 @@
 #include "raptor_dbw_msgs/msg/wheel_speed_report.hpp"
 #include "std_msgs/msg/bool.hpp"
 #include "std_msgs/msg/float32.hpp"
+#include "std_msgs/msg/int32.hpp"
 #include "std_msgs/msg/u_int8.hpp"
 
 #include "nif_control_joint_lqr_nodes/lqr/joint_lqr.h"
@@ -33,7 +34,8 @@ public:
       bool lqr_command_valid, bool valid_path, bool valid_odom,
       bool valid_wpt_distance, bool valid_target_position,
       double lqr_steering_command, double lqr_accel_command,
-      double track_distance, geometry_msgs::msg::PoseStamped lqr_track_point,
+      double track_distance, unsigned int lqr_tracking_idx,
+      geometry_msgs::msg::PoseStamped lqr_track_point,
       joint_lqr::lqr::JointLQR::ErrorMatrix lqr_err_cog,
       joint_lqr::lqr::JointLQR::ErrorMatrix lqr_err);
 
@@ -88,6 +90,8 @@ private:
       lqr_steering_command_pub_;
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr lqr_accel_command_pub_;
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr track_distance_pub_;
+  rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr lqr_tracking_idx_pub_;
+
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr
       lqr_tracking_point_pub_;
   rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr lqr_error_pub_;
@@ -129,7 +133,7 @@ private:
   double desired_vx_;
 
   //! LQR Tracking State
-  unsigned int lqr_tracking_idx_;
+  unsigned int lqr_tracking_idx_ = 0;
 
   //! Manual Overrides for when auto mode is disabled
   double override_steering_target_ = 0.0;
