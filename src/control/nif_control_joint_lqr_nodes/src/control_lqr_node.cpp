@@ -11,6 +11,10 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
   // Debug Publishers
   lqr_command_valid_pub_ = this->create_publisher<std_msgs::msg::Bool>(
       "control_joint_lqr/tracking_valid", nif::common::constants::QOS_DEFAULT);
+  lqr_valid_conditions_pub_ =
+      this->create_publisher<std_msgs::msg::Float32MultiArray>(
+          "control_joint_lqr/valid_conditions",
+          nif::common::constants::QOS_DEFAULT);
   lqr_steering_command_pub_ = this->create_publisher<std_msgs::msg::Float32>(
       "control_joint_lqr/lqr_command", nif::common::constants::QOS_DEFAULT);
   lqr_accel_command_pub_ = this->create_publisher<std_msgs::msg::Float32>(
@@ -119,13 +123,23 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
 }
 
 void ControlLQRNode::publishSteerAccelDiagnostics(
-    bool lqr_command_valid, double lqr_steering_command,
-    double lqr_accel_command, double track_distance,
-    geometry_msgs::msg::PoseStamped lqr_track_point,
+    bool lqr_command_valid, bool valid_path, bool valid_odom,
+    bool valid_wpt_distance, bool valid_target_position,
+    double lqr_steering_command, double lqr_accel_command,
+    double track_distance, geometry_msgs::msg::PoseStamped lqr_track_point,
+    joint_lqr::lqr::JointLQR::ErrorMatrix lqr_err_cog,
     joint_lqr::lqr::JointLQR::ErrorMatrix lqr_err) {
   std_msgs::msg::Bool command_valid_msg;
   command_valid_msg.data = lqr_command_valid;
   lqr_command_valid_pub_->publish(command_valid_msg);
+
+  std_msgs::msg::Float32MultiArray valid_conditions_msg;
+  valid_conditions_msg.data.push_back(lqr_command_valid);
+  valid_conditions_msg.data.push_back(valid_path);
+  valid_conditions_msg.data.push_back(valid_odom);
+  valid_conditions_msg.data.push_back(valid_wpt_distance);
+  valid_conditions_msg.data.push_back(valid_target_position);
+  lqr_valid_conditions_pub_->publish(valid_conditions_msg);
 
   std_msgs::msg::Float32 steering_command_msg;
   steering_command_msg.data = lqr_steering_command;
@@ -139,8 +153,18 @@ void ControlLQRNode::publishSteerAccelDiagnostics(
   track_distance_msg.data = track_distance;
   track_distance_pub_->publish(track_distance_msg);
 
+  lqr_track_point.header.frame_id = "odom";
   lqr_tracking_point_pub_->publish(lqr_track_point);
-  lqr_error_pub_->publish(joint_lqr::utils::ROSError(lqr_err));
+  auto error_cog_array_msg =
+      joint_lqr::utils::ROSError(lqr_err_cog); // Float32MultiArray
+  auto error_array_msg =
+      joint_lqr::utils::ROSError(lqr_err); // Float32MultiArray
+  error_cog_array_msg.data.push_back(error_array_msg.data[0]);
+  error_cog_array_msg.data.push_back(error_array_msg.data[1]);
+  error_cog_array_msg.data.push_back(error_array_msg.data[2]);
+  error_cog_array_msg.data.push_back(error_array_msg.data[3]);
+  error_cog_array_msg.data.push_back(error_array_msg.data[4]);
+  lqr_error_pub_->publish(error_cog_array_msg);
 }
 
 nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
@@ -164,10 +188,11 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
 
   double steering_angle_deg = 0.0;
   double desired_accel = 0.0;
+  joint_lqr::lqr::JointLQR::ErrorMatrix error;
+  joint_lqr::lqr::JointLQR::ErrorMatrix error_COG; // error at center of gravity
+
   // Perform Tracking if path is good
   if (valid_path && valid_odom) {
-    valid_tracking_result = true;
-
     // Check whether path is global/local
     bool is_local_path =
         this->getReferencePath()->header.frame_id == this->getBodyFrameId();
@@ -207,49 +232,72 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
                             lqr_tracking_idx_, target_distance,
                             target_reached_end); // outputs
 
-    // Run LQR :)
+    // Check valid waypoint starting distance & valid target waypoint
+    // position(front)
+    // - starting wpt should be around ego.
+    bool valid_wpt_distance =
+        pure_pursuit_max_max_dist_m_ >
+        joint_lqr::utils::pursuit_dist(this->getReferencePath()->poses[0],
+                                       this->getEgoOdometry());
+    // - target point should be ahead.
+    double target_point_azimuth = joint_lqr::utils::pursuit_azimuth(
+        this->getReferencePath()->poses[lqr_tracking_idx_],
+        this->getEgoOdometry());
+    bool valid_target_position = M_PI / 2. > std::abs(target_point_azimuth);
 
-    // Desired velocity check
-    double l_desired_velocity = 0.0;
-    if (this->hasDesiredVelocity() &&
-        (this->now() - this->getDesiredVelocityUpdateTime() <=
-         rclcpp::Duration(1, 0))) {
-      l_desired_velocity = this->getDesiredVelocity()->data;
+    if (valid_wpt_distance && valid_target_position) {
+      valid_tracking_result = true;
+      // Run LQR :)
+      // Desired velocity check
+      double l_desired_velocity = 0.0;
+      if (this->hasDesiredVelocity() &&
+          (this->now() - this->getDesiredVelocityUpdateTime() <=
+           rclcpp::Duration(1, 0))) {
+        l_desired_velocity = this->getDesiredVelocity()->data;
+      }
+      if (!m_use_mission_max_vel_) {
+        // if not using mission status maximum velocity,
+        // directly use des_vel from velocity planner
+        l_desired_velocity = direct_desired_velocity_;
+      }
+
+      auto goal = joint_lqr::utils::LQRGoal(
+          this->getReferencePath()->poses[lqr_tracking_idx_],
+          l_desired_velocity);
+      auto goal_COG = joint_lqr::utils::LQRGoal(
+          this->getReferencePath()->poses[0], l_desired_velocity);
+      error = joint_lqr_->computeError(state, goal);
+      error_COG = joint_lqr_->computeError(state, goal_COG);
+      auto cmd = joint_lqr_->process(state, goal);
+      steering_angle_deg = cmd(0, 0) * nif::common::constants::RAD2DEG;
+      desired_accel = cmd(1, 0);
+
+      // Make sure steering angle is within range
+      if (steering_angle_deg > max_steering_angle_deg_)
+        steering_angle_deg = max_steering_angle_deg_;
+      if (steering_angle_deg < -max_steering_angle_deg_)
+        steering_angle_deg = -max_steering_angle_deg_;
+
+      //    Adapt to steering ratio (ControlCommand sends steering wheel's
+      //    angle) steering_angle_deg *=
+      //    nif::common::vehicle_param::STEERING_RATIO;
+
+      // Smooth and publish diagnostics
+      double period_double_s =
+          nif::common::utils::time::secs(this->getGclockPeriodDuration());
+      RCLCPP_DEBUG(this->get_logger(), "Smoothing with dt: [s] %f",
+                   period_double_s);
+      joint_lqr::utils::smoothSignal(steering_angle_deg, last_steering_command_,
+                                     steering_max_ddeg_dt_, period_double_s);
+      joint_lqr::utils::smoothSignal(desired_accel, last_accel_command_,
+                                     des_accel_max_da_dt_, period_double_s);
     }
-    if (!m_use_mission_max_vel_) {
-      // if not using mission status maximum velocity,
-      // directly use des_vel from velocity planner
-      l_desired_velocity = direct_desired_velocity_;
-    }
-
-    auto goal = joint_lqr::utils::LQRGoal(
-        this->getReferencePath()->poses[lqr_tracking_idx_], l_desired_velocity);
-    auto error = joint_lqr_->computeError(state, goal);
-    auto cmd = joint_lqr_->process(state, goal);
-    steering_angle_deg = cmd(0, 0) * nif::common::constants::RAD2DEG;
-    desired_accel = cmd(1, 0);
-
-    // Make sure steering angle is within range
-    if (steering_angle_deg > max_steering_angle_deg_)
-      steering_angle_deg = max_steering_angle_deg_;
-    if (steering_angle_deg < -max_steering_angle_deg_)
-      steering_angle_deg = -max_steering_angle_deg_;
-
-    //    Adapt to steering ratio (ControlCommand sends steering wheel's angle)
-    //    steering_angle_deg *= nif::common::vehicle_param::STEERING_RATIO;
-
-    // Smooth and publish diagnostics
-    double period_double_s =
-        nif::common::utils::time::secs(this->getGclockPeriodDuration());
-    RCLCPP_DEBUG(this->get_logger(), "Smoothing with dt: [s] %f",
-                 period_double_s);
-    joint_lqr::utils::smoothSignal(steering_angle_deg, last_steering_command_,
-                                   steering_max_ddeg_dt_, period_double_s);
-    joint_lqr::utils::smoothSignal(desired_accel, last_accel_command_,
-                                   des_accel_max_da_dt_, period_double_s);
+    // Publish diagnostic message
     publishSteerAccelDiagnostics(
-        true, steering_angle_deg, desired_accel, track_distance,
-        this->getReferencePath()->poses[lqr_tracking_idx_], error);
+        valid_tracking_result, valid_path, valid_odom, valid_wpt_distance,
+        valid_target_position, steering_angle_deg, desired_accel,
+        track_distance, this->getReferencePath()->poses[lqr_tracking_idx_],
+        error_COG, error);
   }
 
   if (!this->hasSystemStatus() ||

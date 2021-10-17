@@ -6,6 +6,8 @@
 
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "nav_msgs/msg/odometry.hpp"
+#include <tf2/LinearMath/Matrix3x3.h>
+#include <tf2/LinearMath/Quaternion.h>
 
 #include <cmath>
 
@@ -21,6 +23,8 @@ double pursuit_dist(const geometry_msgs::msg::PoseStamped &point_a,
 double pursuit_dist(const geometry_msgs::msg::PoseStamped &point_a,
                     const geometry_msgs::msg::PoseStamped &point_b);
 
+double pursuit_azimuth(const geometry_msgs::msg::PoseStamped &target_point,
+                       const nav_msgs::msg::Odometry &ego_point);
 /**
  * @brief templated pure pursuit function to find the earliest point
  *  in path pursuit_distance from position
@@ -151,6 +155,8 @@ void track(const PathT &path, const PointT &position,
  **/
 double smoothSignal(double current_signal, double target_signal,
                     double delta_dt, double dt);
+
+double normalizeTheta(double theta);
 
 } /* namespace utils */
 } /* namespace joint_lqr */

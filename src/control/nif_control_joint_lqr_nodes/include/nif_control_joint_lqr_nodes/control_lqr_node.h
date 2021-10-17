@@ -29,12 +29,13 @@ class ControlLQRNode : public nif::control::IControllerNode {
 public:
   explicit ControlLQRNode(const std::string &node_name);
 
-  void
-  publishSteerAccelDiagnostics(bool lqr_command_valid,
-                               double lqr_steering_command,
-                               double lqr_accel_command, double track_distance,
-                               geometry_msgs::msg::PoseStamped lqr_track_point,
-                               joint_lqr::lqr::JointLQR::ErrorMatrix lqr_err);
+  void publishSteerAccelDiagnostics(
+      bool lqr_command_valid, bool valid_path, bool valid_odom,
+      bool valid_wpt_distance, bool valid_target_position,
+      double lqr_steering_command, double lqr_accel_command,
+      double track_distance, geometry_msgs::msg::PoseStamped lqr_track_point,
+      joint_lqr::lqr::JointLQR::ErrorMatrix lqr_err_cog,
+      joint_lqr::lqr::JointLQR::ErrorMatrix lqr_err);
 
   /** ROS Callbacks / Subscription Interface **/
   void afterReferencePathCallback() override {
@@ -81,6 +82,8 @@ public:
 private:
   //! Debug Interface
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr lqr_command_valid_pub_;
+  rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr
+      lqr_valid_conditions_pub_;
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr
       lqr_steering_command_pub_;
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr lqr_accel_command_pub_;
