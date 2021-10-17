@@ -32,16 +32,25 @@ DKGraphPlannerNode::DKGraphPlannerNode(const std::string &node_name_)
   this->declare_parameter<double>("curvature_gain", double(2.0));
   this->declare_parameter<double>("transient_gain", double(2.0));
 
+  this->declare_parameter<double>("inflation_size", double(3.0));
+  this->declare_parameter<double>("collision_check_radius", double(2.0));
+  this->declare_parameter<double>("final_path_update_dist", double(50.0));
+
   this->m_OsmFileName = this->get_parameter("osm_name").as_string();
   this->m_RacingTrajectory =
       this->get_parameter("racing_trajectory").as_string();
   this->m_originLat = this->get_parameter("origin_lat").as_double();
   this->m_originLon = this->get_parameter("origin_lon").as_double();
 
-this->m_ref_gain = this->get_parameter("ref_gain").as_double();
-this->m_collision_gain = this->get_parameter("collision_gain").as_double();
-this->m_curvature_gain = this->get_parameter("curvature_gain").as_double();
-this->m_transient_gain = this->get_parameter("transient_gain").as_double();
+  this->m_ref_gain = this->get_parameter("ref_gain").as_double();
+  this->m_collision_gain = this->get_parameter("collision_gain").as_double();
+  this->m_curvature_gain = this->get_parameter("curvature_gain").as_double();
+  this->m_transient_gain = this->get_parameter("transient_gain").as_double();
+  this->m_inflation_size = this->get_parameter("inflation_size").as_double();
+  this->m_collision_radius =
+      this->get_parameter("collision_check_radius").as_double();
+  this->m_final_path_update_dist =
+      this->get_parameter("final_path_update_dist").as_double();
 
   // Set the ltp reference point
   nif::localization::utils::GeodeticConverter::GeoRef ref;
@@ -104,6 +113,8 @@ this->m_transient_gain = this->get_parameter("transient_gain").as_double();
   OsmParcing();
   RacingLineParcing();
   BuildGraph();
+
+  m_FinalPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
 }
 
 DKGraphPlannerNode::~DKGraphPlannerNode() {}
@@ -364,6 +375,7 @@ void DKGraphPlannerNode::CallbackOdometry(const nav_msgs::msg::Odometry::SharedP
     tf2::convert(msg->pose.pose.orientation, tf_quat);
     tf2::Matrix3x3 mat(tf_quat);
     mat.getRPY(m_veh_roll, m_veh_pitch, m_veh_yaw);
+    m_veh_speed = msg->twist.twist.linear.x;
 
     double m_closest_x_in_racing_line, m_closest_y_in_racing_line;
   
@@ -420,7 +432,7 @@ void DKGraphPlannerNode::CallbackOdometry(const nav_msgs::msg::Odometry::SharedP
     m_StartNode = current_node_id;
 
     double target_x_in_racing_line, target_y_in_racing_line;
-    int target_idx = current_idx + 60;
+    int target_idx = current_idx + 100;
     int target_node_id;
     size_t racingLineRefSize = m_racingLineRefPoints->points.size();
     target_idx = target_idx % racingLineRefSize;
@@ -485,6 +497,14 @@ void DKGraphPlannerNode::CallbackWallPoints(
 }
 
 void DKGraphPlannerNode::timer_callback() {
+
+  current_time = static_cast<double>(this->now().seconds()) +
+                 static_cast<double>(this->now().nanoseconds()) * 1e-9;
+  m_dt = current_time - prev_time;
+  // std::cout << "Time[sec] : " << m_dt << std::endl;
+  // std::cout << "Received Obstacle : " << bInflatedPoints << std::endl;
+  // std::cout << "Received Oodmetry : " << bOdometry << std::endl;
+
   if (bRacingLine && bParcingComplete && bBuildGraph) {
 
     // if (bWallPoints) {
@@ -497,6 +517,7 @@ void DKGraphPlannerNode::timer_callback() {
     Planning();
     ToPathMsg();
   }
+  prev_time = current_time;
 }
 
 void DKGraphPlannerNode::MessagePublisher() {
@@ -780,7 +801,7 @@ void DKGraphPlannerNode::UpdateGraph()
                            (pt_y_global - m_veh_y) * cos(m_veh_yaw);
 
         double collision_cost =
-            CorrespondingCost(pt_x_body, pt_y_body, 3.0, m_ClusterCenterPoints,
+            CorrespondingCost(pt_x_body, pt_y_body, m_inflation_size, m_ClusterCenterPoints,
                               m_InflatedCostPoints);
 
         double wall_cost = 0.;
@@ -854,12 +875,6 @@ void DKGraphPlannerNode::Planning() {
   std::lock_guard<std::mutex> lock(mtx);
 
   // std::cout << "-----Planning----- " << std::endl;
-  current_time = static_cast<double>(this->now().seconds()) +
-                 static_cast<double>(this->now().nanoseconds()) * 1e-9;
-  // std::cout << "Time[sec] : " << current_time - prev_time << std::endl;
-  // std::cout << "Received Occupancy : " << bOccupancyGrid << std::endl;
-  // std::cout << "Received Oodmetry : " << bOdometry << std::endl;
-
   UpdateGraph();
 
   m_PlanningPathNodes.clear();
@@ -953,14 +968,14 @@ void DKGraphPlannerNode::Planning() {
     // }
 
     ReleaseGraph();
-
-    prev_time = current_time;
 }
 
 void DKGraphPlannerNode::ToPathMsg() {
   pcl::PointCloud<pcl::PointXYZI>::Ptr candidates_ptr(
       new pcl::PointCloud<pcl::PointXYZI>);
-  pcl::PointCloud<pcl::PointXYZI>::Ptr finalcloud_ptr(
+  pcl::PointCloud<pcl::PointXYZI>::Ptr finalcloud_before_finalize_ptr(
+      new pcl::PointCloud<pcl::PointXYZI>);
+  pcl::PointCloud<pcl::PointXYZI>::Ptr finalcloud_updated_ptr(
       new pcl::PointCloud<pcl::PointXYZI>);
 
   int count = 0;
@@ -989,11 +1004,8 @@ void DKGraphPlannerNode::ToPathMsg() {
 
   // Final Nodes
   int cnt = 0;
-  double prev_x = 0.;
-  double prev_y = 0.;
   m_BestLayerArray.clear();
   m_BestLayerXYArray.clear();
-  nav_msgs::msg::Path FinalPath;
   for (auto node_id : m_FinalNodes) {
     for (auto final_id : m_FirstNodeBasedResister[node_id]) {
       if (!ExistInList(final_id.last_node_id, m_FinalNodes))
@@ -1011,32 +1023,8 @@ void DKGraphPlannerNode::ToPathMsg() {
         point_buf.y = nd.y;
         point_buf.z = nd.z;
         point_buf.intensity = cnt;
-        finalcloud_ptr->points.push_back(point_buf);
+        finalcloud_before_finalize_ptr->points.push_back(point_buf);
         cnt++;
-
-        geometry_msgs::msg::PoseStamped pose_buf;
-        if(prev_x == 0. && prev_y == 0.)
-        {
-          prev_x = nd.x;
-          prev_y = nd.y;
-          continue;          
-        }
-        if(prev_x == nd.x || prev_y == nd.y)
-          continue;
-        
-        pose_buf.pose.position.x = nd.x;
-        pose_buf.pose.position.y = nd.y;
-        double yaw = atan2(nd.y - prev_y, nd.x - prev_x);
-        tf2::Quaternion quat_;
-        geometry_msgs::msg::Quaternion quat_msg;
-        quat_.setRPY(0., 0., yaw);
-        quat_.normalize();
-        quat_msg = tf2::toMsg(quat_);
-        pose_buf.pose.orientation = quat_msg;
-        FinalPath.poses.push_back(pose_buf);
-
-        prev_x = nd.x;
-        prev_y = nd.y;
 
       }
       // m_BestLayerArray[final_id.start_layer] = final_id.start_node;
@@ -1063,6 +1051,59 @@ void DKGraphPlannerNode::ToPathMsg() {
   BestLayerXYCloudMsg.header.stamp = this->now();
   pubBestLayerXYPoints->publish(BestLayerXYCloudMsg);
 
+  bool path_updated = false;
+  double distance_to_obs = -1;
+  if(bCenteredPoints)
+  {
+    FinalizePath(finalcloud_before_finalize_ptr, m_ClusterCenterPoints,
+                 m_veh_speed, m_dt, m_odom_dist, m_collision_radius,
+                 m_final_path_update_dist, distance_to_obs, 
+                 finalcloud_updated_ptr, path_updated);
+    // std::cout << m_veh_speed << ", " << m_dt << ", " << m_odom_dist << std::endl; 
+    if (path_updated) {
+      RCLCPP_INFO(
+          this->get_logger(),
+          "Final Path updated. Current odometry : %f, Collision dist : %f",
+          m_odom_dist, distance_to_obs);
+      m_FinalPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
+      *m_FinalPoints = *finalcloud_updated_ptr;
+      m_odom_dist = 0.0;
+    }
+  }
+  else
+  {
+    *m_FinalPoints = *finalcloud_before_finalize_ptr;
+  }
+
+  nav_msgs::msg::Path FinalPath;
+  double prev_x = 0.;
+  double prev_y = 0.;
+  for(auto point : m_FinalPoints->points)
+  {
+    geometry_msgs::msg::PoseStamped pose_buf;
+    if (prev_x == 0. && prev_y == 0.) {
+      prev_x = point.x;
+      prev_y = point.y;
+      continue;
+    }
+    if (prev_x == point.x || prev_y == point.y)
+      continue;
+
+    pose_buf.pose.position.x = point.x;
+    pose_buf.pose.position.y = point.y;
+    double yaw = atan2(point.y - prev_y, point.x - prev_x);
+    tf2::Quaternion quat_;
+    geometry_msgs::msg::Quaternion quat_msg;
+    quat_.setRPY(0., 0., yaw);
+    quat_.normalize();
+    quat_msg = tf2::toMsg(quat_);
+    pose_buf.pose.orientation = quat_msg;
+    FinalPath.poses.push_back(pose_buf);
+
+    prev_x = point.x;
+    prev_y = point.y;
+  }
+
   if (FinalPath.poses.empty()) {
     // std::cout << "planning node size : " << m_FinalNodes.size() << std::endl;
     // std::cout << "m_currentLayer : " << m_currentLayer << std::endl;
@@ -1071,8 +1112,8 @@ void DKGraphPlannerNode::ToPathMsg() {
   }
 
   sensor_msgs::msg::PointCloud2 FinalPathCloudMsg;
-  if(!finalcloud_ptr->points.empty())
-    pcl::toROSMsg(*finalcloud_ptr, FinalPathCloudMsg);
+  if(!m_FinalPoints->points.empty())
+    pcl::toROSMsg(*m_FinalPoints, FinalPathCloudMsg);
   FinalPathCloudMsg.header.frame_id = nif::common::frame_id::localization::ODOM;
   FinalPathCloudMsg.header.stamp = this->now();
   pubFinalPathPoints->publish(FinalPathCloudMsg);
@@ -1084,15 +1125,63 @@ void DKGraphPlannerNode::ToPathMsg() {
   pcl::PointCloud<pcl::PointXYZI>::Ptr finalOnBodyPoints(
       new pcl::PointCloud<pcl::PointXYZI>);
   sensor_msgs::msg::PointCloud2 FinalOnBodyCloudMsg;
-  if (!finalcloud_ptr->points.empty())
+  if (!m_FinalPoints->points.empty())
   {
-    TransformPointsToBody(finalcloud_ptr, finalOnBodyPoints, 
+    TransformPointsToBody(m_FinalPoints, finalOnBodyPoints, 
                           m_veh_x, m_veh_y, m_veh_yaw);
     pcl::toROSMsg(*finalOnBodyPoints, FinalOnBodyCloudMsg);
   }
   FinalOnBodyCloudMsg.header.frame_id = nif::common::frame_id::localization::BASE_LINK;
   FinalOnBodyCloudMsg.header.stamp = this->now();
   pubFinalPathOnBody->publish(FinalOnBodyCloudMsg);
+}
+/*
+  We update path only this cases :
+    1. We drove over than "desired_update_dist_in" from last upated.
+    2. Current path is close to the obstacle less than obs_radius_in
+*/
+void DKGraphPlannerNode::FinalizePath(
+    const pcl::PointCloud<pcl::PointXYZI>::Ptr &path_points_in,
+    const pcl::PointCloud<pcl::PointXYZI>::Ptr &obs_center_in,
+    const double &speed_mps_in, const double &dt_in, double &odometry_in,
+    const double &obs_radius_in, const double &desired_update_dist_in,
+    double &dist_to_obs_out,
+    pcl::PointCloud<pcl::PointXYZI>::Ptr &path_points_out,
+    bool &path_updated_out) {
+  //We drove over than "desired_update_dist_in" from last upated.
+  odometry_in += speed_mps_in * dt_in;
+  if (odometry_in > desired_update_dist_in) {
+    *path_points_out = *path_points_in;
+    path_updated_out = true;
+    return;
+  }
+
+  //Current path is close to the obstacle less than obs_radius_in.
+  bool current_path_collision = false;
+  for(auto point : path_points_in->points)
+  {
+    for(auto obs: obs_center_in->points)
+    {
+      double dist_to_obs = sqrt(pow(point.x - obs.x,2) + 
+                                pow(point.y - obs.y,2));
+      if (dist_to_obs < obs_radius_in)
+      {
+        current_path_collision = true;
+        dist_to_obs_out = dist_to_obs;
+        break;
+      }
+    }
+    if (current_path_collision)
+    {
+      break;
+    }
+  }
+
+  if (current_path_collision)
+  {
+    *path_points_out = *path_points_in;
+    path_updated_out = true;
+  }
 }
 
 bool DKGraphPlannerNode::ExistInList(int id, std::deque<int> list) {

@@ -164,7 +164,14 @@ private:
   void BuildGraph();
   void UpdateGraph();
   void ReleaseGraph();
-
+  void FinalizePath(const pcl::PointCloud<pcl::PointXYZI>::Ptr &path_points_in,
+                    const pcl::PointCloud<pcl::PointXYZI>::Ptr &obs_center_in,
+                    const double &speed_mps_in, const double &dt_in,
+                    double &odometry_in, const double &obs_radius_in,
+                    const double &desired_update_dist_in,
+                    double &dist_to_obs_out,
+                    pcl::PointCloud<pcl::PointXYZI>::Ptr &path_points_out,
+                    bool &path_updated_out);
   void GetIntensityInfo(const double &x_in, const double &y_in,
                         pcl::PointCloud<pcl::PointXYZI>::Ptr in_points,
                         int &intensity_out);
@@ -243,6 +250,7 @@ private:
   pcl::PointCloud<pcl::PointXYZI>::Ptr m_ClusterCenterPoints;
   pcl::PointCloud<pcl::PointXYZI>::Ptr m_WallPoints;
   pcl::PointCloud<pcl::PointXYZI>::Ptr m_WallInflatedCostPoints;
+  pcl::PointCloud<pcl::PointXYZI>::Ptr m_FinalPoints;
 
   nif_dk_graph_planner_msgs::msg::OsmParcer m_OsmParcer;
 
@@ -257,15 +265,24 @@ private:
   bool bWallInflated = false;
   bool bDebug;
 
+  double m_dt;
+
   double m_veh_x;
   double m_veh_y;
   double m_veh_roll, m_veh_pitch, m_veh_yaw;
+  double m_veh_speed; 
   double prev_time, current_time;
 
   double m_ref_gain;
   double m_collision_gain;
   double m_curvature_gain;
   double m_transient_gain;
+
+  double m_inflation_size;
+  double m_collision_radius;
+  double m_final_path_update_dist;
+
+  double m_odom_dist = 0.;
 
   int m_ClosestFirstNodeId;
   int m_StartNode; 
