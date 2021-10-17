@@ -74,7 +74,7 @@ AccelControl::AccelControl() : Node("AccelControlNode") {
   this->declare_parameter("throttle.k_bias", 0.09998);
   this->declare_parameter("throttle.pedalToCmd", 100.0);
 
-  this->declare_parameter("throttle.cmd_max", 40.0);
+  this->declare_parameter("throttle.cmd_max", 100.0);
   this->declare_parameter("throttle.cmd_min", 0.0);
   this->declare_parameter("throttle.des_accel_deadband", 0.05);
 
@@ -352,10 +352,12 @@ void AccelControl::publishThrottleBrake() {
   pubThrottleCmdRaw_->publish(this->throttle_cmd);
   pubBrakeCmdRaw_->publish(this->brake_cmd);
 
-  if (this->throttle_cmd.data > this->max_throttle_) {
-    RCLCPP_DEBUG(this->get_logger(), "%s\n", "Throttle Limit Max Reached");
-    this->throttle_cmd.data = this->max_throttle_;
-  }
+// !!!! UNCOMMENT TO ENABLE THROTTLE SATURATION TO JOYSTICK CMD  !!!!
+  // if (this->throttle_cmd.data > this->max_throttle_) {
+  //   RCLCPP_DEBUG(this->get_logger(), "%s\n", "Throttle Limit Max Reached");
+  //   this->throttle_cmd.data = this->max_throttle_;
+  // }
+// !!!! UNCOMMENT TO ENABLE THROTTLE SATURATION TO JOYSTICK CMD  !!!!
 
   this->throttle_cmd.data =
       (this->brake_cmd.data > 0.0) ? 0.0 : this->throttle_cmd.data;

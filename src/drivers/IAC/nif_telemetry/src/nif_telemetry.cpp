@@ -19,6 +19,8 @@
 #include "nav_msgs/msg/path.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 #include "nif_msgs/msg/localization_status.hpp"
+#include <visualization_msgs/msg/marker_array.hpp>
+
 
 using namespace std::chrono_literals;
 
@@ -34,7 +36,7 @@ class Telemetry : public rclcpp::Node
       pub_system_status = this->create_publisher<nif_msgs::msg::SystemStatus>("/nif_telemetry/system_status", qos);
       pub_telemetry = this->create_publisher<nif_msgs::msg::Telemetry>("/nif_telemetry/telemetry", qos);
       pub_reference_path = this->create_publisher<nav_msgs::msg::Path>("/nif_telemetry/path_global", qos);
-      // pub_perception_summary = this->create_publisher<?>("/nif_telemetry/perception_summary", qos);
+      pub_perception_result = this->create_publisher<visualization_msgs::msg::MarkerArray>("/nif_telemetry/perception_result", qos);
 
       sub_ct_report = this->create_subscription<deep_orange_msgs::msg::CtReport>(
         "/raptor_dbw_interface/ct_report", nif::common::constants::QOS_SENSOR_DATA, std::bind(&Telemetry::ct_report_callback, this, std::placeholders::_1));
@@ -72,6 +74,9 @@ class Telemetry : public rclcpp::Node
 
       sub_reference_path = this->create_subscription<nav_msgs::msg::Path>(
         "/planning/path_global", nif::common::constants::QOS_SENSOR_DATA, std::bind(&Telemetry::reference_path_callback, this, std::placeholders::_1));
+      
+      sub_perception_result = this->create_subscription<visualization_msgs::msg::MarkerArray>(
+        "/clustered_markers", nif::common::constants::QOS_SENSOR_DATA, std::bind(&Telemetry::perception_result_callback, this, std::placeholders::_1));
 
       timer_ = this->create_wall_timer(
         100ms, std::bind(&Telemetry::timer_callback, this));
@@ -83,6 +88,7 @@ class Telemetry : public rclcpp::Node
       pub_system_status->publish(msg_system_status);
       pub_telemetry->publish(msg_telemetry);
 
+      // Reference path
       if (!in_reference_path.poses.empty()) {
         nav_msgs::msg::Path path_sampled{};
 
@@ -98,6 +104,9 @@ class Telemetry : public rclcpp::Node
 
         pub_reference_path->publish(path_sampled);
       }
+
+      // Perception result
+      pub_perception_result->publish(msg_perception_result);
     }
     void ct_report_callback(const deep_orange_msgs::msg::CtReport::SharedPtr msg)
     {
@@ -176,11 +185,23 @@ class Telemetry : public rclcpp::Node
     {
       in_reference_path = std::move(*msg);
     }
+    void perception_result_callback(const visualization_msgs::msg::MarkerArray::SharedPtr msg)
+    {
+      msg_perception_result = std::move(*msg);
+
+      for (auto &&marker : msg_perception_result.markers)
+      {
+        // Fake marker orientation as temp solution
+        marker.pose.orientation = msg_telemetry.localization.odometry.pose.orientation;
+      }
+    }
+    
     rclcpp::TimerBase::SharedPtr timer_;
 
     rclcpp::Publisher<nif_msgs::msg::SystemStatus>::SharedPtr pub_system_status;
     rclcpp::Publisher<nif_msgs::msg::Telemetry>::SharedPtr pub_telemetry;
     rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_reference_path;
+    rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr pub_perception_result;
 
     rclcpp::Subscription<deep_orange_msgs::msg::CtReport>::SharedPtr sub_ct_report;
     rclcpp::Subscription<deep_orange_msgs::msg::PtReport>::SharedPtr sub_pt_report;
@@ -202,11 +223,15 @@ class Telemetry : public rclcpp::Node
 
     rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr sub_reference_path;
 
+    rclcpp::Subscription<visualization_msgs::msg::MarkerArray>::SharedPtr sub_perception_result;
+
     nif_msgs::msg::SystemStatus msg_system_status;
     nif_msgs::msg::Telemetry msg_telemetry;
 
     nav_msgs::msg::Path in_reference_path;
-    nav_msgs::msg::Path msg_reference_path;
+    nav_msgs::msg::Path msg_reference_path;    
+    
+    visualization_msgs::msg::MarkerArray msg_perception_result;
 };
 
 int main(int argc, char * argv[])

@@ -118,13 +118,11 @@ void DKGraphPlannerNode::OsmParcing() {
   // file opening result
   if (!parcer) {
     RCLCPP_ERROR(this->get_logger(), "Invalid file path.. ");
-    std::cout << "Parse error: " << parcer.description()
-              << ", character pos= " << parcer.offset << std::endl;
-    std::cout << "Tried to open .. \n" << m_FullFilePath.c_str() << std::endl;
+    RCLCPP_ERROR(this->get_logger(), "Parse error: %s; \t character pos =  %d", parcer.description(), parcer.offset);
+    RCLCPP_ERROR(this->get_logger(), "Tried to open .. \n %s", m_FullFilePath.c_str());
   } else {
-    std::cout << "Parse result: " << parcer.description()
-              << ", character pos= " << parcer.offset << std::endl;
-    std::cout << "Tried to open .. \n" << m_FullFilePath.c_str() << std::endl;
+    RCLCPP_INFO(this->get_logger(), "Parse result: %s; \t character pos =  %d", parcer.description(), parcer.offset);
+    RCLCPP_INFO(this->get_logger(), "Tried to open .. \n %s", m_FullFilePath.c_str());
     RCLCPP_INFO(this->get_logger(), "Valid file!");
   }
 
@@ -422,7 +420,7 @@ void DKGraphPlannerNode::CallbackOdometry(const nav_msgs::msg::Odometry::SharedP
     m_StartNode = current_node_id;
 
     double target_x_in_racing_line, target_y_in_racing_line;
-    int target_idx = current_idx + 100;
+    int target_idx = current_idx + 60;
     int target_node_id;
     size_t racingLineRefSize = m_racingLineRefPoints->points.size();
     target_idx = target_idx % racingLineRefSize;
@@ -1141,7 +1139,7 @@ DKGraphPlannerNode::read_csv(std::string filename) {
       result.push_back({colname, std::vector<double>{}});
     }
   } else {
-    std::cout << "Check CSV file" << std::endl;
+    RCLCPP_ERROR(this->get_logger(), "Check CSV file");
   }
 
   // Read data, line by line
