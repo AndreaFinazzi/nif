@@ -50,6 +50,7 @@ private:
   double velocity_zero = 0.0;
   double velocity_max = 0.0;
   double velocity_avoidance = 0.0;
+  double velocity_warmup = 0.0;
   double velocity_pit_in = 0.0;
   double velocity_pit_out = 0.0;
   double velocity_slow_drive = 0.0;
@@ -61,6 +62,7 @@ private:
   bool is_system_startup = true;
 
   bool is_avoidance_enabled = false;
+  bool is_warmup_enabled = false;
 
   unsigned short int lap_count = 0;
   unsigned int lap_distance = 0;
@@ -71,6 +73,8 @@ private:
   unsigned int mission_avoidance_lap_distance_min = 0;
   unsigned int mission_avoidance_lap_distance_max = 0;
 
+  bool mission_warmup_auto_switch = false;
+  
   nif::system::MissionsDescription missions_description;
   
   /**
@@ -94,6 +98,10 @@ private:
           const std_srvs::srv::Trigger::Request::SharedPtr request,
           std_srvs::srv::Trigger::Response::SharedPtr response);
   void avoidanceServiceHandler(
+          const std::shared_ptr<rmw_request_id_t> request_header,
+          const std_srvs::srv::Trigger::Request::SharedPtr request,
+          std_srvs::srv::Trigger::Response::SharedPtr response);  
+  void warmupServiceHandler(
           const std::shared_ptr<rmw_request_id_t> request_header,
           const std_srvs::srv::Trigger::Request::SharedPtr request,
           std_srvs::srv::Trigger::Response::SharedPtr response);

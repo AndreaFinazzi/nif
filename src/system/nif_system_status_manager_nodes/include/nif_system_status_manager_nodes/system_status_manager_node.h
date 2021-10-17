@@ -54,7 +54,7 @@ private:
 
   unsigned int mode = 255;
 //  TODO make parameter
-  const int max_counter_drop = 20;
+  const int max_counter_drop = 60; // 2s at 30hz
   int t = 0;
 
   const int default_counter = 502;
