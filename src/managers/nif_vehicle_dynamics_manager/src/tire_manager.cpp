@@ -34,7 +34,8 @@ double TireManager::CalcTireSlipRatio(double v_front, double v_rear) {
 
 bool TireManager::CalcDynamicsFeasibility(nav_msgs::msg::Path path, double vx,
                                           double ax, double yaw_rate,
-                                          double current_steer, double dt) {
+                                          double current_steer,
+                                          double bank_angle, double dt) {
   // Compute dynamics feasibility of input path w.r.t. tire model
   /* example
   bool dyn_feasiblity = m_tire_manager.CalcDynamicsFeasibility(current_path,
@@ -51,8 +52,8 @@ bool TireManager::CalcDynamicsFeasibility(nav_msgs::msg::Path path, double vx,
   for (int i = 0; i < path.poses.size(); i++) {
     // - calculate current lateral acceleration w.r.t. curvature
     double ay_i = pow(current_velocity, 2.0) * curv_array[i];
-    double ay_imax =
-        ComputeLateralAccelLimit(ax, ay_i, yaw_rate, current_steer, vx);
+    double ay_imax = ComputeLateralAccelLimit(ax, ay_i, yaw_rate, current_steer,
+                                              vx, bank_angle);
     // if calculated ay_i is larger than ay limit, infeasible
     if (ay_i > ay_imax) {
       dyn_feasible = false;
@@ -67,7 +68,8 @@ bool TireManager::CalcDynamicsFeasibility(nav_msgs::msg::Path path, double vx,
 double TireManager::ComputeLateralAccelLimit(double a_lon, double a_lat,
                                              double yaw_rate,
                                              double current_steer,
-                                             double current_velocity) {
+                                             double current_velocity,
+                                             double bank_angle) {
   // Get Lateral Acceleration Limit considering Tire load transfer.
   auto tire_data = Compute4WheelLateralForceLimit(a_lon, a_lat);
   std::vector<double> tire_loads = std::get<0>(tire_data);
@@ -86,7 +88,8 @@ double TireManager::ComputeLateralAccelLimit(double a_lon, double a_lat,
   // TODO: Use Vehicle dynamics model class
   double a_lat_max =
       1 / m_total *
-      (FyR + FyF * cos(current_steer) - m_total * current_velocity * yaw_rate);
+      (FyR + FyF * cos(current_steer) - m_total * current_velocity * yaw_rate +
+       g * sin(bank_angle));
 
   return a_lat_max;
 }
