@@ -37,7 +37,7 @@ MissionManagerNode::MissionManagerNode(
     this->declare_parameter("mission.avoidance.lap_distance_min", 0);
     this->declare_parameter("mission.avoidance.lap_distance_max", 0);
 
-    this->declare_parameter("mission.avoidance.auto_switch", false);
+    this->declare_parameter("mission.warmup.auto_switch", false);
 
     long int timeout_rc_flag_summary_s = this->get_parameter("timeout_rc_flag_summary_s").as_int();
     long int timeout_velocity_ms = this->get_parameter("timeout_velocity_ms").as_int();
@@ -119,6 +119,13 @@ MissionManagerNode::MissionManagerNode(
             "/mission_manager/avoidance",
             std::bind(
                     &MissionManagerNode::avoidanceServiceHandler,
+                    this,
+                    std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+
+    this->warmup_service = this->create_service<std_srvs::srv::Trigger>(
+            "/mission_manager/warmup",
+            std::bind(
+                    &MissionManagerNode::warmupServiceHandler,
                     this,
                     std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 
@@ -330,7 +337,7 @@ MissionManagerNode::RCFlagSummaryCallback(
         this->lap_count >= 0  &&
         this->lap_distance >= 2000 )
     {
-        this->is_avoidance_enabled = false;
+        this->is_warmup_enabled = false;
     }
 
 

@@ -187,10 +187,23 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
       this->getReferencePathLastPointDistance() > m_path_min_length_m &&
       nif::common::utils::time::secs(now - this->getReferencePathUpdateTime()) <
           path_timeout_sec_;
+  
   bool valid_odom =
       this->hasEgoOdometry() &&
       nif::common::utils::time::secs(now - this->getEgoOdometryUpdateTime()) <
           odometry_timeout_sec_;
+
+    // Check valid waypoint starting distance & valid target waypoint
+    // position(front)
+    // - starting wpt should be around ego.
+  bool valid_wpt_distance = valid_path && valid_odom &&
+        pure_pursuit_max_max_dist_m_ >
+        joint_lqr::utils::pursuit_dist(this->getReferencePath()->poses[0],
+                                       this->getEgoOdometry());
+
+    // - initialize valid target position
+    bool valid_target_position = false;
+
   bool valid_tracking_result = false;
 
   double steering_angle_deg = 0.0;
@@ -239,18 +252,12 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
                             lqr_tracking_idx_, target_distance,
                             target_reached_end); // outputs
 
-    // Check valid waypoint starting distance & valid target waypoint
-    // position(front)
-    // - starting wpt should be around ego.
-    bool valid_wpt_distance =
-        pure_pursuit_max_max_dist_m_ >
-        joint_lqr::utils::pursuit_dist(this->getReferencePath()->poses[0],
-                                       this->getEgoOdometry());
     // - target point should be ahead.
     double target_point_azimuth = joint_lqr::utils::pursuit_azimuth(
         this->getReferencePath()->poses[lqr_tracking_idx_],
         this->getEgoOdometry());
-    bool valid_target_position = M_PI / 2. > std::abs(target_point_azimuth);
+    valid_target_position = M_PI * 3 / 4. > std::abs(target_point_azimuth);
+
 
     if (valid_wpt_distance && valid_target_position) {
       valid_tracking_result = true;
@@ -310,7 +317,7 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
   if (!this->hasSystemStatus() ||
       (this->getSystemStatus().autonomy_status.lateral_autonomy_enabled ||
        this->getSystemStatus().autonomy_status.longitudinal_autonomy_enabled) &&
-          !(valid_path && valid_odom)) {
+          !(valid_path && valid_odom && valid_wpt_distance && valid_target_position)) {
     node_status = common::NODE_ERROR;
     this->setNodeStatus(node_status);
     return nullptr;

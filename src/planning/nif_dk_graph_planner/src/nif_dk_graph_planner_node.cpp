@@ -1053,6 +1053,9 @@ void DKGraphPlannerNode::ToPathMsg() {
 
   bool path_updated = false;
   double distance_to_obs = -1;
+  
+  *m_FinalPoints = *finalcloud_before_finalize_ptr;
+  
   if(bCenteredPoints)
   {
     FinalizePath(finalcloud_before_finalize_ptr, m_ClusterCenterPoints,
@@ -1069,10 +1072,6 @@ void DKGraphPlannerNode::ToPathMsg() {
       *m_FinalPoints = *finalcloud_updated_ptr;
       m_odom_dist = 0.0;
     }
-  }
-  else
-  {
-    *m_FinalPoints = *finalcloud_before_finalize_ptr;
   }
 
   nav_msgs::msg::Path FinalPath;

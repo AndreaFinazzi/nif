@@ -16,7 +16,7 @@ c_wpt::c_wpt(string wpt_file_path_, string wpt_alias_ = "",
   m_global_frame_id = global_frame_id_;
   m_spline_interval = spline_interval_;
   m_spline_flg = spline_flg_;
-  m_spline_flg = false;
+  m_spline_flg = true;
   m_3d_wpt_flg = wpt_3d_file_flg_;
 
   m_wpt_inglobal.header.frame_id = m_global_frame_id;

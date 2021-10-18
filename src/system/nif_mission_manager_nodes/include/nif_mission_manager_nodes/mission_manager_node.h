@@ -74,7 +74,11 @@ private:
   unsigned int mission_avoidance_lap_distance_max = 0;
 
   bool mission_warmup_auto_switch = false;
-  
+  unsigned int mission_warmup_lap_count = 0;
+  unsigned int mission_warmup_previous_track_flag = 0;
+  unsigned int mission_warmup_lap_distance_min = 0;
+  unsigned int mission_warmup_lap_distance_max = 0;
+
   nif::system::MissionsDescription missions_description;
   
   /**
@@ -88,6 +92,7 @@ private:
 
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr recovery_service;
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr avoidance_service;
+  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr warmup_service;
 
   void RCFlagSummaryCallback(const nif::common::msgs::RCFlagSummary::UniquePtr msg);
   void velocityCallback(

@@ -32,10 +32,10 @@ int main(int argc, char *argv[]) {
   try {
     RCLCPP_INFO(
         rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
-        "Instantiating WaypointManagerMissionSelectiveNode with name: %s;",
+        "Instantiating WaypointManagerMissionNode with name: %s;",
         node_name);
 
-    nd = std::make_shared<WaypointManagerMissionSelectiveNode>(node_name);
+    nd = std::make_shared<WaypointManagerMissionNode>(node_name);
     // nd = std::make_shared<WaypointManagerMissionNode>(node_name);
     //    nd = std::make_shared<WaypointManagerNode>(node_name);
   } catch (std::exception &e) {
@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
   rclcpp::shutdown();
 
   RCLCPP_INFO(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
-              "Shutting down %s [WaypointManagerMissionSelectiveNode]",
+              "Shutting down %s [WaypointManagerMissionNode]",
               node_name);
 
   return 0;
