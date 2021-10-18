@@ -282,7 +282,7 @@ private:
   double m_collision_radius;
   double m_final_path_update_dist;
 
-  double m_odom_dist = 0.;
+  double m_odom_dist = 9999.;
 
   int m_ClosestFirstNodeId;
   int m_StartNode; 

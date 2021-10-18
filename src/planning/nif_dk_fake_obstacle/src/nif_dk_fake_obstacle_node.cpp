@@ -34,7 +34,7 @@ FakeObsNode::FakeObsNode(const std::string &node_name_)
 
   using namespace std::chrono_literals; // NOLINT
   sub_timer_ = this->create_wall_timer(
-      200ms, std::bind(&FakeObsNode::timer_callback, this));
+      10ms, std::bind(&FakeObsNode::timer_callback, this));
 
   sub_odometry_ = this->create_subscription<nav_msgs::msg::Odometry>(
       "/aw_localization/ekf/odom", nif::common::constants::QOS_EGO_ODOMETRY,
