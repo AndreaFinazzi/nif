@@ -14,6 +14,7 @@ IWaypointManager::IWaypointManager(const vector<string> &wpt_file_path_list_,
                                    const int &spline_interval_)
     : m_body_frame_id(body_frame_id_), m_global_frame_id(global_frame_id_),
       m_spline_interval(spline_interval_) {
+
   if (wpt_file_path_list_.empty()) {
     throw std::runtime_error(
         "wpt_file_path_list_ is empty. WaypointManager cannot be initialized.");
@@ -26,6 +27,7 @@ IWaypointManager::IWaypointManager(const vector<string> &wpt_file_path_list_,
   // bool spline_flg = false;
 
   for (const auto &wpt_file_idx : wpt_file_path_list_) {
+    std::cout << wpt_file_idx << std::endl;
     c_wpt obj(wpt_file_idx, "", m_global_frame_id, wpt_3d_flg, spline_flg,
               m_spline_interval);
     m_wpt_list.push_back(obj);
