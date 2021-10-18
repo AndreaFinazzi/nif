@@ -5,14 +5,14 @@
 // Created by usrg on 7/6/21.
 //
 
-#include "nif_waypoint_manager_mission/waypoint_manager_mission.h"
+#include "nif_waypoint_manager_mission/waypoint_manager_mission_v2.h"
 
-WaypointManagerMission::WaypointManagerMission(const string &rl_wpt_file_path_,
-                                               const string &pit_wpt_file_path_,
-                                               const string &body_frame_id_,
-                                               const string &global_frame_id_,
-                                               const double &spline_interval_)
+WaypointManagerMissionV2::WaypointManagerMissionV2(
+    const string &rl_wpt_file_path_, const string &warm_up_wpt_file_path_,
+    const string &pit_wpt_file_path_, const string &body_frame_id_,
+    const string &global_frame_id_, const double &spline_interval_)
     : m_rl_wpt_file_path(rl_wpt_file_path_),
+      m_warmup_wpt_file_path(warm_up_wpt_file_path_),
       m_pit_wpt_file_path(pit_wpt_file_path_),
       m_body_frame_id_str(body_frame_id_),
       m_global_frame_id_str(global_frame_id_),
@@ -27,6 +27,7 @@ WaypointManagerMission::WaypointManagerMission(const string &rl_wpt_file_path_,
       std::make_shared<nif::planning::cost_calculator::costCalculator>();
 
   vector<string> rl_file_path_vec_tmp{m_rl_wpt_file_path};
+  vector<string> warmup_file_path_vec_tmp{m_warmup_wpt_file_path};
   vector<string> pit_file_path_vec_tmp{m_pit_wpt_file_path};
 
   m_odom_first_callbacked = false;
@@ -34,32 +35,36 @@ WaypointManagerMission::WaypointManagerMission(const string &rl_wpt_file_path_,
   m_rl_wpt_manager = std::make_shared<IWaypointManager>(
       rl_file_path_vec_tmp, m_body_frame_id_str, m_global_frame_id_str,
       int(m_spline_interval));
+  m_warmup_wpt_manager = std::make_shared<IWaypointManager>(
+      warmup_file_path_vec_tmp, m_body_frame_id_str, m_global_frame_id_str,
+      int(m_spline_interval));
   m_pit_wpt_manager = std::make_shared<IWaypointManager>(
       pit_file_path_vec_tmp, m_body_frame_id_str, m_global_frame_id_str,
       int(m_spline_interval));
 }
 
-void WaypointManagerMission::setCurrentOdometry(
+void WaypointManagerMissionV2::setCurrentOdometry(
     const nav_msgs::msg::Odometry &ego_vehicle_odom) {
   m_cur_odom = ego_vehicle_odom;
   m_rl_wpt_manager->setCurrentOdometry(ego_vehicle_odom);
+  m_warmup_wpt_manager->setCurrentOdometry(ego_vehicle_odom);
   m_pit_wpt_manager->setCurrentOdometry(ego_vehicle_odom);
   if (!m_odom_first_callbacked)
     m_odom_first_callbacked = true;
 }
 
-void WaypointManagerMission::setSystemStatus(
+void WaypointManagerMissionV2::setSystemStatus(
     const nif_msgs::msg::SystemStatus &sys_status) {
   m_cur_sys_status = sys_status;
   m_cur_mission_code = sys_status.mission_status;
 }
 
-void WaypointManagerMission::setOccupancyGridMap(
+void WaypointManagerMissionV2::setOccupancyGridMap(
     const nav_msgs::msg::OccupancyGrid &occupancy_map) {
   this->m_frenet_cost_calculator->setOccupancyMap(occupancy_map);
 }
 
-void WaypointManagerMission::calcMapTrack() {
+void WaypointManagerMissionV2::calcMapTrack() {
 
   if (m_odom_first_callbacked) {
     if (m_cur_mission_code.mission_status_code ==
@@ -129,6 +134,11 @@ void WaypointManagerMission::calcMapTrack() {
       //       cos(m_collision_avoidance_fp_body_ptr->yaw()[i] / 2.0);
       //   m_collision_avoidance_path_body.poses.push_back(ps);
       // }
+    } else if (m_cur_mission_code.mission_status_code ==
+               m_cur_mission_code.MISSION_TIRE_WARMUP) {
+      m_map_track_path_global =
+          m_warmup_wpt_manager->getDesiredMapTrackInGlobal();
+      m_map_track_path_body = m_warmup_wpt_manager->getDesiredMapTrackInBody();
     } else if (m_cur_mission_code.mission_status_code ==
                m_cur_mission_code.MISSION_STANDBY) {
       // NOTE : check out of track
@@ -346,13 +356,13 @@ void WaypointManagerMission::calcMapTrack() {
   }
 }
 
-void WaypointManagerMission::setCollisionAvoidanceGraphPath(
+void WaypointManagerMissionV2::setCollisionAvoidanceGraphPath(
     const nav_msgs::msg::Path &coll_free_msg) {
   // TODO : check whether it is in the global frame
   m_graph_based_path = coll_free_msg;
 }
 
-void WaypointManagerMission::frenetPathsToPointCloud(
+void WaypointManagerMissionV2::frenetPathsToPointCloud(
     std::vector<std::shared_ptr<FrenetPath>> &frenet_paths) {
 
   pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_ptr(
