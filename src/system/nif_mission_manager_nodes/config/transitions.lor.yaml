@@ -1,7 +1,7 @@
 # Misison codes are specified in nif_msgs/msg/MissionStatus.msg
 # Velocities are expressed in meter per seconds [m/s]
 # Listed conditions must have an 'active' flag. If false, the condition is ignored.
-# fallback_mission_code is used in case  pf rejection
+# fallback_mission_code is used in case pf rejection
 missions:
   - mission_code: 0 # MISSION_RACE
     active: true
@@ -15,6 +15,22 @@ missions:
         - 75  # MISSION_PIT_TO_TRACK
         - 128 # MISSION_SLOW_DRIVE
         - 200 # MISSION_COMMANDED_STOP
+        - 400 # MISSION_COLLISION_AVOIDNACE
+        - 777 # MISSION_TEST
+
+  - mission_code: 400 # MISSION_COLLISION_AVOIDNACE
+    active: true
+    fallback:
+      active: true
+      mission_code: 128 # MISSION_SLOW_DRIVE
+    allowed_transitions:
+      active: true
+      from:
+        - 0   # MISSION_RACE
+        - 75  # MISSION_PIT_TO_TRACK
+        - 128 # MISSION_SLOW_DRIVE
+        - 200 # MISSION_COMMANDED_STOP
+        - 400 # MISSION_COLLISION_AVOIDNACE
         - 777 # MISSION_TEST
 
   - mission_code: 777 # MISSION_TEST
@@ -57,6 +73,7 @@ missions:
         - 128 # MISSION_SLOW_DRIVE
         - 200 # MISSION_COMMANDED_STOP
         - 250 # MISSION_EMERGENCY_STOP
+        - 400 # MISSION_COLLISION_AVOIDNACE
         - 777 # MISSION_TEST
         - 65000 # MISSION_PIT_INIT
     timeout:
@@ -71,9 +88,9 @@ missions:
     activation_area:
       active: true
       bboxes:
-        - - -50.0 # x_min
-          - -30.0 # y_min
-          - -35.0 # x_max
+        - - -40.0 # x_min
+          - -35.0 # y_min
+          - 40.0 # x_max
           - -15.0 # y_max
     activation_velocity:
       active: false
@@ -154,6 +171,7 @@ missions:
         - 75  # MISSION_PIT_TO_TRACK
         - 200 # MISSION_COMMANDED_STOP
         - 128 # MISSION_SLOW_DRIVE
+        - 400 # MISSION_COLLISION_AVOIDNACE
         - 777 # MISSION_TEST
 
   - mission_code: 65000 # MISSION_PIT_INIT
@@ -165,7 +183,7 @@ missions:
       active: true
       bboxes:
         - - -80.0 # x_min
-          - -30.0 # y_min
+          - -35.0 # y_min
           - 80.0 # x_max
           - -15.0 # y_max
     allowed_transitions:

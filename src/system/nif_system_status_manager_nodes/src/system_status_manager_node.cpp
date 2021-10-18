@@ -25,7 +25,6 @@ SystemStatusManagerNode::SystemStatusManagerNode(
     this->declare_parameter("safeloc.velocity_slow_down_max", 22.2);
     this->declare_parameter("safeloc.velocity_slow_down_min", 8.0);
 
-
     this->system_status_msg.autonomy_status.lateral_autonomy_enabled = this->get_parameter(
             "lat_autonomy_enabled").as_bool();
     this->system_status_msg.autonomy_status.longitudinal_autonomy_enabled = this->get_parameter(

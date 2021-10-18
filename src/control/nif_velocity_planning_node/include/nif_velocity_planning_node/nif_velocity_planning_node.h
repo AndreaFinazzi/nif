@@ -526,7 +526,7 @@ private:
 
   void velocityCallback(
       const raptor_dbw_msgs::msg::WheelSpeedReport::SharedPtr msg) {
-    m_current_speed_mps = (msg->rear_left + msg->rear_right) * 0.5 *
+    m_current_speed_mps = (msg->front_left + msg->front_right) * 0.5 *
                           nif::common::constants::KPH2MS;
   }
 

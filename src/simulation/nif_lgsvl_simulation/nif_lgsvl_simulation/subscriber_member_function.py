@@ -12,7 +12,7 @@ import pandas as pd
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import CompressedImage, Imu, PointCloud2, NavSatFix
 from lgsvl_msgs.msg import VehicleOdometry, Detection2DArray
-from novatel_oem7_msgs.msg import INSPVA, BESTPOS, INSSTDEV
+from novatel_oem7_msgs.msg import INSPVA, BESTPOS, INSSTDEV, InertialSolutionStatus
 from geometry_msgs.msg import PoseStamped, TransformStamped, Vector3, Quaternion
 from raptor_dbw_msgs.msg import WheelSpeedReport
 
@@ -230,11 +230,13 @@ class LGSVLSubscriberNode(BaseNode):
 
     def convert_fix_to_inspva(self, fix : NavSatFix, noise):
         inspva_msg = INSPVA()
+        status = InertialSolutionStatus()
         inspva_msg.header = fix.header
         inspva_msg.latitude = fix.latitude + noise[0] * 0.000001
         inspva_msg.longitude = fix.longitude + noise[0] * 0.000001
         inspva_msg.height = fix.altitude + noise[0] * 0.000001
         inspva_msg.azimuth = - self.heading_deg + noise[1]
+        inspva_msg.status.status = 3
         # inspva_msg.azimuth = self.heading_deg + noise[1]
 
         return inspva_msg

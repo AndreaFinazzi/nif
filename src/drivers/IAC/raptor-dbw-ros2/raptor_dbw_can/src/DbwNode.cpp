@@ -64,12 +64,14 @@ DbwNode::DbwNode(const rclcpp::NodeOptions & options)
   gear_warned_ = false;
 
   // Frame ID
-  frame_id_ = "base_footprint";
-  this->declare_parameter<std::string>("frame_id", frame_id_);
+  this->frame_id_ = "base_footprint";
+  this->declare_parameter<std::string>("frame_id", this->frame_id_);
+  this->declare_parameter<int>("veh_number", this->veh_number_);
 
   // Buttons (enable/disable)
   buttons_ = true;
   this->declare_parameter<bool>("buttons", buttons_);
+  
 
 
   // Ackermann steering parameters
@@ -150,6 +152,9 @@ DbwNode::DbwNode(const rclcpp::NodeOptions & options)
   pub_brake_temp_report_ = this->create_publisher<deep_orange_msgs::msg::BrakeTempReport>("brake_temp_report", 10);
   pub_tire_report_ = this->create_publisher<deep_orange_msgs::msg::TireReport>("tire_report", 10);
   pub_pt_report_ = this->create_publisher<deep_orange_msgs::msg::PtReport>("pt_report", 10);
+  pub_diag_report_ = this->create_publisher<deep_orange_msgs::msg::DiagnosticReport>("diag_report", 10);
+  pub_timing_report_ = this->create_publisher<deep_orange_msgs::msg::LapTimeReport>("lap_time_report", 10);
+
 
   // autoware auto msg
 
@@ -236,6 +241,23 @@ void DbwNode::recvCAN(const can_msgs::msg::Frame::SharedPtr msg)
 {
   if (!msg->is_rtr && !msg->is_error) {
     switch (msg->id) {
+      case ID_LAP_TIME_REPORT:
+        {
+          NewEagle::DbcMessage * message = dbwDbc_.GetMessageById(ID_LAP_TIME_REPORT);
+          if (msg->dlc >= message->GetDlc()) {
+            message->SetFrame(msg);
+
+            deep_orange_msgs::msg::LapTimeReport out;
+            out.stamp = msg->header.stamp;
+            out.laps = message->GetSignal("laps")->GetResult();
+            out.lap_time = message->GetSignal("lap_time")->GetResult();
+            out.time_stamp = message->GetSignal("time_stamp")->GetResult(); 
+            pub_timing_report_->publish(out);
+
+          }
+        }
+        break;
+
       case ID_BRAKE_REPORT:
         {
           NewEagle::DbcMessage * message = dbwDbc_.GetMessageById(ID_BRAKE_REPORT);
@@ -349,8 +371,8 @@ void DbwNode::recvCAN(const can_msgs::msg::Frame::SharedPtr msg)
             out.track_flag = message->GetSignal("track_flag")->GetResult();
             out.veh_flag = message->GetSignal("veh_flag")->GetResult();
             out.veh_rank = message->GetSignal("veh_rank")->GetResult();
-            out.lap_status_whole = message->GetSignal("lap_status_whole")->GetResult();
-            out.lap_status_fraction = message->GetSignal("lap_status_fraction")->GetResult();
+            out.lap_count = message->GetSignal("lap_count")->GetResult();
+            out.lap_distance = message->GetSignal("lap_distance")->GetResult();
 
             pub_flags_->publish(out);
 
@@ -476,6 +498,38 @@ void DbwNode::recvCAN(const can_msgs::msg::Frame::SharedPtr msg)
         }
         break;
 
+      case ID_DIAG_REPORT:
+        {
+         NewEagle::DbcMessage* message = dbwDbc_.GetMessageById(ID_DIAG_REPORT);
+          if (msg->dlc >= message->GetDlc()) {
+
+            message->SetFrame(msg);
+
+            deep_orange_msgs::msg::DiagnosticReport out;
+            out.stamp = msg->header.stamp;
+            out.sd_system_warning = message->GetSignal("sd_system_warning")->GetResult(); 
+            out.sd_system_failure = message->GetSignal("sd_system_failure")->GetResult(); 
+            out.motec_warning = message->GetSignal("motec_warning")->GetResult();
+            out.sd_brake_warning1 = message->GetSignal("sd_brake_warning1")->GetResult();
+            out.sd_brake_warning2 = message->GetSignal("sd_brake_warning2")->GetResult();
+            out.sd_brake_warning3 = message->GetSignal("sd_brake_warning3")->GetResult();
+            out.sd_steer_warning1 = message->GetSignal("sd_steer_warning1")->GetResult();
+            out.sd_steer_warning2 = message->GetSignal("sd_steer_warning2")->GetResult();
+            out.sd_steer_warning3 = message->GetSignal("sd_steer_warning3")->GetResult();
+            out.est1_oos_front_brk = message->GetSignal("est1_oos_front_brk")->GetResult();
+            out.est2_oos_rear_brk = message->GetSignal("est2_oos_rear_brk")->GetResult();
+            out.est3_low_eng_speed = message->GetSignal("est3_low_eng_speed")->GetResult();
+            out.est4_sd_comms_loss = message->GetSignal("est4_sd_comms_loss")->GetResult();
+            out.est5_motec_comms_loss = message->GetSignal("est5_motec_comms_loss")->GetResult();
+            out.est6_sd_ebrake = message->GetSignal("est6_sd_ebrake")->GetResult();
+            out.adlink_hb_lost = message->GetSignal("adlink_hb_lost")->GetResult();
+            out.rc_lost = message->GetSignal("rc_lost")->GetResult();
+
+            pub_diag_report_->publish(out);
+          }
+        }
+        break;
+
       case ID_RC_TO_CT:
         {
          NewEagle::DbcMessage* message = dbwDbc_.GetMessageById(ID_RC_TO_CT);
@@ -524,6 +578,18 @@ void DbwNode::recvCAN(const can_msgs::msg::Frame::SharedPtr msg)
             pt_report_msg.engine_coolant_temperature = message->GetSignal("coolant_temperature")->GetResult();
             pt_report_msg.transmission_oil_temperature = message->GetSignal("transmission_temperature")->GetResult();
             pt_report_msg.transmission_oil_pressure = message->GetSignal("transmission_pressure_kPa")->GetResult();
+          }
+        }
+        break;
+
+        case ID_PT_REPORT_3:
+        {
+         NewEagle::DbcMessage* message = dbwDbc_.GetMessageById(ID_PT_REPORT_3);
+          if (msg->dlc >= message->GetDlc()) {
+
+            message->SetFrame(msg);
+
+            pt_report_msg.engine_oil_temperature = message->GetSignal("engine_oil_temperature")->GetResult();
           }
         }
         break;
@@ -1216,6 +1282,7 @@ void DbwNode::recvCAN(const can_msgs::msg::Frame::SharedPtr msg)
   message->GetSignal("veh_sig_ack")->SetResult(msg->veh_sig_ack);
   message->GetSignal("ct_state")->SetResult(msg->ct_state);
   message->GetSignal("ct_state_rolling_counter")->SetResult(msg->rolling_counter);
+  message->GetSignal("veh_num")->SetResult(this->veh_number_);
 
   can_msgs::msg::Frame frame = message->GetFrame();
 

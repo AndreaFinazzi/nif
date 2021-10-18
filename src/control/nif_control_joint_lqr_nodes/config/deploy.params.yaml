@@ -14,3 +14,5 @@
     path_timeout_sec: 0.5
     steering_max_ddeg_dt: 3.0
     invert_steering: false
+    pure_pursuit_1st_vel_m: 20.0
+    pure_pursuit_max_max_dist_m: 20.0

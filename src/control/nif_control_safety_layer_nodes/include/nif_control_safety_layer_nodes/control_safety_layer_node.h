@@ -152,7 +152,7 @@ public:
     this->declare_parameter("throttle.integral_gain", 0.0);
     this->declare_parameter("throttle.derivative_gain", 0.0);
     this->declare_parameter("throttle.max_integrator_error", 10.0);
-    this->declare_parameter("throttle.cmd_max", 40.0);
+    this->declare_parameter("throttle.cmd_max", 100.0);
     this->declare_parameter("throttle.cmd_min", 0.0);
     this->declare_parameter("throttle.reset_integral_below_this_cmd", 15.0);
 
@@ -173,7 +173,9 @@ public:
     this->declare_parameter("safe_des_vel.hard_braking_time", 1.5);
     this->declare_parameter("safe_des_vel.soft_braking_time", 1.0);
 
-    this->declare_parameter("desired_acceleration.cmd_max", 5.0);
+    this->declare_parameter("override.brake.deadband", 100000.0);
+
+    this->declare_parameter("desired_acceleration.cmd_max", 20.0);
 
     // Read in misc. parameters
     max_steering_angle_deg =
@@ -245,6 +247,8 @@ public:
 
     this->brake_deadband = this->get_parameter("brake.vel_error_deadband_mps").as_double();
 
+    this->override_brake_deadband = this->get_parameter("override.brake.deadband").as_double();
+
     this->brake_pid_ =
             PID(bp_, bi_, bd_, ts_, biMax_, brakeCmdMax_, brakeCmdMin_);
 
@@ -271,7 +275,12 @@ private:
 
   // emergency lane flag. Activated in case of emergency.
   bool emergency_lane_enabled = false;
+
+  // emergency buffer flag. Activated in case of control stack malfunctioning.
   bool emergency_buffer_empty = false;
+
+  // manual emergency flag. Activated by override.
+  bool emergency_manual = false;
 
   // Automatically boot with lat_autonomy_enabled
   bool lat_autonomy_enabled;
@@ -453,6 +462,8 @@ private:
     double iBrakeReset_;
     double brake_deadband;
 
+    double override_brake_deadband;
+
     bool has_vel = false;
     rclcpp::Time vel_recv_time_;
 
@@ -508,12 +519,10 @@ private:
             const raptor_dbw_msgs::msg::WheelSpeedReport::SharedPtr msg) {
         const double kphToMps = 1.0 / 3.6;
         // front left wheel speed (kph)
-        // double front_left = msg->front_left;
-        // double front_right = msg->front_right;
-        double rear_left = msg->rear_left;
-        double rear_right = msg->rear_right;
+        double front_left = msg->front_left;
+        double front_right = msg->front_right;
         // average wheel speeds (kph) and convert to m/s
-        this->speed_mps_ = (rear_left + rear_right) * 0.5 * kphToMps;
+        this->speed_mps_ = (front_left + front_right) * 0.5 * kphToMps;
         this->has_vel = true;
         this->vel_recv_time_ = this->now();
     }
@@ -562,7 +571,7 @@ private:
 
     double emergencyBrakeCmd(double vel_err) {
         this->brake_pid_.Update(-vel_err);
-        if (this->speed_mps_ < 6.0)
+        if (this->speed_mps_ < 5.0)
         {
             return this->brakeCmdMax_;
         }
