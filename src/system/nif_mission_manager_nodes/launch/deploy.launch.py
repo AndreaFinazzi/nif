@@ -55,6 +55,7 @@ def generate_launch_description():
             "velocity.zero": 0.0,
             "velocity.max": 15.0,
             "velocity.avoidance": 15.0,
+            "velocity.warmup": 15.0,
             "velocity.pit_in": 8.0,
             "velocity.pit_out": 8.0,
             "velocity.slow_drive": 12.0,
@@ -69,6 +70,7 @@ def generate_launch_description():
             "mission.avoidance.lap_distance_min": 0,
             "mission.avoidance.lap_distance_max": 0,
 
+            "mission.warmup.auto_switch": False,
         }],
         remappings=[
             ('out_mission_status', '/system/mission'),

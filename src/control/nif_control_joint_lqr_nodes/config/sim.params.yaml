@@ -5,9 +5,9 @@
     max_steering_angle_deg: 20.0
     steering_auto_override_deg: 4.0
     steering_units_multiplier: 1.0
-    pure_pursuit_min_dist_m: 4.0
-    pure_pursuit_max_dist_m: 8.0
-    pure_pursuit_k_vel_m_ms: 0.75
+    pure_pursuit_min_dist_m: 20.0
+    pure_pursuit_max_dist_m: 80.0
+    pure_pursuit_k_vel_m_ms: 1.5
     use_tire_velocity: false
     odometry_timeout_sec: 0.5
     path_timeout_sec: 1.
