@@ -1052,7 +1052,7 @@ void DKGraphPlannerNode::ToPathMsg() {
   pubBestLayerXYPoints->publish(BestLayerXYCloudMsg);
 
   bool path_updated = false;
-  double distance_to_obs = -1;
+  double distance_to_obs = INF;
   if(bCenteredPoints)
   {
     FinalizePath(finalcloud_before_finalize_ptr, m_ClusterCenterPoints,
@@ -1063,8 +1063,8 @@ void DKGraphPlannerNode::ToPathMsg() {
     if (path_updated) {
       RCLCPP_INFO(
           this->get_logger(),
-          "Final Path updated. Current odometry : %f, Collision dist : %f",
-          m_odom_dist, distance_to_obs);
+          "Final Path updated.Layer : %d, Current odometry : %f, Collision dist : %f",
+          m_currentLayer, m_odom_dist, distance_to_obs);
       m_FinalPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
       *m_FinalPoints = *finalcloud_updated_ptr;
       m_odom_dist = 0.0;

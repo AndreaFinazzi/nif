@@ -81,7 +81,7 @@ def write_csv(points, save_csv_path):
 
 def parse_configs():
     parser = argparse.ArgumentParser(description='Read the pickle data, and convert files')
-    parser.add_argument('--filename', type=str, default='stored_graph_ims.pckl',
+    parser.add_argument('--filename', type=str, default='stored_graph_ims_less_curv.pckl',
                         help='csv file name')
     parser.add_argument('--check_header', type=bool, default=False,
                         help='check headers name')
