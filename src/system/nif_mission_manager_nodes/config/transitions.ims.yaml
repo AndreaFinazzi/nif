@@ -106,9 +106,9 @@ missions:
     activation_area:
       active: true
       bboxes:
-        - - -2015.0 # x_min
+        - - -2030.0 # x_min
           - 250.0 # y_min
-          - -2030.0 # x_max
+          - -2015.0 # x_max
           - 312.0 # y_max
     activation_velocity:
       active: false
@@ -136,9 +136,6 @@ missions:
       range_mps:
         - 0.000 # min m/s
         - 0.001 # max m/s
-    allowed_transitions:
-      active: false # ignore
-      from:
 
   - mission_code: 70 # MISSION_PIT_OUT
     active: true

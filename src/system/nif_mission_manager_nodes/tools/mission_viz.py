@@ -178,7 +178,9 @@ if __name__ == "__main__":
                 bboxes = mission_code_block.get("activation_area").get("bboxes")
                 for box in bboxes:
                     print(box)
-
+                    if (box[0] >= box[2] or box[1] >= box[3]):
+                        raise ValueError("BBox is malformed! MISSION", mission_code_block.get("mission_code"))
+                    
                     box = patches.Rectangle((box[0], box[1]), # x_min, y_min
                                             box[2] - box[0], # x-wise width
                                             box[3] - box[1], # y-wise height

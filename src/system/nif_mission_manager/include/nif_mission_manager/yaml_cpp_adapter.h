@@ -8,6 +8,8 @@
 #include "nif_mission_manager/common.h"
 #include <rclcpp/rclcpp.hpp>
 
+#define ASSERT(x) if( !(x) ) throw std::range_error("Assertion failed in yaml_cpp_adapter");
+
 using namespace nif::system;
 const rclcpp::Logger LOGGER = rclcpp::get_logger("nif_mission_manager::yaml-cpp");
 
@@ -27,14 +29,14 @@ namespace YAML {
 //      * @return parsed mission code
 //      */
 //     static bool decode(const Node &node, nif_msgs::msg::MissionStatus::_mission_status_code_type &out) {
-//         assert(node.isScalar());
+//         ASSERT(node.isScalar());
 
 //         auto value = node.as<int>();
-//         assert(value <= std::numeric_limits<
+//         ASSERT(value <= std::numeric_limits<
 //                 nif_msgs::msg::MissionStatus::_mission_status_code_type>::max() );
-//         assert(value >= std::numeric_limits<
+//         ASSERT(value >= std::numeric_limits<
 //             nif_msgs::msg::MissionStatus::_mission_status_code_type>::min() );
-//         assert(nif::common::msgs::isMissionCodeInRange(value));
+//         ASSERT(nif::common::msgs::isMissionCodeInRange(value));
 //         return true;
 //     }
 // };
@@ -51,16 +53,16 @@ struct convert<BBox> {
      * @return parsed bounding box
      */
     static bool decode(const Node &node, BBox &out) {
-        assert(node.size() == 4);
-        assert(node.IsSequence());
+        ASSERT(node.size() == 4);
+        ASSERT(node.IsSequence());
 
         out.x_min = node[0].as<double>();
         out.y_min = node[1].as<double>();
         out.x_max = node[2].as<double>();
         out.y_max = node[3].as<double>();
 
-        assert(out.x_min < out.x_max);
-        assert(out.y_min < out.y_max);
+        ASSERT(out.x_min < out.x_max);
+        ASSERT(out.y_min < out.y_max);
 
         RCLCPP_INFO(LOGGER, "Loaded BBox.");
         return true;
@@ -88,13 +90,13 @@ struct convert<MissionActivationArea> {
         }
         
         if (out.active) {
-            assert(node.size() == 2); // active and bboxes
+            ASSERT(node.size() == 2); // active and bboxes
 
             // active = true, everything else must be ok
             auto bboxes = node[ID_ACTIVATION_AREA_BOUNDING_BOXES];
-            assert(bboxes);
-            assert(bboxes.IsSequence());
-            assert(bboxes.size() > 0);
+            ASSERT(bboxes);
+            ASSERT(bboxes.IsSequence());
+            ASSERT(bboxes.size() > 0);
 
             for (auto &&bbox : bboxes) {
                 out.bounding_boxes.push_back(bbox.as<BBox>());
@@ -126,12 +128,12 @@ struct convert<MissionActivationVelocity> {
             return false;
         }
         if (out.active) {
-            assert(node.size() == 2); // active and range_mps
+            ASSERT(node.size() == 2); // active and range_mps
 
             auto range_mps = node[ID_ACTIVATION_VELOCITY_RANGE];
-            assert(range_mps);
-            assert(range_mps.IsSequence());
-            assert(range_mps.size() == 2);
+            ASSERT(range_mps);
+            ASSERT(range_mps.IsSequence());
+            ASSERT(range_mps.size() == 2);
 
             out.range_min_mps = range_mps[0].as<double>();
             out.range_max_mps = range_mps[1].as<double>();
@@ -163,17 +165,17 @@ struct convert<MissionAllowedTransitions> {
             return false;
         }
         if (out.active) {
-            assert(node.size() == 2); // active and from
+            ASSERT(node.size() == 2); // active and from
 
             auto from = node[ID_ALLOWED_TRANSITIONS_FROM];
-            assert(from);
-            assert(from.IsSequence());
-            assert(from.size() > 0);
+            ASSERT(from);
+            ASSERT(from.IsSequence());
+            ASSERT(from.size() > 0);
 
             out.from = from.as<std::vector<
                     nif_msgs::msg::MissionStatus::_mission_status_code_type>>();
             for (auto &&mission_code : out.from) {
-                assert(nif::common::msgs::isMissionCodeInRange(mission_code));
+                ASSERT(nif::common::msgs::isMissionCodeInRange(mission_code));
             }
 
             RCLCPP_INFO(LOGGER, "Loaded MissionAllowedTransitions.from.size(): %d", out.from.size());
@@ -203,11 +205,11 @@ struct convert<MissionTimeout> {
             return false;
         }
         if (out.active) {
-            assert(node.size() == 2); // active and duration_ms
+            ASSERT(node.size() == 2); // active and duration_ms
 
             auto duration_ms = node[ID_TIMEOUT_DURATION];
-            assert(duration_ms);
-            assert(duration_ms.as<long int>() > 0);
+            ASSERT(duration_ms);
+            ASSERT(duration_ms.as<long int>() > 0);
 
             out.duration_ms = duration_ms.as<long int>();
 
@@ -237,14 +239,14 @@ struct convert<MissionFallback> {
             return false;
         }
         if (out.active) {
-            assert(node.size() == 2); // active and mission_code
+            ASSERT(node.size() == 2); // active and mission_code
 
             auto mission_code_node = node[ID_FALLBACK_MISSION_CODE];
-            assert(mission_code_node);
+            ASSERT(mission_code_node);
             
             auto mission_code = mission_code_node.as<
                 nif_msgs::msg::MissionStatus::_mission_status_code_type>();
-            assert(nif::common::msgs::isMissionCodeInRange(mission_code));
+            ASSERT(nif::common::msgs::isMissionCodeInRange(mission_code));
 
             out.mission_code = mission_code;
 
@@ -281,8 +283,8 @@ struct convert<MissionNode> {
         }
 
         if (out.active) {
-            assert(nif::common::msgs::isMissionCodeInRange(out.mission_code));
-            assert(node.size() >= 2); // mission_code and active
+            ASSERT(nif::common::msgs::isMissionCodeInRange(out.mission_code));
+            ASSERT(node.size() >= 2); // mission_code and active
             if (node[nif::system::ID_ACTIVATION_AREA]) {
                 out.activation_area = node[nif::system::ID_ACTIVATION_AREA].as<MissionActivationArea>();
             }
@@ -317,14 +319,14 @@ struct convert<MissionsDescription> {
     {
         auto missions = node[ID_MISSIONS_LIST];
 
-        assert(missions);
-        assert(missions.size() > 0);
+        ASSERT(missions);
+        ASSERT(missions.size() > 0);
 
         for (auto &&node : missions)
         {
             auto mission_node = node.as<MissionNode>();
             // Assert unique mission_code
-            assert(out.find(mission_node.mission_code) == out.end());
+            ASSERT(out.find(mission_node.mission_code) == out.end());
 
             out.insert({ mission_node.mission_code, mission_node });
         }
