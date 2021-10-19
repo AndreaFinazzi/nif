@@ -26,6 +26,7 @@ def generate_launch_description():
                 package="nif_points_clustering",
                 executable="nif_points_clustering_exe",
                 output="screen",
+                respawn=True,
                 emulate_tty=True,
                 parameters=[
                     LaunchConfiguration('nif_points_clustering_param_file')

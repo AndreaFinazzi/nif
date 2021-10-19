@@ -1070,6 +1070,10 @@ void DKGraphPlannerNode::ToPathMsg() {
       m_odom_dist = 0.0;
     }
   }
+  else if(bCenteredPoints && m_FinalPoints->points.empty())
+  {
+    *m_FinalPoints = *finalcloud_before_finalize_ptr;
+  }
   else
   {
     *m_FinalPoints = *finalcloud_before_finalize_ptr;
@@ -1104,11 +1108,17 @@ void DKGraphPlannerNode::ToPathMsg() {
     prev_y = point.y;
   }
 
+  rclcpp::Clock clock;
   if (FinalPath.poses.empty()) {
-    std::cout << "planning node size : " << m_FinalNodes.size() << std::endl;
-    std::cout << "m_currentLayer : " << m_currentLayer << std::endl;
-    std::cout << "start node id : " << m_StartNode << std::endl;
-    RCLCPP_WARN(this->get_logger(), "Empty poses in the fianl path.");
+    // std::cout << "planning node size : " << m_FinalNodes.size() << std::endl;
+    // std::cout << "m_currentLayer : " << m_currentLayer << std::endl;
+    // std::cout << "start node id : " << m_StartNode << std::endl;
+    // RCLCPP_WARN(this->get_logger(), "Empty poses in the fianl path.");
+
+    RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 5000, "Empty poses in the fianl path.");
+    RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 5000, "Current Layer : %d", m_currentLayer);
+    RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 5000, "Start node id : %d", m_StartNode);
+
   }
 
   sensor_msgs::msg::PointCloud2 FinalPathCloudMsg;
