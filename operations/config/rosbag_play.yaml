@@ -9,7 +9,7 @@ windows:
       # - cd /home/usrg/bag/VEH4_IMS_RUN-ontrack00_2021-09-03 #IMS Full track     
       # - cd /home/usrg/media/IAC/LOR/VEH4_LOR_RUN-nif.full_2021-09-12 #Large error GPS data 
       # - cd /home/usrg/media/IAC/LOR/VEH4_LOR_RUN-nif.0_2021-09-12_with_lidar #LOR with origin lidar driver 
-      - cd /home/usrg/media/IAC/21.09.21_IMS/VEH_4_IMS_0__2021-09-21-09-59-36 #IAC_run_0 
+      # - cd /home/usrg/media/IAC/21.09.21_IMS/VEH_4_IMS_0__2021-09-21-09-59-36 #IAC_run_0 
       # - cd /home/usrg/media/IAC/21.09.21_IMS/VEH4_IMS_RUN-ontrack.1_2021-09-21 #IAC_run_1
       # - cd /home/usrg/media/T7/IAC_0928_si/2021_09_21_IMS/VEH8_MIT-PITT-RW #RADAR  
       # - cd /home/usrg/media/IAC/LOR/VEH4_LOR_RUN-graph.aw_2021-09-29 #LOR_0929_aw
@@ -22,7 +22,8 @@ windows:
       # - cd /home/usrg/media/NVME_1_COPY/recorVEH4_LOR_RUN-nochase.dk.scenario_2021-10-12dings/VEH4_LOR_RUN-nochase.dk.scenario_2021-10-12 #LOR obstacle avoidance test
       # - cd /home/usrg/media/ssd/VEH4_LOR_RUN-01_2021-10-14/ #LOR obstacle continuous avoidance 10.14
       # - cd /home/usrg/media/ssd/VEH4_LOR_RUN-03.b_2021-10-14/ 
-      - cd /home/usrg/media/T7/iac/VEH4_IMS_RUN-02_2021-10-09/ 
+      # - cd /home/usrg/media/T7/iac/VEH4_IMS_RUN-02_2021-10-09/ 
+      - cd /home/usrg/media/ssd/2021.10.18_IMS/VEH4_IMS_RUN-1018_2021-10-18
 
     panes:
     - shell_command:
@@ -41,6 +42,7 @@ windows:
         # - ros2 bag play autonomy_2021-10-12_15-28-09/ --topics /raptor_dbw_interface/wheel_speed_report /bvs_localization/ltp_odom #avoidance
         # - ros2 bag play autonomy_2021-10-14_15-54-47/ /graph_planner/cost:/origin/graph_planner/cost /graph_planner/final_path:/origin/graph_planner/final_path /graph_planner/final_path_points:/origin/graph_planner/final_path_points /graph_planner/wall_inflated:/origin/graph_planner/wall_inflated
         # - ros2 bag play autonomy_2021-10-09_15-38-35/  
+        - ros2 bag play autonomy_2021-10-18_14-02-36/ --remap /aw_localization/ekf/status:=/bag/aw_localization/ekf/status /aw_localization/ekf/odom:=/bag/aw_localization/ekf/odom --topics /aw_localization/ekf/status /aw_localization/ekf/odom #IAC_run_0
 
     - shell_command:
         # - ros2 bag play sensors_2021-09-03_10-59-19/ --topics /merged/lidar /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /raptor_dbw_interface/wheel_speed_report /novatel_top/bestpos /novatel_top/inspva /novatel_top/bestvel /novatel_top/imu/data /novatel_bottom/insstdev
@@ -56,10 +58,11 @@ windows:
         #  - ros2 bag play sensors_2021-10-12_13-59-52/  --topics /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /raptor_dbw_interface/wheel_speed_report /novatel_top/bestpos /novatel_top/inspva /novatel_top/bestvel /novatel_top/imu/data /novatel_bottom/insstdev /radar_front/radar_visz_moving /luminar_front_points /luminar_left_points /luminar_right_points #obstacle
         #  - ros2 bag play sensors_2021-10-12_15-28-09/  --topics /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /raptor_dbw_interface/wheel_speed_report /novatel_top/bestpos /novatel_top/inspva /novatel_top/bestvel /novatel_top/imu/data /novatel_bottom/insstdev /radar_front/radar_visz_moving /luminar_front_points /luminar_left_points /luminar_right_points #no lidar
         #  - ros2 bag play sensors_2021-10-14_10-16-00/  --topics /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /raptor_dbw_interface/wheel_speed_report /novatel_top/bestpos /novatel_top/inspva /novatel_top/bestvel /novatel_top/imu/data /novatel_bottom/insstdev /radar_front/radar_visz_moving /luminar_front_points /luminar_left_points /luminar_right_points 
-        - ros2 bag play sensors_2021-10-09_15-38-35/ --topics /luminar_front_points /luminar_left_points /luminar_right_points /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /raptor_dbw_interface/wheel_speed_report /novatel_top/bestpos /novatel_top/inspva /novatel_top/bestvel /novatel_top/imu/data /novatel_bottom/insstdev #IAC_run_0
+        # - ros2 bag play sensors_2021-10-09_15-38-35/ --topics /luminar_front_points /luminar_left_points /luminar_right_points /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /raptor_dbw_interface/wheel_speed_report /novatel_top/bestpos /novatel_top/inspva /novatel_top/bestvel /novatel_top/imu/data /novatel_bottom/insstdev #IAC_run_0
+        - ros2 bag play sensors_2021-10-18_14-02-36/ --topics /luminar_front_points /luminar_left_points /luminar_right_points /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /raptor_dbw_interface/wheel_speed_report /novatel_top/bestpos /novatel_top/inspva /novatel_top/bestvel /novatel_top/imu/data /novatel_bottom/insstdev  #IAC_run_0
 
     - shell_command:
-      # - ros2 run plotjuggler plotjuggler
+      - ros2 run plotjuggler plotjuggler
 
   - window_name: Algorithm Tab
     layout: tiled
@@ -80,12 +83,12 @@ windows:
           - ros2 launch nif_aw_localization_nodes deploy.launch.py
       - shell_command:
           # - ros2 launch nif_costmap_generator deploy.launch.py
-          - ros2 launch nif_waypoint_manager_nodes deploy.launch.py
+          # - ros2 launch nif_waypoint_manager_nodes deploy.launch.py
       - shell_command:
           - ros2 launch nif_points_clustering deploy.launch.py
       - shell_command:
           # - ros2 topic echo /aw_localization/ekf/status
-          - ros2 run nif_telemetry telemetry
+          # - ros2 run nif_telemetry telemetry
       - shell_command:
           - ros2 launch nif_dk_graph_planner deploy.launch.py
       - shell_command:

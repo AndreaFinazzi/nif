@@ -1,3 +1,3 @@
 #!/usr/bin/env sh
 
-SESSION_DIR=/home/$USER/nifbagplay/$(date +%Y%m%d_%H%M%S) /bin/tmuxp load ./operations/config/rosbag_play_graph_planner.yaml
+SESSION_DIR=/home/$USER/nifbagplay/$(date +%Y%m%d_%H%M%S) /bin/tmuxp load ./operations/config/rosbag_play.yaml
