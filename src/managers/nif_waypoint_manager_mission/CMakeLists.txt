@@ -17,7 +17,9 @@ ament_auto_find_build_dependencies()
 
 # Library
 ament_auto_add_library(${PROJECT_NAME} SHARED
-        src/waypoint_manager_mission.cpp)
+        src/waypoint_manager_mission.cpp
+        src/waypoint_manager_mission_v2.cpp
+        )
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

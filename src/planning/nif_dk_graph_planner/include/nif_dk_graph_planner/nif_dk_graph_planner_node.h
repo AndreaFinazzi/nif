@@ -97,9 +97,11 @@ typedef struct Connected
 {
   int id;
   double cost;
-  double additional_cost;
+  double collision_cost;
   int best_node;
   double transient_cost;
+  double curvature_cost;
+  double cost_close_to_vehicle;
 
 } connected_t;
 
@@ -119,6 +121,14 @@ typedef struct Waymap {
 struct AnalyticalFunctions {
   std::function<double(double, double)> f_;
 };
+
+struct duplication_comparator {
+  bool operator()(const std::pair<int, int> &a,
+                  const std::pair<int, int> &b) const {
+    return a.first != b.first;
+  }
+};
+
 namespace nif{
 namespace planning{
 
@@ -154,7 +164,14 @@ private:
   void BuildGraph();
   void UpdateGraph();
   void ReleaseGraph();
-
+  void FinalizePath(const pcl::PointCloud<pcl::PointXYZI>::Ptr &path_points_in,
+                    const pcl::PointCloud<pcl::PointXYZI>::Ptr &obs_center_in,
+                    const double &speed_mps_in, const double &dt_in,
+                    double &odometry_in, const double &obs_radius_in,
+                    const double &desired_update_dist_in,
+                    double &dist_to_obs_out,
+                    pcl::PointCloud<pcl::PointXYZI>::Ptr &path_points_out,
+                    bool &path_updated_out);
   void GetIntensityInfo(const double &x_in, const double &y_in,
                         pcl::PointCloud<pcl::PointXYZI>::Ptr in_points,
                         int &intensity_out);
@@ -178,12 +195,15 @@ private:
                       const int &search_num_idx_in,
                       pcl::PointCloud<pcl::PointXYZI>::Ptr points_in,
                       int &current_layer_out,
-                      std::vector<int> &nearby_indice_out);
+                      std::vector<std::pair<int, int>> &nearby_indice_out);
 
+  void TransformPointsToBody(const pcl::PointCloud<pcl::PointXYZI>::Ptr CloudIn,
+                             pcl::PointCloud<pcl::PointXYZI>::Ptr CloudOut, 
+                             const double &veh_x_, const double &veh_y_, const double &veh_yaw_);
 
   std::vector<std::pair<std::string, std::vector<double>>> read_csv(
           std::string filename);
-  void removeDuplicated(std::vector<int> &v);
+  void removeDuplicated(std::vector<std::pair<int, int>> &v);
   pcl::PointCloud<pcl::PointXYZI>::Ptr
   downsample(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, double resolution);
 
@@ -206,8 +226,10 @@ private:
       pubFinalPathPoints;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubCostPoints;
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pubFinalPath;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubFinalPathOnBody;
 
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubWallInflatedPoints;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubBestLayerXYPoints;
 
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr SubOdometry;
   rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr
@@ -228,6 +250,7 @@ private:
   pcl::PointCloud<pcl::PointXYZI>::Ptr m_ClusterCenterPoints;
   pcl::PointCloud<pcl::PointXYZI>::Ptr m_WallPoints;
   pcl::PointCloud<pcl::PointXYZI>::Ptr m_WallInflatedCostPoints;
+  pcl::PointCloud<pcl::PointXYZI>::Ptr m_FinalPoints;
 
   nif_dk_graph_planner_msgs::msg::OsmParcer m_OsmParcer;
 
@@ -240,21 +263,40 @@ private:
   bool bCenteredPoints = false;
   bool bWallPoints = false;
   bool bWallInflated = false;
+  bool bDebug;
 
-      double m_veh_x;
+  double m_dt;
+
+  double m_veh_x;
   double m_veh_y;
   double m_veh_roll, m_veh_pitch, m_veh_yaw;
+  double m_veh_speed; 
   double prev_time, current_time;
-  int m_closestStartNode; 
+
+  double m_ref_gain;
+  double m_collision_gain;
+  double m_curvature_gain;
+  double m_transient_gain;
+
+  double m_inflation_size;
+  double m_collision_radius;
+  double m_final_path_update_dist;
+
+  double m_odom_dist = 9999.;
+
+  int m_ClosestFirstNodeId;
+  int m_StartNode; 
   int m_closestGoalNode;
   int m_currentLayer;
   int m_prevBestFirstNodeInLayer = -1;
   int m_prevBestEndNodeInLayer = -1;
   int m_prevFirstLayer;
+  int m_LayerSize;
   int m_prevStartFirstNodeId = -1;
   int m_UsePrevStartFirstNodeAfter2 = 0;
 
-  std::unordered_map<int, int> m_BestLayerArray;  //first node id , layer's node
+  std::unordered_map<int, int> m_BestLayerArray;  //first node id , layer's way
+  std::unordered_map<int, std::pair<double, double>> m_BestLayerXYArray;
   std::unordered_map<int, std::vector<nif_dk_graph_planner_msgs::msg::Way>>
           m_WaysResister;
   std::unordered_map<int, std::vector<nif_dk_graph_planner_msgs::msg::Way>>
@@ -264,8 +306,9 @@ private:
       m_RacingLineGraphArray; // pair layer, node
 
   std::vector<Obstacle> m_obstacle;
-  std::vector<int> m_nearbyFirstNodes;
+  std::vector<std::pair<int, int>> m_nearbyFirstNodes;
   nav_msgs::msg::OccupancyGrid m_OccupancyGrid;
+
 
   nif::localization::utils::GeodeticConverter conv_;
   double m_originLat;

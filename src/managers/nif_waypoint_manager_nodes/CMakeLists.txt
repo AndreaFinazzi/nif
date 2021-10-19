@@ -18,6 +18,7 @@ ament_auto_find_build_dependencies()
 ament_auto_add_library(${PROJECT_NAME} SHARED
         src/waypoint_manager_node.cpp
         src/waypoint_manager_node_mission.cpp
+        src/waypoint_manager_node_mission_selective.cpp
         )
 
 ament_auto_add_executable(${PROJECT_NAME}_exe

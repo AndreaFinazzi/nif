@@ -39,6 +39,14 @@ PointsClustering::PointsClustering()
       "in_lidar_points", nif::common::constants::QOS_SENSOR_DATA,
       std::bind(&PointsClustering::PointsCallback, this,
                 std::placeholders::_1));
+  subLeftPoints = this->create_subscription<sensor_msgs::msg::PointCloud2>(
+      "in_left_points", nif::common::constants::QOS_SENSOR_DATA,
+      std::bind(&PointsClustering::LeftPointsCallback, this,
+                std::placeholders::_1));
+  subRightPoints = this->create_subscription<sensor_msgs::msg::PointCloud2>(
+      "in_right_points", nif::common::constants::QOS_SENSOR_DATA,
+      std::bind(&PointsClustering::RightPointsCallback, this,
+                std::placeholders::_1));
 
   using namespace std::chrono_literals; // NOLINT
   sub_timer_ = this->create_wall_timer(
@@ -51,17 +59,53 @@ void PointsClustering::timer_callback() {
 
   std::lock_guard<std::mutex> sensor_lock(sensor_mtx);
 
-  if(!bPoints)
+  if(!bPoints || !m_inPoints || m_inPoints->points.empty())
     return;
 
   //simple height map filter
   m_simpleHeightmapPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
   for (auto point : m_inPoints->points)
   {
+    pcl::PointXYZI point_buf;
+    point_buf = point;
+    point_buf.x = point.x + 0.9214;
+    point_buf.z = point.z + 0.212;
+
     if (point.z > m_height_filter_thres && point.z < 2.0 && fabs(point.y) < 20.0) {
-      m_simpleHeightmapPoints->points.push_back(point);
+      m_simpleHeightmapPoints->points.push_back(point_buf);
     }
   }
+
+  // pcl::PointCloud<pcl::PointXYZI>::Ptr RightToMergedPoints(
+  //     new pcl::PointCloud<pcl::PointXYZI>);
+  // if(bRightPoints)
+  // {
+  //   pcl::PointCloud<pcl::PointXYZI>::Ptr RightDownsampledPoints(
+  //       new pcl::PointCloud<pcl::PointXYZI>);
+  //   RightDownsampledPoints = downsample(m_RightPoints, 0.05);
+  //   for (auto point : RightDownsampledPoints->points) {
+  //     if (fabs(point.y) < 2.0 && point.z > m_height_filter_thres &&
+  //         point.z < 0.5 && point.x > -5.0 && point.x < 0.5) {
+  //       RightToMergedPoints->points.push_back(point);
+  //     }
+  //   }
+  //   *m_simpleHeightmapPoints += *RightToMergedPoints;
+  // }
+  // pcl::PointCloud<pcl::PointXYZI>::Ptr LeftToMergedPoints(
+  //     new pcl::PointCloud<pcl::PointXYZI>);
+  // if (bLeftPoints) {
+  //   pcl::PointCloud<pcl::PointXYZI>::Ptr LeftDownsampledPoints(
+  //       new pcl::PointCloud<pcl::PointXYZI>);
+  //   LeftDownsampledPoints = downsample(m_LeftPoints, 0.05);
+  //   for (auto point : LeftDownsampledPoints->points) {
+  //     if (fabs(point.y) < 2.0 && point.z > m_height_filter_thres &&
+  //         point.z < 0.5 && point.x > -5.0 && point.x < 0.5) {
+  //       LeftToMergedPoints->points.push_back(point);
+  //     }
+  //   }
+  //   *m_simpleHeightmapPoints += *LeftToMergedPoints;
+  // }
+
 
   sensor_msgs::msg::PointCloud2 cloud_simple_heightmap_msg;
   pcl::toROSMsg(*m_simpleHeightmapPoints, cloud_simple_heightmap_msg);
@@ -128,7 +172,22 @@ void PointsClustering::PointsCallback(
   bPoints = true;
 
   // std::cout << "callback" << std::endl;
+}
 
+void PointsClustering::LeftPointsCallback(
+    const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
+
+  m_LeftPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
+  pcl::fromROSMsg(*msg, *m_LeftPoints);
+  bLeftPoints = true;
+}
+
+void PointsClustering::RightPointsCallback(
+    const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
+
+  m_RightPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
+  pcl::fromROSMsg(*msg, *m_RightPoints);
+  bRightPoints = true;
 }
 
 void PointsClustering::clusterAndColorGpu(
@@ -138,54 +197,56 @@ void PointsClustering::clusterAndColorGpu(
     double in_max_cluster_distance) {
 
 #ifdef GPU_CLUSTERING
+  if (in_cloud_ptr && !in_cloud_ptr->points.empty())
+  {
+    int size = in_cloud_ptr->points.size();
 
-  int size = in_cloud_ptr->points.size();
+    // if (size == 0)
+    //   return clusters;
 
-  // if (size == 0)
-  //   return clusters;
+    float *tmp_x, *tmp_y, *tmp_z;
 
-  float *tmp_x, *tmp_y, *tmp_z;
+    tmp_x = (float *)malloc(sizeof(float) * size);
+    tmp_y = (float *)malloc(sizeof(float) * size);
+    tmp_z = (float *)malloc(sizeof(float) * size);
 
-  tmp_x = (float *)malloc(sizeof(float) * size);
-  tmp_y = (float *)malloc(sizeof(float) * size);
-  tmp_z = (float *)malloc(sizeof(float) * size);
+    for (int i = 0; i < size; i++) {
+      pcl::PointXYZI tmp_point = in_cloud_ptr->at(i);
 
-  for (int i = 0; i < size; i++) {
-    pcl::PointXYZI tmp_point = in_cloud_ptr->at(i);
+      tmp_x[i] = tmp_point.x;
+      tmp_y[i] = tmp_point.y;
+      tmp_z[i] = tmp_point.z;
+    }
 
-    tmp_x[i] = tmp_point.x;
-    tmp_y[i] = tmp_point.y;
-    tmp_z[i] = tmp_point.z;
+    GpuEuclideanCluster gecl_cluster;
+
+    gecl_cluster.setInputPoints(tmp_x, tmp_y, tmp_z, size);
+    gecl_cluster.setThreshold(in_max_cluster_distance);
+    gecl_cluster.setMinClusterPts(m_cluster_size_min);
+    gecl_cluster.setMaxClusterPts(m_cluster_size_max);
+    gecl_cluster.extractClusters();
+    std::vector<GpuEuclideanCluster::GClusterIndex> cluster_indices =
+        gecl_cluster.getOutput();
+
+    unsigned int k = 0;
+    
+    for (auto it = cluster_indices.begin(); it != cluster_indices.end(); it++) {
+      pcl::PointCloud<pcl::PointXYZI>::Ptr bufPoints(
+          new pcl::PointCloud<pcl::PointXYZI>);
+      SetCloud(in_cloud_ptr, bufPoints, it->points_in_cluster,
+              out_clustered_array, k);
+      //   clusters.push_back(cluster);
+      *out_cloud_ptr += *bufPoints;
+      k++;
+      // std::cout << "k: " << k << ", " << it->points_in_cluster.size() << std::endl;
+    }
+
+    // std::cout << "working" << std::endl;
+
+    free(tmp_x);
+    free(tmp_y);
+    free(tmp_z);
   }
-
-  GpuEuclideanCluster gecl_cluster;
-
-  gecl_cluster.setInputPoints(tmp_x, tmp_y, tmp_z, size);
-  gecl_cluster.setThreshold(in_max_cluster_distance);
-  gecl_cluster.setMinClusterPts(m_cluster_size_min);
-  gecl_cluster.setMaxClusterPts(m_cluster_size_max);
-  gecl_cluster.extractClusters();
-  std::vector<GpuEuclideanCluster::GClusterIndex> cluster_indices =
-      gecl_cluster.getOutput();
-
-  unsigned int k = 0;
-  
-  for (auto it = cluster_indices.begin(); it != cluster_indices.end(); it++) {
-    pcl::PointCloud<pcl::PointXYZI>::Ptr bufPoints(
-        new pcl::PointCloud<pcl::PointXYZI>);
-    SetCloud(in_cloud_ptr, bufPoints, it->points_in_cluster,
-             out_clustered_array, k);
-    //   clusters.push_back(cluster);
-    *out_cloud_ptr += *bufPoints;
-    k++;
-    // std::cout << "k: " << k << ", " << it->points_in_cluster.size() << std::endl;
-  }
-
-  // std::cout << "working" << std::endl;
-
-  free(tmp_x);
-  free(tmp_y);
-  free(tmp_z);
 
 #endif
   // return clusters;
@@ -322,7 +383,7 @@ void PointsClustering::createGaussianWorld(
     gaussian_tmp.y0 = marker.pose.position.y;
     gaussian_tmp.varX = inflation_x;
     gaussian_tmp.varY = inflation_y;
-    gaussian_tmp.s = 1 / inflation_x;
+    gaussian_tmp.s = 1 / (inflation_x + 0.00001);
     g.push_back(gaussian_tmp);
   }
 
@@ -334,8 +395,8 @@ void PointsClustering::createGaussianWorld(
       const double varX = g.at(i).varX;
       const double varY = g.at(i).varY;
       const double s = g.at(i).s;
-      value += s * std::exp(-(x - x0) * (x - x0) / (2.0 * varX) -
-                            (y - y0) * (y - y0) / (2.0 * varY));
+      value += s * std::exp(-(x - x0) * (x - x0) / (2.0 * varX + 0.00001) -
+                            (y - y0) * (y - y0) / (2.0 * varY + 0.00001));
     }
     return value;
   };
