@@ -394,37 +394,36 @@ void DKGraphPlannerNode::CallbackOdometry(const nav_msgs::msg::Odometry::SharedP
                      current_layer_for_starting_node); // to get current layer
 
 
-    int prev_layer_for_starting_node = current_layer_for_starting_node -1;
-    if(prev_layer_for_starting_node < 0)
-      prev_layer_for_starting_node = prev_layer_for_starting_node + m_LayerSize;
+    // int prev_layer_for_starting_node = current_layer_for_starting_node -1;
+    // if(prev_layer_for_starting_node < 0)
+    //   prev_layer_for_starting_node = prev_layer_for_starting_node + m_LayerSize;
 
-    prev_layer_for_starting_node = prev_layer_for_starting_node % m_LayerSize;
+    // prev_layer_for_starting_node = prev_layer_for_starting_node % m_LayerSize;
 
 
-    for (auto way : m_WaysResister[prev_layer_for_starting_node]) {
-      if (way.start_node == 4)
-        current_node_id = way.first_node_id;
+    // for (auto way : m_WaysResister[prev_layer_for_starting_node]) {
+    //   if (way.start_node == 4)
+    //     current_node_id = way.first_node_id;
 
-      if(current_node_id == 0)
-      {
-        current_node_id = way.first_node_id;
-        break;
-      }
-    }
+    //   if(current_node_id == 0)
+    //   {
+    //     current_node_id = way.first_node_id;
+    //     break;
+    //   }
+    // }
 
     GetIntensityInfo(m_veh_x, m_veh_y, m_FirstNodeContainPoints,
                      m_ClosestFirstNodeId); // to get current first node id
-    if(current_node_id == 0)
-    {
-      current_node_id = m_ClosestFirstNodeId;
-    }
+    // if(current_node_id == 0)
+    // {
+    //   current_node_id = m_ClosestFirstNodeId;
+    // }
     // std::cout << m_ClosestFirstNodeId << std::endl;
 
     
-      // Path from racing line
-      // GetIntensityInfo(m_closest_x_in_racing_line,
-      // m_closest_y_in_racing_line,
-      //                  m_FirstNodeContainPoints, current_node_id);
+    // Path from racing line
+    GetIntensityInfo(m_closest_x_in_racing_line, m_closest_y_in_racing_line,
+                     m_FirstNodeContainPoints, current_node_id);
 
       // if(m_prevStartFirstNodeId != -1)
       //   current_node_id = m_prevStartFirstNodeId;
@@ -1051,14 +1050,36 @@ void DKGraphPlannerNode::ToPathMsg() {
   BestLayerXYCloudMsg.header.stamp = this->now();
   pubBestLayerXYPoints->publish(BestLayerXYCloudMsg);
 
+  pcl::PointCloud<pcl::PointXYZI>::Ptr finalOnBodyPoints(
+      new pcl::PointCloud<pcl::PointXYZI>);
+  sensor_msgs::msg::PointCloud2 FinalOnBodyCloudMsg;
+  if (!finalcloud_before_finalize_ptr->points.empty()) {
+    if(m_FinalPoints->points.empty())
+    {
+      TransformPointsToBody(finalcloud_before_finalize_ptr, finalOnBodyPoints, 
+                          m_veh_x, m_veh_y, m_veh_yaw);
+    }
+    else
+    {
+      TransformPointsToBody(m_FinalPoints, finalOnBodyPoints, 
+                            m_veh_x, m_veh_y,m_veh_yaw);
+    }
+    pcl::toROSMsg(*finalOnBodyPoints, FinalOnBodyCloudMsg);
+  }
+  FinalOnBodyCloudMsg.header.frame_id =
+      nif::common::frame_id::localization::BASE_LINK;
+  FinalOnBodyCloudMsg.header.stamp = this->now();
+  pubFinalPathOnBody->publish(FinalOnBodyCloudMsg);
+
   bool path_updated = false;
   double distance_to_obs = INF;
   if(bCenteredPoints)
   {
-    FinalizePath(finalcloud_before_finalize_ptr, m_ClusterCenterPoints,
-                 m_veh_speed, m_dt, m_odom_dist, m_collision_radius,
-                 m_final_path_update_dist, distance_to_obs, 
-                 finalcloud_updated_ptr, path_updated);
+    FinalizePath(finalcloud_before_finalize_ptr,
+                 finalOnBodyPoints,
+                 m_ClusterCenterPoints, m_veh_speed, m_dt,
+                 m_odom_dist, m_collision_radius, m_final_path_update_dist,
+                 distance_to_obs, finalcloud_updated_ptr, path_updated);
     // std::cout << m_veh_speed << ", " << m_dt << ", " << m_odom_dist << std::endl; 
     if (path_updated) {
       RCLCPP_INFO(
@@ -1131,19 +1152,6 @@ void DKGraphPlannerNode::ToPathMsg() {
   FinalPath.header.frame_id = nif::common::frame_id::localization::ODOM;
   FinalPath.header.stamp = this->now();
   pubFinalPath->publish(FinalPath);
-
-  pcl::PointCloud<pcl::PointXYZI>::Ptr finalOnBodyPoints(
-      new pcl::PointCloud<pcl::PointXYZI>);
-  sensor_msgs::msg::PointCloud2 FinalOnBodyCloudMsg;
-  if (!m_FinalPoints->points.empty())
-  {
-    TransformPointsToBody(m_FinalPoints, finalOnBodyPoints, 
-                          m_veh_x, m_veh_y, m_veh_yaw);
-    pcl::toROSMsg(*finalOnBodyPoints, FinalOnBodyCloudMsg);
-  }
-  FinalOnBodyCloudMsg.header.frame_id = nif::common::frame_id::localization::BASE_LINK;
-  FinalOnBodyCloudMsg.header.stamp = this->now();
-  pubFinalPathOnBody->publish(FinalOnBodyCloudMsg);
 }
 /*
   We update path only this cases :
@@ -1152,6 +1160,7 @@ void DKGraphPlannerNode::ToPathMsg() {
 */
 void DKGraphPlannerNode::FinalizePath(
     const pcl::PointCloud<pcl::PointXYZI>::Ptr &path_points_in,
+    const pcl::PointCloud<pcl::PointXYZI>::Ptr &path_points_on_body_in,
     const pcl::PointCloud<pcl::PointXYZI>::Ptr &obs_center_in,
     const double &speed_mps_in, const double &dt_in, double &odometry_in,
     const double &obs_radius_in, const double &desired_update_dist_in,
@@ -1163,17 +1172,19 @@ void DKGraphPlannerNode::FinalizePath(
   if (odometry_in > desired_update_dist_in) {
     *path_points_out = *path_points_in;
     path_updated_out = true;
+    RCLCPP_INFO(this->get_logger(), "Updated by odometry");
     return;
   }
 
   //Current path is close to the obstacle less than obs_radius_in.
   bool current_path_collision = false;
-  for(auto point : path_points_in->points)
-  {
+  double dist_to_obs = DBL_MAX;
+  for (auto point : path_points_on_body_in->points) {
     for(auto obs: obs_center_in->points)
     {
-      double dist_to_obs = sqrt(pow(point.x - obs.x,2) + 
-                                pow(point.y - obs.y,2));
+      dist_to_obs = sqrt(pow(point.x - obs.x,2) + 
+                         pow(point.y - obs.y,2));
+      // std::cout << "dist_to_obs : " << dist_to_obs << std::endl;
       if (dist_to_obs < obs_radius_in)
       {
         current_path_collision = true;
@@ -1191,6 +1202,7 @@ void DKGraphPlannerNode::FinalizePath(
   {
     *path_points_out = *path_points_in;
     path_updated_out = true;
+    RCLCPP_INFO(this->get_logger(), "Updated by collision : %f", dist_to_obs);
   }
 }
 
