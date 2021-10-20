@@ -191,7 +191,7 @@ public:
 
     this->declare_parameter("desired_acceleration.cmd_max", 20.0);
 
-    this->declare_parameter("wall_distance.min_threshold_m", 1.5);
+    this->declare_parameter("wall_distance.min_threshold_m", 1.25);
 
     // Read in misc. parameters
     max_steering_angle_deg =

@@ -156,6 +156,7 @@ if __name__ == "__main__":
 
     pit_wpt = os.path.join(waypoint_manager_path, 'maps',TRACK_NAME,'pit_lane.csv',)
     raceline = os.path.join(waypoint_manager_path, 'maps',TRACK_NAME,'race_line.csv',)
+    wu_line = os.path.join(waypoint_manager_path, 'maps',TRACK_NAME,'warm_up_wpt.csv',)
 
     # raceline = os.path.join(waypoint_manager_path, 'inputs/traj_ltpl_cl',TRACK_NAME,'traj_race_cl.csv',)
     graph = os.path.join(waypoint_manager_path, 'inputs/track_offline_graphs',TRACK_NAME,'stored_graph.pckl')
@@ -178,6 +179,7 @@ if __name__ == "__main__":
                 bboxes = mission_code_block.get("activation_area").get("bboxes")
                 for box in bboxes:
                     print(box)
+                    # Check whether x_min < x_max and y_min < y_max
                     if (box[0] >= box[2] or box[1] >= box[3]):
                         raise ValueError("BBox is malformed! MISSION", mission_code_block.get("mission_code"))
                     
@@ -193,6 +195,7 @@ if __name__ == "__main__":
 
     WPTFileVisualizer(pit_wpt, "pit-in-entire")
     WPTFileVisualizer(raceline, "race-line")
+    WPTFileVisualizer(wu_line, "warm-up-line")
 
     dot.view()
 

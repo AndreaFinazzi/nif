@@ -182,6 +182,8 @@ def generate_launch_description():
             ('in_control_cmd', '/control_pool/control_cmd'),
             ('in_override_control_cmd', '/control_pool/override_cmd'),
             ('in_perception_steering', '/wall_following_steering_cmd'),
+            ('in_wall_distance_inner', '/detected_inner_distance'),
+            ('in_wall_distance_outer', '/detected_outer_distance'),
             ('out_control_cmd', '/control_safety_layer/out/control_cmd'),
             ('out_steering_control_cmd', '/joystick/steering_cmd'),
             ('out_accelerator_control_cmd', '/joystick/accelerator_cmd'),

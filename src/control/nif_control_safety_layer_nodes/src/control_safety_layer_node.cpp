@@ -78,7 +78,9 @@ void nif::control::ControlSafetyLayerNode::run() {
 
     if (this->wall_distance_outer > 0.0 &&
         this->wall_distance_outer < this->wall_distance_min_threshold_m &&
-        (this->missionIs(MissionStatus::MISSION_RACE) || this->missionIs(MissionStatus::MISSION_COMMANDED_STOP)))
+        (this->missionIs(MissionStatus::MISSION_RACE) || 
+         this->missionIs(MissionStatus::MISSION_SLOW_DRIVE) || 
+         this->missionIs(MissionStatus::MISSION_COMMANDED_STOP)))
         {
             this->emergency_wall_distance = true;
         } else
@@ -125,7 +127,7 @@ void nif::control::ControlSafetyLayerNode::run() {
                     this->now() - this->perception_steering_last_update < rclcpp::Duration(1, 0) ) {
             // Too close to the wall, use perception-based lateral control
             this->control_cmd.steering_control_cmd.data =
-            this->perception_steering_cmd;
+                this->perception_steering_cmd;
 
         } else if ( !this->emergency_buffer_empty   &&
                     !is_buffer_empty                &&

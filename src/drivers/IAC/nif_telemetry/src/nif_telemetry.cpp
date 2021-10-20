@@ -86,7 +86,7 @@ class Telemetry : public rclcpp::Node
         "/detected_outer_distance", nif::common::constants::QOS_SENSOR_DATA, std::bind(&Telemetry::wall_distance_outer_callback, this, std::placeholders::_1));
 
       timer_ = this->create_wall_timer(
-        75ms, std::bind(&Telemetry::timer_callback, this));
+        50ms, std::bind(&Telemetry::timer_callback, this));
     }
 
   private:
