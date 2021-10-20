@@ -1073,15 +1073,30 @@ void DKGraphPlannerNode::ToPathMsg() {
 
   bool path_updated = false;
   double distance_to_obs = INF;
+  double remain_distance = INF;
+  bool path_update2 = false;
+  if(!m_FinalPoints->points.empty())
+  {
+    double last_x = m_FinalPoints->points[m_FinalPoints->points.size() - 1].x;
+    double last_y = m_FinalPoints->points[m_FinalPoints->points.size() - 1].y;
+    remain_distance = sqrt(pow(m_veh_x - last_x, 2) + pow(m_veh_y - last_y, 2));
+    if (remain_distance < 30.0)
+    {
+      path_update2 = true;
+      RCLCPP_WARN(this->get_logger(), "PATH UPDATE IS TOO LATE. ENFORCE PATH UPDATE");
+    }
+  }
+  
   if(bCenteredPoints)
   {
+    // m_stack_dist += sqrt(pow(m_veh_x - m_prev_x, 2) + pow(m_veh_y - m_prev_y, 2));
     FinalizePath(finalcloud_before_finalize_ptr,
                  finalOnBodyPoints,
                  m_ClusterCenterPoints, m_veh_speed, m_dt,
                  m_odom_dist, m_collision_radius, m_final_path_update_dist,
                  distance_to_obs, finalcloud_updated_ptr, path_updated);
-    // std::cout << m_veh_speed << ", " << m_dt << ", " << m_odom_dist << std::endl; 
-    if (path_updated) {
+    // RCLCPP_INFO(this->get_logger(), "%f,  %f", m_odom_dist, m_stack_dist);
+    if (path_updated || path_update2) {
       RCLCPP_INFO(
           this->get_logger(),
           "Final Path updated.Layer : %d, Current odometry : %f, Collision dist : %f",
@@ -1089,7 +1104,10 @@ void DKGraphPlannerNode::ToPathMsg() {
       m_FinalPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
       *m_FinalPoints = *finalcloud_updated_ptr;
       m_odom_dist = 0.0;
+      // m_stack_dist = 0.0;
     }
+    // m_prev_x = m_veh_x;
+    // m_prev_y = m_veh_y;
   }
   else if(bCenteredPoints && m_FinalPoints->points.empty())
   {

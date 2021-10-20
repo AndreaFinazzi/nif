@@ -266,6 +266,10 @@ private:
   bool bWallInflated = false;
   bool bDebug;
 
+  double m_prev_x; 
+  double m_prev_y;
+  double m_stack_dist;
+
   double m_dt;
 
   double m_veh_x;
