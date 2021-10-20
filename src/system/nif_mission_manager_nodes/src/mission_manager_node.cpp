@@ -448,6 +448,10 @@ double nif::system::MissionManagerNode::getMissionMaxVelocityMps(
             max_vel_mps = this->velocity_pit_out;
             break;
 
+        case MissionStatus::MISSION_PIT_TO_TRACK:
+            max_vel_mps = this->velocity_pit_out;
+            break;
+
         case MissionStatus::MISSION_RACE:
             // Race at max speed, if localization is good enough. 
             max_vel_mps = this->velocity_max;

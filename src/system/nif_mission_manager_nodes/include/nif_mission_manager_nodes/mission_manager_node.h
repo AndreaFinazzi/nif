@@ -10,7 +10,6 @@
 #include "std_srvs/srv/trigger.hpp"
 
 using nif_msgs::msg::MissionStatus;
-using nif_msgs::msg::MissionStatus;
 
 namespace nif {
 namespace system {
@@ -138,10 +137,6 @@ private:
     
     return rc_ok && velocity_ok && odometry_ok;
   };
-
-  bool missionIs(MissionStatus::_mission_status_code_type mission) {
-    return this->mission_status_msg.mission_status_code == mission;
-  }
 
   void run() final;
 };

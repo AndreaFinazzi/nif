@@ -24,6 +24,8 @@
 namespace nif {
 namespace common {
 
+using nif_msgs::msg::MissionStatus;
+
 class IBaseNode : public rclcpp::Node {
 public:
   inline std::string getNodeStatusTopicName() {
@@ -119,6 +121,12 @@ protected:
                                "retrieve global parameters.");
     }
   }
+
+
+  bool missionIs(MissionStatus::_mission_status_code_type mission) {
+    return this->getSystemStatus().mission_status.mission_status_code == mission;
+  }
+
 
 private:
   /**

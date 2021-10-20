@@ -1,6 +1,6 @@
 /**:
   ros__parameters:
-    race_wpt_path: 'maps/IMS/race_line.csv'
+    race_wpt_path: 'maps/IMS/race_line_opt.csv'
     pit_wpt_path: 'maps/IMS/pit_lane.csv'
     warmup_wpt_path: 'maps/IMS/warm_up_wpt.csv'
     spline_interval: 1.0 # in [m]
