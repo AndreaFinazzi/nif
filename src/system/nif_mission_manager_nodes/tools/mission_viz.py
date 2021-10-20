@@ -178,7 +178,9 @@ if __name__ == "__main__":
                 bboxes = mission_code_block.get("activation_area").get("bboxes")
                 for box in bboxes:
                     print(box)
-
+                    if (box[0] >= box[2] or box[1] >= box[3]):
+                        raise ValueError("BBox is malformed! MISSION", mission_code_block.get("mission_code"))
+                    
                     box = patches.Rectangle((box[0], box[1]), # x_min, y_min
                                             box[2] - box[0], # x-wise width
                                             box[3] - box[1], # y-wise height
@@ -194,20 +196,9 @@ if __name__ == "__main__":
 
     dot.view()
 
-    s = graphviz.Digraph('structs', filename='structs_revisited.gv',
-                     node_attr={'shape': 'record'})
-
-    s.node('struct1', '<f0> left|<f1> middle|<f2> right')
-    s.node('struct2', '<f0> one|<f1> two')
-    s.node('struct3', r'hello\nworld |{ b |{c|<here> d|e}| f}| g | h')
-
-    s.edges([('struct1:f1', 'struct2:f0'), ('struct1:f2', 'struct3:here')])
-
-    s.view()
     # dot.render("missions_graph", view=True)
     # RaceLineFileVisualizer(raceline, "race-line")
     # GraphVisualizer(graph, "graph_node")
     plt.axis('equal')
     plt.grid()
     plt.show()
-
