@@ -8,8 +8,6 @@
 #include "nif_mission_manager/common.h"
 #include <rclcpp/rclcpp.hpp>
 
-#define ASSERT(x) if( !(x) ) throw std::range_error("Assertion failed in yaml_cpp_adapter");
-
 using namespace nif::system;
 const rclcpp::Logger LOGGER = rclcpp::get_logger("nif_mission_manager::yaml-cpp");
 
@@ -322,9 +320,9 @@ struct convert<MissionsDescription> {
         ASSERT(missions);
         ASSERT(missions.size() > 0);
 
-        for (auto &&node : missions)
+        for (auto &&mission : missions)
         {
-            auto mission_node = node.as<MissionNode>();
+            auto mission_node = mission.as<MissionNode>();
             // Assert unique mission_code
             ASSERT(out.find(mission_node.mission_code) == out.end());
 
@@ -336,6 +334,63 @@ struct convert<MissionsDescription> {
     }
 };
 
+template<>
+struct convert<TrackZone> {
+    /**
+     * zone_id:
+     * bbox:
+     * - ...
+     * @param node
+     * @param out
+     * @return
+     */
+    static bool decode(const Node &node, TrackZone &out) 
+    {
+        if (node[nif::system::ID_ZONE_ID]) {
+            out.id = node[nif::system::ID_ZONE_ID].as<track_zone_id_t>();
+        } else {
+            RCLCPP_ERROR(LOGGER, "Listed zone must have the 'id' specifier.");
+            return false;
+        }
+
+        out.bbox = node[ID_ZONE_BBOX].as<BBox>();
+        
+        RCLCPP_INFO(LOGGER, "Loaded TrackZone.id: %d", out.id);
+        return true;
+    }
+};
+
+
+template<>
+struct convert<TrackZonesDescription> {
+    /**
+     * zones:
+     *   - ...
+     * @param node
+     * @param out
+     * @return
+     */
+    static bool decode(const Node &node, TrackZonesDescription &out) 
+    {
+        auto zones = node[ID_ZONES_LIST];
+
+        ASSERT(zones);
+        ASSERT(zones.IsSequence());
+        ASSERT(zones.size() > 0);
+
+        for (auto &&zone : zones)
+        {
+            auto zone_node = zone.as<TrackZone>();
+            // Assert unique mission_code
+            ASSERT(out.find(zone_node.id) == out.end());
+
+            out.insert({ zone_node.id, zone_node });
+        }
+
+        RCLCPP_INFO(LOGGER, "Loaded ZonesDescription.");
+        return true;
+    }
+};
 
 } // namespace YAML
 

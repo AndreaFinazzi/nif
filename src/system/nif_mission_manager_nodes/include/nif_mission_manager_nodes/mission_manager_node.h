@@ -79,6 +79,10 @@ private:
   unsigned int mission_warmup_lap_distance_max = 0;
 
   nif::system::MissionsDescription missions_description;
+  nif::system::TrackZonesDescription zones_description;
+
+  track_zone_id_t current_track_zone_id;
+  std::unordered_map<track_zone_id_t, unsigned int> track_zones_hit_count_map;
   
   /**
    * SystemStatus publisher. Publishes the latest system_status message, after
@@ -121,6 +125,8 @@ private:
   OnSetParametersCallbackHandle::SharedPtr parameters_callback_handle;
 
   double getMissionMaxVelocityMps(MissionStatus::_mission_status_code_type);
+
+  void afterEgoOdometryCallback() override;
 
   /**
    * Return a valid mission code based on the current status and the input next_mission.

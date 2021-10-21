@@ -146,8 +146,8 @@ class GraphVisualizer:
 
 if __name__ == "__main__":
 
-    TRACK_NAME = 'IMS'
-    TRANSITION_FILE = 'transitions.ims.yaml'
+    TRACK_NAME = 'lgsvl_sim'
+    TRANSITION_FILE = 'transitions.sim.yaml'
 
     mission_manager_path = get_package_share_directory('nif_mission_manager_nodes')
     waypoint_manager_path = get_package_share_directory('nif_waypoint_manager_nodes')
