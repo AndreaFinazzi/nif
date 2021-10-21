@@ -104,13 +104,13 @@ public:
 
     this->wall_distance_inner_sub =
             this->create_subscription<std_msgs::msg::Float32>(
-                    "in_wall_distance_inner", nif::common::constants::QOS_CONTROL_CMD,
+                    "in_wall_distance_inner", nif::common::constants::QOS_EGO_ODOMETRY,
                     std::bind(&ControlSafetyLayerNode::wallDistanceInnerCallback, this,
                               std::placeholders::_1));                              
 
     this->wall_distance_outer_sub =
             this->create_subscription<std_msgs::msg::Float32>(
-                    "in_wall_distance_outer", nif::common::constants::QOS_CONTROL_CMD,
+                    "in_wall_distance_outer", nif::common::constants::QOS_EGO_ODOMETRY,
                     std::bind(&ControlSafetyLayerNode::wallDistanceOuterCallback, this,
                               std::placeholders::_1));                              
 
