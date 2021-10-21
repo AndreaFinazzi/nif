@@ -562,17 +562,17 @@ void MissionManagerNode::afterEgoOdometryCallback() {
           this->getEgoOdometry(), 
           this->current_velocity_mps))
     {
-        if (this->current_track_zone_id != zone_pair.first)
+        if (this->current_track_zone_id != zone_pair.second.id)
         {
-            if (this->track_zones_hit_count_map.find(zone_pair.first) == this->track_zones_hit_count_map.end()) {
-                this->track_zones_hit_count_map.insert(std::make_pair(zone_pair.first, 1));
+            if (this->track_zones_hit_count_map.find(zone_pair.second.id) == this->track_zones_hit_count_map.end()) {
+                this->track_zones_hit_count_map.insert(std::make_pair(zone_pair.second.id, 1));
             }
             else
             {
-                this->track_zones_hit_count_map[zone_pair.first]++;
+                this->track_zones_hit_count_map[zone_pair.second.id]++;
             }
         }
-        this->current_track_zone_id = zone_pair.first;
+        this->current_track_zone_id = zone_pair.second.id;
     }
   }
 }
