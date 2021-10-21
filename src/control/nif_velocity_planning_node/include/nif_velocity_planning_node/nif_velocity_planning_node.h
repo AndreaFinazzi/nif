@@ -250,7 +250,7 @@ private:
               lpf_curv_array[m_target_idx]; // curvature at target point
           double curv_ratio =
               std::min(abs(kappa_target), m_CURVATURE_MAX) / m_CURVATURE_MAX;
-          double curv_gain = 1.0 - 0.1 * curv_ratio;
+          double curv_gain = 1.0 - 0.05 * curv_ratio;
           desired_velocity_curvature_mps = curv_gain * m_max_vel_mps;
           desired_velocity_mps =
               std::min(desired_velocity_curvature_mps, desired_velocity_mps);

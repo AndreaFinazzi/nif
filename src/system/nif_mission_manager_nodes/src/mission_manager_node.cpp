@@ -323,6 +323,12 @@ MissionManagerNode::RCFlagSummaryCallback(
     this->lap_count = msg->lap_count;
     this->lap_distance = msg->lap_distance;
 
+    this->mission_status_msg.track_flag = msg->track_flag;
+    this->mission_status_msg.veh_flag = msg->veh_flag;
+
+    this->mission_status_msg.lap_count = msg->lap_count;
+    this->mission_status_msg.lap_distance = msg->lap_distance;
+
     // Auto transition to collision avoidance mode
     if (
         !this->is_system_startup    &&
