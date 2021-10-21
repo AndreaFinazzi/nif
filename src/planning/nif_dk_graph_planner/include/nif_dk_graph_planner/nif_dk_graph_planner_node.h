@@ -164,14 +164,15 @@ private:
   void BuildGraph();
   void UpdateGraph();
   void ReleaseGraph();
-  void FinalizePath(const pcl::PointCloud<pcl::PointXYZI>::Ptr &path_points_in,
-                    const pcl::PointCloud<pcl::PointXYZI>::Ptr &obs_center_in,
-                    const double &speed_mps_in, const double &dt_in,
-                    double &odometry_in, const double &obs_radius_in,
-                    const double &desired_update_dist_in,
-                    double &dist_to_obs_out,
-                    pcl::PointCloud<pcl::PointXYZI>::Ptr &path_points_out,
-                    bool &path_updated_out);
+  void FinalizePath(
+      const pcl::PointCloud<pcl::PointXYZI>::Ptr &path_points_in,
+      const pcl::PointCloud<pcl::PointXYZI>::Ptr &path_points_on_body_in,
+      const pcl::PointCloud<pcl::PointXYZI>::Ptr &obs_center_in,
+      const double &speed_mps_in, const double &dt_in, double &odometry_in,
+      const double &obs_radius_in, const double &desired_update_dist_in,
+      double &dist_to_obs_out,
+      pcl::PointCloud<pcl::PointXYZI>::Ptr &path_points_out,
+      bool &path_updated_out);
   void GetIntensityInfo(const double &x_in, const double &y_in,
                         pcl::PointCloud<pcl::PointXYZI>::Ptr in_points,
                         int &intensity_out);
@@ -264,6 +265,10 @@ private:
   bool bWallPoints = false;
   bool bWallInflated = false;
   bool bDebug;
+
+  double m_prev_x; 
+  double m_prev_y;
+  double m_stack_dist;
 
   double m_dt;
 

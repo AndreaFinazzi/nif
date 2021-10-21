@@ -76,14 +76,14 @@ def generate_launch_description():
                     'origin_lat' : origin_lat,
                     'origin_lon' : origin_lon,
                     
-                    'ref_gain' : 0.5,
-                    'collision_gain' : 30.0,
-                    'curvature_gain' : 10.0,
+                    'ref_gain' : 5.0, #0.5,
+                    'collision_gain' : 30.0, #30.0,
+                    'curvature_gain' : 10.0, #10.0,
                     'transient_gain' : 2.0,
 
                     'inflation_size' : 3.0,
-                    'collision_check_radius' : 2.2,
-                    'final_path_update_dist' : 170., # 170.0,
+                    'collision_check_radius' : 2.5,
+                    'final_path_update_dist' : 300., # 170.0,
                 }],
                 remappings=[ 
                     ("in_ekf_odometry", "/aw_localization/ekf/odom"),

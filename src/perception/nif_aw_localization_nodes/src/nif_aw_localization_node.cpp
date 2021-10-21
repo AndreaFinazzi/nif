@@ -1065,33 +1065,43 @@ void AWLocalizationNode::measurementUpdatePose(rclcpp::Time measurement_time_,
 
     if (bBOTTOM_GPS && bTOP_GPS) // if TOP AND BOTTOM are started, calculated covariance using difference between two sensors.
     {
-      // if (m_localization_status.localization_status_code ==
-      //         nif_msgs::msg::LocalizationStatus::BEST_STATUS)
-      // {
+      if (m_localization_status.localization_status_code ==
+              nif_msgs::msg::LocalizationStatus::BEST_STATUS ||
+          m_localization_status.localization_status_code ==
+              nif_msgs::msg::LocalizationStatus::SENSOR_FUSION) {
         R(0, 0) = fabs(BestPosBottom.x - BestPosTop.x) + cov_pos_x +
                   std::pow(pose_stddev_x_, 2); 
         R(1, 1) = fabs(BestPosBottom.y - BestPosTop.y) + cov_pos_y +
                   std::pow(pose_stddev_y_, 2); 
         R(2, 2) = m_stdev_azimuth + cov_yaw +
-                  std::pow(pose_stddev_yaw_, 2); 
-      // } else if (m_localization_status.localization_status_code ==
-      //            nif_msgs::msg::LocalizationStatus::ONLY_TOP) {
-      //   R(0, 0) = BestPosTop.lat_noise + cov_pos_x +
-      //             std::pow(pose_stddev_x_, 2); 
-      //   R(1, 1) = BestPosTop.lon_noise + cov_pos_y +
-      //             std::pow(pose_stddev_y_, 2); 
-      //   R(2, 2) = m_stdev_azimuth + cov_yaw +
-      //             std::pow(pose_stddev_yaw_, 2); 
-      // } else if (m_localization_status.localization_status_code ==
-      //            nif_msgs::msg::LocalizationStatus::ONLY_BOTTOM) {
-      //   R(0, 0) = BestPosBottom.lat_noise + cov_pos_x +
-      //             std::pow(pose_stddev_x_, 2); 
-      //   R(1, 1) = BestPosBottom.lon_noise + cov_pos_y +
-      //             std::pow(pose_stddev_y_, 2); 
-      //   R(2, 2) = m_stdev_azimuth + cov_yaw +
-      //             std::pow(pose_stddev_yaw_, 2); 
-      // }
+                  std::pow(pose_stddev_yaw_, 2);
+      } else if (m_localization_status.localization_status_code ==
+                 nif_msgs::msg::LocalizationStatus::ONLY_TOP) {
+        R(0, 0) = BestPosTop.lat_noise + cov_pos_x +
+                  std::pow(pose_stddev_x_, 2); 
+        R(1, 1) = BestPosTop.lon_noise + cov_pos_y +
+                  std::pow(pose_stddev_y_, 2); 
+        R(2, 2) = m_stdev_azimuth + cov_yaw +
+                  std::pow(pose_stddev_yaw_, 2);
+      } else if (m_localization_status.localization_status_code ==
+                 nif_msgs::msg::LocalizationStatus::ONLY_BOTTOM) {
+        R(0, 0) = BestPosBottom.lat_noise + cov_pos_x +
+                  std::pow(pose_stddev_x_, 2); 
+        R(1, 1) = BestPosBottom.lon_noise + cov_pos_y +
+                  std::pow(pose_stddev_y_, 2); 
+        R(2, 2) = m_stdev_azimuth + cov_yaw +
+                  std::pow(pose_stddev_yaw_, 2);
+      }
+      else
+      {
+        R(0, 0) = m_stdev_latitude + cov_pos_x +  std::pow(pose_stddev_x_, 2) ; //+ cov_pos_x; //  pos_x
+        R(1, 1) = m_stdev_longitude + cov_pos_y + std::pow(pose_stddev_y_, 2) ; //+ cov_pos_y +  pos_y
+        R(2, 2) = m_stdev_azimuth + cov_yaw + std::pow(pose_stddev_yaw_, 2); // + cov_yaw; //  yaw
+
+      }
+
     }
+
 
   }
 
