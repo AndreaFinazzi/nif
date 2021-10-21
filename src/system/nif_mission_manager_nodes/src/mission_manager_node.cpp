@@ -33,7 +33,7 @@ MissionManagerNode::MissionManagerNode(
     this->declare_parameter("zones_file_path", "");
 
     this->declare_parameter("mission.avoidance.auto_switch", false);
-    this->declare_parameter("mission.avoidance.lap_count", 0);
+    this->declare_parameter("mission.avoidance.lap_count_min", 0);
     this->declare_parameter("mission.avoidance.previous_track_flag", 1);
     this->declare_parameter("mission.avoidance.lap_distance_min", 0);
     this->declare_parameter("mission.avoidance.lap_distance_max", 0);
@@ -69,7 +69,7 @@ MissionManagerNode::MissionManagerNode(
     auto zones_file_path = this->get_parameter("zones_file_path").as_string();
 
     this->mission_avoidance_auto_switch = this->get_parameter("mission.avoidance.auto_switch").as_bool();
-    this->mission_avoidance_lap_count = this->get_parameter("mission.avoidance.lap_count").as_int();
+    this->mission_avoidance_lap_count_min = this->get_parameter("mission.avoidance.lap_count_min").as_int();
     this->mission_avoidance_previous_track_flag = this->get_parameter("mission.avoidance.previous_track_flag").as_int();
     this->mission_avoidance_lap_distance_min = this->get_parameter("mission.avoidance.lap_distance_min").as_int();
     this->mission_avoidance_lap_distance_max = this->get_parameter("mission.avoidance.lap_distance_max").as_int();    
@@ -327,7 +327,7 @@ MissionManagerNode::RCFlagSummaryCallback(
     if (
         !this->is_system_startup    &&
         this->mission_avoidance_auto_switch && 
-        this->mission_avoidance_lap_count == this->lap_count  &&
+        this->mission_avoidance_lap_count_min <= this->lap_count  &&
         this->mission_avoidance_previous_track_flag == this->rc_flag_summary.track_flag  &&
         this->mission_avoidance_lap_distance_min <= this->lap_distance &&
         this->mission_avoidance_lap_distance_max >= this->lap_distance  )

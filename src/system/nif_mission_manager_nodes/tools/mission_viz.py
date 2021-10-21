@@ -146,8 +146,9 @@ class GraphVisualizer:
 
 if __name__ == "__main__":
 
-    TRACK_NAME = 'lgsvl_sim'
-    TRANSITION_FILE = 'transitions.sim.yaml'
+    TRACK_NAME = 'IMS'
+    TRANSITION_FILE = 'transitions.ims.yaml'
+    ZONES_FILE = 'zones.ims.yaml'
 
     mission_manager_path = get_package_share_directory('nif_mission_manager_nodes')
     waypoint_manager_path = get_package_share_directory('nif_waypoint_manager_nodes')
@@ -162,8 +163,11 @@ if __name__ == "__main__":
     graph = os.path.join(waypoint_manager_path, 'inputs/track_offline_graphs',TRACK_NAME,'stored_graph.pckl')
 
     mission_yaml_file = os.path.join(mission_manager_path, 'config', TRANSITION_FILE)
+    zones_yaml_file = os.path.join(mission_manager_path, 'config', ZONES_FILE)
     with open(mission_yaml_file) as f:
         mission_yaml = yaml.safe_load(f)
+    with open(zones_yaml_file) as f:
+        zones_yaml = yaml.safe_load(f)
 
     for i, mission_code_block in enumerate(mission_yaml.get("missions")):
         if mission_code_block.get("active"):
@@ -188,6 +192,24 @@ if __name__ == "__main__":
                                             box[3] - box[1], # y-wise height
                                             linewidth=1, edgecolor=(r, g, b), fc=(r, g, b, 0.3), label='MISSION BOX: ' + str(mission_code_block.get("mission_code")))
                     ax.add_patch(box)
+
+    for i, zone_block in enumerate(zones_yaml.get("zones")):
+        r = random.random()
+        b = random.random()
+        g = random.random()
+        
+        if zone_block.get("bbox"):
+            box = zone_block.get("bbox")
+            print(box)
+            # Check whether x_min < x_max and y_min < y_max
+            if (box[0] >= box[2] or box[1] >= box[3]):
+                raise ValueError("BBox is malformed! ZONE", zone_block.get("id"))
+            
+            box = patches.Rectangle((box[0], box[1]), # x_min, y_min
+                                    box[2] - box[0], # x-wise width
+                                    box[3] - box[1], # y-wise height
+                                    linewidth=1, edgecolor=(r, g, b), fc=(r, g, b, 0.3), label='ZONE BOX: ' + str(zone_block.get("id")))
+            ax.add_patch(box)
 
 
     print(pit_wpt)

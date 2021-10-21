@@ -67,7 +67,7 @@ private:
   unsigned int lap_distance = 0;
 
   bool mission_avoidance_auto_switch = false;
-  unsigned int mission_avoidance_lap_count = 0;
+  unsigned int mission_avoidance_lap_count_min = 0;
   unsigned int mission_avoidance_previous_track_flag = 0;
   unsigned int mission_avoidance_lap_distance_min = 0;
   unsigned int mission_avoidance_lap_distance_max = 0;
