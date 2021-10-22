@@ -26,6 +26,8 @@
 namespace nif {
 namespace control {
 
+using nif_msgs::msg::MissionStatus;
+
 struct GearState {
     int gear;
     double gearRatio;
@@ -98,6 +100,18 @@ public:
             this->create_subscription<std_msgs::msg::Float32>(
                     "in_perception_steering", nif::common::constants::QOS_CONTROL_CMD,
                     std::bind(&ControlSafetyLayerNode::perceptionSteeringCallback, this,
+                              std::placeholders::_1));                              
+
+    this->wall_distance_inner_sub =
+            this->create_subscription<std_msgs::msg::Float32>(
+                    "in_wall_distance_inner", nif::common::constants::QOS_EGO_ODOMETRY,
+                    std::bind(&ControlSafetyLayerNode::wallDistanceInnerCallback, this,
+                              std::placeholders::_1));                              
+
+    this->wall_distance_outer_sub =
+            this->create_subscription<std_msgs::msg::Float32>(
+                    "in_wall_distance_outer", nif::common::constants::QOS_EGO_ODOMETRY,
+                    std::bind(&ControlSafetyLayerNode::wallDistanceOuterCallback, this,
                               std::placeholders::_1));                              
 
     this->control_pub = this->create_publisher<nif::common::msgs::ControlCmd>(
@@ -177,6 +191,8 @@ public:
 
     this->declare_parameter("desired_acceleration.cmd_max", 20.0);
 
+    this->declare_parameter("wall_distance.min_threshold_m", 1.25);
+
     // Read in misc. parameters
     max_steering_angle_deg =
         this->get_parameter("max_steering_angle_deg").as_double();
@@ -252,6 +268,8 @@ public:
     this->brake_pid_ =
             PID(bp_, bi_, bd_, ts_, biMax_, brakeCmdMax_, brakeCmdMin_);
 
+    this->wall_distance_min_threshold_m = this->get_parameter("wall_distance.min_threshold_m").as_double();
+
     this->control_cmd.accelerator_control_cmd.data = 0.0;
     this->control_cmd.steering_control_cmd.data = 0.0;
     this->control_cmd.braking_control_cmd.data = 0.0;
@@ -282,6 +300,9 @@ private:
   // manual emergency flag. Activated by override.
   bool emergency_manual = false;
 
+  // wall distance emergency flag. Activated in case the distance from the wall is out of the nominal range.
+  bool emergency_wall_distance = false;
+
   // Automatically boot with lat_autonomy_enabled
   bool lat_autonomy_enabled;
   bool long_autonomy_enabled;
@@ -306,14 +327,27 @@ private:
   // Maximum steering speed [deg/sec]
   bool invert_steering;
 
+  // Minimum allowed distance from the wall [m]
+  double wall_distance_min_threshold_m;
+
+
 //OVERRIDE SIIGNALS
   nif::common::msgs::ControlCmd override_control_cmd;
   nif::common::msgs::ControlCmd last_control_cmd;
   nif::common::msgs::ControlCmd control_cmd;
   float perception_steering_cmd = 0.0;
   bool has_perception_steering = false;
-  rclcpp::Time override_last_update;
   rclcpp::Time perception_steering_last_update;
+
+  rclcpp::Time override_last_update;
+
+  float wall_distance_inner = 0.0;
+  bool has_wall_distance_inner = false;
+  rclcpp::Time wall_distance_inner_last_update;
+  
+  float wall_distance_outer = 0.0;
+  bool has_wall_distance_outer = false;
+  rclcpp::Time wall_distance_outer_last_update;
 
   /**
    * Stores control commands coming from the controllers' stack. It's flushed at
@@ -337,6 +371,9 @@ private:
   rclcpp::Subscription<nif::common::msgs::ControlCmd>::SharedPtr control_override_sub;
   
   rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr perception_steering_sub;
+
+  rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr wall_distance_inner_sub;
+  rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr wall_distance_outer_sub;
 
   /**
    * Control publisher. Publishes the effective command to the vehicle interface
@@ -386,6 +423,8 @@ private:
   void controlCallback(const nif::common::msgs::ControlCmd::SharedPtr msg);
   void controlOverrideCallback(const nif::common::msgs::ControlCmd::UniquePtr msg);
   void perceptionSteeringCallback(const std_msgs::msg::Float32::UniquePtr msg);
+  void wallDistanceInnerCallback(const std_msgs::msg::Float32::UniquePtr msg);
+  void wallDistanceOuterCallback(const std_msgs::msg::Float32::UniquePtr msg);
 
   rcl_interfaces::msg::SetParametersResult
   parametersCallback(const std::vector<rclcpp::Parameter> &vector);

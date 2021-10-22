@@ -19,10 +19,19 @@ namespace MissionParser {
 void loadMissionsDescription(const std::string & file_name, MissionsDescription & out) {
     YAML::Node config = YAML::LoadFile(file_name);
 
-    assert(config);
+    ASSERT(config);
     out = config.as<MissionsDescription>();
     
 }
+
+void loadZonesDescription(const std::string & file_name, TrackZonesDescription & out) {
+    YAML::Node config = YAML::LoadFile(file_name);
+
+    ASSERT(config);
+    out = config.as<TrackZonesDescription>();
+    
+}
+
 
 } // namespace MisisonParser
 } // namespace system

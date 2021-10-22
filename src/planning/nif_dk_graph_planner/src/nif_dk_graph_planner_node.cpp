@@ -1088,7 +1088,12 @@ void DKGraphPlannerNode::ToPathMsg() {
   }
   
   if(bCenteredPoints)
-  {
+  {    
+    if(m_FinalPoints->points.empty())
+    {
+      *m_FinalPoints = *finalcloud_before_finalize_ptr;
+      return;
+    }
     // m_stack_dist += sqrt(pow(m_veh_x - m_prev_x, 2) + pow(m_veh_y - m_prev_y, 2));
     FinalizePath(finalcloud_before_finalize_ptr,
                  finalOnBodyPoints,
@@ -1108,10 +1113,7 @@ void DKGraphPlannerNode::ToPathMsg() {
     }
     // m_prev_x = m_veh_x;
     // m_prev_y = m_veh_y;
-  }
-  else if(bCenteredPoints && m_FinalPoints->points.empty())
-  {
-    *m_FinalPoints = *finalcloud_before_finalize_ptr;
+
   }
   else
   {

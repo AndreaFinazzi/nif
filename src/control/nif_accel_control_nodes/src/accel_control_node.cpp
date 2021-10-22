@@ -350,6 +350,11 @@ void AccelControl::calculateBrakeCmd(double des_accel) {
   if (curr_speed < 3.0 && des_accel < 0) {
     brake_cmd_out = this->m_brake_controller_.CurrentControl(-3.0);
   }
+  // - braking during zero desired velocity
+  // -- 46% brake bedal input at -3 m/s2 command
+  if (curr_speed < 0.1 && des_accel <= 0) {
+    brake_cmd_out = this->m_brake_controller_.CurrentControl(-3.0);
+  }
   // - final brake command output
   this->brake_cmd.data = brake_cmd_out;
 }

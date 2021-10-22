@@ -183,17 +183,18 @@ private:
   void run() override {
     nif::common::NodeStatusCode node_status = common::NODE_ERROR;
     auto now = this->now();
-    bool valid_path = has_path &&
+    bool valid_path = has_path && !m_current_path.poses.empty() &&
                       (m_current_path.poses.size() > m_path_min_length_m) &&
                       (now - m_path_update_time < m_path_timeout);
 
     bool valid_odom =
         this->hasEgoOdometry() &&
         now - this->getEgoOdometryUpdateTime() < m_odometry_timeout;
+
     bool valid_tracking_result = false;
 
     // Switching to odometry-based velocity
-    if (m_sub_odom_velocity) {
+    if (m_sub_odom_velocity && this->hasEgoOdometry()) {
       m_current_speed_mps = this->getEgoOdometry().twist.twist.linear.x;
     }
 
@@ -249,7 +250,7 @@ private:
               lpf_curv_array[m_target_idx]; // curvature at target point
           double curv_ratio =
               std::min(abs(kappa_target), m_CURVATURE_MAX) / m_CURVATURE_MAX;
-          double curv_gain = 1.0 - 0.1 * curv_ratio;
+          double curv_gain = 1.0 - 0.05 * curv_ratio;
           desired_velocity_curvature_mps = curv_gain * m_max_vel_mps;
           desired_velocity_mps =
               std::min(desired_velocity_curvature_mps, desired_velocity_mps);
@@ -301,7 +302,7 @@ private:
         // Publish diagnose message (valid odom and path only)
         publishDiagnostic(valid_path, valid_odom, m_max_vel_mps,
                           desired_velocity_curvature_mps,
-                          desired_velocity_dynamics_mps, -1, -1, -1, -1, -1, -1,
+                          desired_velocity_dynamics_mps, -1, -1, -1, -1, -1, -1,  
                           -1, -1);
       }
     } else {
@@ -328,12 +329,12 @@ private:
     RCLCPP_DEBUG(this->get_logger(), "Smoothing with dt: [s] %f",
                  period_double_s);
     // - mission specific step limiter
-    auto mission_code = this->getSystemStatus().mission_status;
+    auto mission_code = this->hasSystemStatus() ? this->getSystemStatus().mission_status.mission_status_code : MissionStatus::MISSION_COMMANDED_STOP;
 
-    if (mission_code.mission_status_code == mission_code.MISSION_RACE ||
-        mission_code.mission_status_code ==
-            mission_code.MISSION_COLLISION_AVOIDNACE ||
-        mission_code.mission_status_code == mission_code.MISSION_TEST) {
+    if (mission_code == MissionStatus::MISSION_RACE ||
+        mission_code ==
+            MissionStatus::MISSION_COLLISION_AVOIDNACE ||
+        mission_code == MissionStatus::MISSION_TEST) {
       desired_velocity_mps =
           smoothSignal(desired_velocity_prev_mps, desired_velocity_mps,
                        m_max_ddes_vel_dt_green_flag, period_double_s);

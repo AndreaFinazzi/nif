@@ -322,9 +322,12 @@ void AWLocalizationNode::timerCallback()
       m_localization_status.bottom_error = bottomError;
 
       if (bottomError < 5.0 && bottom_yaw_error < 0.1 &&
-          BestPosBottom.novatel_ins_status ==
+          (BestPosBottom.novatel_ins_status ==
               novatel_oem7_msgs::msg::InertialSolutionStatus::
-                  INS_SOLUTION_GOOD) {
+                  INS_SOLUTION_GOOD || 
+           BestPosBottom.novatel_ins_status ==
+              novatel_oem7_msgs::msg::InertialSolutionStatus::
+                  INS_ALIGNMENT_COMPLETE)) {
         bInitConverged = true;
       }
 
@@ -373,9 +376,12 @@ void AWLocalizationNode::timerCallback()
       // RCLCPP_INFO(this->get_logger(), "yaw error = %f", top_yaw_error);
 
       if (topError < 5.0 && top_yaw_error < 0.1 &&
-          BestPosTop.novatel_ins_status ==
+          (BestPosTop.novatel_ins_status ==
               novatel_oem7_msgs::msg::InertialSolutionStatus::
-                  INS_SOLUTION_GOOD) {
+                  INS_SOLUTION_GOOD ||
+           BestPosTop.novatel_ins_status ==
+              novatel_oem7_msgs::msg::InertialSolutionStatus::
+                  INS_ALIGNMENT_COMPLETE)) {
         bInitConverged = true;
       }
 
@@ -1296,8 +1302,11 @@ bool AWLocalizationNode::CalculateBestCorrection(
     bottom_yaw_error = bottom_yaw_error - 2*M_PI;
 
   if ((bottomError < 5.0 || topError < 5.0) && bottom_yaw_error < 0.1 &&
-      BestPosBottom.novatel_ins_status ==
-          novatel_oem7_msgs::msg::InertialSolutionStatus::INS_SOLUTION_GOOD) {
+      (BestPosBottom.novatel_ins_status ==
+          novatel_oem7_msgs::msg::InertialSolutionStatus::INS_SOLUTION_GOOD ||
+       BestPosBottom.novatel_ins_status ==
+              novatel_oem7_msgs::msg::InertialSolutionStatus::
+                  INS_ALIGNMENT_COMPLETE)) {
     bInitConverged = true;
   }
   // std::cout << "------------" << std::endl;

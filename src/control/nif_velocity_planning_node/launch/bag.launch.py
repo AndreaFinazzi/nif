@@ -21,7 +21,7 @@ def generate_launch_description():
             ('out_desired_velocity', 'velocity_planner/des_vel_test'),
             ('/velocity_planner/diagnostic', '/velocity_planner/diagnostic_test'),
             # ('in_reference_path', 'planning/graph/path_global'),
-            ('in_reference_path', 'planning/path_global'),
+            ('in_reference_path', 'planning/path_global_test'),
             ('in_ego_odometry', '/aw_localization/ekf/odom'),
             ('in_wheel_speed_report', 'raptor_dbw_interface/wheel_speed_report'),
             ('in_imu_data', 'novatel_bottom/imu/data'),

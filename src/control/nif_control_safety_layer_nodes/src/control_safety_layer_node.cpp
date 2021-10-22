@@ -45,6 +45,20 @@ void nif::control::ControlSafetyLayerNode::perceptionSteeringCallback(
     this->perception_steering_last_update = this->now();
 }
 
+void nif::control::ControlSafetyLayerNode::wallDistanceInnerCallback(
+        const std_msgs::msg::Float32::UniquePtr msg) {
+    this->has_wall_distance_inner = true;
+    this->wall_distance_inner = msg->data;
+    this->wall_distance_inner_last_update = this->now();
+}
+
+void nif::control::ControlSafetyLayerNode::wallDistanceOuterCallback(
+        const std_msgs::msg::Float32::UniquePtr msg) {
+    this->has_wall_distance_outer = true;
+    this->wall_distance_outer = msg->data;
+    this->wall_distance_outer_last_update = this->now();
+}
+
 void nif::control::ControlSafetyLayerNode::run() {
     // send diagnostic hb to vehicle interface
     auto joy_hb = std_msgs::msg::Int32();
@@ -62,11 +76,23 @@ void nif::control::ControlSafetyLayerNode::run() {
     
     nif::common::NodeStatusCode node_status = common::NODE_ERROR;
 
+    if (this->wall_distance_outer > 0.0 &&
+        this->wall_distance_outer < this->wall_distance_min_threshold_m &&
+        (this->missionIs(MissionStatus::MISSION_RACE) || 
+         this->missionIs(MissionStatus::MISSION_SLOW_DRIVE) || 
+         this->missionIs(MissionStatus::MISSION_COMMANDED_STOP)))
+        {
+            this->emergency_wall_distance = true;
+        } else
+        {
+            this->emergency_wall_distance = false;
+        }
+
     if (    this->emergency_lane_enabled ||
             this->emergency_buffer_empty ||
             this->emergency_manual       ||
             !this->hasSystemStatus())
-    {   
+    {
         // STOP THE CAR ASAP, IN A SAFE MANNER (set_speed_mps=0.0, brake_cmd based on PID, accel_cmd=0)
         
         double velocity_error = emergencyVelocityError();
@@ -95,6 +121,13 @@ void nif::control::ControlSafetyLayerNode::run() {
             this->control_cmd.steering_control_cmd =
                     this->override_control_cmd.steering_control_cmd;
             is_overriding_steering = true;
+
+        } else if ( this->emergency_wall_distance &&
+                    this->has_perception_steering && 
+                    this->now() - this->perception_steering_last_update < rclcpp::Duration(1, 0) ) {
+            // Too close to the wall, use perception-based lateral control
+            this->control_cmd.steering_control_cmd.data =
+                this->perception_steering_cmd;
 
         } else if ( !this->emergency_buffer_empty   &&
                     !is_buffer_empty                &&
@@ -155,7 +188,18 @@ void nif::control::ControlSafetyLayerNode::run() {
                     this->buffer_empty_counter = 0;
 
                     if (!is_overriding_steering)
+                    {
+
                         this->control_cmd.steering_control_cmd = top_control_cmd.steering_control_cmd;
+                        
+                        if (    this->emergency_wall_distance &&
+                                this->has_perception_steering && 
+                                this->now() - this->perception_steering_last_update < rclcpp::Duration(1, 0) ) {
+                                // Too close to the wall, use perception-based lateral control
+                                this->control_cmd.steering_control_cmd.data =
+                                    this->perception_steering_cmd;
+                        }
+                    }
 
                     if (long_autonomy_enabled) {
                         this->control_cmd.desired_accel_cmd = top_control_cmd.desired_accel_cmd;
