@@ -194,7 +194,7 @@ void FakeObsNode::timer_callback() {
     if (bOdometry){
       TransformPointsToBody(m_FakeObsPoints, fakeCenerPoints, m_veh_x, m_veh_y,
                             m_veh_yaw);
-      createGaussianWorld(fakeCenerPoints, 3.0, 3.0, fakeInflatedPoints);
+      createGaussianWorld(fakeCenerPoints, 7.0, 3.0, fakeInflatedPoints);
 
       sensor_msgs::msg::PointCloud2 FakeCenterCloudMsg;
       pcl::toROSMsg(*fakeCenerPoints, FakeCenterCloudMsg);

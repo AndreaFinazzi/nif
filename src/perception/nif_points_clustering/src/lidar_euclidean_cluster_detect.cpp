@@ -134,7 +134,7 @@ void PointsClustering::timer_callback() {
     centerPoints->points.push_back(point_buf);
   }
 
-  createGaussianWorld(clustered_array, 3.0, 3.0, inflationedPoints);
+  createGaussianWorld(clustered_array, 7.0, 3.0, inflationedPoints);
 
   sensor_msgs::msg::PointCloud2 cloud_clustered_msg;
   pcl::toROSMsg(*registeredPoints, cloud_clustered_msg);
