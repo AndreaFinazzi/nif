@@ -8,23 +8,24 @@ windows:
       # - cd /home/usrg/media/ssd/VEH4_LOR_RUN-03.b_2021-10-14/ 
       # - cd /home/usrg/media/ssd/VEH4_LOR_RUN-01_2021-10-14/ 
       # - cd /home/usrg/media/NVME_1_COPY/VEH4_IMS_RUN-0_2021-10-10/
-      # - cd /home/usrg/media/NVME_1_COPY/VEH4_IMS_RUN-0_2021-10-18/
-      - cd /home/usrg/media/ssd/2021.10.18_IMS/VEH4_IMS_RUN-1018_2021-10-18
-
-
+      # - cd /home/usrg/media/NVME_1_COPY/VEH4_IMS_RUN-0_2021-10-18
+      # - cd /home/usrg/media/ssd/2021.10.18_IMS/VEH4_IMS_RUN-1018_2021-10-18
+      - cd /home/usrg/media/ssd/2021.10.21_IMS/VEH4_IMS_RUN-02_2021-10-21
 
     panes:
     - shell_command:
-        # - ros2 bag play autonomy_2021-10-14_15-54-47/ --remap /graph_planner/cost:=/origin/graph_planner/cost /graph_planner/final_path:=/origin/graph_planner/final_path /graph_planner/final_path_points:=/origin/graph_planner/final_path_points /graph_planner/wall_inflated:=/origin/graph_planner/wall_inflated
+      # - ros2 bag play autonomy_2021-10-14_15-54-47/ --remap /graph_planner/cost:=/origin/graph_planner/cost /graph_planner/final_path:=/origin/graph_planner/final_path /graph_planner/final_path_points:=/origin/graph_planner/final_path_points /graph_planner/wall_inflated:=/origin/graph_planner/wall_inflated
       # - ros2 bag play autonomy_2021-10-14_10-16-00/ --remap /graph_planner/cost:=/origin/graph_planner/cost /graph_planner/final_path:=/origin/graph_planner/final_path /graph_planner/final_path_points:=/origin/graph_planner/final_path_points /graph_planner/wall_inflated:=/origin/graph_planner/wall_inflated --topics /aw_localization/ekf/odom /graph_planner/final_path_points
       # - ros2 bag play autonomy_2021-10-10_10-35-17/ --topics /aw_localization/ekf/odom --read-ahead-queue-size 10000
       # - ros2 bag play autonomy_2021-10-18_08-11-37/ --topics /aw_localization/ekf/odom /inflated_points /cluster_center_points--read-ahead-queue-size 10000
       # - ros2 bag play autonomy_2021-10-18_14-02-36/ --topics /aw_localization/ekf/odom /inflated_points /cluster_center_points--read-ahead-queue-size 10000 -r 5
+      # - ros2 bag play autonomy_2021-10-21_15-38-00/ --topics /aw_localization/ekf/odom --read-ahead-queue-size 10000 
+      - ros2 bag play autonomy_2021-10-21_15-38-00/ --read-ahead-queue-size 10000 
 
     - shell_command:
         # - ros2 bag play sensors_2021-10-14_10-16-00/ --topics  /luminar_front_points  --read-ahead-queue-size 10000 -r 3
-      # - ros2 bag play sensors_2021-10-18_08-11-37/ --topics /luminar_front_points--read-ahead-queue-size 10000
-      - ros2 bag play sensors_2021-10-18_14-02-36/ --topics /luminar_front_points /luminar_right_points /luminar_left_points /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /raptor_dbw_interface/wheel_speed_report  /novatel_bottom/insstdev --read-ahead-queue-size 10000 
+      # - ros2 bag play sensors_2021-10-18_08-11-37 --topics /luminar_front_points --read-ahead-queue-size 10000
+      # - ros2 bag play sensors_2021-10-18_14-02-36/ --topics /luminar_front_points /luminar_right_points /luminar_left_points /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /raptor_dbw_interface/wheel_speed_report  /novatel_bottom/insstdev --read-ahead-queue-size 10000 
 
     - shell_command:
       # - ros2 launch av21_description deploy.launch.py
@@ -38,16 +39,16 @@ windows:
       - echo $TRACK
     panes:
       - shell_command:
-          - ros2 launch nif_points_clustering deploy.launch.py
+          # - ros2 launch nif_points_clustering deploy.launch.py
       - shell_command:
-          - ros2 launch nif_points_preprocessor_nodes deploy.launch.py
+          # - ros2 launch nif_points_preprocessor_nodes deploy.launch.py
       - shell_command:
-          - ros2 launch nif_dk_graph_planner deploy.launch.py
+          # - ros2 launch nif_dk_graph_planner deploy.launch.py
       - shell_command:
           - rviz2
       - shell_command:
           # - ros2 launch nif_dk_fake_obstacle_node deploy.launch.py
-          - ros2 launch nif_localization_nodes test.launch.py
+          # - ros2 launch nif_localization_nodes test.launch.py
       - shell_command:
-          - ros2 launch nif_aw_localization_nodes deploy.launch.py
+          # - ros2 launch nif_aw_localization_nodes deploy.launch.py
       - shell_command:
