@@ -333,7 +333,8 @@ MissionManagerNode::RCFlagSummaryCallback(
     if (
         !this->is_system_startup    &&
         this->mission_avoidance_auto_switch && 
-        this->mission_avoidance_lap_count_min <= this->lap_count  &&
+        this->track_zones_hit_count_map.find(5) != this->track_zones_hit_count_map.end() &&
+        this->track_zones_hit_count_map[5] >= this->mission_avoidance_lap_count_min  &&
         this->mission_avoidance_previous_track_flag == this->rc_flag_summary.track_flag  &&
         this->mission_avoidance_lap_distance_min <= this->lap_distance &&
         this->mission_avoidance_lap_distance_max >= this->lap_distance  )

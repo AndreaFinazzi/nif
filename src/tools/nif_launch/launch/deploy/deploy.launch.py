@@ -207,7 +207,7 @@ def generate_launch_description():
             ('in_control_error', 'control_joint_lqr/lqr_error')
         ],
         parameters=[{
-            'lateral_tire_model_factor' : 0.7,
+            'lateral_tire_model_factor' : 0.8,
         }]
     )
 
@@ -263,6 +263,7 @@ def generate_launch_description():
         parameters=[{
             'engine_based_throttle_enabled' : True, 
             'gear.track': gear_track,
+            'lateral_error_deadband_m': 1.0,
         }]
     )
 

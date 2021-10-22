@@ -46,15 +46,15 @@ def generate_launch_description():
         raise RuntimeError("ERROR: invalid track provided: {}".format(track))
 
     fake_obstacle_path = os.path.join(
-                    get_package_share_directory("nif_dk_fake_obstacle_node"),
+                    get_package_share_directory("nif_dk_fake_obstacle"),
                     "map", directory,
                     'fake_obstacle.osm'
     )  
 
 
     dk_fake_obs_node =  Node(
-                package="nif_dk_fake_obstacle_node",
-                executable="nif_dk_fake_obstacle_node_exe",
+                package="nif_dk_fake_obstacle",
+                executable="nif_dk_fake_obstacle_exe",
                 output={
                     "stderr": "screen",
                     "stdout": "screen"

@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="3">
-  <name>nif_dk_fake_obstacle_node</name>
+  <name>nif_dk_fake_obstacle</name>
   <version>0.0.0</version>
-  <description>The nif_dk_fake_obstacle_node package</description>
+  <description>The nif_dk_fake_obstacle package</description>
   <maintainer email="lee.dk@kaist.ac.kr">DaegyuLee</maintainer>
 
   <license>BSD</license>
