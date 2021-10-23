@@ -77,7 +77,7 @@ def generate_launch_description():
 
             # Mission avoidance auto switch
             "mission.avoidance.auto_switch": True,
-            "mission.avoidance.lap_count_min": 2,
+            "mission.avoidance.lap_count_min": 4,
             "mission.avoidance.previous_track_flag": 1,
             "mission.avoidance.lap_distance_min": 0,
             "mission.avoidance.lap_distance_max": 0,

@@ -65,16 +65,12 @@ def generate_launch_description():
             
             "missions_file_path": mm_missions_default_file,
             "velocity.zero": 0.0,
-            "velocity.max": 67.0,
-            "velocity.avoidance": 20.0,
-            "velocity.warmup": 20.0,
-            "velocity.pit_in": 25.0,
-            "velocity.pit_out": 25.0,
+            "velocity.max": 45.0,
+            "velocity.avoidance": 30.0,
+            "velocity.warmup": 25.0,
+            "velocity.pit_in": 10.0,
+            "velocity.pit_out": 10.0,
             "velocity.slow_drive": 25.0,
-            "safeloc.threshold_stop": 40.0,
-            "safeloc.threshold_slow_down": 20.0,
-            "safeloc.velocity_slow_down_max": 22.2,
-            "safeloc.velocity_slow_down_min": 8.0,
 
             # Mission avoidance auto switch
             "mission.avoidance.auto_switch": True,

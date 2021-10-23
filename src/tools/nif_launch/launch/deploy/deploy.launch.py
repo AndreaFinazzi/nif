@@ -207,6 +207,7 @@ def generate_launch_description():
             ('in_control_error', 'control_joint_lqr/lqr_error')
         ],
         parameters=[{
+            'max_ddes_vel_dt_default'   : 3.0,
             'lateral_tire_model_factor' : 0.8,
         }]
     )
