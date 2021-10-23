@@ -263,7 +263,7 @@ void AccelControl::initializeGears(const std::string &track_id) {
         {2, std::make_shared<control::GearState>(2, 1.875, 11, 22)},
         {3, std::make_shared<control::GearState>(3, 1.38, 19.5, 30)},
         {4, std::make_shared<control::GearState>(4, 1.5, 27.5, 37.5)},
-        {5, std::make_shared<control::GearState>(5, 0.96, 35, 44)},
+        {5, std::make_shared<control::GearState>(5, 0.96, 35, 50)},
         {6, std::make_shared<control::GearState>(6, 0.889, 41.5, 255)}};
   } else {
     RCLCPP_ERROR(this->get_logger(),
