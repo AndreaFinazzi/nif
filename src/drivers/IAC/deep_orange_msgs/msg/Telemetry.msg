@@ -1,0 +1,25 @@
+builtin_interfaces/Time stamp
+uint8 sys_state
+uint8 ct_state
+float32 battery_voltage
+bool mode_switch_state
+float32 fuel_pressure
+float32 engine_oil_pressure
+float32 engine_oil_temperature
+float32 engine_coolant_temperature
+float32 engine_coolant_pressure
+float32 engine_rpm
+int8 current_gear
+float32 vehicle_speed_kmph
+float32 vehicle_speed_ms
+float32 lookahead_error
+float32 lateral_error
+float32 latitude
+float32 longitude
+float32 lat_std
+float32 long_std
+float32 current_yaw
+int32 rc_flag
+int32 veh_flag
+
+

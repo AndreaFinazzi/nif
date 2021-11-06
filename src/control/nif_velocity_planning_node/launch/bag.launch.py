@@ -18,21 +18,22 @@ def generate_launch_description():
         executable='nif_velocity_planning_node_exe',
         output='screen',
         remappings=[
-            ('out_desired_velocity', 'velocity_planner/des_vel/test'),
-            ('/velocity_planner/diagnostic', '/velocity_planner/diagnostic/test'),
+            ('out_desired_velocity', 'velocity_planner/des_vel_test'),
+            ('/velocity_planner/diagnostic', '/velocity_planner/diagnostic_test'),
             # ('in_reference_path', 'planning/graph/path_global'),
-            ('in_reference_path', 'planning/path_global'),
+            ('in_reference_path', 'planning/path_global_test'),
             ('in_ego_odometry', '/aw_localization/ekf/odom'),
             ('in_wheel_speed_report', 'raptor_dbw_interface/wheel_speed_report'),
             ('in_imu_data', 'novatel_bottom/imu/data'),
             ('in_steering_report', 'raptor_dbw_interface/steering_report'),
-            ('in_control_error', 'control_joint_lqr/lqr_error')
+            ('in_control_error', 'control_joint_lqr/lqr_error_test'),
+            ('/control_joint_lqr/track_idx', '/control_joint_lqr/track_idx_test'),
         ],
         parameters=[{
                 'odometry_timeout_sec' : 0.5,
                 'path_timeout_sec' : 1.0,
                 'use_mission_max_vel': True,
-                'lateral_tire_model_factor' : 0.6,
+                'lateral_tire_model_factor' : 0.8,
             }]
     )
     return LaunchDescription([

@@ -20,6 +20,7 @@ MissionManagerNode::MissionManagerNode(
     this->declare_parameter("velocity.zero", 0.0);
     this->declare_parameter("velocity.max", 37.0);
     this->declare_parameter("velocity.avoidance", 20.0);
+    this->declare_parameter("velocity.warmup", 20.0);
     this->declare_parameter("velocity.pit_in", 8.0);
     this->declare_parameter("velocity.pit_out", 8.0);
     this->declare_parameter("velocity.slow_drive", 8.0);
@@ -29,13 +30,15 @@ MissionManagerNode::MissionManagerNode(
     this->declare_parameter("safeloc.velocity_slow_down_min", 8.0);
 
     this->declare_parameter("missions_file_path", "");
+    this->declare_parameter("zones_file_path", "");
 
     this->declare_parameter("mission.avoidance.auto_switch", false);
-    this->declare_parameter("mission.avoidance.lap_count", 0);
+    this->declare_parameter("mission.avoidance.lap_count_min", 0);
     this->declare_parameter("mission.avoidance.previous_track_flag", 1);
     this->declare_parameter("mission.avoidance.lap_distance_min", 0);
     this->declare_parameter("mission.avoidance.lap_distance_max", 0);
 
+    this->declare_parameter("mission.warmup.auto_switch", false);
 
     long int timeout_rc_flag_summary_s = this->get_parameter("timeout_rc_flag_summary_s").as_int();
     long int timeout_velocity_ms = this->get_parameter("timeout_velocity_ms").as_int();
@@ -53,6 +56,7 @@ MissionManagerNode::MissionManagerNode(
     this->velocity_zero = this->get_parameter("velocity.zero").as_double();
     this->velocity_max = this->get_parameter("velocity.max").as_double();
     this->velocity_avoidance = this->get_parameter("velocity.avoidance").as_double();
+    this->velocity_warmup = this->get_parameter("velocity.warmup").as_double();
     this->velocity_pit_in = this->get_parameter("velocity.pit_in").as_double();
     this->velocity_pit_out = this->get_parameter("velocity.pit_out").as_double();
     this->velocity_slow_drive = this->get_parameter("velocity.slow_drive").as_double();
@@ -62,12 +66,15 @@ MissionManagerNode::MissionManagerNode(
     this->safeloc_velocity_slow_down_min = this->get_parameter("safeloc.velocity_slow_down_min").as_double();
 
     auto missions_file_path = this->get_parameter("missions_file_path").as_string();
+    auto zones_file_path = this->get_parameter("zones_file_path").as_string();
 
     this->mission_avoidance_auto_switch = this->get_parameter("mission.avoidance.auto_switch").as_bool();
-    this->mission_avoidance_lap_count = this->get_parameter("mission.avoidance.lap_count").as_int();
+    this->mission_avoidance_lap_count_min = this->get_parameter("mission.avoidance.lap_count_min").as_int();
     this->mission_avoidance_previous_track_flag = this->get_parameter("mission.avoidance.previous_track_flag").as_int();
     this->mission_avoidance_lap_distance_min = this->get_parameter("mission.avoidance.lap_distance_min").as_int();
     this->mission_avoidance_lap_distance_max = this->get_parameter("mission.avoidance.lap_distance_max").as_int();    
+
+    this->mission_warmup_auto_switch = this->get_parameter("mission.warmup.auto_switch").as_bool();
 
     if (!nif::common::msgs::isTrackFlagInRange(this->mission_avoidance_previous_track_flag))
     {
@@ -117,9 +124,20 @@ MissionManagerNode::MissionManagerNode(
                     this,
                     std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 
+    this->warmup_service = this->create_service<std_srvs::srv::Trigger>(
+            "/mission_manager/warmup",
+            std::bind(
+                    &MissionManagerNode::warmupServiceHandler,
+                    this,
+                    std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+
 
     MissionParser::loadMissionsDescription(missions_file_path, this->missions_description);
+    MissionParser::loadZonesDescription(zones_file_path, this->zones_description);
     
+    if (this->mission_warmup_auto_switch)
+        this->is_warmup_enabled = true;
+
     this->setNodeStatus(common::NodeStatusCode::NODE_INITIALIZED);
 }
 
@@ -283,6 +301,8 @@ MissionStatus::_mission_status_code_type MissionManagerNode::getMissionVehFlagNu
                 return MissionStatus::MISSION_PIT_STANDBY;
             } else {
                 // TODO If on track, RACE should be set and maintained.
+                if (this->is_warmup_enabled)
+                    return MissionStatus::MISSION_TIRE_WARMUP;
                 if (this->is_avoidance_enabled)
                     return MissionStatus::MISSION_COLLISION_AVOIDNACE;
                 return MissionStatus::MISSION_RACE;
@@ -303,16 +323,31 @@ MissionManagerNode::RCFlagSummaryCallback(
     this->lap_count = msg->lap_count;
     this->lap_distance = msg->lap_distance;
 
+    this->mission_status_msg.track_flag = msg->track_flag;
+    this->mission_status_msg.veh_flag = msg->veh_flag;
+
+    this->mission_status_msg.lap_count = msg->lap_count;
+    this->mission_status_msg.lap_distance = msg->lap_distance;
+
     // Auto transition to collision avoidance mode
     if (
         !this->is_system_startup    &&
         this->mission_avoidance_auto_switch && 
-        this->mission_avoidance_lap_count == this->lap_count  &&
+        this->track_zones_hit_count_map.find(5) != this->track_zones_hit_count_map.end() &&
+        this->track_zones_hit_count_map[5] >= this->mission_avoidance_lap_count_min  &&
         this->mission_avoidance_previous_track_flag == this->rc_flag_summary.track_flag  &&
-        this->mission_avoidance_lap_distance_min <= this->lap_distance &&     
+        this->mission_avoidance_lap_distance_min <= this->lap_distance &&
         this->mission_avoidance_lap_distance_max >= this->lap_distance  )
     {
         this->is_avoidance_enabled = true;
+    }
+
+    if (
+        this->mission_warmup_auto_switch && 
+        this->track_zones_hit_count_map.find(5) != this->track_zones_hit_count_map.end() &&
+        this->track_zones_hit_count_map[5] >= 2 )
+    {
+        this->is_warmup_enabled = false;
     }
 
     this->rc_flag_summary = std::move(*msg);
@@ -376,6 +411,14 @@ MissionManagerNode::parametersCallback(
                     result.successful = true;
                 }
             }
+        } else if (param.get_name() == "velocity.warmup") {
+            if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
+                if (param.as_double() >= 0.0 && param.as_double() <= 40.0) // TODO implement switching policy, if needed
+                {
+                    this->velocity_warmup = param.as_double();
+                    result.successful = true;
+                }
+            }
         }
     }
 
@@ -414,6 +457,10 @@ double nif::system::MissionManagerNode::getMissionMaxVelocityMps(
             max_vel_mps = this->velocity_pit_out;
             break;
 
+        case MissionStatus::MISSION_PIT_TO_TRACK:
+            max_vel_mps = this->velocity_pit_out;
+            break;
+
         case MissionStatus::MISSION_RACE:
             // Race at max speed, if localization is good enough. 
             max_vel_mps = this->velocity_max;
@@ -427,7 +474,10 @@ double nif::system::MissionManagerNode::getMissionMaxVelocityMps(
             max_vel_mps = this->velocity_avoidance;
             break;
             
-        
+        case MissionStatus::MISSION_TIRE_WARMUP:
+            max_vel_mps = this->velocity_warmup;
+            break;
+            
         default:
             max_vel_mps = this->velocity_zero;
             break;
@@ -497,3 +547,39 @@ void MissionManagerNode::recoveryServiceHandler(
             response->message.append(this->is_avoidance_enabled ? "true" : "false");
             response->success = true;
           }
+
+void MissionManagerNode::warmupServiceHandler(
+          const std::shared_ptr<rmw_request_id_t> request_header,
+          const std_srvs::srv::Trigger::Request::SharedPtr request,
+          std_srvs::srv::Trigger::Response::SharedPtr response)
+          {
+            this->is_warmup_enabled = !this->is_warmup_enabled;
+            response->message = "is_warmup_enabled set to ";
+            response->message.append(this->is_warmup_enabled ? "true" : "false");
+            response->success = true;
+          }
+
+void MissionManagerNode::afterEgoOdometryCallback() {
+  // Update the current zone and increase hit count if it's a zone transition.
+  for (auto &&zone_pair : this->zones_description)
+  {
+    if (zone_pair.second.isValid(
+          this->mission_status_msg.mission_status_code, 
+          this->mission_status_msg.mission_status_code, 
+          this->getEgoOdometry(), 
+          this->current_velocity_mps))
+    {
+        if (this->current_track_zone_id != zone_pair.second.id)
+        {
+            if (this->track_zones_hit_count_map.find(zone_pair.second.id) == this->track_zones_hit_count_map.end()) {
+                this->track_zones_hit_count_map.insert(std::make_pair(zone_pair.second.id, 1));
+            }
+            else
+            {
+                this->track_zones_hit_count_map[zone_pair.second.id]++;
+            }
+        }
+        this->current_track_zone_id = zone_pair.second.id;
+    }
+  }
+}

@@ -69,9 +69,9 @@ def generate_launch_description():
         package='nif_waypoint_manager_nodes',
         executable='nif_waypoint_manager_nodes_exe',
         output='screen',
-        parameters=[
-            LaunchConfiguration('nif_waypoint_manager_param_file')
-        ],
+        # parameters=[
+        #     LaunchConfiguration('nif_waypoint_manager_param_file')
+        # ],
         remappings=[
             # ('topic_ego_odometry', '/bvs_localization/ltp_odom'),
             ('topic_ego_odometry', '/aw_localization/ekf/odom'),
@@ -82,6 +82,6 @@ def generate_launch_description():
 
     return LaunchDescription([
         nif_base_launch,
-        param_file_argument,
+        # param_file_argument,
         waypoint_manager_node
     ])

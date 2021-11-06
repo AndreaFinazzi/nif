@@ -11,7 +11,15 @@ windows:
       # - cd /home/usrg/media/T7_Touch/IAC/rosbag/2021.10.06_LOR/VEH4_LOR_RUN-01_2021-10-06
       # - cd /home/usrg/media/T7_Touch/IAC/rosbag/2021.10.06_LOR/VEH4_LOR_RUN-02_2021-10-06
       # - cd /home/usrg/media/T7/iac/VEH4_IMS_RUN-01_2021-10-09
-      - cd /home/usrg/media/T7_Touch/IAC/rosbag/2021.10.10_IMS/VEH4_IMS_RUN-0_2021-10-10
+      # - cd /home/usrg/media/T7_Touch/IAC/rosbag/2021.10.10_IMS/VEH4_IMS_RUN-0_2021-10-10
+      # - cd /home/usrg/media/T7_Touch/IAC/rosbag/2021.10.12_LOR/VEH4_LOR_RUN-nochase.dk.narrow_2021-10-12
+      # - cd /home/usrg/media/T7_Touch/IAC/rosbag/2021.10.12_LOR/VEH4_LOR_RUN-nochase_2021-10-12
+      # - cd /home/usrg/media/T7_Touch/IAC/rosbag/2021.10.14_LOR/VEH4_LOR_RUN-01_2021-10-14
+      # - cd /home/usrg/media/T7_Touch/IAC/rosbag/2021.10.14_LOR/VEH4_LOR_RUN-02_2021-10-14
+      # - cd /home/usrg/media/T7_Touch/IAC/rosbag/2021.10.18_IMS/VEH4_IMS_RUN-1018_2021-10-18
+      # - cd /home/usrg/media/ssd/2021.10.18_IMS/VEH4_IMS_RUN-1018_2021-10-18
+      - cd /home/usrg/media/ssd/2021.10.21_IMS/VEH4_IMS_RUN-02_2021-10-21
+      
     panes:
     - shell_command:
         # - ros2 bag play sensors_2021-09-03_10-59-19/ --topics /merged/lidar /novatel_bottom/bestpos /novatel_bottom/inspva /novatel_bottom/bestvel /novatel_bottom/imu/data /raptor_dbw_interface/wheel_speed_report /novatel_top/bestpos /novatel_top/inspva /novatel_top/bestvel /novatel_top/imu/data /novatel_bottom/insstdev
@@ -39,7 +47,14 @@ windows:
       # - ros2 bag play autonomy_2021-10-06_11-15-52/ --read-ahead-queue-size 10000 # 2021.10.06_LOR nif data
       # - ./multidb3 # 2021.10.06_LOR nif data last
       # - ./multidb3 # 2021.10.06_LOR nif data last
-      - ros2 bag play autonomy_2021-10-10_10-35-17/ --read-ahead-queue-size 10000 -l # 2021.10.06_LOR nif data
+      # - ros2 bag play autonomy_2021-10-10_10-35-17/ --read-ahead-queue-size 10000 -r 1  # 2021.10.10 IMS
+      # - ros2 bag play autonomy_2021-10-12_13-59-52/ --read-ahead-queue-size 10000 -r 5  # 2021.10.12
+      # - ros2 bag play autonomy_2021-10-12_10-28-45/ --read-ahead-queue-size 10000 -r 2  # 2021.10.12
+      # - ros2 bag play autonomy_2021-10-14_10-16-00/ --read-ahead-queue-size 10000 -r 1  # 2021.10.12
+      # - ros2 bag play autonomy_2021-10-14_11-16-49/ --read-ahead-queue-size 10000 -r 1 -l # 2021.10.12
+      # - ros2 bag play autonomy_2021-10-18_14-02-36/ --read-ahead-queue-size 10000 -r 1 -l # 2021.10.18
+      # - ros2 bag play autonomy_2021-10-18_14-02-36/ --read-ahead-queue-size 10000 -r 1 -l # 2021.10.18
+      - ros2 bag play autonomy_2021-10-21_15-38-00/ --read-ahead-queue-size 10000 -r 1 -l # 2021.10.18
 
     - shell_command:
       - ros2 run plotjuggler plotjuggler -l /home/usrg/nif/operations/config/plotjuggler_config_control_hk.xml
@@ -85,13 +100,13 @@ windows:
       - shell_command:
           - ros2 launch nif_launch base_hk.launch.py
       - shell_command:
+          - ros2 launch nif_waypoint_manager_nodes deploy_hk.launch.py
+      - shell_command:
           - ros2 launch nif_velocity_planning_node bag.launch.py
       - shell_command:
           - ros2 launch nif_control_joint_lqr_nodes bag.launch.py
       - shell_command:
           - ros2 launch nif_accel_control_nodes bag.launch.py
-      - shell_command:
-          # - ros2 topic echo /velocity_planner/des_vel
       - shell_command:
           # - ros2 topic echo /velocity_planner/diagnostic
           

@@ -51,7 +51,7 @@ def generate_launch_description():
     )
 
     dbc_file_path = get_share_file(
-        package_name='raptor_dbw_can', file_name='launch/CAN1_INDY_V4.dbc'
+        package_name='raptor_dbw_can', file_name='launch/CAN1_INDY_V6.dbc'
     )
 
     ssc_interface_param = DeclareLaunchArgument(
@@ -125,7 +125,10 @@ def generate_launch_description():
         output='screen',
         namespace='raptor_dbw_interface',
         parameters=[
-            {'dbw_dbc_file': dbc_file_path}
+            {
+                'dbw_dbc_file': dbc_file_path,
+                'veh_number': 4
+            }
         ],
         remappings=[
             ('/raptor_dbw_interface/can_rx', '/from_can_bus'),
@@ -133,8 +136,8 @@ def generate_launch_description():
         ],
     )
 
-    telemetry_node = Node(
-        package='telemetry',
+    nif_telemetry_node = Node(
+        package='nif_telemetry',
         executable='telemetry',
         output='screen',
     )
@@ -179,6 +182,8 @@ def generate_launch_description():
             ('in_control_cmd', '/control_pool/control_cmd'),
             ('in_override_control_cmd', '/control_pool/override_cmd'),
             ('in_perception_steering', '/wall_following_steering_cmd'),
+            ('in_wall_distance_inner', '/detected_inner_distance'),
+            ('in_wall_distance_outer', '/detected_outer_distance'),
             ('out_control_cmd', '/control_safety_layer/out/control_cmd'),
             ('out_steering_control_cmd', '/joystick/steering_cmd'),
             ('out_accelerator_control_cmd', '/joystick/accelerator_cmd'),
@@ -194,7 +199,7 @@ def generate_launch_description():
         output='screen',
         remappings=[
             ('out_desired_velocity', 'velocity_planner/des_vel'),
-            ('in_reference_path', 'planning/graph/path_global'),
+            ('in_reference_path', 'planning/path_global'),
             ('in_ego_odometry', '/aw_localization/ekf/odom'),
             ('in_wheel_speed_report', 'raptor_dbw_interface/wheel_speed_report'),
             ('in_imu_data', 'novatel_bottom/imu/data'),
@@ -202,7 +207,8 @@ def generate_launch_description():
             ('in_control_error', 'control_joint_lqr/lqr_error')
         ],
         parameters=[{
-            'lateral_tire_model_factor' : 0.5,
+            'max_ddes_vel_dt_default'   : 3.0,
+            'lateral_tire_model_factor' : 0.8,
         }]
     )
 
@@ -237,7 +243,7 @@ def generate_launch_description():
         remappings=[
             ('in_control_cmd_prev', '/control_safety_layer/out/control_cmd'),
             ('out_control_cmd', '/control_pool/control_cmd'),
-            ('in_reference_path', '/planning/graph/path_global'),
+            ('in_reference_path', 'planning/path_global'),
         ]
     )
 
@@ -258,6 +264,7 @@ def generate_launch_description():
         parameters=[{
             'engine_based_throttle_enabled' : True, 
             'gear.track': gear_track,
+            'lateral_error_deadband_m': 1.0,
         }]
     )
 
@@ -313,19 +320,56 @@ def generate_launch_description():
         )
     )
 
-    nif_multilayer_planning_node = Node(
-        package='nif_multilayer_planning_nodes',
-        executable='nif_multilayer_planning_nodes_exe',
-        output={
-            'stdout': 'screen',
-            'stderr': 'screen',
-        },
-        remappings={
-            ('out_local_maptrack_inglobal', '/planning/graph/path_global'),
-            ('in_ego_odometry', '/aw_localization/ekf/odom'),
-            ('in_system_status', '/system/status')
-        }
+### NIF WAYPOINT MANAGER #############################
+
+    wpt_config_file_lor = (
+        os.path.join(
+            get_package_share_directory("nif_waypoint_manager_nodes"),
+            "config",
+            "mission",
+            "lor_new.yaml",
+        ),
     )
+
+    wpt_config_file_ims = (
+        os.path.join(
+            get_package_share_directory("nif_waypoint_manager_nodes"),
+            "config",
+            "mission",
+            "ims_new.yaml", 
+        ),
+    )
+
+    config_file = None
+
+    if track == LOR:
+        config_file = wpt_config_file_lor
+    elif track == IMS:
+        config_file = wpt_config_file_ims
+    else:
+        raise RuntimeError("ERROR: invalid track provided: {}".format(track))
+
+    nif_wpt_param = DeclareLaunchArgument(
+        'nif_waypoint_manager_param_file',
+        default_value=config_file,
+        description='Path to config file for waypoint manager'
+    )
+
+    nif_waypoint_manager_node = Node(
+        package='nif_waypoint_manager_nodes',
+        executable='nif_waypoint_manager_nodes_exe',
+        output='screen',
+        parameters=[
+            LaunchConfiguration('nif_waypoint_manager_param_file')
+        ],
+        remappings=[
+            ('topic_ego_odometry', '/aw_localization/ekf/odom'),
+            ('wpt_manager/maptrack_path/global', '/planning/path_global'),
+            ('wpt_manager/maptrack_path/body', '/planning/path_body')
+        ]
+    )
+
+### NIF WAYPOINT MANAGER END #############################
 
     nif_mission_manager_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -339,19 +383,26 @@ def generate_launch_description():
         )
     )
 
+    nif_dk_planner_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            get_share_file("nif_dk_graph_planner", 'launch/deploy.launch.py')
+        )
+    )
+
 ### NIF MULTILAYER PLANNER END #############################
 
     return LaunchDescription([
         ssc_interface_param,
         nif_global_param,
         nif_csl_param,
+        nif_wpt_param,
         nif_joint_lqr_param,
 
         ssc_interface,
         socketcan_receiver_launch,
         socketcan_sender_launch,
         raptor_node,
-        telemetry_node,
+        nif_telemetry_node,
 
         nif_global_param_node,
         nif_system_status_manager_node,
@@ -360,10 +411,11 @@ def generate_launch_description():
         nif_localization_launch,
         nif_wall_node_launch_bg,
         robot_description_launch,
-        nif_multilayer_planning_node,
         nif_velocity_planning_node,
         nif_joint_lqr_control_node,
         nif_accel_control_node,
         nif_mission_manager_launch,
-        nif_points_clustering
-    ])
+        nif_waypoint_manager_node,
+        nif_points_clustering,
+        nif_dk_planner_launch
+])

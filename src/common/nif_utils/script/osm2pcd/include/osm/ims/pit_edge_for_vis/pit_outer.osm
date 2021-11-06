@@ -1,0 +1,64 @@
+<osm version="0.6" generator="JOSM">
+  <node id="-3791596" action="modify" visible="true" lat="39.79675978503" lon="-86.23880892741">
+    <tag k="alt" v="0.17210449272287717" />
+    <tag k="speed" v="0.0" />
+    <tag k="yaw" v="0.0" />
+  </node>
+  <node id="-3791597" action="modify" visible="true" lat="39.79610101212" lon="-86.2388068661">
+    <tag k="alt" v="0.18914571931884852" />
+    <tag k="speed" v="0.0" />
+    <tag k="yaw" v="0.0" />
+  </node>
+  <node id="-3791598" action="modify" visible="true" lat="39.79577563423" lon="-86.23880374392">
+    <tag k="alt" v="0.1978640749099518" />
+    <tag k="speed" v="0.0" />
+    <tag k="yaw" v="0.0" />
+  </node>
+  <node id="-3791599" action="modify" visible="true" lat="39.79526282432" lon="-86.23880141399">
+    <tag k="alt" v="0.2120747027292063" />
+    <tag k="speed" v="0.0" />
+    <tag k="yaw" v="0.0" />
+  </node>
+  <node id="-3791600" action="modify" visible="true" lat="39.79426346445" lon="-86.23878500046">
+    <tag k="alt" v="0.2410567777668511" />
+    <tag k="speed" v="0.0" />
+    <tag k="yaw" v="0.0" />
+  </node>
+  <node id="-3791601" action="modify" visible="true" lat="39.79323716585" lon="-86.23877018516">
+    <tag k="alt" v="0.27288712784211666" />
+    <tag k="speed" v="0.0" />
+    <tag k="yaw" v="0.0" />
+  </node>
+  <node id="-3791602" action="modify" visible="true" lat="39.79218208285" lon="-86.23875792557">
+    <tag k="alt" v="0.3077505753106455" />
+    <tag k="speed" v="0.0" />
+    <tag k="yaw" v="0.0" />
+  </node>
+  <node id="-3791603" action="modify" visible="true" lat="39.79139848603" lon="-86.23874761268">
+    <tag k="alt" v="0.33503434198076665" />
+    <tag k="speed" v="0.0" />
+    <tag k="yaw" v="0.0" />
+  </node>
+  <node id="-3791604" action="modify" visible="true" lat="39.7907769133" lon="-86.23873055641">
+    <tag k="alt" v="0.35748644836904814" />
+    <tag k="speed" v="0.0" />
+    <tag k="yaw" v="0.0" />
+  </node>
+  <node id="-3791605" action="modify" visible="true" lat="39.79050716066" lon="-86.2386942046">
+    <tag k="alt" v="0.36734499562968737" />
+    <tag k="speed" v="0.0" />
+    <tag k="yaw" v="0.0" />
+  </node>
+  <way id="-100003890" action="modify" visible="true">
+    <nd ref="-3791596" />
+    <nd ref="-3791597" />
+    <nd ref="-3791598" />
+    <nd ref="-3791599" />
+    <nd ref="-3791600" />
+    <nd ref="-3791601" />
+    <nd ref="-3791602" />
+    <nd ref="-3791603" />
+    <nd ref="-3791604" />
+    <nd ref="-3791605" />
+  </way>
+</osm>

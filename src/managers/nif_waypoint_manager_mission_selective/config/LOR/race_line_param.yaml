@@ -1,0 +1,7 @@
+racine_lines_file_paths:
+  origin_rl: race_line.csv
+  outter_rl: race_line.csv
+  center_rl: center_line.csv
+  inner_rl: center_line.csv
+
+pit_lines_file_path: pit_lane.csv

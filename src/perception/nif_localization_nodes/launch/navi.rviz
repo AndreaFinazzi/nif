@@ -17,27 +17,31 @@ Panels:
         - /PointCloud22/Autocompute Value Bounds1
         - /PointCloud23/Topic1
         - /PointCloud24/Topic1
-        - /Odometry2
         - /Odometry2/Shape1
         - /PointCloud25/Topic1
         - /Path5/Topic1
         - /Path6/Topic1
-        - /Path7
         - /Path7/Topic1
         - /Odometry3/Shape1
         - /Odometry3/Covariance1
         - /Odometry3/Covariance1/Position1
         - /Map1/Topic1
         - /Odometry4/Covariance1/Orientation1
-        - /Path8
         - /Path8/Topic1
         - /Path8/Offset1
         - /Marker1/Topic1
-        - /Path9
         - /PointCloud26/Topic1
         - /PointCloud27/Topic1
+        - /PointCloud28
+        - /PointCloud28/Status1
+        - /PointCloud28/Topic1
+        - /PointCloud29
         - /PointCloud210
         - /Map2/Topic1
+        - /PointCloud211
+        - /PointCloud212
+        - /PointCloud212/Status1
+        - /PointCloud212/Topic1
       Splitter Ratio: 0.4676470458507538
     Tree Height: 703
   - Class: rviz_common/Selection
@@ -776,9 +780,9 @@ Visualization Manager:
       Name: PointCloud2
       Position Transformer: XYZ
       Selectable: true
-      Size (Pixels): 6
-      Size (m): 0.5
-      Style: Points
+      Size (Pixels): 1
+      Size (m): 0.25
+      Style: Squares
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -800,57 +804,24 @@ Visualization Manager:
       Color: 255; 255; 255
       Color Transformer: Intensity
       Decay Time: 0
-      Enabled: false
-      Invert Rainbow: false
-      Max Color: 255; 255; 255
-      Max Intensity: 1.99951171875
-      Min Color: 0; 0; 0
-      Min Intensity: 0
-      Name: PointCloud2
-      Position Transformer: XYZ
-      Selectable: true
-      Size (Pixels): 3
-      Size (m): 0.10000000149011612
-      Style: Flat Squares
-      Topic:
-        Depth: 5
-        Durability Policy: Volatile
-        History Policy: Keep Last
-        Reliability Policy: Best Effort
-        Value: /merged/lidar
-      Use Fixed Frame: true
-      Use rainbow: true
-      Value: false
-    - Alpha: 1
-      Autocompute Intensity Bounds: true
-      Autocompute Value Bounds:
-        Max Value: 10
-        Min Value: -10
-        Value: true
-      Axis: Z
-      Channel Name: intensity
-      Class: rviz_default_plugins/PointCloud2
-      Color: 255; 255; 255
-      Color Transformer: Intensity
-      Decay Time: 0
       Enabled: true
       Invert Rainbow: false
       Max Color: 255; 255; 255
-      Max Intensity: 4.800000190734863
+      Max Intensity: 2026
       Min Color: 0; 0; 0
       Min Intensity: 0
       Name: PointCloud2
       Position Transformer: XYZ
       Selectable: true
       Size (Pixels): 3
-      Size (m): 0.30000001192092896
+      Size (m): 1
       Style: Flat Squares
       Topic:
         Depth: 5
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Best Effort
-        Value: /graph_planner/cost
+        Value: /graph_planner/racing_line
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
@@ -869,7 +840,40 @@ Visualization Manager:
       Enabled: true
       Invert Rainbow: false
       Max Color: 255; 255; 255
-      Max Intensity: 211
+      Max Intensity: 0.5650687217712402
+      Min Color: 0; 0; 0
+      Min Intensity: 0.0011490016477182508
+      Name: PointCloud2
+      Position Transformer: XYZ
+      Selectable: true
+      Size (Pixels): 3
+      Size (m): 0.30000001192092896
+      Style: Flat Squares
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+        Value: /glboal_inflated_points
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: true
+    - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 10
+        Min Value: -10
+        Value: true
+      Axis: Z
+      Channel Name: intensity
+      Class: rviz_default_plugins/PointCloud2
+      Color: 255; 255; 255
+      Color Transformer: Intensity
+      Decay Time: 0
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Max Intensity: 311
       Min Color: 0; 0; 0
       Min Intensity: 0
       Name: PointCloud2
@@ -899,10 +903,10 @@ Visualization Manager:
       Color: 255; 255; 255
       Color Transformer: Intensity
       Decay Time: 0
-      Enabled: true
+      Enabled: false
       Invert Rainbow: false
       Max Color: 255; 255; 255
-      Max Intensity: 161
+      Max Intensity: 162
       Min Color: 0; 0; 0
       Min Intensity: 0
       Name: PointCloud2
@@ -919,7 +923,7 @@ Visualization Manager:
         Value: /graph_planner/full_nodes
       Use Fixed Frame: true
       Use rainbow: true
-      Value: true
+      Value: false
     - Angle Tolerance: 0.10000000149011612
       Class: rviz_default_plugins/Odometry
       Covariance:
@@ -1038,6 +1042,39 @@ Visualization Manager:
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
+    - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 10
+        Min Value: -10
+        Value: true
+      Axis: Z
+      Channel Name: intensity
+      Class: rviz_default_plugins/PointCloud2
+      Color: 255; 255; 255
+      Color Transformer: Intensity
+      Decay Time: 0
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Max Intensity: 337
+      Min Color: 0; 0; 0
+      Min Intensity: 0
+      Name: PointCloud2
+      Position Transformer: XYZ
+      Selectable: true
+      Size (Pixels): 3
+      Size (m): 2
+      Style: Flat Squares
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+        Value: /clustered_points
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -1080,7 +1117,7 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Angle: 12.474998474121094
+      Angle: 11.044999122619629
       Class: rviz_default_plugins/TopDownOrtho
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
@@ -1090,11 +1127,11 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 11.09720230102539
-      Target Frame: base_link
+      Scale: -4.631766319274902
+      Target Frame: odom
       Value: TopDownOrtho (rviz_default_plugins)
-      X: 5.581640243530273
-      Y: 0.9991877675056458
+      X: -1966.9556884765625
+      Y: 316.4656982421875
     Saved: ~
 Window Geometry:
   Displays:

@@ -22,6 +22,7 @@ find_package(deep_orange_msgs REQUIRED)
 find_package(nif_common REQUIRED)
 find_package(nif_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
+find_package(visualization_msgs REQUIRED)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -35,7 +36,7 @@ if(BUILD_TESTING)
 endif()
 
 add_executable(telemetry src/nif_telemetry.cpp)
-ament_target_dependencies(telemetry rclcpp deep_orange_msgs raptor_dbw_msgs nif_common nif_msgs nav_msgs)
+ament_target_dependencies(telemetry rclcpp deep_orange_msgs raptor_dbw_msgs nif_common nif_msgs nav_msgs visualization_msgs)
 
 
 install(TARGETS

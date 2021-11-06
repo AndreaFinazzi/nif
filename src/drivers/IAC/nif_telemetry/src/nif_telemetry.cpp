@@ -10,6 +10,7 @@
 #include "deep_orange_msgs/msg/ct_report.hpp"
 #include "deep_orange_msgs/msg/pt_report.hpp"
 #include "deep_orange_msgs/msg/misc_report.hpp"
+#include "deep_orange_msgs/msg/tire_report.hpp"
 #include "std_msgs/msg/float32.hpp"
 #include "std_msgs/msg/u_int8.hpp"
 #include "std_msgs/msg/float32_multi_array.hpp"
@@ -19,6 +20,8 @@
 #include "nav_msgs/msg/path.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 #include "nif_msgs/msg/localization_status.hpp"
+#include <visualization_msgs/msg/marker_array.hpp>
+
 
 using namespace std::chrono_literals;
 
@@ -34,7 +37,7 @@ class Telemetry : public rclcpp::Node
       pub_system_status = this->create_publisher<nif_msgs::msg::SystemStatus>("/nif_telemetry/system_status", qos);
       pub_telemetry = this->create_publisher<nif_msgs::msg::Telemetry>("/nif_telemetry/telemetry", qos);
       pub_reference_path = this->create_publisher<nav_msgs::msg::Path>("/nif_telemetry/path_global", qos);
-      // pub_perception_summary = this->create_publisher<?>("/nif_telemetry/perception_summary", qos);
+      pub_perception_result = this->create_publisher<visualization_msgs::msg::MarkerArray>("/nif_telemetry/perception_result", qos);
 
       sub_ct_report = this->create_subscription<deep_orange_msgs::msg::CtReport>(
         "/raptor_dbw_interface/ct_report", nif::common::constants::QOS_SENSOR_DATA, std::bind(&Telemetry::ct_report_callback, this, std::placeholders::_1));
@@ -64,25 +67,53 @@ class Telemetry : public rclcpp::Node
         "/velocity_planner/des_vel", nif::common::constants::QOS_SENSOR_DATA, std::bind(&Telemetry::command_desired_velocity_callback, this, std::placeholders::_1));
       sub_command_gear = this->create_subscription<std_msgs::msg::UInt8>(
         "/joystick/gear_cmd", nif::common::constants::QOS_SENSOR_DATA, std::bind(&Telemetry::command_gear_callback, this, std::placeholders::_1));
-        // sub_perception_result
 
       sub_control_lqr_error = this->create_subscription<std_msgs::msg::Float32MultiArray>(
         "/control_joint_lqr/lqr_error", nif::common::constants::QOS_SENSOR_DATA, std::bind(&Telemetry::control_lqr_error_callback, this, std::placeholders::_1));
 
-
       sub_reference_path = this->create_subscription<nav_msgs::msg::Path>(
         "/planning/path_global", nif::common::constants::QOS_SENSOR_DATA, std::bind(&Telemetry::reference_path_callback, this, std::placeholders::_1));
+      
+      sub_perception_result = this->create_subscription<visualization_msgs::msg::MarkerArray>(
+        "/clustered_markers", nif::common::constants::QOS_SENSOR_DATA, std::bind(&Telemetry::perception_result_callback, this, std::placeholders::_1));
+
+      sub_tire_report = this->create_subscription<deep_orange_msgs::msg::TireReport>(
+        "/raptor_dbw_interface/tire_report", nif::common::constants::QOS_SENSOR_DATA, std::bind(&Telemetry::tire_report_callback, this, std::placeholders::_1));
+
+      sub_wall_distance_inner = this->create_subscription<std_msgs::msg::Float32>(
+        "/detected_inner_distance", nif::common::constants::QOS_SENSOR_DATA, std::bind(&Telemetry::wall_distance_inner_callback, this, std::placeholders::_1));
+      sub_wall_distance_outer = this->create_subscription<std_msgs::msg::Float32>(
+        "/detected_outer_distance", nif::common::constants::QOS_SENSOR_DATA, std::bind(&Telemetry::wall_distance_outer_callback, this, std::placeholders::_1));
 
       timer_ = this->create_wall_timer(
-        100ms, std::bind(&Telemetry::timer_callback, this));
+        50ms, std::bind(&Telemetry::timer_callback, this));
     }
 
   private:
+    double tire_array_average(const deep_orange_msgs::msg::TireReport::_fr_tire_temperature_type & in) 
+    {
+      if (in.empty()) return -100.0;
+
+      double average = 0.0;
+      for (double && elem : in) {
+        average += elem;
+      }
+      return average / in.size();
+    }
     void timer_callback()
     {
       pub_system_status->publish(msg_system_status);
+
+      // Get tires temp average
+      msg_telemetry.tires.stamp = in_tire_report.stamp;
+      msg_telemetry.tires.temp_front_left = tire_array_average(in_tire_report.fl_tire_temperature);
+      msg_telemetry.tires.temp_front_right = tire_array_average(in_tire_report.fr_tire_temperature);
+      msg_telemetry.tires.temp_rear_left = tire_array_average(in_tire_report.rl_tire_temperature);
+      msg_telemetry.tires.temp_rear_right = tire_array_average(in_tire_report.rr_tire_temperature);
+
       pub_telemetry->publish(msg_telemetry);
 
+      // Reference path
       if (!in_reference_path.poses.empty()) {
         nav_msgs::msg::Path path_sampled{};
 
@@ -98,6 +129,9 @@ class Telemetry : public rclcpp::Node
 
         pub_reference_path->publish(path_sampled);
       }
+
+      // Perception result
+      pub_perception_result->publish(msg_perception_result);
     }
     void ct_report_callback(const deep_orange_msgs::msg::CtReport::SharedPtr msg)
     {
@@ -176,11 +210,34 @@ class Telemetry : public rclcpp::Node
     {
       in_reference_path = std::move(*msg);
     }
+    void perception_result_callback(const visualization_msgs::msg::MarkerArray::SharedPtr msg)
+    {
+      msg_perception_result = std::move(*msg);
+
+      for (auto &&marker : msg_perception_result.markers)
+      {
+        // Fake marker orientation as temp solution
+        marker.pose.orientation = msg_telemetry.localization.odometry.pose.orientation;
+      }
+    }
+    void tire_report_callback(const deep_orange_msgs::msg::TireReport::SharedPtr msg)
+    {
+      in_tire_report = std::move(*msg);
+    }
+    void wall_distance_inner_callback(const std_msgs::msg::Float32::SharedPtr msg)
+    {
+      msg_telemetry.localization.detected_inner_distance = msg->data;
+    }    
+    void wall_distance_outer_callback(const std_msgs::msg::Float32::SharedPtr msg)
+    {
+      msg_telemetry.localization.detected_outer_distance = msg->data;
+    }
     rclcpp::TimerBase::SharedPtr timer_;
 
     rclcpp::Publisher<nif_msgs::msg::SystemStatus>::SharedPtr pub_system_status;
     rclcpp::Publisher<nif_msgs::msg::Telemetry>::SharedPtr pub_telemetry;
     rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_reference_path;
+    rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr pub_perception_result;
 
     rclcpp::Subscription<deep_orange_msgs::msg::CtReport>::SharedPtr sub_ct_report;
     rclcpp::Subscription<deep_orange_msgs::msg::PtReport>::SharedPtr sub_pt_report;
@@ -202,11 +259,23 @@ class Telemetry : public rclcpp::Node
 
     rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr sub_reference_path;
 
+    rclcpp::Subscription<visualization_msgs::msg::MarkerArray>::SharedPtr sub_perception_result;
+
+    rclcpp::Subscription<deep_orange_msgs::msg::TireReport>::SharedPtr sub_tire_report;
+
+    rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr sub_wall_distance_inner;
+    rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr sub_wall_distance_outer;
+
     nif_msgs::msg::SystemStatus msg_system_status;
     nif_msgs::msg::Telemetry msg_telemetry;
 
     nav_msgs::msg::Path in_reference_path;
-    nav_msgs::msg::Path msg_reference_path;
+    nav_msgs::msg::Path msg_reference_path;    
+    
+    visualization_msgs::msg::MarkerArray msg_perception_result;
+
+    deep_orange_msgs::msg::TireReport in_tire_report;
+
 };
 
 int main(int argc, char * argv[])

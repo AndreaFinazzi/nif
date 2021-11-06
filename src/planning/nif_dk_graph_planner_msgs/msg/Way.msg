@@ -14,3 +14,6 @@ int32 start_layer
 int32 end_layer
 int32 start_node
 int32 end_node
+
+float64 psi
+float64 kappa

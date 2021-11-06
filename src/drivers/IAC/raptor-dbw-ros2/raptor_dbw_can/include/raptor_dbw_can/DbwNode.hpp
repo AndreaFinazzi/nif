@@ -60,6 +60,8 @@
 #include <raptor_dbw_msgs/msg/wheel_position_report.hpp>
 #include <raptor_dbw_msgs/msg/wheel_speed_report.hpp>
 #include <deep_orange_msgs/msg/base_to_car_summary.hpp>
+#include <deep_orange_msgs/msg/diagnostic_report.hpp>
+#include <deep_orange_msgs/msg/lap_time_report.hpp>
 
 #include <deep_orange_msgs/msg/brake_temp_report.hpp>
 #include <deep_orange_msgs/msg/ct_report.hpp>
@@ -263,6 +265,9 @@ private:
   rclcpp::Publisher<deep_orange_msgs::msg::BrakeTempReport>::SharedPtr pub_brake_temp_report_;
   rclcpp::Publisher<deep_orange_msgs::msg::TireReport>::SharedPtr pub_tire_report_;
   rclcpp::Publisher<deep_orange_msgs::msg::PtReport>::SharedPtr pub_pt_report_;
+  rclcpp::Publisher<deep_orange_msgs::msg::DiagnosticReport>::SharedPtr pub_diag_report_;
+  rclcpp::Publisher<deep_orange_msgs::msg::LapTimeReport>::SharedPtr pub_timing_report_;
+
 
   rclcpp::Publisher<autoware_auto_msgs::msg::VehicleKinematicState>::SharedPtr pub_kinematic_state_;
   

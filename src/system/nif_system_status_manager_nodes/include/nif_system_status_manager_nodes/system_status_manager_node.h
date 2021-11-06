@@ -54,11 +54,11 @@ private:
 
   unsigned int mode = 255;
 //  TODO make parameter
-  const int max_counter_drop = 20;
+  const int max_counter_drop = 75; // 2.5s at 30hz
   int t = 0;
 
   const int default_counter = 502;
-  int counter_joy_prev = default_counter-1;
+  int counter_joy_prev = default_counter;
   int counter_joy = default_counter;
   bool joy_emergency_stop = false;
   bool recovery_enabled = true;

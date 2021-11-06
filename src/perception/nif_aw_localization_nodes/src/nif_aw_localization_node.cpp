@@ -322,9 +322,12 @@ void AWLocalizationNode::timerCallback()
       m_localization_status.bottom_error = bottomError;
 
       if (bottomError < 5.0 && bottom_yaw_error < 0.1 &&
-          BestPosBottom.novatel_ins_status ==
+          (BestPosBottom.novatel_ins_status ==
               novatel_oem7_msgs::msg::InertialSolutionStatus::
-                  INS_SOLUTION_GOOD) {
+                  INS_SOLUTION_GOOD || 
+           BestPosBottom.novatel_ins_status ==
+              novatel_oem7_msgs::msg::InertialSolutionStatus::
+                  INS_ALIGNMENT_COMPLETE)) {
         bInitConverged = true;
       }
 
@@ -373,9 +376,12 @@ void AWLocalizationNode::timerCallback()
       // RCLCPP_INFO(this->get_logger(), "yaw error = %f", top_yaw_error);
 
       if (topError < 5.0 && top_yaw_error < 0.1 &&
-          BestPosTop.novatel_ins_status ==
+          (BestPosTop.novatel_ins_status ==
               novatel_oem7_msgs::msg::InertialSolutionStatus::
-                  INS_SOLUTION_GOOD) {
+                  INS_SOLUTION_GOOD ||
+           BestPosTop.novatel_ins_status ==
+              novatel_oem7_msgs::msg::InertialSolutionStatus::
+                  INS_ALIGNMENT_COMPLETE)) {
         bInitConverged = true;
       }
 
@@ -1065,33 +1071,43 @@ void AWLocalizationNode::measurementUpdatePose(rclcpp::Time measurement_time_,
 
     if (bBOTTOM_GPS && bTOP_GPS) // if TOP AND BOTTOM are started, calculated covariance using difference between two sensors.
     {
-      // if (m_localization_status.localization_status_code ==
-      //         nif_msgs::msg::LocalizationStatus::BEST_STATUS)
-      // {
+      if (m_localization_status.localization_status_code ==
+              nif_msgs::msg::LocalizationStatus::BEST_STATUS ||
+          m_localization_status.localization_status_code ==
+              nif_msgs::msg::LocalizationStatus::SENSOR_FUSION) {
         R(0, 0) = fabs(BestPosBottom.x - BestPosTop.x) + cov_pos_x +
                   std::pow(pose_stddev_x_, 2); 
         R(1, 1) = fabs(BestPosBottom.y - BestPosTop.y) + cov_pos_y +
                   std::pow(pose_stddev_y_, 2); 
         R(2, 2) = m_stdev_azimuth + cov_yaw +
-                  std::pow(pose_stddev_yaw_, 2); 
-      // } else if (m_localization_status.localization_status_code ==
-      //            nif_msgs::msg::LocalizationStatus::ONLY_TOP) {
-      //   R(0, 0) = BestPosTop.lat_noise + cov_pos_x +
-      //             std::pow(pose_stddev_x_, 2); 
-      //   R(1, 1) = BestPosTop.lon_noise + cov_pos_y +
-      //             std::pow(pose_stddev_y_, 2); 
-      //   R(2, 2) = m_stdev_azimuth + cov_yaw +
-      //             std::pow(pose_stddev_yaw_, 2); 
-      // } else if (m_localization_status.localization_status_code ==
-      //            nif_msgs::msg::LocalizationStatus::ONLY_BOTTOM) {
-      //   R(0, 0) = BestPosBottom.lat_noise + cov_pos_x +
-      //             std::pow(pose_stddev_x_, 2); 
-      //   R(1, 1) = BestPosBottom.lon_noise + cov_pos_y +
-      //             std::pow(pose_stddev_y_, 2); 
-      //   R(2, 2) = m_stdev_azimuth + cov_yaw +
-      //             std::pow(pose_stddev_yaw_, 2); 
-      // }
+                  std::pow(pose_stddev_yaw_, 2);
+      } else if (m_localization_status.localization_status_code ==
+                 nif_msgs::msg::LocalizationStatus::ONLY_TOP) {
+        R(0, 0) = BestPosTop.lat_noise + cov_pos_x +
+                  std::pow(pose_stddev_x_, 2); 
+        R(1, 1) = BestPosTop.lon_noise + cov_pos_y +
+                  std::pow(pose_stddev_y_, 2); 
+        R(2, 2) = m_stdev_azimuth + cov_yaw +
+                  std::pow(pose_stddev_yaw_, 2);
+      } else if (m_localization_status.localization_status_code ==
+                 nif_msgs::msg::LocalizationStatus::ONLY_BOTTOM) {
+        R(0, 0) = BestPosBottom.lat_noise + cov_pos_x +
+                  std::pow(pose_stddev_x_, 2); 
+        R(1, 1) = BestPosBottom.lon_noise + cov_pos_y +
+                  std::pow(pose_stddev_y_, 2); 
+        R(2, 2) = m_stdev_azimuth + cov_yaw +
+                  std::pow(pose_stddev_yaw_, 2);
+      }
+      else
+      {
+        R(0, 0) = m_stdev_latitude + cov_pos_x +  std::pow(pose_stddev_x_, 2) ; //+ cov_pos_x; //  pos_x
+        R(1, 1) = m_stdev_longitude + cov_pos_y + std::pow(pose_stddev_y_, 2) ; //+ cov_pos_y +  pos_y
+        R(2, 2) = m_stdev_azimuth + cov_yaw + std::pow(pose_stddev_yaw_, 2); // + cov_yaw; //  yaw
+
+      }
+
     }
+
 
   }
 
@@ -1286,8 +1302,11 @@ bool AWLocalizationNode::CalculateBestCorrection(
     bottom_yaw_error = bottom_yaw_error - 2*M_PI;
 
   if ((bottomError < 5.0 || topError < 5.0) && bottom_yaw_error < 0.1 &&
-      BestPosBottom.novatel_ins_status ==
-          novatel_oem7_msgs::msg::InertialSolutionStatus::INS_SOLUTION_GOOD) {
+      (BestPosBottom.novatel_ins_status ==
+          novatel_oem7_msgs::msg::InertialSolutionStatus::INS_SOLUTION_GOOD ||
+       BestPosBottom.novatel_ins_status ==
+              novatel_oem7_msgs::msg::InertialSolutionStatus::
+                  INS_ALIGNMENT_COMPLETE)) {
     bInitConverged = true;
   }
   // std::cout << "------------" << std::endl;

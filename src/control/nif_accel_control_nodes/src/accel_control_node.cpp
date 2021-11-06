@@ -65,16 +65,25 @@ AccelControl::AccelControl() : Node("AccelControlNode") {
       "in_imu_data", rclcpp::SensorDataQoS(),
       std::bind(&AccelControl::receiveImu, this, std::placeholders::_1));
 
+  this->subLQRError_ =
+      this->create_subscription<std_msgs::msg::Float32MultiArray>(
+          "control_joint_lqr/lqr_error", nif::common::constants::QOS_DEFAULT,
+          std::bind(&AccelControl::receiveLQRError, this,
+                    std::placeholders::_1));
+
   // Declare Parameters
   this->declare_parameter("time_step", 0.01);
   this->declare_parameter("engine_based_throttle_enabled", false);
+
+  this->declare_parameter("lateral_error_deadband_m", 0.5);
+  this->declare_parameter("error_factor_vel_thres_mps", 15.0);
 
   this->declare_parameter("throttle.k_accel", 0.05780);
   this->declare_parameter("throttle.k_accel2", 0.0);
   this->declare_parameter("throttle.k_bias", 0.09998);
   this->declare_parameter("throttle.pedalToCmd", 100.0);
 
-  this->declare_parameter("throttle.cmd_max", 40.0);
+  this->declare_parameter("throttle.cmd_max", 100.0);
   this->declare_parameter("throttle.cmd_min", 0.0);
   this->declare_parameter("throttle.des_accel_deadband", 0.05);
 
@@ -137,6 +146,12 @@ AccelControl::AccelControl() : Node("AccelControlNode") {
 
   this->engine_based_throttle_enabled_ =
       this->get_parameter("engine_based_throttle_enabled").as_bool();
+
+  this->m_lateral_error_deadband_m =
+      this->get_parameter("lateral_error_deadband_m").as_double();
+
+  this->m_error_factor_vel_thres_mps =
+      this->get_parameter("error_factor_vel_thres_mps").as_double();
 
   if (engine_based_throttle_enabled_) {
     // Engine model-based throttle controller
@@ -248,7 +263,7 @@ void AccelControl::initializeGears(const std::string &track_id) {
         {2, std::make_shared<control::GearState>(2, 1.875, 11, 22)},
         {3, std::make_shared<control::GearState>(3, 1.38, 19.5, 30)},
         {4, std::make_shared<control::GearState>(4, 1.5, 27.5, 37.5)},
-        {5, std::make_shared<control::GearState>(5, 0.96, 35, 44)},
+        {5, std::make_shared<control::GearState>(5, 0.96, 35, 50)},
         {6, std::make_shared<control::GearState>(6, 0.889, 41.5, 255)}};
   } else {
     RCLCPP_ERROR(this->get_logger(),
@@ -335,6 +350,11 @@ void AccelControl::calculateBrakeCmd(double des_accel) {
   if (curr_speed < 3.0 && des_accel < 0) {
     brake_cmd_out = this->m_brake_controller_.CurrentControl(-3.0);
   }
+  // - braking during zero desired velocity
+  // -- 46% brake bedal input at -3 m/s2 command
+  if (curr_speed < 0.1 && des_accel <= 0) {
+    brake_cmd_out = this->m_brake_controller_.CurrentControl(-3.0);
+  }
   // - final brake command output
   this->brake_cmd.data = brake_cmd_out;
 }
@@ -352,9 +372,26 @@ void AccelControl::publishThrottleBrake() {
   pubThrottleCmdRaw_->publish(this->throttle_cmd);
   pubBrakeCmdRaw_->publish(this->brake_cmd);
 
-  if (this->throttle_cmd.data > this->max_throttle_) {
-    RCLCPP_DEBUG(this->get_logger(), "%s\n", "Throttle Limit Max Reached");
-    this->throttle_cmd.data = this->max_throttle_;
+// !!!! UNCOMMENT TO ENABLE THROTTLE SATURATION TO JOYSTICK CMD  !!!!
+  // if (this->throttle_cmd.data > this->max_throttle_) {
+  //   RCLCPP_DEBUG(this->get_logger(), "%s\n", "Throttle Limit Max Reached");
+  //   this->throttle_cmd.data = this->max_throttle_;
+  // }
+// !!!! UNCOMMENT TO ENABLE THROTTLE SATURATION TO JOYSTICK CMD  !!!!
+
+  // Release throttle w.r.t. lateral error
+  // - only when speed is large enough
+  double curr_speed = this->speed_;
+  if (curr_speed > this->m_error_factor_vel_thres_mps) {
+    double error_ratio = 0.0;
+    if (abs(m_error_y) > m_lateral_error_deadband_m) {
+      error_ratio =
+          std::min(abs(m_error_y) - m_lateral_error_deadband_m, m_ERROR_Y_MAX) /
+          m_ERROR_Y_MAX; // [0.0~1.0] ratio
+    }
+
+    double error_gain = 1.0 - 0.5 * error_ratio; // [1.0~0.5] gain
+    this->throttle_cmd.data = error_gain * this->throttle_cmd.data;
   }
 
   this->throttle_cmd.data =
@@ -438,7 +475,7 @@ void AccelControl::shiftCallback() {
     this->shifting_counter_ = 0;
   }
 
-   pubGearCmd_->publish(this->gear_cmd); // send gear command
+  pubGearCmd_->publish(this->gear_cmd); // send gear command
 }
 
 void AccelControl::receiveJoystick(
@@ -526,6 +563,12 @@ void AccelControl::receiveImu(const sensor_msgs::msg::Imu::SharedPtr msg) {
   // - correction
   kf_a_lon.correct((float)(msg->linear_acceleration.x));
   kf_a_lat.correct((float)(msg->linear_acceleration.y));
+}
+
+void AccelControl::receiveLQRError(
+    const std_msgs::msg::Float32MultiArray::SharedPtr msg) {
+  // ey, eydot, eyaw, eyawdot, ev
+  m_error_y = msg->data[0];
 }
 
 } // end namespace control

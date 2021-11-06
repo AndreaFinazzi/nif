@@ -6,6 +6,8 @@
 
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "nav_msgs/msg/odometry.hpp"
+#include <tf2/LinearMath/Matrix3x3.h>
+#include <tf2/LinearMath/Quaternion.h>
 
 #include <cmath>
 
@@ -21,6 +23,8 @@ double pursuit_dist(const geometry_msgs::msg::PoseStamped &point_a,
 double pursuit_dist(const geometry_msgs::msg::PoseStamped &point_a,
                     const geometry_msgs::msg::PoseStamped &point_b);
 
+double pursuit_azimuth(const geometry_msgs::msg::PoseStamped &target_point,
+                       const nav_msgs::msg::Odometry &ego_point);
 /**
  * @brief templated pure pursuit function to find the earliest point
  *  in path pursuit_distance from position
@@ -46,7 +50,7 @@ void track(const PathT &path, const PointT &position,
     target_idx = path.size() - 1;
   }
 
-  target_distance = pursuit_dist(path[target_idx], position);
+  target_distance = pursuit_dist(path[target_idx], path[0]);
   while (true) {
     // if the distance is less than the pursuit distance we try to advance
     if (target_distance < pursuit_distance) {
@@ -55,7 +59,7 @@ void track(const PathT &path, const PointT &position,
       }
       // This will break if the trajectory wraps around 180 degrees
       // within the tracking horizon
-      target_distance = pursuit_dist(path[target_idx + 1], position);
+      target_distance = pursuit_dist(path[target_idx + 1], path[0]);
       ++target_idx;
 
       // Otherwise we try to go backwards on the trajectory
@@ -64,7 +68,7 @@ void track(const PathT &path, const PointT &position,
       if (target_idx <= 0) {
         break;
       }
-      auto dist_prev = pursuit_dist(path[target_idx - 1], position);
+      auto dist_prev = pursuit_dist(path[target_idx - 1], path[0]);
       // If the previous point is also greater than the pursuit distance
       // we will go back and select it
       if (dist_prev >= pursuit_distance) {
@@ -151,6 +155,8 @@ void track(const PathT &path, const PointT &position,
  **/
 double smoothSignal(double current_signal, double target_signal,
                     double delta_dt, double dt);
+
+double normalizeTheta(double theta);
 
 } /* namespace utils */
 } /* namespace joint_lqr */

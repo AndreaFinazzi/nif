@@ -189,8 +189,7 @@ private:
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_fake_obs_points_;
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_ground_filtered_points_;
 
-  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr
-      sub_odometry_;
+  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr sub_odometry_;
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr sub_closest_geofence_idx_;
   rclcpp::TimerBase::SharedPtr sub_timer_;
 

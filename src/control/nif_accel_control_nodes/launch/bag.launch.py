@@ -37,6 +37,7 @@ def generate_launch_description():
             {
                 'engine_based_throttle_enabled': True,
                 'gear.track': "IMS",
+                'lateral_error_deadband_m': 1.0,
             }
         ],
         output={
@@ -44,9 +45,11 @@ def generate_launch_description():
             'stderr': 'screen',
         },
         remappings=[
-            ('/control_safety_layer/out/desired_accel', '/control_joint_lqr/accel_command'),
+            ('/control_safety_layer/out/desired_accel', '/control_joint_lqr/accel_command_test'),
+            ('/accel_control/diagnostic', '/accel_control/diagnostic_test'),
+            ('/control_joint_lqr/lqr_error', '/control_joint_lqr/lqr_error_test'),
             ('/joystick/accelerator_cmd', '/joystick/accelerator_cmd_test'),
-            ('/joystick/accelerator_cmd/raw', '/joystick/accelerator_cmd/raw_test'),
+            ('/joystick/accelerator_cmd/raw', '/joystick/accelerator_cmd_test/raw'),
             ('/joystick/brake_cmd', '/joystick/brake_cmd_test'),
             ('/joystick/brake_cmd/raw', '/joystick/brake_cmd/raw_test'),
         ]

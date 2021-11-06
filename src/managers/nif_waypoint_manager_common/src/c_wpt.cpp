@@ -1,11 +1,8 @@
 #include "nif_waypoint_manager_common/c_wpt.h"
 
-c_wpt::c_wpt(string wpt_file_path_,
-             string wpt_alias_ = "",
-             string global_frame_id_ = "map",
-             bool wpt_3d_file_flg_ = false,
-             bool spline_flg_ = false,
-             double spline_interval_ = 0.5) {
+c_wpt::c_wpt(string wpt_file_path_, string wpt_alias_ = "",
+             string global_frame_id_ = "map", bool wpt_3d_file_flg_ = false,
+             bool spline_flg_ = false, double spline_interval_ = 0.5) {
   //  init
   m_wpt_raw_x.clear();
   m_wpt_splined_x.clear();
@@ -19,6 +16,7 @@ c_wpt::c_wpt(string wpt_file_path_,
   m_global_frame_id = global_frame_id_;
   m_spline_interval = spline_interval_;
   m_spline_flg = spline_flg_;
+  m_spline_flg = true;
   m_3d_wpt_flg = wpt_3d_file_flg_;
 
   m_wpt_inglobal.header.frame_id = m_global_frame_id;

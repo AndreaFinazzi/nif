@@ -10,10 +10,13 @@
 
 #include <unordered_map>
 
+#define ASSERT(x) if( !(x) ) throw std::range_error("Assertion failed in yaml_cpp_adapter");
+
 using nif_msgs::msg::MissionStatus;
 
 namespace nif {
 namespace system {
+    using track_zone_id_t = uint16_t;
 
     constexpr const char* ID_MISSIONS_LIST = "missions";
     constexpr const char* ID_MISSION_CODE = "mission_code";
@@ -33,6 +36,10 @@ namespace system {
 
     constexpr const char* ID_FALLBACK = "fallback";
     constexpr const char* ID_FALLBACK_MISSION_CODE = "mission_code";
+
+    constexpr const char* ID_ZONES_LIST = "zones";
+    constexpr const char* ID_ZONE_ID = "id";
+    constexpr const char* ID_ZONE_BBOX = "bbox";
 
     struct MissionCondition {
         bool active = false;
@@ -165,8 +172,27 @@ namespace system {
             }
     };
 
+    struct TrackZone {
+        // TODO collect MissionConditions in a dinamic collection, for flexibility
+        track_zone_id_t id;
+        BBox bbox;
+
+        bool isValid(
+            const MissionStatus::_mission_status_code_type &current_mission,
+            const MissionStatus::_mission_status_code_type &next_mission,
+            const nif::common::msgs::Odometry &ego_odom,
+            const MissionStatus::_max_velocity_mps_type &ego_velocity_mps)
+            {
+                return this->bbox.isValid(current_mission, next_mission, ego_odom, ego_velocity_mps);
+            }
+    };
+
+
     using MissionsDescription = std::unordered_map<
             MissionStatus::_mission_status_code_type, MissionNode>;
+            
+    using TrackZonesDescription = std::unordered_map<
+            track_zone_id_t, TrackZone>;
             
 } // namespace system
 } // namespace nif

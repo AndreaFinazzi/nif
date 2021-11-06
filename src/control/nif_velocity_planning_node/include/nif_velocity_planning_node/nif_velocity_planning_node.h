@@ -35,6 +35,7 @@
 #include "sensor_msgs/msg/imu.hpp"
 #include "std_msgs/msg/float32.hpp"
 #include "std_msgs/msg/float32_multi_array.hpp"
+#include "std_msgs/msg/int32.hpp"
 
 using nif_msgs::msg::MissionStatus;
 
@@ -80,6 +81,11 @@ public:
     error_sub_ = this->create_subscription<std_msgs::msg::Float32MultiArray>(
         "in_control_error", nif::common::constants::QOS_DEFAULT,
         std::bind(&VelocityPlannerNode::errorCallback, this,
+                  std::placeholders::_1));
+
+    target_idx_sub_ = this->create_subscription<std_msgs::msg::Int32>(
+        "control_joint_lqr/track_idx", nif::common::constants::QOS_DEFAULT,
+        std::bind(&VelocityPlannerNode::targetIdxCallback, this,
                   std::placeholders::_1));
 
     // ROS Params
@@ -177,24 +183,28 @@ private:
   void run() override {
     nif::common::NodeStatusCode node_status = common::NODE_ERROR;
     auto now = this->now();
-    bool valid_path = has_path &&
+    bool valid_path = has_path && !m_current_path.poses.empty() &&
                       (m_current_path.poses.size() > m_path_min_length_m) &&
                       (now - m_path_update_time < m_path_timeout);
 
     bool valid_odom =
         this->hasEgoOdometry() &&
         now - this->getEgoOdometryUpdateTime() < m_odometry_timeout;
+
     bool valid_tracking_result = false;
 
     // Switching to odometry-based velocity
-    if (m_sub_odom_velocity) {
+    if (m_sub_odom_velocity && this->hasEgoOdometry()) {
       m_current_speed_mps = this->getEgoOdometry().twist.twist.linear.x;
     }
 
     // Variables
     double desired_velocity_mps = 0.0;                 // [m/s]
+    double desired_velocity_curvature_mps = 0.0;       // [m/s]
+    double desired_velocity_dynamics_mps = 0.0;        // [m/s]
     double current_velocity_mps = m_current_speed_mps; // [m/s]
-    double current_steer_rad = m_current_steer_rad;    // [rad]
+    double m_bank_angle_rad = 0.0;
+    double current_steer_rad = m_current_steer_rad; // [rad]
 
     // Perform Velocity Planning if path is good
     if (m_vel_plan_enabled) {
@@ -221,42 +231,47 @@ private:
         // - apply low pass filter
         lpf_curve.getFilteredArray(curv_array, lpf_curv_array);
         // - get instantaneous curvature
-        double kappa = lpf_curv_array[0];
+        double kappa = lpf_curv_array[0]; // curvature at COG
         // - get path distance
         double path_dist = dist_array[path_len - 1];
 
         // Get Lateral Acceleration Limit using Vehicle dynamics manager
         double a_lat_max = m_tire_manager.ComputeLateralAccelLimit(
             m_a_lon_kf, m_a_lat_kf, m_yaw_rate_kf, current_steer_rad,
-            current_velocity_mps);
-        // // - hyunki 21.10.04, for temporal testing
-        // double a_lat_max = m_tire_manager.ComputeLateralAccelLimit(
-        //     0.0, 0.0, m_yaw_rate_kf, current_steer_rad,
-        //     current_velocity_mps);
-        // double a_lat_max = m_tire_manager.ComputeLateralAccelLimit(
-        //     a_lon, a_lat, yaw_rate, current_steer_rad,
-        //     current_velocity_mps);
+            current_velocity_mps, m_bank_angle_rad);
 
         // Compute maximum velocity
-        if (abs(kappa) <= m_CURVATURE_MINIMUM) {
-          // Handling too small curvature
-          desired_velocity_mps = m_max_vel_mps;
-        } else {
-          // Compute velocity using centripetal acceleration equation
-          // F = m*v^2 / R; v^2 = a * R; v = sqrt(a * R) = sqrt(a / kappa)
-          desired_velocity_mps = sqrt(abs(a_lat_max) / abs(kappa));
-          desired_velocity_mps = std::min(desired_velocity_mps, m_max_vel_mps);
+        // - init desired velocity as max
+        desired_velocity_mps = m_max_vel_mps;
+        if (abs(kappa) > m_CURVATURE_MINIMUM) {
+          // 1. Compute curvature-based velocity planning
+          // - get target point's curvature
+          double kappa_target =
+              lpf_curv_array[m_target_idx]; // curvature at target point
+          double curv_ratio =
+              std::min(abs(kappa_target), m_CURVATURE_MAX) / m_CURVATURE_MAX;
+          double curv_gain = 1.0 - 0.05 * curv_ratio;
+          desired_velocity_curvature_mps = curv_gain * m_max_vel_mps;
+          desired_velocity_mps =
+              std::min(desired_velocity_curvature_mps, desired_velocity_mps);
+          // 2. Compute velocity using centripetal acceleration equation
+          // - F = m*v^2 / R; v^2 = a * R; v = sqrt(a * R) = sqrt(a / kappa)
+          desired_velocity_dynamics_mps =
+              std::min(300 / 3.6, sqrt(abs(a_lat_max) / abs(kappa)));
+          desired_velocity_mps =
+              std::min(desired_velocity_dynamics_mps, desired_velocity_mps);
         }
-
-        // Decrease desired velocity w.r.t. lateral error
+        // 3. Decrease desired velocity w.r.t. lateral error
         double error_ratio = 0.0;
         if (abs(m_error_y_lpf) > m_lateral_error_deadband_m) {
-          error_ratio = std::min(abs(m_error_y_lpf), m_ERROR_Y_MAX) /
-                        m_ERROR_Y_MAX; // [0.0~1.0] ratio
+          error_ratio =
+              std::min(abs(m_error_y_lpf) - m_lateral_error_deadband_m,
+                       m_ERROR_Y_MAX) /
+              m_ERROR_Y_MAX; // [0.0~1.0] ratio
         }
         double error_gain = 1.0 - 0.5 * error_ratio; // [1.0~0.5] gain
 
-        // Decrease desired velocity w.r.t. Safe path distance
+        // 4. Decrease desired velocity w.r.t. Safe path distance
         double path_dist_safe =
             m_path_dist_min + m_current_speed_mps * m_ttc_thres;
         path_dist_safe = std::max(m_path_dist_min + 0.001,
@@ -272,10 +287,11 @@ private:
         // desired_velocity_mps = error_gain * desired_velocity_mps;
 
         // Publish diagnose message
-        publishDiagnostic(valid_path, valid_odom, m_max_vel_mps, kappa,
-                          abs(a_lat_max), m_a_lat_kf, error_gain,
-                          safe_dist_gain, path_dist_safe, m_a_lon_kf,
-                          m_yaw_rate_kf);
+        publishDiagnostic(valid_path, valid_odom, m_max_vel_mps,
+                          desired_velocity_curvature_mps,
+                          desired_velocity_dynamics_mps, kappa, abs(a_lat_max),
+                          m_a_lat_kf, error_gain, safe_dist_gain,
+                          path_dist_safe, m_a_lon_kf, m_yaw_rate_kf);
 
       } else {
         //! Publish zero desired velocity
@@ -284,8 +300,10 @@ private:
         desired_velocity_mps = 0.0;
 
         // Publish diagnose message (valid odom and path only)
-        publishDiagnostic(valid_path, valid_odom, m_max_vel_mps, -1, -1, -1, -1,
-                          -1, -1, -1, -1);
+        publishDiagnostic(valid_path, valid_odom, m_max_vel_mps,
+                          desired_velocity_curvature_mps,
+                          desired_velocity_dynamics_mps, -1, -1, -1, -1, -1, -1,  
+                          -1, -1);
       }
     } else {
       // manual control case
@@ -311,12 +329,12 @@ private:
     RCLCPP_DEBUG(this->get_logger(), "Smoothing with dt: [s] %f",
                  period_double_s);
     // - mission specific step limiter
-    auto mission_code = this->getSystemStatus().mission_status;
+    auto mission_code = this->hasSystemStatus() ? this->getSystemStatus().mission_status.mission_status_code : MissionStatus::MISSION_COMMANDED_STOP;
 
-    if (mission_code.mission_status_code == mission_code.MISSION_RACE ||
-        mission_code.mission_status_code ==
-            mission_code.MISSION_COLLISION_AVOIDNACE ||
-        mission_code.mission_status_code == mission_code.MISSION_TEST) {
+    if (mission_code == MissionStatus::MISSION_RACE ||
+        mission_code ==
+            MissionStatus::MISSION_COLLISION_AVOIDNACE ||
+        mission_code == MissionStatus::MISSION_TEST) {
       desired_velocity_mps =
           smoothSignal(desired_velocity_prev_mps, desired_velocity_mps,
                        m_max_ddes_vel_dt_green_flag, period_double_s);
@@ -467,7 +485,8 @@ private:
   }
 
   void publishDiagnostic(double valid_path, double valid_odom,
-                         double max_vel_mps, double curvature, double a_lat_max,
+                         double max_vel_mps, double vel_curv_mps,
+                         double vel_dyn_mps, double curvature, double a_lat_max,
                          double a_lat_kf, double error_gain,
                          double safe_dist_gain, double safe_dist,
                          double a_lon_kf, double yaw_rate_kf) {
@@ -479,7 +498,10 @@ private:
 
     diagnostic.valid_path = valid_path;
     diagnostic.valid_odom = valid_odom;
+
     diagnostic.max_vel_mps = max_vel_mps;
+    diagnostic.vel_curv_mps = vel_curv_mps;
+    diagnostic.vel_dyn_mps = vel_dyn_mps;
 
     diagnostic.curvature = curvature;
     diagnostic.a_lat_max = a_lat_max;
@@ -560,6 +582,10 @@ private:
     lpf_error.getFilteredValue(m_error_y, m_error_y_lpf);
   }
 
+  void targetIdxCallback(const std_msgs::msg::Int32::SharedPtr msg) {
+    m_target_idx = msg->data;
+  }
+
   rcl_interfaces::msg::SetParametersResult
   parametersCallback(const std::vector<rclcpp::Parameter> &vector) {
     rcl_interfaces::msg::SetParametersResult result;
@@ -618,6 +644,7 @@ private:
       steering_sub_;
   rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr steering_cmd_sub_;
   rclcpp::Subscription<std_msgs::msg::Float32MultiArray>::SharedPtr error_sub_;
+  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr target_idx_sub_;
 
   //! Publisher
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr des_vel_pub_;
@@ -655,6 +682,8 @@ private:
   double m_current_speed_odom_mps = 0; // [m/s]
   double m_error_y = 0;                // [m]
   double m_error_y_lpf = 0;            // [m]
+
+  int m_target_idx = 0;
 
   bool kalman_init = false;
   double m_a_lon_kf = 0.0;    // longitudinal accel from KF
@@ -696,6 +725,7 @@ private:
   double m_max_ddes_vel_dt_green_flag;
 
   double m_CURVATURE_MINIMUM = 0.000001;
+  double m_CURVATURE_MAX = 0.0039; // IMS turning radius (840 ft, 256 meter)
   double m_ERROR_Y_MAX = 4.0; // halving des_vel point. Width of IMS track: 12 m
 
 }; /* class VelocityPlannerNode */

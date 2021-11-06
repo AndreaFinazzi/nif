@@ -62,10 +62,10 @@ public:
   double CalcTireSlipRatio(double v_front, double v_rear);
   bool CalcDynamicsFeasibility(nav_msgs::msg::Path path, double vx, double ax,
                                double yaw_rate, double current_steer,
-                               double dt);
+                               double bank_angle, double dt);
   double ComputeLateralAccelLimit(double a_lon, double a_lat, double yaw_rate,
-                                  double current_steer,
-                                  double current_velocity);
+                                  double current_steer, double current_velocity,
+                                  double bank_angle);
   double ComputeLongitudinalAccelLimit(double a_lon, double a_lat);
 
   std::tuple<std::vector<double>, std::vector<double>, std::vector<double>>
@@ -95,13 +95,13 @@ public:
 
   // - lateral tire force table w.r.t. tire load
   std::string m_tire_fz_fy_LF_path =
-      pkg_install_dir + "/data/tire_fz_fy/Fz_FyMax_FyMin_LF.csv";
+      pkg_install_dir + "/data/tire_fz_fy/Fz_FyMax_FyMin_LF_updated.csv";
   std::string m_tire_fz_fy_RF_path =
-      pkg_install_dir + "/data/tire_fz_fy/Fz_FyMax_FyMin_RF.csv";
+      pkg_install_dir + "/data/tire_fz_fy/Fz_FyMax_FyMin_RF_updated.csv";
   std::string m_tire_fz_fy_LR_path =
-      pkg_install_dir + "/data/tire_fz_fy/Fz_FyMax_FyMin_LR.csv";
+      pkg_install_dir + "/data/tire_fz_fy/Fz_FyMax_FyMin_LR_updated.csv";
   std::string m_tire_fz_fy_RR_path =
-      pkg_install_dir + "/data/tire_fz_fy/Fz_FyMax_FyMin_RR.csv";
+      pkg_install_dir + "/data/tire_fz_fy/Fz_FyMax_FyMin_RR_updated.csv";
 
   std::vector<std::vector<double>> m_tire_fz_fy_LF =
       getTireFzFyDataFromCSV(m_tire_fz_fy_LF_path); // [Fz, FyMax, FyMin]
@@ -114,13 +114,13 @@ public:
 
   // - longitudinal tire force table w.r.t. tire load
   std::string m_tire_fz_fx_LF_path =
-      pkg_install_dir + "/data/tire_fz_fx/Fz_FxMax_FxMin_LF.csv";
+      pkg_install_dir + "/data/tire_fz_fx/Fz_FxMax_FxMin_LF_updated.csv";
   std::string m_tire_fz_fx_RF_path =
-      pkg_install_dir + "/data/tire_fz_fx/Fz_FxMax_FxMin_RF.csv";
+      pkg_install_dir + "/data/tire_fz_fx/Fz_FxMax_FxMin_RF_updated.csv";
   std::string m_tire_fz_fx_LR_path =
-      pkg_install_dir + "/data/tire_fz_fx/Fz_FxMax_FxMin_LR.csv";
+      pkg_install_dir + "/data/tire_fz_fx/Fz_FxMax_FxMin_LR_updated.csv";
   std::string m_tire_fz_fx_RR_path =
-      pkg_install_dir + "/data/tire_fz_fx/Fz_FxMax_FxMin_RR.csv";
+      pkg_install_dir + "/data/tire_fz_fx/Fz_FxMax_FxMin_RR_updated.csv";
   std::vector<std::vector<double>> m_tire_fz_fx_LF =
       getTireFzFyDataFromCSV(m_tire_fz_fx_LF_path); // [Fz, FxMax, FxMin]
   std::vector<std::vector<double>> m_tire_fz_fx_RF =
@@ -133,7 +133,7 @@ public:
   // Parameters
   double g = 9.80665;
   // Safety factor (aggressiveness; belief w.r.t. model parameters)
-  double gamma = 0.4;
+  double gamma = 1.0;
   // Vehicle Parameters (geometric)
   double m_uns_f = 29.5; // unsprung mass front [kg]
   double m_uns_r = 36;   // unsprung mass rear [kg]

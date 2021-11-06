@@ -40,8 +40,7 @@ using namespace Frenet;
 #define RIGHT_WIDTH_MARGIN 5.51 // meter
 #define WIDTH_DELTA 1.0         // meter
 
-class WaypointManagerMission
-{
+class WaypointManagerMission {
 public:
   WaypointManagerMission(const string &rl_wpt_file_path_,
                          const string &pit_wpt_file_path_,
@@ -61,24 +60,20 @@ public:
       std::vector<std::shared_ptr<FrenetPath>> &frenet_paths);
 
   void genCandidates();
-  nav_msgs::msg::Path getDesiredMapTrackInGlobal()
-  {
+  nav_msgs::msg::Path getDesiredMapTrackInGlobal() {
     calcMapTrack();
     return m_map_track_path_global;
   }
-  nav_msgs::msg::Path getDesiredMapTrackInBody()
-  {
+  nav_msgs::msg::Path getDesiredMapTrackInBody() {
     calcMapTrack();
     return m_map_track_path_body;
   }
 
-  sensor_msgs::msg::PointCloud2 getFrenetCandidatesAsPc()
-  {
+  sensor_msgs::msg::PointCloud2 getFrenetCandidatesAsPc() {
     return m_frenet_candidates_pc;
   }
 
-  nav_msgs::msg::Path getMinCostFrenetPath()
-  {
+  nav_msgs::msg::Path getMinCostFrenetPath() {
     return m_collision_avoidance_path_body;
   }
 

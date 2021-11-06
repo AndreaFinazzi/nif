@@ -15,7 +15,40 @@ missions:
         - 75  # MISSION_PIT_TO_TRACK
         - 128 # MISSION_SLOW_DRIVE
         - 200 # MISSION_COMMANDED_STOP
+        - 400 # MISSION_COLLISION_AVOIDNACE
+        - 500 # MISSION_WARMUP
         - 777 # MISSION_TEST
+
+  - mission_code: 400 # MISSION_COLLISION_AVOIDNACE
+    active: true
+    fallback:
+      active: true
+      mission_code: 128 # MISSION_SLOW_DRIVE
+    allowed_transitions:
+      active: true
+      from:
+        - 0   # MISSION_RACE
+        - 75  # MISSION_PIT_TO_TRACK
+        - 128 # MISSION_SLOW_DRIVE
+        - 200 # MISSION_COMMANDED_STOP
+        - 400 # MISSION_COLLISION_AVOIDNACE
+        - 777 # MISSION_TEST
+
+  - mission_code: 500 # MISSION_WARMUP
+    active: true
+    fallback:
+      active: true
+      mission_code: 128 # MISSION_SLOW_DRIVE
+    allowed_transitions:
+      active: true
+      from:
+        - 0   # MISSION_RACE
+        - 75  # MISSION_PIT_TO_TRACK
+        - 128 # MISSION_SLOW_DRIVE
+        - 200 # MISSION_COMMANDED_STOP
+        - 500 # MISSION_WARMUP
+        - 777 # MISSION_TEST
+
 
   - mission_code: 777 # MISSION_TEST
     active: true
@@ -57,6 +90,8 @@ missions:
         - 128 # MISSION_SLOW_DRIVE
         - 200 # MISSION_COMMANDED_STOP
         - 250 # MISSION_EMERGENCY_STOP
+        - 400 # MISSION_COLLISION_AVOIDNACE
+        - 500 # MISSION_WARMUP
         - 777 # MISSION_TEST
         - 65000 # MISSION_PIT_INIT
     timeout:
@@ -71,9 +106,9 @@ missions:
     activation_area:
       active: true
       bboxes:
-        - - -2015.0 # x_min
+        - - -2030.0 # x_min
           - 250.0 # y_min
-          - -2030.0 # x_max
+          - -2015.0 # x_max
           - 312.0 # y_max
     activation_velocity:
       active: false
@@ -101,9 +136,6 @@ missions:
       range_mps:
         - 0.000 # min m/s
         - 0.001 # max m/s
-    allowed_transitions:
-      active: false # ignore
-      from:
 
   - mission_code: 70 # MISSION_PIT_OUT
     active: true
@@ -154,6 +186,8 @@ missions:
         - 75  # MISSION_PIT_TO_TRACK
         - 200 # MISSION_COMMANDED_STOP
         - 128 # MISSION_SLOW_DRIVE
+        - 400 # MISSION_COLLISION_AVOIDNACE
+        - 500 # MISSION_WARMUP
         - 777 # MISSION_TEST
 
   - mission_code: 65000 # MISSION_PIT_INIT
