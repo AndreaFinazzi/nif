@@ -17,13 +17,15 @@
 #include "constraints.h"
 namespace mpcc {
 Constraints::Constraints() {
-  std::cout << "(constraints) default constructor, not everything is initialized properly"
+  std::cout << "(constraints) default constructor, not everything is "
+               "initialized properly"
             << std::endl;
 }
 
 Constraints::Constraints(double Ts, const PathToJson &path)
     : model_(Ts, path), param_(Param(path.param_path)), is_oppo_mpc_(false) {
-    std::cout << "(constraints) Openning params at " << path.param_path << std::endl;
+  std::cout << "(constraints) Openning params at " << path.param_path
+            << std::endl;
 }
 
 OneDConstraint Constraints::getTrackConstraints(const ArcLengthSpline &track,
@@ -76,76 +78,35 @@ OneDConstraint Constraints::getTrackConstraints(const ArcLengthSpline &track,
   const Eigen::Vector2d tan_center = {-d_center(1), d_center(0)};
 
   ////////////// Making r_in and r_out dependent on s /////////////
-  const Eigen::Vector2d pos_track_out = track_i.getClosestPostion(x, track_o);
-  // const Eigen::Vector2d pos_track_out = track_o.getClosestPostion(x,
-  // track_o);
+  const Eigen::Vector2d pos_track_out = track_o.getClosestPostion(
+      x, track_o); // change from "track_i" to "track_o"
   const Eigen::Vector2d pos_track_in = track_i.getClosestPostion(x, track_i);
 
-  double boundary_margin_in, boundary_margin_out;
-  if (is_oppo_mpc_) {
-    boundary_margin_in = param_.car_w * 0.5 * 1.4 + 0.4;
-    boundary_margin_out = 0.;
-  } 
-  else {
-    boundary_margin_in = param_.car_w * 0.5 * 1.4 + 0.4;
-    // boundary_margin_in  = param_.car_w * 0.5 * 1.4 + 1;
-    
-    
-    
-    // if(is_straight)
-    // {
-    //     boundary_margin_out = param_.car_w * 0.5 * 1.4 + 0.25;
-    // }
-    // else
-    // {
-    //     // boundary_margin_out = param_.car_w * 0.5 * 1.4 + 0.85;
-    //     boundary_margin_out = param_.car_w * 0.5 * 1.4 + 3.0;
-    // }
-    
-    
-    
-    
-    boundary_margin_out = param_.car_w * 0.5 * 1.4 + (0.25) + amount_modulation;
-    
-    
-    
-    
-    
-    // boundary_margin_out = param_.car_w * 0.5 * 1.4 + (0.25)+
-    // amount_modulation;
-  }
-  double r_in =
-      ((pos_track_in - pos_center).dot(tan_center)) - boundary_margin_in;
-//   double r_out = r_in - 10.2;
-  double r_out = r_in - 10.2 + amount_modulation;
-  
-  // double r_out = ((pos_track_out - pos_center).dot(-tan_center)) +
-  // boundary_margin_out;
+  /*
+   * DEPRECATED
+   */
+  //   double boundary_margin_in, boundary_margin_out;
+  //   if (is_oppo_mpc_) {
+  //     boundary_margin_in = param_.car_w * 0.5 * 1.4 + 0.4;
+  //     boundary_margin_out = 0.;
+  //   } else {
+  //     boundary_margin_in = param_.car_w * 0.5 * 1.4 + 0.4;
+  //     boundary_margin_out = param_.car_w * 0.5 * 1.4 + (0.25) +
+  //     amount_modulation;
+  //   }
+  //   double r_in =
+  //       ((pos_track_in - pos_center).dot(tan_center)) - boundary_margin_in;
+  //   double r_out = r_in - 10.2 + amount_modulation;
 
-  // double r_in = abs((pos_track_in - pos_center).dot(tan_center)) -
-  // param_.car_w * 1.2; double r_out = abs((pos_track_out -
-  // pos_center).dot(tan_center)) - param_.car_w * 1.2; double r_in = 1.2;
-  // double r_out = -1.2;
+  //   const Eigen::Vector2d pos_outer = pos_center + r_in * tan_center;
+  //   const Eigen::Vector2d pos_inner =
+  //       pos_center +
+  //       r_out * tan_center; // inner and outer is flipped in MPC problem
 
-  double obs_test = 1.;
-  double obs_test1 = 1.;
-  if ((x.s > 550. && x.s < 700.)) {
-    //	    obs_test = -0.5;
-  }
-  if (x.s > 1400. && x.s < 1600.) {
-    //	    obs_test1 = -0.5;
-  }
-
-  const Eigen::Vector2d pos_outer = pos_center + obs_test1 * r_in * tan_center;
-  const Eigen::Vector2d pos_inner =
-      pos_center + obs_test * r_out *
-                       tan_center; // inner and outer is flipped in MPC problem
-  // const Eigen::Vector2d pos_outer = pos_center + obs_test1 * r_in *
-  // tan_center; const Eigen::Vector2d pos_inner = pos_center - obs_test * r_out
-  // * tan_center; // inner and outer is flipped in MPC problem
-
-  // const Eigen::Vector2d pos_outer = pos_center + param_.r_out*tan_center;
-  // const Eigen::Vector2d pos_inner = pos_center - param_.r_in*tan_center;
+  double r_in = abs((pos_track_in - pos_center).dot(tan_center));
+  double r_out = abs((pos_track_out - pos_center).dot(tan_center));
+  const Eigen::Vector2d pos_outer = pos_center + r_out * tan_center;
+  const Eigen::Vector2d pos_inner = pos_center - r_in * tan_center;
   pos_outer_xy_ = {pos_outer(0), pos_outer(1)};
   pos_inner_xy_ = {pos_inner(0), pos_inner(1)};
 
