@@ -16,7 +16,8 @@ WaypointManagerMissionV2::WaypointManagerMissionV2(
       m_pit_wpt_file_path(pit_wpt_file_path_),
       m_body_frame_id_str(body_frame_id_),
       m_global_frame_id_str(global_frame_id_),
-      m_spline_interval(spline_interval_) {
+      m_spline_interval(spline_interval_)
+{
 
   m_map_track_path_global.header.frame_id = m_global_frame_id_str;
   m_map_track_path_body.header.frame_id = m_body_frame_id_str;
@@ -44,7 +45,8 @@ WaypointManagerMissionV2::WaypointManagerMissionV2(
 }
 
 void WaypointManagerMissionV2::setCurrentOdometry(
-    const nav_msgs::msg::Odometry &ego_vehicle_odom) {
+    const nav_msgs::msg::Odometry &ego_vehicle_odom)
+{
   m_cur_odom = ego_vehicle_odom;
   m_rl_wpt_manager->setCurrentOdometry(ego_vehicle_odom);
   m_warmup_wpt_manager->setCurrentOdometry(ego_vehicle_odom);
@@ -54,21 +56,26 @@ void WaypointManagerMissionV2::setCurrentOdometry(
 }
 
 void WaypointManagerMissionV2::setSystemStatus(
-    const nif_msgs::msg::SystemStatus &sys_status) {
+    const nif_msgs::msg::SystemStatus &sys_status)
+{
   m_cur_sys_status = sys_status;
   m_cur_mission_code = sys_status.mission_status;
 }
 
 void WaypointManagerMissionV2::setOccupancyGridMap(
-    const nav_msgs::msg::OccupancyGrid &occupancy_map) {
+    const nav_msgs::msg::OccupancyGrid &occupancy_map)
+{
   this->m_frenet_cost_calculator->setOccupancyMap(occupancy_map);
 }
 
-void WaypointManagerMissionV2::calcMapTrack() {
+void WaypointManagerMissionV2::calcMapTrack()
+{
 
-  if (m_odom_first_callbacked) {
+  if (m_odom_first_callbacked)
+  {
     if (m_cur_mission_code.mission_status_code ==
-        m_cur_mission_code.MISSION_PIT_IN) {
+        m_cur_mission_code.MISSION_PIT_IN)
+    {
       m_map_track_path_global = m_pit_wpt_manager->getDesiredMapTrackInGlobal();
       m_map_track_path_body = m_pit_wpt_manager->getDesiredMapTrackInBody();
 
@@ -134,20 +141,27 @@ void WaypointManagerMissionV2::calcMapTrack() {
       //       cos(m_collision_avoidance_fp_body_ptr->yaw()[i] / 2.0);
       //   m_collision_avoidance_path_body.poses.push_back(ps);
       // }
-    } else if (m_cur_mission_code.mission_status_code ==
-               m_cur_mission_code.MISSION_TIRE_WARMUP) {
+    }
+    else if (m_cur_mission_code.mission_status_code ==
+             m_cur_mission_code.MISSION_TIRE_WARMUP)
+    {
       m_map_track_path_global =
           m_warmup_wpt_manager->getDesiredMapTrackInGlobal();
       m_map_track_path_body = m_warmup_wpt_manager->getDesiredMapTrackInBody();
-    } else if (m_cur_mission_code.mission_status_code ==
-               m_cur_mission_code.MISSION_STANDBY) {
+    }
+    else if (m_cur_mission_code.mission_status_code ==
+             m_cur_mission_code.MISSION_STANDBY)
+    {
       // NOTE : check out of track
-      if (m_on_track_flg) {
+      if (m_on_track_flg)
+      {
         // if the vehicle is on the track
         m_map_track_path_global =
             m_rl_wpt_manager->getDesiredMapTrackInGlobal();
         m_map_track_path_body = m_rl_wpt_manager->getDesiredMapTrackInBody();
-      } else {
+      }
+      else
+      {
         // if the vehicle is out of the track
         m_map_track_path_global =
             m_pit_wpt_manager->getDesiredMapTrackInGlobal();
@@ -203,12 +217,14 @@ void WaypointManagerMissionV2::calcMapTrack() {
         //   m_collision_avoidance_path_body.poses.push_back(ps);
         // }
       }
-    } else if (m_cur_mission_code.mission_status_code ==
-                   m_cur_mission_code.MISSION_PIT_OUT ||
-               m_cur_mission_code.mission_status_code ==
-                   m_cur_mission_code.MISSION_PIT_STANDBY ||
-               m_cur_mission_code.mission_status_code ==
-                   m_cur_mission_code.MISSION_PIT_INIT) {
+    }
+    else if (m_cur_mission_code.mission_status_code ==
+                 m_cur_mission_code.MISSION_PIT_OUT ||
+             m_cur_mission_code.mission_status_code ==
+                 m_cur_mission_code.MISSION_PIT_STANDBY ||
+             m_cur_mission_code.mission_status_code ==
+                 m_cur_mission_code.MISSION_PIT_INIT)
+    {
       m_map_track_path_global = m_pit_wpt_manager->getDesiredMapTrackInGlobal();
       m_map_track_path_body = m_pit_wpt_manager->getDesiredMapTrackInBody();
 
@@ -262,12 +278,16 @@ void WaypointManagerMissionV2::calcMapTrack() {
       //         sin(m_collision_avoidance_fp_body_ptr->yaw()[i] / 2.0);
       //     m_collision_avoidance_path_body.poses.push_back(ps);
       //   }
-    } else if (m_cur_mission_code.mission_status_code ==
-               m_cur_mission_code.MISSION_SLOW_DRIVE) {
+    }
+    else if (m_cur_mission_code.mission_status_code ==
+             m_cur_mission_code.MISSION_SLOW_DRIVE)
+    {
       m_map_track_path_global = m_rl_wpt_manager->getDesiredMapTrackInGlobal();
       m_map_track_path_body = m_rl_wpt_manager->getDesiredMapTrackInBody();
-    } else if (m_cur_mission_code.mission_status_code ==
-               m_cur_mission_code.MISSION_COLLISION_AVOIDNACE) {
+    }
+    else if (m_cur_mission_code.mission_status_code ==
+             m_cur_mission_code.MISSION_COLLISION_AVOIDNACE)
+    {
       // m_map_track_path_global =
       // m_rl_wpt_manager->getDesiredMapTrackInGlobal(); m_map_track_path_body =
       // m_rl_wpt_manager->getDesiredMapTrackInBody();
@@ -328,7 +348,8 @@ void WaypointManagerMissionV2::calcMapTrack() {
           m_rl_wpt_manager->getCurrentIdx(m_graph_based_path, m_cur_odom);
 
       m_map_track_path_global.poses.clear();
-      for (int i = cur_idx; i < m_graph_based_path.poses.size(); i++) {
+      for (int i = cur_idx; i < m_graph_based_path.poses.size(); i++)
+      {
         geometry_msgs::msg::PoseStamped ps;
         ps.pose.position.x = m_graph_based_path.poses[i].pose.position.x;
         ps.pose.position.y = m_graph_based_path.poses[i].pose.position.y;
@@ -346,31 +367,39 @@ void WaypointManagerMissionV2::calcMapTrack() {
       m_map_track_path_body =
           nif::common::utils::coordination::getPathGlobaltoBody(
               m_cur_odom, m_map_track_path_global);
-    } else {
+    }
+    else
+    {
       // nominal case
       m_map_track_path_global = m_rl_wpt_manager->getDesiredMapTrackInGlobal();
       m_map_track_path_body = m_rl_wpt_manager->getDesiredMapTrackInBody();
     }
-  } else {
+  }
+  else
+  {
     // odom is not setted yet
   }
 }
 
 void WaypointManagerMissionV2::setCollisionAvoidanceGraphPath(
-    const nav_msgs::msg::Path &coll_free_msg) {
+    const nav_msgs::msg::Path &coll_free_msg)
+{
   // TODO : check whether it is in the global frame
   m_graph_based_path = coll_free_msg;
 }
 
 void WaypointManagerMissionV2::frenetPathsToPointCloud(
-    std::vector<std::shared_ptr<FrenetPath>> &frenet_paths) {
+    std::vector<std::shared_ptr<FrenetPath>> &frenet_paths)
+{
 
   pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_ptr(
       new pcl::PointCloud<pcl::PointXYZI>);
 
-  for (int i = 0; i < frenet_paths.size(); i++) {
+  for (int i = 0; i < frenet_paths.size(); i++)
+  {
     int count = 0;
-    for (int j = 0; j < int(frenet_paths[i]->points_x().size() - 1); j++) {
+    for (int j = 0; j < int(frenet_paths[i]->points_x().size() - 1); j++)
+    {
       std::shared_ptr<FrenetPath> &frenet_path = frenet_paths[i];
 
       pcl::PointXYZI current_point;

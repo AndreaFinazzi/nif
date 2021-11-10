@@ -13,15 +13,19 @@
 
 nif::managers::WaypointManagerMissionNode::WaypointManagerMissionNode(
     const std::string &node_name_)
-    : IBaseNode(node_name_, common::NodeType::PLANNING) {
+    : IBaseNode(node_name_, common::NodeType::PLANNING)
+{
   std::string package_share_directory;
 
-  try {
+  try
+  {
     // This value shouldn't be used, it's as a backup if a config param is
     // missing.
     package_share_directory = ament_index_cpp::get_package_share_directory(
         "nif_waypoint_manager_nodes");
-  } catch (std::exception e) {
+  }
+  catch (std::exception e)
+  {
     RCLCPP_FATAL(this->get_logger(), "Can't get package_share_directory");
   }
   package_share_directory = package_share_directory.append("/");
@@ -84,13 +88,15 @@ nif::managers::WaypointManagerMissionNode::WaypointManagerMissionNode(
 }
 
 void nif::managers::WaypointManagerMissionNode::graphCallback(
-    const nav_msgs::msg::Path::SharedPtr graph_path_msg) {
+    const nav_msgs::msg::Path::SharedPtr graph_path_msg)
+{
   m_graph_path_in_global = *graph_path_msg;
   this->wpt_manager->setCollisionAvoidanceGraphPath(m_graph_path_in_global);
 }
 
 void nif::managers::WaypointManagerMissionNode::occupancyCallback(
-    const nav_msgs::msg::OccupancyGrid::SharedPtr occupancy_map_msg) {
+    const nav_msgs::msg::OccupancyGrid::SharedPtr occupancy_map_msg)
+{
   this->wpt_manager->setOccupancyGridMap(*occupancy_map_msg);
 }
 
@@ -99,11 +105,14 @@ void nif::managers::WaypointManagerMissionNode::occupancyCallback(
 nif::managers::WaypointManagerMissionNode::WaypointManagerMissionNode(
     const std::string &node_name_,
     const std::shared_ptr<WaypointManagerMissionV2> wpt_manager_ptr)
-    : WaypointManagerMissionNode(node_name_) {
+    : WaypointManagerMissionNode(node_name_)
+{
   this->setWaypointManager(wpt_manager_ptr);
 }
 
-void nif::managers::WaypointManagerMissionNode::timerCallback() try {
+void nif::managers::WaypointManagerMissionNode::timerCallback()
+try
+{
   //  RCLCPP_DEBUG(this->get_logger(), "WaypointManagerMissionNode timer
   //  callback");
 
@@ -134,15 +143,22 @@ void nif::managers::WaypointManagerMissionNode::timerCallback() try {
   // m_frenet_min_cost_publisher->publish(this->wpt_manager->getMinCostFrenetPath());
 
   if (path_in_body.poses.size() >= this->maptrack_size_safety_threshold &&
-      path_in_global.poses.size() >= this->maptrack_size_safety_threshold) {
+      path_in_global.poses.size() >= this->maptrack_size_safety_threshold)
+  {
     this->setNodeStatus(common::NODE_OK);
-  } else {
+  }
+  else
+  {
     this->setNodeStatus(common::NODE_ERROR);
   }
-} catch (std::exception &e) {
+}
+catch (std::exception &e)
+{
   RCLCPP_ERROR(this->get_logger(), e.what());
   this->setNodeStatus(common::NODE_FATAL_ERROR);
-} catch (...) {
+}
+catch (...)
+{
   RCLCPP_ERROR(this->get_logger(),
                "Unknown exception thrown in WaypointManagerMissionNode.");
   this->setNodeStatus(common::NODE_FATAL_ERROR);
