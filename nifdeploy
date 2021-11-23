@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-. /opt/ros/foxy/setup.bash
+. /opt/ros/$ROS_DISTRO/setup.bash
 if ! [ -f /etc/ros/rosdep/sources.list.d/20-default.list ]; then
   sudo -u $USER rosdep init
 fi
