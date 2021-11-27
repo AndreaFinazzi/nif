@@ -5,7 +5,7 @@ frontRight:
     frame_id: map
     camera_ip_addr: 10.42.0.53
     acquisition_mode: Continuous
-    acquisition_rate: 10.0
+    acquisition_rate: 10
     balance_ratio_abs: 1.0
     balance_ratio_selector: Red
     binning_x: 1
