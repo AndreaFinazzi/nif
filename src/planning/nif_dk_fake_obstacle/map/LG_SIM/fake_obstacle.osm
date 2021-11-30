@@ -1,15 +1,3 @@
-<?xml version='1.0' encoding='UTF-8'?>
-<osm version='0.6' generator='JOSM'>
-  <node id='-461237' action='modify' visible='true' lat='39.79509846632' lon='-86.24365238481' />
-  <node id='-461238' action='modify' visible='true' lat='39.79510029863' lon='-86.24371200399' />
-  <node id='-461239' action='modify' visible='true' lat='39.79465687866' lon='-86.24379547085' />
-  <node id='-461240' action='modify' visible='true' lat='39.79465321402' lon='-86.2437263126' />
-  <way id='-100008587' action='modify' visible='true'>
-    <nd ref='-461237' />
-    <nd ref='-461238' />
-  </way>
-  <way id='-100008588' action='modify' visible='true'>
-    <nd ref='-461239' />
-    <nd ref='-461240' />
-  </way>
-</osm>
+version https://git-lfs.github.com/spec/v1
+oid sha256:841995d37573ba951abf6037cdbd18936ffd8b5651cd777234aae8e359b3adb3
+size 702
