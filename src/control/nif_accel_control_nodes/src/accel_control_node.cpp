@@ -99,7 +99,7 @@ AccelControl::AccelControl() : Node("AccelControlNode") {
   this->declare_parameter("gear.shift_up", 4000.0);
   this->declare_parameter("gear.shift_down", 2200.0);
   this->declare_parameter("gear.shift_time_ms", 1000);
-  this->declare_parameter("gear.track", "IMS");
+  this->declare_parameter("gear.track", "LVMS");
 
   this->declare_parameter("engine.model_safety_factor", 1.2); // larger than 1.0
   this->declare_parameter("engine.safety_rpm_thres", 3000);
@@ -257,6 +257,15 @@ void AccelControl::initializeGears(const std::string &track_id) {
         {5, std::make_shared<control::GearState>(5, 0.96, 22, 35)},
         {6, std::make_shared<control::GearState>(6, 0.889, 30, 255)}};
   } else if (track_id == TRACK_ID_IMS) {
+    // IMS params
+    this->gear_states = {
+        {1, std::make_shared<control::GearState>(1, 2.92, -255, 13.5)},
+        {2, std::make_shared<control::GearState>(2, 1.875, 11, 22)},
+        {3, std::make_shared<control::GearState>(3, 1.38, 19.5, 30)},
+        {4, std::make_shared<control::GearState>(4, 1.5, 27.5, 37.5)},
+        {5, std::make_shared<control::GearState>(5, 0.96, 35, 50)},
+        {6, std::make_shared<control::GearState>(6, 0.889, 41.5, 255)}};
+  } else if (track_id == TRACK_ID_LVMS) {
     // IMS params
     this->gear_states = {
         {1, std::make_shared<control::GearState>(1, 2.92, -255, 13.5)},

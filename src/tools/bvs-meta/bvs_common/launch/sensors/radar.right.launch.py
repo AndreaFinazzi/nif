@@ -19,7 +19,7 @@ def generate_launch_description():
 
     # Print to terminal to notify right radar are enabled
     print('RIGHT RADAR ENABLED')
-    can_interface = 'can5'
+    can_interface = 'can3'
 
     # Right Radar
     socket_can_receiver_node = LifecycleNode(

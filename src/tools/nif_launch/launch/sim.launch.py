@@ -26,8 +26,10 @@ from launch_ros.actions import Node
 
 IMS = 0
 LOR = 1
-LG_SVL = 2
-track = LG_SVL
+IMS_SIM = 2
+LVMS = 3
+LVMS_SIM = 4
+track = IMS_SIM
 
 def get_share_file(package_name, file_name):
     return os.path.join(get_package_share_directory(package_name), file_name)
@@ -261,7 +263,11 @@ def generate_launch_description():
         global_params_file = 'params.sim.global.yaml'
     elif track == IMS:
         global_params_file = 'params.sim.global.yaml'
-    elif track == LG_SVL:
+    elif track == IMS_SIM:
+        global_params_file = 'params.sim.global.yaml'
+    elif track == LVMS:
+        global_params_file = 'params.sim.global.yaml'
+    elif track == LVMS_SIM:
         global_params_file = 'params.sim.global.yaml'
     else:
         raise RuntimeError("ERROR: invalid track provided: {}".format(track))
@@ -317,7 +323,7 @@ def generate_launch_description():
             get_package_share_directory("nif_waypoint_manager_nodes"),
             "config",
             "mission",
-            "lor_new.yaml",
+            "lor.yaml",
         ),
     )
 
@@ -326,7 +332,7 @@ def generate_launch_description():
             get_package_share_directory("nif_waypoint_manager_nodes"),
             "config",
             "mission",
-            "ims_new.yaml", 
+            "ims.yaml", 
         ),
     )
 
@@ -335,7 +341,25 @@ def generate_launch_description():
             get_package_share_directory("nif_waypoint_manager_nodes"),
             "config",
             "mission",
-            "lgsvl_new.yaml",   
+            "lgsvl.yaml",   
+        ),
+    )
+
+    wpt_config_file_lvms = (
+        os.path.join(
+            get_package_share_directory("nif_waypoint_manager_nodes"),
+            "config",
+            "mission",
+            "lvms.yaml",   
+        ),
+    )
+
+    wpt_config_file_lvms_sim = (
+        os.path.join(
+            get_package_share_directory("nif_waypoint_manager_nodes"),
+            "config",
+            "mission",
+            "lvms_sim.yaml",   
         ),
     )
 
@@ -345,8 +369,12 @@ def generate_launch_description():
         config_file = wpt_config_file_lor
     elif track == IMS:
         config_file = wpt_config_file_ims
-    elif track == LG_SVL:
+    elif track == IMS_SIM:
         config_file = wpt_config_file_svl
+    elif track == LVMS:
+        config_file = wpt_config_file_lvms
+    elif track == LVMS_SIM:
+        config_file = wpt_config_file_lvms_sim
     else:
         raise RuntimeError("ERROR: invalid track provided: {}".format(track))
 

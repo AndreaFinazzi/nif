@@ -19,7 +19,7 @@ def generate_launch_description():
 
     # Print to terminal to notify front radar are enabled
     print('FRONT RADAR ENABLED')
-    can_interface = 'can3'
+    can_interface = 'can1'
 
     # Front Radar
     socket_can_receiver_node = LifecycleNode(

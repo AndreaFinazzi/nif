@@ -17,7 +17,7 @@
     exposure_auto_alg: 'FitRange'       # STRING
     exposure_auto_max: 60000000         # INTEGER
     exposure_auto_min: 41               # INTEGER
-    exposure_auto_outliers: 0           # INTEGER
+    exposure_auto_outliers: 1000        # INTEGER
     exposure_auto_rate: 100             # INTEGER
     exposure_auto_target: 50            # INTEGER
     exposure_auto_tol: 5                # INTEGER
@@ -74,7 +74,7 @@
     exposure_auto_alg: 'FitRange'       # STRING
     exposure_auto_max: 60000000         # INTEGER
     exposure_auto_min: 41               # INTEGER
-    exposure_auto_outliers: 0           # INTEGER
+    exposure_auto_outliers: 1000        # INTEGER
     exposure_auto_rate: 100             # INTEGER
     exposure_auto_target: 50            # INTEGER
     exposure_auto_tol: 5                # INTEGER
@@ -131,7 +131,7 @@
     exposure_auto_alg: 'FitRange'       # STRING
     exposure_auto_max: 60000000         # INTEGER
     exposure_auto_min: 41               # INTEGER
-    exposure_auto_outliers: 0           # INTEGER
+    exposure_auto_outliers: 1000        # INTEGER
     exposure_auto_rate: 100             # INTEGER
     exposure_auto_target: 50            # INTEGER
     exposure_auto_tol: 5                # INTEGER
@@ -188,7 +188,7 @@
     exposure_auto_alg: 'FitRange'       # STRING
     exposure_auto_max: 60000000         # INTEGER
     exposure_auto_min: 41               # INTEGER
-    exposure_auto_outliers: 0           # INTEGER
+    exposure_auto_outliers: 1000        # INTEGER
     exposure_auto_rate: 100             # INTEGER
     exposure_auto_target: 50            # INTEGER
     exposure_auto_tol: 5                # INTEGER
@@ -245,7 +245,7 @@
     exposure_auto_alg: 'FitRange'       # STRING
     exposure_auto_max: 60000000         # INTEGER
     exposure_auto_min: 41               # INTEGER
-    exposure_auto_outliers: 0           # INTEGER
+    exposure_auto_outliers: 1000        # INTEGER
     exposure_auto_rate: 100             # INTEGER
     exposure_auto_target: 50            # INTEGER
     exposure_auto_tol: 5                # INTEGER
@@ -302,7 +302,7 @@
     exposure_auto_alg: 'FitRange'       # STRING
     exposure_auto_max: 60000000         # INTEGER
     exposure_auto_min: 41               # INTEGER
-    exposure_auto_outliers: 0           # INTEGER
+    exposure_auto_outliers: 1000        # INTEGER
     exposure_auto_rate: 100             # INTEGER
     exposure_auto_target: 50            # INTEGER
     exposure_auto_tol: 5                # INTEGER
