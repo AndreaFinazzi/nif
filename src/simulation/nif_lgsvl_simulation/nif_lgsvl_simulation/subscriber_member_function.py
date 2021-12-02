@@ -282,9 +282,14 @@ class LGSVLSubscriberNode(BaseNode):
         '''
 
         # FAKE FIX
-        ecef_ref_lat = 39.79312996
-        ecef_ref_lon = -86.23524024
-        ecef_ref_hgt = -0.170035537
+        # ecef_ref_lat = 39.79312996
+        # ecef_ref_lon = -86.23524024
+        # ecef_ref_hgt = -0.170035537
+
+        # Reference origin from TUM : 36.268252, -115.015914 
+        ecef_ref_lat = 36.268252
+        ecef_ref_lon = -115.015914
+        ecef_ref_hgt = -0.0
 
         llh = ned2geodetic(msg.pose.pose.position.x, -msg.pose.pose.position.y, 0., 
                            ecef_ref_lat, ecef_ref_lon, 0.)
