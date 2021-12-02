@@ -21,6 +21,8 @@
   <depend>nif_common</depend>
   <depend>nif_common_nodes</depend>
   <depend>autoware_auto_msgs</depend>
+  <depend>yaml-cpp</depend>
+  <depend>ament_index_cpp</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>

@@ -12,6 +12,7 @@ endif()
 
 # find dependencies
 find_package(ament_cmake_auto REQUIRED)
+find_package(ament_index_cpp REQUIRED)
 ament_auto_find_build_dependencies()
 
 # Library
@@ -23,6 +24,12 @@ ament_auto_add_library(${PROJECT_NAME} SHARED
 
 ament_auto_add_executable(${PROJECT_NAME}_exe
   src/adaptive_cruise_node_main.cpp)
+
+target_include_directories(${PROJECT_NAME} PRIVATE ${YAML_CPP_INCLUDE_DIR})
+target_link_libraries(${PROJECT_NAME} yaml-cpp)
+ament_target_dependencies(${PROJECT_NAME} yaml-cpp)
+
+ament_export_dependencies(ament_index_cpp)
 
 
 # if(BUILD_TESTING)
