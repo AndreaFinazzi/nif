@@ -1,7 +1,12 @@
 #ifndef CAMBER_COMPENSATOR_H_
 #define CAMBER_COMPENSATOR_H_
 
+#define DEFAULT_MAX_COMPENSATE_MAG_DEG 4.0
+#define DEFAULT_CONST_COMPENSATE_MAG_DEG 2.0
+#define DEFAULT_MAX_SPEED_MPS 60.0
+
 #include <iostream>
+#include <limits>
 
 namespace nif {
 namespace control {
@@ -19,8 +24,28 @@ enum CAMBERCOMPESATORMODE {
 
 class CamberCompensator {
 public:
+  /// @brief This is origianlly designed for Indy AV-21 which has a left camber
+  /// setup. --> when steering cmd is zero, the car goes to left side.
+  CamberCompensator(
+      CAMBERCOMPESATORMODE &mode_,
+      bool &sign_flip_); // default is "CONSTANT_BIAS" mode / sign_flip == false
+
+  void setVehSpeed(double &veh_speed_mps_);
+  void setBankAngle(double &bank_angle_rad_);
+  void setSignFlip(bool &is_flip_);
+  void setCompMode(CAMBERCOMPESATORMODE &mode_);
+  double getCamberCompensation();
+
 private:
-}
+  CAMBERCOMPESATORMODE m_compesator_mode;
+  double m_veh_speed; // [mps]
+  bool m_sign_flip;
+  int m_sign_multiplier;
+  bool m_bank_angle_rad;
+
+  double m_max_compensate_mag; // [deg] : must be positive
+  double m_compensated_result; // [deg]
+};
 } // namespace control
 } // namespace nif
 
