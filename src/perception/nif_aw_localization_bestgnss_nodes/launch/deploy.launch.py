@@ -10,6 +10,7 @@ from launch_ros.actions import Node
 IMS = 0
 LOR = 1
 LG_SVL = 2
+LVMS = 3
 
 track_id = os.environ.get('TRACK').strip()
 
@@ -19,6 +20,8 @@ elif track_id == "LOR":
     track = LOR
 elif track_id == "LG_SVL":
     track = LG_SVL
+elif track_id == "LVMS":
+    track = LVMS
 else:
     raise RuntimeError("ERROR: Invalid track {}".format(track_id))
 
@@ -32,11 +35,13 @@ def generate_launch_description():
         config_file = 'config_ims.yaml'
     elif track == LG_SVL:
         config_file = 'config_lgsim.yaml'
+    elif track == LVMS:
+        config_file = 'config_lvms.yaml'
     else:
         raise RuntimeError("ERROR: invalid track provided: {}".format(track))
 
     params_file = os.path.join(
-            get_package_share_directory("nif_aw_localization_nodes"),
+            get_package_share_directory("nif_aw_localization_bestgnss_nodes"),
             "config",
             config_file
         )
@@ -48,8 +53,8 @@ def generate_launch_description():
     )
 
     aw_localization_node =  Node(
-                package="nif_aw_localization_nodes",
-                executable="nif_aw_localization_nodes_exe",
+                package="nif_aw_localization_bestgnss_nodes",
+                executable="nif_aw_localization_bestgnss_nodes_exe",
                 output={
                     "stderr": "screen",
                     "stdout": "screen"

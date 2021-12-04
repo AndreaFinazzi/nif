@@ -44,18 +44,18 @@ ament_auto_add_library(amathuutils_lib SHARED
         lib/kalman_filter.cpp
         lib/time_delay_kalman_filter.cpp)
 
-ament_auto_add_library(nif_aw_localization_node SHARED
-        src/nif_aw_localization_node.cpp)
+ament_auto_add_library(nif_aw_localization_bestgnss_node SHARED
+        src/nif_aw_localization_bestgnss_node.cpp)
 
-target_link_libraries(nif_aw_localization_node
+target_link_libraries(nif_aw_localization_bestgnss_node
         amathuutils_lib
         aw_geodetic_conv
 )
 
 ament_auto_add_executable(${PROJECT_NAME}_exe
-        src/nif_aw_localization_nodes_main.cpp)
+        src/nif_aw_localization_bestgnss_nodes_main.cpp)
 target_link_libraries(${PROJECT_NAME}_exe
-        nif_aw_localization_node
+        nif_aw_localization_bestgnss_node
 )
 
 if(BUILD_TESTING)
@@ -63,7 +63,7 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 
 #   add_ros_test(
-#           test/nif_aw_localization_nodes.launch.py
+#           test/nif_aw_localization_bestgnss_nodes.launch.py
 #           TIMEOUT "30"
 #   )
   ament_add_gtest(${PROJECT_NAME}_test

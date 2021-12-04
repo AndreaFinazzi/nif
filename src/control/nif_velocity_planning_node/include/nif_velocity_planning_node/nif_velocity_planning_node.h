@@ -117,7 +117,10 @@ public:
     // - time to collision(arrive) until safe path dist
     this->declare_parameter("ttc_thres", 2.0);
     // - safety factor for lateral tire force model
-    this->declare_parameter("lateral_tire_model_factor", 0.6);
+    // this->declare_parameter("lateral_tire_model_factor", 0.6);
+    // - safety factor for lateral tire force model (increase to 0.9 by cy for
+    // LVMS)
+    this->declare_parameter("lateral_tire_model_factor", 0.9);
     // - smoothing desired velocity change // mps increase per sec
     this->declare_parameter("max_ddes_vel_dt_default", 5.0);
     this->declare_parameter("max_ddes_vel_dt_green_flag", 10.0);
@@ -302,7 +305,7 @@ private:
         // Publish diagnose message (valid odom and path only)
         publishDiagnostic(valid_path, valid_odom, m_max_vel_mps,
                           desired_velocity_curvature_mps,
-                          desired_velocity_dynamics_mps, -1, -1, -1, -1, -1, -1,  
+                          desired_velocity_dynamics_mps, -1, -1, -1, -1, -1, -1,
                           -1, -1);
       }
     } else {
@@ -329,11 +332,13 @@ private:
     RCLCPP_DEBUG(this->get_logger(), "Smoothing with dt: [s] %f",
                  period_double_s);
     // - mission specific step limiter
-    auto mission_code = this->hasSystemStatus() ? this->getSystemStatus().mission_status.mission_status_code : MissionStatus::MISSION_COMMANDED_STOP;
+    auto mission_code =
+        this->hasSystemStatus()
+            ? this->getSystemStatus().mission_status.mission_status_code
+            : MissionStatus::MISSION_COMMANDED_STOP;
 
     if (mission_code == MissionStatus::MISSION_RACE ||
-        mission_code ==
-            MissionStatus::MISSION_COLLISION_AVOIDNACE ||
+        mission_code == MissionStatus::MISSION_COLLISION_AVOIDNACE ||
         mission_code == MissionStatus::MISSION_TEST) {
       desired_velocity_mps =
           smoothSignal(desired_velocity_prev_mps, desired_velocity_mps,
