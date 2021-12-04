@@ -266,14 +266,14 @@ void AccelControl::initializeGears(const std::string &track_id) {
         {5, std::make_shared<control::GearState>(5, 0.96, 35, 50)},
         {6, std::make_shared<control::GearState>(6, 0.889, 41.5, 255)}};
   } else if (track_id == TRACK_ID_LVMS) {
-    // IMS params
+    // LOR params
     this->gear_states = {
-        {1, std::make_shared<control::GearState>(1, 2.92, -255, 13.5)},
-        {2, std::make_shared<control::GearState>(2, 1.875, 11, 22)},
-        {3, std::make_shared<control::GearState>(3, 1.38, 19.5, 30)},
-        {4, std::make_shared<control::GearState>(4, 1.5, 27.5, 37.5)},
-        {5, std::make_shared<control::GearState>(5, 0.96, 35, 50)},
-        {6, std::make_shared<control::GearState>(6, 0.889, 41.5, 255)}};
+        {1, std::make_shared<control::GearState>(1, 2.92, -255, 11)},
+        {2, std::make_shared<control::GearState>(2, 1.875, 9.5, 16)},
+        {3, std::make_shared<control::GearState>(3, 1.38, 14, 22)},
+        {4, std::make_shared<control::GearState>(4, 1.5, 17, 30)},
+        {5, std::make_shared<control::GearState>(5, 0.96, 22, 35)},
+        {6, std::make_shared<control::GearState>(6, 0.889, 30, 255)}};
   } else {
     RCLCPP_ERROR(this->get_logger(),
                  "Got unrecognized track_id: %s, parameter out of range.",
@@ -382,10 +382,10 @@ void AccelControl::publishThrottleBrake() {
   pubBrakeCmdRaw_->publish(this->brake_cmd);
 
 // !!!! UNCOMMENT TO ENABLE THROTTLE SATURATION TO JOYSTICK CMD  !!!!
-  // if (this->throttle_cmd.data > this->max_throttle_) {
-  //   RCLCPP_DEBUG(this->get_logger(), "%s\n", "Throttle Limit Max Reached");
-  //   this->throttle_cmd.data = this->max_throttle_;
-  // }
+  if (this->throttle_cmd.data > this->max_throttle_) {
+    RCLCPP_DEBUG(this->get_logger(), "%s\n", "Throttle Limit Max Reached");
+    this->throttle_cmd.data = this->max_throttle_;
+  }
 // !!!! UNCOMMENT TO ENABLE THROTTLE SATURATION TO JOYSTICK CMD  !!!!
 
   // Release throttle w.r.t. lateral error
@@ -462,9 +462,10 @@ void AccelControl::shiftCallback() {
     return;
   }
 
+  bool upshift_enabled = this->throttle_cmd.data > 0.0 || this->max_throttle_ > 0.0;
+
   // Determine if a shift is required
-  if (curr_speed > upshift_speed && this->throttle_cmd.data > 0.0 &&
-      curr_gear_num < 6) {
+  if (curr_speed > upshift_speed && upshift_enabled && curr_gear_num < 6) {
     // change to next gear if not in 4th
     curr_gear_ptr_ = this->gear_states[curr_gear_num + 1];
     this->gear_cmd.data = curr_gear_num + 1;
