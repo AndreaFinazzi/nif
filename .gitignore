@@ -86,3 +86,4 @@ src/planning/nif_dk_graph_planner/map/
 src/perception/nif_localization_nodes/map/ims/full_map.pcd
 
 core
+.editorconfig
