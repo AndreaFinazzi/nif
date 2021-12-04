@@ -29,7 +29,7 @@ LOR = 1
 IMS_SIM = 2
 LVMS = 3
 LVMS_SIM = 4
-track = IMS_SIM
+track = LVMS_SIM
 
 def get_share_file(package_name, file_name):
     return os.path.join(get_package_share_directory(package_name), file_name)
@@ -268,7 +268,7 @@ def generate_launch_description():
     elif track == LVMS:
         global_params_file = 'params.sim.global.yaml'
     elif track == LVMS_SIM:
-        global_params_file = 'params.sim.global.yaml'
+        global_params_file = 'params_LVMS_SIM.global.yaml'
     else:
         raise RuntimeError("ERROR: invalid track provided: {}".format(track))
 
