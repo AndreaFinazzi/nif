@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
 . /opt/ros/$ROS_DISTRO/setup.bash
-sudo apt update
 
 # Import external repos
 GL_TOKEN=$(cat .secret.gitlab) GH_TOKEN=$(cat .secret.github) bash -c 'cat nif.$ROS_DISTRO.repos | envsubst > nif.$ROS_DISTRO.repos.tmp'

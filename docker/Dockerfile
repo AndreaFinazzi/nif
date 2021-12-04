@@ -7,20 +7,16 @@ FROM ros:$ROS_DISTRO
 ARG GH_TOKEN=${GH_TOKEN}
 ARG GL_TOKEN=${GL_TOKEN}
 
-RUN apt-get update \
-  && DEBIAN_FRONTEND=noninteractive apt-get upgrade -y \
-  && DEBIAN_FRONTEND=noninteractive apt-get install -y ssh \
-      build-essential \
-      gcc \
-      g++ \
-      gdb \
-      clang \
-      cmake \
-      rsync \
-      tar \
-      python \
-      wget \
-  && apt-get clean
+## Install from packages list
+COPY apt-packages /tmp/
+RUN . /opt/ros/$ROS_DISTRO/setup.sh && \
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get -y dist-upgrade && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y gettext-base && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        $(cat /tmp/apt-packages | cut -d# -f1 | envsubst) \
+    && rm -rf /var/lib/apt/lists/* /tmp/apt-packages \
+    && apt-get clean
 
 RUN ( \
     echo 'LogLevel DEBUG2'; \
@@ -30,29 +26,7 @@ RUN ( \
   ) > /etc/ssh/sshd_config_test_clion \
   && mkdir /run/sshd
 
-## Install from packages list
-COPY apt-packages /tmp/
-RUN apt-get update && \
-    apt-get install -y \
-        $(cat /tmp/apt-packages | cut -d# -f1 | envsubst) \
-    && rm -rf /var/lib/apt/lists/* /tmp/apt-packages
-
-RUN apt-get update \
-  && DEBIAN_FRONTEND=noninteractive apt-get install -y \
-      ros-$ROS_DISTRO-rqt \
-      ros-$ROS_DISTRO-rqt-* \
-      ros-$ROS_DISTRO-tf2-tools \
-      tmux tmuxp terminator nano \
-      ros-$ROS_DISTRO-plotjuggler \
-      ros-$ROS_DISTRO-plotjuggler-ros \
-  && apt-get clean
-
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
-      libglm-dev \
-  && apt-get clean
-
 # Clone and install dependencies
-RUN apt update && DEBIAN_FRONTEND=noninteractive apt install -y python3-vcstool
 RUN cd /opt && echo $GH_TOKEN && echo $GL_TOKEN && \
     git clone --recurse-submodules https://$GH_TOKEN@github.com/AndreaFinazzi/nif.git && \
     cd nif && echo $GL_TOKEN > .secret.gitlab && echo $GH_TOKEN > .secret.github && \
@@ -66,16 +40,20 @@ RUN cd /opt && git clone https://github.com/borglab/gtsam.git && \
     cmake -DGTSAM_INSTALL_GEOGRAPHICLIB=ON -DGTSAM_WITH_EIGEN_MKL=OFF .. && \
     make install
 
-RUN apt-get update && \
-    apt-get -y dist-upgrade && \
-    rm -rf /var/lib/apt/lists/*
-
 # Install Allied Vision Vimba SDK
 RUN wget https://autoware-auto.s3.us-east-2.amazonaws.com/iac/Vimba_v4.2_Linux.tgz \
     && tar xvf Vimba_v4.2_Linux.tgz \
     && rm Vimba_v4.2_Linux.tgz \
     && mv Vimba_4_2/ /opt \
     && /opt/Vimba_4_2/VimbaGigETL/Install.sh
+
+# Install VSCode
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y software-properties-common apt-transport-https wget && \
+    wget -q https://packages.microsoft.com/keys/microsoft.asc -O- | sudo apt-key add - && \
+    add-apt-repository "deb [arch=amd64] https://packages.microsoft.com/repos/vscode stable main" && \
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y code
 
 
 COPY env.sh /etc/profile.d/ade_env.sh

@@ -25,6 +25,7 @@ python3-bloom
 python3-catkin-pkg
 python3-colcon-common-extensions
 python3-pip
+python3-vcstool
 shellcheck
 strace
 twine
@@ -32,6 +33,26 @@ vim
 xdg-utils
 wget
 gettext-base
+ssh
+build-essential
+gcc
+g++
+cmake
+rsync
+tar
+python3
+
+tmux 
+tmuxp 
+terminator 
+nano
+libglm-dev
+
+ros-$ROS_DISTRO-rqt
+ros-$ROS_DISTRO-rqt-*
+ros-$ROS_DISTRO-tf2-tools
+ros-$ROS_DISTRO-plotjuggler
+ros-$ROS_DISTRO-plotjuggler-ros
 
 # DDS Dependencies
 ros-$ROS_DISTRO-cyclonedds
@@ -47,7 +68,7 @@ ros-$ROS_DISTRO-rosbag2-transport
 ros-$ROS_DISTRO-ament-clang-format
 
 # lgsvl-bridge
-ros-$ROS_DISTRO-lgsvl-bridge
+# ros-$ROS_DISTRO-lgsvl-bridge
 
 # Other deps
 ros-$ROS_DISTRO-diagnostic-updater
