@@ -639,7 +639,7 @@ void AWLocalizationNode::TOPBESTPOSCallback(
   tf2::Transform transform_top_on_global;
   transform_top_on_global.setOrigin(tf2::Vector3(m_d_TOP_GPS_X, m_d_TOP_GPS_Y, -ltp_pt.z));
   tf2::Quaternion quat_top_on_global;
-  quat_top_on_global.setRPY(m_dGPS_roll, 0, m_dGPS_Heading);
+  quat_top_on_global.setRPY(m_dGPS_TOP_roll, 0, m_dGPS_Heading);
   transform_top_on_global.setRotation(quat_top_on_global);
 
   auto transform_top_to_bottom_sync = transform_top_on_global * transform_top_to_bottom ;
@@ -718,7 +718,7 @@ void AWLocalizationNode::TOPINSPVACallback(
   }
 
   m_dGPS_TOP_Heading = yaw;
-  m_dGPS_roll = msg->roll * nif::common::constants::DEG2RAD;
+  m_dGPS_TOP_roll = msg->roll * nif::common::constants::DEG2RAD;
   bTOPGPSHeading = true;
   if (m_use_inspva_heading) {
     heading_flag = true;

@@ -199,6 +199,7 @@ private:
   double m_dGPS_Heading;
   double m_dGPS_TOP_Heading;
   double m_dGPS_roll;
+  double m_dGPS_TOP_roll; // Note : roll of top and bottom are very different. Add field for novatel top
   double m_dGPS_Heading_prev;
   double m_prevYaw;
   double m_prevTOPYaw;
