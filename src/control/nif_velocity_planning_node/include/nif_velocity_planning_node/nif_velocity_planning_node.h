@@ -118,8 +118,8 @@ public:
     this->declare_parameter("ttc_thres", 2.0);
     // - safety factor for lateral tire force model
     // this->declare_parameter("lateral_tire_model_factor", 0.6);
-    // - safety factor for lateral tire force model (increase to 0.9 by cy for
-    // LVMS)
+
+    // NOTE : dev/conservative-params-update (0.6 to 0.9)
     this->declare_parameter("lateral_tire_model_factor", 0.9);
     // - smoothing desired velocity change // mps increase per sec
     this->declare_parameter("max_ddes_vel_dt_default", 5.0);
