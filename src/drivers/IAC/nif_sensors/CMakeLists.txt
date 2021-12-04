@@ -19,7 +19,7 @@ find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
 
 # ament package generation and installing
-ament_auto_package(INSTALL_TO_SHARE'
+ament_auto_package(INSTALL_TO_SHARE
     launch
     novatel_oem7_driver
     )
