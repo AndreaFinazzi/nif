@@ -191,7 +191,7 @@ def generate_launch_description():
         remappings=[
             ('out_desired_velocity', 'velocity_planner/des_vel'),
             ('in_reference_path', 'planning/path_global'),
-            ('in_ego_odometry', '/aw_localization/ekf/odom'),
+            ('in_ego_odometry', '/sensor/odom_ground_truth'),
             ('in_wheel_speed_report', 'raptor_dbw_interface/wheel_speed_report'),
             ('in_imu_data', 'novatel_bottom/imu/data'),
             ('in_steering_report', 'raptor_dbw_interface/steering_report'),
@@ -392,7 +392,7 @@ def generate_launch_description():
             LaunchConfiguration('nif_waypoint_manager_param_file')
         ],
         remappings=[
-            ('topic_ego_odometry', '/aw_localization/ekf/odom'),
+            ('topic_ego_odometry', '/sensor/odom_ground_truth'),
             ('wpt_manager/maptrack_path/global', '/planning/path_global'),
             ('wpt_manager/maptrack_path/body', '/planning/path_body')
         ]
@@ -437,7 +437,7 @@ def generate_launch_description():
         nif_global_param_node,
         nif_system_status_manager_node,
         nif_csl_node,
-        nif_aw_localization_launch,
+        # nif_aw_localization_launch,
         nif_wall_node_launch_bg,
         robot_description_launch,
         nif_velocity_planning_node,

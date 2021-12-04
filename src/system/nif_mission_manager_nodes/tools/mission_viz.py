@@ -157,7 +157,7 @@ if __name__ == "__main__":
 
     pit_wpt = os.path.join(waypoint_manager_path, 'maps',TRACK_NAME,'pit_lane.csv',)
     raceline = os.path.join(waypoint_manager_path, 'maps',TRACK_NAME,'race_line.csv',)
-    wu_line = os.path.join(waypoint_manager_path, 'maps',TRACK_NAME,'warm_up_wpt.csv',)
+    wu_line = os.path.join(waypoint_manager_path, 'maps',TRACK_NAME,'centerline.csv',)
 
     # raceline = os.path.join(waypoint_manager_path, 'inputs/traj_ltpl_cl',TRACK_NAME,'traj_race_cl.csv',)
     graph = os.path.join(waypoint_manager_path, 'inputs/track_offline_graphs',TRACK_NAME,'stored_graph.pckl')

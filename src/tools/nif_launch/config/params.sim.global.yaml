@@ -24,7 +24,7 @@
       radar_rear: "radar_rear"
 
     topics:
-      ego_odometry: /aw_localization/ekf/odom
+      ego_odometry: /sensor/odom_ground_truth
       system_status: system/status
       race_control_status: /raptor_dbw_interface/rc_to_ct
       ego_powertrain_status: /raptor_dbw_interface/pt_report
