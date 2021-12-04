@@ -36,6 +36,8 @@
     <exec_depend>raptor_dbw_can</exec_depend>
     <exec_depend>diagnostics</exec_depend>
 
+    <exec_depend>nif_sensors</exec_depend>
+
     <exec_depend>bvs_common</exec_depend>
     <exec_depend>bvs_long_control</exec_depend>
     <exec_depend>bvs_utils</exec_depend>

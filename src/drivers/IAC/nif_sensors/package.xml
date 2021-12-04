@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>nif_sensors</name>
+  <version>0.0.1</version>
+  <description>NIF sensors config</description>
+
+  <maintainer email="finazzi@kaist.ac.kr">Andrea Finazzi - USRG @ KAIST</maintainer>
+
+  <license>MIT</license>
+
+  <url type="website">http://www.novatel.com</url>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+</package>
