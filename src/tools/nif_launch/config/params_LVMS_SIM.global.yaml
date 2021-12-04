@@ -32,7 +32,7 @@
       node_status_prefix: /node_status/
 
     time:
-      period_node_status_us: 20000
+      period_node_status_us: 40000
 
     coordinates:
       use_enu: false
@@ -45,6 +45,6 @@
       loc_ref_y: 24.387
       loc_ref_z: -0.0817
 
-      ecef_ref_lat: 39.8125900071711  #LOR
-      ecef_ref_lon: -86.3418060783425 #LOR
-      ecef_ref_hgt: 0.0               #LOR
+      ecef_ref_lat: 36.27395157819169   #LVMS_SIM
+      ecef_ref_lon: -115.01206308896546 #LVMS_SIM
+      ecef_ref_hgt: 0.0        #LVMS

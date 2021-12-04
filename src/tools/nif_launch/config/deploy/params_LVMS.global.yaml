@@ -45,9 +45,6 @@
       loc_ref_y: 24.387
       loc_ref_z: -0.0817
 
-      # ecef_ref_lat: 39.79312996
-      # ecef_ref_lon: -86.23524024
-
       ecef_ref_lat: 36.268252  #LVMS
       ecef_ref_lon: -115.015914 #LVMS
       ecef_ref_hgt: 0.0        #LVMS
