@@ -272,7 +272,25 @@ private:
                        m_ERROR_Y_MAX) /
               m_ERROR_Y_MAX; // [0.0~1.0] ratio
         }
-        double error_gain = 1.0 - 0.5 * error_ratio; // [1.0~0.5] gain
+
+        // Safety factor related with the cross-track error.
+        // what is it mean?
+        // First, cte_speed_reduce_gain must be less than 1.0.
+        // If the crosstrack error is larger than the certain level, our system
+        // is designed to be decress the speed so that the look-ahead distance
+        // become shorter and position gain(in tracking controller) become
+        // larger.
+        // cte_speed_reduce_gain means the maximum ratio that it decrease the
+        // speed.
+        // For example, if cte_speed_reduce_gain is set to 0.5, it outputs 0.5 *
+        // original output as a maximum modulation.
+        double cte_speed_reduce_gain = 1.0;
+        if (cte_speed_reduce_gain > 1.0 || cte_speed_reduce_gain < 0.0) {
+          std::cout << "[NIF velocity planning node] : invalid "
+                       "cte_speed_reduce_gain range. Set to Default, 0.5 "
+                    << std::endl;
+        }
+        double error_gain = 1.0 - cte_speed_reduce_gain * error_ratio;
 
         // 4. Decrease desired velocity w.r.t. Safe path distance
         double path_dist_safe =
