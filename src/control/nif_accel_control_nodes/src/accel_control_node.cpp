@@ -101,7 +101,17 @@ AccelControl::AccelControl() : Node("AccelControlNode") {
   this->declare_parameter("gear.shift_time_ms", 1000);
   this->declare_parameter("gear.track", "IMS");
 
-  this->declare_parameter("engine.model_safety_factor", 1.2); // larger than 1.0
+  // NOTE : how it works?
+  // Let's say that we want to produce the engine torque, 1200 and the desired
+  // throttle position is 20 based on the engine-torque map table.
+  // And then, that inversly calculated throttle position is divided by the
+  // model_safety_factor gain.
+  // In short, if the gain is closer to one, it believes the engine torque table
+  // more.
+  //  this->declare_parameter("engine.model_safety_factor", 1.2); // larger
+  // than 1.0
+  this->declare_parameter("engine.model_safety_factor", 1.1); // larger than 1.0
+
   this->declare_parameter("engine.safety_rpm_thres", 3000);
 
   this->declare_parameter("throttle.traction_enabled", true);
@@ -372,12 +382,12 @@ void AccelControl::publishThrottleBrake() {
   pubThrottleCmdRaw_->publish(this->throttle_cmd);
   pubBrakeCmdRaw_->publish(this->brake_cmd);
 
-// !!!! UNCOMMENT TO ENABLE THROTTLE SATURATION TO JOYSTICK CMD  !!!!
+  // !!!! UNCOMMENT TO ENABLE THROTTLE SATURATION TO JOYSTICK CMD  !!!!
   // if (this->throttle_cmd.data > this->max_throttle_) {
   //   RCLCPP_DEBUG(this->get_logger(), "%s\n", "Throttle Limit Max Reached");
   //   this->throttle_cmd.data = this->max_throttle_;
   // }
-// !!!! UNCOMMENT TO ENABLE THROTTLE SATURATION TO JOYSTICK CMD  !!!!
+  // !!!! UNCOMMENT TO ENABLE THROTTLE SATURATION TO JOYSTICK CMD  !!!!
 
   // Release throttle w.r.t. lateral error
   // - only when speed is large enough
