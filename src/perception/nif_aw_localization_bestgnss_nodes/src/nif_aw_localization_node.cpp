@@ -76,6 +76,8 @@ AWLocalizationNode::AWLocalizationNode(const std::string &node_name)
   this->declare_parameter<double>("top_to_bottom_bias_y", double(0.0));
   this->declare_parameter<bool>("use_bestvel_for_speed", bool(false));
 
+  this->declare_parameter<bool>("enable_tf_publisher", bool(true));
+
   this->m_use_inspva_heading =
       this->get_parameter("use_inspva_heading").as_bool();
   this->get_parameter("bestvel_heading_update_velocity_thres").as_double();
@@ -126,6 +128,8 @@ AWLocalizationNode::AWLocalizationNode(const std::string &node_name)
       this->get_parameter("top_to_bottom_bias_y").as_double();
   this->bUseBestVelForSpeed =
       this->get_parameter("use_bestvel_for_speed").as_bool();
+
+  this->enable_tf_publisher = this->get_parameter("enable_tf_publisher").as_bool();
 
   ekf_dt_ = 1.0 / std::max(ekf_rate_, 0.1);
   if (!enable_yaw_bias_estimation_) {
@@ -214,7 +218,7 @@ AWLocalizationNode::AWLocalizationNode(const std::string &node_name)
       SyncPolicyT(10), sub_filtered_IMU, sub_filtered_Wheel);
 
   m_sync->registerCallback(
-      std::bind(&AWLocalizationNode::MessegefilteringCallback, this,
+      std::bind(&AWLocalizationNode::MessageFilteringCallback, this,
                 std::placeholders::_1, std::placeholders::_2));
 
   dim_x_ex_ = dim_x_ * extend_state_step_;
@@ -827,7 +831,7 @@ void AWLocalizationNode::TOPINSSTDEVCallback(
   BestPosTop.yaw_noise = msg->azimuth_stdev / 180 * M_PI;
 }
 
-void AWLocalizationNode::MessegefilteringCallback(
+void AWLocalizationNode::MessageFilteringCallback(
     const sensor_msgs::msg::Imu ::ConstSharedPtr &imu_msg,
     const raptor_dbw_msgs::msg::WheelSpeedReport::ConstSharedPtr
         &wheel_speed_msg) {
@@ -1554,18 +1558,20 @@ void AWLocalizationNode::publishEstimateResult() {
 
   pub_odom_->publish(current_ekf_odom_);
 
-  geometry_msgs::msg::TransformStamped nav_base_tf{};
-  nav_base_tf.transform.translation.x = current_ekf_odom_.pose.pose.position.x;
-  nav_base_tf.transform.translation.y = current_ekf_odom_.pose.pose.position.y;
-  nav_base_tf.transform.translation.z = current_ekf_odom_.pose.pose.position.z;
-  nav_base_tf.transform.rotation.w = current_ekf_odom_.pose.pose.orientation.w;
-  nav_base_tf.transform.rotation.x = current_ekf_odom_.pose.pose.orientation.x;
-  nav_base_tf.transform.rotation.y = current_ekf_odom_.pose.pose.orientation.y;
-  nav_base_tf.transform.rotation.z = current_ekf_odom_.pose.pose.orientation.z;
-  nav_base_tf.header.stamp = this->now();
-  nav_base_tf.header.frame_id = nif::common::frame_id::localization::ODOM;
-  nav_base_tf.child_frame_id = nif::common::frame_id::localization::BASE_LINK;
-  broadcaster_->sendTransform(nav_base_tf);
+  if (this->enable_tf_publisher) {
+    geometry_msgs::msg::TransformStamped nav_base_tf{};
+    nav_base_tf.transform.translation.x = current_ekf_odom_.pose.pose.position.x;
+    nav_base_tf.transform.translation.y = current_ekf_odom_.pose.pose.position.y;
+    nav_base_tf.transform.translation.z = current_ekf_odom_.pose.pose.position.z;
+    nav_base_tf.transform.rotation.w = current_ekf_odom_.pose.pose.orientation.w;
+    nav_base_tf.transform.rotation.x = current_ekf_odom_.pose.pose.orientation.x;
+    nav_base_tf.transform.rotation.y = current_ekf_odom_.pose.pose.orientation.y;
+    nav_base_tf.transform.rotation.z = current_ekf_odom_.pose.pose.orientation.z;
+    nav_base_tf.header.stamp = this->now();
+    nav_base_tf.header.frame_id = nif::common::frame_id::localization::ODOM;
+    nav_base_tf.child_frame_id = nif::common::frame_id::localization::BASE_LINK;
+    broadcaster_->sendTransform(nav_base_tf);
+  }
 
   /* publish localization score*/
   std_msgs::msg::Float64 mahalanobisScoreMsg;

@@ -18,19 +18,19 @@ int32_t main(int32_t argc, char **argv) {
   // using namespace nif::common::constants;
   // using namespace nif::perception;
 
-  const char *node_name = "nif_aw_localization_nodes";
+  const char *node_name = "aw_localization_bestgnss_node";
 
   rclcpp::Node::SharedPtr nd;
 
   try {
-    RCLCPP_INFO(rclcpp::get_logger("nif_aw_localization_nodes"),
+    RCLCPP_INFO(rclcpp::get_logger("aw_localization_bestgnss_node"),
                 "Instantiating AWLocalizationNode with name: %s", &node_name);
     rclcpp::NodeOptions options;
 
     nd = std::make_shared<AWLocalizationNode>(node_name);
 
   } catch (std::exception &e) {
-    RCLCPP_FATAL(rclcpp::get_logger("nif_aw_localization_nodes"),
+    RCLCPP_FATAL(rclcpp::get_logger("aw_localization_bestgnss_node"),
                  "FATAL ERROR during node initialization: ABORTING.\n%s",
                  e.what());
     return -1;
@@ -39,8 +39,8 @@ int32_t main(int32_t argc, char **argv) {
   rclcpp::spin(nd);
   rclcpp::shutdown();
 
-  RCLCPP_INFO(rclcpp::get_logger("nif_aw_localization_nodes"),
-              "Shutting down %s [localization_aw_node]", &node_name);
+  RCLCPP_INFO(rclcpp::get_logger("aw_localization_bestgnss_node"),
+              "Shutting down %s [aw_localization_bestgnss_node]", &node_name);
 
   return 0;
 }

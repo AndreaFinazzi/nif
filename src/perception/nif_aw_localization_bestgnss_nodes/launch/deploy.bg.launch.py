@@ -68,7 +68,10 @@ def generate_launch_description():
                 },
                 emulate_tty=True,
                 parameters=[
-                    LaunchConfiguration('nif_aw_localization_param_file')
+                    LaunchConfiguration('nif_aw_localization_param_file'),
+                    {
+                        "enable_tf_publisher": False
+                    }
                 ],
                 remappings=[
                     # Current set : Bottom INS Disabled // Top INS Enabled
@@ -83,14 +86,14 @@ def generate_launch_description():
                     ("in_top_insstdev", "novatel_top/insstdev"), #INS STANDARD DEVIATION
                     ("in_wheel_speed_report", "raptor_dbw_interface/wheel_speed_report"), # WHEEL SPEED
 
-                    ("out_odometry_ekf_estimated", "/aw_localization/ekf/odom"),
-                    ("out_odometry_bestpos", "/aw_localization/ekf/odom_bestpos"),
-                    ("out_top_odometry_bestpos", "/aw_localization/ekf/top_bestpos"),
-                    ('out_localization_error', '/aw_localization/ekf/error'),
-                    ('out_localization_status', '/aw_localization/ekf/status'),
-                    ('/debug', '/aw_localization/debug'),
-                    ('/debug/measured_pose', '/aw_localization/debug/measured_pose'),
-                    ('/estimated_yaw_bias', '/aw_localization/estimated_yaw_bias'),
+                    ("out_odometry_ekf_estimated", "/aw_localization_bgp/ekf/odom"),
+                    ("out_odometry_bestpos", "/aw_localization_bgp/ekf/odom_bestpos"),
+                    ("out_top_odometry_bestpos", "/aw_localization_bgp/ekf/top_bestpos"),
+                    ('out_localization_error', '/aw_localization_bgp/ekf/error'),
+                    ('out_localization_status', '/aw_localization_bgp/ekf/status'),
+                    ('/debug', '/aw_localization_bgp/debug'),
+                    ('/debug/measured_pose', '/aw_localization_bgp/debug/measured_pose'),
+                    ('/estimated_yaw_bias', '/aw_localization_bgp/estimated_yaw_bias'),
 
                 ]
     )

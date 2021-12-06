@@ -44,10 +44,10 @@ ament_auto_add_library(amathuutils_lib SHARED
         lib/kalman_filter.cpp
         lib/time_delay_kalman_filter.cpp)
 
-ament_auto_add_library(nif_aw_localization_node SHARED
+ament_auto_add_library(${PROJECT_NAME} SHARED
         src/nif_aw_localization_node.cpp)
 
-target_link_libraries(nif_aw_localization_node
+target_link_libraries(${PROJECT_NAME}
         amathuutils_lib
         aw_geodetic_conv
 )
@@ -55,7 +55,7 @@ target_link_libraries(nif_aw_localization_node
 ament_auto_add_executable(${PROJECT_NAME}_exe
         src/nif_aw_localization_nodes_main.cpp)
 target_link_libraries(${PROJECT_NAME}_exe
-        nif_aw_localization_node
+        ${PROJECT_NAME}
 )
 
 if(BUILD_TESTING)

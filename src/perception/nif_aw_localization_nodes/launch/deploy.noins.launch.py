@@ -7,6 +7,7 @@ from launch.substitutions import LaunchConfiguration
 from launch.substitutions import ThisLaunchFileDir
 from launch_ros.actions import Node
 
+
 IMS = 0
 LOR = 1
 IMS_SIM = 2
@@ -37,18 +38,18 @@ def generate_launch_description():
     if track == LOR:
         config_file = 'config_lor.yaml'
     elif track == IMS:
-        config_file = 'config_ims.yaml'
+        config_file = 'config_ims.noins.yaml'
     elif track == IMS_SIM:
         config_file = 'config_lgsim.yaml'
     elif track == LVMS:
-        config_file = 'config_lvms.yaml'
+        config_file = 'config_lvms.noins.yaml'
     elif track == LVMS_SIM:
         config_file = 'config_lvms_sim.yaml'
     else:
         raise RuntimeError("ERROR: invalid track provided: {}".format(track))
 
     params_file = os.path.join(
-            get_package_share_directory("nif_aw_localization_bestgnss_nodes"),
+            get_package_share_directory("nif_aw_localization_nodes"),
             "config",
             config_file
         )
@@ -60,8 +61,8 @@ def generate_launch_description():
     )
 
     aw_localization_node =  Node(
-                package="nif_aw_localization_bestgnss_nodes",
-                executable="nif_aw_localization_bestgnss_nodes_exe",
+                package="nif_aw_localization_nodes",
+                executable="nif_aw_localization_nodes_exe",
                 output={
                     "stderr": "screen",
                     "stdout": "screen"
@@ -91,7 +92,6 @@ def generate_launch_description():
                     ('/debug', '/aw_localization/debug'),
                     ('/debug/measured_pose', '/aw_localization/debug/measured_pose'),
                     ('/estimated_yaw_bias', '/aw_localization/estimated_yaw_bias'),
-
                 ]
     )
 

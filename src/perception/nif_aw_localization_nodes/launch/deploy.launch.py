@@ -76,8 +76,8 @@ def generate_launch_description():
                     # /novatel_bottom/bestvel is used to back-up solution when novatel_top/inspva heading is not published.  
                     ("in_inspva", "novatel_bottom/inspva"), # HEADING PRIORITY 1
                     ("in_top_inspva", "novatel_top/inspva"), # HEADING PRIORITY 2
-                    ("in_bestpos", "novatel_bottom/bestpos"), # POSE (X,Y)
-                    ("in_top_bestpos", "novatel_top/bestpos"), # POSE (X,Y)
+                    ("in_bestpos", "novatel_bottom/bestgnsspos"), # POSE (X,Y)
+                    ("in_top_bestpos", "novatel_top/bestgnsspos"), # POSE (X,Y)
                     ("in_imu", "novatel_bottom/imu/data"), # YAW RATE
                     ("in_bestvel", "novatel_bottom/bestvel"), #HEADING PRIORITY 3(BACK UP SOLUTION)
                     ("in_insstdev", "novatel_bottom/insstdev"), #INS STANDARD DEVIATION
@@ -88,7 +88,10 @@ def generate_launch_description():
                     ("out_odometry_bestpos", "/aw_localization/ekf/odom_bestpos"),
                     ("out_top_odometry_bestpos", "/aw_localization/ekf/top_bestpos"),
                     ('out_localization_error', '/aw_localization/ekf/error'),
-                    ('out_localization_status', '/aw_localization/ekf/status')
+                    ('out_localization_status', '/aw_localization/ekf/status'),
+                    ('/debug', '/aw_localization/debug'),
+                    ('/debug/measured_pose', '/aw_localization/debug/measured_pose'),
+                    ('/estimated_yaw_bias', '/aw_localization/estimated_yaw_bias'),
                 ]
     )
 

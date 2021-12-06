@@ -254,6 +254,8 @@ private:
 
   double m_testnoise;
 
+  bool enable_tf_publisher;
+
       rclcpp::Time imu_time_last_update;
   rclcpp::Time bestpos_time_last_update;
   rclcpp::Time top_bestpos_time_last_update;
@@ -303,7 +305,7 @@ private:
   void
   TOPINSSTDEVCallback(const novatel_oem7_msgs::msg::INSSTDEV::SharedPtr msg);
 
-  void MessegefilteringCallback(
+  void MessageFilteringCallback(
       const sensor_msgs::msg::Imu ::ConstSharedPtr &imu_msg,
       const raptor_dbw_msgs::msg::WheelSpeedReport::ConstSharedPtr
           &wheel_speed_msg);

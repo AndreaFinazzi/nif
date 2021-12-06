@@ -1,4 +1,4 @@
-nif_aw_localization_nodes:
+/**:
   ros__parameters:
     use_inspva_heading: true
     bestvel_heading_update_velocity_thres : 2.0
