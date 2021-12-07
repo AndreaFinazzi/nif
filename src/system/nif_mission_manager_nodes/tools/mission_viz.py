@@ -155,9 +155,12 @@ if __name__ == "__main__":
 
     dot = graphviz.Digraph(comment='Mission Tree')   
 
+    raceline = os.path.join(waypoint_manager_path, 'maps',TRACK_NAME,'centerline.csv',)
     pit_wpt = os.path.join(waypoint_manager_path, 'maps',TRACK_NAME,'pit_lane.csv',)
-    raceline = os.path.join(waypoint_manager_path, 'maps',TRACK_NAME,'race_line.csv',)
-    wu_line = os.path.join(waypoint_manager_path, 'maps',TRACK_NAME,'centerline.csv',)
+    wu_line = os.path.join(waypoint_manager_path, 'maps',TRACK_NAME,'race_line.csv',)
+    line_1 = os.path.join(waypoint_manager_path, 'maps',TRACK_NAME,'raceline.csv',)
+    line_2 = os.path.join(waypoint_manager_path, 'maps',TRACK_NAME,'right_side_center.csv',)
+    line_3 = os.path.join(waypoint_manager_path, 'maps',TRACK_NAME,'left_side_center.csv',)
 
     # raceline = os.path.join(waypoint_manager_path, 'inputs/traj_ltpl_cl',TRACK_NAME,'traj_race_cl.csv',)
     graph = os.path.join(waypoint_manager_path, 'inputs/track_offline_graphs',TRACK_NAME,'stored_graph.pckl')
@@ -237,15 +240,19 @@ if __name__ == "__main__":
     print(pit_wpt)
     print(raceline)
 
-    WPTFileVisualizer(pit_wpt, "pit-in-entire")
-    WPTFileVisualizer(raceline, "race-line")
-    WPTFileVisualizer(wu_line, "warm-up-line")
+    WPTFileVisualizer(raceline, "centerline")
+    WPTFileVisualizer(pit_wpt, "pit_lane")
+    WPTFileVisualizer(wu_line, "race_line")
+    WPTFileVisualizer(line_1, "raceline")
+    WPTFileVisualizer(line_2, "right_side_center")
+    WPTFileVisualizer(line_3, "left_side_center")
 
     dot.view()
 
     # dot.render("missions_graph", view=True)
     # RaceLineFileVisualizer(raceline, "race-line")
     # GraphVisualizer(graph, "graph_node")
+    plt.scatter(647, -378, s=10)
     plt.axis('equal')
     plt.grid(which='minor')
     plt.show()

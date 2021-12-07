@@ -77,14 +77,14 @@ missions:
       #     - 10.0 # x_max
       #     - 10.0 # y_max
       polygons:
-        - - x: 750.0  # x_0
-            y: 800.0  # y_0
-          - x: 850.0 # x_1
-            y: 800.0  # y_1
-          - x: 950.0  # x_2
-            y: 700.0  # y_2
-          - x: 850.0  # x_3
-            y: 700.0  # y_3
+        - - x: 295.0  # x_0
+            y: -800.0  # y_0
+          - x: 400.0 # x_1
+            y: -700.0  # y_1
+          - x: 495.0  # x_2
+            y: -850.0  # y_2
+          - x: 400.0  # x_3
+            y: -950.0  # y_3
     activation_velocity:
       active: true
       range_mps:
@@ -115,14 +115,14 @@ missions:
     activation_area:
       active: true
       polygons:
-        - - x: 250.0  # x_0
-            y: 590.0  # y_0
-          - x: 300.0  # x_1
-            y: 625.0  # y_1
-          - x: 300.0  # x_2
-            y: 460.0  # y_2
-          - x: 250.0  # x_3
-            y: 425.0  # y_3
+        - - x: 550.0  # x_0
+            y: -350.0  # y_0
+          - x: 650.0  # x_1
+            y: -300.0  # y_1
+          - x: 690.0  # x_2
+            y: -360.0  # y_2
+          - x: 600.0  # x_3
+            y: -420.0  # y_3
     activation_velocity:
       active: false
       range_mps:
@@ -170,14 +170,14 @@ missions:
     activation_area:
       active: true
       polygons:
-        - - x: 500.0  # x_0
-            y: 200.0  # y_0
-          - x: 650.0 # x_1
-            y: 350.0  # y_1
-          - x: 650.0  # x_2
-            y: 150.0  # y_2
-          - x: 500.0  # x_3
-            y: 0.0  # y_3
+        - - x: 200.0  # x_0
+            y: -500.0  # y_0
+          - x: 350.0 # x_1
+            y: -650.0  # y_1
+          - x: 150.0  # x_2
+            y: -650.0  # y_2
+          - x: 0.0  # x_3
+            y: -500.0  # y_3
     allowed_transitions:
       active: true # ignore
       from:
@@ -215,18 +215,18 @@ missions:
     activation_area:
       active: true
       polygons:
-        - - x: 125.0  # x_0
-            y: 400.0  # y_0
-          - x: 200.0  # x_1
-            y: 550.0  # y_1
-          - x: 400.0  # x_2
-            y: 725.0  # y_2
-          - x: 625.0  # x_3
-            y: 810.0  # y_3
-          - x: 625.0  # x_4
-            y: 750.0  # y_4
-          - x: 125.0  # x_5
-            y: 300.0  # y_5
+        - - x: 400.0  # x_0
+            y: -125.0  # y_0
+          - x: 550.0  # x_1
+            y: -200.0  # y_1
+          - x: 725.0  # x_2
+            y: -400.0  # y_2
+          - x: 810.0  # x_3
+            y: -625.0  # y_3
+          - x: 750.0  # x_4
+            y: -625.0  # y_4
+          - x: 300.0  # x_5
+            y: -125.0  # y_5
 
 
     allowed_transitions:
