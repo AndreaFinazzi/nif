@@ -5,4 +5,3 @@ oem7_msg_handlers:
     - RXSTATUSHandler
     - TimeHandler
     - NMEAHandler
-            

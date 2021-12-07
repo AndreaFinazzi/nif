@@ -19,9 +19,6 @@ INSSTDEV:   {topic: insstdev,   frame_id: gps,  queue_size: 10}
 INSCONFIG:  {topic: insconfig,  frame_id: gps,  queue_size: 10}
 RXSTATUS:   {topic: rxstatus,   frame_id: gps,  queue_size: 10}
 TIME:       {topic: time,       frame_id: gps} 
-
-
-
-
-   
+RAWIMU:     {topic: rawimu,     frame_id: imu_link}
+RAWIMUX:    {topic: rawimux,    frame_id: imu_link}
 
