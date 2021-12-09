@@ -179,6 +179,9 @@ class Telemetry : public rclcpp::Node
         msg_telemetry.localization.stamp = msg->stamp;
         msg_telemetry.localization.uncertainty = msg->uncertainty;
         msg_telemetry.localization.localization_status_code = msg->localization_status_code;
+        msg_telemetry.localization.pos_type_0 = msg->pos_type_0;
+        msg_telemetry.localization.pos_type_1 = msg->pos_type_1;
+        msg_telemetry.localization.heading = msg->heading;
     }
     void command_steering_callback(const std_msgs::msg::Float32::SharedPtr msg)
     {

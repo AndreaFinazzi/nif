@@ -80,6 +80,8 @@ def generate_launch_description():
                     ("in_top_bestpos", "novatel_top/bestgnsspos"), # POSE (X,Y)
                     ("in_imu", "novatel_bottom/rawimux"), # YAW RATE
                     ("in_bestvel", "novatel_bottom/bestvel"), #HEADING PRIORITY 3(BACK UP SOLUTION)
+                    ("in_bestvel_top", "novatel_top/bestvel"), #HEADING PRIORITY 3(BACK UP SOLUTION)
+                    ("in_heading2", "novatel_bottom/heading2"), #HEADING PRIORITY 3(BACK UP SOLUTION)
                     ("in_insstdev", "novatel_bottom/insstdev"), #INS STANDARD DEVIATION
                     ("in_top_insstdev", "novatel_top/insstdev"), #INS STANDARD DEVIATION
                     ("in_wheel_speed_report", "raptor_dbw_interface/wheel_speed_report"), # WHEEL SPEED
