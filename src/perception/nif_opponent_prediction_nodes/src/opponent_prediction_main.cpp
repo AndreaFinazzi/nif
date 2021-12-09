@@ -6,44 +6,43 @@
 //
 
 #include "nif_common/constants.h"
+#include "nif_opponent_prediction_nodes/frenet_based_opponent_predictor.h"
 #include "nif_utils/utils.h"
 #include "rcutils/error_handling.h"
-#include "nif_opponent_prediction_nodes/frenet_based_opponent_predictor.h"
 
-int32_t main(int32_t argc, char **argv)
-{
-    rclcpp::init(argc, argv);
+int32_t main(int32_t argc, char** argv) {
+  rclcpp::init(argc, argv);
 
-    using nif::perception::FrenetBasedOpponentPredictor;
-    using namespace nif::common::constants;
+  using nif::perception::FrenetBasedOpponentPredictor;
+  using namespace nif::common::constants;
 
-    const char *node_name = "frenet_oppo_prediction_node";
+  const char* node_name = "frenet_oppo_prediction_node";
 
-    rclcpp::Node::SharedPtr nd;
+  rclcpp::Node::SharedPtr nd;
 
-    try
-    {
-        RCLCPP_INFO(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
-                    "Instantiating FrenetBasedOpponentPredictor with name: %s", node_name);
-        rclcpp::NodeOptions options;
-
-        string target_ref_file_path = "";
-        string prediction_config_file_path = "";
-        nd = std::make_shared<FrenetBasedOpponentPredictor>(target_ref_file_path,
-                                                            prediction_config_file_path);
-    }
-    catch (std::exception &e)
-    {
-        RCLCPP_FATAL(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
-                     "FATAL ERROR during node initialization: ABORTING.\n%s", e.what());
-        return -1;
-    }
-
-    rclcpp::spin(nd);
-    rclcpp::shutdown();
-
+  try {
     RCLCPP_INFO(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
-                "Shutting down %s [FrenetBasedOpponentPredictor]", node_name);
+                "Instantiating FrenetBasedOpponentPredictor with name: %s",
+                node_name);
+    rclcpp::NodeOptions options;
 
-    return 0;
+    string target_ref_file_path = "";
+    string prediction_config_file_path = "";
+    nd = std::make_shared<FrenetBasedOpponentPredictor>(
+        target_ref_file_path, prediction_config_file_path);
+  } catch (std::exception& e) {
+    RCLCPP_FATAL(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
+                 "FATAL ERROR during node initialization: ABORTING.\n%s",
+                 e.what());
+    return -1;
+  }
+
+  rclcpp::spin(nd);
+  rclcpp::shutdown();
+
+  RCLCPP_INFO(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
+              "Shutting down %s [FrenetBasedOpponentPredictor]",
+              node_name);
+
+  return 0;
 }

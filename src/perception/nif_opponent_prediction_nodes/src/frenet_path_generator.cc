@@ -9,11 +9,11 @@
 #define MAX_ROAD_WIDTH 0.5 // maximum road width [m]
 #define D_ROAD_W 0.5       // road width sampling length [m]
 #define DT 0.2             // time tick [s]
-#define MAX_T \
+#define MAX_T                                                                  \
   4.01 // max prediction time [m] ----------------> python code에서 floating \
        // point가 잘 못되서 +- 0.1을 해줌
-#define MIN_T \
-  2.0                           // min prediction time [m] ----------------> python code에서 floating \
+#define MIN_T                                                                  \
+  2.0 // min prediction time [m] ----------------> python code에서 floating \
                                 // point가 잘 못되서 +- 0.1을 해줌
 #define TARGET_SPEED 10.0 / 3.6 // target speed [m/s]
 #define D_T_S 5.0 / 3.6         // target speed sampling length [m/s]
@@ -36,38 +36,41 @@
 #define PI 3.1415926535897
 
 std::vector<std::shared_ptr<FrenetPath>>
-FrenetPathGenerator::generate_frenet_paths(
-    double current_position_d, double current_position_s,
-    double current_velocity_d, double current_velocity_s,
-    double current_acceleration_d, double min_t, double max_t, double dt)
-{
+FrenetPathGenerator::generate_frenet_paths(double current_position_d,
+                                           double current_position_s,
+                                           double current_velocity_d,
+                                           double current_velocity_s,
+                                           double current_acceleration_d,
+                                           double min_t,
+                                           double max_t,
+                                           double dt) {
   std::vector<std::shared_ptr<FrenetPath>> frenet_paths;
 
   // double expected_position_d = -MAX_ROAD_WIDTH;
   double expected_position_d = 0.0;
-  while (expected_position_d == 0.0)
-  {
+  while (expected_position_d == 0.0) {
     double time = min_t;
-    while (time < max_t)
-    {
+    while (time < max_t) {
       std::shared_ptr<FrenetPath> frenet_path(new FrenetPath());
 
       std::shared_ptr<QuinticPolynomial> quintic_polynomial_lateral(
-          new QuinticPolynomial(current_position_d, current_velocity_d,
-                                current_acceleration_d, expected_position_d,
-                                0.0, 0.0, time));
+          new QuinticPolynomial(current_position_d,
+                                current_velocity_d,
+                                current_acceleration_d,
+                                expected_position_d,
+                                0.0,
+                                0.0,
+                                time));
 
       double frenet_path_time_i = 0.0;
-      while (frenet_path_time_i < time)
-      {
+      while (frenet_path_time_i < time) {
         frenet_path->push_back_time(frenet_path_time_i);
         frenet_path_time_i += dt;
       }
 
-      const std::vector<double> &frenet_path_time = frenet_path->time();
+      const std::vector<double>& frenet_path_time = frenet_path->time();
       for (auto itr = frenet_path_time.begin(); itr != frenet_path_time.end();
-           itr++)
-      {
+           itr++) {
         double frenet_path_time_i = *itr;
 
         double zeroth_derivative_d =
@@ -83,25 +86,28 @@ FrenetPathGenerator::generate_frenet_paths(
             quintic_polynomial_lateral->calculate_third_derivative(
                 frenet_path_time_i);
 
-        frenet_path->push_back_derivatives_d(
-            zeroth_derivative_d, first_derivative_d, second_derivative_d,
-            third_derivative_d);
+        frenet_path->push_back_derivatives_d(zeroth_derivative_d,
+                                             first_derivative_d,
+                                             second_derivative_d,
+                                             third_derivative_d);
       }
 
       double target_velocity_s = TARGET_SPEED - D_T_S * N_S_SAMPLE;
-      while (target_velocity_s <= TARGET_SPEED + D_T_S * N_S_SAMPLE)
-      {
+      while (target_velocity_s <= TARGET_SPEED + D_T_S * N_S_SAMPLE) {
         std::shared_ptr<FrenetPath> frenet_path_target_velocity_s(
             new FrenetPath(*frenet_path));
 
         std::shared_ptr<QuarticPolynomial> quartic_polynomial_longitudinal(
-            new QuarticPolynomial(current_position_s, current_velocity_s, 0.0,
-                                  target_velocity_s, 0.0, time));
+            new QuarticPolynomial(current_position_s,
+                                  current_velocity_s,
+                                  0.0,
+                                  target_velocity_s,
+                                  0.0,
+                                  time));
 
-        const std::vector<double> &frenet_path_time = frenet_path->time();
+        const std::vector<double>& frenet_path_time = frenet_path->time();
         for (auto itr = frenet_path_time.begin(); itr != frenet_path_time.end();
-             itr++)
-        {
+             itr++) {
           double frenet_path_time_i = *itr;
 
           double zeroth_derivative_s =
@@ -118,25 +124,27 @@ FrenetPathGenerator::generate_frenet_paths(
                   frenet_path_time_i);
 
           frenet_path_target_velocity_s->push_back_derivatives_s(
-              zeroth_derivative_s, first_derivative_s, second_derivative_s,
+              zeroth_derivative_s,
+              first_derivative_s,
+              second_derivative_s,
               third_derivative_s);
         }
 
         double jerk_d = 0;
-        const std::vector<double> &third_derivative_d =
+        const std::vector<double>& third_derivative_d =
             frenet_path_target_velocity_s->third_derivative_d();
         for (auto itr = third_derivative_d.begin();
-             itr != third_derivative_d.end(); itr++)
-        {
+             itr != third_derivative_d.end();
+             itr++) {
           jerk_d += pow(*itr, 2);
         }
 
         double jerk_s = 0;
-        const std::vector<double> &third_derivative_s =
+        const std::vector<double>& third_derivative_s =
             frenet_path_target_velocity_s->third_derivative_s();
         for (auto itr = third_derivative_s.begin();
-             itr != third_derivative_s.end(); itr++)
-        {
+             itr != third_derivative_s.end();
+             itr++) {
           jerk_s += pow(*itr, 2);
         }
 
@@ -146,7 +154,7 @@ FrenetPathGenerator::generate_frenet_paths(
                 2);
 
         double cost_d = K_J * jerk_d + K_T * time +
-                        K_D * pow(frenet_path->points_d().back(), 2);
+            K_D * pow(frenet_path->points_d().back(), 2);
         double cost_s = K_J * jerk_s + K_T * time + K_D * delta_velocity;
         double cost_total = K_LAT * cost_d + K_LON * cost_s;
 
@@ -169,13 +177,17 @@ FrenetPathGenerator::generate_frenet_paths(
 
 std::vector<std::shared_ptr<FrenetPath>>
 FrenetPathGenerator::generate_frenet_paths_v2(
-    double current_position_d, double current_position_s,
-    double current_velocity_d, double current_velocity_s,
-    double current_acceleration_d, double min_t, double max_t, double dt,
-    double left_margin = -MAX_ROAD_WIDTH, double right_margin = MAX_ROAD_WIDTH,
-    double width_d = D_ROAD_W)
-{
-
+    double current_position_d,
+    double current_position_s,
+    double current_velocity_d,
+    double current_velocity_s,
+    double current_acceleration_d,
+    double min_t,
+    double max_t,
+    double dt,
+    double left_margin = -MAX_ROAD_WIDTH,
+    double right_margin = MAX_ROAD_WIDTH,
+    double width_d = D_ROAD_W) {
   assert(left_margin >= 0);
   assert(right_margin <= 0);
   assert(width_d <= 0);
@@ -186,29 +198,29 @@ FrenetPathGenerator::generate_frenet_paths_v2(
   std::vector<std::shared_ptr<FrenetPath>> frenet_paths;
 
   double expected_position_d = left_margin;
-  while (expected_position_d <= right_margin)
-  {
+  while (expected_position_d <= right_margin) {
     double time = min_t;
-    while (time < max_t)
-    {
+    while (time < max_t) {
       std::shared_ptr<FrenetPath> frenet_path(new FrenetPath());
 
       std::shared_ptr<QuinticPolynomial> quintic_polynomial_lateral(
-          new QuinticPolynomial(current_position_d, current_velocity_d,
-                                current_acceleration_d, expected_position_d,
-                                0.0, 0.0, time));
+          new QuinticPolynomial(current_position_d,
+                                current_velocity_d,
+                                current_acceleration_d,
+                                expected_position_d,
+                                0.0,
+                                0.0,
+                                time));
 
       double frenet_path_time_i = 0.0;
-      while (frenet_path_time_i < time)
-      {
+      while (frenet_path_time_i < time) {
         frenet_path->push_back_time(frenet_path_time_i);
         frenet_path_time_i += dt;
       }
 
-      const std::vector<double> &frenet_path_time = frenet_path->time();
+      const std::vector<double>& frenet_path_time = frenet_path->time();
       for (auto itr = frenet_path_time.begin(); itr != frenet_path_time.end();
-           itr++)
-      {
+           itr++) {
         double frenet_path_time_i = *itr;
 
         double zeroth_derivative_d =
@@ -224,25 +236,28 @@ FrenetPathGenerator::generate_frenet_paths_v2(
             quintic_polynomial_lateral->calculate_third_derivative(
                 frenet_path_time_i);
 
-        frenet_path->push_back_derivatives_d(
-            zeroth_derivative_d, first_derivative_d, second_derivative_d,
-            third_derivative_d);
+        frenet_path->push_back_derivatives_d(zeroth_derivative_d,
+                                             first_derivative_d,
+                                             second_derivative_d,
+                                             third_derivative_d);
       }
 
       double target_velocity_s = TARGET_SPEED - D_T_S * N_S_SAMPLE;
-      while (target_velocity_s <= TARGET_SPEED + D_T_S * N_S_SAMPLE)
-      {
+      while (target_velocity_s <= TARGET_SPEED + D_T_S * N_S_SAMPLE) {
         std::shared_ptr<FrenetPath> frenet_path_target_velocity_s(
             new FrenetPath(*frenet_path));
 
         std::shared_ptr<QuarticPolynomial> quartic_polynomial_longitudinal(
-            new QuarticPolynomial(current_position_s, current_velocity_s, 0.0,
-                                  target_velocity_s, 0.0, time));
+            new QuarticPolynomial(current_position_s,
+                                  current_velocity_s,
+                                  0.0,
+                                  target_velocity_s,
+                                  0.0,
+                                  time));
 
-        const std::vector<double> &frenet_path_time = frenet_path->time();
+        const std::vector<double>& frenet_path_time = frenet_path->time();
         for (auto itr = frenet_path_time.begin(); itr != frenet_path_time.end();
-             itr++)
-        {
+             itr++) {
           double frenet_path_time_i = *itr;
 
           double zeroth_derivative_s =
@@ -259,25 +274,27 @@ FrenetPathGenerator::generate_frenet_paths_v2(
                   frenet_path_time_i);
 
           frenet_path_target_velocity_s->push_back_derivatives_s(
-              zeroth_derivative_s, first_derivative_s, second_derivative_s,
+              zeroth_derivative_s,
+              first_derivative_s,
+              second_derivative_s,
               third_derivative_s);
         }
 
         double jerk_d = 0;
-        const std::vector<double> &third_derivative_d =
+        const std::vector<double>& third_derivative_d =
             frenet_path_target_velocity_s->third_derivative_d();
         for (auto itr = third_derivative_d.begin();
-             itr != third_derivative_d.end(); itr++)
-        {
+             itr != third_derivative_d.end();
+             itr++) {
           jerk_d += pow(*itr, 2);
         }
 
         double jerk_s = 0;
-        const std::vector<double> &third_derivative_s =
+        const std::vector<double>& third_derivative_s =
             frenet_path_target_velocity_s->third_derivative_s();
         for (auto itr = third_derivative_s.begin();
-             itr != third_derivative_s.end(); itr++)
-        {
+             itr != third_derivative_s.end();
+             itr++) {
           jerk_s += pow(*itr, 2);
         }
 
@@ -287,7 +304,7 @@ FrenetPathGenerator::generate_frenet_paths_v2(
                 2);
 
         double cost_d = K_J * jerk_d + K_T * time +
-                        K_D * pow(frenet_path->points_d().back(), 2);
+            K_D * pow(frenet_path->points_d().back(), 2);
         double cost_s = K_J * jerk_s + K_T * time + K_D * delta_velocity;
         double cost_total = K_LAT * cost_d + K_LON * cost_s;
 
@@ -309,19 +326,15 @@ FrenetPathGenerator::generate_frenet_paths_v2(
 }
 
 void FrenetPathGenerator::calculate_global_paths(
-    std::vector<std::shared_ptr<FrenetPath>> &frenet_paths,
-    std::shared_ptr<CubicSpliner2D> &cubic_spliner_2D)
-{
-  for (int i = 0; i < frenet_paths.size(); i++)
-  {
-    std::shared_ptr<FrenetPath> &frenet_path = frenet_paths[i];
+    std::vector<std::shared_ptr<FrenetPath>>& frenet_paths,
+    std::shared_ptr<CubicSpliner2D>& cubic_spliner_2D) {
+  for (int i = 0; i < frenet_paths.size(); i++) {
+    std::shared_ptr<FrenetPath>& frenet_path = frenet_paths[i];
 
-    if (!frenet_path->points_s().empty())
-    {
+    if (!frenet_path->points_s().empty()) {
       // calculate x and y
-      const std::vector<double> &points_s = frenet_path->points_s();
-      for (int j = 0; j < frenet_path->points_s().size(); j++)
-      {
+      const std::vector<double>& points_s = frenet_path->points_s();
+      for (int j = 0; j < frenet_path->points_s().size(); j++) {
         double point_s = points_s[j];
 
         std::tuple<double, double> position =
@@ -343,13 +356,12 @@ void FrenetPathGenerator::calculate_global_paths(
       }
 
       // calculate yaw and delta_velocity
-      const std::vector<double> &points_x = frenet_path->points_x();
-      const std::vector<double> &points_y = frenet_path->points_y();
+      const std::vector<double>& points_x = frenet_path->points_x();
+      const std::vector<double>& points_y = frenet_path->points_y();
 
       assert(points_x.size() == points_y.size());
 
-      for (int j = 0; j < points_x.size() - 1; j++)
-      {
+      for (int j = 0; j < points_x.size() - 1; j++) {
         double delta_x = points_x[j + 1] - points_x[j];
         double delta_y = points_y[j + 1] - points_y[j];
 
@@ -362,13 +374,12 @@ void FrenetPathGenerator::calculate_global_paths(
           frenet_path->delta_velocity().back());
 
       // calculate curvature
-      const std::vector<double> &yaw = frenet_path->yaw();
-      const std::vector<double> &delta_velocity = frenet_path->delta_velocity();
+      const std::vector<double>& yaw = frenet_path->yaw();
+      const std::vector<double>& delta_velocity = frenet_path->delta_velocity();
 
       assert(yaw.size() == delta_velocity.size());
 
-      for (int j = 0; j < yaw.size() - 1; j++)
-      {
+      for (int j = 0; j < yaw.size() - 1; j++) {
         double curvature = (yaw[j + 1] - yaw[j]) / delta_velocity[j];
         frenet_path->push_back_curvature(curvature);
       }
@@ -377,17 +388,15 @@ void FrenetPathGenerator::calculate_global_paths(
 }
 
 void FrenetPathGenerator::calculate_global_paths_w_current_pose(
-    std::vector<std::shared_ptr<FrenetPath>> &frenet_paths,
-    std::shared_ptr<CubicSpliner2D> &cubic_spliner_2D, double current_yaw)
-{
-  for (int i = 0; i < frenet_paths.size(); i++)
-  {
-    std::shared_ptr<FrenetPath> &frenet_path = frenet_paths[i];
+    std::vector<std::shared_ptr<FrenetPath>>& frenet_paths,
+    std::shared_ptr<CubicSpliner2D>& cubic_spliner_2D,
+    double current_yaw) {
+  for (int i = 0; i < frenet_paths.size(); i++) {
+    std::shared_ptr<FrenetPath>& frenet_path = frenet_paths[i];
 
     // calculate x and y
-    const std::vector<double> &points_s = frenet_path->points_s();
-    for (int j = 0; j < frenet_path->points_s().size(); j++)
-    {
+    const std::vector<double>& points_s = frenet_path->points_s();
+    for (int j = 0; j < frenet_path->points_s().size(); j++) {
       double point_s = points_s[j];
 
       std::tuple<double, double> position =
@@ -402,21 +411,19 @@ void FrenetPathGenerator::calculate_global_paths_w_current_pose(
       double frenet_x = point_x + point_d * cos(yaw + PI / 2.0);
       double frenet_y = point_y + point_d * sin(yaw + PI / 2.0);
 
-      if (frenet_x > 0.0)
-      {
+      if (frenet_x > 0.0) {
         frenet_path->push_back_point_x(frenet_x);
         frenet_path->push_back_point_y(frenet_y);
       }
     }
 
     // calculate yaw and delta_velocity
-    const std::vector<double> &points_x = frenet_path->points_x();
-    const std::vector<double> &points_y = frenet_path->points_y();
+    const std::vector<double>& points_x = frenet_path->points_x();
+    const std::vector<double>& points_y = frenet_path->points_y();
 
     assert(points_x.size() == points_y.size());
 
-    for (int j = 0; j < points_x.size() - 1; j++)
-    {
+    for (int j = 0; j < points_x.size() - 1; j++) {
       double delta_x = points_x[j + 1] - points_x[j];
       double delta_y = points_y[j + 1] - points_y[j];
 
@@ -428,13 +435,12 @@ void FrenetPathGenerator::calculate_global_paths_w_current_pose(
     frenet_path->push_back_delta_velocity(frenet_path->delta_velocity().back());
 
     // calculate curvature
-    const std::vector<double> &yaw = frenet_path->yaw();
-    const std::vector<double> &delta_velocity = frenet_path->delta_velocity();
+    const std::vector<double>& yaw = frenet_path->yaw();
+    const std::vector<double>& delta_velocity = frenet_path->delta_velocity();
 
     assert(yaw.size() == delta_velocity.size());
 
-    for (int j = 0; j < yaw.size() - 1; j++)
-    {
+    for (int j = 0; j < yaw.size() - 1; j++) {
       double curvature = (yaw[j + 1] - yaw[j]) / delta_velocity[j];
       frenet_path->push_back_curvature(curvature);
     }
@@ -442,26 +448,22 @@ void FrenetPathGenerator::calculate_global_paths_w_current_pose(
 }
 
 bool FrenetPathGenerator::check_frenet_path_collision(
-    std::shared_ptr<FrenetPath> &frenet_path,
-    std::vector<std::tuple<double, double>> &obstacles)
-{
+    std::shared_ptr<FrenetPath>& frenet_path,
+    std::vector<std::tuple<double, double>>& obstacles) {
   bool is_collision = false;
 
-  for (int i = 0; i < int(obstacles.size()); i++)
-  {
+  for (int i = 0; i < int(obstacles.size()); i++) {
     double obstacle_x = std::get<0>(obstacles[i]);
     double obstacle_y = std::get<0>(obstacles[i]);
 
-    const std::vector<double> &points_x = frenet_path->points_x();
-    const std::vector<double> &points_y = frenet_path->points_y();
+    const std::vector<double>& points_x = frenet_path->points_x();
+    const std::vector<double>& points_y = frenet_path->points_y();
 
-    for (int j = 0; j < int(points_x.size()); j++)
-    {
+    for (int j = 0; j < int(points_x.size()); j++) {
       double distance =
           pow(points_x[j] - obstacle_x, 2) + pow(points_y[j] - obstacle_y, 2);
 
-      if (distance < pow(ROBOT_RADIUS, 2))
-      {
+      if (distance < pow(ROBOT_RADIUS, 2)) {
         is_collision = true;
         break;
       }
@@ -472,29 +474,26 @@ bool FrenetPathGenerator::check_frenet_path_collision(
 }
 
 void FrenetPathGenerator::check_frenet_paths_validity_w_constraint(
-    std::vector<std::shared_ptr<FrenetPath>> &frenet_paths)
-{
+    std::vector<std::shared_ptr<FrenetPath>>& frenet_paths) {
   std::vector<std::shared_ptr<FrenetPath>> valid_frenet_paths;
 
-  for (int i = 0; i < frenet_paths.size(); i++)
-  {
+  for (int i = 0; i < frenet_paths.size(); i++) {
     std::shared_ptr<FrenetPath> frenet_path = frenet_paths[i];
 
-    const std::vector<double> &first_derivative_s =
+    const std::vector<double>& first_derivative_s =
         frenet_path->first_derivative_s();
-    const std::vector<double> &second_derivative_s =
+    const std::vector<double>& second_derivative_s =
         frenet_path->second_derivative_s();
 
-    if (std::any_of(first_derivative_s.begin(), first_derivative_s.end(),
-                    [](double velocity)
-                    { return velocity > MAX_SPEED; }))
-    {
+    if (std::any_of(first_derivative_s.begin(),
+                    first_derivative_s.end(),
+                    [](double velocity) { return velocity > MAX_SPEED; })) {
       continue;
-    }
-    else if (std::any_of(second_derivative_s.begin(),
-                         second_derivative_s.end(), [](double acceleration)
-                         { return abs(acceleration) > MAX_ACCEL; }))
-    {
+    } else if (std::any_of(second_derivative_s.begin(),
+                           second_derivative_s.end(),
+                           [](double acceleration) {
+                             return abs(acceleration) > MAX_ACCEL;
+                           })) {
       continue;
     }
 
@@ -503,34 +502,29 @@ void FrenetPathGenerator::check_frenet_paths_validity_w_constraint(
 }
 
 void FrenetPathGenerator::check_frenet_paths_validity(
-    std::vector<std::shared_ptr<FrenetPath>> &frenet_paths,
-    std::vector<std::tuple<double, double>> &obstacles)
-{
+    std::vector<std::shared_ptr<FrenetPath>>& frenet_paths,
+    std::vector<std::tuple<double, double>>& obstacles) {
   std::vector<std::shared_ptr<FrenetPath>> valid_frenet_paths;
 
-  for (int i = 0; i < frenet_paths.size(); i++)
-  {
+  for (int i = 0; i < frenet_paths.size(); i++) {
     std::shared_ptr<FrenetPath> frenet_path = frenet_paths[i];
 
-    const std::vector<double> &first_derivative_s =
+    const std::vector<double>& first_derivative_s =
         frenet_path->first_derivative_s();
-    const std::vector<double> &second_derivative_s =
+    const std::vector<double>& second_derivative_s =
         frenet_path->second_derivative_s();
 
-    if (std::any_of(first_derivative_s.begin(), first_derivative_s.end(),
-                    [](double velocity)
-                    { return velocity > MAX_SPEED; }))
-    {
+    if (std::any_of(first_derivative_s.begin(),
+                    first_derivative_s.end(),
+                    [](double velocity) { return velocity > MAX_SPEED; })) {
       continue;
-    }
-    else if (std::any_of(second_derivative_s.begin(),
-                         second_derivative_s.end(), [](double acceleration)
-                         { return abs(acceleration) > MAX_ACCEL; }))
-    {
+    } else if (std::any_of(second_derivative_s.begin(),
+                           second_derivative_s.end(),
+                           [](double acceleration) {
+                             return abs(acceleration) > MAX_ACCEL;
+                           })) {
       continue;
-    }
-    else if (check_frenet_path_collision(frenet_path, obstacles))
-    {
+    } else if (check_frenet_path_collision(frenet_path, obstacles)) {
       continue;
     }
 
@@ -541,42 +535,46 @@ void FrenetPathGenerator::check_frenet_paths_validity(
 std::tuple<std::shared_ptr<FrenetPath>,
            std::vector<std::shared_ptr<FrenetPath>>>
 FrenetPathGenerator::calculate_optimal_frenet_path(
-    double current_position_d, double current_position_s,
-    double current_velocity_d, double current_velocity_s,
+    double current_position_d,
+    double current_position_s,
+    double current_velocity_d,
+    double current_velocity_s,
     double current_acceleration_d,
-    std::shared_ptr<CubicSpliner2D> &cubic_spliner_2D,
-    std::vector<std::tuple<double, double>> &obstacles, double min_t = 2.0,
-    double max_t = 4.01, double dt = 0.2)
-{
-  std::vector<std::shared_ptr<FrenetPath>> frenet_paths = generate_frenet_paths(
-      current_position_d, current_position_s, current_velocity_d,
-      current_velocity_s, current_acceleration_d, min_t, max_t, dt);
+    std::shared_ptr<CubicSpliner2D>& cubic_spliner_2D,
+    std::vector<std::tuple<double, double>>& obstacles,
+    double min_t = 2.0,
+    double max_t = 4.01,
+    double dt = 0.2) {
+  std::vector<std::shared_ptr<FrenetPath>> frenet_paths =
+      generate_frenet_paths(current_position_d,
+                            current_position_s,
+                            current_velocity_d,
+                            current_velocity_s,
+                            current_acceleration_d,
+                            min_t,
+                            max_t,
+                            dt);
 
   calculate_global_paths(frenet_paths, cubic_spliner_2D);
   check_frenet_paths_validity(frenet_paths, obstacles);
 
-  if (frenet_paths.empty() == false)
-  {
+  if (frenet_paths.empty() == false) {
     std::shared_ptr<FrenetPath> optimal_frenet_path;
 
     // Find Frenet path with the minimum cost
     double min_cost_total = frenet_paths[0]->cost_total();
     optimal_frenet_path = frenet_paths[0];
-    for (int i = 1; i < frenet_paths.size(); i++)
-    {
+    for (int i = 1; i < frenet_paths.size(); i++) {
       std::shared_ptr<FrenetPath> frenet_path = frenet_paths[i];
 
-      if (min_cost_total > frenet_path->cost_total())
-      {
+      if (min_cost_total > frenet_path->cost_total()) {
         min_cost_total = frenet_path->cost_total();
         optimal_frenet_path = frenet_path;
       }
     }
 
     return std::make_tuple(optimal_frenet_path, frenet_paths);
-  }
-  else
-  {
+  } else {
     std::shared_ptr<FrenetPath> empty_path(new FrenetPath(-1.1, -1.0));
     return std::make_tuple(empty_path, frenet_paths);
   }
@@ -585,19 +583,30 @@ FrenetPathGenerator::calculate_optimal_frenet_path(
 std::tuple<std::shared_ptr<FrenetPath>,
            std::vector<std::shared_ptr<FrenetPath>>>
 FrenetPathGenerator::calc_frenet_paths(
-    double current_position_d, double current_position_s,
-    double current_velocity_d, double current_velocity_s,
+    double current_position_d,
+    double current_position_s,
+    double current_velocity_d,
+    double current_velocity_s,
     double current_acceleration_d,
-    std::shared_ptr<CubicSpliner2D> &cubic_spliner_2D, double min_t = 2.0,
-    double max_t = 4.01, double dt = 0.2, double left_margin = -1.0,
-    double right_margin = 1.0, double width_d = 0.2)
-{
-
+    std::shared_ptr<CubicSpliner2D>& cubic_spliner_2D,
+    double min_t = 2.0,
+    double max_t = 4.01,
+    double dt = 0.2,
+    double left_margin = -1.0,
+    double right_margin = 1.0,
+    double width_d = 0.2) {
   std::vector<std::shared_ptr<FrenetPath>> frenet_paths =
-      generate_frenet_paths_v2(current_position_d, current_position_s,
-                               current_velocity_d, current_velocity_s,
-                               current_acceleration_d, min_t, max_t, dt,
-                               left_margin, right_margin, width_d);
+      generate_frenet_paths_v2(current_position_d,
+                               current_position_s,
+                               current_velocity_d,
+                               current_velocity_s,
+                               current_acceleration_d,
+                               min_t,
+                               max_t,
+                               dt,
+                               left_margin,
+                               right_margin,
+                               width_d);
 
   // std::vector<std::shared_ptr<FrenetPath>> frenet_paths =
   //     generate_frenet_paths_v2(current_position_d, current_position_s,
@@ -606,38 +615,32 @@ FrenetPathGenerator::calc_frenet_paths(
 
   calculate_global_paths(frenet_paths, cubic_spliner_2D);
 
-  if (frenet_paths.empty() == false)
-  {
+  if (frenet_paths.empty() == false) {
     std::shared_ptr<FrenetPath> optimal_frenet_path;
 
     // Find Frenet path with the minimum cost
     double min_cost_total = frenet_paths[0]->cost_total();
     optimal_frenet_path = frenet_paths[0];
-    for (int i = 0; i < frenet_paths.size(); i++)
-    {
+    for (int i = 0; i < frenet_paths.size(); i++) {
       std::shared_ptr<FrenetPath> frenet_path = frenet_paths[i];
 
-      if (min_cost_total > frenet_path->cost_total())
-      {
+      if (min_cost_total > frenet_path->cost_total()) {
         min_cost_total = frenet_path->cost_total();
         optimal_frenet_path = frenet_path;
       }
     }
 
     return std::make_tuple(optimal_frenet_path, frenet_paths);
-  }
-  else
-  {
+  } else {
     std::shared_ptr<FrenetPath> empty_path(new FrenetPath(-1.1, -1.0));
     return std::make_tuple(empty_path, frenet_paths);
   }
 }
 
 FrenetPathGenerator::CubicSpliner2DResult
-FrenetPathGenerator::apply_cubic_spliner(std::vector<double> &points_x,
-                                         std::vector<double> &points_y,
-                                         double spline_interval = 1.0)
-{
+FrenetPathGenerator::apply_cubic_spliner(std::vector<double>& points_x,
+                                         std::vector<double>& points_y,
+                                         double spline_interval = 1.0) {
   std::shared_ptr<CubicSpliner2D> cubic_spliner_2D(
       new CubicSpliner2D(points_x, points_y));
 
@@ -649,8 +652,7 @@ FrenetPathGenerator::apply_cubic_spliner(std::vector<double> &points_x,
   double point_s = 0.0;
   double point_s_end = cubic_spliner_2D->points_s().back();
 
-  while (point_s < point_s_end)
-  {
+  while (point_s < point_s_end) {
     std::tuple<double, double> position =
         cubic_spliner_2D->calculate_position(point_s);
 
@@ -668,15 +670,18 @@ FrenetPathGenerator::apply_cubic_spliner(std::vector<double> &points_x,
 
     point_s += spline_interval;
   }
-  return std::make_tuple(cubic_spliner_x, cubic_spliner_y, cubic_spliner_yaw,
-                         cubic_spliner_curvature, cubic_spliner_2D);
+  return std::make_tuple(cubic_spliner_x,
+                         cubic_spliner_y,
+                         cubic_spliner_yaw,
+                         cubic_spliner_curvature,
+                         cubic_spliner_2D);
 }
 
 FrenetPathGenerator::CubicSpliner2DResult
 FrenetPathGenerator::apply_cubic_spliner_w_current_pose(
-    std::vector<double> &points_x, std::vector<double> &points_y,
-    double cur_heading_rad)
-{
+    std::vector<double>& points_x,
+    std::vector<double>& points_y,
+    double cur_heading_rad) {
   std::shared_ptr<CubicSpliner2D> cubic_spliner_2D(
       new CubicSpliner2D(points_x, points_y));
 
@@ -687,8 +692,7 @@ FrenetPathGenerator::apply_cubic_spliner_w_current_pose(
 
   double point_s = 0.0;
   double point_s_end = cubic_spliner_2D->points_s().back();
-  while (point_s < point_s_end)
-  {
+  while (point_s < point_s_end) {
     std::tuple<double, double> position =
         cubic_spliner_2D->calculate_position(point_s);
     double point_x = std::get<0>(position);
@@ -708,6 +712,9 @@ FrenetPathGenerator::apply_cubic_spliner_w_current_pose(
     // point_s += 0.1;
     point_s += 1;
   }
-  return std::make_tuple(cubic_spliner_x, cubic_spliner_y, cubic_spliner_yaw,
-                         cubic_spliner_curvature, cubic_spliner_2D);
+  return std::make_tuple(cubic_spliner_x,
+                         cubic_spliner_y,
+                         cubic_spliner_yaw,
+                         cubic_spliner_curvature,
+                         cubic_spliner_2D);
 }
