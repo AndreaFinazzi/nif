@@ -8,7 +8,6 @@
 
 #include "nif_common/constants.h"
 #include "nif_control_joint_lqr_nodes/control_lqr_node.h"
-#include "nif_control_joint_lqr_nodes/control_lqr_camber_comp_node.h"
 #include "nif_utils/utils.h"
 #include "rcutils/error_handling.h"
 
@@ -17,21 +16,21 @@ int32_t main(int32_t argc, char **argv)
   rclcpp::init(argc, argv);
 
   // using nif::control::ControlLQRNode;
-  using nif::control::ControlLQRCamberCompNode;
+  using nif::control::ControlLQRNode;
   using namespace nif::common::constants;
 
   // const char *node_name = "control_joint_lqr_node";
-  const char *node_name = "control_joint_lqr_camber_comp_node";
+  const char *node_name = "control_joint_lqr";
 
   rclcpp::Node::SharedPtr nd;
 
   try
   {
     RCLCPP_INFO(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
-                "Instantiating ControlLQRCamberCompNode with name: %s", node_name);
+                "Instantiating ControlLQRNode with name: %s", node_name);
     rclcpp::NodeOptions options;
 
-    nd = std::make_shared<ControlLQRCamberCompNode>(node_name);
+    nd = std::make_shared<ControlLQRNode>(node_name);
   }
   catch (std::exception &e)
   {
@@ -45,7 +44,7 @@ int32_t main(int32_t argc, char **argv)
   rclcpp::shutdown();
 
   RCLCPP_INFO(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
-              "Shutting down %s [ControlLQRCamberCompNode]", node_name);
+              "Shutting down %s [ControlLQRNode]", node_name);
 
   return 0;
 }

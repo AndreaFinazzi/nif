@@ -28,8 +28,7 @@ ament_auto_add_library(${PROJECT_NAME} SHARED
         src/utils/joint_lqr_ros.cpp
         src/utils/path_util.cpp
         src/utils/pure_pursuit_tracker.cpp
-        src/control_lqr_node.cpp
-        src/control_lqr_camber_comp_node.cpp)
+        src/control_lqr_node.cpp)
 
 ament_auto_add_executable (${PROJECT_NAME}_exe
         src/control_lqr_main.cpp)
