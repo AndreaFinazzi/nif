@@ -1,9 +1,9 @@
-#include "nif_control_joint_lqr_nodes/control_lqr_node.h"
+#include "nif_control_joint_lqr_nodes/control_lqr_camber_comp_node.h"
 #include <nif_common/vehicle_model.h>
 
-using nif::control::ControlLQRNode;
+using nif::control::ControlLQRCamberCompNode;
 
-ControlLQRNode::ControlLQRNode(const std::string &node_name)
+ControlLQRCamberCompNode::ControlLQRCamberCompNode(const std::string &node_name)
     : IControllerNode(node_name)
 {
 
@@ -31,13 +31,13 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
       this->create_subscription<raptor_dbw_msgs::msg::WheelSpeedReport>(
           "/raptor_dbw_interface/wheel_speed_report",
           nif::common::constants::QOS_SENSOR_DATA,
-          std::bind(&ControlLQRNode::velocityCallback, this,
+          std::bind(&ControlLQRCamberCompNode::velocityCallback, this,
                     std::placeholders::_1));
 
   direct_desired_velocity_sub =
       this->create_subscription<std_msgs::msg::Float32>(
           "velocity_planner/des_vel", nif::common::constants::QOS_CONTROL_CMD,
-          std::bind(&ControlLQRNode::directDesiredVelocityCallback, this,
+          std::bind(&ControlLQRCamberCompNode::directDesiredVelocityCallback, this,
                     std::placeholders::_1));
 
   this->declare_parameter("lqr_config_file", "");
@@ -116,7 +116,7 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
   }
 }
 
-void ControlLQRNode::publishSteerAccelDiagnostics(
+void ControlLQRCamberCompNode::publishSteerAccelDiagnostics(
     bool lqr_command_valid, double lqr_steering_command,
     double lqr_accel_command, double track_distance,
     geometry_msgs::msg::PoseStamped lqr_track_point,
@@ -142,7 +142,7 @@ void ControlLQRNode::publishSteerAccelDiagnostics(
   lqr_error_pub_->publish(joint_lqr::utils::ROSError(lqr_err));
 }
 
-nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve()
+nif::common::msgs::ControlCmd::SharedPtr ControlLQRCamberCompNode::solve()
 {
   auto now = this->now();
   nif::common::NodeStatusCode node_status = common::NODE_ERROR;
@@ -229,8 +229,16 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve()
     if (steering_angle_deg < -max_steering_angle_deg_)
       steering_angle_deg = -max_steering_angle_deg_;
 
-    //    Adapt to steering ratio (ControlCommand sends steering wheel's angle)
-    //    steering_angle_deg *= nif::common::vehicle_param::STEERING_RATIO;
+    // ----------------------------------------------------------------------------
+    /*
+    // APPLY CAMBER COMPENSATION
+    */
+    m_camber_manager_ptr->setVehSpeed(this->current_speed_ms_);
+    double tmp_bank_ = 0.0;
+    m_camber_manager_ptr->setBankAngle(tmp_bank_);
+    auto camber_compensatation_deg = m_camber_manager_ptr->getCamberCompensation();
+    steering_angle_deg = steering_angle_deg + camber_compensatation_deg;
+    // ----------------------------------------------------------------------------
 
     // Smooth and publish diagnostics
     double period_double_s = nif::common::utils::time::secs(this->getGclockPeriodDuration());

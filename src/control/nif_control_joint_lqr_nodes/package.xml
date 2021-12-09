@@ -23,6 +23,8 @@
   <depend>raptor_dbw_msgs</depend>
   <depend>tf2</depend>
   <depend>tf2_msgs</depend>
+  <depend>nif_control_common</depend>
+
 
   <depend>eigen3</depend>
   <depend>yaml-cpp</depend>
