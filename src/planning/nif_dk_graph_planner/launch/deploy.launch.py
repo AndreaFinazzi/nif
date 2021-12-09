@@ -82,7 +82,7 @@ def generate_launch_description():
                     'transient_gain' : 2.0,
 
                     'inflation_size' : 3.0,
-                    'collision_check_radius' : 2.5,
+                    'collision_check_radius' : 2.0,
                     'final_path_update_dist' : 300., # 170.0,
                 }],
                 remappings=[ 
