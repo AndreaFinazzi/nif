@@ -6,6 +6,7 @@ DOCKER_RUNTIMES=$(docker -D info | grep Runtimes)
 POSITIONAL=()
 SIMULATOR=false
 CLION=false
+ROS_DISTRO="galactic"
 
 while [[ $# -gt 0 ]]; do
   key="$1"
@@ -21,15 +22,16 @@ while [[ $# -gt 0 ]]; do
      shift # past argument
      shift # past value
      ;;
-#    -l|--lib)
-#      LIBPATH="$2"
-#      shift # past argument
-#      shift # past value
-#      ;;
-#    --default)
-#      DEFAULT=YES
-#      shift # past argument
-#      ;;
+   --cuda-host)
+     CUDA="host"
+     shift # past argument
+     shift # past value
+     ;;
+   --foxy)
+     ROS_DISTRO="foxy"
+     shift # past argument
+     shift # past value
+     ;;
     *)    # unknown option
       POSITIONAL+=("$1") # save it in an array for later
       shift # past argument
@@ -53,9 +55,26 @@ else
     OPTIONS_NVIDIA=""
 fi
 
-if $SIMULATOR ;
+if [[ $CUDA == "host" ]] ;
+then
+  if [[ $ROS_DISTRO == "galactic" ]]
+  then
+    ADERC=".aderc-cuda-galactic"
+    echo "Starting with .aderc-*-cuda-galactic"
+  else
+    ADERC=".aderc-cuda"
+    echo "Starting with .aderc-*-cuda"
+  fi
+  
+elif $SIMULATOR ;
 then
   ADERC=".aderc-lgsvl"
+
+elif [[ $ROS_DISTRO == "galactic" ]]
+then
+  ADERC=".aderc-galactic"
+  echo "Starting with .aderc-galactic"
+
 else
   ADERC=".aderc"
 fi
@@ -83,11 +102,10 @@ then
 fi  
 
 ade --rc $ADERC \
-    start -f --update -- \
+    start -f -- \
     -v /tmp/.X11-unix:/tmp/.X11-unix \
     -v /etc/localtime:/etc/localtime:ro \
     -v /media/$USER/:/home/$USER/media \
     -v /home/$USER/dev_ws/src/bag/:/home/$USER/bag \
     $OPTIONS_CLION \
-    $OPTIONS_NVIDIA
-
+    $OPTIONS_NVIDIA 

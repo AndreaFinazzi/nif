@@ -1,0 +1,32 @@
+# Zones list for a specific track. Currently, only bboxes are supported for zone definitions.
+zones:
+  - id: 0
+    bbox:
+      - 0.0 # x_min
+      - 0.0 # y_min
+      - 1.0 # x_max
+      - 1.0 # y_max
+    polygon:
+      - x: 500.0  # x_0
+        y: -000.0  # y_0
+      - x: 750.0  # x_1
+        y: -300.0  # y_1
+      - x: 600.0  # x_2
+        y: -400.0  # y_2
+      - x: 380.0  # x_3
+        y: -110.0  # y_3
+  - id: 5
+    bbox:
+      - 0.0 # x_min
+      - 0.0 # y_min
+      - 1.0 # x_max
+      - 1.0 # y_max
+    polygon:
+      - x: 300.0  # x_0
+        y: -600.0  # y_0
+      - x: 500.0  # x_1
+        y: -850.0  # y_1
+      - x: 400.0  # x_2
+        y: -950.0  # y_2
+      - x: 200.0  # x_3
+        y: -650.0  # y_3

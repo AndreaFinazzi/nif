@@ -25,7 +25,6 @@ SystemStatusManagerNode::SystemStatusManagerNode(
     this->declare_parameter("safeloc.velocity_slow_down_max", 22.2);
     this->declare_parameter("safeloc.velocity_slow_down_min", 8.0);
 
-
     this->system_status_msg.autonomy_status.lateral_autonomy_enabled = this->get_parameter(
             "lat_autonomy_enabled").as_bool();
     this->system_status_msg.autonomy_status.longitudinal_autonomy_enabled = this->get_parameter(
@@ -55,7 +54,7 @@ SystemStatusManagerNode::SystemStatusManagerNode(
     this->parameters_callback_handle = this->add_on_set_parameters_callback(
             std::bind(&SystemStatusManagerNode::parametersCallback, this, std::placeholders::_1));
 
-    // Inintializa to failure state
+    // Inintialize to failure state
     this->system_status_msg.health_status.communication_failure = true;
     this->system_status_msg.health_status.localization_failure = true;
     this->system_status_msg.health_status.system_failure = true;
@@ -99,6 +98,10 @@ SystemStatusManagerNode::SystemStatusManagerNode(
             nif::common::constants::SYNC_PERIOD_DEFAULT_US,
             [this] { systemStatusTimerCallback(); });
 
+    this->comms_heartbeat_timer = this->create_wall_timer(
+            nif::common::constants::COMMS_HEARTBEAT_PERIOD_US,
+            [this] { commsHeartbeatTimerCallback(); });
+
     this->recovery_service = this->create_service<std_srvs::srv::Trigger>(
             "/system_status_manager/recover",
             std::bind(
@@ -106,13 +109,12 @@ SystemStatusManagerNode::SystemStatusManagerNode(
                     this,
                     std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 }
-
 void SystemStatusManagerNode::systemStatusTimerCallback() {
     // Check for passed out topics
     nodeStatusesAgeCheck();
 
     // check safety conditions
-    bool hb_ok = heartbeatOk();
+    bool hb_ok = this->comms_heartbeat_ok;
     bool localization_ok = localizationOk(); // gps_health_ok();
 
     if (!hb_ok || !this->recovery_enabled) {
@@ -148,6 +150,11 @@ void SystemStatusManagerNode::systemStatusTimerCallback() {
     }
 
     this->system_status_pub->publish(this->system_status_msg);
+}
+
+void SystemStatusManagerNode::commsHeartbeatTimerCallback()
+{
+    this->comms_heartbeat_ok =  commsHeartbeatOk();
 }
 
 void SystemStatusManagerNode::subscribeNodeStatus(
@@ -262,7 +269,7 @@ nif::common::types::t_node_id SystemStatusManagerNode::newStatusRecord(
     node_status_short.node_name = request->node_name;
     node_status_short.node_status_code = common::NODE_INACTIVE;
 
-    this->system_status_msg.health_status.node_list.push_back(request->node_name);
+    // this->system_status_msg.health_status.node_list.push_back(request->node_name);
     auto it = this->system_status_msg.health_status.node_statuses_list.begin();
     this->system_status_msg.health_status.node_statuses_list.insert(it + node_index, std::move(node_status_short));
 
@@ -296,7 +303,7 @@ nif::common::types::t_node_id SystemStatusManagerNode::newStatusRecord(
     return node_id;
 }
 
-bool SystemStatusManagerNode::heartbeatOk() {
+bool SystemStatusManagerNode::commsHeartbeatOk() {
     // check for timeouts
     if (counter_joy_prev != counter_joy) {
         // received new message, heartbeat ok
@@ -321,7 +328,7 @@ bool SystemStatusManagerNode::heartbeatOk() {
 }
 
 bool SystemStatusManagerNode::localizationOk() {
-    bool loc_error_trigger = !this->hasLocalizationStatus() || ( this->localization_status.localization_status_code >= 200 );
+    bool loc_error_trigger = !this->hasLocalizationStatus() || ( this->localization_status.localization_status_code >= 100 );
 
     return !loc_error_trigger;
 }

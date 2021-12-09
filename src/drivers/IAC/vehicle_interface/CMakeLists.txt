@@ -1,6 +1,18 @@
 cmake_minimum_required(VERSION 3.5)
 project(vehicle_interface)
 
+# # Default to C++17
+# if(NOT CMAKE_CXX_STANDARD)
+#     set(CMAKE_CXX_STANDARD 17) # Needs 17 or later
+# endif()
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+    set(DEPRECATION_FLAG "-wr1478")
+else()
+    set(DEPRECATION_FLAG "-Wno-deprecated-declarations")
+endif()
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${DEPRECATION_FLAG}")
+
 # find dependencies
 find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
@@ -13,35 +25,35 @@ ament_auto_add_library(${PROJECT_NAME} SHARED
   src/vehicle_interface_node.cpp)
 autoware_set_compile_options(${PROJECT_NAME})
 
-if(BUILD_TESTING)
-  # Lint
-  find_package(ament_lint_auto REQUIRED)
-  ament_lint_auto_find_test_dependencies()
-  # Test
-  ament_add_gtest(${PROJECT_NAME}_test
-    test/gtest_main.cpp
-    test/error_handling.cpp
-    test/filtering.cpp
-    test/sanity_checks.cpp
-    test/state_machine.hpp
-    test/state_machine.cpp
-    test/state_machine_bad_state.cpp
-    test/state_machine_clamp.cpp
-    test/state_machine_gear.cpp
-    test/state_machine_headlight.cpp
-    test/state_machine_node.cpp
-    test/test_dbw_state_machine.cpp
-    test/test_vi_node.hpp)
-  autoware_set_compile_options(${PROJECT_NAME}_test)
-  target_include_directories(${PROJECT_NAME}_test PRIVATE "include")
-  target_link_libraries(${PROJECT_NAME}_test ${PROJECT_NAME})
-  ament_target_dependencies(vehicle_interface_test
-    "autoware_auto_msgs"
-    "rclcpp"
-    "reference_tracking_controller"
-    "signal_filters"
-    "time_utils"
-    "mpark_variant_vendor")
-endif()
+# if(BUILD_TESTING)
+#   # Lint
+#   find_package(ament_lint_auto REQUIRED)
+#   ament_lint_auto_find_test_dependencies()
+#   # Test
+#   ament_add_gtest(${PROJECT_NAME}_test
+#     test/gtest_main.cpp
+#     test/error_handling.cpp
+#     test/filtering.cpp
+#     test/sanity_checks.cpp
+#     test/state_machine.hpp
+#     test/state_machine.cpp
+#     test/state_machine_bad_state.cpp
+#     test/state_machine_clamp.cpp
+#     test/state_machine_gear.cpp
+#     test/state_machine_headlight.cpp
+#     test/state_machine_node.cpp
+#     test/test_dbw_state_machine.cpp
+#     test/test_vi_node.hpp)
+#   autoware_set_compile_options(${PROJECT_NAME}_test)
+#   target_include_directories(${PROJECT_NAME}_test PRIVATE "include")
+#   target_link_libraries(${PROJECT_NAME}_test ${PROJECT_NAME})
+#   ament_target_dependencies(vehicle_interface_test
+#     "autoware_auto_msgs"
+#     "rclcpp"
+#     "reference_tracking_controller"
+#     "signal_filters"
+#     "time_utils"
+#     "mpark_variant_vendor")
+# endif()
 
 ament_auto_package(INSTALL_TO_SHARE param)

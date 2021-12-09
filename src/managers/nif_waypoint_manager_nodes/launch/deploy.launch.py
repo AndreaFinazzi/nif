@@ -7,17 +7,27 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
+
 IMS = 0
 LOR = 1
+IMS_SIM = 2
+LVMS = 3
+LVMS_SIM = 4
 track = None
 
 # get which track we are at
 track_id = os.environ.get('TRACK').strip()
 
-if track_id == "IMS":
+if track_id == "IMS" or track_id == "ims":
     track = IMS
-elif track_id == "LOR":
+elif track_id == "LOR" or track_id == "lor":
     track = LOR
+elif track_id == "IMS_SIM" or track_id == "ims_sim":
+    track = IMS_SIM
+elif track_id == "LVMS" or track_id == "lvms":
+    track = LVMS
+elif track_id == "LVMS_SIM" or track_id == "lvms_sim":
+    track = LVMS_SIM
 else:
     raise RuntimeError("ERROR: Invalid track {}".format(track_id))
 
@@ -30,7 +40,8 @@ def generate_launch_description():
         os.path.join(
             get_package_share_directory("nif_waypoint_manager_nodes"),
             "config",
-            "lor.yaml",
+            "mission",
+            "lor_new.yaml",
         ),
     )
 
@@ -38,7 +49,8 @@ def generate_launch_description():
         os.path.join(
             get_package_share_directory("nif_waypoint_manager_nodes"),
             "config",
-            "ims.yaml",
+            "mission",
+            "ims_new.yaml",
         ),
     )
 
@@ -66,7 +78,7 @@ def generate_launch_description():
         ],
         remappings=[
             # ('topic_ego_odometry', '/bvs_localization/ltp_odom'),
-            ('topic_ego_odometry', 'localization/ekf/odom'),
+            ('topic_ego_odometry', '/aw_localization/ekf/odom'),
             ('wpt_manager/maptrack_path/global', '/planning/path_global'),
             ('wpt_manager/maptrack_path/body', '/planning/path_body')
         ]

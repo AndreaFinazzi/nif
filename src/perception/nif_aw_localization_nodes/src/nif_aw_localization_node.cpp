@@ -4,6 +4,11 @@
 //
 // Created by USRG on 9/14/21.
 //
+// TODO 
+// 1. heading initialization check
+// 2. inspva status check
+// 3. validate high speed localization 
+
 
 #include "ekf_localizer/nif_aw_localization_node.h"
 #include "nif_frame_id/frame_id.h"
@@ -18,6 +23,9 @@ using namespace std::placeholders;
 // #define DEBUG_INFO(...) { if (show_debug_info_) { RCLCPP_INFO(this->get_logger(),  _VA_ARGS__); } }
 #define DEBUG_PRINT_MAT(X) { if (show_debug_info_) { std::cout << #X << ": " << X << std::endl; } }
 
+using novatel_oem7_msgs::msg::InertialSolutionStatus;
+using novatel_oem7_msgs::msg::PositionOrVelocityType;
+
 // clang-format on
 AWLocalizationNode::AWLocalizationNode(const std::string &node_name)
     // : IBaseNode(node_name), dim_x_(6 /* x, y, yaw, yaw_bias, vx, wz */)
@@ -26,6 +34,9 @@ AWLocalizationNode::AWLocalizationNode(const std::string &node_name)
 {
   this->declare_parameter<bool>("use_inspva_heading", bool(true));
   this->declare_parameter<double>("bestvel_heading_update_velocity_thres", double(2.));
+  this->declare_parameter<double>("heading_initial_guess", double(-215.));
+  this->declare_parameter<bool>("heading_initial_guess_enabled", bool(true));
+  this->declare_parameter<double>("heading_lowpass_gain", double(0.95));
   m_origin_lat = this->get_global_parameter<double>("coordinates.ecef_ref_lat");
   m_origin_lon = this->get_global_parameter<double>("coordinates.ecef_ref_lon");
 
@@ -65,9 +76,21 @@ AWLocalizationNode::AWLocalizationNode(const std::string &node_name)
   this->declare_parameter<double>("top_to_bottom_bias_y", double(0.0));
   this->declare_parameter<bool>("use_bestvel_for_speed", bool(false));
 
+  this->declare_parameter<bool>("enable_tf_publisher", bool(true));
+
   this->m_use_inspva_heading =
       this->get_parameter("use_inspva_heading").as_bool();
-  this->get_parameter("bestvel_heading_update_velocity_thres").as_double();
+  this->m_bestvel_heading_update_thres = 
+      this->get_parameter("bestvel_heading_update_velocity_thres").as_double();
+  this->m_heading_initial_guess_enabled = 
+      this->get_parameter("heading_initial_guess_enabled").as_bool();
+  
+  if (this->m_heading_initial_guess_enabled)
+    this->m_best_heading =
+        this->get_parameter("heading_initial_guess").as_double();
+  this->m_heading_lowpass_gain = 
+    this->get_parameter("heading_lowpass_gain").as_double();
+
   this->show_debug_info_ = this->get_parameter("show_debug_info").as_bool();
   this->ekf_rate_ = this->get_parameter("predict_frequency").as_double();
   this->tf_rate_ = this->get_parameter("tf_rate").as_double();
@@ -102,6 +125,8 @@ AWLocalizationNode::AWLocalizationNode(const std::string &node_name)
   this->top_to_bottom_bias_y = this->get_parameter("top_to_bottom_bias_y").as_double();
   this->bUseBestVelForSpeed =
       this->get_parameter("use_bestvel_for_speed").as_bool();
+
+  this->enable_tf_publisher = this->get_parameter("enable_tf_publisher").as_bool();
 
   ekf_dt_ = 1.0 / std::max(ekf_rate_, 0.1);
   if (!enable_yaw_bias_estimation_) {
@@ -144,35 +169,51 @@ AWLocalizationNode::AWLocalizationNode(const std::string &node_name)
       std::bind(&AWLocalizationNode::TOPBESTPOSCallback, this,
                 std::placeholders::_1));
 
-  // NOT USED
-  subINSPVA = this->create_subscription<novatel_oem7_msgs::msg::INSPVA>(
-      "in_inspva", nif::common::constants::QOS_SENSOR_DATA,
-      std::bind(&AWLocalizationNode::BOTTOMINSPVACallback, this,
-                std::placeholders::_1));
-  // HEADING
-  subTOPINSPVA = this->create_subscription<novatel_oem7_msgs::msg::INSPVA>(
-      "in_top_inspva", nif::common::constants::QOS_SENSOR_DATA,
-      std::bind(&AWLocalizationNode::TOPINSPVACallback, this, std::placeholders::_1));
+  if (this->m_use_inspva_heading) {
+    // NOT USED
+    subINSPVA = this->create_subscription<novatel_oem7_msgs::msg::INSPVA>(
+        "in_inspva", nif::common::constants::QOS_SENSOR_DATA,
+        std::bind(&AWLocalizationNode::BOTTOMINSPVACallback, this,
+                  std::placeholders::_1));
+    // HEADING
+    subTOPINSPVA = this->create_subscription<novatel_oem7_msgs::msg::INSPVA>(
+        "in_top_inspva", nif::common::constants::QOS_SENSOR_DATA,
+        std::bind(&AWLocalizationNode::TOPINSPVACallback, this, std::placeholders::_1));
+
+    subINSSTDEV = this->create_subscription<novatel_oem7_msgs::msg::INSSTDEV>(
+        "in_insstdev", nif::common::constants::QOS_SENSOR_DATA,
+        std::bind(&AWLocalizationNode::INSSTDEVCallback, this,
+                  std::placeholders::_1));
+
+    subTOPINSSTDEV = this->create_subscription<novatel_oem7_msgs::msg::INSSTDEV>(
+        "in_top_insstdev", nif::common::constants::QOS_SENSOR_DATA,
+        std::bind(&AWLocalizationNode::TOPINSSTDEVCallback, this,
+                  std::placeholders::_1));
+  }
+
   // HEADING BACK-UP SOLUTION
   subBESTVEL = this->create_subscription<novatel_oem7_msgs::msg::BESTVEL>(
       "in_bestvel", nif::common::constants::QOS_SENSOR_DATA,
-      std::bind(&AWLocalizationNode::BESTVELCallback, this, std::placeholders::_1));
-  subINSSTDEV = this->create_subscription<novatel_oem7_msgs::msg::INSSTDEV>(
-      "in_insstdev", nif::common::constants::QOS_SENSOR_DATA,
-      std::bind(&AWLocalizationNode::INSSTDEVCallback, this,
-                std::placeholders::_1));
-  subTOPINSSTDEV = this->create_subscription<novatel_oem7_msgs::msg::INSSTDEV>(
-      "in_top_insstdev", nif::common::constants::QOS_SENSOR_DATA,
-      std::bind(&AWLocalizationNode::TOPINSSTDEVCallback, this,
-                std::placeholders::_1));
+      std::bind(&AWLocalizationNode::BOTTOMBESTVELCallback, this, std::placeholders::_1));
+  
+  subTOPBESTVEL = this->create_subscription<novatel_oem7_msgs::msg::BESTVEL>(
+    "in_bestvel_top", nif::common::constants::QOS_SENSOR_DATA,
+    std::bind(&AWLocalizationNode::TOPBESTVELCallback, this, std::placeholders::_1));
+
+  subHEADING2 = this->create_subscription<novatel_oem7_msgs::msg::HEADING2>(
+      "in_heading2", nif::common::constants::QOS_SENSOR_DATA,
+      std::bind(&AWLocalizationNode::HEADING2Callback, this, std::placeholders::_1));  
+
   subIMUONLY = this->create_subscription<sensor_msgs::msg::Imu>(
       "in_imu", nif::common::constants::QOS_SENSOR_DATA,
       std::bind(&AWLocalizationNode::IMUCallback, this,
                 std::placeholders::_1)); //use this when putting bestvel speed as vehicle velocity.
+  
   subtest = this->create_subscription<std_msgs::msg::Float64>(
       "test_noise", 1,
       std::bind(&AWLocalizationNode::TestCallback, this,
                 std::placeholders::_1)); 
+
   auto rmw_qos_profile =
       nif::common::constants::QOS_SENSOR_DATA.get_rmw_qos_profile();
 
@@ -182,7 +223,7 @@ AWLocalizationNode::AWLocalizationNode(const std::string &node_name)
   m_sync = std::make_shared<message_filters::Synchronizer<SyncPolicyT>>(
       SyncPolicyT(10), sub_filtered_IMU, sub_filtered_Wheel);
 
-  m_sync->registerCallback(std::bind(&AWLocalizationNode::MessegefilteringCallback,
+  m_sync->registerCallback(std::bind(&AWLocalizationNode::MessageFilteringCallback,
                                      this, std::placeholders::_1,
                                      std::placeholders::_2));
 
@@ -216,10 +257,14 @@ AWLocalizationNode::~AWLocalizationNode(){};
  */
 void AWLocalizationNode::timerCallback()
 {
-  if (bImuFirstCall && (bBOTTOM_GPS || bTOP_GPS) && (bBOTTOMGPSHeading || bTOPGPSHeading)) {
+  if (bImuFirstCall && (bBOTTOM_GPS || bTOP_GPS) && (bBOTTOMGPSHeading || bTOPGPSHeading || m_heading_initial_guess_enabled)) {
     auto node_status = nif::common::NODE_ERROR;
 
     m_localization_status.stamp = this->now();
+    if(!bBOTTOM_GPS)
+    {
+      this->bestpos_time_last_update = this->top_bestpos_time_last_update;
+    }
 
     // If the geofence data is too old, report error, but keep going.
     if ((this->now().nanoseconds() - bestpos_time_last_update.nanoseconds()) >=
@@ -245,14 +290,21 @@ void AWLocalizationNode::timerCallback()
 
     veh_vel_x = m_dVelolcity_X;
     veh_yaw_rate = m_dIMU_yaw_rate;
-    if(bTOPGPSHeading && !bBOTTOMGPSHeading)
-    {
-      correction_yaw = m_dGPS_TOP_Heading;
+
+    if (bBOTTOMGPSHeading && bTOPGPSHeading && 
+        (abs(m_dGPS_Heading - m_dGPS_TOP_Heading) < 10.) ) {
+
+      m_best_heading = ( m_dGPS_Heading + m_dGPS_TOP_Heading ) / 2;
+
+    } else if (bBOTTOMGPSHeading) {
+      m_best_heading = m_dGPS_Heading;
+
+    } else if (bTOPGPSHeading) {
+      m_best_heading = m_dGPS_TOP_Heading;
     }
-    if (bBOTTOMGPSHeading)
-    {
-      correction_yaw = m_dGPS_Heading;
-    }
+    
+    correction_yaw = m_best_heading;
+    m_localization_status.heading = m_best_heading;
 
     // standard deviation from novatel bottom/top
     double bottom_noise_total =
@@ -267,6 +319,7 @@ void AWLocalizationNode::timerCallback()
     bool update_pose = false;
     if (bBOTTOM_GPS && bTOP_GPS)
     {
+      // More cases inside here
       update_pose = CalculateBestCorrection(BestPosBottom, BestPosTop,
                                             CurrentEstimated, BestCorrection);
       correction_x = BestCorrection.x; 
@@ -274,12 +327,17 @@ void AWLocalizationNode::timerCallback()
       m_localization_status.top_initialized = true;
       m_localization_status.bottom_initialized = true;
 
-    } else if ((bBOTTOM_GPS && !bTOP_GPS) ||
-               (bottom_noise_total < 2.0 && top_noise_total > 2.0)) {
+    }
+    else if ( bBOTTOM_GPS && // if top is not received, use only bottom. 
+              bottom_noise_total < 2.0 // && BestPosBottom.quality_code_ok
+            ) // when top has large noise, but bottom is good, use bottom.
+    { 
+      // No top, Bottom only mode is validated.
+      // Also, InertialSolutionStatus is integrated/validated on the bottom only mode.
       correction_x = BestPosBottom.x; 
       correction_y = BestPosBottom.y;
       update_pose = true;
-      m_localization_status.status = "TOP IS NOT STARTED. ONLY BOTTOM";
+      m_localization_status.status = "TOP IS BAD. ONLY BOTTOM";
       m_localization_status.top_initialized = false;
       m_localization_status.bottom_initialized = true;
       m_localization_status.localization_status_code =
@@ -306,16 +364,22 @@ void AWLocalizationNode::timerCallback()
 
       m_localization_status.bottom_error = bottomError;
 
-      if (bottomError < 5.0 && bottom_yaw_error < 0.1) {
+      if (bottomError < 5.0 && bottom_yaw_error < 0.1 // && BestPosBottom.quality_code_ok
+      ) {
         bInitConverged = true;
       }
 
-    } else if ((!bBOTTOM_GPS && bTOP_GPS) ||
-               (bottom_noise_total > 2.0 && top_noise_total < 2.0)) {
+    }
+    else if ( bTOP_GPS && // If Bottom is not received, use top
+              top_noise_total < 2.0 // && BestPosTop.quality_code_ok
+            ) {
+      // No bottom, TOP only mode is validated.
+      // Also, InertialSolutionStatus is integrated/validated on the top only
+      // mode.
       correction_x = BestPosTop.x;
       correction_y = BestPosTop.y;
       update_pose = true;
-      m_localization_status.status = "BOTTOM IS NOT STARTED. ONLY TOP";
+      m_localization_status.status = "BOTTOM IS BAD. ONLY TOP";
       m_localization_status.top_initialized = true;
       m_localization_status.bottom_initialized = false;
       m_localization_status.localization_status_code =
@@ -338,10 +402,16 @@ void AWLocalizationNode::timerCallback()
                
       m_localization_status.top_error = topError;
 
+      correction_yaw = BestPosTop.yaw;
+
       if (top_yaw_error > 2 * M_PI)
         top_yaw_error = top_yaw_error - 2 * M_PI;
 
-      if (topError < 5.0 && top_yaw_error < 0.1) {
+      // RCLCPP_INFO(this->get_logger(), "yaw = %f", correction_yaw);
+      // RCLCPP_INFO(this->get_logger(), "yaw error = %f", top_yaw_error);
+
+      if (topError < 5.0 && top_yaw_error < 0.1 // && BestPosTop.quality_code_ok
+      ) {
         bInitConverged = true;
       }
 
@@ -355,31 +425,46 @@ void AWLocalizationNode::timerCallback()
       node_status = nif::common::NODE_ERROR;
     }
 
-    if (bottom_noise_total > 2.0 && top_noise_total > 2.0 && bBOTTOM_GPS &&
-        bTOP_GPS) {
+    // From here, we state high GPS error status.
+    // 1. check sensor is initialized(started) or not.
+    // 2. see the noise or novatel ins status. 
+    if  ( bBOTTOM_GPS && bTOP_GPS && 
+          (
+            (bottom_noise_total > 2.0 && top_noise_total > 2.0) 
+            // || (!BestPosBottom.quality_code_ok && !BestPosBottom.quality_code_ok) 
+          ) 
+        ) {
+
       m_localization_status.status = "NO UPDATE, GPS HIGH ERROR";
       m_localization_status.localization_status_code =
           nif_msgs::msg::LocalizationStatus::GPS_HIGH_ERROR;
       update_pose = false;
       node_status = nif::common::NODE_ERROR;
-    } else if (bottom_noise_total > 2.0 && 
-               bBOTTOM_GPS && !bTOP_GPS)
-    {
-      m_localization_status.status = "NO UPDATE, GPS HIGH ERROR";
+    
+    } else {
+      // Either one of the two is bad or none.
+      if ((bottom_noise_total > 2.0) && bBOTTOM_GPS) {
+
+      m_localization_status.status = "NO UPDATE, GPS HIGH ERROR, ONLY BOTTOM";
       m_localization_status.localization_status_code =
           nif_msgs::msg::LocalizationStatus::GPS_HIGH_ERROR;
       update_pose = false;
       node_status = nif::common::NODE_ERROR;
-    } else if (top_noise_total > 2.0 &&
-               !bBOTTOM_GPS && bTOP_GPS) 
-    {
-      m_localization_status.status = "NO UPDATE, GPS HIGH ERROR";
-      m_localization_status.localization_status_code =
-          nif_msgs::msg::LocalizationStatus::GPS_HIGH_ERROR;
-      update_pose = false;
-      node_status = nif::common::NODE_ERROR;
+    
+      } 
+      
+      if (top_noise_total > 2.0 && bTOP_GPS) {
+
+        m_localization_status.status = "NO UPDATE, GPS HIGH ERROR, ONLY TOP";
+        m_localization_status.localization_status_code =
+            nif_msgs::msg::LocalizationStatus::GPS_HIGH_ERROR;
+        update_pose = false;
+        node_status = nif::common::NODE_ERROR;
+      }
     }
 
+    // check convergence has higher priority than "GPS HIGH ERROR"
+    // even though GPS error is high, keep trying to find the converged value.  
     if (!bInitConverged) {
         m_localization_status.status = "NO CONVERGED. WAITING FOR CONVERGENCE";
         m_localization_status.localization_status_code =
@@ -390,7 +475,8 @@ void AWLocalizationNode::timerCallback()
 
     /* pose measurement update */
     if ((bottom_gps_update == true || top_gps_update == true) && update_pose) {
-      measurementUpdatePose(bestpos_time_last_update, correction_x,
+
+      measurementUpdatePose(bestpos_time_last_update, correction_x, 
                             correction_y, correction_yaw);
 
       // std::cout << "correction_yaw : " << correction_yaw << std::endl;
@@ -412,7 +498,7 @@ void AWLocalizationNode::timerCallback()
     /* publish ekf result */
     publishEstimateResult();
  
-  if(m_localization_status.uncertainty > 10.0)
+  if(m_localization_status.uncertainty > 5.0)
   {
     m_localization_status.localization_status_code =
             nif_msgs::msg::LocalizationStatus::UNCERTAINTY_TOO_HIGH;
@@ -455,7 +541,8 @@ void AWLocalizationNode::setCurrentResult()
   current_ekf_pose_.pose.position.x = ekf_.getXelement(IDX::X);
   current_ekf_pose_.pose.position.y = ekf_.getXelement(IDX::Y);
 
-  tf2::Quaternion q_tf;
+  tf2::Quaternion q_tf;  void TOPBESTVELCallback(const novatel_oem7_msgs::msg::BESTVEL::SharedPtr msg);
+
   double roll = 0.;
   double pitch = 0.;
   double yaw = ekf_.getXelement(IDX::YAW) + ekf_.getXelement(IDX::YAWB);
@@ -465,16 +552,15 @@ void AWLocalizationNode::setCurrentResult()
   current_ekf_twist_.header.frame_id = nif::common::frame_id::localization::ODOM;
   current_ekf_twist_.header.stamp = this->now();
   current_ekf_twist_.twist.linear.x = ekf_.getXelement(IDX::VX);
-
-  Eigen::MatrixXd X_curr(dim_x_, 1); //  curent state
-  ekf_.getLatestX(X_curr);
-  current_ekf_twist_.twist.linear.y = 0.0;
-      // X_curr(IDX::VX) * sin(X_curr(IDX::YAW) + X_curr(IDX::YAWB)) *
-      //     std::sin(-yaw) -
-      // X_curr(IDX::VX) * cos(X_curr(IDX::YAW) + X_curr(IDX::YAWB)) *
-      //     std::cos(-yaw);
-
   current_ekf_twist_.twist.angular.z = ekf_.getXelement(IDX::WZ);
+
+  // delta_x = vx * cos(yaw + yaw_bias)
+  // delta_y = vx * sin(yaw + yaw_bias)
+
+  // m_dGPS_vel_x_onBody = msg->north_velocity * std::cos(-yaw) +
+  //                       msg->east_velocity * std::sin(-yaw);
+  // m_dGPS_vel_y_onBody = msg->north_velocity * std::sin(-yaw) -
+  //                       msg->east_velocity * std::cos(-yaw);
 }
 
 // HOW TO CORRECT HEADING IN EKF
@@ -524,19 +610,28 @@ void AWLocalizationNode::BESTPOSCallback
   quat_ekf_msg = tf2::toMsg(quat_ekf);
   ltp_odom.pose.pose.orientation = quat_ekf_msg;
 
-  ltp_odom.pose.covariance.at(0) = BestPosBottom.lat_noise;  //  x - x
-  ltp_odom.pose.covariance.at(1) = BestPosBottom.lat_noise;  //  x - y
-  ltp_odom.pose.covariance.at(6) = BestPosBottom.lon_noise;  //  y - x
-  ltp_odom.pose.covariance.at(7) = BestPosBottom.lon_noise;  //  y - y
-  ltp_odom.pose.covariance.at(35) = BestPosBottom.yaw_noise; //  yaw - yaw
+  ltp_odom.pose.covariance.at(0) = fabs(BestPosBottom.lat_noise);  //  x - x
+  ltp_odom.pose.covariance.at(1) = fabs(BestPosBottom.lat_noise);  //  x - y
+  ltp_odom.pose.covariance.at(6) = fabs(BestPosBottom.lon_noise);  //  y - x
+  ltp_odom.pose.covariance.at(7) = fabs(BestPosBottom.lon_noise);  //  y - y
+  ltp_odom.pose.covariance.at(35) =fabs(BestPosBottom.yaw_noise); //  yaw - yaw
 
   pub_bestpos_odometry->publish(ltp_odom);
+
+
+  if ((double)msg->lat == 0. && (double)msg->lon == 0.)
+    return;
 
   bottom_gps_update = true;
   bBOTTOM_GPS = true;
 
   BestPosBottom.x = m_dGPS_X;
   BestPosBottom.y = m_dGPS_Y;
+
+  BestPosBottom.novatel_bestpos_status = msg->pos_type.type;
+  BestPosBottom.quality_code_ok = BestPosBottom.novatel_bestpos_status >= PositionOrVelocityType::L1_FLOAT;
+
+  m_localization_status.pos_type_0 = msg->pos_type.type;
 
   ////////////////////////////////////////////////////////////////////////////////////
 }
@@ -549,6 +644,8 @@ void AWLocalizationNode::TOPBESTPOSCallback(
   // double mean = m_testnoise / 10.;
   // double stdev = (int)m_testnoise % 10;
   // std::normal_distribution<double> dist(mean, stdev);
+
+  this->top_bestpos_time_last_update = this->now();
 
   nif::localization::utils::GeodeticConverter::GeoRef currentGPS;
   currentGPS.latitude = (double)msg->lat; //+ dist(generator) * 1e-5;
@@ -579,7 +676,7 @@ void AWLocalizationNode::TOPBESTPOSCallback(
   tf2::Transform transform_top_on_global;
   transform_top_on_global.setOrigin(tf2::Vector3(m_d_TOP_GPS_X, m_d_TOP_GPS_Y, -ltp_pt.z));
   tf2::Quaternion quat_top_on_global;
-  quat_top_on_global.setRPY(m_dGPS_roll, 0, m_dGPS_Heading);
+  quat_top_on_global.setRPY(m_dGPS_TOP_roll, 0, m_dGPS_TOP_Heading);
   transform_top_on_global.setRotation(quat_top_on_global);
 
   auto transform_top_to_bottom_sync = transform_top_on_global * transform_top_to_bottom ;
@@ -609,6 +706,12 @@ void AWLocalizationNode::TOPBESTPOSCallback(
   BestPosTop.x = transform_top_to_bottom_sync.getOrigin().x();
   BestPosTop.y = transform_top_to_bottom_sync.getOrigin().y();
 
+  BestPosTop.novatel_bestpos_status = msg->pos_type.type;
+  BestPosTop.quality_code_ok = BestPosTop.novatel_bestpos_status >= PositionOrVelocityType::L1_FLOAT;
+
+  m_localization_status.pos_type_1 = msg->pos_type.type;
+
+  // We assume not to be in the ocean at (0.0, 0.0)
   if((double)msg->lat == 0. && (double)msg->lon == 0.)
     return;
   
@@ -618,78 +721,129 @@ void AWLocalizationNode::TOPBESTPOSCallback(
 
 void AWLocalizationNode::BOTTOMINSPVACallback(
     const novatel_oem7_msgs::msg::INSPVA::SharedPtr msg) {
+
+  // TODO Motivate this 'minus' sign.
   double yaw = (-msg->azimuth) * nif::common::constants::DEG2RAD;
   if (yaw != 0.0 && yaw != m_prevYaw) {
     m_inspva_heading_init = true;
   }
-  if (!m_inspva_heading_init) {
-    // std::cout << "INSPVA HEADING IS NOT INITIALIZED" << std::endl;
-    m_prevYaw = yaw;
-    return;
-  }
 
-  m_dGPS_Heading = yaw;
-  m_dGPS_roll = msg->roll * nif::common::constants::DEG2RAD;
-  bBOTTOMGPSHeading = true;
   if (m_use_inspva_heading) {
+    if (!m_inspva_heading_init) {
+      // std::cout << "INSPVA HEADING IS NOT INITIALIZED" << std::endl;
+      m_prevYaw = yaw;
+      return;
+    }
+
+    m_dGPS_Heading = yaw;
+    m_dGPS_roll = msg->roll * nif::common::constants::DEG2RAD;
+    bBOTTOMGPSHeading = true;
     heading_flag = true;
+    BestPosBottom.yaw = yaw;
+    BestPosBottom.novatel_ins_status = msg->status.status;
+    BestPosBottom.quality_code_ok = BestPosBottom.novatel_ins_status == InertialSolutionStatus::INS_SOLUTION_GOOD;
   }
 
-  BestPosBottom.yaw = yaw;
 }
 
 void AWLocalizationNode::TOPINSPVACallback(
     const novatel_oem7_msgs::msg::INSPVA::SharedPtr msg) {
-  double yaw = (-msg->azimuth) * nif::common::constants::DEG2RAD; // TODO
+  
+  // TODO Motivate this 'minus' sign.
+  double yaw = (-msg->azimuth) * nif::common::constants::DEG2RAD; 
 
   if (yaw != 0.0 && yaw != m_prevTOPYaw) {
     m_top_inspva_heading_init = true;
   }
-  if (!m_top_inspva_heading_init) {
-    // std::cout << "INSPVA HEADING IS NOT INITIALIZED" << std::endl;
-    m_prevTOPYaw = yaw;
-    return;
-  }
 
-  m_dGPS_TOP_Heading = yaw;
-  m_dGPS_roll = msg->roll * nif::common::constants::DEG2RAD;
-  bTOPGPSHeading = true;
   if (m_use_inspva_heading) {
-    heading_flag = true;
-  }
+    if (!m_top_inspva_heading_init) {
+      m_prevTOPYaw = yaw;
+      return;
+    }
 
-  BestPosTop.yaw = yaw;
+    m_dGPS_TOP_Heading = yaw;
+    m_dGPS_TOP_roll = msg->roll * nif::common::constants::DEG2RAD;
+    bTOPGPSHeading = true;
+    heading_flag = true;
+    BestPosTop.yaw = yaw;
+    BestPosTop.novatel_ins_status = msg->status.status;
+    BestPosTop.quality_code_ok = BestPosTop.novatel_ins_status == InertialSolutionStatus::INS_SOLUTION_GOOD;
+  }
 }
 
-void AWLocalizationNode::BESTVELCallback(
+void AWLocalizationNode::BOTTOMBESTVELCallback(
     const novatel_oem7_msgs::msg::BESTVEL::SharedPtr msg) {
   double yaw = (-msg->trk_gnd) * nif::common::constants::DEG2RAD;
 
-  if (!m_inspva_heading_init &&
-      m_use_inspva_heading) // INSPVA HEADING BACK UP SOLUTITON
+  if (m_top_inspva_heading_init) { // Always false if use_inspva_heading=false
+    return;
+  }
+
+    // When we don't use INSPVA HEADING, we use bestvel heading
+    // param [use_inspva_heading]
+    //       True :  Use bestvel for only back-up solution
+    //       False : Use bestvel for heading estimation
+  if (m_dVelolcity_X > m_bestvel_heading_update_thres &&
+      ( (!m_inspva_heading_init && m_use_inspva_heading) || !m_use_inspva_heading ) ) // INSPVA HEADING BACK UP SOLUTITON
   {
-    m_dGPS_Heading = yaw;
-    // m_dGPS_roll = msg->roll * nif::common::constants::DEG2RAD;
+    m_dGPS_Heading =  this->m_heading_lowpass_gain * yaw + 
+                        (1 - this->m_heading_lowpass_gain) * m_dGPS_Heading_prev;
+    m_dGPS_Heading_prev = m_dGPS_Heading;
+    BestPosBottom.yaw = yaw;
     bBOTTOMGPSHeading = true;
-  }
-
-  // When we don't use INSPVA HEADING, we use bestvel heading
-  // param [use_inspva_heading]
-  //       True :  Use bestvel for only back-up solution
-  //       False : Use bestvel for heading estimation
-  if (!m_use_inspva_heading) {
-    m_dGPS_Heading = yaw;
-    // m_dGPS_roll = msg->roll * nif::common::constants::DEG2RAD;
-    bBOTTOMGPSHeading = true;
-  }
-
-  if (m_dVelolcity_X > m_bestvel_heading_update_thres) {
     heading_flag = true;
   }
+  // TODO !WARNING! What happen if velocity < threshold?
 
   if (bUseBestVelForSpeed) {
     m_dVelolcity_X = msg->hor_speed;
   }
+}
+
+void AWLocalizationNode::TOPBESTVELCallback(
+    const novatel_oem7_msgs::msg::BESTVEL::SharedPtr msg) {
+  double yaw = (-msg->trk_gnd) * nif::common::constants::DEG2RAD;
+
+  if (m_top_inspva_heading_init) { // Always false if use_inspva_heading=false
+    return;
+  }
+
+    // When we don't use INSPVA HEADING, we use bestvel heading
+    // param [use_inspva_heading]
+    //       True :  Use bestvel for only back-up solution
+    //       False : Use bestvel for heading estimation
+  if (m_dVelolcity_X > m_bestvel_heading_update_thres &&
+      ( (!m_inspva_heading_init && m_use_inspva_heading) || !m_use_inspva_heading ) ) // INSPVA HEADING BACK UP SOLUTITON
+  {
+    m_dGPS_TOP_Heading =  this->m_heading_lowpass_gain * yaw + 
+                        (1 - this->m_heading_lowpass_gain) * m_dGPS_TOP_Heading_prev;
+    m_dGPS_TOP_Heading_prev = m_dGPS_TOP_Heading;    
+    BestPosTop.yaw = yaw;
+    bBOTTOMGPSHeading = true;
+    heading_flag = true;
+  }
+  // TODO !WARNING! What happen if velocity < threshold?
+
+  if (bUseBestVelForSpeed) {
+    m_dVelolcity_X = msg->hor_speed;
+  }
+}
+
+void AWLocalizationNode::HEADING2Callback(
+    const novatel_oem7_msgs::msg::HEADING2::SharedPtr msg) {
+      // HEADING2 from top comes 180 off wrt trck_gnd((no minus))
+  double yaw = (msg->heading) * nif::common::constants::DEG2RAD;
+
+  if (m_top_inspva_heading_init) { // Always false if use_inspva_heading=false
+    return;
+  }
+
+  // // HEADING2 used only for initial guess (if stddev is low enough)
+  if ( !(bBOTTOMGPSHeading || bTOPGPSHeading )  &&
+        msg->heading_stdev > 0. && msg->heading_stdev < 2.0)
+    m_best_heading = yaw;
+
 }
 
 void AWLocalizationNode::INSSTDEVCallback(
@@ -715,20 +869,22 @@ void AWLocalizationNode::TOPINSSTDEVCallback(
   BestPosTop.yaw_noise = msg->azimuth_stdev / 180 * M_PI;
 }
 
-void AWLocalizationNode::MessegefilteringCallback(
+void AWLocalizationNode::MessageFilteringCallback(
     const sensor_msgs::msg::Imu ::ConstSharedPtr &imu_msg,
     const raptor_dbw_msgs::msg::WheelSpeedReport::ConstSharedPtr
         &wheel_speed_msg) {
 
   this->imu_time_last_update = this->now();
   m_dIMU_yaw_rate = imu_msg->angular_velocity.z;
-  m_dVelolcity_X =
-      (wheel_speed_msg->front_right + wheel_speed_msg->front_left) / 2 *
-      nif::common::constants::KPH2MS;
+
+  if (!this->bUseBestVelForSpeed) {
+    m_dVelolcity_X =
+        (wheel_speed_msg->front_right + wheel_speed_msg->front_left) / 2 *
+        nif::common::constants::KPH2MS * 0.9826;
+  }
 
   if (!bImuFirstCall) {
     bImuFirstCall = true;
-    return;
   }
 }
 
@@ -809,6 +965,7 @@ void AWLocalizationNode::predictKinematicsModel()
   const double vx = X_curr(IDX::VX);
   const double wz = X_curr(IDX::WZ);
   const double dt = ekf_dt_;
+
 
   /* Update for latest state */
   X_next(IDX::X) = X_curr(IDX::X) + vx * cos(yaw + yaw_bias) * dt; //  dx = v * cos(yaw)
@@ -904,7 +1061,7 @@ void AWLocalizationNode::measurementUpdatePose(rclcpp::Time measurement_time_,
   }
   int delay_step = std::roundf(delay_time / ekf_dt_);
   if (delay_step > extend_state_step_ - 1) {
-    RCLCPP_WARN(this->get_logger(), 
+    RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 10000,
                 "Pose delay exceeds the compensation limit, ignored. delay: %f[s], "
                 " limit= extend_state_step * ekf_dt : %f [s]", delay_time, extend_state_step_* ekf_dt_);
     return;
@@ -931,7 +1088,7 @@ void AWLocalizationNode::measurementUpdatePose(rclcpp::Time measurement_time_,
 
 
   if (isnan(y.array()).any() || isinf(y.array()).any()) {
-    RCLCPP_WARN(this->get_logger(), "[EKF] pose measurement matrix includes NaN of Inf. ignore update. check pose message.");    
+    RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 10000, "[EKF] pose measurement matrix includes NaN of Inf. ignore update. check pose message.");    
     return;
   }
 
@@ -999,33 +1156,43 @@ void AWLocalizationNode::measurementUpdatePose(rclcpp::Time measurement_time_,
 
     if (bBOTTOM_GPS && bTOP_GPS) // if TOP AND BOTTOM are started, calculated covariance using difference between two sensors.
     {
-      // if (m_localization_status.localization_status_code ==
-      //         nif_msgs::msg::LocalizationStatus::BEST_STATUS)
-      // {
+      if (m_localization_status.localization_status_code ==
+              nif_msgs::msg::LocalizationStatus::BEST_STATUS ||
+          m_localization_status.localization_status_code ==
+              nif_msgs::msg::LocalizationStatus::SENSOR_FUSION) {
         R(0, 0) = fabs(BestPosBottom.x - BestPosTop.x) + cov_pos_x +
                   std::pow(pose_stddev_x_, 2); 
         R(1, 1) = fabs(BestPosBottom.y - BestPosTop.y) + cov_pos_y +
                   std::pow(pose_stddev_y_, 2); 
         R(2, 2) = m_stdev_azimuth + cov_yaw +
-                  std::pow(pose_stddev_yaw_, 2); 
-      // } else if (m_localization_status.localization_status_code ==
-      //            nif_msgs::msg::LocalizationStatus::ONLY_TOP) {
-      //   R(0, 0) = BestPosTop.lat_noise + cov_pos_x +
-      //             std::pow(pose_stddev_x_, 2); 
-      //   R(1, 1) = BestPosTop.lon_noise + cov_pos_y +
-      //             std::pow(pose_stddev_y_, 2); 
-      //   R(2, 2) = m_stdev_azimuth + cov_yaw +
-      //             std::pow(pose_stddev_yaw_, 2); 
-      // } else if (m_localization_status.localization_status_code ==
-      //            nif_msgs::msg::LocalizationStatus::ONLY_BOTTOM) {
-      //   R(0, 0) = BestPosBottom.lat_noise + cov_pos_x +
-      //             std::pow(pose_stddev_x_, 2); 
-      //   R(1, 1) = BestPosBottom.lon_noise + cov_pos_y +
-      //             std::pow(pose_stddev_y_, 2); 
-      //   R(2, 2) = m_stdev_azimuth + cov_yaw +
-      //             std::pow(pose_stddev_yaw_, 2); 
-      // }
+                  std::pow(pose_stddev_yaw_, 2);
+      } else if (m_localization_status.localization_status_code ==
+                 nif_msgs::msg::LocalizationStatus::ONLY_TOP) {
+        R(0, 0) = BestPosTop.lat_noise + cov_pos_x +
+                  std::pow(pose_stddev_x_, 2); 
+        R(1, 1) = BestPosTop.lon_noise + cov_pos_y +
+                  std::pow(pose_stddev_y_, 2); 
+        R(2, 2) = m_stdev_azimuth + cov_yaw +
+                  std::pow(pose_stddev_yaw_, 2);
+      } else if (m_localization_status.localization_status_code ==
+                 nif_msgs::msg::LocalizationStatus::ONLY_BOTTOM) {
+        R(0, 0) = BestPosBottom.lat_noise + cov_pos_x +
+                  std::pow(pose_stddev_x_, 2); 
+        R(1, 1) = BestPosBottom.lon_noise + cov_pos_y +
+                  std::pow(pose_stddev_y_, 2); 
+        R(2, 2) = m_stdev_azimuth + cov_yaw +
+                  std::pow(pose_stddev_yaw_, 2);
+      }
+      else
+      {
+        R(0, 0) = m_stdev_latitude + cov_pos_x +  std::pow(pose_stddev_x_, 2) ; //+ cov_pos_x; //  pos_x
+        R(1, 1) = m_stdev_longitude + cov_pos_y + std::pow(pose_stddev_y_, 2) ; //+ cov_pos_y +  pos_y
+        R(2, 2) = m_stdev_azimuth + cov_yaw + std::pow(pose_stddev_yaw_, 2); // + cov_yaw; //  yaw
+
+      }
+
     }
+
 
   }
 
@@ -1079,7 +1246,7 @@ void AWLocalizationNode::measurementUpdateTwist(rclcpp::Time measurement_time_,
   }
   int delay_step = std::roundf(delay_time / ekf_dt_);
   if (delay_step > extend_state_step_ - 1) {
-    RCLCPP_WARN(this->get_logger(), 
+    RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 10000,
                 "Twist delay exceeds the compensation limit, ignored. delay: "
                 "%f[s], limit = "
                 "extend_state_step * ekf_dt : %f [s]",
@@ -1162,9 +1329,9 @@ bool AWLocalizationNode::mahalanobisGate(const double& dist_max, const Eigen::Ma
 
   if (mahalanobis_squared(0) > dist_max * dist_max)
   {
-    RCLCPP_WARN(this->get_logger(), "speed : %f, yaw_rate : %f", m_dVelolcity_X,
+    RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 10000, "speed : %f, yaw_rate : %f", m_dVelolcity_X,
                 m_dIMU_yaw_rate);
-    RCLCPP_WARN(this->get_logger(),
+    RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 10000,
                 "[EKF] Pose measurement update, mahalanobis distance is over "
                 "limit.ignore measurement data.");
     return false;
@@ -1218,8 +1385,14 @@ bool AWLocalizationNode::CalculateBestCorrection(
                                                 ekf_.getXelement(IDX::YAWB)));
   if (bottom_yaw_error > 2*M_PI)
     bottom_yaw_error = bottom_yaw_error - 2*M_PI;
-    
-  if ((bottomError < 5.0 || topError < 5.0) && bottom_yaw_error < 0.1) {
+
+  // TODO !Q: isn't this duplicated? 
+  if ((bottomError < 5.0 || topError < 5.0) && bottom_yaw_error < 0.1
+      // && (BestPosBottom.quality_code_ok ||
+      //  BestPosBottom.novatel_ins_status ==
+      //         novatel_oem7_msgs::msg::InertialSolutionStatus::
+      //             INS_ALIGNMENT_COMPLETE)
+      ) { // Safe also when use_inspva_heading = false;
     bInitConverged = true;
   }
   // std::cout << "------------" << std::endl;
@@ -1248,7 +1421,7 @@ bool AWLocalizationNode::CalculateBestCorrection(
     pose_gate_dist_local = pose_gate_dist_;
   }
 
-    // if bottom and top is close enough, we regard bottom status is nominal.
+    // if bottom and top are close enough, we regard bottom status is nominal.
     // output : bypass fusion. return novatel bottom directly.
     if (diff_top_bottom < 0.5) {
       BestCorrectionOut.x = BottomDataIn.x;
@@ -1272,7 +1445,11 @@ bool AWLocalizationNode::CalculateBestCorrection(
         return true;
       }
       // 2. if bottom is diverged, and top is nominal, USE NOVATEL TOP
-      else if (bottomError > pose_gate_dist_local && topError < pose_gate_dist_local) {
+      else if ((bottomError > pose_gate_dist_local &&
+                topError < pose_gate_dist_local) ||
+               (!BottomDataIn.quality_code_ok &&
+                TopDataIn.quality_code_ok)) {
+
         BestCorrectionOut.x = TopDataIn.x;
         BestCorrectionOut.y = TopDataIn.y;
         m_localization_status.status = "BOTTOM ERROR, USE TOP";
@@ -1281,15 +1458,29 @@ bool AWLocalizationNode::CalculateBestCorrection(
         return true;
       }
       // 3. if top is diverged, and bottom is nominal, USE NOVATEL BOTTOM
-      else if (bottomError < pose_gate_dist_local && topError > pose_gate_dist_local) {
+      else if ((bottomError < pose_gate_dist_local &&
+                topError > pose_gate_dist_local) ||
+               (BottomDataIn.quality_code_ok &&
+                !TopDataIn.quality_code_ok)) {
+
         BestCorrectionOut.x = BottomDataIn.x;
         BestCorrectionOut.y = BottomDataIn.y;
         m_localization_status.status = "TOP ERROR, USE BOTTOM";
         m_localization_status.localization_status_code =
             nif_msgs::msg::LocalizationStatus::ONLY_BOTTOM;
         return true;
-      }
-      // 4. if all the sensors are bad, do not update measurement
+      } 
+      // // 4. if both of ins inertial solution status is not good, GPS HIGH ERROR STATUS
+      // else if ((!BottomDataIn.quality_code_ok &&
+      //           !TopDataIn.quality_code_ok))
+      // {
+
+      //   m_localization_status.status = "NO UPDATE, GPS HIGH ERROR";
+      //   m_localization_status.localization_status_code =
+      //       nif_msgs::msg::LocalizationStatus::GPS_HIGH_ERROR;
+      //   return false;
+      // }
+      // 5. if all the sensors are bad, do not update measurement
       else {
         m_localization_status.status = "NO UPDATE, GPS HIGH ERROR";
         m_localization_status.localization_status_code =
@@ -1316,7 +1507,7 @@ bool AWLocalizationNode::GPSIgnoreGate(
   RCLCPP_INFO(this->get_logger(), "x_delta = %f, y_delta = %f", x_delta, y_delta);
 
   if (x_delta < 0. && atan(fabs(y_delta / x_delta)) > 0.2479) {
-    RCLCPP_WARN(this->get_logger(), "Non-holonomic model cannot move like this");
+    RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 10000, "Non-holonomic model cannot move like this");
     return false;
   }
 
@@ -1360,19 +1551,21 @@ void AWLocalizationNode::publishEstimateResult()
 
   pub_odom_->publish(current_ekf_odom_);
 
-  geometry_msgs::msg::TransformStamped nav_base_tf{};
-  nav_base_tf.transform.translation.x = current_ekf_odom_.pose.pose.position.x;
-  nav_base_tf.transform.translation.y = current_ekf_odom_.pose.pose.position.y;
-  nav_base_tf.transform.translation.z = current_ekf_odom_.pose.pose.position.z;
-  nav_base_tf.transform.rotation.w = current_ekf_odom_.pose.pose.orientation.w;
-  nav_base_tf.transform.rotation.x = current_ekf_odom_.pose.pose.orientation.x;
-  nav_base_tf.transform.rotation.y = current_ekf_odom_.pose.pose.orientation.y;
-  nav_base_tf.transform.rotation.z = current_ekf_odom_.pose.pose.orientation.z;
-  nav_base_tf.header.stamp = this->now();
-  nav_base_tf.header.frame_id = nif::common::frame_id::localization::ODOM;
-  nav_base_tf.child_frame_id = nif::common::frame_id::localization::BASE_LINK;
-  broadcaster_->sendTransform(nav_base_tf);
-  
+  if (this->enable_tf_publisher) {
+    geometry_msgs::msg::TransformStamped nav_base_tf{};
+    nav_base_tf.transform.translation.x = current_ekf_odom_.pose.pose.position.x;
+    nav_base_tf.transform.translation.y = current_ekf_odom_.pose.pose.position.y;
+    nav_base_tf.transform.translation.z = current_ekf_odom_.pose.pose.position.z;
+    nav_base_tf.transform.rotation.w = current_ekf_odom_.pose.pose.orientation.w;
+    nav_base_tf.transform.rotation.x = current_ekf_odom_.pose.pose.orientation.x;
+    nav_base_tf.transform.rotation.y = current_ekf_odom_.pose.pose.orientation.y;
+    nav_base_tf.transform.rotation.z = current_ekf_odom_.pose.pose.orientation.z;
+    nav_base_tf.header.stamp = this->now();
+    nav_base_tf.header.frame_id = nif::common::frame_id::localization::ODOM;
+    nav_base_tf.child_frame_id = nif::common::frame_id::localization::BASE_LINK;
+    broadcaster_->sendTransform(nav_base_tf);
+  }
+
   /* publish localization score*/
   std_msgs::msg::Float64 mahalanobisScoreMsg;
   mahalanobisScoreMsg.data = m_mahalanobisScore;

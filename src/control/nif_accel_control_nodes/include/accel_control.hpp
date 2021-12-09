@@ -44,8 +44,9 @@
 
 namespace control {
 
-const char* TRACK_ID_LOR = "LOR";
-const char* TRACK_ID_IMS = "IMS";
+const char *TRACK_ID_LOR = "LOR";
+const char *TRACK_ID_IMS = "IMS";
+const char *TRACK_ID_LVMS = "LVMS";
 
 // Gear State
 // Contains: gear_number, downshift speed, upshift speed, pointer to previous
@@ -82,8 +83,13 @@ public:
   double m_max_engine_torque = 0.;
   double m_max_a_lon = 0.;
 
+  double m_lateral_error_deadband_m = 0.5;
+  double m_error_factor_vel_thres_mps = 15.0;
+  double m_error_y = 0.;
+  double m_ERROR_Y_MAX = 0.5; // halving des_vel point.
+
 private:
-  void initializeGears(const std::string & track_id);
+  void initializeGears(const std::string &track_id);
   void controlCallback();
   void paramUpdateCallback();
 
@@ -104,6 +110,7 @@ private:
   void receiveDesAccel(const std_msgs::msg::Float32::SharedPtr msg);
   void receivePtReport(const deep_orange_msgs::msg::PtReport::SharedPtr msg);
   void receiveImu(const sensor_msgs::msg::Imu::SharedPtr msg);
+  void receiveLQRError(const std_msgs::msg::Float32MultiArray::SharedPtr msg);
 
   rclcpp::TimerBase::SharedPtr gear_timer_;
 
@@ -123,6 +130,8 @@ private:
   rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr subDesAccel_;
   rclcpp::Subscription<deep_orange_msgs::msg::PtReport>::SharedPtr subPtReport_;
   rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr subImu_;
+  rclcpp::Subscription<std_msgs::msg::Float32MultiArray>::SharedPtr
+      subLQRError_;
 
   rclcpp::Time joy_recv_time_;
   rclcpp::Time vel_recv_time_;
@@ -187,10 +196,16 @@ private:
   bool isDataOk() {
     auto now = this->now();
 
-    bool joy_ok = this->has_joy_ && now - this->joy_recv_time_ <= rclcpp::Duration(1, 0);
-    bool velocity_ok = this->has_vel_ && now - this->vel_recv_time_ <= rclcpp::Duration(1, 0);
-    bool des_acceleration_ok = this->has_des_accel_ && now - this->des_accel_recv_time_ <= rclcpp::Duration(1, 0);
-    bool pt_report_ok = this->has_pt_report_ && now - this->pt_report_recv_time_ <= rclcpp::Duration(1, 0);
+    bool joy_ok =
+        this->has_joy_ && now - this->joy_recv_time_ <= rclcpp::Duration(1, 0);
+    bool velocity_ok =
+        this->has_vel_ && now - this->vel_recv_time_ <= rclcpp::Duration(1, 0);
+    bool des_acceleration_ok =
+        this->has_des_accel_ &&
+        now - this->des_accel_recv_time_ <= rclcpp::Duration(1, 0);
+    bool pt_report_ok =
+        this->has_pt_report_ &&
+        now - this->pt_report_recv_time_ <= rclcpp::Duration(1, 0);
 
     return joy_ok && velocity_ok && des_acceleration_ok && pt_report_ok;
   }

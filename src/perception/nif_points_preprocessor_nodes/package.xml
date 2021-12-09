@@ -24,12 +24,12 @@
   <depend>rclcpp</depend>
   <depend>std_msgs</depend>
   <depend>sensor_msgs</depend>
-  <depend>astuff_sensor_msgs</depend>
+  <!-- <depend>astuff_sensor_msgs</depend> -->
   <depend>pcl_ros</depend>
   <depend>cv_bridge</depend>
   <depend>message_filters</depend>
   <depend>nif_wall_following_controller</depend>
-
+  <depend>delphi_esr_msgs</depend>
 
   <export>
     <build_type>ament_cmake</build_type>

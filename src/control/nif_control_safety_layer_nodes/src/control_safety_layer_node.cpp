@@ -33,6 +33,9 @@ void nif::control::ControlSafetyLayerNode::controlOverrideCallback(
     // TODO Declare thresholds params and implement override mechanism.
     this->override_control_cmd = std::move(*msg);
     this->override_last_update = this->now();
+
+    this->emergency_manual = 
+        (this->override_control_cmd.braking_control_cmd.data >= this->override_brake_deadband);
 }
 
 void nif::control::ControlSafetyLayerNode::perceptionSteeringCallback(
@@ -40,6 +43,20 @@ void nif::control::ControlSafetyLayerNode::perceptionSteeringCallback(
     this->has_perception_steering = true;
     this->perception_steering_cmd = msg->data;
     this->perception_steering_last_update = this->now();
+}
+
+void nif::control::ControlSafetyLayerNode::wallDistanceInnerCallback(
+        const std_msgs::msg::Float32::UniquePtr msg) {
+    this->has_wall_distance_inner = true;
+    this->wall_distance_inner = msg->data;
+    this->wall_distance_inner_last_update = this->now();
+}
+
+void nif::control::ControlSafetyLayerNode::wallDistanceOuterCallback(
+        const std_msgs::msg::Float32::UniquePtr msg) {
+    this->has_wall_distance_outer = true;
+    this->wall_distance_outer = msg->data;
+    this->wall_distance_outer_last_update = this->now();
 }
 
 void nif::control::ControlSafetyLayerNode::run() {
@@ -59,22 +76,40 @@ void nif::control::ControlSafetyLayerNode::run() {
     
     nif::common::NodeStatusCode node_status = common::NODE_ERROR;
 
+    if (this->wall_distance_outer > 0.0 &&
+        this->wall_distance_outer < this->wall_distance_min_threshold_m &&
+        (this->missionIs(MissionStatus::MISSION_RACE) || 
+         this->missionIs(MissionStatus::MISSION_SLOW_DRIVE) || 
+         this->missionIs(MissionStatus::MISSION_COMMANDED_STOP)))
+        {
+            this->emergency_wall_distance = true;
+        } else
+        {
+            this->emergency_wall_distance = false;
+        }
+
     if (    this->emergency_lane_enabled ||
             this->emergency_buffer_empty ||
+            this->emergency_manual       ||
             !this->hasSystemStatus())
     {
-//      TODO EMERGENCY LANE HANDLING
+        // STOP THE CAR ASAP, IN A SAFE MANNER (set_speed_mps=0.0, brake_cmd based on PID, accel_cmd=0)
+        
         double velocity_error = emergencyVelocityError();
         double safe_brake_cmd = this->emergencyBrakeCmd(velocity_error);
-//        RCLCPP_INFO(this->get_logger(), "safe_brake_cmd: %f", safe_brake_cmd);
-        safe_brake_cmd = std::max(safe_brake_cmd,
-                                  static_cast<double>(this->override_control_cmd.braking_control_cmd.data));
-//        RCLCPP_INFO(this->get_logger(), "override_brake_cmd: %f", safe_brake_cmd);
+
+// !!!!!!! UNCOMMENT TO ENABLE MANUAL OVERRIDE ON BRAKES!!! !!!!!!! 
+        // safe_brake_cmd = std::max(safe_brake_cmd,
+        //                           static_cast<double>(this->override_control_cmd.braking_control_cmd.data));
+// !!!!!!! UNCOMMENT TO ENABLE MANUAL OVERRIDE ON BRAKES!!! !!!!!!! 
+
         this->control_cmd.braking_control_cmd.data = safe_brake_cmd;
         this->publishBrakingCmd(this->control_cmd.braking_control_cmd);
 
-        this->control_cmd.gear_control_cmd.data = this->getGearCmd();
-        this->publishGearCmd(this->control_cmd.gear_control_cmd);
+// !!!!!!! UNCOMMENT TO ENABLE GEAR CONTROL IN EMERGENCY CONTROL!!! !!!!!!! 
+        // this->control_cmd.gear_control_cmd.data = this->getGearCmd();
+        // this->publishGearCmd(this->control_cmd.gear_control_cmd);
+// !!!!!!! UNCOMMENT TO ENABLE GEAR CONTROL IN EMERGENCY CONTROL!!! !!!!!!! 
 
         this->control_cmd.accelerator_control_cmd.data = 0.0;
         this->publishAcceleratorCmd(this->control_cmd.accelerator_control_cmd);
@@ -86,6 +121,13 @@ void nif::control::ControlSafetyLayerNode::run() {
             this->control_cmd.steering_control_cmd =
                     this->override_control_cmd.steering_control_cmd;
             is_overriding_steering = true;
+
+        } else if ( this->emergency_wall_distance &&
+                    this->has_perception_steering && 
+                    this->now() - this->perception_steering_last_update < rclcpp::Duration(1, 0) ) {
+            // Too close to the wall, use perception-based lateral control
+            this->control_cmd.steering_control_cmd.data =
+                this->perception_steering_cmd;
 
         } else if ( !this->emergency_buffer_empty   &&
                     !is_buffer_empty                &&
@@ -127,8 +169,6 @@ void nif::control::ControlSafetyLayerNode::run() {
         node_status = common::NODE_OK;
         // Check / Process Overrides
         // If override.steering is greater than the threshold, use it
-        // TODO If override.brake is greater than 0.0, use it
-        // TODO If autonomous_mode is disabled, override has full control
         // RE-STAMP
         this->control_cmd.header.frame_id = this->getBodyFrameId();
 
@@ -148,7 +188,18 @@ void nif::control::ControlSafetyLayerNode::run() {
                     this->buffer_empty_counter = 0;
 
                     if (!is_overriding_steering)
+                    {
+
                         this->control_cmd.steering_control_cmd = top_control_cmd.steering_control_cmd;
+                        
+                        if (    this->emergency_wall_distance &&
+                                this->has_perception_steering && 
+                                this->now() - this->perception_steering_last_update < rclcpp::Duration(1, 0) ) {
+                                // Too close to the wall, use perception-based lateral control
+                                this->control_cmd.steering_control_cmd.data =
+                                    this->perception_steering_cmd;
+                        }
+                    }
 
                     if (long_autonomy_enabled) {
                         this->control_cmd.desired_accel_cmd = top_control_cmd.desired_accel_cmd;
@@ -176,16 +227,21 @@ void nif::control::ControlSafetyLayerNode::run() {
 
             this->publishSteeringCmd(this->control_cmd.steering_control_cmd);
 
+// !!!!!!! UNCOMMENT TO ENABLE MANUAL OVERRIDE ON BRAKES!!! !!!!!!! 
             //    Always allow braking override
-            if (this->override_control_cmd.braking_control_cmd.data > 100.0)
-            {
-                this->control_cmd.braking_control_cmd =
-                        this->override_control_cmd.braking_control_cmd;
-                this->control_cmd.accelerator_control_cmd.data = 0.0;
-                this->publishBrakingCmd(this->control_cmd.braking_control_cmd);
-                this->publishAcceleratorCmd(this->control_cmd.accelerator_control_cmd);
-            //  Publish desired velocity if long_autonomy_enabled
-            } else if (long_autonomy_enabled) {
+            // if (this->override_control_cmd.braking_control_cmd.data > this->override_brake_deadband)
+            // {
+            //     this->control_cmd.braking_control_cmd =
+            //             this->override_control_cmd.braking_control_cmd;
+            //     this->control_cmd.accelerator_control_cmd.data = 0.0;
+            //     this->publishBrakingCmd(this->control_cmd.braking_control_cmd);
+            //     this->publishAcceleratorCmd(this->control_cmd.accelerator_control_cmd);
+            // //  Publish desired velocity if long_autonomy_enabled
+            // } else if (long_autonomy_enabled) {
+// !!!!!!! UNCOMMENT TO ENABLE MANUAL OVERRIDE ON BRAKES!!! !!!!!!! 
+
+            // Manual braking (emergency_manual) is handled above
+            if (long_autonomy_enabled) {
                 this->publishDesiredAcceleration(this->control_cmd.desired_accel_cmd);
             // Publish joystck commands if long_autonomy_enable is false and no braking is commanded
             } else {
@@ -205,7 +261,8 @@ void nif::control::ControlSafetyLayerNode::run() {
             //      TODO handle critical error in the safest way
             RCLCPP_ERROR(this->get_logger(),
                          "ControlSafetyLayerNode caught an exception, enabling emergency lane control");
-            //    Notify the SystemStatusManager of the change.
+            // Notify the SystemStatusManager of the change.
+            // Proceed in emergency mode from the next iteration
             this->emergency_lane_enabled = true;
             this->setNodeStatus(common::NodeStatusCode::NODE_FATAL_ERROR);
         }

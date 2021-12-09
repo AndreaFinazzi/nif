@@ -1,0 +1,115 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<root version="2.3.8">
+ <tabbed_widget parent="main_window" name="Main Window">
+  <Tab tab_name="tab1" containers="1">
+   <Container>
+    <DockSplitter orientation="-" sizes="0.249698;0.250905;0.249698;0.249698" count="4">
+     <DockArea name="...">
+      <plot style="Lines" mode="TimeSeries">
+       <range bottom="-10.560884" left="0.000083" right="596.290594" top="12.996235"/>
+       <limitY/>
+       <curve color="#1f77b4" name="/control_joint_lqr/lqr_error/data.4"/>
+      </plot>
+     </DockArea>
+     <DockArea name="...">
+      <plot style="Lines" mode="TimeSeries">
+       <range bottom="-1.440000" left="0.000083" right="596.290594" top="59.040000"/>
+       <limitY/>
+       <curve color="#d62728" name="/velocity_planner/des_vel/data">
+        <transform alias="/velocity_planner/des_vel/data[Scale/Offset]" name="Scale/Offset">
+         <options value_offset="0" time_offset="0" value_scale="3.6"/>
+        </transform>
+       </curve>
+       <curve color="#1ac938" name="/raptor_dbw_interface/wheel_speed_report/front_left"/>
+      </plot>
+     </DockArea>
+     <DockArea name="...">
+      <plot style="Lines" mode="TimeSeries">
+       <range bottom="-2.907895" left="0.000083" right="596.290594" top="22.240548"/>
+       <limitY/>
+       <curve color="#ff7f0e" name="/joystick/accelerator_cmd/data"/>
+       <curve color="#f14cc1" name="/raptor_dbw_interface/pt_report/engine_rpm">
+        <transform alias="/raptor_dbw_interface/pt_report/engine_rpm[Scale/Offset]" name="Scale/Offset">
+         <options value_offset="0" time_offset="0" value_scale="0.005"/>
+        </transform>
+       </curve>
+      </plot>
+     </DockArea>
+     <DockArea name="...">
+      <plot style="Lines" mode="TimeSeries">
+       <range bottom="815.450000" left="0.000083" right="596.290594" top="3106.550000"/>
+       <limitY/>
+       <curve color="#f14cc1" name="/raptor_dbw_interface/pt_report/engine_rpm"/>
+      </plot>
+     </DockArea>
+    </DockSplitter>
+   </Container>
+  </Tab>
+  <currentTabIndex index="0"/>
+ </tabbed_widget>
+ <use_relative_time_offset enabled="1"/>
+ <!-- - - - - - - - - - - - - - - -->
+ <!-- - - - - - - - - - - - - - - -->
+ <Plugins>
+  <plugin ID="DataLoad CSV">
+   <default time_axis=""/>
+  </plugin>
+  <plugin ID="DataLoad ROS2 bags">
+   <use_header_stamp value="false"/>
+   <discard_large_arrays value="true"/>
+   <max_array_size value="100"/>
+  </plugin>
+  <plugin ID="DataLoad ULog"/>
+  <plugin ID="ROS2 Topic Subscriber">
+   <use_header_stamp value="false"/>
+   <discard_large_arrays value="false"/>
+   <max_array_size value="true"/>
+   <selected_topics>
+    <topic name="/accel_control/diagnostic"/>
+    <topic name="/aw_localization/ekf/odom"/>
+    <topic name="/aw_localization/ekf/odom_bestpos"/>
+    <topic name="/aw_localization/ekf/top_bestpos"/>
+    <topic name="/control_joint_lqr/accel_command"/>
+    <topic name="/control_joint_lqr/accel_command_test"/>
+    <topic name="/control_joint_lqr/lqr_command"/>
+    <topic name="/control_joint_lqr/lqr_command_test"/>
+    <topic name="/control_joint_lqr/lqr_error"/>
+    <topic name="/control_joint_lqr/lqr_error_test"/>
+    <topic name="/control_safety_layer/out/control_cmd"/>
+    <topic name="/joystick/accelerator_cmd"/>
+    <topic name="/joystick/accelerator_cmd/raw"/>
+    <topic name="/joystick/accelerator_cmd/raw_test"/>
+    <topic name="/joystick/brake_cmd"/>
+    <topic name="/joystick/brake_cmd/raw"/>
+    <topic name="/joystick/brake_cmd/raw_test"/>
+    <topic name="/localization/ekf/odom"/>
+    <topic name="/raptor_dbw_interface/pt_report"/>
+    <topic name="/raptor_dbw_interface/wheel_speed_report"/>
+    <topic name="/system/status"/>
+    <topic name="/velocity_planner/des_vel"/>
+    <topic name="/velocity_planner/diagnostic"/>
+   </selected_topics>
+  </plugin>
+  <plugin ID="UDP Server"/>
+  <plugin ID="WebSocket Server"/>
+  <plugin ID="ZMQ Subscriber"/>
+  <plugin status="idle" ID="CSV Exporter"/>
+  <plugin status="idle" ID="ROS2 Topic Re-Publisher"/>
+ </Plugins>
+ <!-- - - - - - - - - - - - - - - -->
+ <previouslyLoaded_Datafiles>
+  <fileInfo prefix="" filename="/home/usrg/media/T7_Touch/IAC/rosbag/2021.10.04_LOR/VEH4_LOR_RUN-mylaps.accel_2021-10-04/autonomy_2021-10-04_13-15-58/metadata.yaml">
+   <selected_datasources value="/aw_localization/ekf/odom;/control_joint_lqr/lqr_command;/control_joint_lqr/lqr_error;/joystick/accelerator_cmd;/joystick/accelerator_cmd/raw;/joystick/brake_cmd;/joystick/brake_cmd/raw;/joystick/gear_cmd;/novatel_bottom/bestvel;/novatel_bottom/imu/data;/novatel_bottom/inspva;/raptor_dbw_interface/wheel_speed_report;/velocity_planner/des_vel;/velocity_planner/diagnostic;/raptor_dbw_interface/pt_report"/>
+   <plugin ID="DataLoad ROS2 bags">
+    <use_header_stamp value="false"/>
+    <discard_large_arrays value="true"/>
+    <max_array_size value="100"/>
+   </plugin>
+  </fileInfo>
+ </previouslyLoaded_Datafiles>
+ <!-- - - - - - - - - - - - - - - -->
+ <customMathEquations/>
+ <snippets/>
+ <!-- - - - - - - - - - - - - - - -->
+</root>
+

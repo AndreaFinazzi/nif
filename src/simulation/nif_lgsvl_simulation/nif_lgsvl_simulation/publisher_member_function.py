@@ -112,7 +112,6 @@ class LGSVLPublisherNode(BaseNode):
         
         # d_wheels_angle_deg = (wheels_angle_deg - self.prev_steering_cmd) / 0.02
         self.prev_steering_cmd = wheels_angle_deg #- 0.2 * d_wheels_angle_deg
-        
         self.target_wheel_angle_rad = 0.3 * self.prev_steering_cmd * math.pi / 180
 
     # Subscribe brake pressure in pascal -> publish braking pedal %

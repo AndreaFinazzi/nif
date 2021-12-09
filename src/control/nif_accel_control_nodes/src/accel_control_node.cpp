@@ -13,9 +13,9 @@
    limitations under the License.
 */
 
-#include <accel_control.hpp>
 #include "nif_common/constants.h"
 #include "nif_utils/utils.h"
+#include <accel_control.hpp>
 
 namespace control {
 AccelControl::AccelControl() : Node("AccelControlNode") {
@@ -65,16 +65,25 @@ AccelControl::AccelControl() : Node("AccelControlNode") {
       "in_imu_data", rclcpp::SensorDataQoS(),
       std::bind(&AccelControl::receiveImu, this, std::placeholders::_1));
 
+  this->subLQRError_ =
+      this->create_subscription<std_msgs::msg::Float32MultiArray>(
+          "control_joint_lqr/lqr_error", nif::common::constants::QOS_DEFAULT,
+          std::bind(&AccelControl::receiveLQRError, this,
+                    std::placeholders::_1));
+
   // Declare Parameters
   this->declare_parameter("time_step", 0.01);
   this->declare_parameter("engine_based_throttle_enabled", false);
+
+  this->declare_parameter("lateral_error_deadband_m", 0.5);
+  this->declare_parameter("error_factor_vel_thres_mps", 15.0);
 
   this->declare_parameter("throttle.k_accel", 0.05780);
   this->declare_parameter("throttle.k_accel2", 0.0);
   this->declare_parameter("throttle.k_bias", 0.09998);
   this->declare_parameter("throttle.pedalToCmd", 100.0);
 
-  this->declare_parameter("throttle.cmd_max", 30.0);
+  this->declare_parameter("throttle.cmd_max", 100.0);
   this->declare_parameter("throttle.cmd_min", 0.0);
   this->declare_parameter("throttle.des_accel_deadband", 0.05);
 
@@ -90,7 +99,7 @@ AccelControl::AccelControl() : Node("AccelControlNode") {
   this->declare_parameter("gear.shift_up", 4000.0);
   this->declare_parameter("gear.shift_down", 2200.0);
   this->declare_parameter("gear.shift_time_ms", 1000);
-  this->declare_parameter("gear.track", "IMS");
+  this->declare_parameter("gear.track", "LVMS");
 
   this->declare_parameter("engine.model_safety_factor", 1.2); // larger than 1.0
   this->declare_parameter("engine.safety_rpm_thres", 3000);
@@ -115,7 +124,7 @@ AccelControl::AccelControl() : Node("AccelControlNode") {
   // Create Callback Timers
   this->ts_ = this->get_parameter("time_step").as_double();
 
-  int timer_gear_ms_ = static_cast<int>(ts_ * 10000);
+  int timer_gear_ms_ = static_cast<int>(ts_ * 1000);
   this->gear_timer_ =
       this->create_wall_timer(std::chrono::milliseconds(timer_gear_ms_),
                               std::bind(&AccelControl::shiftCallback, this));
@@ -138,6 +147,12 @@ AccelControl::AccelControl() : Node("AccelControlNode") {
   this->engine_based_throttle_enabled_ =
       this->get_parameter("engine_based_throttle_enabled").as_bool();
 
+  this->m_lateral_error_deadband_m =
+      this->get_parameter("lateral_error_deadband_m").as_double();
+
+  this->m_error_factor_vel_thres_mps =
+      this->get_parameter("error_factor_vel_thres_mps").as_double();
+
   if (engine_based_throttle_enabled_) {
     // Engine model-based throttle controller
     double engine_safety_factor =
@@ -146,12 +161,11 @@ AccelControl::AccelControl() : Node("AccelControlNode") {
         this->get_parameter("engine.safety_rpm_thres").as_int();
 
     if (engine_safety_factor < 1.0) {
-        RCLCPP_ERROR(this->get_logger(),
-                   "Got engine.model_safety_factor: %f;",
+      RCLCPP_ERROR(this->get_logger(), "Got engine.model_safety_factor: %f;",
                    engine_safety_factor);
-        throw std::range_error("Parameter engine.model_safety_factor must be greater or equal than 1.0.");
+      throw std::range_error("Parameter engine.model_safety_factor must be "
+                             "greater or equal than 1.0.");
     }
-
 
     this->m_throttle_controller_engine_ =
         EngineMapAccelController(engine_safety_factor, engine_safety_rpm_thres,
@@ -171,12 +185,12 @@ AccelControl::AccelControl() : Node("AccelControlNode") {
   this->brakeCmdMax_ = this->get_parameter("brake.cmd_max").as_double();
   this->brakeCmdMin_ = this->get_parameter("brake.cmd_min").as_double();
 
-    if (this->brakeCmdMax_ < 1000000) {
-        RCLCPP_ERROR(this->get_logger(),
-            "Got brake.cmd_max: %f;",
-            this->brakeCmdMax_);
-        throw std::range_error("Parameter brake.cmd_max must be greater or equal than 10000.0.");
-    }
+  if (this->brakeCmdMax_ < 1000000) {
+    RCLCPP_ERROR(this->get_logger(), "Got brake.cmd_max: %f;",
+                 this->brakeCmdMax_);
+    throw std::range_error(
+        "Parameter brake.cmd_max must be greater or equal than 10000.0.");
+  }
 
   this->m_brake_controller_ =
       ThrottleBrakeProfiler(brake_k_accel_, brake_k_accel2_, brake_k_bias_,
@@ -207,27 +221,24 @@ AccelControl::AccelControl() : Node("AccelControlNode") {
   double control_rate =
       this->get_parameter("traction_abs.control_rate").as_double();
 
-    if (traction_enabled && (
-        (traction_throttle_cmd_thres < 0.0 || traction_throttle_cmd_thres > 1.0) ||
-        (traction_factor < 0.0 || traction_factor > 1.0 ) ||
-        (traction_rate <= 0.0 || traction_rate >= 100.0))
-        ) {
-        RCLCPP_ERROR(this->get_logger(),
-                   "Got traction_enabled and parameter out of range.");
-        throw std::range_error("traction_enabled prameters out of range.");
-    } else if (ABS_enabled && (
-        (ABS_brake_cmd_thres < 0.5 || ABS_brake_cmd_thres > 1.0) ||
-        (ABS_factor < 0.0 || ABS_factor > 1.0) ||
-        (ABS_rate <= 0.0 || ABS_rate >= 100.0) ||
-        (velocity_thres_mps < 0.0 || velocity_thres_mps > 27.0) ||
-        (sigma_thres < 0.0 || sigma_thres > 1.0 ) ||
-        (control_rate <= ABS_rate )
-    )) 
-    {
-        RCLCPP_ERROR(this->get_logger(),
-                   "Got ABS_enabled and parameter out of range.");
-        throw std::range_error("ABS_enabled prameters out of range.");
-    }
+  if (traction_enabled && ((traction_throttle_cmd_thres < 0.0 ||
+                            traction_throttle_cmd_thres > 1.0) ||
+                           (traction_factor < 0.0 || traction_factor > 1.0) ||
+                           (traction_rate <= 0.0 || traction_rate >= 100.0))) {
+    RCLCPP_ERROR(this->get_logger(),
+                 "Got traction_enabled and parameter out of range.");
+    throw std::range_error("traction_enabled prameters out of range.");
+  } else if (ABS_enabled &&
+             ((ABS_brake_cmd_thres < 0.5 || ABS_brake_cmd_thres > 1.0) ||
+              (ABS_factor < 0.0 || ABS_factor > 1.0) ||
+              (ABS_rate <= 0.0 || ABS_rate >= 100.0) ||
+              (velocity_thres_mps < 0.0 || velocity_thres_mps > 27.0) ||
+              (sigma_thres < 0.0 || sigma_thres > 1.0) ||
+              (control_rate <= ABS_rate))) {
+    RCLCPP_ERROR(this->get_logger(),
+                 "Got ABS_enabled and parameter out of range.");
+    throw std::range_error("ABS_enabled prameters out of range.");
+  }
 
   this->m_traction_ABS_controller_ = TractionABS(
       traction_enabled, traction_throttle_cmd_thres, traction_factor,
@@ -235,30 +246,40 @@ AccelControl::AccelControl() : Node("AccelControlNode") {
       velocity_thres_mps, sigma_thres, control_rate);
 }
 
-void AccelControl::initializeGears(const std::string & track_id) {
-    if (track_id == TRACK_ID_LOR) {
-        // LOR params
-        this->gear_states = {
-            {1, std::make_shared<control::GearState>(1, 2.92, -255, 11)},
-            {2, std::make_shared<control::GearState>(2, 1.875, 9.5, 16)},
-            {3, std::make_shared<control::GearState>(3, 1.38, 14, 22)},
-            {4, std::make_shared<control::GearState>(4, 1.5, 17, 30)},
-            {5, std::make_shared<control::GearState>(5, 0.96, 22, 35)},
-            {6, std::make_shared<control::GearState>(6, 0.889, 30, 255)}};
-    } else if (track_id == TRACK_ID_IMS) {
-        // IMS params
-        this->gear_states = {
-            {1, std::make_shared<control::GearState>(1, 2.92, -255, 13.5)},
-            {2, std::make_shared<control::GearState>(2, 1.875, 11, 22)},
-            {3, std::make_shared<control::GearState>(3, 1.38, 19.5, 30)},
-            {4, std::make_shared<control::GearState>(4, 1.5, 27.5, 37.5)},
-            {5, std::make_shared<control::GearState>(5, 0.96, 35, 44)},
-            {6, std::make_shared<control::GearState>(6, 0.889, 41.5, 255)}};
-    } else {
-        RCLCPP_ERROR(this->get_logger(),
-                   "Got unrecognized track_id: %s, parameter out of range.", track_id.c_str());
-        throw std::range_error("track_id out of range.");
-    }
+void AccelControl::initializeGears(const std::string &track_id) {
+  if (track_id == TRACK_ID_LOR) {
+    // LOR params
+    this->gear_states = {
+        {1, std::make_shared<control::GearState>(1, 2.92, -255, 11)},
+        {2, std::make_shared<control::GearState>(2, 1.875, 9.5, 16)},
+        {3, std::make_shared<control::GearState>(3, 1.38, 14, 22)},
+        {4, std::make_shared<control::GearState>(4, 1.5, 17, 30)},
+        {5, std::make_shared<control::GearState>(5, 0.96, 22, 35)},
+        {6, std::make_shared<control::GearState>(6, 0.889, 30, 255)}};
+  } else if (track_id == TRACK_ID_IMS) {
+    // IMS params
+    this->gear_states = {
+        {1, std::make_shared<control::GearState>(1, 2.92, -255, 13.5)},
+        {2, std::make_shared<control::GearState>(2, 1.875, 11, 22)},
+        {3, std::make_shared<control::GearState>(3, 1.38, 19.5, 30)},
+        {4, std::make_shared<control::GearState>(4, 1.5, 27.5, 37.5)},
+        {5, std::make_shared<control::GearState>(5, 0.96, 35, 50)},
+        {6, std::make_shared<control::GearState>(6, 0.889, 41.5, 255)}};
+  } else if (track_id == TRACK_ID_LVMS) {
+    // LOR params
+    this->gear_states = {
+        {1, std::make_shared<control::GearState>(1, 2.92, -255, 11)},
+        {2, std::make_shared<control::GearState>(2, 1.875, 9.5, 16)},
+        {3, std::make_shared<control::GearState>(3, 1.38, 14, 22)},
+        {4, std::make_shared<control::GearState>(4, 1.5, 17, 30)},
+        {5, std::make_shared<control::GearState>(5, 0.96, 22, 35)},
+        {6, std::make_shared<control::GearState>(6, 0.889, 30, 255)}};
+  } else {
+    RCLCPP_ERROR(this->get_logger(),
+                 "Got unrecognized track_id: %s, parameter out of range.",
+                 track_id.c_str());
+    throw std::range_error("track_id out of range.");
+  }
 
   this->curr_gear_ptr_ = this->gear_states[1];
 }
@@ -266,14 +287,15 @@ void AccelControl::initializeGears(const std::string & track_id) {
 void AccelControl::paramUpdateCallback() {}
 
 void AccelControl::calculateThrottleCmd(double des_accel) {
-    bool imu_ok =   this->has_m_imu_ && 
-                    this->now() - this->m_imu_update_time <= rclcpp::Duration(1, 0);
-    // If imu is not okay, set the acceleration zero.
-    if (!imu_ok) {
-        RCLCPP_ERROR_ONCE(this->get_logger(), "Imu data is too old, unreliable acceleration control!");
-        m_a_lon_kf = 0;
-        m_a_lat_kf = 0;
-    }
+  bool imu_ok = this->has_m_imu_ &&
+                this->now() - this->m_imu_update_time <= rclcpp::Duration(1, 0);
+  // If imu is not okay, set the acceleration zero.
+  if (!imu_ok) {
+    RCLCPP_ERROR_ONCE(this->get_logger(),
+                      "Imu data is too old, unreliable acceleration control!");
+    m_a_lon_kf = 0;
+    m_a_lat_kf = 0;
+  }
   // Get Longitudinal Acceleration Limit using Vehicle dynamics manager
   m_max_a_lon =
       m_tire_manager_.ComputeLongitudinalAccelLimit(m_a_lon_kf, m_a_lat_kf);
@@ -332,6 +354,16 @@ void AccelControl::calculateBrakeCmd(double des_accel) {
   brake_cmd_out =
       m_traction_ABS_controller_.ABSControl(brake_cmd_out, curr_speed, m_sigma);
   m_abs_activated = m_traction_ABS_controller_.m_abs_activated;
+  // - braking for complete stop
+  // -- 46% brake bedal input at -3 m/s2 command
+  if (curr_speed < 3.0 && des_accel < 0) {
+    brake_cmd_out = this->m_brake_controller_.CurrentControl(-3.0);
+  }
+  // - braking during zero desired velocity
+  // -- 46% brake bedal input at -3 m/s2 command
+  if (curr_speed < 0.1 && des_accel <= 0) {
+    brake_cmd_out = this->m_brake_controller_.CurrentControl(-3.0);
+  }
   // - final brake command output
   this->brake_cmd.data = brake_cmd_out;
 }
@@ -346,22 +378,40 @@ void AccelControl::publishThrottleBrake() {
   // run controller if comms is bad or auto is enabled
   // Sets the joystick throttle cmd as the saturation limit on throttle
 
-
   pubThrottleCmdRaw_->publish(this->throttle_cmd);
   pubBrakeCmdRaw_->publish(this->brake_cmd);
 
+// !!!! UNCOMMENT TO ENABLE THROTTLE SATURATION TO JOYSTICK CMD  !!!!
   if (this->throttle_cmd.data > this->max_throttle_) {
     RCLCPP_DEBUG(this->get_logger(), "%s\n", "Throttle Limit Max Reached");
     this->throttle_cmd.data = this->max_throttle_;
+  }
+// !!!! UNCOMMENT TO ENABLE THROTTLE SATURATION TO JOYSTICK CMD  !!!!
+
+  // Release throttle w.r.t. lateral error
+  // - only when speed is large enough
+  double curr_speed = this->speed_;
+  if (curr_speed > this->m_error_factor_vel_thres_mps) {
+    double error_ratio = 0.0;
+    if (abs(m_error_y) > m_lateral_error_deadband_m) {
+      error_ratio =
+          std::min(abs(m_error_y) - m_lateral_error_deadband_m, m_ERROR_Y_MAX) /
+          m_ERROR_Y_MAX; // [0.0~1.0] ratio
+    }
+
+    double error_gain = 1.0 - 0.5 * error_ratio; // [1.0~0.5] gain
+    this->throttle_cmd.data = error_gain * this->throttle_cmd.data;
   }
 
   this->throttle_cmd.data =
       (this->brake_cmd.data > 0.0) ? 0.0 : this->throttle_cmd.data;
 
-  if(!this->isDataOk()) {
-      RCLCPP_ERROR_ONCE(this->get_logger(), "Data is too old, accel_control_node is blindly braking!");
-      this->throttle_cmd.data = 0.0;
-      this->brake_cmd.data = this->m_brake_controller_.CurrentControl(- 8.0);
+  if (!this->isDataOk()) {
+    RCLCPP_ERROR_ONCE(
+        this->get_logger(),
+        "Data is too old, accel_control_node is blindly braking!");
+    this->throttle_cmd.data = 0.0;
+    this->brake_cmd.data = this->m_brake_controller_.CurrentControl(-8.0);
   }
 
   pubThrottleCmd_->publish(this->throttle_cmd);
@@ -412,9 +462,10 @@ void AccelControl::shiftCallback() {
     return;
   }
 
+  bool upshift_enabled = this->throttle_cmd.data > 0.0 || this->max_throttle_ > 0.0;
+
   // Determine if a shift is required
-  if (curr_speed > upshift_speed && this->throttle_cmd.data > 0.0 &&
-      curr_gear_num < 4) {
+  if (curr_speed > upshift_speed && upshift_enabled && curr_gear_num < 6) {
     // change to next gear if not in 4th
     curr_gear_ptr_ = this->gear_states[curr_gear_num + 1];
     this->gear_cmd.data = curr_gear_num + 1;
@@ -434,12 +485,12 @@ void AccelControl::shiftCallback() {
     this->shifting_counter_ = 0;
   }
 
-  //  pubGearCmd_->publish(this->gear_cmd); // send gear command
+  pubGearCmd_->publish(this->gear_cmd); // send gear command
 }
 
 void AccelControl::receiveJoystick(
     const deep_orange_msgs::msg::JoystickCommand::SharedPtr msg) {
-    this->has_joy_ = true;
+  this->has_joy_ = true;
   this->max_throttle_ = msg->accelerator_cmd;
   this->joy_gear_ = msg->gear_cmd;
   this->joy_recv_time_ = this->now();
@@ -447,7 +498,7 @@ void AccelControl::receiveJoystick(
 
 void AccelControl::receiveVelocity(
     const raptor_dbw_msgs::msg::WheelSpeedReport::SharedPtr msg) {
-        this->has_vel_ = true;
+  this->has_vel_ = true;
   const double kphToMps = 1.0 / 3.6;
   // front left wheel speed (kph)
   double front_left = msg->front_left;
@@ -474,7 +525,7 @@ void AccelControl::receiveDesAccel(
   calculateBrakeCmd(current_des_accel);
 
   publishThrottleBrake();
-  pubGearCmd_->publish(this->gear_cmd); // send gear command
+  // pubGearCmd_->publish(this->gear_cmd); // send gear command
 
   // publish diagnostic message
   publishDiagnostic(engine_based_throttle_enabled_, m_traction_activated,
@@ -484,7 +535,7 @@ void AccelControl::receiveDesAccel(
 
 void AccelControl::receivePtReport(
     const deep_orange_msgs::msg::PtReport::SharedPtr msg) {
-        this->has_pt_report_ = true;
+  this->has_pt_report_ = true;
   this->current_gear_ = msg->current_gear;
   this->engine_speed_ = msg->engine_rpm;
   this->engine_running_ = (msg->engine_rpm > 500) ? true : false;
@@ -522,6 +573,12 @@ void AccelControl::receiveImu(const sensor_msgs::msg::Imu::SharedPtr msg) {
   // - correction
   kf_a_lon.correct((float)(msg->linear_acceleration.x));
   kf_a_lat.correct((float)(msg->linear_acceleration.y));
+}
+
+void AccelControl::receiveLQRError(
+    const std_msgs::msg::Float32MultiArray::SharedPtr msg) {
+  // ey, eydot, eyaw, eyawdot, ev
+  m_error_y = msg->data[0];
 }
 
 } // end namespace control

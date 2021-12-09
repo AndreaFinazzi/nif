@@ -8,20 +8,27 @@ from launch.substitutions import LaunchConfiguration
 from launch.conditions import IfCondition
 from launch_ros.actions import Node
 
+
 IMS = 0
 LOR = 1
+IMS_SIM = 2
+LVMS = 3
+LVMS_SIM = 4
 track = None
 
 # get which track we are at
-# track_id = os.environ.get('TRACK').strip()
+track_id = os.environ.get('TRACK').strip()
 
-track_id = "IMS"
-
-
-if track_id == "IMS":
+if track_id == "IMS" or track_id == "ims":
     track = IMS
-elif track_id == "LOR":
+elif track_id == "LOR" or track_id == "lor":
     track = LOR
+elif track_id == "IMS_SIM" or track_id == "ims_sim":
+    track = IMS_SIM
+elif track_id == "LVMS" or track_id == "lvms":
+    track = LVMS
+elif track_id == "LVMS_SIM" or track_id == "lvms_sim":
+    track = LVMS_SIM
 else:
     raise RuntimeError("ERROR: Invalid track {}".format(track_id))
 
@@ -105,17 +112,7 @@ def generate_launch_description():
         }],
 
         remappings=[
-            # Current set : Bottom INS Disabled // Top INS Enabled
-            # /novatel_bottom/bestvel is used to back-up solution when novatel_top/inspva heading is not published.
-            ("in_inspva", "novatel_bottom/inspva_nouse"), # NOT USED
-            ("in_top_inspva", "novatel_top/inspva"), # HEADING
-            ("in_bestpos", "novatel_bottom/bestpos"), # POSE (X,Y)
-            ("in_imu", "novatel_top/imu/data"), # YAW RATE
-            ("in_bestvel", "novatel_bottom/bestvel"), #HEADING BACK UP SOLUTION
-            ("in_wheel_speed_report", "raptor_dbw_interface/wheel_speed_report"), # WHEEL SPEED
-
-            ("out_odometry_ekf_estimated", "/localization/ekf/odom"),
-            ("out_odometry_bestpos", "/localization/ekf/odom_bestpos")
+            ("in_odometry_ekf_estimated", "/aw_localization/ekf/odom"),
         ]
     )
 

@@ -1,0 +1,214 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<root version="2.3.8">
+ <tabbed_widget parent="main_window" name="Main Window">
+  <Tab tab_name="tab2" containers="1">
+   <Container>
+    <DockSplitter sizes="0.25;0.25;0.25;0.25" orientation="-" count="4">
+     <DockArea name="...">
+      <plot mode="TimeSeries" style="Lines">
+       <range left="0.000939" bottom="18.108124" right="19.999299" top="75.465654"/>
+       <limitY/>
+       <curve color="#1ac938" name="/raptor_dbw_interface/wheel_speed_report/front_left"/>
+       <curve color="#1f77b4" name="/raptor_dbw_interface/wheel_speed_report/rear_left">
+        <transform alias="/raptor_dbw_interface/wheel_speed_report/rear_left[Scale/Offset]" name="Scale/Offset">
+         <options time_offset="0" value_scale="0.2778" value_offset="0"/>
+        </transform>
+       </curve>
+      </plot>
+     </DockArea>
+     <DockArea name="...">
+      <plot mode="TimeSeries" style="Lines">
+       <range left="0.000939" bottom="-2.865267" right="19.999299" top="1.525698"/>
+       <limitY/>
+       <curve color="#17becf" name="/control_joint_lqr/lqr_error/data.0"/>
+       <curve color="#bcbd22" name="/control_joint_lqr/lqr_error/data.1"/>
+       <curve color="#1f77b4" name="/control_joint_lqr/lqr_error_test/data.0"/>
+       <curve color="#d62728" name="/control_joint_lqr/lqr_error_test/data.1"/>
+       <curve color="#1f77b4" name="/control_joint_lqr/lqr_error_test/data.5"/>
+       <curve color="#d62728" name="/control_joint_lqr/lqr_error_test/data.6"/>
+      </plot>
+     </DockArea>
+     <DockArea name="...">
+      <plot mode="TimeSeries" style="Lines">
+       <range left="0.000939" bottom="-2.012477" right="19.999299" top="6.838825"/>
+       <limitY/>
+       <curve color="#f14cc1" name="/control_joint_lqr/lqr_command/data"/>
+       <curve color="#9467bd" name="/control_joint_lqr/lqr_command_test/data"/>
+      </plot>
+     </DockArea>
+     <DockArea name="...">
+      <plot mode="TimeSeries" style="Lines">
+       <range left="0.000939" bottom="0.900000" right="19.999299" top="1.100000"/>
+       <limitY/>
+       <curve color="#ff7f0e" name="/control_joint_lqr/valid_conditions_test/data.3"/>
+       <curve color="#f14cc1" name="/control_joint_lqr/valid_conditions_test/data.4"/>
+      </plot>
+     </DockArea>
+    </DockSplitter>
+   </Container>
+  </Tab>
+  <Tab tab_name="tab3" containers="1">
+   <Container>
+    <DockSplitter sizes="0.250559;0.249441;0.250559;0.249441" orientation="-" count="4">
+     <DockArea name="...">
+      <plot mode="TimeSeries" style="Lines">
+       <range left="60.190344" bottom="72.632500" right="80.179846" top="88.067497"/>
+       <limitY/>
+       <curve color="#1ac938" name="/raptor_dbw_interface/wheel_speed_report/front_left"/>
+      </plot>
+     </DockArea>
+     <DockArea name="...">
+      <plot mode="TimeSeries" style="Lines">
+       <range left="60.190994" bottom="0.168498" right="80.190298" top="1.789400"/>
+       <limitY/>
+       <curve color="#17becf" name="/control_joint_lqr/lqr_error/data.0"/>
+       <curve color="#1f77b4" name="/control_joint_lqr/lqr_error_test/data.0"/>
+      </plot>
+     </DockArea>
+     <DockArea name="...">
+      <plot mode="TimeSeries" style="Lines">
+       <range left="60.190200" bottom="13.336636" right="80.189612" top="25.258064"/>
+       <limitY/>
+       <curve color="#9467bd" name="/velocity_planner/des_vel/data"/>
+       <curve color="#17becf" name="/velocity_planner/des_vel_test/data"/>
+       <curve color="#1f77b4" name="/raptor_dbw_interface/wheel_speed_report/front_right">
+        <transform alias="/raptor_dbw_interface/wheel_speed_report/front_right[Scale/Offset]" name="Scale/Offset">
+         <options time_offset="0" value_scale="0.2778" value_offset="0"/>
+        </transform>
+       </curve>
+       <curve color="#1f77b4" name="/velocity_planner/diagnostic_test/vel_curv_mps"/>
+       <curve color="#d62728" name="/velocity_planner/diagnostic_test/vel_dyn_mps"/>
+      </plot>
+     </DockArea>
+     <DockArea name="...">
+      <plot mode="TimeSeries" style="Lines">
+       <range left="60.199374" bottom="-1.394608" right="80.189612" top="13.670895"/>
+       <limitY/>
+       <curve color="#bcbd22" name="/velocity_planner/diagnostic/a_lat_max"/>
+       <curve color="#1f77b4" name="/velocity_planner/diagnostic/a_lat_kf"/>
+       <curve color="#d62728" name="/velocity_planner/diagnostic_test/a_lat_max"/>
+       <curve color="#1ac938" name="/velocity_planner/diagnostic_test/a_lat_kf"/>
+      </plot>
+     </DockArea>
+    </DockSplitter>
+   </Container>
+  </Tab>
+  <Tab tab_name="tab4" containers="1">
+   <Container>
+    <DockSplitter sizes="0.200448;0.199328;0.200448;0.199328;0.200448" orientation="-" count="5">
+     <DockArea name="...">
+      <plot mode="TimeSeries" style="Lines">
+       <range left="28.466817" bottom="75.809999" right="48.453207" top="87.989997"/>
+       <limitY/>
+       <curve color="#1ac938" name="/raptor_dbw_interface/wheel_speed_report/front_left"/>
+      </plot>
+     </DockArea>
+     <DockArea name="...">
+      <plot mode="TimeSeries" style="Lines">
+       <range left="28.434389" bottom="0.159479" right="48.450088" top="1.859817"/>
+       <limitY/>
+       <curve color="#17becf" name="/control_joint_lqr/lqr_error/data.0"/>
+       <curve color="#1f77b4" name="/control_joint_lqr/lqr_error_test/data.0"/>
+      </plot>
+     </DockArea>
+     <DockArea name="...">
+      <plot mode="TimeSeries" style="Lines">
+       <range left="28.429887" bottom="-2.832895" right="48.452467" top="27.727632"/>
+       <limitY/>
+       <curve color="#ff7f0e" name="/joystick/accelerator_cmd/data"/>
+       <curve color="#f14cc1" name="/joystick/accelerator_cmd/raw/data"/>
+       <curve color="#9467bd" name="/joystick/accelerator_cmd_test/data"/>
+       <curve color="#17becf" name="/joystick/accelerator_cmd_test/raw/data"/>
+      </plot>
+     </DockArea>
+     <DockArea name="...">
+      <plot mode="TimeSeries" style="Lines">
+       <range left="28.453062" bottom="-13249.129687" right="48.453912" top="543214.317187"/>
+       <limitY/>
+       <curve color="#1f77b4" name="/joystick/brake_cmd/data"/>
+       <curve color="#d62728" name="/joystick/brake_cmd/raw/data"/>
+       <curve color="#1ac938" name="/joystick/brake_cmd_test/data"/>
+       <curve color="#ff7f0e" name="/joystick/brake_cmd/raw_test/data"/>
+      </plot>
+     </DockArea>
+     <DockArea name="...">
+      <plot mode="TimeSeries" style="Lines">
+       <range left="28.451151" bottom="-2.718060" right="48.451528" top="7.795391"/>
+       <limitY/>
+       <curve color="#bcbd22" name="/accel_control/diagnostic/max_a_lon"/>
+       <curve color="#1f77b4" name="/accel_control/diagnostic_test/max_a_lon"/>
+       <curve color="#d62728" name="/velocity_planner/diagnostic/a_lon_kf"/>
+       <curve color="#1ac938" name="/velocity_planner/diagnostic_test/a_lon_kf"/>
+      </plot>
+     </DockArea>
+    </DockSplitter>
+   </Container>
+  </Tab>
+  <currentTabIndex index="1"/>
+ </tabbed_widget>
+ <use_relative_time_offset enabled="1"/>
+ <!-- - - - - - - - - - - - - - - -->
+ <!-- - - - - - - - - - - - - - - -->
+ <Plugins>
+  <plugin ID="DataLoad CSV">
+   <default time_axis=""/>
+  </plugin>
+  <plugin ID="DataLoad ROS2 bags">
+   <use_header_stamp value="false"/>
+   <discard_large_arrays value="true"/>
+   <max_array_size value="100"/>
+  </plugin>
+  <plugin ID="DataLoad ULog"/>
+  <plugin ID="ROS2 Topic Subscriber">
+   <use_header_stamp value="false"/>
+   <discard_large_arrays value="false"/>
+   <max_array_size value="true"/>
+   <selected_topics>
+    <topic name="/accel_control/diagnostic_test"/>
+    <topic name="/aw_localization/ekf/odom"/>
+    <topic name="/aw_localization/ekf/odom_bestpos"/>
+    <topic name="/control_joint_lqr/accel_command_test"/>
+    <topic name="/control_joint_lqr/lqr_command"/>
+    <topic name="/control_joint_lqr/lqr_command_test"/>
+    <topic name="/control_joint_lqr/lqr_error_test"/>
+    <topic name="/control_joint_lqr/valid_conditions_test"/>
+    <topic name="/control_safety_layer/out/control_cmd"/>
+    <topic name="/joystick/accelerator_cmd_test"/>
+    <topic name="/joystick/accelerator_cmd_test/raw"/>
+    <topic name="/joystick/brake_cmd/raw_test"/>
+    <topic name="/joystick/brake_cmd_test"/>
+    <topic name="/localization/ekf/odom"/>
+    <topic name="/novatel_bottom/imu/data"/>
+    <topic name="/raptor_dbw_interface/pt_report"/>
+    <topic name="/raptor_dbw_interface/wheel_speed_report"/>
+    <topic name="/system/status"/>
+    <topic name="/velocity_planner/des_vel_test"/>
+    <topic name="/velocity_planner/diagnostic_test"/>
+    <topic name="/accel_control/diagnostic"/>
+    <topic name="/aw_localization/ekf/top_bestpos"/>
+    <topic name="/control_joint_lqr/accel_command"/>
+    <topic name="/control_joint_lqr/lqr_error"/>
+    <topic name="/joystick/accelerator_cmd"/>
+    <topic name="/joystick/accelerator_cmd/raw"/>
+    <topic name="/joystick/brake_cmd"/>
+    <topic name="/joystick/brake_cmd/raw"/>
+    <topic name="/joystick/steering_cmd"/>
+    <topic name="/velocity_planner/des_vel"/>
+    <topic name="/control_joint_lqr/track_idx_test"/>
+   </selected_topics>
+  </plugin>
+  <plugin ID="UDP Server"/>
+  <plugin ID="WebSocket Server"/>
+  <plugin ID="ZMQ Subscriber"/>
+  <plugin ID="CSV Exporter" status="idle"/>
+  <plugin ID="ROS2 Topic Re-Publisher" status="idle"/>
+ </Plugins>
+ <!-- - - - - - - - - - - - - - - -->
+ <previouslyLoaded_Datafiles/>
+ <previouslyLoaded_Streamer name="ROS2 Topic Subscriber"/>
+ <!-- - - - - - - - - - - - - - - -->
+ <customMathEquations/>
+ <snippets/>
+ <!-- - - - - - - - - - - - - - - -->
+</root>
+

@@ -7,18 +7,27 @@ from launch.substitutions import LaunchConfiguration
 from launch.substitutions import ThisLaunchFileDir
 from launch_ros.actions import Node
 
+
 IMS = 0
 LOR = 1
-LG_SVL = 2
+IMS_SIM = 2
+LVMS = 3
+LVMS_SIM = 4
+track = None
 
+# get which track we are at
 track_id = os.environ.get('TRACK').strip()
 
-if track_id == "IMS":
+if track_id == "IMS" or track_id == "ims":
     track = IMS
-elif track_id == "LOR":
+elif track_id == "LOR" or track_id == "lor":
     track = LOR
-elif track_id == "LG_SVL":
-    track = LG_SVL
+elif track_id == "IMS_SIM" or track_id == "ims_sim":
+    track = IMS_SIM
+elif track_id == "LVMS" or track_id == "lvms":
+    track = LVMS
+elif track_id == "LVMS_SIM" or track_id == "lvms_sim":
+    track = LVMS_SIM
 else:
     raise RuntimeError("ERROR: Invalid track {}".format(track_id))
 
@@ -30,8 +39,12 @@ def generate_launch_description():
         config_file = 'config_lor.yaml'
     elif track == IMS:
         config_file = 'config_ims.yaml'
-    elif track == LG_SVL:
+    elif track == IMS_SIM:
         config_file = 'config_lgsim.yaml'
+    elif track == LVMS:
+        config_file = 'config_lvms.yaml'
+    elif track == LVMS_SIM:
+        config_file = 'config_lvms_sim.yaml'
     else:
         raise RuntimeError("ERROR: invalid track provided: {}".format(track))
 
@@ -51,7 +64,7 @@ def generate_launch_description():
                 package="nif_aw_localization_nodes",
                 executable="nif_aw_localization_nodes_exe",
                 output={
-                    "stderr": "log",
+                    "stderr": "screen",
                     "stdout": "screen"
                 },
                 emulate_tty=True,
@@ -61,12 +74,12 @@ def generate_launch_description():
                 remappings=[
                     # Current set : Bottom INS Disabled // Top INS Enabled
                     # /novatel_bottom/bestvel is used to back-up solution when novatel_top/inspva heading is not published.  
-                    ("in_inspva", "novatel_bottom/inspva"), # NOT USED
-                    ("in_top_inspva", "novatel_top/inspva_nouse"), # HEADING
-                    ("in_bestpos", "novatel_bottom/bestpos"), # POSE (X,Y)
-                    ("in_top_bestpos", "novatel_top/bestpos"), # POSE (X,Y)
+                    ("in_inspva", "novatel_bottom/inspva"), # HEADING PRIORITY 1
+                    ("in_top_inspva", "novatel_top/inspva"), # HEADING PRIORITY 2
+                    ("in_bestpos", "novatel_bottom/bestgnsspos"), # POSE (X,Y)
+                    ("in_top_bestpos", "novatel_top/bestgnsspos"), # POSE (X,Y)
                     ("in_imu", "novatel_bottom/imu/data"), # YAW RATE
-                    ("in_bestvel", "novatel_bottom/bestvel"), #HEADING BACK UP SOLUTION
+                    ("in_bestvel", "novatel_bottom/bestvel"), #HEADING PRIORITY 3(BACK UP SOLUTION)
                     ("in_insstdev", "novatel_bottom/insstdev"), #INS STANDARD DEVIATION
                     ("in_top_insstdev", "novatel_top/insstdev"), #INS STANDARD DEVIATION
                     ("in_wheel_speed_report", "raptor_dbw_interface/wheel_speed_report"), # WHEEL SPEED
@@ -75,7 +88,10 @@ def generate_launch_description():
                     ("out_odometry_bestpos", "/aw_localization/ekf/odom_bestpos"),
                     ("out_top_odometry_bestpos", "/aw_localization/ekf/top_bestpos"),
                     ('out_localization_error', '/aw_localization/ekf/error'),
-                    ('out_localization_status', '/aw_localization/ekf/status')
+                    ('out_localization_status', '/aw_localization/ekf/status'),
+                    ('/debug', '/aw_localization/debug'),
+                    ('/debug/measured_pose', '/aw_localization/debug/measured_pose'),
+                    ('/estimated_yaw_bias', '/aw_localization/estimated_yaw_bias'),
                 ]
     )
 

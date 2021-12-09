@@ -13,6 +13,8 @@ import graph_ltpl
 import yaml
 import matplotlib.patches as patches
 
+# from planning.nif_multilayer_planning_nodes.nif_multilayer_planning_nodes.nif_multilayer_planning_node import GraphBasedPlanner
+
 
 ax = plt.subplot(1,1,1)
 
@@ -105,6 +107,8 @@ class GraphVisualizer:
         self.graph_path = file_path
         self.nodes = []
         self.nodes_pos = []
+        self.left_bound = None
+        self.right_bound = None
         self.loadGraph()
         self.visualization(legend)
 
@@ -123,6 +127,8 @@ class GraphVisualizer:
                                                                     return_child=True,
                                                                     return_parent=True)
             self.nodes_pos.append(pos)
+
+        self.left_bound = graph_base.left_bound()
 
     def visualization(self, legend):
         node_x = []

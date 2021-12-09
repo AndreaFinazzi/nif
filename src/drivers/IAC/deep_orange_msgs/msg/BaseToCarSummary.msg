@@ -16,5 +16,5 @@ uint8 VEH_FLAG_PURPLE=8
 uint8 veh_flag
 
 uint8 veh_rank
-float32 lap_status_whole
-float32 lap_status_fraction
+uint8 lap_count
+uint16 lap_distance

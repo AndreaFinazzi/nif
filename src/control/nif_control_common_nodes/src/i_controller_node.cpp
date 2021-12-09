@@ -76,19 +76,22 @@ void nif::control::IControllerNode::referencePathCallback(
   this->reference_path_update_time = this->now();
   this->reference_path = msg;
 
-  auto last_point = this->reference_path->poses.back();
+  if (this->reference_path && !this->reference_path->poses.empty())
+  {
+    auto last_point = this->reference_path->poses.back();
 
-  if (this->reference_path && this->hasEgoOdometry())
-    if(this->reference_path->header.frame_id == this->getBodyFrameId()) {
-      this->reference_path_last_point_distance = sqrt(
-      pow(last_point.pose.position.x, 2) +
-      pow(last_point.pose.position.y, 2));
-    }
-    else {
-      this->reference_path_last_point_distance = sqrt(
-      pow(this->getEgoOdometry().pose.pose.position.x - last_point.pose.position.x, 2) +
-      pow(this->getEgoOdometry().pose.pose.position.y - last_point.pose.position.y, 2));
-    }
+    if (this->reference_path && this->hasEgoOdometry())
+      if(this->reference_path->header.frame_id == this->getBodyFrameId()) {
+        this->reference_path_last_point_distance = sqrt(
+        pow(last_point.pose.position.x, 2) +
+        pow(last_point.pose.position.y, 2));
+      }
+      else {
+        this->reference_path_last_point_distance = sqrt(
+        pow(this->getEgoOdometry().pose.pose.position.x - last_point.pose.position.x, 2) +
+        pow(this->getEgoOdometry().pose.pose.position.y - last_point.pose.position.y, 2));
+      }
+  }
 
   this->afterReferencePathCallback();
 }

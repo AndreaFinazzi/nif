@@ -12,13 +12,14 @@ def generate_launch_description():
             "config",
             "config.yaml",
         ),
-        )
+    )
 
     return LaunchDescription(
         [
             Node(
                 package="nif_points_preprocessor_nodes",
                 executable="nif_points_preprocessor_nodes_exe",
+                respawn=True,
                 output={
                     'stdout': 'screen',
                     'stderr': 'screen',

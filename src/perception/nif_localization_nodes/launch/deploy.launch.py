@@ -8,22 +8,29 @@ from launch.substitutions import LaunchConfiguration
 from launch.conditions import IfCondition
 from launch_ros.actions import Node
 
+
 IMS = 0
 LOR = 1
+IMS_SIM = 2
+LVMS = 3
+LVMS_SIM = 4
 track = None
 
 # get which track we are at
 track_id = os.environ.get('TRACK').strip()
 
-if track_id == "IMS":
+if track_id == "IMS" or track_id == "ims":
     track = IMS
-elif track_id == "LOR":
+elif track_id == "LOR" or track_id == "lor":
     track = LOR
-elif track_id == "LG_SVL":
-    track = IMS
+elif track_id == "IMS_SIM" or track_id == "ims_sim":
+    track = IMS_SIM
+elif track_id == "LVMS" or track_id == "lvms":
+    track = LVMS
+elif track_id == "LVMS_SIM" or track_id == "lvms_sim":
+    track = LVMS_SIM
 else:
     raise RuntimeError("ERROR: Invalid track {}".format(track_id))
-
 
 def generate_launch_description():
     ns = ""
@@ -33,6 +40,8 @@ def generate_launch_description():
         track_subdir = "lor"
     elif track == IMS:
         track_subdir = "ims"
+    elif track == LVMS:
+        track_subdir = "lvms"
     else:
         raise RuntimeError("ERROR: invalid track provided: {}".format(track))
 
@@ -88,26 +97,10 @@ def generate_launch_description():
                     # resilient localization node
                     'thres_for_distance_error_flag' : 1.0,
                     'thres_for_distance_to_wall' : 2.0,
-
-                    # EKF node
-                    'use_inspva_heading' : True,
-                    'bestvel_heading_update_velocity_thres' : 2.0, # unit : km/h
-                    # 'origin_lat' : 39.809786,
-                    # 'origin_lon' : -86.235148,
                     }],
 
                 remappings=[
-                    # Current set : Bottom INS Disabled // Top INS Enabled
-                    # /novatel_bottom/bestvel is used to back-up solution when novatel_top/inspva heading is not published.  
-                    ("in_inspva", "novatel_bottom/inspva"), # HAEDING
-                    ("in_top_inspva", "novatel_top/inspva_no_use"), # NO USE
-                    ("in_bestpos", "novatel_bottom/bestpos"), # POSE (X,Y)
-                    ("in_imu", "novatel_bottom/imu/data"), # YAW RATE
-                    ("in_bestvel", "novatel_bottom/bestvel"), #HEADING BACK UP SOLUTION
-                    ("in_wheel_speed_report", "raptor_dbw_interface/wheel_speed_report"), # WHEEL SPEED
-
-                    ("out_odometry_ekf_estimated", "/localization/ekf/odom"),
-                    ("out_odometry_bestpos", "/localization/ekf/odom_bestpos")
+                    ("in_odometry_ekf_estimated", "/aw_localization/ekf/odom"),
                 ]
             )
 

@@ -15,6 +15,13 @@ cmake_minimum_required(VERSION 3.5)
 
 project(ssc_interface)
 
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+    set(DEPRECATION_FLAG "-wr1478")
+else()
+    set(DEPRECATION_FLAG "-Wno-deprecated-declarations")
+endif()
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${DEPRECATION_FLAG}")
+
 # dependencies
 find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()

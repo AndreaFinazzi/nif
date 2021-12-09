@@ -10,7 +10,6 @@
 #include "std_srvs/srv/trigger.hpp"
 
 using nif_msgs::msg::MissionStatus;
-using nif_msgs::msg::MissionStatus;
 
 namespace nif {
 namespace system {
@@ -49,6 +48,8 @@ private:
   // Mission and safe localization parameters
   double velocity_zero = 0.0;
   double velocity_max = 0.0;
+  double velocity_avoidance = 0.0;
+  double velocity_warmup = 0.0;
   double velocity_pit_in = 0.0;
   double velocity_pit_out = 0.0;
   double velocity_slow_drive = 0.0;
@@ -59,7 +60,29 @@ private:
 
   bool is_system_startup = true;
 
+  bool is_avoidance_enabled = false;
+  bool is_warmup_enabled = false;
+
+  unsigned short int lap_count = 0;
+  unsigned int lap_distance = 0;
+
+  bool mission_avoidance_auto_switch = false;
+  unsigned int mission_avoidance_lap_count_min = 0;
+  unsigned int mission_avoidance_previous_track_flag = 0;
+  unsigned int mission_avoidance_lap_distance_min = 0;
+  unsigned int mission_avoidance_lap_distance_max = 0;
+
+  bool mission_warmup_auto_switch = false;
+  unsigned int mission_warmup_lap_count = 0;
+  unsigned int mission_warmup_previous_track_flag = 0;
+  unsigned int mission_warmup_lap_distance_min = 0;
+  unsigned int mission_warmup_lap_distance_max = 0;
+
   nif::system::MissionsDescription missions_description;
+  nif::system::TrackZonesDescription zones_description;
+
+  track_zone_id_t current_track_zone_id;
+  std::unordered_map<track_zone_id_t, unsigned int> track_zones_hit_count_map;
   
   /**
    * SystemStatus publisher. Publishes the latest system_status message, after
@@ -71,6 +94,8 @@ private:
   rclcpp::Subscription<raptor_dbw_msgs::msg::WheelSpeedReport>::SharedPtr velocity_sub;
 
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr recovery_service;
+  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr avoidance_service;
+  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr warmup_service;
 
   void RCFlagSummaryCallback(const nif::common::msgs::RCFlagSummary::UniquePtr msg);
   void velocityCallback(
@@ -80,7 +105,14 @@ private:
           const std::shared_ptr<rmw_request_id_t> request_header,
           const std_srvs::srv::Trigger::Request::SharedPtr request,
           std_srvs::srv::Trigger::Response::SharedPtr response);
-
+  void avoidanceServiceHandler(
+          const std::shared_ptr<rmw_request_id_t> request_header,
+          const std_srvs::srv::Trigger::Request::SharedPtr request,
+          std_srvs::srv::Trigger::Response::SharedPtr response);  
+  void warmupServiceHandler(
+          const std::shared_ptr<rmw_request_id_t> request_header,
+          const std_srvs::srv::Trigger::Request::SharedPtr request,
+          std_srvs::srv::Trigger::Response::SharedPtr response);
   /**
    * Mission Status state machine.
    * @return the mission encoding.
@@ -93,6 +125,8 @@ private:
   OnSetParametersCallbackHandle::SharedPtr parameters_callback_handle;
 
   double getMissionMaxVelocityMps(MissionStatus::_mission_status_code_type);
+
+  void afterEgoOdometryCallback() override;
 
   /**
    * Return a valid mission code based on the current status and the input next_mission.
@@ -109,10 +143,6 @@ private:
     
     return rc_ok && velocity_ok && odometry_ok;
   };
-
-  bool missionIs(MissionStatus::_mission_status_code_type mission) {
-    return this->mission_status_msg.mission_status_code == mission;
-  }
 
   void run() final;
 };

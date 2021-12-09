@@ -36,6 +36,7 @@ if(BUILD_TESTING)
           test/test_utils_geometry.cpp
           test/test_utils_numeric.cpp
           test/test_utils_time.cpp
+          test/test_utils_polygon_helper.cpp
           )
 
   target_include_directories(${PROJECT_NAME}_test PRIVATE "include")

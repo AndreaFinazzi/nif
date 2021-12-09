@@ -91,9 +91,9 @@
  * MAP_HEIGHT : longitudinal direction
  */
 const unsigned long MAP_WIDTH =
-    560; //(front_upper_distance + rear_upper_distance) / resolution
+    400; //(front_upper_distance + rear_upper_distance) / resolution
 const unsigned long MAP_HEIGHT =
-    240; // (right_upper_distance + left_upper_distance) / resolution
+    300; // (right_upper_distance + left_upper_distance) / resolution
 
 namespace nif {
 namespace perception {
@@ -103,8 +103,8 @@ public:
   EgoShapeFilterNode(const std::string &node_name_);
   ~EgoShapeFilterNode();
   void mergedPointsCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
-  void WheelSpeedCallback(const raptor_dbw_msgs::msg::WheelSpeedReport::SharedPtr msg);
-  void RadarMarkerCallback(const visualization_msgs::msg::Marker::SharedPtr msg);
+//   void WheelSpeedCallback(const raptor_dbw_msgs::msg::WheelSpeedReport::SharedPtr msg);
+//   void RadarMarkerCallback(const visualization_msgs::msg::Marker::SharedPtr msg);
   void timer_callback();
 
 private:
@@ -114,8 +114,8 @@ private:
   void SetControllerParams();
 
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_points_;
-  rclcpp::Subscription<raptor_dbw_msgs::msg::WheelSpeedReport>::SharedPtr sub_wheel_speed_;
-  rclcpp::Subscription<visualization_msgs::msg::Marker>::SharedPtr sub_radar_marker_;
+//   rclcpp::Subscription<raptor_dbw_msgs::msg::WheelSpeedReport>::SharedPtr sub_wheel_speed_;
+//   rclcpp::Subscription<visualization_msgs::msg::Marker>::SharedPtr sub_radar_marker_;
   rclcpp::TimerBase::SharedPtr timer_;
 
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr
@@ -124,23 +124,12 @@ private:
       pub_inverse_points;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr
       pub_weaker_thres_inverse_points;
-   rclcpp::Publisher<
-      sensor_msgs::msg::PointCloud2>::SharedPtr pub_left_ransac_filtered_points;
-  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr
-      pub_right_ransac_filtered_points;
-  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr
-      pub_both_ransac_filtered_points;
+   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_inverse_left_points;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_inverse_right_points;  
+  
   rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr pub_oc_grid;
   rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr
       pub_forwarding_map_grid;
-
-  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_left_wall_line;
-  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_right_wall_line;
-  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_wall_following_path;
-
-  rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pub_inner_wall_distance;
-  rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pub_outer_wall_distance;
-  rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pub_wall_following_steer_cmd;
 
   double left_lower_distance_;
   double right_lower_distance_;
@@ -155,21 +144,6 @@ private:
   double height_lower_distance_;
   double resolution_;
   double count_threshold_;
-  double normal_angle_thres_;
-  int ransac_pts_thresh_;
-  double m_ransacDistanceThres;
-
-  double inner_bound_distance;
-  double outer_bound_distance;
-  double prev_inner_bound_distance;
-  double prev_outer_bound_distance;
-  double distance_low_fass_filter;
-
-
-  double extract_distance_x_roi; 
-  double extract_distance_thres;
-  double m_target_space_to_wall;
-  double m_margin_to_wall;
 
   pcl::PointCloud<pcl::PointXYZI>::Ptr m_CloudShapeFiltered;
   bool bMergedLidar = false;
@@ -177,12 +151,24 @@ private:
   rclcpp::Duration lidar_timeout = rclcpp::Duration(1, 0);
   rclcpp::Time lidar_time_last_update;
 
-  nav_msgs::msg::Path final_wall_following_path_msg;
-  nif::control::KinControl m_KinController;
-  double m_vel_speed_x;
   std::array<std::array<float, (size_t)(MAP_WIDTH + 1)>,
                                   (size_t)(MAP_HEIGHT + 1)>
       map;
+  std::array<std::array<std::vector<double>, (size_t)(MAP_WIDTH + 1)>,
+             (size_t)(MAP_HEIGHT + 1)>
+      points_map;
+
+  std::array<std::array<float, (size_t)(MAP_WIDTH + 1)>,
+             (size_t)(MAP_HEIGHT + 1)>
+      count_map;
+
+  std::array<std::array<float, (size_t)(MAP_WIDTH + 1)>,
+             (size_t)(MAP_HEIGHT + 1)>
+      mean_map;
+
+  std::array<std::array<float, (size_t)(MAP_WIDTH + 1)>,
+             (size_t)(MAP_HEIGHT + 1)>
+      cov_map;
 
   void EgoShape(pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud_ptr,
                 pcl::PointCloud<pcl::PointXYZI>::Ptr out_cloud_ptr,
@@ -207,39 +193,6 @@ private:
                   pcl::PointCloud<pcl::PointXYZI>::Ptr cloudLeftOut,
                   pcl::PointCloud<pcl::PointXYZI>::Ptr cloudRightOut,
                   float min_x, float min_y, float in_resolution);
-  boost::optional<Eigen::Vector4f>
-  wall_detect(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud,
-              pcl::PointCloud<pcl::PointXYZI>::Ptr cloudOut);
-
-  void
-  ExtractDistanceInCloud(const pcl::PointCloud<pcl::PointXYZI>::Ptr &cloudIn,
-                         const double &x_roi_, const double &dist_thres_,
-                         double &distance_out);
-
-  void CubicSpliner(
-                  pcl::PointCloud<pcl::PointXYZI>::Ptr cloudIn,
-                  const boost::optional<Eigen::Vector4f> wall_plane_coeff,
-                  double in_front_upper_threshold, double in_rear_upper_threshold,
-                  nav_msgs::msg::Path& path_msg_out, cv::Mat& PolyCoefficient);
-
-  void CubicSpliner(
-      pcl::PointCloud<pcl::PointXYZI>::Ptr cloudIn,
-      const boost::optional<Eigen::Vector4f> wall_plane_coeff,
-      double in_front_upper_threshold, double in_rear_upper_threshold,
-      nav_msgs::msg::Path& path_msg_out, cv::Mat& PolyCoefficient, int& poly_order);
-
-  cv::Mat polyfit(std::vector<cv::Point2f> &in_point, int n);
-
-  void EstimatePredictivePath(
-      const boost::optional<Eigen::Vector4f> wall_plane_coeff,
-      const cv::Mat &PolyCoefficient, nav_msgs::msg::Path &path_msg_out,
-      const double &target_space_to_wall);
-
-  void EstimatePredictivePath(
-      const boost::optional<Eigen::Vector4f> wall_plane_coeff,
-      const cv::Mat &PolyCoefficient, const int& poly_order,
-      nav_msgs::msg::Path &path_msg_out,
-      const double &target_space_to_wall);
 };
 } // namespace perception
 } // namespace nif

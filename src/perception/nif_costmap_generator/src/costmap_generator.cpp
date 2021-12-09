@@ -16,15 +16,8 @@ using namespace nif::common::frame_id::localization;
 CostmapGenerator::CostmapGenerator()
     : Node("nif_costmap_generator_node"),
       SENSOR_POINTS_COSTMAP_LAYER_("sensor_points"),
-      COMBINED_COSTMAP_LAYER_("costmap"), INFLATION_COSTMAP_LAYER_("inflation")
-{
-  //   : nh_(nh), private_nh_(private_nh), has_subscribed_wayarea_(false),
-  //     LANE_POINTS_COSTMAP_LAYER_("lane"), LASER_2D_COSTMAP_LAYER_("laser_scan"),
-  //     BOUNDING_BOX_COSTMAP_LAYER_("bounding_boxes"),
-  //     VISUAL_COSTMAP_LAYER_("visual"),
-
-  this->declare_parameter<std::string>("lidar_frame", "center_of_gravity");
-  this->declare_parameter<std::string>("map_frame", "map");
+      COMBINED_COSTMAP_LAYER_("costmap"),
+      INFLATION_COSTMAP_LAYER_("inflation") {
   this->declare_parameter<double>("grid_min_value", 0.0);
   this->declare_parameter<double>("grid_max_value", 1.0);
   this->declare_parameter<double>("grid_resolution", 0.2);
@@ -36,11 +29,11 @@ CostmapGenerator::CostmapGenerator()
   this->declare_parameter<double>("minimum_lidar_height_thres", -0.5);
   this->declare_parameter<double>("maximum_laserscan_distance_thres", 50);
   this->declare_parameter<double>("minimum_laserscan_distance_thres", 0.1);
+
   this->declare_parameter<bool>("use_points", true);
   this->declare_parameter<bool>("enable_potential", false);
+  this->declare_parameter<double>("potential_size", 2.0);
 
-  this->lidar_frame_ = this->get_parameter("lidar_frame").as_string();
-  this->map_frame_ = this->get_parameter("map_frame").as_string();
   this->grid_min_value_ = this->get_parameter("grid_min_value").as_double();
   this->grid_max_value_ = this->get_parameter("grid_max_value").as_double();
   this->grid_resolution_ = this->get_parameter("grid_resolution").as_double();
@@ -54,9 +47,10 @@ CostmapGenerator::CostmapGenerator()
   this->minimum_laserscan_distance_thres_ = this->get_parameter("minimum_laserscan_distance_thres").as_double();
   this->use_points_ = this->get_parameter("use_points").as_bool();
   this->bEnablePotential_ = this->get_parameter("enable_potential").as_bool();
+  this->potential_size_ = this->get_parameter("potential_size").as_double();
 
   pub_occupancy_grid_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
-      "out_map_topic_name", nif::common::constants::QOS_SENSOR_DATA);
+      "out_occupancy_map", nif::common::constants::QOS_SENSOR_DATA);
   pub_points_on_global_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(
       "/points_on_global", nif::common::constants::QOS_SENSOR_DATA);
   pub_points_on_track_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(
@@ -64,10 +58,26 @@ CostmapGenerator::CostmapGenerator()
 
   using namespace std::chrono_literals; // NOLINT
   sub_timer_ = this->create_wall_timer(10ms, std::bind(&CostmapGenerator::timer_callback, this));
-  sub_points_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
-      "weaker_thres_inverse_mapped_points",
+  sub_wall_points_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
+      "in_wall_points",
       nif::common::constants::QOS_SENSOR_DATA,
-      std::bind(&CostmapGenerator::sensorPointsCallback, this,
+      std::bind(&CostmapGenerator::wallPointsCallback, this,
+                std::placeholders::_1));
+
+  sub_object_points_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
+      "in_object_points",
+      nif::common::constants::QOS_SENSOR_DATA,
+      std::bind(&CostmapGenerator::objectPointsCallback, this,
+                std::placeholders::_1));
+  sub_ground_filtered_points_ =
+      this->create_subscription<sensor_msgs::msg::PointCloud2>(
+          "in_ground_filtered_points", nif::common::constants::QOS_SENSOR_DATA,
+          std::bind(&CostmapGenerator::groundFilteredCallback, this,
+                    std::placeholders::_1));
+
+  sub_fake_obs_points_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
+      "in_fake_obs_points", nif::common::constants::QOS_SENSOR_DATA,
+      std::bind(&CostmapGenerator::fakeObstacleCallback, this,
                 std::placeholders::_1));
 
   sub_odometry_ = this->create_subscription<nav_msgs::msg::Odometry>(
@@ -101,68 +111,122 @@ CostmapGenerator::~CostmapGenerator(){}
 
 void CostmapGenerator::run() {
 
-  if (bGeoFence && bPoints && bOdometry)
-  {
-    pcl::PointCloud<pcl::PointXYZI>::Ptr PointsOnGlobal(
+  if ((bWallPoints || bObjectPoints || bFakeObstaclePoints ||
+       bGroundFilteredPoints)) {
+    //   pcl::PointCloud<pcl::PointXYZI>::Ptr PointsOnGlobal(
+    //       new pcl::PointCloud<pcl::PointXYZI>);
+    //   TransformPointsToGlobal(m_in_object_points, PointsOnGlobal, m_veh_x,
+    //   m_veh_y, m_veh_yaw);
+
+    //   sensor_msgs::msg::PointCloud2 points_on_global_msg;
+    //   pcl::toROSMsg(*PointsOnGlobal, points_on_global_msg);
+    //   points_on_global_msg.header.stamp = this->now();
+    //   points_on_global_msg.header.frame_id = ODOM;
+    //   pub_points_on_global_->publish(points_on_global_msg);
+    //   // std::cout << "points size : " << PointsOnGlobal->points.size() <<
+    //   std::endl;
+
+    //   pcl::PointCloud<pcl::PointXYZI>::Ptr PointsOnTrackGlobal(
+    //       new pcl::PointCloud<pcl::PointXYZI>);
+    //   SearchPointsOntrack(m_InnerGeoFence, m_OuterGeoFence,
+    //                       m_closestGeofenceIndex, PointsOnGlobal,
+    //                       PointsOnTrackGlobal);
+
+    //   // std::cout << "tarck points size : " <<
+    //   PointsOnTrackGlobal->points.size() << std::endl;
+
+    //   // std::cout << "m_InnerGeoFence: " << m_InnerGeoFence.size() <<
+    //   std::endl;
+    //   // std::cout << "m_OuterGeoFence: " << m_OuterGeoFence.size() <<
+    //   std::endl;
+
+    //   sensor_msgs::msg::PointCloud2 points_on_track_msg;
+    //   pcl::toROSMsg(*PointsOnTrackGlobal, points_on_track_msg);
+    //   points_on_track_msg.header.stamp = this->now();
+    //   points_on_track_msg.header.frame_id = ODOM;
+    //   pub_points_on_track_->publish(points_on_track_msg);
+
+    //   pcl::PointCloud<pcl::PointXYZI>::Ptr PointsOnTrackBody(
+    //       new pcl::PointCloud<pcl::PointXYZI>);
+    //   TransformPointsToBody(PointsOnTrackGlobal, PointsOnTrackBody,
+    //                         m_veh_x, m_veh_y, m_veh_yaw);
+    // }
+    pcl::PointCloud<pcl::PointXYZI>::Ptr PointsWallAndObject(
         new pcl::PointCloud<pcl::PointXYZI>);
-    TransformPointsToGlobal(m_in_sensor_points, PointsOnGlobal, m_veh_x, m_veh_y, m_veh_yaw);
+    // if (bWallPoints)
+      // *PointsWallAndObject += *m_in_wall_points;
+    if (bObjectPoints)
+      *PointsWallAndObject += *m_in_object_points;
 
-    sensor_msgs::msg::PointCloud2 points_on_global_msg;
-    pcl::toROSMsg(*PointsOnGlobal, points_on_global_msg);
-    points_on_global_msg.header.stamp = this->now();
-    points_on_global_msg.header.frame_id = ODOM;
-    pub_points_on_global_->publish(points_on_global_msg);
-    // std::cout << "points size : " << PointsOnGlobal->points.size() << std::endl;
+    // too noisy
+    // if (bGroundFilteredPoints)
+    //   *PointsWallAndObject += *m_in_ground_filtered_points;
 
-    pcl::PointCloud<pcl::PointXYZI>::Ptr PointsOnTrackGlobal(
-        new pcl::PointCloud<pcl::PointXYZI>);
-    SearchPointsOntrack(m_InnerGeoFence, m_OuterGeoFence,
-                        m_closestGeofenceIndex, PointsOnGlobal, PointsOnTrackGlobal);
-                        
-    // std::cout << "tarck points size : " << PointsOnTrackGlobal->points.size() << std::endl;
+    if (bFakeObstaclePoints)
+      *PointsWallAndObject += *m_in_fake_obstacle_points;
 
-    // std::cout << "m_InnerGeoFence: " << m_InnerGeoFence.size() << std::endl; 
-    // std::cout << "m_OuterGeoFence: " << m_OuterGeoFence.size() << std::endl;
+    costmap_[SENSOR_POINTS_COSTMAP_LAYER_] =
+        generateSensorPointsCostmap(PointsWallAndObject);
 
-    sensor_msgs::msg::PointCloud2 points_on_track_msg;
-    pcl::toROSMsg(*PointsOnTrackGlobal, points_on_track_msg);
-    points_on_track_msg.header.stamp = this->now();
-    points_on_track_msg.header.frame_id = ODOM;
-    pub_points_on_track_->publish(points_on_track_msg);
+    if (bEnablePotential_)
+      MakeInflationWithPoints();
 
-    pcl::PointCloud<pcl::PointXYZI>::Ptr PointsOnTrackBody(
-        new pcl::PointCloud<pcl::PointXYZI>);
-    TransformPointsToBody(PointsOnTrackGlobal, PointsOnTrackBody, 
-                          m_veh_x, m_veh_y, m_veh_yaw);
+    generateCombinedCostmap();
+    publishRosMsg(&costmap_);
+    // publishRoadBoundaryMsg(&RoadBoundarycostmap_);
   }
-
-  if(bEnablePotential_)
-    MakeInflationWithPoints();
-
-  generateCombinedCostmap();
-  publishRosMsg(&costmap_);
-  // publishRoadBoundaryMsg(&RoadBoundarycostmap_);
 }
 
 void CostmapGenerator::timer_callback() {
   run();
 }
 
-void CostmapGenerator::sensorPointsCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
+void CostmapGenerator::wallPointsCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
 {
   if (!use_points_) {
     return;
   }
-  m_in_sensor_points.reset(new pcl::PointCloud<pcl::PointXYZI>());
+  m_in_wall_points.reset(new pcl::PointCloud<pcl::PointXYZI>());
 
-  pcl::fromROSMsg(*msg, *m_in_sensor_points);
-
-  costmap_[SENSOR_POINTS_COSTMAP_LAYER_] =
-      generateSensorPointsCostmap(m_in_sensor_points);
+  pcl::fromROSMsg(*msg, *m_in_wall_points);
   m_in_header = msg->header;
-  bPoints = true;
+  bWallPoints = true;
+}
 
-  std::cout << "points received" << std::endl;
+void CostmapGenerator::objectPointsCallback(
+    const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
+
+  m_in_object_points.reset(new pcl::PointCloud<pcl::PointXYZI>());
+  pcl::fromROSMsg(*msg, *m_in_object_points);
+  bObjectPoints = true;
+}
+
+void CostmapGenerator::groundFilteredCallback(
+    const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
+  //only for vehicle front-close area 
+  m_in_ground_filtered_points.reset(new pcl::PointCloud<pcl::PointXYZI>());
+  pcl::PointCloud<pcl::PointXYZI>::Ptr in_points(
+      new pcl::PointCloud<pcl::PointXYZI>);
+  pcl::fromROSMsg(*msg, *in_points);
+  for(auto point : in_points->points)
+  {
+    if (point.x < 50.0 && point.x >-10.0 && fabs(point.y) < 3.0)
+      m_in_ground_filtered_points->points.push_back(point);
+  }
+
+  bGroundFilteredPoints = true;
+}
+
+void CostmapGenerator::fakeObstacleCallback(
+    const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
+
+  m_in_fake_obstacle_points.reset(new pcl::PointCloud<pcl::PointXYZI>());
+  pcl::PointCloud<pcl::PointXYZI>::Ptr in_points(new pcl::PointCloud<pcl::PointXYZI>);
+  pcl::fromROSMsg(*msg, *in_points);
+  TransformPointsToBody(in_points, m_in_fake_obstacle_points, 
+                        m_veh_x, m_veh_y, m_veh_yaw);
+
+  bFakeObstaclePoints = true;
 }
 
 void CostmapGenerator::OdometryCallback(
@@ -177,7 +241,7 @@ void CostmapGenerator::OdometryCallback(
   mat.getRPY(m_veh_roll, m_veh_pitch, m_veh_yaw);
   bOdometry = true;
 
-  std::cout << "odometry received" << std::endl;
+  // std::cout << "odometry received" << std::endl;
 }
 
 void CostmapGenerator::MessegefilteringCallback(
@@ -248,114 +312,50 @@ void CostmapGenerator::TransformPointsToGlobal(
 }
 
 void CostmapGenerator::TransformPointsToBody(
-    const pcl::PointCloud<pcl::PointXYZI>::Ptr &CloudIn,
-    pcl::PointCloud<pcl::PointXYZI>::Ptr &CloudOut, const double &veh_x_,
+    const pcl::PointCloud<pcl::PointXYZI>::Ptr CloudIn,
+    pcl::PointCloud<pcl::PointXYZI>::Ptr CloudOut, const double &veh_x_,
     const double &veh_y_, const double &veh_yaw_) {
 
   for (auto point : CloudIn->points) {
-    pcl::PointXYZI pointOnGlobal;
-    pointOnGlobal.x = (point.x - veh_x_) * cos(veh_yaw_) + (point.y -veh_y_) * sin(veh_yaw_);
-    pointOnGlobal.y = -(point.x - veh_x_) * sin(veh_yaw_) + (point.y -  veh_y_) * cos(veh_yaw_);
-    pointOnGlobal.z = point.z;
-    CloudOut->points.push_back(pointOnGlobal);
+    pcl::PointXYZI pointOnBody;
+    pointOnBody.x = (point.x - veh_x_) * cos(veh_yaw_) + (point.y -veh_y_) * sin(veh_yaw_);
+    pointOnBody.y = -(point.x - veh_x_) * sin(veh_yaw_) + (point.y -  veh_y_) * cos(veh_yaw_);
+    pointOnBody.z = point.z;
+    CloudOut->points.push_back(pointOnBody);
   }
 }
 
 void CostmapGenerator::MakeInflationWithPoints()
 {
-  if(!bPoints)
-    return;
-
-  costmap_[INFLATION_COSTMAP_LAYER_].setConstant(grid_min_value_);
-  obstacleArray.clear();
-  int idx = 0;
-  for (grid_map::GridMapIterator iterator(costmap_);
-  !iterator.isPastEnd(); ++iterator) {
-    const grid_map::Index index(*iterator);
-    grid_map::Position pos;
-    costmap_.getPosition(index, pos);
-    if(costmap_[SENSOR_POINTS_COSTMAP_LAYER_](index(0), index(1)) != 0 )
-    {
-      std::pair<double, double> pointBuf;
-      pointBuf.first = pos.x();
-      pointBuf.second = pos.y();
-      obstacleArray.push_back(pointBuf);
+  if (bWallPoints || bObjectPoints || bFakeObstaclePoints ||
+      bGroundFilteredPoints) {
+    costmap_[INFLATION_COSTMAP_LAYER_].setConstant(grid_min_value_);
+    obstacleArray.clear();
+    int idx = 0;
+    for (grid_map::GridMapIterator iterator(costmap_);
+    !iterator.isPastEnd(); ++iterator) {
+      const grid_map::Index index(*iterator);
+      grid_map::Position pos;
+      costmap_.getPosition(index, pos);
+      if(costmap_[SENSOR_POINTS_COSTMAP_LAYER_](index(0), index(1)) != 0 )
+      {
+        std::pair<double, double> pointBuf;
+        pointBuf.first = pos.x();
+        pointBuf.second = pos.y();
+        obstacleArray.push_back(pointBuf);
+      }
+      idx ++;
     }
-    idx ++;
+    costmap_[INFLATION_COSTMAP_LAYER_] = createGaussianWorld(
+        &costmap_, INFLATION_COSTMAP_LAYER_, this->potential_size_,
+        this->potential_size_, obstacleArray);
   }
-  costmap_[INFLATION_COSTMAP_LAYER_] = createGaussianWorld(&costmap_,
-  INFLATION_COSTMAP_LAYER_, 3.0, 3.0, obstacleArray);
-
 }
 
-    // void CostmapGenerator::laneBoundaryCallback(
-    //     const sensor_msgs::PointCloud2::ConstPtr
-    //     &in_lane_points_on_global_msg) {
-    //   pcl::PointCloud<pcl::PointXYZI>::Ptr in_lane_points_on_global(
-    //       new pcl::PointCloud<pcl::PointXYZI>);
-    //   pcl::PointCloud<pcl::PointXYZI>::Ptr in_lane_points_on_body(
-    //       new pcl::PointCloud<pcl::PointXYZI>);
-    //   pcl::fromROSMsg(*in_lane_points_on_global_msg,
-    //   *in_lane_points_on_global);
-
-    //   double roll, pitch, yaw;
-    //   tf::Quaternion q;
-    //   tf::quaternionMsgToTF(m_odom.pose.pose.orientation, q);
-    //   tf::Matrix3x3 m(q);
-    //   m.getRPY(roll, pitch, yaw);
-
-    //   for (auto point : in_lane_points_on_global->points) {
-    //     double local_x = (point.x - m_odom.pose.pose.position.x) * cos(yaw) +
-    //                      (point.y - m_odom.pose.pose.position.y) * sin(yaw);
-    //     double local_y = -(point.x - m_odom.pose.pose.position.x) * sin(yaw)
-    //     +
-    //                      (point.y - m_odom.pose.pose.position.y) * cos(yaw);
-
-    //     pcl::PointXYZI current_point;
-    //     current_point.x = local_x;
-    //     current_point.y = local_y;
-    //     in_lane_points_on_body->points.push_back(current_point);
-    //   }
-
-    //   RoadBoundarycostmap_[LANE_POINTS_COSTMAP_LAYER_] =
-    //       lane2costmap_.makeCostmapFromSensorPoints(
-    //           1, -1, grid_min_value_, grid_max_value_, costmap_,
-    //           LANE_POINTS_COSTMAP_LAYER_, in_lane_points_on_body);
-
-    //   bRoadBoundary = true;
-    // }
-
-    // void CostmapGenerator::BoundingBoxesCallback(
-    //     const jsk_recognition_msgs::BoundingBoxArray::ConstPtr &in_boxes) {
-
-    //   costmap_[BOUNDING_BOX_COSTMAP_LAYER_] =
-    //   generateBBoxesCostmap(in_boxes);
-    //   // bBoundingBox = true;
-    //   bBoundingBox = true;
-    // }
-
-    // void CostmapGenerator::VisualCallback(const
-    // detection_msgs::BoundingBoxArrayConstPtr& msg)
-    // {
-    //   costmap_[VISUAL_COSTMAP_LAYER_] = generateVisualCostmap(msg);
-    //   bVisual = true;
-    // }
-
-    // void CostmapGenerator::OdometryCallback(
-    //     const nav_msgs::Odometry::ConstPtr &msg) {
-    //   m_odom = *msg;
-    // }
-
-    // void CostmapGenerator::LocalWaypointCallback(
-    //     const nav_msgs::PathConstPtr &msg) {
-    //   m_LocalPathOnBody = *msg;
-    // }
-
-    // // Create the map using length, resolution, pose.
-    grid_map::GridMap CostmapGenerator::initGridmap() {
+grid_map::GridMap CostmapGenerator::initGridmap() {
   grid_map::GridMap map;
 
-  map.setFrameId(lidar_frame_);
+  map.setFrameId(nif::common::frame_id::localization::BASE_LINK);
   map.setGeometry(grid_map::Length(grid_length_x_, grid_length_y_),
                   grid_resolution_,
                   grid_map::Position(grid_position_x_, grid_position_y_));
@@ -395,7 +395,7 @@ void CostmapGenerator::generateCombinedCostmap() {
   //   // assuming combined_costmap is calculated by element wise max operation
 
   costmap_[COMBINED_COSTMAP_LAYER_].setConstant(grid_min_value_);
-  if (bPoints) {
+  if (bWallPoints || bObjectPoints) {
     costmap_[COMBINED_COSTMAP_LAYER_] =
         costmap_[COMBINED_COSTMAP_LAYER_].cwiseMax(
             costmap_[SENSOR_POINTS_COSTMAP_LAYER_]);
@@ -403,6 +403,7 @@ void CostmapGenerator::generateCombinedCostmap() {
         costmap_[COMBINED_COSTMAP_LAYER_].cwiseMax(
             costmap_[INFLATION_COSTMAP_LAYER_]);
   }
+
   // if (bBoundingBox) {
   //   costmap_[COMBINED_COSTMAP_LAYER_] =
   //       costmap_[COMBINED_COSTMAP_LAYER_].cwiseMax(
@@ -434,7 +435,7 @@ void CostmapGenerator::publishRosMsg(grid_map::GridMap *map) {
       *map, COMBINED_COSTMAP_LAYER_, grid_min_value_, grid_max_value_,
       out_occupancy_grid);
   out_occupancy_grid.header = m_in_header;
-  out_occupancy_grid.header.frame_id = lidar_frame_;
+  out_occupancy_grid.header.frame_id = nif::common::frame_id::localization::BASE_LINK;
   pub_occupancy_grid_->publish(out_occupancy_grid);
 }
 
@@ -444,7 +445,7 @@ void CostmapGenerator::publishRosMsg(grid_map::GridMap *map) {
 //       *map, COMBINED_COSTMAP_LAYER_, grid_min_value_, grid_max_value_,
 //       out_occupancy_grid);
 //   out_occupancy_grid.header = m_in_header;
-//   out_occupancy_grid.header.frame_id = lidar_frame_;
+//   out_occupancy_grid.header.frame_id = nif::common::frame_id::localization::BASE_LINK;
 //   pub_road_occupancy_grid_.publish(out_occupancy_grid);
 // }
 

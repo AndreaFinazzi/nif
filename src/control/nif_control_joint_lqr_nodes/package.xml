@@ -26,7 +26,7 @@
   <depend>nif_control_common</depend>
 
 
-  <depend>eigen3</depend>
+  <depend>libeigen3-dev</depend>
   <depend>yaml-cpp</depend>
 
   <test_depend>ament_lint_auto</test_depend>

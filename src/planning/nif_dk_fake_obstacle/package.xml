@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>nif_dk_fake_obstacle</name>
+  <version>0.0.0</version>
+  <description>The nif_dk_fake_obstacle package</description>
+  <maintainer email="lee.dk@kaist.ac.kr">DaegyuLee</maintainer>
+
+  <license>BSD</license>
+
+  <buildtool_depend>ament_cmake_auto</buildtool_depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+  <test_depend>ament_cmake_gtest</test_depend>
+  <test_depend>ros_testing</test_depend>
+
+  <depend>nif_common</depend>
+  <depend>nif_msgs</depend>
+  <depend>nif_utils</depend>
+  <depend>nif_common_nodes</depend>
+  <depend>nif_localization_minimal</depend>
+  
+  <depend>rclcpp</depend>
+  <depend>std_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <!-- <depend>astuff_sensor_msgs</depend> -->
+  <depend>pcl_ros</depend>
+  <depend>cv_bridge</depend>
+  <depend>message_filters</depend>
+  <depend>geometry_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>route_planner_msgs</depend>
+  <depend>pugixml-dev</depend>
+  <depend>pcl_conversions</depend>
+  <depend>nif_dk_graph_planner_msgs</depend>
+
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+  
+</package>
