@@ -53,7 +53,7 @@ double nif::common::utils::geometry::mph2mps(const double mph) {
 inline double nif::common::utils::coordination::quat2yaw(
     geometry_msgs::msg::Quaternion& data) {
   return atan2(2 * (data.w * data.z + data.x * data.y),
-               f 1 - 2 * (data.y * data.y + data.z * data.z));
+               1 - 2 * (data.y * data.y + data.z * data.z));
 }
 
 inline double nif::common::utils::coordination::angle_wrap(double diff) {
