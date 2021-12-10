@@ -53,7 +53,7 @@ double nif::common::utils::geometry::mph2mps(const double mph) {
 inline double nif::common::utils::coordination::quat2yaw(
     geometry_msgs::msg::Quaternion& data) {
   return atan2(2 * (data.w * data.z + data.x * data.y),
-               1 - 2 * (data.y * data.y + data.z * data.z));
+               f 1 - 2 * (data.y * data.y + data.z * data.z));
 }
 
 inline double nif::common::utils::coordination::angle_wrap(double diff) {
@@ -102,6 +102,31 @@ nif::common::utils::coordination::getPtGlobaltoBody(
       cos(-1 * current_yaw_rad) *
           (point_in_global_.pose.position.y -
            current_pose_.pose.pose.position.y);
+  point_in_body.pose.position.z = 0.0;
+
+  point_in_body.pose.orientation.x = 0.0;
+  point_in_body.pose.orientation.y = 0.0;
+  point_in_body.pose.orientation.z = 0.0;
+  point_in_body.pose.orientation.w = 1.0;
+  return point_in_body;
+}
+
+geometry_msgs::msg::PoseStamped
+nif::common::utils::coordination::getPtGlobaltoBody(
+    nav_msgs::msg::Odometry& current_pose_,
+    double& global_x_,
+    double& global_y_) {
+  double current_yaw_rad = nif::common::utils::coordination::quat2yaw(
+      current_pose_.pose.pose.orientation);
+  geometry_msgs::msg::PoseStamped point_in_body;
+  point_in_body.pose.position.x = cos(-1 * current_yaw_rad) *
+          (global_x_ - current_pose_.pose.pose.position.x) -
+      sin(-1 * current_yaw_rad) *
+          (global_y_ - current_pose_.pose.pose.position.y);
+  point_in_body.pose.position.y = sin(-1 * current_yaw_rad) *
+          (global_x_ - current_pose_.pose.pose.position.x) +
+      cos(-1 * current_yaw_rad) *
+          (global_y_ - current_pose_.pose.pose.position.y);
   point_in_body.pose.position.z =
       point_in_global_.pose.position.z - current_pose_.pose.pose.position.z;
 

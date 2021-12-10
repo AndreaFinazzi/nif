@@ -136,6 +136,10 @@ getPtBodytoGlobal(nav_msgs::msg::Odometry& current_pose_,
 geometry_msgs::msg::PoseStamped
 getPtGlobaltoBody(nav_msgs::msg::Odometry& current_pose_,
                   geometry_msgs::msg::PoseStamped& point_in_global_);
+geometry_msgs::msg::PoseStamped
+getPtGlobaltoBody(nav_msgs::msg::Odometry& current_pose_,
+                  double& global_x_,
+                  double& global_y_);
 nav_msgs::msg::Path getPathGlobaltoBody(nav_msgs::msg::Odometry& current_pose_,
                                         nav_msgs::msg::Path& path_in_global_);
 
