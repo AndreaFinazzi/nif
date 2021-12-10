@@ -10,8 +10,8 @@ FrenetBasedOpponentPredictor::FrenetBasedOpponentPredictor(
   m_config_valid_flg = false;
   m_initialize_done_flg = false;
 
-  double defualt_oppo_vel = 80; // mph
-  m_defender_vel_mps = common::utils::geometry::mph2mps(defualt_oppo_vel);
+  double defualt_oppo_vel = 80;                  // mph
+  m_defender_vel_mps = defualt_oppo_vel / 2.237; // mph2mps
 
   // TODO
   m_opponent_status_topic_name = "SetPropoerTopicName";
@@ -159,7 +159,7 @@ void FrenetBasedOpponentPredictor::calcOpponentProgress() {
   // Sign calculation
   int sign = 1;
   // global to local transform
-  auto local_pt = common::utils::coordination::getPtGlobaltoBody(
+  auto local_pt = nif::common::utils::coordination::getPtGlobaltoBody(
       m_ego_status,
       m_centerline_path_x[opponent_index],
       m_centerline_path_y[opponent_index]);
