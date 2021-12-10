@@ -102,12 +102,19 @@ nif::common::utils::coordination::getPtGlobaltoBody(
       cos(-1 * current_yaw_rad) *
           (point_in_global_.pose.position.y -
            current_pose_.pose.pose.position.y);
-  point_in_body.pose.position.z = 0.0;
+
+  point_in_body.pose.position.z =
+      point_in_global_.pose.position.z - current_pose_.pose.pose.position.z;
+
+  double target_yaw = nif::common::utils::coordination::quat2yaw(
+      point_in_global_.pose.orientation);
 
   point_in_body.pose.orientation.x = 0.0;
   point_in_body.pose.orientation.y = 0.0;
-  point_in_body.pose.orientation.z = 0.0;
-  point_in_body.pose.orientation.w = 1.0;
+  // TODO : should be tested
+  point_in_body.pose.orientation.z = sin((target_yaw - current_yaw_rad) / 2.0);
+  point_in_body.pose.orientation.w = cos((target_yaw - current_yaw_rad) / 2.0);
+
   return point_in_body;
 }
 
@@ -127,17 +134,12 @@ nif::common::utils::coordination::getPtGlobaltoBody(
           (global_x_ - current_pose_.pose.pose.position.x) +
       cos(-1 * current_yaw_rad) *
           (global_y_ - current_pose_.pose.pose.position.y);
-  point_in_body.pose.position.z =
-      point_in_global_.pose.position.z - current_pose_.pose.pose.position.z;
-
-  double target_yaw = nif::common::utils::coordination::quat2yaw(
-      point_in_global_.pose.orientation);
+  point_in_body.pose.position.z = 0.0;
 
   point_in_body.pose.orientation.x = 0.0;
   point_in_body.pose.orientation.y = 0.0;
-  // TODO : should be tested
-  point_in_body.pose.orientation.z = sin((target_yaw - current_yaw_rad) / 2.0);
-  point_in_body.pose.orientation.w = cos((target_yaw - current_yaw_rad) / 2.0);
+  point_in_body.pose.orientation.z = 0.0;
+  point_in_body.pose.orientation.w = 1.0;
   return point_in_body;
 }
 
