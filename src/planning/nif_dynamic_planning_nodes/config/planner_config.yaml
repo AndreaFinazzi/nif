@@ -1,0 +1,11 @@
+path_candidates_param:
+    overtaking_candidate_path_array: ['path_a','path_b','path_c'] # do not include the racing line here
+    overtaking_candidate_path_alias_array: ['alias_a','alias_b','alias_c'] # ex) left-center / center / right 
+
+planning_params:
+    planning_horizon_t: 4.0 # [sec]
+    planning_dt: 0.25 # [sec]
+    max_accel: 2.0 # [mpss]
+    overtaking_longitudinal_margin: 20.0 # [m]
+    overtaking_lateral_margin: 2.0 # [m]
+    merging_longitudinal_margin: 5.0 # [m]
