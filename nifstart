@@ -86,8 +86,10 @@ then
 
 fi  
 
+# ade --rc $ADERC \
+#    start -f --update -- \
 ade --rc $ADERC \
-    start -f --update -- \
+     start -f -- \
     -v /tmp/.X11-unix:/tmp/.X11-unix \
     -v /etc/localtime:/etc/localtime:ro \
     -v /media/$USER/:/home/$USER/media \
