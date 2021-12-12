@@ -26,6 +26,7 @@
 #include "nif_common_nodes/i_base_synchronized_node.h"
 #include "nif_msgs/msg/system_status.hpp"
 #include "nif_msgs/msg/velocity_planner_status.hpp"
+#include "nif_msgs/msg/dynamic_trajectory.hpp"
 #include "nif_vehicle_dynamics_manager/kalman.h"
 #include "nif_vehicle_dynamics_manager/tire_manager.hpp"
 #include "nif_velocity_planning_node/low_pass_filter.h"
@@ -57,6 +58,8 @@ public:
         "out_desired_velocity", nif::common::constants::QOS_CONTROL_CMD);
     diag_pub_ = this->create_publisher<nif_msgs::msg::VelocityPlannerStatus>(
         "/velocity_planner/diagnostic", 1);
+    profile_pub_ = this->create_publisher<nif_msgs::msg::DynamicTrajectory>(
+        "/velocity_planner/profile", 1);
 
     // Subscribers
     path_sub_ = this->create_subscription<nav_msgs::msg::Path>(
@@ -121,6 +124,8 @@ public:
     // - smoothing desired velocity change // mps increase per sec
     this->declare_parameter("max_ddes_vel_dt_default", 5.0);
     this->declare_parameter("max_ddes_vel_dt_green_flag", 10.0);
+    // - manual maximum lateral acceleration (for curvature-based velocity planning)
+    this->declare_parameter("max_lateral_acceleration", 9.0); // [m/s2]
 
     // Read in misc. parameters
     m_vel_plan_enabled = this->get_parameter("vel_plan_enabled").as_bool();
@@ -148,6 +153,7 @@ public:
         this->get_parameter("max_ddes_vel_dt_default").as_double();
     m_max_ddes_vel_dt_green_flag =
         this->get_parameter("max_ddes_vel_dt_green_flag").as_double();
+    m_max_lateral_acceleration = this->get_parameter("max_lateral_acceleration").as_double();
 
     if (m_lat_tire_factor > 1.0) {
       RCLCPP_ERROR(this->get_logger(), "Got lateral_tire_model_factor: %f;",
@@ -215,19 +221,29 @@ private:
         // double a_lat = m_current_imu.linear_acceleration.y;
         // double yaw_rate = m_current_imu.angular_velocity.z;
 
+        // Get current path
+        nav_msgs::msg::Path current_path = m_current_path;
+        int path_len = m_current_path.poses.size();
+
         // Get curvature & cumul. distance
         // - get curvature array (+curv: CCW rotation / -curv: CW rotation)
-        int path_len = m_current_path.poses.size();
         std::vector<double> curv_array(path_len, 0.0); // for curvature
         std::vector<double> dist_array(path_len, 0.0); // for cumul. distance
+        std::vector<float> curv_vel_array(path_len, 0.0); // for curvature-based velocity
+        std::vector<float> time_array(path_len, 0.0); // for time-to-arrive profile
         std::vector<double> lpf_curv_array(path_len, 0.0);
         // - get curv. & dist. array (+curv: CCW rotation / -curv: CW rotation)
-        getCurvatureDistArray(curv_array, dist_array);
-        // // - get curvature array (+curv: CCW rotation / -curv: CW rotation)
-        // getCurvatureArray(curv_array);
-
+        getCurvatureDistArray(current_path, curv_array, dist_array);
         // - apply low pass filter
         lpf_curve.getFilteredArray(curv_array, lpf_curv_array);
+
+        // ===== Velocity planning w.r.t. current path waypoints =====
+        // - get curv-based velocity & time-to-arrive profile
+        getCurvVelTimeProfile(current_path, lpf_curv_array, dist_array, curv_vel_array, time_array);
+        // - publish trajectory profile
+        publishTrajectoryProfile(current_path, curv_vel_array, time_array);
+
+        // ===== Velocity planning w.r.t. current Ego vehicle status =====
         // - get instantaneous curvature
         double kappa = lpf_curv_array[0]; // curvature at COG
         // - get path distance
@@ -386,10 +402,11 @@ private:
     curvature_array = vec;
   }
 
-  void getCurvatureDistArray(std::vector<double> &curv_array,
+  void getCurvatureDistArray(nav_msgs::msg::Path current_path,
+                             std::vector<double> &curv_array,
                              std::vector<double> &dist_array) {
     // Iterate computeCurvature to get curvature for each point in path.
-    double path_size = m_current_path.poses.size();
+    double path_size = current_path.poses.size();
 
     std::vector<double> vec_curv(path_size, 0.0);
     std::vector<double> vec_dist(path_size, 0.0);
@@ -397,12 +414,12 @@ private:
     for (int i = 1; i < path_size - 1; i++) {
       // - compute curvature
       vec_curv[i] =
-          computeCurvature(m_current_path.poses[i - 1], m_current_path.poses[i],
-                           m_current_path.poses[i + 1]);
+          computeCurvature(current_path.poses[i - 1], current_path.poses[i],
+                           current_path.poses[i + 1]);
       // - compute cumulative distance
       vec_dist[i] =
           vec_dist[i - 1] +
-          computeDistance(m_current_path.poses[i - 1], m_current_path.poses[i]);
+          computeDistance(current_path.poses[i - 1], current_path.poses[i]);
     }
     // first & last index
     // - curvature
@@ -411,10 +428,34 @@ private:
     // - cumulative distance
     vec_dist[path_size - 1] =
         vec_dist[path_size - 2] +
-        computeDistance(m_current_path.poses[path_size - 2],
-                        m_current_path.poses[path_size - 1]);
+        computeDistance(current_path.poses[path_size - 2],
+                        current_path.poses[path_size - 1]);
     curv_array = vec_curv;
     dist_array = vec_dist;
+  }
+
+  void getCurvVelTimeProfile(nav_msgs::msg::Path current_path,
+                            std::vector<double> &curv_array,
+                            std::vector<double> &dist_array,
+                            std::vector<float> &curv_vel_array,
+                            std::vector<float> &time_array) {
+    // Iterate computeCurvature to get curvature for each point in path.
+    double path_size = current_path.poses.size();
+
+    std::vector<float> vec_curv_vel(path_size, 0.0);
+    std::vector<float> vec_time(path_size, 0.0);
+
+    for (int i = 1; i < path_size; i++) {
+      // - compute curvature-based velocity profile
+      vec_curv_vel[i] = 
+          (float)(std::min(300 / 3.6, sqrt(abs(m_max_lateral_acceleration) / abs(curv_array[i]))));
+      // - compute time-to-arrive profile
+      vec_time[i] = 
+          (float)(vec_time[i - 1] + dist_array[i] / (vec_curv_vel[i] + 1e-6));
+    }
+
+    curv_vel_array = vec_curv_vel;
+    time_array = vec_time;
   }
 
   double computeCurvature(geometry_msgs::msg::PoseStamped &pose_i_prev,
@@ -480,6 +521,18 @@ private:
     std_msgs::msg::Float32 des_vel;
     des_vel.data = desired_velocity_mps;
     des_vel_pub_->publish(des_vel);
+  }
+
+  void publishTrajectoryProfile(nav_msgs::msg::Path current_path,
+                                std::vector<float> &curv_vel_array,
+                                std::vector<float> &time_array) {
+    // Trajectory profile
+    nif_msgs::msg::DynamicTrajectory profile;
+    profile.header.stamp = this->now();
+    profile.trajectory_path = current_path;
+    profile.trajectory_velocity = curv_vel_array;
+    profile.trajectory_timestamp_array = time_array;
+    profile_pub_->publish(profile);
   }
 
   void publishDiagnostic(double valid_path, double valid_odom,
@@ -647,6 +700,7 @@ private:
   //! Publisher
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr des_vel_pub_;
   rclcpp::Publisher<nif_msgs::msg::VelocityPlannerStatus>::SharedPtr diag_pub_;
+  rclcpp::Publisher<nif_msgs::msg::DynamicTrajectory>::SharedPtr profile_pub_;
 
   //! Update Timers
   rclcpp::TimerBase::SharedPtr control_timer_;
@@ -721,6 +775,7 @@ private:
   double m_lat_tire_factor;
   double m_max_ddes_vel_dt_default;
   double m_max_ddes_vel_dt_green_flag;
+  double m_max_lateral_acceleration;
 
   double m_CURVATURE_MINIMUM = 0.000001;
   double m_CURVATURE_MAX = 0.0039; // IMS turning radius (840 ft, 256 meter)
