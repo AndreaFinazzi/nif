@@ -83,9 +83,10 @@ public:
   double m_max_a_lon = 0.;
 
   double m_lateral_error_deadband_m = 0.5;
+  double m_lateral_error_max_scale = 0.8;
   double m_error_factor_vel_thres_mps = 15.0;
   double m_error_y = 0.;
-  double m_ERROR_Y_MAX = 0.5; // halving des_vel point.
+  double m_ERROR_Y_MAX = 1.0; // halving des_vel point.
 
 private:
   void initializeGears(const std::string &track_id);

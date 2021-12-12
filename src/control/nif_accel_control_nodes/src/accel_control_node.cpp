@@ -75,7 +75,8 @@ AccelControl::AccelControl() : Node("AccelControlNode") {
   this->declare_parameter("time_step", 0.01);
   this->declare_parameter("engine_based_throttle_enabled", false);
 
-  this->declare_parameter("lateral_error_deadband_m", 0.5);
+  this->declare_parameter("lateral_error_deadband_m", 1.0);
+  this->declare_parameter("lateral_error_max_scale", 0.5);
   this->declare_parameter("error_factor_vel_thres_mps", 15.0);
 
   this->declare_parameter("throttle.k_accel", 0.05780);
@@ -149,6 +150,9 @@ AccelControl::AccelControl() : Node("AccelControlNode") {
 
   this->m_lateral_error_deadband_m =
       this->get_parameter("lateral_error_deadband_m").as_double();
+
+  this->m_lateral_error_max_scale =
+      this->get_parameter("lateral_error_max_scale").as_double();
 
   this->m_error_factor_vel_thres_mps =
       this->get_parameter("error_factor_vel_thres_mps").as_double();
@@ -390,7 +394,8 @@ void AccelControl::publishThrottleBrake() {
           m_ERROR_Y_MAX; // [0.0~1.0] ratio
     }
 
-    double error_gain = 1.0 - 0.5 * error_ratio; // [1.0~0.5] gain
+    double error_gain =
+        1.0 - (1.0 - m_lateral_error_max_scale) * error_ratio; // [1.0~0.8] gain
     this->throttle_cmd.data = error_gain * this->throttle_cmd.data;
   }
 

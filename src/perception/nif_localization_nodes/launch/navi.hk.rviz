@@ -15,7 +15,8 @@ Panels:
         - /PointCloud23/Topic1
         - /PointCloud24/Topic1
         - //aw_localization/ekf/odom1/Shape1
-        - /Pose1/Topic1
+        - //control_joint_lqr/track_point1/Topic1
+        - //control_joint_lqr/track_point_test1
         - //planning/path_global1/Topic1
         - //planning/path_global_test1/Topic1
       Splitter Ratio: 0.5
@@ -349,7 +350,7 @@ Visualization Manager:
       Enabled: true
       Invert Rainbow: false
       Max Color: 255; 255; 255
-      Max Intensity: 1.99951171875
+      Max Intensity: 1.49853515625
       Min Color: 0; 0; 0
       Min Intensity: 0
       Name: PointCloud2
@@ -448,10 +449,10 @@ Visualization Manager:
       Axes Radius: 0.10000000149011612
       Class: rviz_default_plugins/Pose
       Color: 255; 25; 0
-      Enabled: true
+      Enabled: false
       Head Length: 0.30000001192092896
       Head Radius: 0.10000000149011612
-      Name: Pose
+      Name: /control_joint_lqr/track_point
       Shaft Length: 1
       Shaft Radius: 1
       Shape: Arrow
@@ -461,10 +462,10 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Best Effort
         Value: /control_joint_lqr/track_point
-      Value: true
+      Value: false
     - Alpha: 1
-      Axes Length: 1
-      Axes Radius: 0.10000000149011612
+      Axes Length: 2
+      Axes Radius: 0.800000011920929
       Class: rviz_default_plugins/Pose
       Color: 255; 255; 0
       Enabled: true
@@ -473,7 +474,7 @@ Visualization Manager:
       Name: /control_joint_lqr/track_point_test
       Shaft Length: 2
       Shaft Radius: 1.5
-      Shape: Arrow
+      Shape: Axes
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -535,6 +536,39 @@ Visualization Manager:
         Reliability Policy: Best Effort
         Value: /planning/path_global_test
       Value: true
+    - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 10
+        Min Value: -10
+        Value: true
+      Axis: Z
+      Channel Name: intensity
+      Class: rviz_default_plugins/PointCloud2
+      Color: 255; 255; 255
+      Color Transformer: Intensity
+      Decay Time: 0
+      Enabled: false
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Max Intensity: 311
+      Min Color: 0; 0; 0
+      Min Intensity: 0
+      Name: PointCloud2
+      Position Transformer: XYZ
+      Selectable: true
+      Size (Pixels): 3
+      Size (m): 1
+      Style: Flat Squares
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+        Value: /graph_planner/final_path_points
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: false
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -578,25 +612,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/ThirdPersonFollower
-      Distance: 70.08744812011719
+      Distance: 33.09363555908203
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 8.203335762023926
-        Y: -0.39105987548828125
+        X: 0.045340538024902344
+        Y: -0.046230316162109375
         Z: -3.021251905011013e-05
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.5697963237762451
+      Pitch: 0.40979620814323425
       Target Frame: base_link
       Value: ThirdPersonFollower (rviz_default_plugins)
-      Yaw: 3.140422821044922
+      Yaw: 3.21543288230896
     Saved: ~
 Window Geometry:
   Displays:
