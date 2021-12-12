@@ -17,7 +17,8 @@ windows:
       # - cd /home/usrg/media/T7_Touch/IAC/rosbag/2021.10.14_LOR/VEH4_LOR_RUN-01_2021-10-14
       # - cd /home/usrg/media/T7_Touch/IAC/rosbag/2021.10.14_LOR/VEH4_LOR_RUN-02_2021-10-14
       # - cd /home/usrg/media/T7_Touch/IAC/rosbag/2021.10.18_IMS/VEH4_IMS_RUN-1018_2021-10-18
-      - cd /home/usrg/media/T7_Touch/IAC/rosbag/2021.10.21_IMS/VEH4_IMS_RUN-02_2021-10-21
+      # - cd /home/usrg/media/ssd/2021.10.18_IMS/VEH4_IMS_RUN-1018_2021-10-18
+      - cd /home/usrg/media/ssd/2021.10.21_IMS/VEH4_IMS_RUN-02_2021-10-21
       
     panes:
     - shell_command:
@@ -51,6 +52,7 @@ windows:
       # - ros2 bag play autonomy_2021-10-12_10-28-45/ --read-ahead-queue-size 10000 -r 2  # 2021.10.12
       # - ros2 bag play autonomy_2021-10-14_10-16-00/ --read-ahead-queue-size 10000 -r 1  # 2021.10.12
       # - ros2 bag play autonomy_2021-10-14_11-16-49/ --read-ahead-queue-size 10000 -r 1 -l # 2021.10.12
+      # - ros2 bag play autonomy_2021-10-18_14-02-36/ --read-ahead-queue-size 10000 -r 1 -l # 2021.10.18
       # - ros2 bag play autonomy_2021-10-18_14-02-36/ --read-ahead-queue-size 10000 -r 1 -l # 2021.10.18
       - ros2 bag play autonomy_2021-10-21_15-38-00/ --read-ahead-queue-size 10000 -r 1 -l # 2021.10.18
 

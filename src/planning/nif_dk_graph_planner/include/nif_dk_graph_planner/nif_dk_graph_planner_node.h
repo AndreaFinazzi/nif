@@ -33,19 +33,19 @@
 #include <tf2_ros/transform_listener.h>
 
 // headers in STL
-#include <memory>
-#include <cmath>
-#include <type_traits>
-#include <stdio.h>
-#include <float.h>
-#include <vector>
-#include <queue>
-#include <deque>
 #include <algorithm>
-#include <unordered_map>
 #include <bits/stdc++.h>
+#include <cmath>
+#include <deque>
+#include <float.h>
+#include <memory>
 #include <mutex>
+#include <queue>
+#include <stdio.h>
 #include <thread>
+#include <type_traits>
+#include <unordered_map>
+#include <vector>
 
 #include <fstream>
 #include <sstream>   // std::stringstream
@@ -55,20 +55,18 @@
 
 #include <pugixml.hpp>
 
-
 // //User defined messages
+#include "nif_dk_graph_planner_msgs/msg/final_path_id_array.hpp"
+#include "nif_dk_graph_planner_msgs/msg/node.hpp"
 #include "nif_dk_graph_planner_msgs/msg/osm_parcer.hpp"
 #include "nif_dk_graph_planner_msgs/msg/way.hpp"
-#include "nif_dk_graph_planner_msgs/msg/node.hpp"
-#include "nif_dk_graph_planner_msgs/msg/final_path_id_array.hpp"
 
 #include "utils/geodetic_conv.h"
 
-
 // PCL Libraries
-#include <pcl_conversions/pcl_conversions.h>
 #include <pcl/PCLPointCloud2.h>
 #include <pcl/conversions.h>
+#include <pcl_conversions/pcl_conversions.h>
 
 #include <pcl/ModelCoefficients.h>
 #include <pcl/point_types.h>
@@ -81,20 +79,18 @@
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/kdtree/kdtree_flann.h>
 
+#include <pcl/common/common.h>
+#include <pcl/common/pca.h>
 #include <pcl/kdtree/kdtree.h>
 #include <pcl/sample_consensus/method_types.h>
 #include <pcl/sample_consensus/model_types.h>
-#include <pcl/segmentation/sac_segmentation.h>
-#include <pcl/segmentation/extract_clusters.h>
-#include <pcl/segmentation/conditional_euclidean_clustering.h>
-#include <pcl/common/common.h>
-#include <pcl/common/pca.h>
-#include <pcl/search/organized.h>
 #include <pcl/search/kdtree.h>
+#include <pcl/search/organized.h>
+#include <pcl/segmentation/conditional_euclidean_clustering.h>
 #include <pcl/segmentation/extract_clusters.h>
+#include <pcl/segmentation/sac_segmentation.h>
 
-typedef struct Connected
-{
+typedef struct Connected {
   int id;
   double cost;
   double collision_cost;
@@ -129,8 +125,8 @@ struct duplication_comparator {
   }
 };
 
-namespace nif{
-namespace planning{
+namespace nif {
+namespace planning {
 
 class DKGraphPlannerNode : public rclcpp::Node {
 public:
@@ -150,28 +146,30 @@ public:
   void timer_callback();
   void run();
 
-  // void CallbackInitPoseRviz(const geometry_msgs::PoseWithCovarianceStamped& msg);  
-  // void CallbackGoalRviz(const geometry_msgs::PoseStamped& msg);
+  // void CallbackInitPoseRviz(const geometry_msgs::PoseWithCovarianceStamped&
+  // msg); void CallbackGoalRviz(const geometry_msgs::PoseStamped& msg);
   void CallbackOdometry(const nav_msgs::msg::Odometry::SharedPtr msg);
   void CallbackOccupancyGrid(const nav_msgs::msg::OccupancyGrid::SharedPtr msg);
   void CallbackCostPoints(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
-  void CallbackClusterCenterPoints(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
+  void CallbackClusterCenterPoints(
+      const sensor_msgs::msg::PointCloud2::SharedPtr msg);
   void CallbackWallPoints(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
-  
+
 private:
   DKGraphPlannerNode();
 
   void BuildGraph();
   void UpdateGraph();
   void ReleaseGraph();
-  void FinalizePath(const pcl::PointCloud<pcl::PointXYZI>::Ptr &path_points_in,
-                    const pcl::PointCloud<pcl::PointXYZI>::Ptr &obs_center_in,
-                    const double &speed_mps_in, const double &dt_in,
-                    double &odometry_in, const double &obs_radius_in,
-                    const double &desired_update_dist_in,
-                    double &dist_to_obs_out,
-                    pcl::PointCloud<pcl::PointXYZI>::Ptr &path_points_out,
-                    bool &path_updated_out);
+  void FinalizePath(
+      const pcl::PointCloud<pcl::PointXYZI>::Ptr &path_points_in,
+      const pcl::PointCloud<pcl::PointXYZI>::Ptr &path_points_on_body_in,
+      const pcl::PointCloud<pcl::PointXYZI>::Ptr &obs_center_in,
+      const double &speed_mps_in, const double &dt_in, double &odometry_in,
+      const double &obs_radius_in, const double &desired_update_dist_in,
+      double &dist_to_obs_out,
+      pcl::PointCloud<pcl::PointXYZI>::Ptr &path_points_out,
+      bool &path_updated_out);
   void GetIntensityInfo(const double &x_in, const double &y_in,
                         pcl::PointCloud<pcl::PointXYZI>::Ptr in_points,
                         int &intensity_out);
@@ -179,40 +177,40 @@ private:
                         pcl::PointCloud<pcl::PointXYZI>::Ptr in_points,
                         double &intensity_out);
   void GetIntensityInfo(const double &x_in, const double &y_in,
-                        pcl::PointCloud<pcl::PointXYZI>::Ptr in_points, 
-                        double &nearest_x_in_points_out, double &nearest_y_in_points_out,
-                        int &intensity_out);
+                        pcl::PointCloud<pcl::PointXYZI>::Ptr in_points,
+                        double &nearest_x_in_points_out,
+                        double &nearest_y_in_points_out, int &intensity_out);
   double getClosestDistance(const double &x_in, const double &y_in,
                             pcl::PointCloud<pcl::PointXYZI>::Ptr points_in);
   double CorrespondingCost(const double pt_x, const double pt_y,
-                            const nav_msgs::msg::OccupancyGrid &gridmap);
+                           const nav_msgs::msg::OccupancyGrid &gridmap);
   double
   CorrespondingCost(const double pt_x, const double pt_y, double inflation,
                     pcl::PointCloud<pcl::PointXYZI>::Ptr &in_centered_points,
                     pcl::PointCloud<pcl::PointXYZI>::Ptr &in_inflated_points);
 
-  void getNearbyNodesFromLayer(const double &x_in, const double &y_in,
-                      const int &search_num_idx_in,
-                      pcl::PointCloud<pcl::PointXYZI>::Ptr points_in,
-                      int &current_layer_out,
-                      std::vector<std::pair<int, int>> &nearby_indice_out);
+  void getNearbyNodesFromLayer(
+      const double &x_in, const double &y_in, const int &search_num_idx_in,
+      pcl::PointCloud<pcl::PointXYZI>::Ptr points_in, int &current_layer_out,
+      std::vector<std::pair<int, int>> &nearby_indice_out);
 
   void TransformPointsToBody(const pcl::PointCloud<pcl::PointXYZI>::Ptr CloudIn,
-                             pcl::PointCloud<pcl::PointXYZI>::Ptr CloudOut, 
-                             const double &veh_x_, const double &veh_y_, const double &veh_yaw_);
+                             pcl::PointCloud<pcl::PointXYZI>::Ptr CloudOut,
+                             const double &veh_x_, const double &veh_y_,
+                             const double &veh_yaw_);
 
-  std::vector<std::pair<std::string, std::vector<double>>> read_csv(
-          std::string filename);
+  std::vector<std::pair<std::string, std::vector<double>>>
+  read_csv(std::string filename);
   void removeDuplicated(std::vector<std::pair<int, int>> &v);
   pcl::PointCloud<pcl::PointXYZI>::Ptr
   downsample(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, double resolution);
 
-  void createGaussianWorld(
-      pcl::PointCloud<pcl::PointXYZI>::Ptr &points_in, double inflation_x,
-      double inflation_y, pcl::PointCloud<pcl::PointXYZI>::Ptr &points_out);
-  
+  void createGaussianWorld(pcl::PointCloud<pcl::PointXYZI>::Ptr &points_in,
+                           double inflation_x, double inflation_y,
+                           pcl::PointCloud<pcl::PointXYZI>::Ptr &points_out);
+
   rclcpp::TimerBase::SharedPtr sub_timer_;
-  
+
   rclcpp::Publisher<nif_dk_graph_planner_msgs::msg::OsmParcer>::SharedPtr
       pubOsmParcer;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubFullNodePoints;
@@ -226,16 +224,20 @@ private:
       pubFinalPathPoints;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubCostPoints;
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pubFinalPath;
-  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubFinalPathOnBody;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr
+      pubFinalPathOnBody;
 
-  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubWallInflatedPoints;
-  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubBestLayerXYPoints;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr
+      pubWallInflatedPoints;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr
+      pubBestLayerXYPoints;
 
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr SubOdometry;
   rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr
       SubOccupancyGrid;
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr SubCostPoints;
-  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr SubClusterCenterPoints;
+  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr
+      SubClusterCenterPoints;
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr SubWallPoints;
 
   std::string m_OsmFileName, m_FullFilePath;
@@ -265,12 +267,16 @@ private:
   bool bWallInflated = false;
   bool bDebug;
 
+  double m_prev_x;
+  double m_prev_y;
+  double m_stack_dist;
+
   double m_dt;
 
   double m_veh_x;
   double m_veh_y;
   double m_veh_roll, m_veh_pitch, m_veh_yaw;
-  double m_veh_speed; 
+  double m_veh_speed;
   double prev_time, current_time;
 
   double m_ref_gain;
@@ -285,7 +291,7 @@ private:
   double m_odom_dist = 9999.;
 
   int m_ClosestFirstNodeId;
-  int m_StartNode; 
+  int m_StartNode;
   int m_closestGoalNode;
   int m_currentLayer;
   int m_prevBestFirstNodeInLayer = -1;
@@ -295,10 +301,10 @@ private:
   int m_prevStartFirstNodeId = -1;
   int m_UsePrevStartFirstNodeAfter2 = 0;
 
-  std::unordered_map<int, int> m_BestLayerArray;  //first node id , layer's way
+  std::unordered_map<int, int> m_BestLayerArray; // first node id , layer's way
   std::unordered_map<int, std::pair<double, double>> m_BestLayerXYArray;
   std::unordered_map<int, std::vector<nif_dk_graph_planner_msgs::msg::Way>>
-          m_WaysResister;
+      m_WaysResister;
   std::unordered_map<int, std::vector<nif_dk_graph_planner_msgs::msg::Way>>
       m_FirstNodeBasedResister;
 
@@ -308,7 +314,6 @@ private:
   std::vector<Obstacle> m_obstacle;
   std::vector<std::pair<int, int>> m_nearbyFirstNodes;
   nav_msgs::msg::OccupancyGrid m_OccupancyGrid;
-
 
   nif::localization::utils::GeodeticConverter conv_;
   double m_originLat;
@@ -321,8 +326,8 @@ private:
   std::deque<int> m_FinalNodes;
 
   std::mutex mtx;
-  };
+};
 } // namespace planning
 } // namespace nif
 
-#endif  // DK_GRAPH_PLANNER_H
+#endif // DK_GRAPH_PLANNER_H

@@ -33,7 +33,7 @@ def generate_launch_description():
                 'odometry_timeout_sec' : 0.5,
                 'path_timeout_sec' : 1.0,
                 'use_mission_max_vel': True,
-                'lateral_tire_model_factor' : 1.0,
+                'lateral_tire_model_factor' : 0.8,
             }]
     )
     return LaunchDescription([

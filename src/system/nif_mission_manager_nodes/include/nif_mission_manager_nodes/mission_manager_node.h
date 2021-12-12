@@ -10,7 +10,6 @@
 #include "std_srvs/srv/trigger.hpp"
 
 using nif_msgs::msg::MissionStatus;
-using nif_msgs::msg::MissionStatus;
 
 namespace nif {
 namespace system {
@@ -68,7 +67,7 @@ private:
   unsigned int lap_distance = 0;
 
   bool mission_avoidance_auto_switch = false;
-  unsigned int mission_avoidance_lap_count = 0;
+  unsigned int mission_avoidance_lap_count_min = 0;
   unsigned int mission_avoidance_previous_track_flag = 0;
   unsigned int mission_avoidance_lap_distance_min = 0;
   unsigned int mission_avoidance_lap_distance_max = 0;
@@ -80,6 +79,10 @@ private:
   unsigned int mission_warmup_lap_distance_max = 0;
 
   nif::system::MissionsDescription missions_description;
+  nif::system::TrackZonesDescription zones_description;
+
+  track_zone_id_t current_track_zone_id;
+  std::unordered_map<track_zone_id_t, unsigned int> track_zones_hit_count_map;
   
   /**
    * SystemStatus publisher. Publishes the latest system_status message, after
@@ -123,6 +126,8 @@ private:
 
   double getMissionMaxVelocityMps(MissionStatus::_mission_status_code_type);
 
+  void afterEgoOdometryCallback() override;
+
   /**
    * Return a valid mission code based on the current status and the input next_mission.
    */ 
@@ -138,10 +143,6 @@ private:
     
     return rc_ok && velocity_ok && odometry_ok;
   };
-
-  bool missionIs(MissionStatus::_mission_status_code_type mission) {
-    return this->mission_status_msg.mission_status_code == mission;
-  }
 
   void run() final;
 };

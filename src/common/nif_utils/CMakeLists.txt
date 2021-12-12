@@ -25,7 +25,11 @@ ament_auto_add_library(${PROJECT_NAME} SHARED
         src/cubic_spliner_2D.cpp
         src/frenet_path.cpp
         src/frenet_path_generator.cpp
-        src/geodetic_converter.cpp)
+        src/geodetic_converter.cpp
+        lib/Amathutils.cpp
+        lib/butterworth_filter.cpp
+        lib/kalman_filter.cpp
+        lib/time_delay_kalman_filter.cpp)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

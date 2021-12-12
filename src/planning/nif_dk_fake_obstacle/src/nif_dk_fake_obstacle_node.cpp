@@ -190,11 +190,11 @@ void FakeObsNode::timer_callback() {
     pcl::PointCloud<pcl::PointXYZI>::Ptr GlobalfakeInflatedPoints(
         new pcl::PointCloud<pcl::PointXYZI>);
     MessagePublisher();
-    RCLCPP_INFO(this->get_logger(), "Publishing ------------");
+    // RCLCPP_INFO(this->get_logger(), "Publishing ------------");
     if (bOdometry){
       TransformPointsToBody(m_FakeObsPoints, fakeCenerPoints, m_veh_x, m_veh_y,
                             m_veh_yaw);
-      createGaussianWorld(fakeCenerPoints, 3.0, 3.0, fakeInflatedPoints);
+      createGaussianWorld(fakeCenerPoints, 7.0, 3.0, fakeInflatedPoints);
 
       sensor_msgs::msg::PointCloud2 FakeCenterCloudMsg;
       pcl::toROSMsg(*fakeCenerPoints, FakeCenterCloudMsg);
@@ -219,12 +219,12 @@ void FakeObsNode::timer_callback() {
       GlobalFakeInflatedCloudMsg.header.stamp = this->now();
       pubGlobalFakeInflatedPoints->publish(GlobalFakeInflatedCloudMsg);
 
-      RCLCPP_INFO(this->get_logger(), "Publishing Fake inflated obs");
+      // RCLCPP_INFO(this->get_logger(), "Publishing Fake inflated obs");
 
     }
 
     MessagePublisher();
-    RCLCPP_INFO(this->get_logger(), "Publishing Fake Obs");
+    // RCLCPP_INFO(this->get_logger(), "Publishing Fake Obs");
 
   }
 }

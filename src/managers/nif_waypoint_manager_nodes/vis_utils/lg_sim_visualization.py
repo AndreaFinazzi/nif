@@ -9,7 +9,6 @@ import csv
 import pickle
 import sys
 import logging
-import graph_ltpl
 import yaml
 import matplotlib.patches as patches
 
