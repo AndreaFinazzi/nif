@@ -42,6 +42,14 @@ DynamicPlannerNode::DynamicPlannerNode(const std::string& node_name_,
         path_x_vec, path_y_vec, 1.0);
 
     m_overtaking_candidates_spline_data_vec.push_back(splined_result);
+
+    auto pc =
+        genPointCloudFromVec(get<0>(splined_result), get<1>(splined_result));
+    m_overtaking_candidates_path_pc_vec.push_back(pc);
+
+    pcl::KdTreeFLANN<pcl::PointXY> kdtree;
+    kdtree.setInputCloud(pc);
+    m_overtaking_candidates_path_kdtree_vec.push_back(kdtree);
   }
 
   // Initialize subscribers & publisher
@@ -227,20 +235,23 @@ void DynamicPlannerNode::predictionResultCallback(
 
 void DynamicPlannerNode::timer_callback() {
   if (m_timer_callback_first_run) {
-    m_cur_decision_type = PLANNING_DECISION_TYPE::STRAIGHT;
-    m_cur_overtaking_stage = PLANNING_STAGE_TYPE::DRIVING;
+    m_cur_decision = PLANNING_DECISION_TYPE::STRAIGHT;
+    m_cur_overtaking_action = PLANNING_ACTION_TYPE::DRIVING;
     m_timer_callback_first_run = false;
   }
 
-  m_prev_decision_type = m_cur_decision_type;
-  m_prev_overtaking_stage = m_cur_overtaking_stage;
+  // update ego odometry
+  m_ego_odom = this->getEgoOdometry();
+
+  m_prev_decision = m_cur_decision;
+  m_prev_overtaking_action = m_cur_overtaking_action;
   m_prev_ego_planned_result_body = m_cur_ego_planned_result_body;
   m_prev_ego_planned_result_global = m_cur_ego_planned_result_global;
 
   if (m_emergency_flg) {
     // TODO : do something, safe stop, emergency trajectory planning
-    m_cur_decision_type = PLANNING_DECISION_TYPE::ESTOP;
-    m_cur_overtaking_stage = PLANNING_STAGE_TYPE::DRIVING;
+    m_cur_decision = PLANNING_DECISION_TYPE::ESTOP;
+    m_cur_overtaking_action = PLANNING_ACTION_TYPE::DRIVING;
 
     // TODO : temporary just sending empty traj
     initTrajectory(); // all path points are assigned with zero
@@ -251,8 +262,8 @@ void DynamicPlannerNode::timer_callback() {
   if (m_cur_det.id == -1) {
     // TODO : invalid or empty detection result --> this should be implemented
     // in the perception side
-    m_cur_decision_type = PLANNING_DECISION_TYPE::STRAIGHT;
-    m_cur_overtaking_stage = PLANNING_STAGE_TYPE::DRIVING;
+    m_cur_decision = PLANNING_DECISION_TYPE::STRAIGHT;
+    m_cur_overtaking_action = PLANNING_ACTION_TYPE::DRIVING;
 
     // By pass maptrack to velocity planner
     // TODO : currently timestamp arry is uniformly sampled based on planning
@@ -264,25 +275,254 @@ void DynamicPlannerNode::timer_callback() {
     publishTrajectory();
 
   } else {
-    // valid detection, there is a opponent in front.
-    if (!m_overtake_allowed_flg) {
-      // No need to calculate for overtaking
-      // ACC, stay behind of the opponent
-      m_cur_decision_type = PLANNING_DECISION_TYPE::FOLLOW;
-      m_cur_overtaking_stage = PLANNING_STAGE_TYPE::DRIVING;
+    //////////////////////
+    // DECION AND ACITION
+    //////////////////////
 
-      // TODO : ACC when the decision type is FOLLOW
-      m_cur_ego_planned_result_body.trajectory_path = m_maptrack_body;
-      m_cur_ego_planned_result_global.trajectory_path = m_maptrack_global;
-      publishTrajectory();
+    auto progress_diff = calcProgressDiff(m_ego_odom.pose.pose,
+                                          m_cur_det.detection_result_3d.center,
+                                          m_racineline_path_kdtree);
+
+    if (!m_overtake_allowed_flg) {
+      /*
+    STATUS DESCRIPTION :
+      1. There is a opponent in front.
+      2. Overtaking is not allowed by mission manager
+
+    POSSIBLE DECISIONS(previous and current) AND ACTIONS
+      CASE 1
+        PREVIOUS DECISIONS  : STRAIGHT / FOLLOW
+        DECISIONS           : STRAIGHT / FOLLOW / ESTOP
+        ACTIONS             : DRIVING
+
+        ** PAIRING (prev - cur-decision - action)
+          1. (STRAIGHT - STRAIGHT - DRIVING)
+          2. (STRAIGHT - FOLLOW - DRIVING)
+          3. (FOLLOW - STRAIGHT - DRIVING)
+          4. (FOLLOW - FOLLOW - DRIVING)
+          5. (STRAIGHT - ESTOP - DRIVING)
+          6. (FOLLOW - ESTOP - DRIVING)
+
+      CASE 2
+        PREVIOUS DECISIONS  : RIGHT / LEFT
+        DECISIONS           : RIGHT / LEFT / ESTOP
+        ACTIONS             : SIDE-BY-SIDE
+
+        ** PAIRING (prev - cur-decision - action)
+          1. (RIGHT - RIGHT - SIDE-BY-SIDE)
+          2. (LEFT - LEFT - SIDE-BY-SIDE)
+          3. (RIGHT - ESTOP - DRIVING)
+          4. (LEFT - ESTOP - DRIVING)
+
+      CASE 3
+        PREVIOUS DECISIONS  : RIGHT / LEFT
+        DECISIONS           : STRAIGHT / FOLLOW / ESTOP
+        ACTIONS             : FINISH OT / ABORT OT
+
+        ** PAIRING (prev - cur-decision - action)
+          1. (RIGHT - STRAIGHT - FINISH OT)
+          2. (RIGHT - FOLLOW - ABORT OT)
+          3. (LEFT - STRAIGHT - FINISH OT)
+          4. (LEFT - FOLLOW - ABORT OT)
+          5. (RIGHT - ESTOP - DRIVING)
+          6. (LEFT - ESTOP - DRIVING)
+    */
+
+      if (m_prev_decision == PLANNING_DECISION_TYPE::STRAIGHT ||
+          m_prev_decision == PLANNING_DECISION_TYPE::FOLLOW) {
+        ///////////////
+        // CASE 1 CODE
+        ///////////////
+
+        // decision making (via progress comparison)
+        if (progress_diff < 0.0) {
+          m_cur_decision = PLANNING_DECISION_TYPE::STRAIGHT;
+          m_cur_overtaking_action = PLANNING_ACTION_TYPE::DRIVING;
+          // TODO : assign path
+        } else if (progress_diff < m_config_follow_enable_dist) {
+          // close enougth to enable the ACC
+          m_cur_decision = PLANNING_DECISION_TYPE::FOLLOW;
+          m_cur_overtaking_action = PLANNING_ACTION_TYPE::DRIVING;
+          // TODO : assign path
+        } else {
+          // far from the opponent
+          m_cur_decision = PLANNING_DECISION_TYPE::STRAIGHT;
+          m_cur_overtaking_action = PLANNING_ACTION_TYPE::DRIVING;
+          // TODO : assign path
+        }
+      } else if (m_prev_decision == PLANNING_DECISION_TYPE::RIGHT ||
+                 m_prev_decision == PLANNING_DECISION_TYPE::LEFT) {
+        ///////////////////
+        // CASE 2 & 3 CODE
+        ///////////////////
+
+        if (progress_diff < 0.0 &&
+            m_config_merging_longitudinal_margin < abs(progress_diff)) {
+          // ego vehicle is in front of the opponent and the distance is safe
+          // enough to merge to the racing line
+          m_cur_decision = PLANNING_DECISION_TYPE::STRAIGHT;
+          m_cur_overtaking_action = PLANNING_ACTION_TYPE::FINISH_OVERTAKING;
+          // TODO : assign path, merging path is needed
+        } else {
+          bool is_side_by_side_available = false;
+          // TODO : Need to decide SIDE-BY-SIDE or ABORT OT
+
+          if (is_side_by_side_available) {
+            m_cur_decision = m_prev_decision;
+            m_cur_overtaking_action = PLANNING_ACTION_TYPE::SIDE_BY_SIDE;
+            // TODO : assign path
+          } else {
+            m_cur_decision = PLANNING_DECISION_TYPE::FOLLOW;
+            m_cur_overtaking_action = PLANNING_ACTION_TYPE::ABORT_OVERTAKING;
+            // TODO : assign path
+          }
+        }
+
+      } else {
+        /////////
+        // ESTOP
+        /////////
+
+        m_cur_decision = PLANNING_DECISION_TYPE::ESTOP;
+        m_cur_overtaking_action = PLANNING_ACTION_TYPE::DRIVING;
+        // TODO : temporary just sending empty traj
+        initTrajectory(); // all path points are assigned with zero
+        publishTrajectory();
+      }
     } else {
-      // TODO : previous driving mode should be integrated somehow.
-      // Posible cases
-      // 1. Keep racing line and chase the opponent as fast as we can.
-      // 2. If we are close or faster enough, start to overtake. Checking right
-      // and left side if the previous driving mode was STRAIGHT / FOLLOW /.
-      // else, (ex: the previous mode was already START_OVERTAKING,
-      // SIDE_BY_SIDE), check the collision based on that.
+      /*
+    STATUS DESCRIPTION :
+      1. There is a opponent in front.
+      2. Overtaking is allowed by mission manager
+
+    POSSIBLE DECISIONS(previous and current) AND ACTIONS
+      CASE 1
+        PREVIOUS DECISIONS  : STRAIGHT
+        DECISIONS           : STRAIGHT / FOLLOW / ESTOP
+        ACTIONS             : DRIVING
+
+      ** PAIRING (prev - cur-decision - action)
+        1. (STRAIGHT - STRAIGHT - DRIVING)
+        2. (STRAIGHT - FOLLOW - DRIVING)
+        3. (STRAIGHT - ESTOP - DRIVING)
+
+      CASE 2
+        PREVIOUS DECISIONS  : FOLLOW
+        DECISIONS           : FOLLOW / RIGHT / LEFT / ESTOP
+        ACTIONS             : START OT / DRIVING
+
+      ** PAIRING (prev - cur-decision - action)
+        1. (FOLLOW - FOLLOW - DRIVING)
+        2. (FOLLOW - RIGHT/LEFT - START OT)
+        3. (FOLLOW - ESTOP - DRIVING)
+
+      CASE 3
+        PREVIOUS DECISIONS  : RIGHT / LEFT
+        DECISIONS           : RIGHT / LEFT / ESTOP
+        ACTIONS             : SIDE-BY-SIDE / DRIVING
+
+      ** PAIRING (prev - cur-decision - action)
+        1. (RIGHT - RIGHT - SIDE-BY-SIDE)
+        2. (LEFT - LEFT - SIDE-BY-SIDE)
+        3. (RIGHT/LEFT - ESTOP - DRIVING)
+
+      CASE 4
+        PREVIOUS DECISIONS  : RIGHT / LEFT
+        DECISIONS           : STRAIGHT / FOLLOW / ESTOP
+        ACTIONS             : FINISH OT / ABORT OT / DRIVING
+
+      ** PAIRING (prev - cur-decision - action)
+        1. (RIGHT/LEFT - STRAIGHT - FINISH OT)
+        2. (RIGHT/LEFT - FOLLOW - ABORT OT)
+        3. (RIGHT/LEFT - ESTOP - DRIVING)
+    */
+      if (m_prev_decision == PLANNING_DECISION_TYPE::STRAIGHT) {
+        ///////////////
+        // CASE 1 CODE
+        ///////////////
+        // decision making (via progress comparison)
+        if (progress_diff < 0.0) {
+          m_cur_decision = PLANNING_DECISION_TYPE::STRAIGHT;
+          m_cur_overtaking_action = PLANNING_ACTION_TYPE::DRIVING;
+          // TODO : assign path
+        } else if (progress_diff < m_config_follow_enable_dist) {
+          // close enougth to enable the ACC
+          m_cur_decision = PLANNING_DECISION_TYPE::FOLLOW;
+          m_cur_overtaking_action = PLANNING_ACTION_TYPE::DRIVING;
+          // TODO : assign path
+        } else {
+          // far from the opponent
+          m_cur_decision = PLANNING_DECISION_TYPE::STRAIGHT;
+          m_cur_overtaking_action = PLANNING_ACTION_TYPE::DRIVING;
+          // TODO : assign path
+        }
+      } else if (m_prev_decision == PLANNING_DECISION_TYPE::FOLLOW) {
+        ///////////////
+        // CASE 2 CODE
+        ///////////////
+
+        bool is_left_overtaking_available = false;
+        bool is_right_overtaking_available = false;
+        // TODO : check whether overtaking is available or not, both sides
+        // Check left side first
+
+        if (is_left_overtaking_available) {
+          m_cur_decision = PLANNING_DECISION_TYPE::LEFT;
+          m_cur_overtaking_action = PLANNING_ACTION_TYPE::START_OVERTAKING;
+          // TODO : assign path
+        } else if (is_right_overtaking_available) {
+          m_cur_decision = PLANNING_DECISION_TYPE::RIGHT;
+          m_cur_overtaking_action = PLANNING_ACTION_TYPE::START_OVERTAKING;
+          // TODO : assign path
+        } else {
+          // overtake unavailable
+          m_cur_decision = PLANNING_DECISION_TYPE::FOLLOW;
+          m_cur_overtaking_action = PLANNING_ACTION_TYPE::DRIVING;
+          // TODO : assign path
+        }
+      } else if (m_prev_decision == PLANNING_DECISION_TYPE::RIGHT ||
+                 m_prev_decision == PLANNING_DECISION_TYPE::LEFT) {
+        //////////////////
+        // CASE 3 & 4 CODE
+        //////////////////
+
+        ///////////////////
+        // CASE 2 & 3 CODE
+        ///////////////////
+
+        if (progress_diff < 0.0 &&
+            m_config_merging_longitudinal_margin < abs(progress_diff)) {
+          // ego vehicle is in front of the opponent and the distance is safe
+          // enough to merge to the racing line
+          m_cur_decision = PLANNING_DECISION_TYPE::STRAIGHT;
+          m_cur_overtaking_action = PLANNING_ACTION_TYPE::FINISH_OVERTAKING;
+          // TODO : assign path, merging path is needed
+        } else {
+          bool is_side_by_side_available = false;
+          // TODO : Need to decide SIDE-BY-SIDE or ABORT OT
+
+          if (is_side_by_side_available) {
+            m_cur_decision = m_prev_decision;
+            m_cur_overtaking_action = PLANNING_ACTION_TYPE::SIDE_BY_SIDE;
+            // TODO : assign path
+          } else {
+            m_cur_decision = PLANNING_DECISION_TYPE::FOLLOW;
+            m_cur_overtaking_action = PLANNING_ACTION_TYPE::ABORT_OVERTAKING;
+            // TODO : assign path
+          }
+        }
+
+      } else {
+        /////////
+        // ESTOP
+        /////////
+
+        m_cur_decision = PLANNING_DECISION_TYPE::ESTOP;
+        m_cur_overtaking_action = PLANNING_ACTION_TYPE::DRIVING;
+        // TODO : temporary just sending empty traj
+        initTrajectory(); // all path points are assigned with zero
+        publishTrajectory();
+      }
     }
   }
 }
@@ -296,22 +536,22 @@ void DynamicPlannerNode::publishTrajectory() {
   m_cur_ego_planned_result_global.trajectory_type =
       nif_msgs::msg::DynamicTrajectory::TRAJECTORY_TYPE_PLANNING;
 
-  if (m_cur_decision_type == PLANNING_DECISION_TYPE::STRAIGHT) {
+  if (m_cur_decision == PLANNING_DECISION_TYPE::STRAIGHT) {
     m_cur_ego_planned_result_body.planning_decision_type =
         nif_msgs::msg::DynamicTrajectory::PLANNING_DECISION_TYPE_STRAIGHT;
     m_cur_ego_planned_result_global.planning_decision_type =
         nif_msgs::msg::DynamicTrajectory::PLANNING_DECISION_TYPE_STRAIGHT;
-  } else if (m_cur_decision_type == PLANNING_DECISION_TYPE::FOLLOW) {
+  } else if (m_cur_decision == PLANNING_DECISION_TYPE::FOLLOW) {
     m_cur_ego_planned_result_body.planning_decision_type =
         nif_msgs::msg::DynamicTrajectory::PLANNING_DECISION_TYPE_FOLLOW;
     m_cur_ego_planned_result_global.planning_decision_type =
         nif_msgs::msg::DynamicTrajectory::PLANNING_DECISION_TYPE_FOLLOW;
-  } else if (m_cur_decision_type == PLANNING_DECISION_TYPE::RIGHT) {
+  } else if (m_cur_decision == PLANNING_DECISION_TYPE::RIGHT) {
     m_cur_ego_planned_result_body.planning_decision_type =
         nif_msgs::msg::DynamicTrajectory::PLANNING_DECISION_TYPE_RIGHT;
     m_cur_ego_planned_result_global.planning_decision_type =
         nif_msgs::msg::DynamicTrajectory::PLANNING_DECISION_TYPE_RIGHT;
-  } else if (m_cur_decision_type == PLANNING_DECISION_TYPE::LEFT) {
+  } else if (m_cur_decision == PLANNING_DECISION_TYPE::LEFT) {
     m_cur_ego_planned_result_body.planning_decision_type =
         nif_msgs::msg::DynamicTrajectory::PLANNING_DECISION_TYPE_LEFT;
     m_cur_ego_planned_result_global.planning_decision_type =
@@ -324,32 +564,34 @@ void DynamicPlannerNode::publishTrajectory() {
         nif_msgs::msg::DynamicTrajectory::PLANNING_DECISION_TYPE_ESTOP;
   }
 
-  if (m_cur_overtaking_stage == PLANNING_STAGE_TYPE::DRIVING) {
-    m_cur_ego_planned_result_body.planning_stage_type =
-        nif_msgs::msg::DynamicTrajectory::PLANNING_STAGE_DRIVING;
-    m_cur_ego_planned_result_global.planning_stage_type =
-        nif_msgs::msg::DynamicTrajectory::PLANNING_STAGE_DRIVING;
-  } else if (m_cur_overtaking_stage == PLANNING_STAGE_TYPE::START_OVERTAKING) {
-    m_cur_ego_planned_result_body.planning_stage_type =
-        nif_msgs::msg::DynamicTrajectory::PLANNING_STAGE_START_OVERTAKING;
-    m_cur_ego_planned_result_global.planning_stage_type =
-        nif_msgs::msg::DynamicTrajectory::PLANNING_STAGE_START_OVERTAKING;
-  } else if (m_cur_overtaking_stage == PLANNING_STAGE_TYPE::SIDE_BY_SIDE) {
-    m_cur_ego_planned_result_body.planning_stage_type =
-        nif_msgs::msg::DynamicTrajectory::PLANNING_STAGE_SIDE_BY_SIDE;
-    m_cur_ego_planned_result_global.planning_stage_type =
-        nif_msgs::msg::DynamicTrajectory::PLANNING_STAGE_SIDE_BY_SIDE;
-  } else if (m_cur_overtaking_stage == PLANNING_STAGE_TYPE::FINISH_OVERTAKING) {
-    m_cur_ego_planned_result_body.planning_stage_type =
-        nif_msgs::msg::DynamicTrajectory::PLANNING_STAGE_FINISH_OVERTAKING;
-    m_cur_ego_planned_result_global.planning_stage_type =
-        nif_msgs::msg::DynamicTrajectory::PLANNING_STAGE_FINISH_OVERTAKING;
+  if (m_cur_overtaking_action == PLANNING_ACTION_TYPE::DRIVING) {
+    m_cur_ego_planned_result_body.planning_action_type =
+        nif_msgs::msg::DynamicTrajectory::PLANNING_ACTION_DRIVING;
+    m_cur_ego_planned_result_global.planning_action_type =
+        nif_msgs::msg::DynamicTrajectory::PLANNING_ACTION_DRIVING;
+  } else if (m_cur_overtaking_action ==
+             PLANNING_ACTION_TYPE::START_OVERTAKING) {
+    m_cur_ego_planned_result_body.planning_action_type =
+        nif_msgs::msg::DynamicTrajectory::PLANNING_ACTION_START_OVERTAKING;
+    m_cur_ego_planned_result_global.planning_action_type =
+        nif_msgs::msg::DynamicTrajectory::PLANNING_ACTION_START_OVERTAKING;
+  } else if (m_cur_overtaking_action == PLANNING_ACTION_TYPE::SIDE_BY_SIDE) {
+    m_cur_ego_planned_result_body.planning_action_type =
+        nif_msgs::msg::DynamicTrajectory::PLANNING_ACTION_SIDE_BY_SIDE;
+    m_cur_ego_planned_result_global.planning_action_type =
+        nif_msgs::msg::DynamicTrajectory::PLANNING_ACTION_SIDE_BY_SIDE;
+  } else if (m_cur_overtaking_action ==
+             PLANNING_ACTION_TYPE::FINISH_OVERTAKING) {
+    m_cur_ego_planned_result_body.planning_action_type =
+        nif_msgs::msg::DynamicTrajectory::PLANNING_ACTION_START_OVERTAKING;
+    m_cur_ego_planned_result_global.planning_action_type =
+        nif_msgs::msg::DynamicTrajectory::PLANNING_ACTION_START_OVERTAKING;
   } else {
     // defualt : ABORT_OVERTAKING
-    m_cur_ego_planned_result_body.planning_stage_type =
-        nif_msgs::msg::DynamicTrajectory::PLANNING_STAGE_ABORT_OVERTAKING;
-    m_cur_ego_planned_result_global.planning_stage_type =
-        nif_msgs::msg::DynamicTrajectory::PLANNING_STAGE_ABORT_OVERTAKING;
+    m_cur_ego_planned_result_body.planning_action_type =
+        nif_msgs::msg::DynamicTrajectory::PLANNING_ACTION_ABORT_OVERTAKING;
+    m_cur_ego_planned_result_global.planning_action_type =
+        nif_msgs::msg::DynamicTrajectory::PLANNING_ACTION_ABORT_OVERTAKING;
   }
 
   m_ego_traj_body_pub->publish(m_cur_ego_planned_result_body);
@@ -386,10 +628,52 @@ void DynamicPlannerNode::initTrajectory() {
   m_cur_ego_planned_result_global.trajectory_path = init_path_global;
 }
 
-bool DynamicPlannerNode::decisionMaking() {
-  bool overtake_flg;
+double
+DynamicPlannerNode::getProgress(const geometry_msgs::msg::Pose& pt_global_,
+                                pcl::KdTreeFLANN<pcl::PointXY>& target_tree_) {
+  double progress;
 
-  //
+  std::vector<int> pointId_vector;
+  std::vector<float> pointRadius_vector;
+  pcl::PointXY* searchPoint = new pcl::PointXY();
+  searchPoint->x = pt_global_.position.x;
+  searchPoint->y = pt_global_.position.y;
+  int index = 0;
 
-  return overtake_flg;
+  if (target_tree_.nearestKSearch(
+          *searchPoint, 1, pointId_vector, pointRadius_vector) > 0) {
+    index = pointId_vector[0];
+  } else {
+    // TODO : what happens?
+  }
+
+  return index * m_config_spline_interval;
+}
+
+pcl::PointCloud<pcl::PointXY>::Ptr
+DynamicPlannerNode::genPointCloudFromVec(vector<double>& x_,
+                                         vector<double>& y_) {
+  pcl::PointCloud<pcl::PointXY>::Ptr cloud(new pcl::PointCloud<pcl::PointXY>);
+
+  // Generate pointcloud data
+  cloud->width = x_.size();
+  cloud->height = 1;
+  cloud->points.resize(cloud->width * cloud->height);
+
+  for (std::size_t i = 0; i < cloud->size(); ++i) {
+    (*cloud)[i].x = x_[i];
+    (*cloud)[i].y = y_[i];
+  }
+  return cloud;
+}
+
+double DynamicPlannerNode::calcProgressDiff(
+    const geometry_msgs::msg::Pose& ego_pt_global_,
+    const geometry_msgs::msg::Pose& target_pt_global_,
+    pcl::KdTreeFLANN<pcl::PointXY>& target_tree_) {
+  auto ego_progress = getProgress(ego_pt_global_, target_tree_);
+  auto target_progress = getProgress(target_pt_global_, target_tree_);
+
+  // TODO : progress wrapping is needed!!!!!!!!!!!!!!!!!!!
+  return ego_progress - target_progress;
 }

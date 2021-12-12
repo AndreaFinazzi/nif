@@ -21,6 +21,7 @@
   <depend>nif_frame_id</depend>
   <depend>nif_common_nodes</depend>
   <depend>nif_planning_common</depend>
+  <depend>pcl_ros</depend>
   <depend>nif_opponent_prediction_nodes</depend>
 
   <depend>rclcpp</depend>

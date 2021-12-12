@@ -12,7 +12,15 @@ endif()
 
 # find dependencies
 find_package(ament_cmake_auto REQUIRED)
+find_package(PCL REQUIRED)
+find_package(yaml-cpp REQUIRED)
 ament_auto_find_build_dependencies()
+
+include_directories(
+  include
+  ${PCL_INCLUDE_DIRS}
+  ${YAML_CPP_INCLUDEDIR}
+)
 
 # Library
 ament_auto_add_library(${PROJECT_NAME} SHARED

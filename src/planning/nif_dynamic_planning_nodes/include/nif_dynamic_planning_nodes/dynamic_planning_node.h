@@ -8,7 +8,8 @@
 #ifndef ROS2MASTER_DYNAMIC_PLANNER_NODE_H
 #define ROS2MASTER_DYNAMIC_PLANNER_NODE_H
 
-#include "geometry_msgs/msg/pose_stamped.hpp"
+#include "geometry_msgs/msg/pose.hpp"
+#include "nav_msgs/msg/odometry.hpp"
 #include "nav_msgs/msg/path.hpp"
 #include "nif_common/constants.h"
 #include "nif_common/types.h"
@@ -26,6 +27,10 @@
 #include <string>
 #include <yaml-cpp/yaml.h>
 
+// pcl
+#include <pcl/kdtree/kdtree_flann.h>
+#include <pcl/point_cloud.h>
+
 using namespace std;
 
 namespace nif {
@@ -39,7 +44,7 @@ class DynamicPlannerNode : public nif::common::IBaseNode {
     LEFT,     // overtake to the left
     ESTOP     // emergency stop
   };
-  enum PLANNING_STAGE_TYPE {
+  enum PLANNING_ACTION_TYPE {
     DRIVING,           // Without overtaking, driving
     START_OVERTAKING,  // Start overtaking to the right or left. (Before merging
                        // to the another line)
@@ -70,8 +75,22 @@ public:
   void timer_callback();
   void publishTrajectory();
   void initTrajectory();
-
   bool setDrivingMode();
+
+  bool checkOverTake();
+
+  double getProgress(const geometry_msgs::msg::Pose& pt_global_,
+                     pcl::KdTreeFLANN<pcl::PointXY>& target_tree_);
+
+  double calcProgressDiff(
+      const geometry_msgs::msg::Pose& ego_pt_global_,
+      const geometry_msgs::msg::Pose& target_pt_global_,
+      pcl::KdTreeFLANN<pcl::PointXY>&
+          target_tree_); // negative : ego vehicle is in front of the vehicle
+                         // positive : target is in front of the ego vehicle
+
+  pcl::PointCloud<pcl::PointXY>::Ptr genPointCloudFromVec(vector<double>& x_,
+                                                          vector<double>& y_);
 
 private:
   // Opponent perception result (not prediction result)
@@ -118,20 +137,28 @@ private:
   bool m_overtake_allowed_flg; // Set by "system status manager". default : true
   bool m_emergency_flg;        // TODO : If emergency flag is true, then what?
 
-  PLANNING_DECISION_TYPE m_cur_decision_type;
-  PLANNING_DECISION_TYPE m_prev_decision_type;
+  PLANNING_DECISION_TYPE m_cur_decision;
+  PLANNING_DECISION_TYPE m_prev_decision;
 
-  PLANNING_STAGE_TYPE m_cur_overtaking_stage;
-  PLANNING_STAGE_TYPE m_prev_overtaking_stage;
+  PLANNING_ACTION_TYPE m_cur_overtaking_action;
+  PLANNING_ACTION_TYPE m_prev_overtaking_action;
 
   int m_num_overtaking_candidates; // number of lines for overtaking
   std::vector<nav_msgs::msg::Path> m_overtaking_candidates_path_vec;
+  std::vector<pcl::PointCloud<pcl::PointXY>::Ptr>
+      m_overtaking_candidates_path_pc_vec; // for kdtree search
+  std::vector<pcl::KdTreeFLANN<pcl::PointXY>>
+      m_overtaking_candidates_path_kdtree_vec;
   std::vector<std::string> m_overtaking_candidates_file_path_vec;
   std::vector<std::string> m_overtaking_candidates_alias_vec;
   std::vector<FrenetPathGenerator::CubicSpliner2DResult>
       m_overtaking_candidates_spline_data_vec;
+
   std::vector<double> m_racingline_x_vec, m_racingline_y_vec;
   nav_msgs::msg::Path m_racingline_path;
+  pcl::PointCloud<pcl::PointXY>::Ptr m_racingline_path_pc;
+  pcl::KdTreeFLANN<pcl::PointXY> m_racineline_path_kdtree;
+  FrenetPathGenerator::CubicSpliner2DResult m_racingline_spline_data;
 
   int m_planned_traj_len;
   int m_ego_cur_idx_in_planned_traj;
@@ -151,8 +178,12 @@ private:
   double m_config_merging_longitudinal_margin; // [m] longitudinal wise distance
                                                // margin to obey when starts
                                                // merging
+  double m_config_follow_enable_dist;          // [m]
+  double m_config_spline_interval;             // [m]
 
   shared_ptr<FrenetPathGenerator> m_frenet_generator_ptr;
+
+  nav_msgs::msg::Odometry m_ego_odom;
 };
 
 } // namespace planning
