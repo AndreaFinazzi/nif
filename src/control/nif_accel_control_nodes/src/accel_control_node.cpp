@@ -101,7 +101,7 @@ AccelControl::AccelControl() : Node("AccelControlNode") {
   this->declare_parameter("gear.shift_time_ms", 1000);
   this->declare_parameter("gear.track", "LVMS");
 
-  this->declare_parameter("engine.model_safety_factor", 1.2); // larger than 1.0
+  this->declare_parameter("engine.model_safety_factor", 1.0); // larger than 1.0
   this->declare_parameter("engine.safety_rpm_thres", 3000);
 
   this->declare_parameter("throttle.traction_enabled", true);
