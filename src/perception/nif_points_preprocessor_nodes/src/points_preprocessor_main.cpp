@@ -35,7 +35,7 @@ int32_t main(int32_t argc, char **argv) {
   // Use 2 threads
   // rclcpp::executors::SingleThreadedExecutor executor;
   rclcpp::executors::MultiThreadedExecutor executor(
-      rclcpp::executor::create_default_executor_arguments(), 3);
+      rclcpp::ExecutorOptions(), 3);
   try {
     RCLCPP_INFO(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
                "Instantiating PointsConcatFilterNode with name: %s",

@@ -11,7 +11,9 @@ from launch_ros.actions import Node
 
 IMS = 0
 LOR = 1
-LG_SVL = 2
+IMS_SIM = 2
+LVMS = 3
+LVMS_SIM = 4
 track = None
 
 # get which track we are at
@@ -21,8 +23,12 @@ if track_id == "IMS" or track_id == "ims":
     track = IMS
 elif track_id == "LOR" or track_id == "lor":
     track = LOR
-elif track_id == "LG_SVL" or track_id == "lg_svl":
-    track = LG_SVL
+elif track_id == "IMS_SIM" or track_id == "ims_sim":
+    track = IMS_SIM
+elif track_id == "LVMS" or track_id == "lvms":
+    track = LVMS
+elif track_id == "LVMS_SIM" or track_id == "lvms_sim":
+    track = LVMS_SIM
 else:
     raise RuntimeError("ERROR: Invalid track {}".format(track_id))
 

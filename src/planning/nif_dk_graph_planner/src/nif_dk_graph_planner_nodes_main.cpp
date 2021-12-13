@@ -22,7 +22,7 @@ int32_t main(int32_t argc, char **argv) {
 
   // rclcpp::executors::SingleThreadedExecutor executor;
   rclcpp::executors::MultiThreadedExecutor executor(
-      rclcpp::executor::create_default_executor_arguments(), 1);
+      rclcpp::ExecutorOptions(), 1);
   try {
     RCLCPP_INFO(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
                 "Instantiating DKGraphPlannerNode with name: %s", &node_name_1);

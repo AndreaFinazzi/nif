@@ -146,18 +146,21 @@ class GraphVisualizer:
 
 if __name__ == "__main__":
 
-    TRACK_NAME = 'IMS'
-    TRANSITION_FILE = 'transitions.ims.yaml'
-    ZONES_FILE = 'zones.ims.yaml'
+    TRACK_NAME = 'LVMS'
+    TRANSITION_FILE = 'transitions.lvms.yaml'
+    ZONES_FILE = 'zones.lvms.yaml'
 
     mission_manager_path = get_package_share_directory('nif_mission_manager_nodes')
     waypoint_manager_path = get_package_share_directory('nif_waypoint_manager_nodes')
 
     dot = graphviz.Digraph(comment='Mission Tree')   
 
+    raceline = os.path.join(waypoint_manager_path, 'maps',TRACK_NAME,'centerline.csv',)
     pit_wpt = os.path.join(waypoint_manager_path, 'maps',TRACK_NAME,'pit_lane.csv',)
-    raceline = os.path.join(waypoint_manager_path, 'maps',TRACK_NAME,'race_line.csv',)
-    wu_line = os.path.join(waypoint_manager_path, 'maps',TRACK_NAME,'warm_up_wpt.csv',)
+    wu_line = os.path.join(waypoint_manager_path, 'maps',TRACK_NAME,'race_line.csv',)
+    line_1 = os.path.join(waypoint_manager_path, 'maps',TRACK_NAME,'raceline.csv',)
+    line_2 = os.path.join(waypoint_manager_path, 'maps',TRACK_NAME,'right_side_center.csv',)
+    line_3 = os.path.join(waypoint_manager_path, 'maps',TRACK_NAME,'left_side_center.csv',)
 
     # raceline = os.path.join(waypoint_manager_path, 'inputs/traj_ltpl_cl',TRACK_NAME,'traj_race_cl.csv',)
     graph = os.path.join(waypoint_manager_path, 'inputs/track_offline_graphs',TRACK_NAME,'stored_graph.pckl')
@@ -181,17 +184,29 @@ if __name__ == "__main__":
 
             if mission_code_block.get("activation_area") and  mission_code_block.get("activation_area").get('active'):
                 bboxes = mission_code_block.get("activation_area").get("bboxes")
-                for box in bboxes:
-                    print(box)
-                    # Check whether x_min < x_max and y_min < y_max
-                    if (box[0] >= box[2] or box[1] >= box[3]):
-                        raise ValueError("BBox is malformed! MISSION", mission_code_block.get("mission_code"))
-                    
-                    box = patches.Rectangle((box[0], box[1]), # x_min, y_min
-                                            box[2] - box[0], # x-wise width
-                                            box[3] - box[1], # y-wise height
-                                            linewidth=1, edgecolor=(r, g, b), fc=(r, g, b, 0.3), label='MISSION BOX: ' + str(mission_code_block.get("mission_code")))
-                    ax.add_patch(box)
+                if bboxes:
+                    for box in bboxes:
+                        print(box)
+                        # Check whether x_min < x_max and y_min < y_max
+                        if (box[0] >= box[2] or box[1] >= box[3]):
+                            raise ValueError("BBox is malformed! MISSION", mission_code_block.get("mission_code"))
+                        
+                        box_patch = patches.Rectangle((box[0], box[1]), # x_min, y_min
+                                                box[2] - box[0], # x-wise width
+                                                box[3] - box[1], # y-wise height
+                                                linewidth=1, edgecolor=(r, g, b), fc=(r, g, b, 0.3), label='MISSION BOX: ' + str(mission_code_block.get("mission_code")))
+                        ax.add_patch(box_patch)
+
+                polygons = mission_code_block.get("activation_area").get("polygons")
+                if polygons:
+                    for pol in polygons:
+                        print(pol)
+                        xy = []
+                        for vertex in pol:
+                            xy.append([vertex['x'], vertex['y']])
+
+                        pol_patch = patches.Polygon(xy, linewidth=1, edgecolor=(r, g, b), fc=(r, g, b, 0.3), label='MISSION BOX: ' + str(mission_code_block.get("mission_code")))
+                        ax.add_patch(pol_patch)
 
     for i, zone_block in enumerate(zones_yaml.get("zones")):
         r = random.random()
@@ -204,26 +219,40 @@ if __name__ == "__main__":
             # Check whether x_min < x_max and y_min < y_max
             if (box[0] >= box[2] or box[1] >= box[3]):
                 raise ValueError("BBox is malformed! ZONE", zone_block.get("id"))
-            
-            box = patches.Rectangle((box[0], box[1]), # x_min, y_min
+
+            box_patch = patches.Rectangle((box[0], box[1]), # x_min, y_min
                                     box[2] - box[0], # x-wise width
                                     box[3] - box[1], # y-wise height
                                     linewidth=1, edgecolor=(r, g, b), fc=(r, g, b, 0.3), label='ZONE BOX: ' + str(zone_block.get("id")))
-            ax.add_patch(box)
+            ax.add_patch(box_patch)
+
+        if zone_block.get("polygon"):
+            polygon = zone_block.get("polygon")
+            print(polygon)
+            xy = []
+            for vertex in polygon:
+                xy.append([vertex['x'], vertex['y']])
+
+            polygon_patch = patches.Polygon(xy, linewidth=1, edgecolor=(r, g, b), fc=(r, g, b, 0.3), label='ZONE POLYGON: ' + str(zone_block.get("id")))
+            ax.add_patch(polygon_patch)
 
 
     print(pit_wpt)
     print(raceline)
 
-    WPTFileVisualizer(pit_wpt, "pit-in-entire")
-    WPTFileVisualizer(raceline, "race-line")
-    WPTFileVisualizer(wu_line, "warm-up-line")
+    WPTFileVisualizer(raceline, "centerline")
+    WPTFileVisualizer(pit_wpt, "pit_lane")
+    WPTFileVisualizer(wu_line, "race_line")
+    WPTFileVisualizer(line_1, "raceline")
+    WPTFileVisualizer(line_2, "right_side_center")
+    WPTFileVisualizer(line_3, "left_side_center")
 
     dot.view()
 
     # dot.render("missions_graph", view=True)
     # RaceLineFileVisualizer(raceline, "race-line")
     # GraphVisualizer(graph, "graph_node")
+    plt.scatter(647, -378, s=10)
     plt.axis('equal')
-    plt.grid()
+    plt.grid(which='minor')
     plt.show()

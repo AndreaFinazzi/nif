@@ -26,8 +26,10 @@ from launch_ros.actions import Node
 
 IMS = 0
 LOR = 1
-LG_SVL = 2
-track = LG_SVL
+IMS_SIM = 2
+LVMS = 3
+LVMS_SIM = 4
+track = LVMS_SIM
 
 def get_share_file(package_name, file_name):
     return os.path.join(get_package_share_directory(package_name), file_name)
@@ -189,7 +191,7 @@ def generate_launch_description():
         remappings=[
             ('out_desired_velocity', 'velocity_planner/des_vel'),
             ('in_reference_path', 'planning/path_global'),
-            ('in_ego_odometry', '/aw_localization/ekf/odom'),
+            ('in_ego_odometry', '/sensor/odom_ground_truth'),
             ('in_wheel_speed_report', 'raptor_dbw_interface/wheel_speed_report'),
             ('in_imu_data', 'novatel_bottom/imu/data'),
             ('in_steering_report', 'raptor_dbw_interface/steering_report'),
@@ -261,8 +263,12 @@ def generate_launch_description():
         global_params_file = 'params.sim.global.yaml'
     elif track == IMS:
         global_params_file = 'params.sim.global.yaml'
-    elif track == LG_SVL:
+    elif track == IMS_SIM:
         global_params_file = 'params.sim.global.yaml'
+    elif track == LVMS:
+        global_params_file = 'params.sim.global.yaml'
+    elif track == LVMS_SIM:
+        global_params_file = 'params_LVMS_SIM.global.yaml'
     else:
         raise RuntimeError("ERROR: invalid track provided: {}".format(track))
 
@@ -317,7 +323,7 @@ def generate_launch_description():
             get_package_share_directory("nif_waypoint_manager_nodes"),
             "config",
             "mission",
-            "lor_new.yaml",
+            "lor.yaml",
         ),
     )
 
@@ -326,7 +332,7 @@ def generate_launch_description():
             get_package_share_directory("nif_waypoint_manager_nodes"),
             "config",
             "mission",
-            "ims_new.yaml", 
+            "ims.yaml", 
         ),
     )
 
@@ -335,7 +341,25 @@ def generate_launch_description():
             get_package_share_directory("nif_waypoint_manager_nodes"),
             "config",
             "mission",
-            "lgsvl_new.yaml",   
+            "lgsvl.yaml",   
+        ),
+    )
+
+    wpt_config_file_lvms = (
+        os.path.join(
+            get_package_share_directory("nif_waypoint_manager_nodes"),
+            "config",
+            "mission",
+            "lvms.yaml",   
+        ),
+    )
+
+    wpt_config_file_lvms_sim = (
+        os.path.join(
+            get_package_share_directory("nif_waypoint_manager_nodes"),
+            "config",
+            "mission",
+            "lvms_sim.yaml",   
         ),
     )
 
@@ -345,8 +369,12 @@ def generate_launch_description():
         config_file = wpt_config_file_lor
     elif track == IMS:
         config_file = wpt_config_file_ims
-    elif track == LG_SVL:
+    elif track == IMS_SIM:
         config_file = wpt_config_file_svl
+    elif track == LVMS:
+        config_file = wpt_config_file_lvms
+    elif track == LVMS_SIM:
+        config_file = wpt_config_file_lvms_sim
     else:
         raise RuntimeError("ERROR: invalid track provided: {}".format(track))
 
@@ -364,7 +392,7 @@ def generate_launch_description():
             LaunchConfiguration('nif_waypoint_manager_param_file')
         ],
         remappings=[
-            ('topic_ego_odometry', '/aw_localization/ekf/odom'),
+            ('topic_ego_odometry', '/sensor/odom_ground_truth'),
             ('wpt_manager/maptrack_path/global', '/planning/path_global'),
             ('wpt_manager/maptrack_path/body', '/planning/path_body')
         ]
@@ -409,7 +437,7 @@ def generate_launch_description():
         nif_global_param_node,
         nif_system_status_manager_node,
         nif_csl_node,
-        nif_aw_localization_launch,
+        # nif_aw_localization_launch,
         nif_wall_node_launch_bg,
         robot_description_launch,
         nif_velocity_planning_node,

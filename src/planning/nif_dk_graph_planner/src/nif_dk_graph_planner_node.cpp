@@ -360,22 +360,44 @@ void DKGraphPlannerNode::CallbackOdometry(
     tf2::convert(msg->pose.pose.orientation, tf_quat);
     tf2::Matrix3x3 mat(tf_quat);
     mat.getRPY(m_veh_roll, m_veh_pitch, m_veh_yaw);
-    m_veh_speed = msg->twist.twist.linear.x;
+    m_veh_speed = msg->twist.twist.linear.x; // !Q: Be sure that odom.twist has linear velocity
 
-    double m_closest_x_in_racing_line, m_closest_y_in_racing_line;
-
+    double m_closest_x_in_racing_line, m_closest_y_in_racing_line; // !Q: m_* for local variable?
+  
     // // get target index from reference racing points
+    // i.e. get nearest neighbor in racing line and its index
     int current_idx;
     GetIntensityInfo(m_veh_x, m_veh_y, m_racingLineRefPoints,
                      m_closest_x_in_racing_line, m_closest_y_in_racing_line,
                      current_idx);
-    // get node id for planing
+    int current_node_id = 0;
+    // get node id for planning
     // Path from vehicle
 
     int current_layer_for_starting_node;
     GetIntensityInfo(m_veh_x, m_veh_y, m_FullIndexedPoints,
                      current_layer_for_starting_node); // to get current layer
 
+
+    // int prev_layer_for_starting_node = current_layer_for_starting_node -1;
+    // if(prev_layer_for_starting_node < 0)
+    //   prev_layer_for_starting_node = prev_layer_for_starting_node + m_LayerSize;
+
+    // prev_layer_for_starting_node = prev_layer_for_starting_node % m_LayerSize;
+
+
+    // for (auto way : m_WaysResister[prev_layer_for_starting_node]) {
+    //   if (way.start_node == 4)
+    //     current_node_id = way.first_node_id;
+
+    //   if(current_node_id == 0)
+    //   {
+    //     current_node_id = way.first_node_id;
+    //     break;
+    //   }
+    // }
+    
+    // !Q: m_FirstNodeContainPoints ???
     GetIntensityInfo(m_veh_x, m_veh_y, m_FirstNodeContainPoints,
                      m_ClosestFirstNodeId); // to get current first node id
 
@@ -397,7 +419,8 @@ void DKGraphPlannerNode::CallbackOdometry(
     GetIntensityInfo(target_x_in_racing_line, target_y_in_racing_line,
                      m_FirstNodeContainPoints, target_node_id);
     m_closestGoalNode = target_node_id;
-
+    
+    // !Q: Why?
     m_nearbyFirstNodes.clear();
     int search_num_idx = 30;
     int current_layer;
@@ -500,6 +523,7 @@ void DKGraphPlannerNode::MessagePublisher() {
   // }
 }
 
+// !Q: Can we call it get k-th nearest neighbor intensity? 
 void DKGraphPlannerNode::GetIntensityInfo(
     const double &x_in, const double &y_in,
     pcl::PointCloud<pcl::PointXYZI>::Ptr in_points, int &intensity_out) {
@@ -520,7 +544,9 @@ void DKGraphPlannerNode::GetIntensityInfo(
   double nearest_x_in_points, nearest_y_in_points;
   if (kdtree.nearestKSearch(searchPoint, K, pointIdxNKNSearch,
                             pointNKNSquaredDistance) > 0) {
-    for (size_t i = 0; i < pointIdxNKNSearch.size(); ++i) {
+                              
+    // !Q: Why do we cycle if then we return only the last one?
+    for (size_t i = 0; i < pointIdxNKNSearch.size(); ++i) { 
       nearest_x_in_points = in_points->points[pointIdxNKNSearch[i]].x;
       nearest_y_in_points = in_points->points[pointIdxNKNSearch[i]].y;
       intensity_out = in_points->points[pointIdxNKNSearch[i]].intensity;
@@ -556,11 +582,13 @@ void DKGraphPlannerNode::GetIntensityInfo(
   }
 }
 
+// !Q: Can we call it "get k-th nearest neighbor intensity"? 
 void DKGraphPlannerNode::GetIntensityInfo(
     const double &x_in, const double &y_in,
     pcl::PointCloud<pcl::PointXYZI>::Ptr in_points,
     double &nearest_x_in_points_out, double &nearest_y_in_points_out,
     int &intensity_out) {
+  
   if (in_points->points.empty())
     return;
 
@@ -571,13 +599,15 @@ void DKGraphPlannerNode::GetIntensityInfo(
   searchPoint.x = x_in;
   searchPoint.y = y_in;
 
-  int K = 1;
+  int K = 1; // Look for nearest neighbor
   std::vector<int> pointIdxNKNSearch(K);
   std::vector<float> pointNKNSquaredDistance(K);
 
   double nearest_x_in_points, nearest_y_in_points;
   if (kdtree.nearestKSearch(searchPoint, K, pointIdxNKNSearch,
                             pointNKNSquaredDistance) > 0) {
+    
+    // !Q: Why do we cycle if then we return only the last one? (Currently we look for nearest neighbor)
     for (size_t i = 0; i < pointIdxNKNSearch.size(); ++i) {
       nearest_x_in_points = in_points->points[pointIdxNKNSearch[i]].x;
       nearest_y_in_points = in_points->points[pointIdxNKNSearch[i]].y;
@@ -620,6 +650,7 @@ double DKGraphPlannerNode::getClosestDistance(
   return distance;
 }
 
+// !Q: The output of this one is not clear
 void DKGraphPlannerNode::getNearbyNodesFromLayer(
     const double &x_in, const double &y_in, const int &search_num_idx_in,
     pcl::PointCloud<pcl::PointXYZI>::Ptr points_in, int &current_layer_out,
@@ -703,19 +734,24 @@ void DKGraphPlannerNode::UpdateGraph() {
     return;
 
   int count = 0;
-  int nextLayer =
-      1 + m_currentLayer; // maximum current layer : 42 , layer size : 43
-  if (nextLayer > m_LayerSize - 1)
+  // maximum current layer : 42 , layer size : 43
+  int nextLayer = 1 + m_currentLayer; 
+  if(nextLayer > m_LayerSize - 1)
     nextLayer = nextLayer - m_LayerSize;
+
   int nextnextLayer = 1 + nextLayer;
   if (nextnextLayer > m_LayerSize - 1)
     nextnextLayer = nextnextLayer - m_LayerSize;
+  
+  // !Q: Cycle through nodes in the current layer? what's m_nearbyFirstNodes?
   m_CostPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
 
   for (auto nearbyNode : m_nearbyFirstNodes) {
     // std::cout << "----------------------\n";
-    auto first_node_in_nearby = nearbyNode.first; // first_node_id in nearby way
-    auto start_layer_in_nearby = nearbyNode.second; // start_layer in nearby way
+    auto first_node_in_nearby = nearbyNode.first; //first_node_id in nearby way
+    auto start_layer_in_nearby = nearbyNode.second; //start_layer in nearby way
+    // !Q: What's BestLayerXYArray ??
+    // !Q: What's m_WaysResister ??
     double best_layer_last_x = m_BestLayerXYArray[start_layer_in_nearby].first;
     double best_layer_last_y = m_BestLayerXYArray[start_layer_in_nearby].second;
     // std::cout << best_layer_last_x << ", " << best_layer_last_y << std::endl;
@@ -725,6 +761,8 @@ void DKGraphPlannerNode::UpdateGraph() {
       auto way_with_layer = m_WaysResister[start_layer_in_nearby][i];
       double cost_accumulated = 0;
       double cost_transient;
+
+      // !Q: could this be done offline?
       if (way.start_layer == nextnextLayer || way.start_layer == (nextLayer) ||
           way.start_layer == (m_currentLayer)) {
         cost_transient = sqrt(pow(way_with_layer.nodes[way.nodes.size() - 1].x -
@@ -823,8 +861,11 @@ void DKGraphPlannerNode::Planning() {
                       std::greater<std::pair<double, int>>>
       qu;
 
-  qu.push({0., m_StartNode}); // Put init node in the que
-  dist[m_StartNode] = 0.;     // Update value of start point as 0
+    qu.push({0., m_StartNode}); //Put init node in the que
+    dist[m_StartNode] = 0.; // Update value of start point as 0
+    // for(auto id : m_PlanningPat hNodes)
+    //   std::cout << "m_PredSuccMap: " << m_PredSuccMap[id] << std::endl;
+    // std::cout << m_graph[m_StartNode].size() << std::endl;
 
   m_PredSuccMap.clear();
   while (!qu.empty()) {
@@ -837,26 +878,58 @@ void DKGraphPlannerNode::Planning() {
 
     m_PlanningPathNodes.push_back(here);
 
-    if (here == m_closestGoalNode) {
-      // std::cout << "path finding!" << std::endl;
-      // m_PlanningPathNodes.pop_back();
-      break;
-    }
+      // !Q: What's up here?
+      if (here == m_closestGoalNode) {
+        // std::cout << "path finding!" << std::endl;
+        // m_PlanningPathNodes.pop_back();
+        break;
+      }
 
-    for (auto connected : m_graph[here]) {
-      int next = connected.id;
-      double nextcost = connected.cost * m_ref_gain +
-                        connected.collision_cost * m_collision_gain +
-                        connected.curvature_cost * m_curvature_gain +
-                        connected.transient_cost * m_transient_gain;
+      // !Q: Is `connected` the next node in the way?
+      for (auto connected : m_graph[here]) {
+        int next = connected.id;
+        double nextcost = connected.cost * m_ref_gain + 
+                          connected.collision_cost * m_collision_gain +
+                          connected.curvature_cost * m_curvature_gain +
+                          connected.transient_cost * m_transient_gain;
+        // connected.cost_close_to_vehicle;  
 
-      if (dist[next] > dist[here] + nextcost) {
-        dist[next] = dist[here] + nextcost;
-        qu.push({dist[next], next});
-        m_PredSuccMap[next] = here;
+        // std::cout << "connected.cost: " << connected.cost << std::endl;
+        // std::cout << "connected.collision_cost : " << connected.collision_cost << std::endl;
+        // std::cout << "connected.transient_cost : " << connected.transient_cost << std::endl;
+
+        if (dist[next] > dist[here] + nextcost) {
+          dist[next] = dist[here] + nextcost;
+          qu.push({dist[next], next});
+          m_PredSuccMap[next] = here;
+        }
       }
     }
-  }
+
+    // if(!m_PlanningPathNodes.empty())
+      // m_PlanningPathNodes.pop_front();
+
+    // std::cout << "--------------" << std::endl;
+    // for(auto id : m_PlanningPathNodes)
+    //   std::cout << "m_PredSuccMap: " <<m_PredSuccMap[id] << std::endl;
+
+    std::deque<int> FinalPathQue;
+    auto next = m_PredSuccMap[m_closestGoalNode];
+
+    // std::cout << "graph size: "<< m_graph.size() << std::endl;
+    // std::cout << "m_StartNode: " << m_StartNode << std::endl;
+    // std::cout <<"m_closestGoalNode: " << m_closestGoalNode << std::endl;
+    // std::cout << "next: "<<next << std::endl;
+    FinalPathQue.push_back(m_closestGoalNode);
+    FinalPathQue.push_back(next);
+    for (int i = 0; i < m_PlanningPathNodes.size(); i++) { // m_PredSuccMap
+      next = m_PredSuccMap[next];
+      FinalPathQue.push_back(next);
+    }
+    m_FinalNodes.clear(); // !Q: Clear node 0 from final nodes
+    for (auto final : FinalPathQue) {
+      if(final == 0)
+        continue;
 
   std::deque<int> FinalPathQue;
   auto next = m_PredSuccMap[m_closestGoalNode];
@@ -889,7 +962,7 @@ void DKGraphPlannerNode::ToPathMsg() {
 
   int count = 0;
   // Candidates Nodes
-  for (auto node_id : m_PlanningPathNodes) {
+  for (auto node_id : m_PlanningPathNodes) { // !Q: Need some insight here
     for (auto candidates : m_FirstNodeBasedResister[node_id]) {
       for (auto nd : candidates.nodes) {
         pcl::PointXYZI current_point;
@@ -911,7 +984,7 @@ void DKGraphPlannerNode::ToPathMsg() {
   pubCandidatesNodePoints->publish(CandidatesNodeCloudMsg);
 
   // Final Nodes
-  int cnt = 0;
+  int cnt = 0; // !Q: Need some insight here as well
   m_BestLayerArray.clear();
   m_BestLayerXYArray.clear();
   for (auto node_id : m_FinalNodes) {
@@ -939,11 +1012,11 @@ void DKGraphPlannerNode::ToPathMsg() {
                          final_id.nodes[final_id.nodes.size() - 1].y);
     }
   }
-  // BestLayer XY visualize(should be end of each ways)
-  pcl::PointCloud<pcl::PointXYZI>::Ptr best_xy_points(
-      new pcl::PointCloud<pcl::PointXYZI>);
+  // BestLayer XY visualize (should be end of each ways)
+  pcl::PointCloud<pcl::PointXYZI>::Ptr best_xy_points(new pcl::PointCloud<pcl::PointXYZI>);
   int cnt2 = 0;
-  for (auto xy : m_BestLayerXYArray) {
+  for(auto xy : m_BestLayerXYArray)
+  {
     pcl::PointXYZI point_buf;
     point_buf.x = xy.second.first;
     point_buf.y = xy.second.second;
@@ -1062,7 +1135,7 @@ void DKGraphPlannerNode::ToPathMsg() {
     RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 5000,
                          "Start node id : %d", m_StartNode);
   }
-
+  // Publish final path points (for visualization)
   sensor_msgs::msg::PointCloud2 FinalPathCloudMsg;
   if (!m_FinalPoints->points.empty())
     pcl::toROSMsg(*m_FinalPoints, FinalPathCloudMsg);
