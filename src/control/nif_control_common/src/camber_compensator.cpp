@@ -65,10 +65,16 @@ double CamberCompensator::getCamberCompensation()
   }
   case CAMBERCOMPESATORMODE::FIRST_ORDER:
   {
-    double lower_thres_vel = 20;
+    // Commented at Dec 10th (always right side of the waypoint in the low-speed range)
+    // double lower_thres_vel = 20;
+    // double comp_at_lower_thres = DEFAULT_MAX_COMPENSATE_MAG_DEG;
+    // double higher_thres_vel = 40;
+    // double comp_at_higher_thres = DEFAULT_MAX_COMPENSATE_MAG_DEG / 2.0;
+
+    double lower_thres_vel = 15;
     double comp_at_lower_thres = DEFAULT_MAX_COMPENSATE_MAG_DEG;
-    double higher_thres_vel = 40;
-    double comp_at_higher_thres = DEFAULT_MAX_COMPENSATE_MAG_DEG / 2.0;
+    double higher_thres_vel = 35;
+    double comp_at_higher_thres = DEFAULT_MIN_COMPENSATE_MAG_DEG;
 
     if (m_veh_speed < lower_thres_vel)
     {

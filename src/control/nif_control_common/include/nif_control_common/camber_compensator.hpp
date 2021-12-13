@@ -1,8 +1,12 @@
 #ifndef CAMBER_COMPENSATOR_H_
 #define CAMBER_COMPENSATOR_H_
 
-#define DEFAULT_MAX_COMPENSATE_MAG_DEG 4.0
-#define DEFAULT_CONST_COMPENSATE_MAG_DEG 2.0
+// Commented at Dec 10th (always right side of the waypoint in the low-speed range)
+// #define DEFAULT_MAX_COMPENSATE_MAG_DEG 4.0
+// #define DEFAULT_CONST_COMPENSATE_MAG_DEG 2.0
+#define DEFAULT_MAX_COMPENSATE_MAG_DEG 3.0
+#define DEFAULT_MIN_COMPENSATE_MAG_DEG 1.0
+#define DEFAULT_CONST_COMPENSATE_MAG_DEG 1.0
 #define DEFAULT_MAX_SPEED_MPS 60.0
 
 #include <iostream>
