@@ -402,7 +402,6 @@ void DKGraphPlannerNode::CallbackOdometry(
                      m_ClosestFirstNodeId); // to get current first node id
 
     // Path from racing line
-    int current_node_id = 0;
     GetIntensityInfo(m_closest_x_in_racing_line, m_closest_y_in_racing_line,
                      m_FirstNodeContainPoints, current_node_id);
 

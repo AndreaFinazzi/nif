@@ -8,6 +8,7 @@
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <nav_msgs/msg/odometry.hpp>
 #include <nav_msgs/msg/path.hpp>
+#include "nif_msgs/msg/dynamic_trajectory.hpp"
 
 #include <fstream>
 #include <iostream>
@@ -111,7 +112,7 @@ private:
       m_defender_vel_topic_name;
 
   // Publisher & topic name
-  rclcpp::Publisher<nif_msgs::msg::Trajectory>::SharedPtr
+  rclcpp::Publisher<nif_msgs::msg::DynamicTrajectory>::SharedPtr
       m_pub_predicted_trajectory;
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr
       m_pub_predicted_trajectory_vis;

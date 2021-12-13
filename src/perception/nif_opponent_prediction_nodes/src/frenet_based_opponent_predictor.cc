@@ -176,6 +176,7 @@ void FrenetBasedOpponentPredictor::calcOpponentProgress() {
       opponent_index = i;
     }
   }
+
   m_opponent_global_progress =
       (opponent_index * m_config_path_spline_interval * 1.0);
 
@@ -234,51 +235,48 @@ void FrenetBasedOpponentPredictor::predict() {
 
   // 2. Generate minimum jerk frenet path which is parallel to the
   // centerline
-  double left_margin_tmp = m_opponent_cte;
-  double right_margin_tmp = left_margin_tmp + 0.0001;
-  double width_tmp = 0.1;
   std::tuple<std::shared_ptr<FrenetPath>,
              std::vector<std::shared_ptr<FrenetPath>>>
       frenet_path_generation_result = m_frenet_generator_ptr->calc_frenet_paths(
-          m_opponent_cte,             // current_position_d
-          m_opponent_global_progress, // current_position_s
-          0.0,                        // current_velocity_d
-          m_defender_vel_mps,         // current_velocity_s
-          0.0,                        // current_acceleration_d
-          m_centerline_splined_model, // cubic_spliner_2D
-          m_config_prediction_horizon,
-          m_config_prediction_horizon + 0.01,
-          m_config_prediction_sampling_time,
-          left_margin_tmp,
-          right_margin_tmp,
-          width_tmp);
+          m_opponent_cte,                         // current_position_d
+          m_opponent_global_progress,             // current_position_s
+          0.0,                                    // current_velocity_d
+          m_defender_vel_mps,                     // current_velocity_s
+          0.0,                                    // current_acceleration_d
+          m_centerline_splined_model,             // cubic_spliner_2D
+          m_config_prediction_horizon,            // Prediction horizon
+          m_config_prediction_horizon + 0.01,     // Max max horizon (we want only one here)
+          m_config_prediction_sampling_time,      // 
+          m_opponent_cte,
+          m_opponent_cte + 0.01,
+          0.1);
 
   std::shared_ptr<FrenetPath>& predicted_frenet_path =
       std::get<0>(frenet_path_generation_result);
 
-  m_predicted_output_in_global.trajectory_pts.clear();
+  m_predicted_output_in_global.trajectory_path.poses.clear();
   m_predicted_output_in_global_vis.poses.clear();
 
+  nav_msgs::msg::Path traj_global;
   if (!predicted_frenet_path->points_x().empty()) {
+    traj_global.header.frame_id = common::frame_id::localization::ODOM;
+
     for (int i = 0; i < predicted_frenet_path->points_x().size(); i++) {
-      nif_msgs::msg::TrajectoryPoint tp;
-      geometry_msgs::msg::Pose ps;
+      geometry_msgs::msg::PoseStamped ps;
       std_msgs::msg::Header header;
       header.frame_id = common::frame_id::localization::ODOM;
-      ps.position.x = predicted_frenet_path->points_x()[i];
-      ps.position.y = predicted_frenet_path->points_y()[i];
 
-      tp.pose = ps;
-      tp.timestep = predicted_frenet_path->time()[i];
-
-      if (ps.position.x >= predicted_frenet_path->points_x()[0]) {
-        m_predicted_output_in_global.trajectory_pts.push_back(tp);
-        geometry_msgs::msg::PoseStamped p_st;
-        p_st.header = header;
-        p_st.pose = ps;
-        m_predicted_output_in_global_vis.poses.push_back(p_st);
-      }
+      ps.pose.position.x = predicted_frenet_path->points_x()[i];
+      ps.pose.position.y = predicted_frenet_path->points_y()[i];
+      traj_global.poses.push_back(ps);
     }
+
+    m_predicted_output_in_global.trajectory_path = traj_global;
+    m_predicted_output_in_global.trajectory_timestamp_array = predicted_frenet_path->time();
+    m_predicted_output_in_global.trajectory_type = nif_msgs::msg::DynamicTrajectory::TRAJECTORY_TYPE_PREDICTION;
+    m_predicted_output_in_global_vis = traj_global;
+
+    
   } else {
     std::cout << "predicted frenet path length is zero" << std::endl;
   }
