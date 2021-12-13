@@ -38,6 +38,7 @@
     <exec_depend>diagnostics</exec_depend>
 
     <exec_depend>nif_sensors</exec_depend>
+    <exec_depend>ros2_luminar</exec_depend>
 
     <exec_depend>bvs_common</exec_depend>
     <exec_depend>bvs_long_control</exec_depend>

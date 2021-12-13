@@ -145,11 +145,11 @@ def generate_launch_description():
         ],
     )
 
-    nif_telemetry_node = Node(
-        package='nif_telemetry',
-        executable='telemetry',
-        output='screen',
-    )
+    # nif_telemetry_node = Node(
+    #     package='nif_telemetry',
+    #     executable='telemetry',
+    #     output='screen',
+    # )
 
     # Localization
     nif_localization_launch = IncludeLaunchDescription(
@@ -190,9 +190,9 @@ def generate_launch_description():
         remappings=[
             ('in_control_cmd', '/control_pool/control_cmd'),
             ('in_override_control_cmd', '/control_pool/override_cmd'),
-            ('in_perception_steering', '/wall_following_steering_cmd'),
-            ('in_wall_distance_inner', '/detected_inner_distance'),
-            ('in_wall_distance_outer', '/detected_outer_distance'),
+            ('in_perception_steering', '/no'),
+            ('in_wall_distance_inner', '/no'),
+            ('in_wall_distance_outer', '/no'),
             ('out_control_cmd', '/control_safety_layer/out/control_cmd'),
             ('out_steering_control_cmd', '/joystick/steering_cmd'),
             ('out_accelerator_control_cmd', '/joystick/accelerator_cmd'),
@@ -217,7 +217,7 @@ def generate_launch_description():
         ],
         parameters=[{
             'max_ddes_vel_dt_default'   : 3.0,
-            'lateral_tire_model_factor' : 0.8,
+            'lateral_tire_model_factor' : 0.9,
         }]
     )
 
@@ -426,7 +426,7 @@ def generate_launch_description():
         socketcan_receiver_launch,
         socketcan_sender_launch,
         raptor_node,
-        nif_telemetry_node,
+        # nif_telemetry_node,
 
         nif_global_param_node,
         nif_system_status_manager_node,
