@@ -18,7 +18,6 @@ from launch import LaunchDescription
 from launch_ros.actions import LifecycleNode
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
-from launch.substitutions import TextSubstitution
 from launch.actions import EmitEvent
 from launch.actions import RegisterEventHandler
 from launch_ros.events.lifecycle import ChangeState
@@ -33,19 +32,13 @@ import os
 
 
 def generate_launch_description():
-    veh_id = os.environ.get('VEHICLE_ID')
-    if veh_id is None or not veh_id.isnumeric():
-        veh_id = '0'
-    
-    lidar_id = int('10{}20'.format(veh_id))
-
     share_dir = get_package_share_directory('nif_sensors')
-    parameter_file = LaunchConfiguration('params_file_f')
-    node_name = 'luminar_driver_f'
+    parameter_file = LaunchConfiguration('params_file')
+    node_name = 'luminar_driver_rr'
 
-    params_declare = DeclareLaunchArgument('params_file_f',
+    params_declare = DeclareLaunchArgument('params_file',
                                            default_value=os.path.join(
-                                               share_dir, 'ros2_luminar', 'params', 'h3_f.yaml'),
+                                               share_dir, 'params', 'h3_rr.yaml'),
                                            description='FPath to the ROS2 parameters file to use.')
 
     driver_node = LifecycleNode(package='ros2_luminar',
@@ -53,11 +46,7 @@ def generate_launch_description():
                                 name=node_name,
                                 output='screen',
                                 emulate_tty=True,
-                                parameters=[
-                                    parameter_file,
-                                {
-                                    'lidar_fingerprint' : lidar_id
-                                }],
+                                parameters=[parameter_file],
                                 namespace='/',
                                 )
 

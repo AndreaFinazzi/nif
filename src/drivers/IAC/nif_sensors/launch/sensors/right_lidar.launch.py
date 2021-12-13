@@ -39,13 +39,13 @@ def generate_launch_description():
     
     lidar_id = int('10{}21'.format(veh_id))
 
-    share_dir = get_package_share_directory('ros2_luminar')
+    share_dir = get_package_share_directory('nif_sensors')
     parameter_file = LaunchConfiguration('params_file_rr')
     node_name = 'luminar_driver_rr'
 
     params_declare = DeclareLaunchArgument('params_file_rr',
                                            default_value=os.path.join(
-                                               share_dir, 'params', 'h3_rr.yaml'),
+                                               share_dir, 'ros2_luminar', 'params', 'h3_rr.yaml'),
                                            description='FPath to the ROS2 parameters file to use.')
 
     driver_node = LifecycleNode(package='ros2_luminar',

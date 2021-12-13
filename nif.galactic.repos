@@ -14,11 +14,16 @@ repositories:
 #    url: https://gitlab.com/IACBaseSoftware/raptor-dbw-ros2.git
 #    version: master
 
-  src/external/official-novatel-driver:
+#   src/external/official-novatel-driver:
+#     type: git
+# #    url: https://oauth2:$GL_TOKEN@gitlab.com/IACBaseSoftware/official-novatel-driver.git
+#     url: https://$GH_TOKEN@github.com/PITT-MIT-IAC/official-novatel-driver.git
+#     version: galactic
+
+  src/external/ros2_luminar_drivers:
     type: git
-#    url: https://oauth2:$GL_TOKEN@gitlab.com/IACBaseSoftware/official-novatel-driver.git
-    url: https://$GH_TOKEN@github.com/PITT-MIT-IAC/official-novatel-driver.git
-    version: galactic
+    url: https://oauth2:$GL_TOKEN@gitlab.com/IACBaseSoftware/ros2_luminar_drivers.git
+    version: main
 
 #  src/external/bvs-meta:
 #    type: git
