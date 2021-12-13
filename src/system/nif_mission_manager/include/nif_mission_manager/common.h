@@ -7,12 +7,14 @@
 
 #include "yaml-cpp/yaml.h"
 #include "nif_common/types.h"
+#include "nif_utils/polygon_helper.h"
 
 #include <unordered_map>
 
 #define ASSERT(x) if( !(x) ) throw std::range_error("Assertion failed in yaml_cpp_adapter");
 
 using nif_msgs::msg::MissionStatus;
+using nif::utils::geometry::Point2D;
 
 namespace nif {
 namespace system {
@@ -24,6 +26,7 @@ namespace system {
 
     constexpr const char* ID_ACTIVATION_AREA = "activation_area";
     constexpr const char* ID_ACTIVATION_AREA_BOUNDING_BOXES = "bboxes";
+    constexpr const char* ID_ACTIVATION_AREA_POLYGONS = "polygons";
 
     constexpr const char* ID_ACTIVATION_VELOCITY = "activation_velocity";
     constexpr const char* ID_ACTIVATION_VELOCITY_RANGE = "range_mps";
@@ -40,6 +43,7 @@ namespace system {
     constexpr const char* ID_ZONES_LIST = "zones";
     constexpr const char* ID_ZONE_ID = "id";
     constexpr const char* ID_ZONE_BBOX = "bbox";
+    constexpr const char* ID_ZONE_POLYGON = "polygon";
 
     struct MissionCondition {
         bool active = false;
@@ -51,6 +55,25 @@ namespace system {
             const nif::common::msgs::Odometry &ego_odom,
             const MissionStatus::_max_velocity_mps_type &ego_velocity_mps) = 0;
     };
+
+    struct Polygon {
+        std::vector<Point2D> points;
+
+        bool isValid(
+            const MissionStatus::_mission_status_code_type &current_mission,
+            const MissionStatus::_mission_status_code_type &next_mission,
+            const nif::common::msgs::Odometry &ego_odom,
+            const MissionStatus::_max_velocity_mps_type &ego_velocity_mps)
+            {
+                return (
+                    nif::utils::geometry::poly::isInside(
+                        points, 
+                        points.size(), 
+                        {ego_odom.pose.pose.position.x, ego_odom.pose.pose.position.y})
+                );
+            }
+    };
+
 
     struct BBox {
         double x_min;
@@ -75,6 +98,7 @@ namespace system {
 
     struct MissionActivationArea : MissionCondition {
         std::vector<BBox> bounding_boxes;
+        std::vector<Polygon> polygons;
 
         virtual 
         bool isValid(
@@ -89,6 +113,12 @@ namespace system {
                 for (auto &&bbox : bounding_boxes)
                 {
                     is_valid = is_valid || bbox.isValid(
+                        current_mission, next_mission, ego_odom, ego_velocity_mps);
+                }
+                
+                for (auto &&polygon : polygons)
+                {
+                    is_valid = is_valid || polygon.isValid(
                         current_mission, next_mission, ego_odom, ego_velocity_mps);
                 }
                 return is_valid;
@@ -175,7 +205,13 @@ namespace system {
     struct TrackZone {
         // TODO collect MissionConditions in a dinamic collection, for flexibility
         track_zone_id_t id;
+        
+        bool has_bbox = false;
         BBox bbox;
+
+        bool has_polygon = false;
+        Polygon polygon;
+
 
         bool isValid(
             const MissionStatus::_mission_status_code_type &current_mission,
@@ -183,7 +219,11 @@ namespace system {
             const nif::common::msgs::Odometry &ego_odom,
             const MissionStatus::_max_velocity_mps_type &ego_velocity_mps)
             {
-                return this->bbox.isValid(current_mission, next_mission, ego_odom, ego_velocity_mps);
+                bool is_valid = 
+                    (has_bbox && this->bbox.isValid(current_mission, next_mission, ego_odom, ego_velocity_mps)) || 
+                    (has_polygon && this->polygon.isValid(current_mission, next_mission, ego_odom, ego_velocity_mps));
+                
+                return is_valid;
             }
     };
 

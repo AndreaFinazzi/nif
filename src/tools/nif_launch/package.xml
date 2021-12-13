@@ -12,6 +12,7 @@
     <exec_depend>ament_index_python</exec_depend>
     <exec_depend>nif_localization_nodes</exec_depend>
     <exec_depend>nif_aw_localization_nodes</exec_depend>
+    <exec_depend>nif_aw_localization_bestgnss_nodes</exec_depend>
     <exec_depend>nif_waypoint_manager_nodes</exec_depend>
     <exec_depend>nif_multilayer_planning_nodes</exec_depend>
     <exec_depend>nif_common_nodes</exec_depend>
@@ -35,6 +36,9 @@
     <exec_depend>ros2_socketcan</exec_depend>
     <exec_depend>raptor_dbw_can</exec_depend>
     <exec_depend>diagnostics</exec_depend>
+
+    <exec_depend>nif_sensors</exec_depend>
+    <exec_depend>ros2_luminar</exec_depend>
 
     <exec_depend>bvs_common</exec_depend>
     <exec_depend>bvs_long_control</exec_depend>

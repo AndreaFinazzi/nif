@@ -31,7 +31,7 @@
   <exec_depend>bvs_long_control</exec_depend>
   <exec_depend>bvs_localization</exec_depend>
   <exec_depend>camera-utils</exec_depend>
-  <!-- <exec_depend>avt_vimba_camera</exec_depend> -->
+  <exec_depend>avt_vimba_camera</exec_depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>

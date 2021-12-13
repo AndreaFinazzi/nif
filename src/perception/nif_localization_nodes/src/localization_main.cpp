@@ -35,7 +35,7 @@ int32_t main(int32_t argc, char **argv) {
   auto GLOBALMAP_NODE = std::make_shared<GlobalmapLoader>(node_name_4);
 
   rclcpp::executors::MultiThreadedExecutor executor(
-      rclcpp::executor::create_default_executor_arguments(), 3);
+      rclcpp::ExecutorOptions(), 3);
 
   try {
     // RCLCPP_INFO(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),

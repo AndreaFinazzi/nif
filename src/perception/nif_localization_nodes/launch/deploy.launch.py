@@ -8,22 +8,29 @@ from launch.substitutions import LaunchConfiguration
 from launch.conditions import IfCondition
 from launch_ros.actions import Node
 
+
 IMS = 0
 LOR = 1
+IMS_SIM = 2
+LVMS = 3
+LVMS_SIM = 4
 track = None
 
 # get which track we are at
 track_id = os.environ.get('TRACK').strip()
 
-if track_id == "IMS":
+if track_id == "IMS" or track_id == "ims":
     track = IMS
-elif track_id == "LOR":
+elif track_id == "LOR" or track_id == "lor":
     track = LOR
-elif track_id == "LG_SVL":
-    track = IMS
+elif track_id == "IMS_SIM" or track_id == "ims_sim":
+    track = IMS_SIM
+elif track_id == "LVMS" or track_id == "lvms":
+    track = LVMS
+elif track_id == "LVMS_SIM" or track_id == "lvms_sim":
+    track = LVMS_SIM
 else:
     raise RuntimeError("ERROR: Invalid track {}".format(track_id))
-
 
 def generate_launch_description():
     ns = ""
@@ -33,6 +40,8 @@ def generate_launch_description():
         track_subdir = "lor"
     elif track == IMS:
         track_subdir = "ims"
+    elif track == LVMS:
+        track_subdir = "lvms"
     else:
         raise RuntimeError("ERROR: invalid track provided: {}".format(track))
 
