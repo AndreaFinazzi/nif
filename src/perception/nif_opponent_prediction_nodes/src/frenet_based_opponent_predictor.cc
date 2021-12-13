@@ -16,6 +16,8 @@ FrenetBasedOpponentPredictor::FrenetBasedOpponentPredictor(
   // TODO
   m_opponent_status_topic_name = "SetPropoerTopicName";
   m_ego_status_topic_name = "SetPropoerTopicName";
+  m_predicted_trajectory_topic_name = "predicted_traj_topic_name";
+  m_predicted_trajectory_vis_topic_name = "predicted_traj_vis_topic_name";
 
   m_opponent_global_progress = 0.0;
   m_opponent_cte = 0.0;
@@ -106,6 +108,8 @@ FrenetBasedOpponentPredictor::FrenetBasedOpponentPredictor(
   m_pub_predicted_trajectory =
       this->create_publisher<common::msgs::NIF_Trajectory>(
           m_predicted_trajectory_topic_name, common::constants::QOS_PLANNING);
+  m_pub_predicted_trajectory_vis = this->create_publisher<nav_msgs::msg::Path>(
+      m_predicted_trajectory_vis_topic_name, common::constants::QOS_PLANNING);
 
   m_opponent_target_path_valid_flg = true;
   m_config_valid_flg = true;
@@ -122,10 +126,17 @@ void FrenetBasedOpponentPredictor::opponentStatusCallback(
     const common::msgs::PerceptionResult::SharedPtr msg) {
   m_opponent_status = *msg;
 
+  m_defender_vel_mps = msg->obj_velocity_in_local.linear.x +
+      m_ego_status.twist.twist.linear.x +
+      m_config_oppo_vel_bias_mps; // NOTE : should be mps / absolute vel
+
   // Do prediction when the oppponent's status is callbacked
   this->predict();
 
   // TODO: publish predicted trajectory
+
+  m_pub_predicted_trajectory->publish(m_predicted_output_in_global);
+  m_pub_predicted_trajectory_vis->publish(m_predicted_output_in_global_vis);
 }
 
 void FrenetBasedOpponentPredictor::calcOpponentProgress() {
@@ -134,6 +145,18 @@ void FrenetBasedOpponentPredictor::calcOpponentProgress() {
     std::cout << "center path is empty.." << std::endl;
   }
 
+  // TODO : opponent position (body to global)
+  nif_msgs::msg::Perception3D opponent_status_global;
+
+  geometry_msgs::msg::PoseStamped ps_local;
+  ps_local.pose = m_opponent_status.detection_result_3d.center;
+
+  auto global_ps = nif::common::utils::coordination::getPtBodytoGlobal(
+      m_ego_status, ps_local);
+
+  opponent_status_global = m_opponent_status;
+  opponent_status_global.detection_result_3d.center = global_ps.pose;
+
   // calc closest index
   double min_dist = common::constants::numeric::INF;
   int opponent_index = 0;
@@ -141,11 +164,13 @@ void FrenetBasedOpponentPredictor::calcOpponentProgress() {
     double path_x = m_centerline_path_x[i];
     double path_y = m_centerline_path_y[i];
 
-    double dist = sqrt(
-        pow(m_opponent_status.detection_result_3d.center.position.x - path_x,
-            2) +
-        pow(m_opponent_status.detection_result_3d.center.position.y - path_y,
-            2));
+    double dist =
+        sqrt(pow(opponent_status_global.detection_result_3d.center.position.x -
+                     path_x,
+                 2) +
+             pow(opponent_status_global.detection_result_3d.center.position.y -
+                     path_y,
+                 2));
     if (min_dist > dist) {
       min_dist = dist;
       opponent_index = i;
@@ -202,13 +227,13 @@ double FrenetBasedOpponentPredictor::calcProgress(
 }
 
 void FrenetBasedOpponentPredictor::predict() {
-  // TODO : prediction algorithm
   // 1. Calculate the opponent's progress
   // NOTE : Based on current detection result, it calculate the opponent's
-  // current position progress.
+  // current position progress and cross-track error
   this->calcOpponentProgress();
 
-  // 2. Generate minimum jerk frenet path to the reference path
+  // 2. Generate minimum jerk frenet path which is parallel to the
+  // centerline
   double left_margin_tmp = m_opponent_cte;
   double right_margin_tmp = left_margin_tmp + 0.0001;
   double width_tmp = 0.1;

@@ -86,7 +86,7 @@ private:
   double m_config_path_spline_interval;
   double m_config_prediction_horizon;
   double m_config_prediction_sampling_time;
-  double m_config_oppo_vel_bias_mps;
+  double m_config_oppo_vel_bias_mps = 0.5; // mps
   double m_defender_vel_mps; // assume that official provides the speed of
                              // defender
 
@@ -113,7 +113,10 @@ private:
   // Publisher & topic name
   rclcpp::Publisher<nif_msgs::msg::Trajectory>::SharedPtr
       m_pub_predicted_trajectory;
+  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr
+      m_pub_predicted_trajectory_vis;
   string m_predicted_trajectory_topic_name;
+  string m_predicted_trajectory_vis_topic_name;
 };
 } // namespace perception
 } // namespace nif
