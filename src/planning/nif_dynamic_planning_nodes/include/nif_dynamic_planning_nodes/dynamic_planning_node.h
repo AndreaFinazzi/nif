@@ -74,7 +74,7 @@ public:
 
   void timer_callback();
   void publishTrajectory();
-  void initTrajectory();
+  void initOutputTrajectory();
   bool setDrivingMode();
 
   bool checkOverTake();
@@ -82,12 +82,25 @@ public:
   double getProgress(const geometry_msgs::msg::Pose& pt_global_,
                      pcl::KdTreeFLANN<pcl::PointXY>& target_tree_);
 
+  double calcCTE(const geometry_msgs::msg::Pose& pt_global_,
+                 pcl::KdTreeFLANN<pcl::PointXY>& target_tree_,
+                 pcl::PointCloud<pcl::PointXY>::Ptr& pc_);
+
+  tuple<double, double>
+  calcProgressNCTE(const geometry_msgs::msg::Pose& pt_global_,
+                   pcl::KdTreeFLANN<pcl::PointXY>& target_tree_,
+                   pcl::PointCloud<pcl::PointXY>::Ptr& pc_);
+
   double calcProgressDiff(
       const geometry_msgs::msg::Pose& ego_pt_global_,
       const geometry_msgs::msg::Pose& target_pt_global_,
       pcl::KdTreeFLANN<pcl::PointXY>&
           target_tree_); // negative : ego vehicle is in front of the vehicle
                          // positive : target is in front of the ego vehicle
+
+  nav_msgs::msg::Path xyyawVec2Path(std::vector<double>& x_,
+                                    std::vector<double>& y_,
+                                    std::vector<double>& yaw_rad_);
 
   pcl::PointCloud<pcl::PointXY>::Ptr genPointCloudFromVec(vector<double>& x_,
                                                           vector<double>& y_);
@@ -154,6 +167,7 @@ private:
   std::vector<FrenetPathGenerator::CubicSpliner2DResult>
       m_overtaking_candidates_spline_data_vec;
 
+  std::string m_racingline_file_path;
   std::vector<double> m_racingline_x_vec, m_racingline_y_vec;
   nav_msgs::msg::Path m_racingline_path;
   pcl::PointCloud<pcl::PointXY>::Ptr m_racingline_path_pc;
@@ -162,6 +176,7 @@ private:
 
   int m_planned_traj_len;
   int m_ego_cur_idx_in_planned_traj;
+  nif_msgs::msg::DynamicTrajectory m_cur_planned_traj;
 
   std::string m_planning_config_file_path;
 

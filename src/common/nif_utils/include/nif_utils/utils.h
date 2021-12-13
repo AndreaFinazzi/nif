@@ -128,6 +128,9 @@ namespace coordination {
 
 inline double quat2yaw(geometry_msgs::msg::Quaternion& data);
 
+geometry_msgs::msg::Quaternion
+ToQuaternion(double yaw, double pitch, double roll);
+
 inline double angle_wrap(double diff);
 
 geometry_msgs::msg::PoseStamped

@@ -56,6 +56,28 @@ inline double nif::common::utils::coordination::quat2yaw(
                1 - 2 * (data.y * data.y + data.z * data.z));
 }
 
+geometry_msgs::msg::Quaternion nif::common::utils::coordination::ToQuaternion(
+    double yaw,
+    double pitch,
+    double roll) // yaw (Z), pitch (Y), roll (X)
+{
+  // Abbreviations for the various angular functions
+  double cy = cos(yaw * 0.5);
+  double sy = sin(yaw * 0.5);
+  double cp = cos(pitch * 0.5);
+  double sp = sin(pitch * 0.5);
+  double cr = cos(roll * 0.5);
+  double sr = sin(roll * 0.5);
+
+  geometry_msgs::msg::Quaternion q;
+  q.w = cr * cp * cy + sr * sp * sy;
+  q.x = sr * cp * cy - cr * sp * sy;
+  q.y = cr * sp * cy + sr * cp * sy;
+  q.z = cr * cp * sy - sr * sp * cy;
+
+  return q;
+}
+
 inline double nif::common::utils::coordination::angle_wrap(double diff) {
   diff = fmod(diff + nif::common::constants::numeric::PI,
               2 * nif::common::constants::numeric::PI);
