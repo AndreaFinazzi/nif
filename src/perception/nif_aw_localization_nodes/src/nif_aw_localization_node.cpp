@@ -34,9 +34,10 @@ AWLocalizationNode::AWLocalizationNode(const std::string &node_name)
 {
   this->declare_parameter<bool>("use_inspva_heading", bool(true));
   this->declare_parameter<double>("bestvel_heading_update_velocity_thres", double(2.));
-  this->declare_parameter<double>("heading_initial_guess", double(-215.));
-  this->declare_parameter<bool>("heading_initial_guess_enabled", bool(true));
-  this->declare_parameter<double>("heading_lowpass_gain", double(0.95));
+  this->declare_parameter<double>("heading_initial_guess_deg", double(-215.));
+  this->declare_parameter<bool>("heading_initial_guess_enabled", bool(false));
+  this->declare_parameter<double>("heading_lowpass_gain", double(0.90));
+  this->declare_parameter<double>("heading_heading2_offset_deg", double(+90.0));
   m_origin_lat = this->get_global_parameter<double>("coordinates.ecef_ref_lat");
   m_origin_lon = this->get_global_parameter<double>("coordinates.ecef_ref_lon");
 
@@ -85,11 +86,20 @@ AWLocalizationNode::AWLocalizationNode(const std::string &node_name)
   this->m_heading_initial_guess_enabled = 
       this->get_parameter("heading_initial_guess_enabled").as_bool();
   
-  if (this->m_heading_initial_guess_enabled)
-    this->m_best_heading =
-        this->get_parameter("heading_initial_guess").as_double();
+  if (this->m_heading_initial_guess_enabled) {
+    this->m_best_heading_rad =
+        this->get_parameter("heading_initial_guess_deg").as_double() * nif::common::constants::DEG2RAD;
+    
+    BestPosBottom.yaw = m_best_heading_rad;
+    BestPosTop.yaw = m_best_heading_rad;
+    m_heading_initialized = true;
+    m_heading_error = false;
+  }
   this->m_heading_lowpass_gain = 
     this->get_parameter("heading_lowpass_gain").as_double();
+
+  this->m_heading_heading2_offset_rad =
+    this->get_parameter("heading_heading2_offset_deg").as_double() * nif::common::constants::DEG2RAD;
 
   this->show_debug_info_ = this->get_parameter("show_debug_info").as_bool();
   this->ekf_rate_ = this->get_parameter("predict_frequency").as_double();
@@ -257,8 +267,10 @@ AWLocalizationNode::~AWLocalizationNode(){};
  */
 void AWLocalizationNode::timerCallback()
 {
-  if (bImuFirstCall && (bBOTTOM_GPS || bTOP_GPS) && (bBOTTOMGPSHeading || bTOPGPSHeading || m_heading_initial_guess_enabled)) {
+  if (bImuFirstCall && (bBOTTOM_GPS || bTOP_GPS) && (bBOTTOMGPSHeading || bTOPGPSHeading || m_heading_initialized)) {
     auto node_status = nif::common::NODE_ERROR;
+
+    // this->headingAgeCheck();
 
     m_localization_status.stamp = this->now();
     if(!bBOTTOM_GPS)
@@ -279,7 +291,6 @@ void AWLocalizationNode::timerCallback()
 
     predictKinematicsModel();
 
-
     VehPose_t BestCorrection;
     VehPose_t CurrentEstimated;
     CurrentEstimated.x = ekf_.getXelement(IDX::X);
@@ -291,20 +302,42 @@ void AWLocalizationNode::timerCallback()
     veh_vel_x = m_dVelolcity_X;
     veh_yaw_rate = m_dIMU_yaw_rate;
 
-    if (bBOTTOMGPSHeading && bTOPGPSHeading && 
-        (abs(m_dGPS_Heading - m_dGPS_TOP_Heading) < 10.) ) {
+    // Select best heading among top/bottom bestvel and heading2
+    if (!m_use_inspva_heading) {
 
-      m_best_heading = ( m_dGPS_Heading + m_dGPS_TOP_Heading ) / 2;
+      if (m_bestvel_bottom_valid ) {
+        m_best_heading_rad = m_dGPS_Heading; // Use only bottom
+        m_heading_error = false;
 
-    } else if (bBOTTOMGPSHeading) {
-      m_best_heading = m_dGPS_Heading;
+      } else if (m_bestvel_top_valid ) {
+        m_best_heading_rad = m_dGPS_TOP_Heading; // Use only top
+        m_heading_error = false;
 
-    } else if (bTOPGPSHeading) {
-      m_best_heading = m_dGPS_TOP_Heading;
+      } else if (m_heading2_valid) {
+        m_best_heading_rad = m_heading2_heading_rad; // Use only heading2
+  
+        BestPosBottom.yaw = m_best_heading_rad;
+        BestPosTop.yaw = m_best_heading_rad;
+
+        m_heading_error = false;
+
+      } else {
+        m_heading_error = true;
+      }
+
+      correction_yaw = m_best_heading_rad;
+    } else {
+      
+      if(bTOPGPSHeading)
+      {
+        correction_yaw = m_dGPS_TOP_Heading;
+      } else if (bBOTTOMGPSHeading)
+      {
+        correction_yaw = m_dGPS_Heading;
+      }
     }
-    
-    correction_yaw = m_best_heading;
-    m_localization_status.heading = m_best_heading;
+
+    m_localization_status.heading = correction_yaw;
 
     // standard deviation from novatel bottom/top
     double bottom_noise_total =
@@ -502,7 +535,12 @@ void AWLocalizationNode::timerCallback()
   {
     m_localization_status.localization_status_code =
             nif_msgs::msg::LocalizationStatus::UNCERTAINTY_TOO_HIGH;
-    m_localization_status.status = "UNCERTAINTY TOO_HIGH";
+    m_localization_status.status = "UNCERTAINTY_TOO_HIGH";
+    
+  } else if (m_heading_error) {
+    m_localization_status.localization_status_code =
+        nif_msgs::msg::LocalizationStatus::HEADING_ERROR;
+    m_localization_status.status = "HEADING_ERROR";
     
   }
 
@@ -723,23 +761,22 @@ void AWLocalizationNode::BOTTOMINSPVACallback(
     const novatel_oem7_msgs::msg::INSPVA::SharedPtr msg) {
 
   // TODO Motivate this 'minus' sign.
-  double yaw = (-msg->azimuth) * nif::common::constants::DEG2RAD;
-  if (yaw != 0.0 && yaw != m_prevYaw) {
+  double yaw_rad = (-msg->azimuth) * nif::common::constants::DEG2RAD;
+  if (yaw_rad != 0.0 && yaw_rad != m_prevYaw) {
     m_inspva_heading_init = true;
   }
 
   if (m_use_inspva_heading) {
     if (!m_inspva_heading_init) {
       // std::cout << "INSPVA HEADING IS NOT INITIALIZED" << std::endl;
-      m_prevYaw = yaw;
+      m_prevYaw = yaw_rad;
       return;
     }
 
-    m_dGPS_Heading = yaw;
+    m_dGPS_Heading = yaw_rad;
     m_dGPS_roll = msg->roll * nif::common::constants::DEG2RAD;
     bBOTTOMGPSHeading = true;
-    heading_flag = true;
-    BestPosBottom.yaw = yaw;
+    BestPosBottom.yaw = yaw_rad;
     BestPosBottom.novatel_ins_status = msg->status.status;
     BestPosBottom.quality_code_ok = BestPosBottom.novatel_ins_status == InertialSolutionStatus::INS_SOLUTION_GOOD;
   }
@@ -750,23 +787,22 @@ void AWLocalizationNode::TOPINSPVACallback(
     const novatel_oem7_msgs::msg::INSPVA::SharedPtr msg) {
   
   // TODO Motivate this 'minus' sign.
-  double yaw = (-msg->azimuth) * nif::common::constants::DEG2RAD; 
+  double yaw_rad = (-msg->azimuth) * nif::common::constants::DEG2RAD; 
 
-  if (yaw != 0.0 && yaw != m_prevTOPYaw) {
+  if (yaw_rad != 0.0 && yaw_rad != m_prevTOPYaw) {
     m_top_inspva_heading_init = true;
   }
 
   if (m_use_inspva_heading) {
     if (!m_top_inspva_heading_init) {
-      m_prevTOPYaw = yaw;
+      m_prevTOPYaw = yaw_rad;
       return;
     }
 
-    m_dGPS_TOP_Heading = yaw;
+    m_dGPS_TOP_Heading = yaw_rad;
     m_dGPS_TOP_roll = msg->roll * nif::common::constants::DEG2RAD;
     bTOPGPSHeading = true;
-    heading_flag = true;
-    BestPosTop.yaw = yaw;
+    BestPosTop.yaw = yaw_rad;
     BestPosTop.novatel_ins_status = msg->status.status;
     BestPosTop.quality_code_ok = BestPosTop.novatel_ins_status == InertialSolutionStatus::INS_SOLUTION_GOOD;
   }
@@ -774,7 +810,9 @@ void AWLocalizationNode::TOPINSPVACallback(
 
 void AWLocalizationNode::BOTTOMBESTVELCallback(
     const novatel_oem7_msgs::msg::BESTVEL::SharedPtr msg) {
-  double yaw = (-msg->trk_gnd) * nif::common::constants::DEG2RAD;
+  bestvel_time_last_update = std::move(msg->header.stamp);
+
+  double yaw_rad = (-msg->trk_gnd) * nif::common::constants::DEG2RAD;
 
   if (m_top_inspva_heading_init) { // Always false if use_inspva_heading=false
     return;
@@ -787,12 +825,16 @@ void AWLocalizationNode::BOTTOMBESTVELCallback(
   if (m_dVelolcity_X > m_bestvel_heading_update_thres &&
       ( (!m_inspva_heading_init && m_use_inspva_heading) || !m_use_inspva_heading ) ) // INSPVA HEADING BACK UP SOLUTITON
   {
-    m_dGPS_Heading =  this->m_heading_lowpass_gain * yaw + 
-                        (1 - this->m_heading_lowpass_gain) * m_dGPS_Heading_prev;
+    // m_dGPS_Heading =  this->m_heading_lowpass_gain * yaw_rad + 
+    //                     (1 - this->m_heading_lowpass_gain) * m_dGPS_Heading_prev;
+    m_dGPS_Heading = yaw_rad;
     m_dGPS_Heading_prev = m_dGPS_Heading;
-    BestPosBottom.yaw = yaw;
+    BestPosBottom.yaw = yaw_rad;
     bBOTTOMGPSHeading = true;
-    heading_flag = true;
+    m_bestvel_bottom_valid = true;
+    m_heading_initialized = true;
+  } else {
+    m_bestvel_bottom_valid = false;
   }
   // TODO !WARNING! What happen if velocity < threshold?
 
@@ -803,7 +845,8 @@ void AWLocalizationNode::BOTTOMBESTVELCallback(
 
 void AWLocalizationNode::TOPBESTVELCallback(
     const novatel_oem7_msgs::msg::BESTVEL::SharedPtr msg) {
-  double yaw = (-msg->trk_gnd) * nif::common::constants::DEG2RAD;
+  top_bestvel_time_last_update = std::move(msg->header.stamp);
+  double yaw_rad = (-msg->trk_gnd) * nif::common::constants::DEG2RAD;
 
   if (m_top_inspva_heading_init) { // Always false if use_inspva_heading=false
     return;
@@ -816,12 +859,17 @@ void AWLocalizationNode::TOPBESTVELCallback(
   if (m_dVelolcity_X > m_bestvel_heading_update_thres &&
       ( (!m_inspva_heading_init && m_use_inspva_heading) || !m_use_inspva_heading ) ) // INSPVA HEADING BACK UP SOLUTITON
   {
-    m_dGPS_TOP_Heading =  this->m_heading_lowpass_gain * yaw + 
-                        (1 - this->m_heading_lowpass_gain) * m_dGPS_TOP_Heading_prev;
+    // m_dGPS_TOP_Heading =  this->m_heading_lowpass_gain * yaw_rad + 
+    //                     (1 - this->m_heading_lowpass_gain) * m_dGPS_TOP_Heading_prev;
+    m_dGPS_TOP_Heading = yaw_rad;
     m_dGPS_TOP_Heading_prev = m_dGPS_TOP_Heading;    
-    BestPosTop.yaw = yaw;
+    BestPosTop.yaw = yaw_rad;
     bBOTTOMGPSHeading = true;
-    heading_flag = true;
+    m_bestvel_top_valid = true;
+    m_heading_initialized = true;
+  } else {
+    // Neither HEADING2 nor BESTVEL are valid
+    m_bestvel_top_valid = false;
   }
   // TODO !WARNING! What happen if velocity < threshold?
 
@@ -832,17 +880,24 @@ void AWLocalizationNode::TOPBESTVELCallback(
 
 void AWLocalizationNode::HEADING2Callback(
     const novatel_oem7_msgs::msg::HEADING2::SharedPtr msg) {
-      // HEADING2 from top comes 180 off wrt trck_gnd((no minus))
-  double yaw = (msg->heading) * nif::common::constants::DEG2RAD;
+  heading2_time_last_update = std::move(msg->header.stamp);
+  double yaw_rad = (-msg->heading) * nif::common::constants::DEG2RAD;
 
   if (m_top_inspva_heading_init) { // Always false if use_inspva_heading=false
     return;
   }
 
   // // HEADING2 used only for initial guess (if stddev is low enough)
-  if ( !(bBOTTOMGPSHeading || bTOPGPSHeading )  &&
-        msg->heading_stdev > 0. && msg->heading_stdev < 2.0)
-    m_best_heading = yaw;
+  if (  m_dVelolcity_X <= m_bestvel_heading_update_thres && !m_use_inspva_heading &&
+        msg->heading_stdev > 0. && msg->heading_stdev < 2.0 ) {
+
+    m_heading2_heading_rad = yaw_rad + this->m_heading_heading2_offset_rad;
+
+    m_heading_initialized = true;
+    m_heading2_valid = true;
+  } else {
+    m_heading2_valid = false;
+  }
 
 }
 
@@ -1591,4 +1646,23 @@ void AWLocalizationNode::publishEstimateResult()
 double AWLocalizationNode::normalizeYaw(const double& yaw)
 {
   return std::atan2(std::sin(yaw), std::cos(yaw));
+}
+
+/*
+ * MUST remain pull-down only, as other checks are made in each callback.
+ */
+void AWLocalizationNode::headingAgeCheck() {
+  auto now = this->now();
+
+  if (!bBOTTOMGPSHeading || now - bestvel_time_last_update > gps_timeout) {
+    m_bestvel_bottom_valid = false;
+  }
+
+  if (!bTOPGPSHeading || now - top_bestvel_time_last_update > gps_timeout) {
+    m_bestvel_top_valid = false;
+  }
+
+  if (m_heading2_valid || now - heading2_time_last_update > gps_timeout) {
+    m_heading2_valid = false;
+  }
 }

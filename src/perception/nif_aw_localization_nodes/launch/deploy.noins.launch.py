@@ -69,7 +69,13 @@ def generate_launch_description():
                 },
                 emulate_tty=True,
                 parameters=[
-                    LaunchConfiguration('nif_aw_localization_param_file')
+                    LaunchConfiguration('nif_aw_localization_param_file'),
+                    {
+                        "bestvel_heading_update_velocity_thres" : 3.0,
+                        "heading_initial_guess_enabled" : False,
+                        "heading_initial_guess_deg"     : -215.0,
+                        "heading_heading2_offset_deg"   : +90.0
+                    }
                 ],
                 remappings=[
                     # Current set : Bottom INS Disabled // Top INS Enabled
