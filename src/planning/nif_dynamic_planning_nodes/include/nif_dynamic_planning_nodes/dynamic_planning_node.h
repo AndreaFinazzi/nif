@@ -105,6 +105,9 @@ public:
   pcl::PointCloud<pcl::PointXY>::Ptr genPointCloudFromVec(vector<double>& x_,
                                                           vector<double>& y_);
 
+  void registerPath(nav_msgs::msg::Path& frenet_segment_,
+                    nav_msgs::msg::Path& origin_path_);
+
 private:
   // Opponent perception result (not prediction result)
   rclcpp::Subscription<nif_msgs::msg::Perception3D>::SharedPtr m_det_sub;
