@@ -14,7 +14,7 @@ MissionManagerNode::MissionManagerNode(
             nif::common::NodeType::SYSTEM, 
             std::chrono::milliseconds(50)) {
 //    Initialize to false
-    this->declare_parameter("timeout_rc_flag_summary_s", 10);
+    this->declare_parameter("timeout_rc_flag_summary_s", 20);
     this->declare_parameter("timeout_velocity_ms", 1500);
 
     this->declare_parameter("velocity.zero", 0.0);
