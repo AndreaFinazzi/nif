@@ -2,6 +2,11 @@
 #define FRENET_PATH_GENERATOR_H_
 
 #include "nav_msgs/msg/path.hpp"
+#include "nif_msgs/msg/dynamic_trajectory.hpp"
+
+#include "geometry_msgs/msg/pose_stamped.hpp"
+#include "nif_utils/utils.h"
+
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/Eigen>
 #include <float.h>
@@ -28,6 +33,9 @@ public:
                      std::vector<double>,
                      std::shared_ptr<CubicSpliner2D>>
       CubicSpliner2DResult_w_progress;
+
+  typedef std::tuple<std::vector<double>, std::vector<double>>
+      SplineVelProfiler;
 
   FrenetPathGenerator() {}
   ~FrenetPathGenerator() {}
@@ -68,6 +76,11 @@ public:
   CubicSpliner2DResult_w_progress
   apply_cubic_spliner_from_nav_path(nav_msgs::msg::Path& path_,
                                     double spline_interval);
+
+  nif_msgs::msg::DynamicTrajectory
+  convert_paht_to_traj_curv(nav_msgs::msg::Path& path_,
+                            double max_lateral_acceleration_,
+                            double spline_interval_);
 
   CubicSpliner2DResult
   apply_cubic_spliner_w_current_pose(std::vector<double>& points_x,

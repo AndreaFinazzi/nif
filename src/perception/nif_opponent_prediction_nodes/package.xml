@@ -18,7 +18,6 @@
   <depend>nif_msgs</depend>
   <depend>std_msgs</depend>
   <depend>nav_msgs</depend>
-  <depend>nif_utils</depend>
   <depend>visualization_msgs</depend>
   <depend>rcutils</depend>
   <depend>nif_frame_id</depend>
