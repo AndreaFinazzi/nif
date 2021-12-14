@@ -1,6 +1,7 @@
 #ifndef FRENET_PATH_GENERATOR_H_
 #define FRENET_PATH_GENERATOR_H_
 
+#include "nav_msgs/msg/path.hpp"
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/Eigen>
 #include <float.h>
@@ -19,6 +20,14 @@ public:
                      std::vector<double>,
                      std::shared_ptr<CubicSpliner2D>>
       CubicSpliner2DResult;
+
+  typedef std::tuple<std::vector<double>,
+                     std::vector<double>,
+                     std::vector<double>,
+                     std::vector<double>,
+                     std::vector<double>,
+                     std::shared_ptr<CubicSpliner2D>>
+      CubicSpliner2DResult_w_progress;
 
   FrenetPathGenerator() {}
   ~FrenetPathGenerator() {}
@@ -55,6 +64,10 @@ public:
   CubicSpliner2DResult apply_cubic_spliner(std::vector<double>& points_x,
                                            std::vector<double>& points_y,
                                            double spline_interval);
+
+  CubicSpliner2DResult_w_progress
+  apply_cubic_spliner_from_nav_path(nav_msgs::msg::Path& path_,
+                                    double spline_interval);
 
   CubicSpliner2DResult
   apply_cubic_spliner_w_current_pose(std::vector<double>& points_x,

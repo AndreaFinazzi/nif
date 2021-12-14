@@ -677,6 +677,55 @@ FrenetPathGenerator::apply_cubic_spliner(std::vector<double>& points_x,
                          cubic_spliner_2D);
 }
 
+FrenetPathGenerator::CubicSpliner2DResult_w_progress
+FrenetPathGenerator::apply_cubic_spliner_from_nav_path(
+    nav_msgs::msg::Path& path_, double spline_interval = 1.0) {
+  vector<double> points_x, points_y;
+
+  for (int i = 0; i < path_.poses.size(); i++) {
+    points_x.push_back(path_.poses[i].pose.position.x);
+    points_y.push_back(path_.poses[i].pose.position.y);
+  }
+
+  std::shared_ptr<CubicSpliner2D> cubic_spliner_2D(
+      new CubicSpliner2D(points_x, points_y));
+
+  std::vector<double> cubic_spliner_x;
+  std::vector<double> cubic_spliner_y;
+  std::vector<double> cubic_spliner_yaw;
+  std::vector<double> cubic_spliner_curvature;
+  std::vector<double> cubic_spliner_s;
+
+  double point_s = 0.0;
+  double point_s_end = cubic_spliner_2D->points_s().back();
+
+  while (point_s < point_s_end) {
+    std::tuple<double, double> position =
+        cubic_spliner_2D->calculate_position(point_s);
+
+    double point_x = std::get<0>(position);
+    double point_y = std::get<1>(position);
+
+    double yaw = cubic_spliner_2D->calculate_yaw(point_s);
+
+    double curvature = cubic_spliner_2D->calculate_curvature(point_s);
+
+    cubic_spliner_x.push_back(point_x);
+    cubic_spliner_y.push_back(point_y);
+    cubic_spliner_yaw.push_back(yaw);
+    cubic_spliner_curvature.push_back(curvature);
+    cubic_spliner_s.push_back(point_s);
+
+    point_s += spline_interval;
+  }
+  return std::make_tuple(cubic_spliner_x,
+                         cubic_spliner_y,
+                         cubic_spliner_yaw,
+                         cubic_spliner_curvature,
+                         cubic_spliner_s,
+                         cubic_spliner_2D);
+}
+
 FrenetPathGenerator::CubicSpliner2DResult
 FrenetPathGenerator::apply_cubic_spliner_w_current_pose(
     std::vector<double>& points_x,
