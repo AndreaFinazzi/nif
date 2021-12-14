@@ -311,6 +311,20 @@ void DynamicPlannerNode::timer_callback() {
     // DECION AND ACITION
     //////////////////////
 
+    // Before comparing the progress, plan the frenet trajectory to the racing
+    // line.
+    auto ego_fp_racingline = this->getFrenetToRacingLine();
+
+    // velocity profiling the ego_frenetpath_to_racingline
+    // TODO : velocity_profiling
+    // Based on frenet path's and waypoint's curvatures, we can implement the
+    // velocity profiler here.
+    // Let's assume that the output of velocity profiler is a
+    // nif_msgs::msg::DynamicTrajectory which is the same format of the
+    // prediction node.
+
+    //
+
     auto progress_diff = calcProgressDiff(m_ego_odom.pose.pose,
                                           m_cur_det.detection_result_3d.center,
                                           m_racineline_path_kdtree);
@@ -403,29 +417,7 @@ void DynamicPlannerNode::timer_callback() {
           m_cur_overtaking_action = PLANNING_ACTION_TYPE::FINISH_OVERTAKING;
           // TODO : assign path, merging path is needed
           // Generate trajectory segment from current odom to racing line.
-          auto progressNcte = calcProgressNCTE(m_ego_odom.pose.pose,
-                                               m_racineline_path_kdtree,
-                                               m_racingline_path_pc);
-
-          std::tuple<std::shared_ptr<FrenetPath>,
-                     std::vector<std::shared_ptr<FrenetPath>>>
-              frenet_path_generation_result =
-                  m_frenet_generator_ptr->calc_frenet_paths(
-                      get<1>(progressNcte),            // current_position_d
-                      get<0>(progressNcte),            // current_position_s
-                      0.0,                             // current_velocity_d
-                      m_ego_odom.twist.twist.linear.x, // current_velocity_s
-                      0.0,                             // current_acceleration_d
-                      get<4>(m_racingline_spline_data), // cubic_spliner_2D
-                      m_config_planning_horizon,
-                      m_config_planning_horizon + 0.01,
-                      m_config_planning_dt,
-                      0.0,    // left margin
-                      0.0001, // right margin
-                      0.1);   // sampling width dt
-
-          std::shared_ptr<FrenetPath>& predicted_frenet_path =
-              std::get<0>(frenet_path_generation_result);
+          auto predicted_frenet_path = this->getFrenetToRacingLine();
 
           m_cur_ego_planned_result_body.trajectory_path.poses.clear();
           m_cur_ego_planned_result_global.trajectory_path.poses.clear();
@@ -885,4 +877,39 @@ tuple<double, double> DynamicPlannerNode::calcProgressNCTE(
   }
 
   return std::make_tuple(progress, cte);
+}
+
+std::shared_ptr<FrenetPath> DynamicPlannerNode::getFrenetToRacingLine() {
+  // Generate trajectory segment from current odom to racing line.
+  auto progressNcte = calcProgressNCTE(
+      m_ego_odom.pose.pose, m_racineline_path_kdtree, m_racingline_path_pc);
+
+  std::tuple<std::shared_ptr<FrenetPath>,
+             std::vector<std::shared_ptr<FrenetPath>>>
+      frenet_path_generation_result = m_frenet_generator_ptr->calc_frenet_paths(
+          get<1>(progressNcte),             // current_position_d
+          get<0>(progressNcte),             // current_position_s
+          0.0,                              // current_velocity_d
+          m_ego_odom.twist.twist.linear.x,  // current_velocity_s
+          0.0,                              // current_acceleration_d
+          get<4>(m_racingline_spline_data), // cubic_spliner_2D
+          m_config_planning_horizon,
+          m_config_planning_horizon + 0.01,
+          m_config_planning_dt,
+          0.0,
+          0.0001,
+          0.1);
+
+  //   std::shared_ptr<FrenetPath>& predicted_frenet_path =
+  //       std::get<0>(frenet_path_generation_result);
+  return std::get<0>(frenet_path_generation_result);
+}
+
+double DynamicPlannerNode::calcProgressDiff(
+    const nif_msgs::msg::DynamicTrajectory& ego_traj_,
+    const nif_msgs::msg::DynamicTrajectory& oppo_traj_,
+    pcl::KdTreeFLANN<pcl::PointXY>& target_tree_) {
+  // Checking items
+  // 1. Collision
+  // 2. At the specific
 }

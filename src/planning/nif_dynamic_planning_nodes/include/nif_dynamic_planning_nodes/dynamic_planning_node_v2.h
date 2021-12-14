@@ -24,7 +24,9 @@
 #include "rclcpp/rclcpp.hpp"
 #include "rcutils/error_handling.h"
 #include "std_msgs/msg/float32.hpp"
+#include <math.h>
 #include <string>
+#include <vector>
 #include <yaml-cpp/yaml.h>
 
 // pcl
@@ -73,6 +75,7 @@ public:
   loadCSVfile(const std::string& wpt_file_path_);
 
   void timer_callback();
+  void timer_callback_v2();
   void publishTrajectory();
   void initOutputTrajectory();
   bool setDrivingMode();
@@ -81,6 +84,14 @@ public:
 
   double getProgress(const geometry_msgs::msg::Pose& pt_global_,
                      pcl::KdTreeFLANN<pcl::PointXY>& target_tree_);
+
+  double getProgress(const double& pt_x_,
+                     const double& pt_y_,
+                     pcl::KdTreeFLANN<pcl::PointXY>& target_tree_);
+
+  double getCurIdx(const double& pt_x_,
+                   const double& pt_y_,
+                   pcl::KdTreeFLANN<pcl::PointXY>& target_tree_);
 
   double calcCTE(const geometry_msgs::msg::Pose& pt_global_,
                  pcl::KdTreeFLANN<pcl::PointXY>& target_tree_,
@@ -105,6 +116,8 @@ public:
   pcl::PointCloud<pcl::PointXY>::Ptr genPointCloudFromVec(vector<double>& x_,
                                                           vector<double>& y_);
 
+  int calcCurIdxFromDynamicTraj(const nif_msgs::msg::DynamicTrajectory& msg);
+
   void registerPath(nav_msgs::msg::Path& frenet_segment_,
                     nav_msgs::msg::Path& origin_path_);
 
@@ -113,6 +126,25 @@ public:
   double calcProgressDiff(const nif_msgs::msg::DynamicTrajectory& ego_traj_,
                           const nif_msgs::msg::DynamicTrajectory& oppo_traj_,
                           pcl::KdTreeFLANN<pcl::PointXY>& target_tree_);
+
+  bool collisionCheckBTWtrajs(
+      const nif_msgs::msg::DynamicTrajectory& ego_traj_,
+      const nif_msgs::msg::DynamicTrajectory& oppo_traj_,
+      const double collision_dist_boundary,
+      const double
+          collision_time_boundary); // if there is collision, return true.
+
+  bool collisionCheckBTWtrajsNFrenet(
+      std::shared_ptr<FrenetPath> ego_frenet_traj_,
+      const nif_msgs::msg::DynamicTrajectory& oppo_traj_,
+      const double collision_dist_boundary,
+      const double
+          collision_time_boundary); // if there is collision, return true.
+
+  nif_msgs::msg::DynamicTrajectory
+  stitchFrenetToPath(std::shared_ptr<FrenetPath>& frenet_segment_,
+                     pcl::KdTreeFLANN<pcl::PointXY>& target_tree_,
+                     nav_msgs::msg::Path& target_path_);
 
 private:
   // Opponent perception result (not prediction result)
@@ -175,6 +207,8 @@ private:
   std::vector<std::string> m_overtaking_candidates_alias_vec;
   std::vector<FrenetPathGenerator::CubicSpliner2DResult>
       m_overtaking_candidates_spline_data_vec;
+  std::vector<std::shared_ptr<CubicSpliner2D>>
+      m_overtaking_candidates_spline_model_vec;
 
   std::string m_racingline_file_path;
   std::vector<double> m_racingline_x_vec, m_racingline_y_vec;
@@ -183,9 +217,10 @@ private:
   pcl::KdTreeFLANN<pcl::PointXY> m_racineline_path_kdtree;
   FrenetPathGenerator::CubicSpliner2DResult m_racingline_spline_data;
 
+  // OUTPUT
   int m_planned_traj_len;
   int m_ego_cur_idx_in_planned_traj;
-  nif_msgs::msg::DynamicTrajectory m_cur_planned_traj;
+  nif_msgs::msg::DynamicTrajectory m_cur_planned_traj; // full path
 
   std::string m_planning_config_file_path;
 

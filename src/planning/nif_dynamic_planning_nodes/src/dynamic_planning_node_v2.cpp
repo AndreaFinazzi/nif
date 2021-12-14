@@ -5,8 +5,8 @@
 // Created by usrg on 6/24/21.
 //
 
+#include "nif_dynamic_planning_nodes/dynamic_planning_node_v2.h"
 #include "nif_common/constants.h"
-#include "nif_dynamic_planning_nodes/dynamic_planning_node.h"
 #include "nif_utils/utils.h"
 #include "rcutils/error_handling.h"
 #include <stdlib.h>
@@ -59,6 +59,7 @@ DynamicPlannerNode::DynamicPlannerNode(const std::string& node_name_,
         path_x_vec, path_y_vec, m_config_spline_interval);
 
     m_overtaking_candidates_spline_data_vec.push_back(splined_result);
+    m_overtaking_candidates_spline_model_vec.push_back(get<4>(splined_result));
 
     auto pc =
         genPointCloudFromVec(get<0>(splined_result), get<1>(splined_result));
@@ -311,7 +312,19 @@ void DynamicPlannerNode::timer_callback() {
     // DECION AND ACITION
     //////////////////////
 
-    // Before comparing the progress
+    // Before comparing the progress, plan the frenet trajectory to the racing
+    // line.
+    auto ego_fp_racingline = this->getFrenetToRacingLine();
+
+    // velocity profiling the ego_frenetpath_to_racingline
+    // TODO : velocity_profiling
+    // Based on frenet path's and waypoint's curvatures, we can implement the
+    // velocity profiler here.
+    // Let's assume that the output of velocity profiler is a
+    // nif_msgs::msg::DynamicTrajectory which is the same format of the
+    // prediction node.
+
+    //
 
     auto progress_diff = calcProgressDiff(m_ego_odom.pose.pose,
                                           m_cur_det.detection_result_3d.center,
@@ -405,29 +418,7 @@ void DynamicPlannerNode::timer_callback() {
           m_cur_overtaking_action = PLANNING_ACTION_TYPE::FINISH_OVERTAKING;
           // TODO : assign path, merging path is needed
           // Generate trajectory segment from current odom to racing line.
-          auto progressNcte = calcProgressNCTE(m_ego_odom.pose.pose,
-                                               m_racineline_path_kdtree,
-                                               m_racingline_path_pc);
-
-          std::tuple<std::shared_ptr<FrenetPath>,
-                     std::vector<std::shared_ptr<FrenetPath>>>
-              frenet_path_generation_result =
-                  m_frenet_generator_ptr->calc_frenet_paths(
-                      get<1>(progressNcte),            // current_position_d
-                      get<0>(progressNcte),            // current_position_s
-                      0.0,                             // current_velocity_d
-                      m_ego_odom.twist.twist.linear.x, // current_velocity_s
-                      0.0,                             // current_acceleration_d
-                      get<4>(m_racingline_spline_data), // cubic_spliner_2D
-                      m_config_planning_horizon,
-                      m_config_planning_horizon + 0.01,
-                      m_config_planning_dt,
-                      0.0,    // left margin
-                      0.0001, // right margin
-                      0.1);   // sampling width dt
-
-          std::shared_ptr<FrenetPath>& predicted_frenet_path =
-              std::get<0>(frenet_path_generation_result);
+          auto predicted_frenet_path = this->getFrenetToRacingLine();
 
           m_cur_ego_planned_result_body.trajectory_path.poses.clear();
           m_cur_ego_planned_result_global.trajectory_path.poses.clear();
@@ -632,75 +623,220 @@ void DynamicPlannerNode::timer_callback() {
   publishTrajectory();
 }
 
+void DynamicPlannerNode ::timer_callback_v2() {
+  // step -1 : Calculate the current index (on the previous output)
+  // step 0 : check previous result (just checking the collision at the moment.
+  // Do we have to compute the progress agian? )
+  //  step 0 out : boolean (keep current plan or not)
+
+  // if you dont keep the previous plan,
+  // step 1.1 : Generate the frenet candidates to all wpt
+  // step 1.2 : Filer out colliding trajectories
+  // step 1.2-1 : if all path cancled, stop (not publishing anything)
+  // step 1.2 out : Set of non-colliding trajectories
+  // step 1.3 : Calculate the progress for each trajectory
+  // step 1.3-1 : Choose one trajectory based on certain cost/progress function
+  // step 1-4 : Stitch frenet candidate with static waypoints
+  // step 1-5 : Update current trajectory
+  // step 1-6 : Publish
+
+  /*
+  START FROM HERE
+  */
+
+  // step -1
+  m_ego_cur_idx_in_planned_traj = calcCurIdxFromDynamicTraj(m_cur_planned_traj);
+
+  // step 0
+  // Velocity profiling (do with the curvature based as a start point)
+  double max_lateral_acceleration = 2.0;
+  double spline_interval = 1.0;
+  auto ego_traj = m_frenet_generator_ptr->convert_paht_to_traj_curv(
+      m_cur_planned_traj.trajectory_path,
+      max_lateral_acceleration,
+      spline_interval); // 2.0 -> max_lateral_acceleration_ , 1.0 ->
+                        // spline_interval_
+
+  // collision check btw two trajectories
+  double overlap_checking_dist_bound =
+      4.0; // TODO : With this criteria, we can not make 20m longitudinal wise
+           // gap when we overtake.
+  double overlap_checking_time_bound = 1.0;
+  auto is_collision = collisionCheckBTWtrajs(ego_traj,
+                                             m_cur_oppo_pred_result,
+                                             overlap_checking_dist_bound,
+                                             overlap_checking_time_bound);
+
+  if (!is_collision) {
+    // keep current planned traj
+  } else {
+    vector<std::shared_ptr<FrenetPath>> collision_free_frenet_vec;
+    vector<int> collision_free_frenet_index_vec;
+
+    for (int path_candidate_idx = 0;
+         path_candidate_idx < m_overtaking_candidates_path_vec.size();
+         path_candidate_idx++) {
+      // step 1.1 : Generate the frenet candidates to all wpt
+      auto progressNcte = calcProgressNCTE(
+          m_ego_odom.pose.pose,
+          m_overtaking_candidates_path_kdtree_vec[path_candidate_idx],
+          m_overtaking_candidates_path_pc_vec[path_candidate_idx]);
+
+      std::tuple<std::shared_ptr<FrenetPath>,
+                 std::vector<std::shared_ptr<FrenetPath>>>
+          frenet_path_generation_result =
+              m_frenet_generator_ptr->calc_frenet_paths(
+                  get<1>(progressNcte),            // current_position_d
+                  get<0>(progressNcte),            // current_position_s
+                  0.0,                             // current_velocity_d
+                  m_ego_odom.twist.twist.linear.x, // current_velocity_s
+                  0.0,                             // current_acceleration_d
+                  m_overtaking_candidates_spline_model_vec
+                      [path_candidate_idx], // cubic_spliner_2D
+                  m_config_planning_horizon,
+                  m_config_planning_horizon + 0.01,
+                  m_config_planning_dt,
+                  0.0,
+                  0.0001,
+                  0.1);
+
+      std::shared_ptr<FrenetPath> frenet_candidate =
+          std::get<0>(frenet_path_generation_result);
+
+      auto is_collision =
+          collisionCheckBTWtrajsNFrenet(frenet_candidate,
+                                        m_cur_oppo_pred_result,
+                                        overlap_checking_dist_bound,
+                                        overlap_checking_time_bound);
+
+      if (!is_collision) {
+        collision_free_frenet_vec.push_back(frenet_candidate);
+        collision_free_frenet_index_vec.push_back(path_candidate_idx);
+      }
+    }
+
+    // step 1.2-1 : if all path cancled, stop
+    if (collision_free_frenet_vec.empty()) {
+      // (not publishing anything)
+      return;
+    } else {
+      // step 1.3 : Calculate the progress for each trajectory
+      vector<double> collision_free_frenet_progress_vec;
+
+      for (int collision_free_frenet_idx = 0;
+           collision_free_frenet_idx < collision_free_frenet_vec.size();
+           collision_free_frenet_idx++) {
+        auto progress =
+            getProgress(collision_free_frenet_vec[collision_free_frenet_idx]
+                            ->points_x()[-1],
+                        collision_free_frenet_vec[collision_free_frenet_idx]
+                            ->points_y()[-1],
+                        m_racineline_path_kdtree);
+
+        // At the moment, we only care about the progress.
+        // TODO : progress wrapping
+
+        collision_free_frenet_progress_vec.push_back(progress);
+      }
+
+      auto maximum_progress_frenet_idx =
+          std::max_element(collision_free_frenet_progress_vec.begin(),
+                           collision_free_frenet_progress_vec.end()) -
+          collision_free_frenet_progress_vec.begin();
+
+      auto stitch_target_path_candidate_idx =
+          collision_free_frenet_index_vec[maximum_progress_frenet_idx];
+
+      // step 1-4 : Stitch frenet candidate with static waypoints
+
+      auto stitch_frenet_segment = collision_free_frenet_vec
+          [maximum_progress_frenet_idx]; // std::shared_ptr<FrenetPath>
+      auto stitch_target_path_candidate = m_overtaking_candidates_path_vec
+          [stitch_target_path_candidate_idx]; // nav_msgs::msg::Path
+
+      // step 1-5 : Update current trajectory
+      m_cur_planned_traj = stitchFrenetToPath(
+          stitch_frenet_segment,
+          m_overtaking_candidates_path_kdtree_vec
+              [stitch_target_path_candidate_idx],
+          m_overtaking_candidates_path_vec[stitch_target_path_candidate_idx]);
+
+      // step 1-6 : Publish
+    }
+  }
+}
 void DynamicPlannerNode::publishTrajectory() {
-  m_cur_ego_planned_result_body.header.stamp = this->now();
-  m_cur_ego_planned_result_global.header.stamp = this->now();
+  // m_cur_ego_planned_result_body.header.stamp = this->now();
+  // m_cur_ego_planned_result_global.header.stamp = this->now();
 
-  m_cur_ego_planned_result_body.trajectory_type =
-      nif_msgs::msg::DynamicTrajectory::TRAJECTORY_TYPE_PLANNING;
-  m_cur_ego_planned_result_global.trajectory_type =
-      nif_msgs::msg::DynamicTrajectory::TRAJECTORY_TYPE_PLANNING;
+  // m_cur_ego_planned_result_body.trajectory_type =
+  //     nif_msgs::msg::DynamicTrajectory::TRAJECTORY_TYPE_PLANNING;
+  // m_cur_ego_planned_result_global.trajectory_type =
+  //     nif_msgs::msg::DynamicTrajectory::TRAJECTORY_TYPE_PLANNING;
 
-  if (m_cur_decision == PLANNING_DECISION_TYPE::STRAIGHT) {
-    m_cur_ego_planned_result_body.planning_decision_type =
-        nif_msgs::msg::DynamicTrajectory::PLANNING_DECISION_TYPE_STRAIGHT;
-    m_cur_ego_planned_result_global.planning_decision_type =
-        nif_msgs::msg::DynamicTrajectory::PLANNING_DECISION_TYPE_STRAIGHT;
-  } else if (m_cur_decision == PLANNING_DECISION_TYPE::FOLLOW) {
-    m_cur_ego_planned_result_body.planning_decision_type =
-        nif_msgs::msg::DynamicTrajectory::PLANNING_DECISION_TYPE_FOLLOW;
-    m_cur_ego_planned_result_global.planning_decision_type =
-        nif_msgs::msg::DynamicTrajectory::PLANNING_DECISION_TYPE_FOLLOW;
-  } else if (m_cur_decision == PLANNING_DECISION_TYPE::RIGHT) {
-    m_cur_ego_planned_result_body.planning_decision_type =
-        nif_msgs::msg::DynamicTrajectory::PLANNING_DECISION_TYPE_RIGHT;
-    m_cur_ego_planned_result_global.planning_decision_type =
-        nif_msgs::msg::DynamicTrajectory::PLANNING_DECISION_TYPE_RIGHT;
-  } else if (m_cur_decision == PLANNING_DECISION_TYPE::LEFT) {
-    m_cur_ego_planned_result_body.planning_decision_type =
-        nif_msgs::msg::DynamicTrajectory::PLANNING_DECISION_TYPE_LEFT;
-    m_cur_ego_planned_result_global.planning_decision_type =
-        nif_msgs::msg::DynamicTrajectory::PLANNING_DECISION_TYPE_LEFT;
-  } else {
-    // defualt : estop
-    m_cur_ego_planned_result_body.planning_decision_type =
-        nif_msgs::msg::DynamicTrajectory::PLANNING_DECISION_TYPE_ESTOP;
-    m_cur_ego_planned_result_global.planning_decision_type =
-        nif_msgs::msg::DynamicTrajectory::PLANNING_DECISION_TYPE_ESTOP;
-  }
+  // if (m_cur_decision == PLANNING_DECISION_TYPE::STRAIGHT) {
+  //   m_cur_ego_planned_result_body.planning_decision_type =
+  //       nif_msgs::msg::DynamicTrajectory::PLANNING_DECISION_TYPE_STRAIGHT;
+  //   m_cur_ego_planned_result_global.planning_decision_type =
+  //       nif_msgs::msg::DynamicTrajectory::PLANNING_DECISION_TYPE_STRAIGHT;
+  // } else if (m_cur_decision == PLANNING_DECISION_TYPE::FOLLOW) {
+  //   m_cur_ego_planned_result_body.planning_decision_type =
+  //       nif_msgs::msg::DynamicTrajectory::PLANNING_DECISION_TYPE_FOLLOW;
+  //   m_cur_ego_planned_result_global.planning_decision_type =
+  //       nif_msgs::msg::DynamicTrajectory::PLANNING_DECISION_TYPE_FOLLOW;
+  // } else if (m_cur_decision == PLANNING_DECISION_TYPE::RIGHT) {
+  //   m_cur_ego_planned_result_body.planning_decision_type =
+  //       nif_msgs::msg::DynamicTrajectory::PLANNING_DECISION_TYPE_RIGHT;
+  //   m_cur_ego_planned_result_global.planning_decision_type =
+  //       nif_msgs::msg::DynamicTrajectory::PLANNING_DECISION_TYPE_RIGHT;
+  // } else if (m_cur_decision == PLANNING_DECISION_TYPE::LEFT) {
+  //   m_cur_ego_planned_result_body.planning_decision_type =
+  //       nif_msgs::msg::DynamicTrajectory::PLANNING_DECISION_TYPE_LEFT;
+  //   m_cur_ego_planned_result_global.planning_decision_type =
+  //       nif_msgs::msg::DynamicTrajectory::PLANNING_DECISION_TYPE_LEFT;
+  // } else {
+  //   bool collisionCheckBTWtrajs(
+  //       const nif_msgs::msg::DynamicTrajectory& ego_traj_,
+  //       const nif_msgs::msg::DynamicTrajectory& oppo_traj_,
+  //       const double collision_dist_boundary,
+  //       const double collision_time_boundary); // if there is collision,
+  //       return
+  //                                              // true.PE::DRIVING) {
+  //   m_cur_ego_planned_result_body.planning_action_type =
+  //       nif_msgs::msg::DynamicTrajectory::PLANNING_ACTION_DRIVING;
+  //   m_cur_ego_planned_result_global.planning_action_type =
+  //       nif_msgs::msg::DynamicTrajectory::PLANNING_ACTION_DRIVING;
+  // }
+  // else if (m_cur_overtaking_action == PLANNING_ACTION_TYPE::START_OVERTAKING)
+  // {
+  //   m_cur_ego_planned_result_body.planning_action_type =
+  //       nif_msgs::msg::DynamicTrajectory::PLANNING_ACTION_START_OVERTAKING;
+  //   m_cur_ego_planned_result_global.planning_action_type =
+  //       nif_msgs::msg::DynamicTrajectory::PLANNING_ACTION_START_OVERTAKING;
+  // }
+  // else if (m_cur_overtaking_action == PLANNING_ACTION_TYPE::SIDE_BY_SIDE) {
+  //   m_cur_ego_planned_result_body.planning_action_type =
+  //       nif_msgs::msg::DynamicTrajectory::PLANNING_ACTION_SIDE_BY_SIDE;
+  //   m_cur_ego_planned_result_global.planning_action_type =
+  //       nif_msgs::msg::DynamicTrajectory::PLANNING_ACTION_SIDE_BY_SIDE;
+  // }
+  // else if (m_cur_overtaking_action ==
+  // PLANNING_ACTION_TYPE::FINISH_OVERTAKING) {
+  //   m_cur_ego_planned_result_body.planning_action_type =
+  //       nif_msgs::msg::DynamicTrajectory::PLANNING_ACTION_START_OVERTAKING;
+  //   m_cur_ego_planned_result_global.planning_action_type =
+  //       nif_msgs::msg::DynamicTrajectory::PLANNING_ACTION_START_OVERTAKING;
+  // }
+  // else {
+  //   // defualt : ABORT_OVERTAKING
+  //   m_cur_ego_planned_result_body.planning_action_type =
+  //       nif_msgs::msg::DynamicTrajectory::PLANNING_ACTION_ABORT_OVERTAKING;
+  //   m_cur_ego_planned_result_global.planning_action_type =
+  //       nif_msgs::msg::DynamicTrajectory::PLANNING_ACTION_ABORT_OVERTAKING;
+  // }
 
-  if (m_cur_overtaking_action == PLANNING_ACTION_TYPE::DRIVING) {
-    m_cur_ego_planned_result_body.planning_action_type =
-        nif_msgs::msg::DynamicTrajectory::PLANNING_ACTION_DRIVING;
-    m_cur_ego_planned_result_global.planning_action_type =
-        nif_msgs::msg::DynamicTrajectory::PLANNING_ACTION_DRIVING;
-  } else if (m_cur_overtaking_action ==
-             PLANNING_ACTION_TYPE::START_OVERTAKING) {
-    m_cur_ego_planned_result_body.planning_action_type =
-        nif_msgs::msg::DynamicTrajectory::PLANNING_ACTION_START_OVERTAKING;
-    m_cur_ego_planned_result_global.planning_action_type =
-        nif_msgs::msg::DynamicTrajectory::PLANNING_ACTION_START_OVERTAKING;
-  } else if (m_cur_overtaking_action == PLANNING_ACTION_TYPE::SIDE_BY_SIDE) {
-    m_cur_ego_planned_result_body.planning_action_type =
-        nif_msgs::msg::DynamicTrajectory::PLANNING_ACTION_SIDE_BY_SIDE;
-    m_cur_ego_planned_result_global.planning_action_type =
-        nif_msgs::msg::DynamicTrajectory::PLANNING_ACTION_SIDE_BY_SIDE;
-  } else if (m_cur_overtaking_action ==
-             PLANNING_ACTION_TYPE::FINISH_OVERTAKING) {
-    m_cur_ego_planned_result_body.planning_action_type =
-        nif_msgs::msg::DynamicTrajectory::PLANNING_ACTION_START_OVERTAKING;
-    m_cur_ego_planned_result_global.planning_action_type =
-        nif_msgs::msg::DynamicTrajectory::PLANNING_ACTION_START_OVERTAKING;
-  } else {
-    // defualt : ABORT_OVERTAKING
-    m_cur_ego_planned_result_body.planning_action_type =
-        nif_msgs::msg::DynamicTrajectory::PLANNING_ACTION_ABORT_OVERTAKING;
-    m_cur_ego_planned_result_global.planning_action_type =
-        nif_msgs::msg::DynamicTrajectory::PLANNING_ACTION_ABORT_OVERTAKING;
-  }
-
-  m_ego_traj_body_pub->publish(m_cur_ego_planned_result_body);
-  m_ego_traj_global_pub->publish(m_cur_ego_planned_result_global);
+  // m_ego_traj_body_pub->publish(m_cur_ego_planned_result_body);
+  // m_ego_traj_global_pub->publish(m_cur_ego_planned_result_global);
 }
 
 void DynamicPlannerNode::initOutputTrajectory() {
@@ -753,6 +889,52 @@ DynamicPlannerNode::getProgress(const geometry_msgs::msg::Pose& pt_global_,
   }
 
   return index * m_config_spline_interval;
+}
+
+double
+DynamicPlannerNode::getProgress(const double& pt_x_,
+                                const double& pt_y_,
+                                pcl::KdTreeFLANN<pcl::PointXY>& target_tree_) {
+  double progress;
+
+  std::vector<int> pointId_vector;
+  std::vector<float> pointRadius_vector;
+  pcl::PointXY* searchPoint = new pcl::PointXY();
+  searchPoint->x = pt_x_;
+  searchPoint->y = pt_y_;
+  int index = 0;
+
+  if (target_tree_.nearestKSearch(
+          *searchPoint, 1, pointId_vector, pointRadius_vector) > 0) {
+    index = pointId_vector[0];
+  } else {
+    // TODO : what happens?
+  }
+
+  return index * m_config_spline_interval;
+}
+
+double
+DynamicPlannerNode::getCurIdx(const double& pt_x_,
+                              const double& pt_y_,
+                              pcl::KdTreeFLANN<pcl::PointXY>& target_tree_) {
+  double progress;
+
+  std::vector<int> pointId_vector;
+  std::vector<float> pointRadius_vector;
+  pcl::PointXY* searchPoint = new pcl::PointXY();
+  searchPoint->x = pt_x_;
+  searchPoint->y = pt_y_;
+  int index = 0;
+
+  if (target_tree_.nearestKSearch(
+          *searchPoint, 1, pointId_vector, pointRadius_vector) > 0) {
+    index = pointId_vector[0];
+  } else {
+    // TODO : what happens?
+  }
+
+  return index;
 }
 
 double DynamicPlannerNode::calcCTE(const geometry_msgs::msg::Pose& pt_global_,
@@ -887,4 +1069,180 @@ tuple<double, double> DynamicPlannerNode::calcProgressNCTE(
   }
 
   return std::make_tuple(progress, cte);
+}
+
+std::shared_ptr<FrenetPath> DynamicPlannerNode::getFrenetToRacingLine() {
+  // Generate trajectory segment from current odom to racing line.
+  auto progressNcte = calcProgressNCTE(
+      m_ego_odom.pose.pose, m_racineline_path_kdtree, m_racingline_path_pc);
+
+  std::tuple<std::shared_ptr<FrenetPath>,
+             std::vector<std::shared_ptr<FrenetPath>>>
+      frenet_path_generation_result = m_frenet_generator_ptr->calc_frenet_paths(
+          get<1>(progressNcte),             // current_position_d
+          get<0>(progressNcte),             // current_position_s
+          0.0,                              // current_velocity_d
+          m_ego_odom.twist.twist.linear.x,  // current_velocity_s
+          0.0,                              // current_acceleration_d
+          get<4>(m_racingline_spline_data), // cubic_spliner_2D
+          m_config_planning_horizon,
+          m_config_planning_horizon + 0.01,
+          m_config_planning_dt,
+          0.0,
+          0.0001,
+          0.1);
+
+  //   std::shared_ptr<FrenetPath>& predicted_frenet_path =
+  //       std::get<0>(frenet_path_generation_result);
+  return std::get<0>(frenet_path_generation_result);
+}
+
+double DynamicPlannerNode::calcProgressDiff(
+    const nif_msgs::msg::DynamicTrajectory& ego_traj_,
+    const nif_msgs::msg::DynamicTrajectory& oppo_traj_,
+    pcl::KdTreeFLANN<pcl::PointXY>& target_tree_) {
+  // Checking items
+  // 1. Collision
+  // 2. At the specific
+}
+
+int DynamicPlannerNode::calcCurIdxFromDynamicTraj(
+    const nif_msgs::msg::DynamicTrajectory& msg) {
+  int cur_idx = 0;
+  double min_dist = 1000000000;
+
+  for (int i = 0; i < msg.trajectory_path.poses.size(); i++) {
+    double dist = sqrt(pow(m_ego_odom.pose.pose.position.x -
+                               msg.trajectory_path.poses[i].pose.position.x,
+                           2) +
+                       pow(m_ego_odom.pose.pose.position.y -
+                               msg.trajectory_path.poses[i].pose.position.y,
+                           2));
+    if (dist < min_dist) {
+      min_dist = dist;
+      cur_idx = i;
+    }
+  }
+  return cur_idx;
+}
+
+bool DynamicPlannerNode::collisionCheckBTWtrajs(
+    const nif_msgs::msg::DynamicTrajectory& ego_traj_,
+    const nif_msgs::msg::DynamicTrajectory& oppo_traj_,
+    const double collision_dist_boundary,
+    const double collision_time_boundary) {
+  // if there is collision, return true
+
+  bool is_collision = false;
+  for (int ego_traj_idx = 0;
+       ego_traj_idx < ego_traj_.trajectory_path.poses.size();
+       ego_traj_idx++) {
+    for (int oppo_traj_idx = 0;
+         oppo_traj_idx < oppo_traj_.trajectory_path.poses.size();
+         oppo_traj_idx++) {
+      double dist = sqrt(
+          pow((ego_traj_.trajectory_path.poses[ego_traj_idx].pose.position.x -
+               oppo_traj_.trajectory_path.poses[oppo_traj_idx].pose.position.x),
+              2) +
+          pow((ego_traj_.trajectory_path.poses[ego_traj_idx].pose.position.y -
+               oppo_traj_.trajectory_path.poses[oppo_traj_idx].pose.position.y),
+              2));
+
+      double time_diff =
+          abs(ego_traj_.trajectory_timestamp_array[ego_traj_idx] -
+              oppo_traj_.trajectory_timestamp_array[oppo_traj_idx]);
+
+      if (dist < collision_dist_boundary &&
+          time_diff < collision_time_boundary) {
+        is_collision = true;
+        return is_collision;
+      }
+    }
+  }
+  return is_collision;
+}
+
+bool DynamicPlannerNode::collisionCheckBTWtrajsNFrenet(
+    std::shared_ptr<FrenetPath> ego_frenet_traj_,
+    const nif_msgs::msg::DynamicTrajectory& oppo_traj_,
+    const double collision_dist_boundary,
+    const double collision_time_boundary) {
+  // if there is collision, return true.
+  bool is_collision = false;
+
+  vector<double> ego_frenet_x = ego_frenet_traj_->points_x();
+  vector<double> ego_frenet_y = ego_frenet_traj_->points_y();
+  vector<double> ego_frenet_time = ego_frenet_traj_->time();
+
+  for (int ego_traj_idx = 0; ego_traj_idx < ego_frenet_x.size();
+       ego_traj_idx++) {
+    for (int oppo_traj_idx = 0;
+         oppo_traj_idx < oppo_traj_.trajectory_path.poses.size();
+         oppo_traj_idx++) {
+      double dist = sqrt(
+          pow((ego_frenet_x[ego_traj_idx] -
+               oppo_traj_.trajectory_path.poses[oppo_traj_idx].pose.position.x),
+              2) +
+          pow((ego_frenet_y[ego_traj_idx] -
+               oppo_traj_.trajectory_path.poses[oppo_traj_idx].pose.position.y),
+              2));
+
+      double time_diff =
+          abs(ego_frenet_time[ego_traj_idx] -
+              oppo_traj_.trajectory_timestamp_array[oppo_traj_idx]);
+
+      if (dist < collision_dist_boundary &&
+          time_diff < collision_time_boundary) {
+        is_collision = true;
+        return is_collision;
+      }
+    }
+  }
+  return is_collision;
+}
+
+nif_msgs::msg::DynamicTrajectory DynamicPlannerNode::stitchFrenetToPath(
+    std::shared_ptr<FrenetPath>& frenet_segment_,
+    pcl::KdTreeFLANN<pcl::PointXY>& target_tree_,
+    nav_msgs::msg::Path& target_path_) {
+  nif_msgs::msg::DynamicTrajectory out;
+
+  // find closest index of target_path with respect to the start point of the
+  // frenet segment
+  auto vec_x = frenet_segment_->points_x();
+  auto vec_y = frenet_segment_->points_y();
+  auto vec_yaw = frenet_segment_->yaw();
+
+  auto cloest_pt_idx_wrt_segment_start_pt =
+      getCurIdx(vec_x[0], vec_y[0], target_tree_);
+  auto cloest_pt_idx_wrt_segment_end_pt =
+      getCurIdx(vec_x[-1], vec_y[-1], target_tree_);
+
+  for (int i = 0; i < vec_x.size(); i++) {
+    geometry_msgs::msg::PoseStamped ps;
+    ps.pose.position.x = vec_x[i];
+    ps.pose.position.y = vec_y[i];
+    ps.pose.orientation =
+        nif::common::utils::coordination::ToQuaternion(vec_yaw[i], 0.0, 0.0);
+
+    out.trajectory_path.poses.push_back(ps);
+  }
+
+  if (cloest_pt_idx_wrt_segment_start_pt > cloest_pt_idx_wrt_segment_end_pt) {
+    // index wrapping is needed.
+    out.trajectory_path.poses.insert(
+        out.trajectory_path.poses.end(),
+        target_path_.poses.begin() + cloest_pt_idx_wrt_segment_end_pt,
+        target_path_.poses.begin() + cloest_pt_idx_wrt_segment_start_pt);
+  } else {
+    out.trajectory_path.poses.insert(out.trajectory_path.poses.end(),
+                                     target_path_.poses.begin() +
+                                         cloest_pt_idx_wrt_segment_end_pt,
+                                     target_path_.poses.end());
+    out.trajectory_path.poses.insert(out.trajectory_path.poses.end(),
+                                     target_path_.poses.begin(),
+                                     target_path_.poses.begin() +
+                                         cloest_pt_idx_wrt_segment_start_pt);
+  }
+  return out;
 }
