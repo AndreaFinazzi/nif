@@ -266,14 +266,14 @@ void AccelControl::initializeGears(const std::string &track_id) {
         {5, std::make_shared<control::GearState>(5, 0.96, 35, 50)},
         {6, std::make_shared<control::GearState>(6, 0.889, 41.5, 255)}};
   } else if (track_id == TRACK_ID_LVMS) {
-    // LOR params
+    // IMS params
     this->gear_states = {
-        {1, std::make_shared<control::GearState>(1, 2.92, -255, 11)},
-        {2, std::make_shared<control::GearState>(2, 1.875, 9.5, 16)},
-        {3, std::make_shared<control::GearState>(3, 1.38, 14, 22)},
-        {4, std::make_shared<control::GearState>(4, 1.5, 17, 30)},
-        {5, std::make_shared<control::GearState>(5, 0.96, 22, 35)},
-        {6, std::make_shared<control::GearState>(6, 0.889, 30, 255)}};
+        {1, std::make_shared<control::GearState>(1, 2.92, -255, 13.5)},
+        {2, std::make_shared<control::GearState>(2, 1.875, 11, 22)},
+        {3, std::make_shared<control::GearState>(3, 1.38, 19.5, 30)},
+        {4, std::make_shared<control::GearState>(4, 1.5, 27.5, 37.5)},
+        {5, std::make_shared<control::GearState>(5, 0.96, 35, 50)},
+        {6, std::make_shared<control::GearState>(6, 0.889, 41.5, 255)}};
   } else {
     RCLCPP_ERROR(this->get_logger(),
                  "Got unrecognized track_id: %s, parameter out of range.",
@@ -388,20 +388,22 @@ void AccelControl::publishThrottleBrake() {
   }
 // !!!! UNCOMMENT TO ENABLE THROTTLE SATURATION TO JOYSTICK CMD  !!!!
 
+// !!!! UNCOMMENT TO ENABLE LATERAL ERROR SCALEDOWN FACTOR !!!!
   // Release throttle w.r.t. lateral error
   // - only when speed is large enough
-  double curr_speed = this->speed_;
-  if (curr_speed > this->m_error_factor_vel_thres_mps) {
-    double error_ratio = 0.0;
-    if (abs(m_error_y) > m_lateral_error_deadband_m) {
-      error_ratio =
-          std::min(abs(m_error_y) - m_lateral_error_deadband_m, m_ERROR_Y_MAX) /
-          m_ERROR_Y_MAX; // [0.0~1.0] ratio
-    }
+  // double error_ratio = 0.0;
+  // double curr_speed = this->speed_;
+  // if (curr_speed > this->m_error_factor_vel_thres_mps) {
+  //   if (abs(m_error_y) > m_lateral_error_deadband_m) {
+  //     error_ratio =
+  //         std::min(abs(m_error_y) - m_lateral_error_deadband_m, m_ERROR_Y_MAX) /
+  //         m_ERROR_Y_MAX; // [0.0~1.0] ratio
+  //   }
 
-    double error_gain = 1.0 - 0.5 * error_ratio; // [1.0~0.5] gain
-    this->throttle_cmd.data = error_gain * this->throttle_cmd.data;
-  }
+  //   double error_gain = 1.0 - 0.5 * error_ratio; // [1.0~0.5] gain
+  //   this->throttle_cmd.data = error_gain * this->throttle_cmd.data;
+  // }
+// !!!! UNCOMMENT TO ENABLE LATERAL ERROR SCALEDOWN FACTOR !!!!
 
   this->throttle_cmd.data =
       (this->brake_cmd.data > 0.0) ? 0.0 : this->throttle_cmd.data;
