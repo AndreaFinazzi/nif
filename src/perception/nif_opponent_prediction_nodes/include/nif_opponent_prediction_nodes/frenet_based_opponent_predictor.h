@@ -48,10 +48,10 @@ public:
   tuple<vector<double>, vector<double>>
   loadCSVFile(const string wpt_file_path_);
 
-  nif_msgs::msg::Trajectory getPredictiveTrajectoryInGlobal() {
+  nif_msgs::msg::DynamicTrajectory getPredictiveTrajectoryInGlobal() {
     return m_predicted_output_in_global;
   }
-  nif_msgs::msg::Trajectory getPredictiveTrajectoryInBody() {
+  nif_msgs::msg::DynamicTrajectory getPredictiveTrajectoryInBody() {
     return m_predicted_output_in_local;
   }
 
@@ -91,7 +91,7 @@ private:
   double m_defender_vel_mps; // assume that official provides the speed of
                              // defender
 
-  nif_msgs::msg::Trajectory m_predicted_output_in_global,
+  nif_msgs::msg::DynamicTrajectory m_predicted_output_in_global,
       m_predicted_output_in_local;
   nav_msgs::msg::Path m_predicted_output_in_global_vis;
 

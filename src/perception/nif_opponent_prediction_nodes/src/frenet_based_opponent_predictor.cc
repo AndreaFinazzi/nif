@@ -14,10 +14,10 @@ FrenetBasedOpponentPredictor::FrenetBasedOpponentPredictor(
   m_defender_vel_mps = defualt_oppo_vel / 2.237; // mph2mps
 
   // TODO
-  m_opponent_status_topic_name = "SetPropoerTopicName";
-  m_ego_status_topic_name = "SetPropoerTopicName";
-  m_predicted_trajectory_topic_name = "predicted_traj_topic_name";
-  m_predicted_trajectory_vis_topic_name = "predicted_traj_vis_topic_name";
+  m_opponent_status_topic_name = "/ghost/perception";
+  m_ego_status_topic_name = "aw_localization/ekf/odom";
+  m_predicted_trajectory_topic_name = "/oppo/prediction";
+  m_predicted_trajectory_vis_topic_name = "/oppo/vis/prediction";
 
   m_opponent_global_progress = 0.0;
   m_opponent_cte = 0.0;
@@ -272,7 +272,12 @@ void FrenetBasedOpponentPredictor::predict() {
     }
 
     m_predicted_output_in_global.trajectory_path = traj_global;
-    m_predicted_output_in_global.trajectory_timestamp_array = predicted_frenet_path->time();
+    // m_predicted_output_in_global.trajectory_timestamp_array = predicted_frenet_path->time();
+    m_predicted_output_in_global.trajectory_timestamp_array.clear();
+    for(int i =0; i < predicted_frenet_path->time().size(); i++){
+      m_predicted_output_in_global.trajectory_timestamp_array.push_back(predicted_frenet_path->time()[i]);
+    }
+
     m_predicted_output_in_global.trajectory_type = nif_msgs::msg::DynamicTrajectory::TRAJECTORY_TYPE_PREDICTION;
     m_predicted_output_in_global_vis = traj_global;
 

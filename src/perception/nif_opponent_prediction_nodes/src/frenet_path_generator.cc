@@ -329,6 +329,10 @@ void FrenetPathGenerator::calculate_global_paths(
     std::vector<std::shared_ptr<FrenetPath>>& frenet_paths,
     std::shared_ptr<CubicSpliner2D>& cubic_spliner_2D) {
   for (int i = 0; i < frenet_paths.size(); i++) {
+
+    // NOTE : Suspicious part
+    double max_progress = cubic_spliner_2D->points_s()[-1];
+
     std::shared_ptr<FrenetPath>& frenet_path = frenet_paths[i];
 
     if (!frenet_path->points_s().empty()) {
@@ -336,6 +340,10 @@ void FrenetPathGenerator::calculate_global_paths(
       const std::vector<double>& points_s = frenet_path->points_s();
       for (int j = 0; j < frenet_path->points_s().size(); j++) {
         double point_s = points_s[j];
+
+        if(point_s > max_progress){
+          point_s -= max_progress;
+        }
 
         std::tuple<double, double> position =
             cubic_spliner_2D->calculate_position(point_s);
