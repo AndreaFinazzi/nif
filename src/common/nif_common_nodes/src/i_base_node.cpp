@@ -24,7 +24,11 @@ IBaseNode::IBaseNode(const std::string &node_name)
           RCLCPP_WARN(this->get_logger(), "CALL TO IBaseNode DEPRECATED CONSTRUCTOR, SPECIFY NODE TYPE.");
 }
 
-IBaseNode::IBaseNode(const std::string &node_name, const NodeType node_type, const rclcpp::NodeOptions &options)
+IBaseNode::IBaseNode(
+            const std::string &node_name, 
+            const NodeType node_type, 
+            const rclcpp::NodeOptions &options,
+            const bool register_to_system_manager)
     : Node(node_name, options),
       node_status_manager(*this, node_type) {
   //  Initialize timers
@@ -123,29 +127,33 @@ IBaseNode::IBaseNode(const std::string &node_name, const NodeType node_type, con
   this->register_node_service_client =
       this->create_client<nif_msgs::srv::RegisterNodeStatus>("/system_status_manager/register");
 
-  auto request = std::make_shared<nif_msgs::srv::RegisterNodeStatus::Request>();
-  request->node_name = this->get_name();
-  request->status_topic_name = getNodeStatusTopicName();
-  request->node_type = this->node_status_manager.getNodeType();
+  if (register_to_system_manager)
+  {
+    // Register to SystemStatusManager (requires a running SystemStatusManagerNode)
+    auto request = std::make_shared<nif_msgs::srv::RegisterNodeStatus::Request>();
+    request->node_name = this->get_name();
+    request->status_topic_name = getNodeStatusTopicName();
+    request->node_type = this->node_status_manager.getNodeType();
 
-  using ServiceResponseFuture =
-      rclcpp::Client<nif_msgs::srv::RegisterNodeStatus>::SharedFuture;
-  auto response_received_callback = [this](ServiceResponseFuture future) {
-    const auto& response = future.get();
-    RCLCPP_INFO(this->get_logger(), "Response from system_status_manager/register service. Success: %s", response->success ? "true" : "false");
-    if (!response->success)
-    {
-      RCLCPP_ERROR(this->get_logger(), "Couldn't register to System Status Manager.");
-      throw std::runtime_error("Couldn't register to System Status Manager. Not safe to proceed.");
-    } else {
-        this->node_status_manager.setNodeId(response->node_id);
-    }
-  };
-  this->register_node_service_client->wait_for_service(std::chrono::seconds(2));
-  if (this->register_node_service_client->service_is_ready())
-    auto future_result = this->register_node_service_client->async_send_request(request, response_received_callback);
-  else
-    throw std::runtime_error("System Status Manager not ready, proceeding is not safe.");
+    using ServiceResponseFuture =
+        rclcpp::Client<nif_msgs::srv::RegisterNodeStatus>::SharedFuture;
+    auto response_received_callback = [this](ServiceResponseFuture future) {
+      const auto& response = future.get();
+      RCLCPP_INFO(this->get_logger(), "Response from system_status_manager/register service. Success: %s", response->success ? "true" : "false");
+      if (!response->success)
+      {
+        RCLCPP_ERROR(this->get_logger(), "Couldn't register to System Status Manager.");
+        throw std::runtime_error("Couldn't register to System Status Manager. Not safe to proceed.");
+      } else {
+          this->node_status_manager.setNodeId(response->node_id);
+      }
+    };
+    this->register_node_service_client->wait_for_service(std::chrono::seconds(2));
+    if (this->register_node_service_client->service_is_ready())
+      auto future_result = this->register_node_service_client->async_send_request(request, response_received_callback);
+    else
+      throw std::runtime_error("System Status Manager not ready, proceeding is not safe.");
+  }
 
   this->setNodeStatus(NodeStatusCode::NODE_INITIALIZED);
 }

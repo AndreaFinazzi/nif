@@ -126,22 +126,41 @@ constexpr inline const T& clip(const T& min, const T& max, const T& target) {
 
 namespace coordination {
 
-inline double quat2yaw(geometry_msgs::msg::Quaternion& data);
+inline double quat2yaw(const geometry_msgs::msg::Quaternion& data);
 
 inline double angle_wrap(double diff);
 
 geometry_msgs::msg::PoseStamped
-getPtBodytoGlobal(nav_msgs::msg::Odometry& current_pose_,
-                  geometry_msgs::msg::PoseStamped& point_in_body_);
+getPtBodytoGlobal(const nav_msgs::msg::Odometry& current_pose_,
+                  const geometry_msgs::msg::PoseStamped& point_in_body_);
+
 geometry_msgs::msg::PoseStamped
-getPtGlobaltoBody(nav_msgs::msg::Odometry& current_pose_,
-                  geometry_msgs::msg::PoseStamped& point_in_global_);
+getPtBodytoGlobal(
+    const nav_msgs::msg::Odometry& current_pose_,
+    const geometry_msgs::msg::Pose& point_in_body_);
+
 geometry_msgs::msg::PoseStamped
-getPtGlobaltoBody(nav_msgs::msg::Odometry& current_pose_,
-                  double& global_x_,
-                  double& global_y_);
-nav_msgs::msg::Path getPathGlobaltoBody(nav_msgs::msg::Odometry& current_pose_,
-                                        nav_msgs::msg::Path& path_in_global_);
+getPtGlobaltoBody(const nav_msgs::msg::Odometry& current_pose_,
+                  const geometry_msgs::msg::PoseStamped& point_in_global_);
+
+geometry_msgs::msg::PoseStamped
+getPtGlobaltoBody(
+    const nav_msgs::msg::Odometry& current_pose_,
+    const geometry_msgs::msg::Pose& point_in_global_);
+
+geometry_msgs::msg::PoseStamped
+getPtGlobaltoBody(const nav_msgs::msg::Odometry& current_pose_,
+                  const double& global_x_,
+                  const double& global_y_);
+
+geometry_msgs::msg::PoseStamped
+convertToFrame(
+  const geometry_msgs::msg::Pose& origin_frame,
+  const geometry_msgs::msg::Pose& destination_frame);
+
+
+nav_msgs::msg::Path getPathGlobaltoBody(const nav_msgs::msg::Odometry& current_pose_,
+                                        const nav_msgs::msg::Path& path_in_global_);
 
 } // namespace coordination
 

@@ -51,7 +51,7 @@ double nif::common::utils::geometry::mph2mps(const double mph) {
 }
 
 inline double nif::common::utils::coordination::quat2yaw(
-    geometry_msgs::msg::Quaternion& data) {
+    const geometry_msgs::msg::Quaternion& data) {
   return atan2(2 * (data.w * data.z + data.x * data.y),
                1 - 2 * (data.y * data.y + data.z * data.z));
 }
@@ -67,8 +67,8 @@ inline double nif::common::utils::coordination::angle_wrap(double diff) {
 
 geometry_msgs::msg::PoseStamped
 nif::common::utils::coordination::getPtBodytoGlobal(
-    nav_msgs::msg::Odometry& current_pose_,
-    geometry_msgs::msg::PoseStamped& point_in_body_) {
+    const nav_msgs::msg::Odometry& current_pose_,
+    const geometry_msgs::msg::PoseStamped& point_in_body_) {
   double current_yaw_rad = nif::common::utils::coordination::quat2yaw(
       current_pose_.pose.pose.orientation);
   geometry_msgs::msg::PoseStamped point_in_global;
@@ -84,9 +84,39 @@ nif::common::utils::coordination::getPtBodytoGlobal(
 }
 
 geometry_msgs::msg::PoseStamped
+nif::common::utils::coordination::getPtBodytoGlobal(
+    const nav_msgs::msg::Odometry& current_pose_,
+    const geometry_msgs::msg::Pose& point_in_body_) {
+  double current_yaw_rad = nif::common::utils::coordination::quat2yaw(
+      current_pose_.pose.pose.orientation);
+  geometry_msgs::msg::PoseStamped point_in_global;
+  point_in_global.pose.position.x = current_pose_.pose.pose.position.x +
+      point_in_body_.position.x * cos(current_yaw_rad) -
+      point_in_body_.position.y * sin(current_yaw_rad);
+  point_in_global.pose.position.y = current_pose_.pose.pose.position.y +
+      point_in_body_.position.x * sin(current_yaw_rad) +
+      point_in_body_.position.y * cos(current_yaw_rad);
+  point_in_global.pose.position.z =
+      current_pose_.pose.pose.position.y + point_in_body_.position.z;
+
+  double target_yaw = nif::common::utils::coordination::quat2yaw(
+      point_in_body_.orientation);
+
+  point_in_global.pose.orientation.x = 0.0;
+  point_in_global.pose.orientation.y = 0.0;
+  // TODO : should be tested
+  point_in_global.pose.orientation.z = sin((target_yaw - current_yaw_rad) / 2.0);
+  point_in_global.pose.orientation.w = cos((target_yaw - current_yaw_rad) / 2.0);
+
+
+  return point_in_global;
+}
+
+
+geometry_msgs::msg::PoseStamped
 nif::common::utils::coordination::getPtGlobaltoBody(
-    nav_msgs::msg::Odometry& current_pose_,
-    geometry_msgs::msg::PoseStamped& point_in_global_) {
+    const nav_msgs::msg::Odometry& current_pose_,
+    const geometry_msgs::msg::PoseStamped& point_in_global_) {
   double current_yaw_rad = nif::common::utils::coordination::quat2yaw(
       current_pose_.pose.pose.orientation);
   geometry_msgs::msg::PoseStamped point_in_body;
@@ -120,9 +150,44 @@ nif::common::utils::coordination::getPtGlobaltoBody(
 
 geometry_msgs::msg::PoseStamped
 nif::common::utils::coordination::getPtGlobaltoBody(
-    nav_msgs::msg::Odometry& current_pose_,
-    double& global_x_,
-    double& global_y_) {
+    const nav_msgs::msg::Odometry& current_pose_,
+    const geometry_msgs::msg::Pose& point_in_global_) {
+  double current_yaw_rad = nif::common::utils::coordination::quat2yaw(
+      current_pose_.pose.pose.orientation);
+  geometry_msgs::msg::PoseStamped point_in_body;
+  point_in_body.pose.position.x = cos(-1 * current_yaw_rad) *
+          (point_in_global_.position.x -
+           current_pose_.pose.pose.position.x) -
+      sin(-1 * current_yaw_rad) *
+          (point_in_global_.position.y -
+           current_pose_.pose.pose.position.y);
+  point_in_body.pose.position.y = sin(-1 * current_yaw_rad) *
+          (point_in_global_.position.x -
+           current_pose_.pose.pose.position.x) +
+      cos(-1 * current_yaw_rad) *
+          (point_in_global_.position.y -
+           current_pose_.pose.pose.position.y);
+
+  point_in_body.pose.position.z =
+      point_in_global_.position.z - current_pose_.pose.pose.position.z;
+
+  double target_yaw = nif::common::utils::coordination::quat2yaw(
+      point_in_global_.orientation);
+
+  point_in_body.pose.orientation.x = 0.0;
+  point_in_body.pose.orientation.y = 0.0;
+  // TODO : should be tested
+  point_in_body.pose.orientation.z = sin((target_yaw - current_yaw_rad) / 2.0);
+  point_in_body.pose.orientation.w = cos((target_yaw - current_yaw_rad) / 2.0);
+
+  return point_in_body;
+}
+
+geometry_msgs::msg::PoseStamped
+nif::common::utils::coordination::getPtGlobaltoBody(
+    const nav_msgs::msg::Odometry& current_pose_,
+    const double& global_x_,
+    const double& global_y_) {
   double current_yaw_rad = nif::common::utils::coordination::quat2yaw(
       current_pose_.pose.pose.orientation);
   geometry_msgs::msg::PoseStamped point_in_body;
@@ -143,9 +208,42 @@ nif::common::utils::coordination::getPtGlobaltoBody(
   return point_in_body;
 }
 
+geometry_msgs::msg::PoseStamped
+nif::common::utils::coordination::convertToFrame(
+  const geometry_msgs::msg::Pose& origin_frame_in_destination_,
+  const geometry_msgs::msg::Pose& pt_in_origin_) {
+  
+  double theta_rad = nif::common::utils::coordination::quat2yaw(
+      origin_frame_in_destination_.orientation);
+  geometry_msgs::msg::PoseStamped point_in_destination;
+  point_in_destination.pose.position.x = 
+      origin_frame_in_destination_.position.x
+      + cos(theta_rad) * pt_in_origin_.position.x 
+      - sin(theta_rad) * pt_in_origin_.position.y;
+  point_in_destination.pose.position.y = 
+      origin_frame_in_destination_.position.y
+      + sin(theta_rad) * pt_in_origin_.position.x
+      + cos(theta_rad) * pt_in_origin_.position.y;
+
+  point_in_destination.pose.position.z =
+      pt_in_origin_.position.z - origin_frame_in_destination_.position.z;
+
+  double target_yaw = nif::common::utils::coordination::quat2yaw(
+      pt_in_origin_.orientation);
+
+  point_in_destination.pose.orientation.x = 0.0;
+  point_in_destination.pose.orientation.y = 0.0;
+  // TODO : should be tested
+  point_in_destination.pose.orientation.z = sin((target_yaw - theta_rad) / 2.0);
+  point_in_destination.pose.orientation.w = cos((target_yaw - theta_rad) / 2.0);
+
+  return point_in_destination;
+  }
+
+
 nav_msgs::msg::Path nif::common::utils::coordination::getPathGlobaltoBody(
-    nav_msgs::msg::Odometry& current_pose_,
-    nav_msgs::msg::Path& path_in_global_) {
+    const nav_msgs::msg::Odometry& current_pose_,
+    const nav_msgs::msg::Path& path_in_global_) {
   double current_yaw_rad = nif::common::utils::coordination::quat2yaw(
       current_pose_.pose.pose.orientation);
 
