@@ -96,7 +96,8 @@ def generate_launch_description():
         ],
         remappings=[
             ('out_perception_result', '/ghost/perception'),
-            ('out_marker', '/out_marker'),
+            ('out_marker', '/ghost/marker'),
+            ('out_odometry', '/ghost/odometry'),
         ]
     )
 
