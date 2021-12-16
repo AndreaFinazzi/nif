@@ -101,7 +101,7 @@ public:
         }
 
         // RCLCPP objects
-        this->perception_result_pub = this->create_publisher<nif_msgs::msg::Perception3D>(
+        this->perception_result_pub = this->create_publisher<nif_msgs::msg::Perception3DArray>(
             "out_perception_result",
             nif::common::constants::QOS_SENSOR_DATA);
 
@@ -169,6 +169,8 @@ public:
     void run() override {
         auto now = this->now();
 
+        nif_msgs::msg::Perception3DArray perception_array_out_msg{};
+        
         for (auto const& [vehicle_id, vehicle_state] : vehicle_state_by_id) // C++17 
         {
             rclcpp::Duration dt = now - vehicle_state->t_prev;
@@ -210,7 +212,7 @@ public:
 
             vehicle_state->t_prev = now;
 
-    //      perception_result = ...
+            // perception_result = ...
             nif_msgs::msg::Perception3D perception_out_msg{};
             perception_out_msg.header.frame_id = this->getBodyFrameId();
             perception_out_msg.header.stamp = now;
@@ -220,6 +222,8 @@ public:
             perception_out_msg.detection_result_3d.size.x = 4.0;
             perception_out_msg.detection_result_3d.size.y = 2.0;
             perception_out_msg.detection_result_3d.size.z = 1.0;
+
+            perception_array_out_msg.perception_list.push_back(perception_out_msg);
 
             visualization_msgs::msg::Marker marker_out_msg{};
             marker_out_msg.pose = vehicle_state->pose_in_ego_body;
@@ -235,13 +239,13 @@ public:
             marker_out_msg.color.g = 0.0;
             marker_out_msg.color.b = 1.0;
 
-
     //      Inject random noise to solution
     //      pub->publish(perception_result);
-            this->perception_result_pub->publish(perception_out_msg);
             this->marker_pub->publish(marker_out_msg);
             this->odom_pub->publish(vehicle_state->odometry);
         }
+        
+        this->perception_result_pub->publish(perception_array_out_msg);
     }
 
     // ---- CRUD ----
@@ -259,7 +263,7 @@ public:
             nav_msgs::msg::Odometry odometry;
 
             odometry.header.frame_id = this->getGlobalFrameId();
-
+            odometry.child_frame_id = "oppo_" + std::to_string(vehicle_id) + "_base_link";
             auto& wpt_manager = this->wpt_manager_by_id[maptrack_id];
             odometry.pose.pose = wpt_manager->getPoseStampedAtIndex(0).pose;
             // tf2::Transform t_ego_odom_in_global;
@@ -410,7 +414,7 @@ private:
 
     rclcpp::Time t_prev;
 
-    rclcpp::Publisher<nif_msgs::msg::Perception3D>::SharedPtr perception_result_pub;
+    rclcpp::Publisher<nif_msgs::msg::Perception3DArray>::SharedPtr perception_result_pub;
     rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr marker_pub;
     rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub;
 
