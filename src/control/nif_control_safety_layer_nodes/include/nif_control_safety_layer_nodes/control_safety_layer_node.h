@@ -610,7 +610,7 @@ private:
 
     double emergencyBrakeCmd(double vel_err) {
         this->brake_pid_.Update(-vel_err);
-        if (this->speed_mps_ < 5.0)
+        if (this->speed_mps_ < 3.0)
         {
             return this->brakeCmdMax_;
         }

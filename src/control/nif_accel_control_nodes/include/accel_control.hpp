@@ -46,6 +46,7 @@ namespace control {
 
 const char *TRACK_ID_LOR = "LOR";
 const char *TRACK_ID_IMS = "IMS";
+const char *TRACK_ID_LVMS = "LVMS";
 
 // Gear State
 // Contains: gear_number, downshift speed, upshift speed, pointer to previous

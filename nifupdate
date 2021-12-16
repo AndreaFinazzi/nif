@@ -1,15 +1,14 @@
 #!/usr/bin/env bash
 
-. /opt/ros/foxy/setup.bash
-sudo apt update
+. /opt/ros/$ROS_DISTRO/setup.bash
 
 # Import external repos
-GL_TOKEN=$(cat .secret.gitlab) GH_TOKEN=$(cat .secret.github) bash -c 'cat nif.foxy.repos | envsubst > nif.foxy.repos.tmp'
-vcs import < nif.foxy.repos.tmp --workers=1 --recursive
-rm nif.foxy.repos.tmp
+GL_TOKEN=$(cat .secret.gitlab) GH_TOKEN=$(cat .secret.github) bash -c 'cat nif.$ROS_DISTRO.repos | envsubst > nif.$ROS_DISTRO.repos.tmp'
+vcs import < nif.$ROS_DISTRO.repos.tmp --workers=1 --recursive
+rm nif.$ROS_DISTRO.repos.tmp
 
 # Install python dependencies
 pip3 install -r central-requirements.txt
 
 rosdep update
-rosdep install -ir -y --from-path src/ --rosdistro $ROS_DISTRO
+rosdep install -ir -y --from-path src/ --rosdistro $ROS_DISTRO --os=ubuntu:focal

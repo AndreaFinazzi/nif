@@ -29,6 +29,7 @@
 #include <novatel_oem7_msgs/msg/inspva.hpp>
 #include <novatel_oem7_msgs/msg/insstdev.hpp>
 #include <novatel_oem7_msgs/msg/inertial_solution_status.hpp>
+#include <novatel_oem7_msgs/msg/heading2.hpp>
 #include <opencv2/opencv.hpp>
 #include <raptor_dbw_msgs/msg/wheel_speed_report.hpp>
 #include <sensor_msgs/msg/imu.hpp>
@@ -59,6 +60,8 @@ struct GPSCorrectionData_t
     double lon_noise;
     double yaw_noise;
     unsigned int novatel_ins_status;
+    unsigned int novatel_bestpos_status;
+    bool quality_code_ok = false;
 };
 
 struct VehPose_t
@@ -108,6 +111,8 @@ private:
   rclcpp::Subscription<novatel_oem7_msgs::msg::INSPVA>::SharedPtr subINSPVA;
   rclcpp::Subscription<novatel_oem7_msgs::msg::INSPVA>::SharedPtr subTOPINSPVA;
   rclcpp::Subscription<novatel_oem7_msgs::msg::BESTVEL>::SharedPtr subBESTVEL;
+  rclcpp::Subscription<novatel_oem7_msgs::msg::BESTVEL>::SharedPtr subTOPBESTVEL;
+  rclcpp::Subscription<novatel_oem7_msgs::msg::HEADING2>::SharedPtr subHEADING2;
   rclcpp::Subscription<novatel_oem7_msgs::msg::INSSTDEV>::SharedPtr subINSSTDEV;
   rclcpp::Subscription<novatel_oem7_msgs::msg::INSSTDEV>::SharedPtr
       subTOPINSSTDEV;
@@ -193,13 +198,19 @@ private:
   double m_origin_lat;
   double m_origin_lon;
 
+  double m_heading_lowpass_gain;
+
   double m_dGPS_X;
   double m_dGPS_Y;
   double m_dGPS_Z;
   double m_dGPS_Heading;
-  double m_dGPS_TOP_Heading;
-  double m_dGPS_roll;
   double m_dGPS_Heading_prev;
+  double m_dGPS_TOP_Heading;
+  double m_dGPS_TOP_Heading_prev;
+  double m_heading2_heading_rad;
+  double m_best_heading_rad;
+  double m_dGPS_roll;
+  double m_dGPS_TOP_roll; // Note : roll of top and bottom are very different. Add field for novatel top
   double m_prevYaw;
   double m_prevTOPYaw;
 
@@ -210,21 +221,28 @@ private:
   bool bBOTTOM_GPS = false;
   bool bTOP_GPS = false;
 
+  bool m_heading_initial_guess_enabled = false;
   bool bBOTTOMGPSHeading = false;
   bool bTOPGPSHeading = false;
   bool bottom_gps_update = false;
   bool top_gps_update = false;
+  bool m_heading_initialized = false;
+  
+  bool m_heading2_valid = false;
+  bool m_bestvel_bottom_valid = false;
+  bool m_bestvel_top_valid = false;
+  bool m_heading_error = true;
 
   bool bUseBestVelForSpeed;
   bool bInitConverged = false;
 
-  bool heading_flag = false;
   bool measure_flag = false;
   bool m_inspva_heading_init = false;
   bool m_top_inspva_heading_init = false;
 
   bool m_use_inspva_heading;
   double m_bestvel_heading_update_thres;
+  double m_heading_heading2_offset_rad;
 
   double m_dIMU_yaw_rate;
   double m_dVelolcity_X;
@@ -254,9 +272,14 @@ private:
 
   double m_testnoise;
 
+  bool enable_tf_publisher;
+
       rclcpp::Time imu_time_last_update;
   rclcpp::Time bestpos_time_last_update;
   rclcpp::Time top_bestpos_time_last_update;
+  rclcpp::Time bestvel_time_last_update;
+  rclcpp::Time top_bestvel_time_last_update;
+  rclcpp::Time heading2_time_last_update;
   rclcpp::Duration gps_timeout = rclcpp::Duration(1, 0);
 
   enum IDX {
@@ -298,17 +321,29 @@ private:
   void
   BOTTOMINSPVACallback(const novatel_oem7_msgs::msg::INSPVA::SharedPtr msg);
   void TOPINSPVACallback(const novatel_oem7_msgs::msg::INSPVA::SharedPtr msg);
-  void BESTVELCallback(const novatel_oem7_msgs::msg::BESTVEL::SharedPtr msg);
+  
+  void BOTTOMBESTVELCallback(const novatel_oem7_msgs::msg::BESTVEL::SharedPtr msg);
+
+  void TOPBESTVELCallback(const novatel_oem7_msgs::msg::BESTVEL::SharedPtr msg);
+
+  void HEADING2Callback(const novatel_oem7_msgs::msg::HEADING2::SharedPtr msg);
+
   void INSSTDEVCallback(const novatel_oem7_msgs::msg::INSSTDEV::SharedPtr msg);
   void
   TOPINSSTDEVCallback(const novatel_oem7_msgs::msg::INSSTDEV::SharedPtr msg);
 
-  void MessegefilteringCallback(
+  void MessageFilteringCallback(
       const sensor_msgs::msg::Imu ::ConstSharedPtr &imu_msg,
       const raptor_dbw_msgs::msg::WheelSpeedReport::ConstSharedPtr
           &wheel_speed_msg);
   void IMUCallback(const sensor_msgs::msg::Imu::SharedPtr msg);
   void TestCallback(const std_msgs::msg::Float64::SharedPtr msg);
+
+  /**
+   * @brief Check whether heading msgs have been updated recently.
+   * 
+   */
+  void headingAgeCheck();
 
   /**
    * @brief initialization of EKF

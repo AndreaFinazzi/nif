@@ -14,7 +14,7 @@ MissionManagerNode::MissionManagerNode(
             nif::common::NodeType::SYSTEM, 
             std::chrono::milliseconds(50)) {
 //    Initialize to false
-    this->declare_parameter("timeout_rc_flag_summary_s", 10);
+    this->declare_parameter("timeout_rc_flag_summary_s", 20);
     this->declare_parameter("timeout_velocity_ms", 1500);
 
     this->declare_parameter("velocity.zero", 0.0);
@@ -339,7 +339,8 @@ MissionManagerNode::RCFlagSummaryCallback(
         this->mission_avoidance_lap_distance_min <= this->lap_distance &&
         this->mission_avoidance_lap_distance_max >= this->lap_distance  )
     {
-        this->is_avoidance_enabled = true;
+        // this->is_avoidance_enabled = true;
+        RCLCPP_INFO(this->get_logger(), "Mission Avoidance triggered");
     }
 
     if (
@@ -348,6 +349,7 @@ MissionManagerNode::RCFlagSummaryCallback(
         this->track_zones_hit_count_map[5] >= 2 )
     {
         this->is_warmup_enabled = false;
+        RCLCPP_INFO(this->get_logger(), "Mission WarmUp triggered");
     }
 
     this->rc_flag_summary = std::move(*msg);

@@ -61,6 +61,8 @@ if [[ -z "$SKIP_ADEINIT" ]]; then
     done
 fi
 
+sudo rosdep fix-permissions
+
 /usr/sbin/sshd -e -f /etc/ssh/sshd_config_test_clion
 
 # cd /home/$USER/nif && sudo -u $USER ./nifupdate
