@@ -16,6 +16,7 @@ FrenetBasedOpponentPredictor::FrenetBasedOpponentPredictor(
   // TODO
   m_opponent_status_topic_name = "/ghost/perception";
   m_ego_status_topic_name = "aw_localization/ekf/odom";
+  m_defender_vel_topic_name = "/defender_vel";
   m_predicted_trajectory_topic_name = "/oppo/prediction";
   m_predicted_trajectory_vis_topic_name = "/oppo/vis/prediction";
 
@@ -40,6 +41,12 @@ FrenetBasedOpponentPredictor::FrenetBasedOpponentPredictor(
                              "failed (Empty path).");
   }
 
+  // TODO : Testing
+  m_config_path_spline_interval = 1.0;
+  m_config_prediction_horizon = 4.0;
+  m_config_prediction_sampling_time = 0.2;
+  m_config_oppo_vel_bias_mps = 0.5;
+
   // TODO : load config and assign
   // check items
   // spline interval and m_config_prediction_horizon can not be 0.0
@@ -49,18 +56,6 @@ FrenetBasedOpponentPredictor::FrenetBasedOpponentPredictor(
   auto wpt_xy = loadCSVFile(m_centerline_ref_file_path);
   m_centerline_path_x = get<0>(wpt_xy);
   m_centerline_path_y = get<1>(wpt_xy);
-
-  // Assign full target path in global coordinate (in nav_msg path)
-  // deprecated
-  // m_opponent_target_path.header.frame_id =
-  //     common::frame_id::localization::ODOM;
-  // for (int i = 0; i < m_centerline_path_x.size(); i++) {
-  //   geometry_msgs::msg::PoseStamped pt;
-  //   pt.header.frame_id = common::frame_id::localization::ODOM;
-  //   pt.pose.position.x = m_centerline_path_x[i];
-  //   pt.pose.position.y = m_centerline_path_y[i];
-  //   m_opponent_target_path.poses.push_back(pt);
-  // }
 
   // Assign splined full target path in global coordinate (in nav_msg path)
   auto splined_result = m_frenet_generator_ptr->apply_cubic_spliner(
@@ -72,18 +67,7 @@ FrenetBasedOpponentPredictor::FrenetBasedOpponentPredictor(
   m_splined_center_path_curvature = get<3>(splined_result);
   m_centerline_splined_model = get<4>(splined_result);
 
-  // deprecated
-  // m_opponent_splined_target_path.header.frame_id =
-  //     common::frame_id::localization::ODOM;
-  // for (int i = 0; i < m_splined_center_path_x.size(); i++) {
-  //   geometry_msgs::msg::PoseStamped pt;
-  //   pt.header.frame_id = common::frame_id::localization::ODOM;
-  //   pt.pose.position.x = m_splined_center_path_x[i];
-  //   pt.pose.position.y = m_splined_center_path_y[i];
-  //   pt.pose.orientation =
-  //       amathutils::getQuaternionFromYaw(m_splined_center_path_yaw[i]);
-  //   m_opponent_splined_target_path.poses.push_back(pt);
-  // }
+  m_progress_vec = m_centerline_splined_model->points_s();
 
   // Initialize subscribers & publisher
   m_sub_opponent_status =
@@ -145,8 +129,9 @@ void FrenetBasedOpponentPredictor::calcOpponentProgress() {
     std::cout << "center path is empty.." << std::endl;
   }
 
+  m_defender_vel_mps = 15;
+
   // TODO : opponent position (body to global)
-  nif_msgs::msg::Perception3D opponent_status_global;
 
   geometry_msgs::msg::PoseStamped ps_local;
   ps_local.pose = m_opponent_status.detection_result_3d.center;
@@ -154,6 +139,7 @@ void FrenetBasedOpponentPredictor::calcOpponentProgress() {
   auto global_ps = nif::common::utils::coordination::getPtBodytoGlobal(
       m_ego_status, ps_local);
 
+  nif_msgs::msg::Perception3D opponent_status_global;
   opponent_status_global = m_opponent_status;
   opponent_status_global.detection_result_3d.center = global_ps.pose;
 
@@ -177,8 +163,10 @@ void FrenetBasedOpponentPredictor::calcOpponentProgress() {
     }
   }
 
-  m_opponent_global_progress =
-      (opponent_index * m_config_path_spline_interval * 1.0);
+  // m_opponent_global_progress =
+  //     (opponent_index * m_config_path_spline_interval * 1.0);
+
+  m_opponent_global_progress = m_progress_vec[opponent_index];
 
   // positive : opponent is in the left side of the centerline
   // negative : opponent is in the right side of the centerline
@@ -235,6 +223,9 @@ void FrenetBasedOpponentPredictor::predict() {
 
   // 2. Generate minimum jerk frenet path which is parallel to the
   // centerline
+
+  std::cout << "oppo cte : " << m_opponent_cte << std::endl;
+
   std::tuple<std::shared_ptr<FrenetPath>,
              std::vector<std::shared_ptr<FrenetPath>>>
       frenet_path_generation_result = m_frenet_generator_ptr->calc_frenet_paths(
@@ -258,11 +249,13 @@ void FrenetBasedOpponentPredictor::predict() {
   m_predicted_output_in_global_vis.poses.clear();
 
   nav_msgs::msg::Path traj_global;
+
   if (!predicted_frenet_path->points_x().empty()) {
     traj_global.header.frame_id = common::frame_id::localization::ODOM;
 
     for (int i = 0; i < predicted_frenet_path->points_x().size(); i++) {
       geometry_msgs::msg::PoseStamped ps;
+      ps.header.frame_id = common::frame_id::localization::ODOM;
       std_msgs::msg::Header header;
       header.frame_id = common::frame_id::localization::ODOM;
 

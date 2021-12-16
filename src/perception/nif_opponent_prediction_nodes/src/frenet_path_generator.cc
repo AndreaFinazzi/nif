@@ -188,9 +188,9 @@ FrenetPathGenerator::generate_frenet_paths_v2(
     double left_margin = -MAX_ROAD_WIDTH,
     double right_margin = MAX_ROAD_WIDTH,
     double width_d = D_ROAD_W) {
-  assert(left_margin >= 0);
-  assert(right_margin <= 0);
-  assert(width_d <= 0);
+  // assert(left_margin >= 0);
+  // assert(right_margin <= 0);
+  // assert(width_d <= 0);
   // left margin should be set negative
   // right margin should be set positive
   // width_d should be set negative

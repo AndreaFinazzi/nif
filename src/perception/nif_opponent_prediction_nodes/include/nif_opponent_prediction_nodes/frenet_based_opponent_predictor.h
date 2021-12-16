@@ -69,6 +69,8 @@ private:
                                      // opponent_target_path path
   double m_opponent_cte;
 
+  vector<double> m_progress_vec;
+
   vector<double> m_centerline_path_x,
       m_centerline_path_y; // full path without splining
   vector<double> m_opponent_local_maptrack_path_x,

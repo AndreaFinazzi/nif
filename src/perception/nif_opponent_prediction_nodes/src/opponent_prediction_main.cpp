@@ -26,7 +26,7 @@ int32_t main(int32_t argc, char** argv) {
                 node_name);
     rclcpp::NodeOptions options;
 
-    string target_ref_file_path = "";
+    string target_ref_file_path = "/home/usrg/nif/src/managers/nif_waypoint_manager_nodes/maps/LVMS/centerline_opt.csv";
     string prediction_config_file_path = "";
     nd = std::make_shared<FrenetBasedOpponentPredictor>(
         target_ref_file_path, prediction_config_file_path);
