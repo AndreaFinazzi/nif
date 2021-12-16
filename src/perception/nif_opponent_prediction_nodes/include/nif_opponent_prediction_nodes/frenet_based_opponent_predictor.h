@@ -23,14 +23,15 @@
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/float32.hpp>
 
+#include "rcl_interfaces/msg/set_parameters_result.hpp"
+
 using namespace std;
 
 namespace nif {
 namespace perception {
 class FrenetBasedOpponentPredictor : public rclcpp::Node {
 public:
-  FrenetBasedOpponentPredictor(const string& target_ref_file_path_,
-                               const string& prediction_config_file_path_);
+FrenetBasedOpponentPredictor(const string& node_name);
   ~FrenetBasedOpponentPredictor() {}
 
   void setOpponentStatus(const nif_msgs::msg::Perception3D& oppo_status_) {
@@ -86,9 +87,9 @@ private:
   nif_msgs::msg::Perception3D m_opponent_status; // in global
   nav_msgs::msg::Odometry m_ego_status;
 
-  double m_config_path_spline_interval;
-  double m_config_prediction_horizon;
-  double m_config_prediction_sampling_time;
+  double m_config_path_spline_interval_m;
+  double m_config_prediction_horizon_s;
+  double m_config_prediction_sampling_time_s;
   double m_config_oppo_vel_bias_mps = 0.5; // mps
   double m_defender_vel_mps; // assume that official provides the speed of
                              // defender
@@ -109,6 +110,11 @@ private:
       m_sub_opponent_status;
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr m_sub_ego_status;
   rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr m_sub_defender_vel;
+
+  rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr parameters_callback_handle;
+
+  rcl_interfaces::msg::SetParametersResult parametersCallback(
+          const std::vector<rclcpp::Parameter> &vector);
 
   string m_opponent_status_topic_name, m_ego_status_topic_name,
       m_defender_vel_topic_name;

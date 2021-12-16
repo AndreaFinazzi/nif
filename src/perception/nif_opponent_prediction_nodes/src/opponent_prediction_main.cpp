@@ -16,7 +16,7 @@ int32_t main(int32_t argc, char** argv) {
   using nif::perception::FrenetBasedOpponentPredictor;
   using namespace nif::common::constants;
 
-  const char* node_name = "frenet_oppo_prediction_node";
+  const char* node_name = "opponent_predictor_node";
 
   rclcpp::Node::SharedPtr nd;
 
@@ -26,10 +26,7 @@ int32_t main(int32_t argc, char** argv) {
                 node_name);
     rclcpp::NodeOptions options;
 
-    string target_ref_file_path = "/home/usrg/nif/src/managers/nif_waypoint_manager_nodes/maps/LVMS/centerline_opt.csv";
-    string prediction_config_file_path = "";
-    nd = std::make_shared<FrenetBasedOpponentPredictor>(
-        target_ref_file_path, prediction_config_file_path);
+    nd = std::make_shared<FrenetBasedOpponentPredictor>(node_name);
   } catch (std::exception& e) {
     RCLCPP_FATAL(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
                  "FATAL ERROR during node initialization: ABORTING.\n%s",

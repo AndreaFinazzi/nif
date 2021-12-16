@@ -34,6 +34,11 @@ def generate_launch_description():
         output='screen',
         parameters=[
             LaunchConfiguration('nif_objects_tracker_nodes_param_file')
+        ],
+        remappings=[
+            ('in_ego_odom_topic_name', '/aw_localization/ekf/odom'),
+            ('in_perception_topic_name', '/ghost/perception'),
+            ('out_detected_object_topic_name', '/tracking/objects'),
         ]
     )
 

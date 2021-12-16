@@ -370,38 +370,19 @@ void DKGraphPlannerNode::CallbackOdometry(
     GetIntensityInfo(m_veh_x, m_veh_y, m_racingLineRefPoints,
                      m_closest_x_in_racing_line, m_closest_y_in_racing_line,
                      current_idx);
-    int current_node_id = 0;
-    // get node id for planning
+    // get node id for planing
     // Path from vehicle
 
     int current_layer_for_starting_node;
     GetIntensityInfo(m_veh_x, m_veh_y, m_FullIndexedPoints,
                      current_layer_for_starting_node); // to get current layer
 
-
-    // int prev_layer_for_starting_node = current_layer_for_starting_node -1;
-    // if(prev_layer_for_starting_node < 0)
-    //   prev_layer_for_starting_node = prev_layer_for_starting_node + m_LayerSize;
-
-    // prev_layer_for_starting_node = prev_layer_for_starting_node % m_LayerSize;
-
-
-    // for (auto way : m_WaysResister[prev_layer_for_starting_node]) {
-    //   if (way.start_node == 4)
-    //     current_node_id = way.first_node_id;
-
-    //   if(current_node_id == 0)
-    //   {
-    //     current_node_id = way.first_node_id;
-    //     break;
-    //   }
-    // }
-    
     // !Q: m_FirstNodeContainPoints ???
     GetIntensityInfo(m_veh_x, m_veh_y, m_FirstNodeContainPoints,
                      m_ClosestFirstNodeId); // to get current first node id
 
     // Path from racing line
+    int current_node_id = 0;
     GetIntensityInfo(m_closest_x_in_racing_line, m_closest_y_in_racing_line,
                      m_FirstNodeContainPoints, current_node_id);
 
@@ -877,58 +858,26 @@ void DKGraphPlannerNode::Planning() {
 
     m_PlanningPathNodes.push_back(here);
 
-      // !Q: What's up here?
-      if (here == m_closestGoalNode) {
-        // std::cout << "path finding!" << std::endl;
-        // m_PlanningPathNodes.pop_back();
-        break;
-      }
-
-      // !Q: Is `connected` the next node in the way?
-      for (auto connected : m_graph[here]) {
-        int next = connected.id;
-        double nextcost = connected.cost * m_ref_gain + 
-                          connected.collision_cost * m_collision_gain +
-                          connected.curvature_cost * m_curvature_gain +
-                          connected.transient_cost * m_transient_gain;
-        // connected.cost_close_to_vehicle;  
-
-        // std::cout << "connected.cost: " << connected.cost << std::endl;
-        // std::cout << "connected.collision_cost : " << connected.collision_cost << std::endl;
-        // std::cout << "connected.transient_cost : " << connected.transient_cost << std::endl;
-
-        if (dist[next] > dist[here] + nextcost) {
-          dist[next] = dist[here] + nextcost;
-          qu.push({dist[next], next});
-          m_PredSuccMap[next] = here;
-        }
-      }
+    if (here == m_closestGoalNode) {
+      // std::cout << "path finding!" << std::endl;
+      // m_PlanningPathNodes.pop_back();
+      break;
     }
 
-    // if(!m_PlanningPathNodes.empty())
-      // m_PlanningPathNodes.pop_front();
+    for (auto connected : m_graph[here]) {
+      int next = connected.id;
+      double nextcost = connected.cost * m_ref_gain +
+                        connected.collision_cost * m_collision_gain +
+                        connected.curvature_cost * m_curvature_gain +
+                        connected.transient_cost * m_transient_gain;
 
-    // std::cout << "--------------" << std::endl;
-    // for(auto id : m_PlanningPathNodes)
-    //   std::cout << "m_PredSuccMap: " <<m_PredSuccMap[id] << std::endl;
-
-    std::deque<int> FinalPathQue;
-    auto next = m_PredSuccMap[m_closestGoalNode];
-
-    // std::cout << "graph size: "<< m_graph.size() << std::endl;
-    // std::cout << "m_StartNode: " << m_StartNode << std::endl;
-    // std::cout <<"m_closestGoalNode: " << m_closestGoalNode << std::endl;
-    // std::cout << "next: "<<next << std::endl;
-    FinalPathQue.push_back(m_closestGoalNode);
-    FinalPathQue.push_back(next);
-    for (int i = 0; i < m_PlanningPathNodes.size(); i++) { // m_PredSuccMap
-      next = m_PredSuccMap[next];
-      FinalPathQue.push_back(next);
+      if (dist[next] > dist[here] + nextcost) {
+        dist[next] = dist[here] + nextcost;
+        qu.push({dist[next], next});
+        m_PredSuccMap[next] = here;
+      }
     }
-    m_FinalNodes.clear(); // !Q: Clear node 0 from final nodes
-    for (auto final : FinalPathQue) {
-      if(final == 0)
-        continue;
+  }
 
   std::deque<int> FinalPathQue;
   auto next = m_PredSuccMap[m_closestGoalNode];
@@ -939,7 +888,7 @@ void DKGraphPlannerNode::Planning() {
     next = m_PredSuccMap[next];
     FinalPathQue.push_back(next);
   }
-  m_FinalNodes.clear();
+  m_FinalNodes.clear(); // !Q: Clear node 0 from final nodes
   for (auto final : FinalPathQue) {
     if (final == 0)
       continue;
@@ -1011,11 +960,11 @@ void DKGraphPlannerNode::ToPathMsg() {
                          final_id.nodes[final_id.nodes.size() - 1].y);
     }
   }
-  // BestLayer XY visualize (should be end of each ways)
-  pcl::PointCloud<pcl::PointXYZI>::Ptr best_xy_points(new pcl::PointCloud<pcl::PointXYZI>);
+  // BestLayer XY visualize(should be end of each ways)
+  pcl::PointCloud<pcl::PointXYZI>::Ptr best_xy_points(
+      new pcl::PointCloud<pcl::PointXYZI>);
   int cnt2 = 0;
-  for(auto xy : m_BestLayerXYArray)
-  {
+  for (auto xy : m_BestLayerXYArray) {
     pcl::PointXYZI point_buf;
     point_buf.x = xy.second.first;
     point_buf.y = xy.second.second;

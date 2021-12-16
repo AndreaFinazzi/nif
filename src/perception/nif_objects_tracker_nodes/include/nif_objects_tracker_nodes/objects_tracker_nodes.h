@@ -31,7 +31,7 @@ private:
   // void
   // detectionCallback(const nif_msgs::msg::DetectedObjectArray::SharedPtr msg);
 
-  void detectionCallback(const nif_msgs::msg::Perception3DArray::SharedPtr msg);
+  void detectionCallback(const nif_msgs::msg::Perception3D::SharedPtr msg);
   void egoOdomCallback(const nav_msgs::msg::Odometry::SharedPtr msg);
 
   // rclcpp::Publisher<nif_msgs::msg::DetectedObjectArray>::SharedPtr
@@ -41,7 +41,7 @@ private:
 
   rclcpp::Publisher<nif_msgs::msg::Perception3DArray>::SharedPtr
       tracked_output_publisher;
-  rclcpp::Subscription<nif_msgs::msg::Perception3DArray>::SharedPtr
+  rclcpp::Subscription<nif_msgs::msg::Perception3D>::SharedPtr
       detection_result_subscription;
 
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr
