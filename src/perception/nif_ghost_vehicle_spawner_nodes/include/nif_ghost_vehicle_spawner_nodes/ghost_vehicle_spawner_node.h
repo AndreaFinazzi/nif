@@ -19,7 +19,7 @@
 #include "nif_msgs/srv/ghost_vehicle_get.hpp"
 #include "nif_msgs/srv/ghost_vehicle_destroy.hpp"
 #include "nif_msgs/srv/ghost_vehicle_update_maptrack.hpp"
-#include "nif_msgs/srv/ghost_vehicle_update_relative_velocity.hpp"
+#include "nif_msgs/srv/ghost_vehicle_update_velocity.hpp"
 #include "nif_msgs/srv/ghost_vehicle_update_pose.hpp"
 
 #include "nif_common/types.h"
@@ -28,6 +28,7 @@
 #include "nif_waypoint_manager_minimal/waypoint_manager_minimal.h"
 #include "nif_common_nodes/i_base_synchronized_node.h"
 
+#include "tf2/LinearMath/Transform.h"
 #include "ament_index_cpp/get_package_share_directory.hpp"
 #include <rclcpp/rclcpp.hpp>
 
@@ -45,8 +46,8 @@ struct GhostVehicleState {
     unsigned int id;
     nav_msgs::msg::Odometry odometry;
     geometry_msgs::msg::Pose pose_in_ego_body;
-    double velocity_u_vector_in_ego_body[3];
-    double relative_velocity_mps;
+    double velocity_u_vector_in_global[3];
+    double velocity_mps;
     // Speed vector?
     std::string maptrack_id;
     unsigned int waypoint_index;
@@ -127,10 +128,10 @@ public:
                 this,
                 std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
             
-        this->service_update_vehicle_relative_velocity = this->create_service<nif_msgs::srv::GhostVehicleUpdateRelativeVelocity>(
-            "/ghost_spawner/update_vehicle_relative_velocity", 
+        this->service_update_vehicle_velocity = this->create_service<nif_msgs::srv::GhostVehicleUpdateVelocity>(
+            "/ghost_spawner/update_vehicle_velocity", 
             std::bind(
-                &GhostVehicleSpawnerNode::service_handler_update_vehicle_relative_velocity,
+                &GhostVehicleSpawnerNode::service_handler_update_vehicle_velocity,
                 this,
                 std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
             
@@ -171,47 +172,41 @@ public:
         for (auto const& [vehicle_id, vehicle_state] : vehicle_state_by_id) // C++17 
         {
             rclcpp::Duration dt = now - vehicle_state->t_prev;
+            vehicle_state->odometry.header.stamp = now;
     //      vehicle.pose_in_ego_body.x = vehicle.pose_in_ego_body.x + (dt * vehicle.velocity.x);
     //      vehicle.pose_in_ego_body.x = vehicle.pose_in_ego_body.y + (dt * vehicle.velocity.y);
-            vehicle_state->pose_in_ego_body.position.x = vehicle_state->pose_in_ego_body.position.x 
-                + ( TIMER_PERIOD_S * vehicle_state->velocity_u_vector_in_ego_body[0] * vehicle_state->relative_velocity_mps);
+            vehicle_state->odometry.pose.pose.position.x = vehicle_state->odometry.pose.pose.position.x 
+                + ( TIMER_PERIOD_S * vehicle_state->velocity_u_vector_in_global[0] * vehicle_state->velocity_mps);
 
-            vehicle_state->pose_in_ego_body.position.y = vehicle_state->pose_in_ego_body.position.y 
-                + ( TIMER_PERIOD_S * vehicle_state->velocity_u_vector_in_ego_body[1] * vehicle_state->relative_velocity_mps);
+            vehicle_state->odometry.pose.pose.position.y = vehicle_state->odometry.pose.pose.position.y 
+                + ( TIMER_PERIOD_S * vehicle_state->velocity_u_vector_in_global[1] * vehicle_state->velocity_mps);
 
-            // Convert to global
-            vehicle_state->odometry.header.stamp = now;
-            vehicle_state->odometry.pose.pose = nif::common::utils::coordination::convertToFrame(
-                this->getEgoOdometry().pose.pose,
-                vehicle_state->pose_in_ego_body
-            ).pose;
 
             // TODO update odometry linear twist
     //      vehicle.update_velocity_vector();
             auto& wpt_manager = this->wpt_manager_by_id[vehicle_state->maptrack_id];
             wpt_manager->setCurrentOdometry(vehicle_state->odometry);
-            auto& maptrack_in_ghost_body = wpt_manager->getDesiredMapTrackInBody();
+
             auto& maptrack_in_global = wpt_manager->getDesiredMapTrackInGlobal();
 
-            auto& next_wpt_in_ghost_body = maptrack_in_ghost_body.poses[10].pose;
-            
-            geometry_msgs::msg::Pose next_wpt_in_ego_body = nif::common::utils::coordination::convertToFrame(
-                vehicle_state->pose_in_ego_body,
-                next_wpt_in_ghost_body
-            ).pose;
+            auto& next_wpt_in_global = maptrack_in_global.poses[1].pose;
 
-            double d_x = (next_wpt_in_ego_body.position.x - vehicle_state->pose_in_ego_body.position.x);
-            double d_y = (next_wpt_in_ego_body.position.y - vehicle_state->pose_in_ego_body.position.y);
+            double d_x = (next_wpt_in_global.position.x - vehicle_state->odometry.pose.pose.position.x);
+            double d_y = (next_wpt_in_global.position.y - vehicle_state->odometry.pose.pose.position.y);
             double mag = sqrt(d_x * d_x + d_y * d_y);
-            vehicle_state->velocity_u_vector_in_ego_body[0] = d_x / mag; 
-            vehicle_state->velocity_u_vector_in_ego_body[1] = d_y / mag; 
+            vehicle_state->velocity_u_vector_in_global[0] = d_x / mag; 
+            vehicle_state->velocity_u_vector_in_global[1] = d_y / mag; 
 
             // Update orientation
-            double theta_rad_ing_ego_body = atan(
-                vehicle_state->velocity_u_vector_in_ego_body[0] / 
-                vehicle_state->velocity_u_vector_in_ego_body[1]);
-            vehicle_state->pose_in_ego_body.orientation.z = sin(theta_rad_ing_ego_body / 2.0);
-            vehicle_state->pose_in_ego_body.orientation.w = cos(theta_rad_ing_ego_body / 2.0);
+            vehicle_state->odometry.pose.pose.orientation = next_wpt_in_global.orientation;
+
+            // vehicle_state->pose_in_ego_body = nif::common::utils::coordination::convertToFrame(
+            //     this->getEgoOdometry().pose.pose,
+            //     vehicle_state->odometry.pose.pose).pose;
+
+            vehicle_state->pose_in_ego_body = nif::common::utils::coordination::getPtGlobaltoBody(
+                this->getEgoOdometry(),
+                vehicle_state->odometry.pose.pose).pose;
 
             vehicle_state->t_prev = now;
 
@@ -267,8 +262,15 @@ public:
 
             auto& wpt_manager = this->wpt_manager_by_id[maptrack_id];
             odometry.pose.pose = wpt_manager->getPoseStampedAtIndex(0).pose;
-            pose_in_ego_body = nif::common::utils::coordination::convertToFrame(
-                this->getEgoOdometry().pose.pose,
+            // tf2::Transform t_ego_odom_in_global;
+            // t_ego_odom_in_global.setOrigin(this->getEgoOdometry().pose.pose.position); 
+            // t_ego_odom_in_global.setRotation(this->getEgoOdometry().pose.pose.orientation); 
+            // pose_in_ego_body = nif::common::utils::coordination::convertToFrame(
+                // this->getEgoOdometry().pose.pose,
+                // odometry.pose.pose).pose;
+
+            pose_in_ego_body = nif::common::utils::coordination::getPtGlobaltoBody(
+                this->getEgoOdometry(),
                 odometry.pose.pose).pose;
 
             // Populate map <vehicle_id, vehicle_state>
@@ -283,12 +285,22 @@ public:
                 this->now()
             });
 
+            auto next_wpt_in_global = wpt_manager->getPoseStampedAtIndex(1).pose;
+            double d_x = (next_wpt_in_global.position.x - vehicle_state_by_id[vehicle_id]->odometry.pose.pose.position.x);
+            double d_y = (next_wpt_in_global.position.y - vehicle_state_by_id[vehicle_id]->odometry.pose.pose.position.y);
+            double mag = sqrt(d_x * d_x + d_y * d_y);
+            vehicle_state_by_id[vehicle_id]->velocity_u_vector_in_global[0] = d_x / mag; 
+            vehicle_state_by_id[vehicle_id]->velocity_u_vector_in_global[1] = d_y / mag; 
+
             return vehicle_id;
         }
     
     
     GhostVehicleState& get_vehicle_by_id(const unsigned int vehicle_id);
-    void update_vehicle_relative_velocity(const unsigned int vehicle_id, const double relative_velocity_mps);
+    void update_vehicle_velocity(const unsigned int vehicle_id, const double velocity_mps)
+    {
+        vehicle_state_by_id[vehicle_id]->velocity_mps = velocity_mps;
+    }
     
     void update_vehicle_pose(const unsigned int vehicle_id, const geometry_msgs::msg::Pose pose_in_ego_body);
     void update_vehicle_pose(const unsigned int vehicle_id, const nif::utils::geometry::Point2D point_in_body);
@@ -308,7 +320,7 @@ public:
         {
             auto vehicle_id = this->create_vehicle(
                 std::move(request->maptrack_id), 
-                request->relative_velocity_mps, 
+                request->velocity_mps, 
                 request->waypoint_index);
 
             if (vehicle_state_by_id.find(vehicle_id) != vehicle_state_by_id.end())
@@ -330,11 +342,26 @@ public:
         nif_msgs::srv::GhostVehicleGet::Response::SharedPtr response
     ) {}
     
-    void service_handler_update_vehicle_relative_velocity(
+    void service_handler_update_vehicle_velocity(
         const std::shared_ptr<rmw_request_id_t> request_header,
-        const nif_msgs::srv::GhostVehicleUpdateRelativeVelocity::Request::SharedPtr request,
-        nif_msgs::srv::GhostVehicleUpdateRelativeVelocity::Response::SharedPtr response
-    ) {}
+        const nif_msgs::srv::GhostVehicleUpdateVelocity::Request::SharedPtr request,
+        nif_msgs::srv::GhostVehicleUpdateVelocity::Response::SharedPtr response
+    ) 
+    {
+        bool success = false;
+        if (vehicle_state_by_id.find(request->vehicle_id) != vehicle_state_by_id.end())
+        {
+            this->update_vehicle_velocity(request->vehicle_id, request->velocity_mps);
+            if (vehicle_state_by_id[request->vehicle_id]->velocity_mps == request->velocity_mps)
+            {
+                response->success = true;
+                response->message = "OK: vehicle velocity updated successfully.";
+            }
+        } else {
+            response->success = false;
+            response->message = "ERROR: invalid vehicle_id.";
+        }
+    }
     
     void service_handler_update_vehicle_pose(
         const std::shared_ptr<rmw_request_id_t> request_header,
@@ -352,7 +379,18 @@ public:
         const std::shared_ptr<rmw_request_id_t> request_header,
         const nif_msgs::srv::GhostVehicleDestroy::Request::SharedPtr request,
         nif_msgs::srv::GhostVehicleDestroy::Response::SharedPtr response
-    ) {}
+    ) 
+    {
+        this->destroy_vehicle(request->vehicle_id);
+        if (vehicle_state_by_id.find(request->vehicle_id) == vehicle_state_by_id.end())
+        {
+            response->success = true;
+            response->message = "OK: Ghost vehicle removed successfully.";
+        } else {
+            response->success = false;
+            response->message = "ERROR: Ghost vehicle could not be removed.";
+        }
+    }
     
 
 
@@ -378,7 +416,7 @@ private:
 
     rclcpp::Service<nif_msgs::srv::GhostVehicleCreate>::SharedPtr service_create_vehicle;
     rclcpp::Service<nif_msgs::srv::GhostVehicleGet>::SharedPtr service_get_vehicle;
-    rclcpp::Service<nif_msgs::srv::GhostVehicleUpdateRelativeVelocity>::SharedPtr service_update_vehicle_relative_velocity;
+    rclcpp::Service<nif_msgs::srv::GhostVehicleUpdateVelocity>::SharedPtr service_update_vehicle_velocity;
     rclcpp::Service<nif_msgs::srv::GhostVehicleUpdatePose>::SharedPtr service_update_vehicle_pose;
     rclcpp::Service<nif_msgs::srv::GhostVehicleUpdateMaptrack>::SharedPtr service_update_vehicle_maptrack;
     rclcpp::Service<nif_msgs::srv::GhostVehicleDestroy>::SharedPtr service_destroy_vehicle;

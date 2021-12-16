@@ -6,6 +6,7 @@
 //
 
 #include "nif_utils/utils.h"
+#include "tf2/LinearMath/Transform.h"
 #include <math.h>
 
 /**
@@ -208,37 +209,39 @@ nif::common::utils::coordination::getPtGlobaltoBody(
   return point_in_body;
 }
 
-geometry_msgs::msg::PoseStamped
-nif::common::utils::coordination::convertToFrame(
-  const geometry_msgs::msg::Pose& origin_frame_in_destination_,
-  const geometry_msgs::msg::Pose& pt_in_origin_) {
-  
-  double theta_rad = nif::common::utils::coordination::quat2yaw(
-      origin_frame_in_destination_.orientation);
-  geometry_msgs::msg::PoseStamped point_in_destination;
-  point_in_destination.pose.position.x = 
-      origin_frame_in_destination_.position.x
-      + cos(theta_rad) * pt_in_origin_.position.x 
-      - sin(theta_rad) * pt_in_origin_.position.y;
-  point_in_destination.pose.position.y = 
-      origin_frame_in_destination_.position.y
-      + sin(theta_rad) * pt_in_origin_.position.x
-      + cos(theta_rad) * pt_in_origin_.position.y;
+// geometry_msgs::msg::PoseStamped
+// nif::common::utils::coordination::convertToFrame(
+//   const geometry_msgs::msg::Pose& origin_frame_in_destination_,
+//   const geometry_msgs::msg::Pose& pt_in_origin_) {
+//   double theta_rad = nif::common::utils::coordination::quat2yaw(
+//       origin_frame_in_destination_.orientation);
+//   geometry_msgs::msg::PoseStamped point_in_destination;
+//   point_in_destination.pose.position.x = 
+//       origin_frame_in_destination_.position.x
+//       + cos(theta_rad) * pt_in_origin_.position.x 
+//       - sin(theta_rad) * pt_in_origin_.position.y;
+//   point_in_destination.pose.position.y = 
+//       origin_frame_in_destination_.position.y
+//       + sin(theta_rad) * pt_in_origin_.position.x
+//       + cos(theta_rad) * pt_in_origin_.position.y;
 
-  point_in_destination.pose.position.z =
-      pt_in_origin_.position.z - origin_frame_in_destination_.position.z;
+//   point_in_destination.pose.position.z =
+//       pt_in_origin_.position.z - origin_frame_in_destination_.position.z;
 
-  double target_yaw = nif::common::utils::coordination::quat2yaw(
-      pt_in_origin_.orientation);
+//   double target_yaw = nif::common::utils::coordination::quat2yaw(
+//       pt_in_origin_.orientation);
 
-  point_in_destination.pose.orientation.x = 0.0;
-  point_in_destination.pose.orientation.y = 0.0;
-  // TODO : should be tested
-  point_in_destination.pose.orientation.z = sin((target_yaw - theta_rad) / 2.0);
-  point_in_destination.pose.orientation.w = cos((target_yaw - theta_rad) / 2.0);
+//   // point_in_destination.pose.orientation = 
+//   //   origin_frame_in_destination_.orientation * pt_in_origin_.orientation;
 
-  return point_in_destination;
-  }
+//   point_in_destination.pose.orientation.x = 0.0;
+//   point_in_destination.pose.orientation.y = 0.0;
+//   // TODO : should be tested
+//   point_in_destination.pose.orientation.z = sin((target_yaw + theta_rad) / 2.0);
+//   point_in_destination.pose.orientation.w = cos((target_yaw + theta_rad) / 2.0);
+
+//   return point_in_destination;
+//   }
 
 
 nav_msgs::msg::Path nif::common::utils::coordination::getPathGlobaltoBody(
