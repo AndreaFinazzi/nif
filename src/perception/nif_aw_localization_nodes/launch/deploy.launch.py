@@ -69,7 +69,13 @@ def generate_launch_description():
                 },
                 emulate_tty=True,
                 parameters=[
-                    LaunchConfiguration('nif_aw_localization_param_file')
+                    LaunchConfiguration('nif_aw_localization_param_file'),
+                    {
+                        "bestvel_heading_update_velocity_thres" : 3.0,
+                        "heading_initial_guess_enabled" : False,
+                        "heading_initial_guess_deg"     : -215.0,
+                        "heading_heading2_offset_deg"   : +90.0
+                    }
                 ],
                 remappings=[
                     # Current set : Bottom INS Disabled // Top INS Enabled
@@ -78,8 +84,10 @@ def generate_launch_description():
                     ("in_top_inspva", "novatel_top/inspva"), # HEADING PRIORITY 2
                     ("in_bestpos", "novatel_bottom/bestgnsspos"), # POSE (X,Y)
                     ("in_top_bestpos", "novatel_top/bestgnsspos"), # POSE (X,Y)
-                    ("in_imu", "novatel_bottom/imu/data"), # YAW RATE
+                    ("in_imu", "novatel_bottom/rawimux"), # YAW RATE
                     ("in_bestvel", "novatel_bottom/bestvel"), #HEADING PRIORITY 3(BACK UP SOLUTION)
+                    ("in_bestvel_top", "novatel_top/bestvel"), #HEADING PRIORITY 3(BACK UP SOLUTION)
+                    ("in_heading2", "novatel_bottom/heading2"), #HEADING PRIORITY 3(BACK UP SOLUTION)
                     ("in_insstdev", "novatel_bottom/insstdev"), #INS STANDARD DEVIATION
                     ("in_top_insstdev", "novatel_top/insstdev"), #INS STANDARD DEVIATION
                     ("in_wheel_speed_report", "raptor_dbw_interface/wheel_speed_report"), # WHEEL SPEED
