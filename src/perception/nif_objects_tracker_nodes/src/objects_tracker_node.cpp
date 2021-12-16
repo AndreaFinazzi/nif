@@ -27,7 +27,7 @@ IMMObjectTrackerNode::IMMObjectTrackerNode(const std::string &node_name_)
           "output_topic_name", 10);
 
   detection_result_subscription =
-      this->create_subscription<nif_msgs::msg::Perception3D>(
+      this->create_subscription<nif_msgs::msg::Perception3DArray>(
           "in_perception_topic_name", 10,
           std::bind(&IMMObjectTrackerNode::detectionCallback, this,
                     std::placeholders::_1));
@@ -49,7 +49,7 @@ IMMObjectTrackerNode::IMMObjectTrackerNode(
           "output_topic_name", 10);
 
   detection_result_subscription =
-      this->create_subscription<nif_msgs::msg::DetectedObjectArray>(
+      this->create_subscription<nif_msgs::msg::Perception3DArray>(
           "input_topic_name", 10,
           std::bind(&IMMObjectTrackerNode::detectionCallback, this,
                     std::placeholders::_1));
@@ -62,30 +62,8 @@ IMMObjectTrackerNode::IMMObjectTrackerNode(
   // success to initialize the tracker
 }
 
-// void IMMObjectTrackerNode::detectionCallback(
-//     const nif_msgs::msg::Perception3DArray::SharedPtr msg) {
-//   // TODO : Set the latest ego position to the tracker
-//   tracker_ptr->setEgoOdom(ego_odom);
-//   // TODO : Set the detection result to the tracker
-//   // TODO : TOPIC TYPE CONVERSION : Perception3DArray to DetectionArray
-//   nif_msgs::msg::DetectedObjectArray tmp;
-
-//   tmp.header = msg->header;
-//   for (int det_idx = 0; det_idx < msg->perception_list.size(); det_idx++) {
-//     tmp.objects[det_idx].pose.position.x =
-//         msg->perception_list[det_idx].detection_result_3d.center.position.x;
-//     tmp.objects[det_idx].pose.position.y =
-//         msg->perception_list[det_idx].detection_result_3d.center.position.y;
-//     tmp.objects[det_idx].pose.position.z =
-//         msg->perception_list[det_idx].detection_result_3d.center.position.z;
-//   }
-
-//   tracked_objects = tracker_ptr->getTrackedResult(tmp);
-//   tracked_output_publisher->publish(tracked_objects);
-// }
-
 void IMMObjectTrackerNode::detectionCallback(
-    const nif_msgs::msg::Perception3D::SharedPtr msg) {
+    const nif_msgs::msg::Perception3DArray::SharedPtr msg) {
   // TODO : Set the latest ego position to the tracker
   tracker_ptr->setEgoOdom(ego_odom);
   // TODO : Set the detection result to the tracker
@@ -93,12 +71,14 @@ void IMMObjectTrackerNode::detectionCallback(
   nif_msgs::msg::DetectedObjectArray tmp;
 
   tmp.header = msg->header;
-    tmp.objects[0].pose.position.x =
-        msg->detection_result_3d.center.position.x;
-    tmp.objects[0].pose.position.y =
-        msg->detection_result_3d.center.position.y;
-    tmp.objects[0].pose.position.z =
-        msg->detection_result_3d.center.position.z;
+  for (int det_idx = 0; det_idx < msg->perception_list.size(); det_idx++) {
+    tmp.objects[det_idx].pose.position.x =
+        msg->perception_list[det_idx].detection_result_3d.center.position.x;
+    tmp.objects[det_idx].pose.position.y =
+        msg->perception_list[det_idx].detection_result_3d.center.position.y;
+    tmp.objects[det_idx].pose.position.z =
+        msg->perception_list[det_idx].detection_result_3d.center.position.z;
+  }
 
   tracked_objects = tracker_ptr->getTrackedResult(tmp);
   tracked_output_publisher->publish(tracked_objects);

@@ -31,17 +31,13 @@ private:
   // void
   // detectionCallback(const nif_msgs::msg::DetectedObjectArray::SharedPtr msg);
 
-  void detectionCallback(const nif_msgs::msg::Perception3D::SharedPtr msg);
+  void detectionCallback(const nif_msgs::msg::Perception3DArray::SharedPtr msg);
   void egoOdomCallback(const nav_msgs::msg::Odometry::SharedPtr msg);
-
-  // rclcpp::Publisher<nif_msgs::msg::DetectedObjectArray>::SharedPtr
-  //     tracked_output_publisher;
-  // rclcpp::Subscription<nif_msgs::msg::DetectedObjectArray>::SharedPtr
-  //     detection_result_subscription;
 
   rclcpp::Publisher<nif_msgs::msg::Perception3DArray>::SharedPtr
       tracked_output_publisher;
-  rclcpp::Subscription<nif_msgs::msg::Perception3D>::SharedPtr
+
+  rclcpp::Subscription<nif_msgs::msg::Perception3DArray>::SharedPtr
       detection_result_subscription;
 
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr
