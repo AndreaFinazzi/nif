@@ -32,6 +32,7 @@
 #include "nif_msgs/msg/waypoints.hpp"
 #include "nif_msgs/msg/waypoints_array.hpp"
 #include "nif_msgs/msg/trajectory.hpp"
+#include "nif_msgs/msg/dynamic_trajectory.hpp"
 #include "deep_orange_msgs/msg/base_to_car_summary.hpp"
 
 namespace nif
@@ -202,7 +203,7 @@ namespace nif
  * Message produced by a Motion Planner
  */
       using Trajectory = autoware_auto_msgs::msg::Trajectory;
-      using NIF_Trajectory = nif_msgs::msg::Trajectory;
+      using NIF_Trajectory = nif_msgs::msg::DynamicTrajectory;
 
       /**
  * Message produced by a Path Planner

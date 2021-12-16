@@ -36,10 +36,12 @@ public:
 
 protected:
   // DEPRECATED, will be removed!
+  __attribute_deprecated__
   explicit IBaseNode(const std::string &);
 
   IBaseNode(const std::string &, const NodeType,
-            const rclcpp::NodeOptions & = rclcpp::NodeOptions{});
+            const rclcpp::NodeOptions & = rclcpp::NodeOptions{},
+            const bool register_to_system_manager = true);
 
   virtual ~IBaseNode() {
     this->setNodeStatus(NodeStatusCode::NODE_DEAD);
