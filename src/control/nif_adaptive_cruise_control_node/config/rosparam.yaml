@@ -1,0 +1,6 @@
+/**:
+  ros__parameters:
+    input_perception_msg_topic_name: "in_topic_name"
+    idm_acc_config_file: "config_file_path"
+    input_maptrack_body_topic_name: "in_topic_name_maptrack"
+    output_acc_cmd_topic_name: "out_topic_name_cmd"

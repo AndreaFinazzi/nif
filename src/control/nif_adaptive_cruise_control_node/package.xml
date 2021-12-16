@@ -7,7 +7,7 @@
   <maintainer email="cy.jung@kaist.ac.kr">Chanyoung Jung</maintainer>
   <license>Apache License 2.0</license>
 
-  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>ament_cmake_auto</buildtool_depend>
 
   <depend>rclcpp</depend>
   <depend>std_msgs</depend>
@@ -17,6 +17,7 @@
   <depend>bvs_msgs</depend>
   <depend>launch_xml</depend>
   <depend>nif_msgs</depend>
+  <depend>nav_msgs</depend>
   <depend>nif_utils</depend>
   <depend>nif_common</depend>
   <depend>nif_common_nodes</depend>
