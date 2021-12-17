@@ -20,6 +20,8 @@
 #include <memory>
 #include <stdlib.h>
 #include <string>
+#include "visualization_msgs/msg/marker.hpp"
+#include "visualization_msgs/msg/marker_array.hpp"
 
 class IMMObjectTrackerNode : public rclcpp::Node {
 public:
@@ -36,6 +38,8 @@ private:
 
   rclcpp::Publisher<nif_msgs::msg::Perception3DArray>::SharedPtr
       tracked_output_publisher;
+  rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr
+      tracked_output_vis_publisher;
 
   rclcpp::Subscription<nif_msgs::msg::Perception3DArray>::SharedPtr
       detection_result_subscription;

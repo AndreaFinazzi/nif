@@ -52,7 +52,7 @@ class ImmUkfPda {
 private:
   int target_id_;
   bool init_;
-  double timestamp_;
+  rclcpp::Time timestamp_;
 
   std::vector<UKF> targets_;
 
@@ -133,20 +133,20 @@ private:
                            nif_msgs::msg::DetectedObject &object);
 
   void initTracker(const nif_msgs::msg::DetectedObjectArray &input,
-                   double timestamp);
+                   const rclcpp::Time timestamp);
   void secondInit(UKF &target,
                   const std::vector<nif_msgs::msg::DetectedObject> &object_vec,
-                  double dt);
+                  const rclcpp::Duration dt);
 
   void updateTrackingNum(
       const std::vector<nif_msgs::msg::DetectedObject> &object_vec,
       UKF &target);
 
   bool probabilisticDataAssociation(
-      const nif_msgs::msg::DetectedObjectArray &input, const double dt,
+      const nif_msgs::msg::DetectedObjectArray &input, const rclcpp::Duration dt,
       std::vector<bool> &matching_vec,
       std::vector<nif_msgs::msg::DetectedObject> &object_vec, UKF &target);
-  void makeNewTargets(const double timestamp,
+  void makeNewTargets(const rclcpp::Time timestamp,
                       const nif_msgs::msg::DetectedObjectArray &input,
                       const std::vector<bool> &matching_vec);
 

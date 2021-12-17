@@ -25,6 +25,7 @@
 #include <vector>
 
 #include "nif_msgs/msg/detected_object.hpp"
+#include "rclcpp/time.hpp"
 
 enum TrackingState : int {
   Die = 0,       // No longer tracking
@@ -92,7 +93,7 @@ public:
   Eigen::MatrixXd x_sig_pred_rm_;
 
   //* time when the state is true, in us
-  long long time_;
+  rclcpp::Time time_;
 
   //* Process noise standard deviation longitudinal acceleration in m/s^2
   double std_a_cv_;
@@ -241,7 +242,7 @@ public:
 
   void updateYawWithHighProb();
 
-  void initialize(const Eigen::VectorXd &z, const double timestamp,
+  void initialize(const Eigen::VectorXd &z, const rclcpp::Time timestamp,
                   const int target_ind);
 
   void updateModeProb(const std::vector<double> &lambda_vec);
@@ -252,9 +253,9 @@ public:
 
   void interaction();
 
-  void predictionSUKF(const double dt, const bool has_subscribed_vectormap);
+  void predictionSUKF(const rclcpp::Duration, const bool has_subscribed_vectormap);
 
-  void predictionIMMUKF(const double dt, const bool has_subscribed_vectormap);
+  void predictionIMMUKF(const rclcpp::Duration, const bool has_subscribed_vectormap);
 
   void findMaxZandS(Eigen::VectorXd &max_det_z, Eigen::MatrixXd &max_det_s);
 
@@ -277,19 +278,19 @@ public:
                const std::vector<nif_msgs::msg::DetectedObject> &object_vec);
 
   void ctrv(const double p_x, const double p_y, const double v,
-            const double yaw, const double yawd, const double delta_t,
+            const double yaw, const double yawd, const rclcpp::Duration dt,
             std::vector<double> &state);
 
   void cv(const double p_x, const double p_y, const double v, const double yaw,
-          const double yawd, const double delta_t, std::vector<double> &state);
+          const double yawd, const rclcpp::Duration dt, std::vector<double> &state);
 
   void randomMotion(const double p_x, const double p_y, const double v,
-                    const double yaw, const double yawd, const double delta_t,
+                    const double yaw, const double yawd, const rclcpp::Duration dt,
                     std::vector<double> &state);
 
-  void initCovarQs(const double dt, const double yaw);
+  void initCovarQs(const rclcpp::Duration, const double yaw);
 
-  void predictionMotion(const double delta_t, const int model_ind);
+  void predictionMotion(const rclcpp::Duration, const int model_ind);
 
   void
   checkLaneDirectionAvailability(const nif_msgs::msg::DetectedObject &in_object,
@@ -316,7 +317,7 @@ public:
               const std::vector<nif_msgs::msg::DetectedObject> &object_vec);
 
   void prediction(const bool use_sukf, const bool has_subscribed_vectormap,
-                  const double dt);
+                  const rclcpp::Duration);
 };
 
 #endif /* UKF_H */
