@@ -56,7 +56,7 @@ FrenetBasedOpponentPredictor(const string& node_name);
     return m_predicted_output_in_local;
   }
 
-  void opponentStatusCallback(const nif_msgs::msg::Perception3D::SharedPtr msg);
+  void opponentStatusCallback(const common::msgs::PerceptionResultList::SharedPtr msg);
   void egoStatusCallback(const nav_msgs::msg::Odometry::SharedPtr msg);
   void defenderVelCallback(const std_msgs::msg::Float32::SharedPtr msg);
 
@@ -93,6 +93,7 @@ private:
   double m_config_oppo_vel_bias_mps = 0.5; // mps
   double m_defender_vel_mps; // assume that official provides the speed of
                              // defender
+  double m_defender_vel_default_mps;
 
   nif_msgs::msg::DynamicTrajectory m_predicted_output_in_global,
       m_predicted_output_in_local;
@@ -106,7 +107,7 @@ private:
   bool m_initialize_done_flg;
 
   // Subscribers & topic information
-  rclcpp::Subscription<nif_msgs::msg::Perception3D>::SharedPtr
+  rclcpp::Subscription<common::msgs::PerceptionResultList>::SharedPtr
       m_sub_opponent_status;
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr m_sub_ego_status;
   rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr m_sub_defender_vel;

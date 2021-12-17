@@ -15,7 +15,7 @@
 #define MIN_T                                                                  \
   2.0 // min prediction time [m] ----------------> python code에서 floating \
                                 // point가 잘 못되서 +- 0.1을 해줌
-#define TARGET_SPEED 10.0 / 3.6 // target speed [m/s]
+#define TARGET_SPEED 300.0 / 3.6 // target speed [m/s]
 #define D_T_S 5.0 / 3.6         // target speed sampling length [m/s]
 #define N_S_SAMPLE 0            // sampling number of target speed
 #define ROBOT_RADIUS 2.0        // robot radius [m]
@@ -92,8 +92,8 @@ FrenetPathGenerator::generate_frenet_paths(double current_position_d,
                                              third_derivative_d);
       }
 
-      double target_velocity_s = TARGET_SPEED - D_T_S * N_S_SAMPLE;
-      while (target_velocity_s <= TARGET_SPEED + D_T_S * N_S_SAMPLE) {
+      double target_velocity_s = current_velocity_s;
+      while (target_velocity_s <= current_velocity_s) {
         std::shared_ptr<FrenetPath> frenet_path_target_velocity_s(
             new FrenetPath(*frenet_path));
 
@@ -200,7 +200,7 @@ FrenetPathGenerator::generate_frenet_paths_v2(
   double expected_position_d = left_margin;
   while (expected_position_d <= right_margin) {
     double time = min_t;
-    while (time < max_t) {
+    while (time <= max_t) {
       std::shared_ptr<FrenetPath> frenet_path(new FrenetPath());
 
       std::shared_ptr<QuinticPolynomial> quintic_polynomial_lateral(
@@ -213,7 +213,7 @@ FrenetPathGenerator::generate_frenet_paths_v2(
                                 time));
 
       double frenet_path_time_i = 0.0;
-      while (frenet_path_time_i < time) {
+      while (frenet_path_time_i <= time) {
         frenet_path->push_back_time(frenet_path_time_i);
         frenet_path_time_i += dt;
       }
@@ -242,8 +242,8 @@ FrenetPathGenerator::generate_frenet_paths_v2(
                                              third_derivative_d);
       }
 
-      double target_velocity_s = TARGET_SPEED - D_T_S * N_S_SAMPLE;
-      while (target_velocity_s <= TARGET_SPEED + D_T_S * N_S_SAMPLE) {
+      double target_velocity_s = current_velocity_s;
+      while (target_velocity_s <= current_velocity_s) {
         std::shared_ptr<FrenetPath> frenet_path_target_velocity_s(
             new FrenetPath(*frenet_path));
 
