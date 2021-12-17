@@ -5,8 +5,8 @@
 // Created by usrg on 6/22/21.
 //
 
-#ifndef NIF_COMMON_NODES_UTILS_GEOMETRY_H
-#define NIF_COMMON_NODES_UTILS_GEOMETRY_H
+#ifndef NIF_UTILS_H
+#define NIF_UTILS_H
 
 #include "geometry_msgs/msg/point.hpp"
 #include "geometry_msgs/msg/pose.hpp"
@@ -178,4 +178,4 @@ inline const std::string getGlobalParamName(const std::string& param_name) {
 } // namespace common
 } // namespace nif
 
-#endif // NIF_COMMON_NODES_UTILS_GEOMETRY_H
+#endif // NIF_UTILS_H

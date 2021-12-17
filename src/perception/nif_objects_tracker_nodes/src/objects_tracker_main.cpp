@@ -8,7 +8,7 @@
 //
 // Created by usrg on 6/23/21.
 //
-#include "../include/nif_objects_tracker_nodes/objects_tracker_nodes.h"
+#include "nif_objects_tracker_nodes/objects_tracker_nodes.h"
 #include "nif_common/constants.h"
 #include "nif_common/types.h"
 #include "nif_utils/utils.h"

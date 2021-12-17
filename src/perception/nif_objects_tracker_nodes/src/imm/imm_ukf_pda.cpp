@@ -134,18 +134,12 @@ void ImmUkfPda::transformPoseToGlobal(
     nif_msgs::msg::DetectedObjectArray &transformed_input) {
   transformed_input.header = input_header_;
 
-  double current_yaw_rad = nif::common::utils::coordination::quat2yaw(
-      ego_odom_.pose.pose.orientation);
   for (auto const &object : input.objects) {
-    geometry_msgs::msg::Pose out_pose;
-    out_pose.position.x = ego_odom_.pose.pose.position.x +
-                          object.pose.position.x * cos(current_yaw_rad) -
-                          object.pose.position.y * sin(current_yaw_rad);
-    out_pose.position.y = ego_odom_.pose.pose.position.y +
-                          object.pose.position.x * sin(current_yaw_rad) +
-                          object.pose.position.y * cos(current_yaw_rad);
-    out_pose.position.z =
-        ego_odom_.pose.pose.position.y + object.pose.position.z;
+    geometry_msgs::msg::Pose out_pose = 
+      nif::common::utils::coordination::getPtBodytoGlobal(
+        ego_odom_,
+        object.pose
+    ).pose;
 
     nif_msgs::msg::DetectedObject dd;
     dd.header = input.header;
@@ -160,32 +154,11 @@ void ImmUkfPda::transformPoseToLocal(
     nif_msgs::msg::DetectedObjectArray &detected_objects_output) {
   detected_objects_output.header = input_header_;
 
-  double current_yaw_rad = nif::common::utils::coordination::quat2yaw(
-      ego_odom_.pose.pose.orientation);
   for (auto &object : detected_objects_output.objects) {
-    geometry_msgs::msg::Pose out_pose;
-    out_pose.position.x =
-        cos(-1 * current_yaw_rad) *
-            (object.pose.position.x - ego_odom_.pose.pose.position.x) -
-        sin(-1 * current_yaw_rad) *
-            (object.pose.position.y - ego_odom_.pose.pose.position.y);
-    out_pose.position.y =
-        sin(-1 * current_yaw_rad) *
-            (object.pose.position.x - ego_odom_.pose.pose.position.x) +
-        cos(-1 * current_yaw_rad) *
-            (object.pose.position.y - ego_odom_.pose.pose.position.y);
-    out_pose.position.z =
-        object.pose.position.z - ego_odom_.pose.pose.position.z;
-
-    double target_yaw =
-        nif::common::utils::coordination::quat2yaw(object.pose.orientation);
-
-    out_pose.orientation.x = 0.0;
-    out_pose.orientation.y = 0.0;
-    // TODO : should be tested
-    out_pose.orientation.z = sin((target_yaw - current_yaw_rad) / 2.0);
-    out_pose.orientation.w = cos((target_yaw - current_yaw_rad) / 2.0);
-
+    geometry_msgs::msg::Pose out_pose = 
+      nif::common::utils::coordination::getPtGlobaltoBody(
+        ego_odom_,
+        object.pose).pose;
     object.header = input_header_;
     object.pose = out_pose;
   }

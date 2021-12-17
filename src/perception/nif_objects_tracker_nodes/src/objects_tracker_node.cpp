@@ -2,7 +2,7 @@
 // Created by usrg on 7/10/21.
 //
 
-#include "../include/nif_objects_tracker_nodes/objects_tracker_nodes.h"
+#include "nif_objects_tracker_nodes/objects_tracker_nodes.h"
 
 IMMObjectTrackerNode::IMMObjectTrackerNode(const std::string &node_name_)
     : Node(node_name_) {
