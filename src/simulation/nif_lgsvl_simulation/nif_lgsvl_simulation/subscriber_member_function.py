@@ -52,12 +52,12 @@ class LGSVLSubscriberNode(BaseNode):
         #     raise RuntimeError("Can't connect to global_parameters_node.")
 
         self.use_enu   = False
-        self.sim_ref_x = -1.727
-        self.sim_ref_y = 21.37
-        self.sim_ref_z = 0.119
-        self.loc_ref_x = -314.766
-        self.loc_ref_y = 24.387
-        self.loc_ref_z = -0.0817
+        self.sim_ref_x = 0.0 # -1.727
+        self.sim_ref_y = 0.0 # 21.37
+        self.sim_ref_z = 0.0 # 0.119
+        self.loc_ref_x = 0.0 # -314.766
+        self.loc_ref_y = 0.0 # 24.387
+        self.loc_ref_z = 0.0 # -0.0817
 
         self.heading_deg = 0.0
         self.gps_top_counter = 0
@@ -185,7 +185,7 @@ class LGSVLSubscriberNode(BaseNode):
     def callback_vehicleodometry(self, msg : VehicleOdometry):
         wheel_speed_msg = WheelSpeedReport()
         wheel_speed_msg.header = msg.header
-        vel_kph = msg.velocity * 3.6
+        vel_kph = msg.velocity * 3.6 # / 3.0 # Correction factor (completely empirical)
         wheel_speed_msg.front_left = vel_kph
         wheel_speed_msg.front_right = vel_kph
         wheel_speed_msg.rear_left = vel_kph
@@ -282,14 +282,9 @@ class LGSVLSubscriberNode(BaseNode):
         '''
 
         # FAKE FIX
-        # ecef_ref_lat = 39.79312996
-        # ecef_ref_lon = -86.23524024
-        # ecef_ref_hgt = -0.170035537
-
-        # Reference origin from TUM : 36.268252, -115.015914 
-        ecef_ref_lat = 36.268252
-        ecef_ref_lon = -115.015914
-        ecef_ref_hgt = -0.0
+        ecef_ref_lat = 36.27395157819169   #LVMS_SIM
+        ecef_ref_lon = -115.01206308896546 #LVMS_SIM
+        ecef_ref_hgt = 603.3212349116802         #LVMS_SIM
 
         llh = ned2geodetic(msg.pose.pose.position.x, -msg.pose.pose.position.y, 0., 
                            ecef_ref_lat, ecef_ref_lon, 0.)

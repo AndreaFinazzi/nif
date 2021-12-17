@@ -21,8 +21,8 @@ def indent(elem, level=0):
             elem.tail = i
 
 ### READ xml file ###
-osm_file_path = '/home/usrg/adehome/nif/src/planning/nif_dk_graph_planner/map/IMS/stored_graph_new_ims.osm' # original
-new_osm_file_path = '/home/usrg/adehome/nif/src/planning/nif_dk_graph_planner/map/IMS/IMS_new_modified.osm' # modified
+osm_file_path = '/home/usrg/adehome/nif/src/planning/nif_dk_graph_planner/map/IMS/IMS_final.osm' # original
+new_osm_file_path = '/home/usrg/adehome/nif/src/planning/nif_dk_graph_planner/map/IMS/IMS_final_modified.osm' # modified
 
 
 tree = parse(osm_file_path)

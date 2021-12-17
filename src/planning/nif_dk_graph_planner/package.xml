@@ -23,14 +23,14 @@
   <depend>rclcpp</depend>
   <depend>std_msgs</depend>
   <depend>sensor_msgs</depend>
-  <depend>astuff_sensor_msgs</depend>
+  <!-- <depend>astuff_sensor_msgs</depend> -->
   <depend>pcl_ros</depend>
   <depend>cv_bridge</depend>
   <depend>message_filters</depend>
   <depend>geometry_msgs</depend>
   <depend>nav_msgs</depend>
   <depend>route_planner_msgs</depend>
-  <depend>puxixml-dev</depend>
+  <depend>pugixml-dev</depend>
   <depend>pcl_conversions</depend>
   <depend>nif_dk_graph_planner_msgs</depend>
 

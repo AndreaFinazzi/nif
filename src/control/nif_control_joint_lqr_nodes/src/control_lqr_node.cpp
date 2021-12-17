@@ -7,6 +7,9 @@ ControlLQRNode::ControlLQRNode(const std::string& node_name)
   : IControllerNode(node_name) {
   control_cmd = std::make_shared<nif::common::msgs::ControlCmd>();
 
+  m_camber_manager_ptr = std::make_shared<CamberCompensator>(nif::control::CAMBERCOMPESATORMODE::FIRST_ORDER, true);
+
+
   // Debug Publishers
   lqr_command_valid_pub_ = this->create_publisher<std_msgs::msg::Bool>(
       "control_joint_lqr/tracking_valid", nif::common::constants::QOS_DEFAULT);
@@ -306,9 +309,23 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
       if (steering_angle_deg < -max_steering_angle_deg_)
         steering_angle_deg = -max_steering_angle_deg_;
 
-      //    Adapt to steering ratio (ControlCommand sends steering wheel's
-      //    angle) steering_angle_deg *=
-      //    nif::common::vehicle_param::STEERING_RATIO;
+      // ----------------------------------------------------------------------------
+      /*
+      // APPLY CAMBER COMPENSATION
+      */
+      double camber_compensatation_deg = 0.0;
+      try {
+        m_camber_manager_ptr->setVehSpeed(this->current_speed_ms_);
+        double tmp_bank_ = 0.0;
+        m_camber_manager_ptr->setBankAngle(tmp_bank_);
+        camber_compensatation_deg = m_camber_manager_ptr->getCamberCompensation();
+  
+      } catch (std::exception & e) {
+          RCLCPP_ERROR(this->get_logger(), "CAMBER COMPENSATION EXCEPTION. %s", e.what());
+          camber_compensatation_deg = 0.0;
+      }
+      steering_angle_deg = steering_angle_deg + camber_compensatation_deg;
+      // ----------------------------------------------------------------------------
 
       // Smooth and publish diagnostics
       double period_double_s =

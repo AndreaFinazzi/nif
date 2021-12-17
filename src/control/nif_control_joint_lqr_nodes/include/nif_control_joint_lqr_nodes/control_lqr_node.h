@@ -23,6 +23,8 @@
 #include "nif_control_joint_lqr_nodes/utils/joint_lqr_ros.h"
 #include "nif_control_joint_lqr_nodes/utils/pure_pursuit_tracker.h"
 
+#include "nif_control_common/camber_compensator.hpp"
+
 namespace nif {
 namespace control {
 
@@ -131,6 +133,9 @@ private:
 
   //! Control command published by solve()
   nif::common::msgs::ControlCmd::SharedPtr control_cmd;
+
+  // camber compensator
+  std::shared_ptr<CamberCompensator> m_camber_manager_ptr;
 
   //! Current Vehicle State
   double current_speed_ms_;

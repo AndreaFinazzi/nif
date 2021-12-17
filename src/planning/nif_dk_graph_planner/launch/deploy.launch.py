@@ -7,18 +7,27 @@ from launch.substitutions import LaunchConfiguration
 from launch.substitutions import ThisLaunchFileDir
 from launch_ros.actions import Node
 
+
 IMS = 0
 LOR = 1
-LG_SVL = 2
+IMS_SIM = 2
+LVMS = 3
+LVMS_SIM = 4
+track = None
 
+# get which track we are at
 track_id = os.environ.get('TRACK').strip()
 
-if track_id == "IMS":
+if track_id == "IMS" or track_id == "ims":
     track = IMS
-elif track_id == "LOR":
+elif track_id == "LOR" or track_id == "lor":
     track = LOR
-elif track_id == "LG_SVL":
-    track = LG_SVL
+elif track_id == "IMS_SIM" or track_id == "ims_sim":
+    track = IMS_SIM
+elif track_id == "LVMS" or track_id == "lvms":
+    track = LVMS
+elif track_id == "LVMS_SIM" or track_id == "lvms_sim":
+    track = LVMS_SIM
 else:
     raise RuntimeError("ERROR: Invalid track {}".format(track_id))
 
@@ -41,11 +50,24 @@ def generate_launch_description():
         origin_lat = 39.809786
         origin_lon = -86.235148
 
-    elif track == LG_SVL:
+    elif track == IMS_SIM:
         map_file = 'LG_SIM.osm'
         directory = 'LG_SIM'
         origin_lat = 39.79312996
         origin_lon = -86.23524024
+
+    elif track == LVMS:
+        map_file = 'LVMS.osm'
+        directory = 'LVMS'
+        origin_lat = 36.268252
+        origin_lon = -115.015914
+
+    elif track == LVMS_SIM:
+        map_file = 'LVMS_SIM.osm'
+        directory = 'LVMS_SIM'
+        origin_lat = 36.268252
+        origin_lon = -115.015914
+        
     else:
         raise RuntimeError("ERROR: invalid track provided: {}".format(track))
 
@@ -82,7 +104,7 @@ def generate_launch_description():
                     'transient_gain' : 2.0,
 
                     'inflation_size' : 3.0,
-                    'collision_check_radius' : 2.5,
+                    'collision_check_radius' : 2.0,
                     'final_path_update_dist' : 300., # 170.0,
                 }],
                 remappings=[ 

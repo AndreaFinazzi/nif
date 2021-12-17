@@ -40,6 +40,29 @@ namespace YAML {
 // };
 
 template<>
+struct convert<Point2D> {
+    /**
+     * x: 0.0  # x_1
+     * y: 0.0  # y_1
+     * 
+     * @param node
+     * @param out
+     * @return parsed Point2D
+     */
+    static bool decode(const Node &node, Point2D &out) {
+        ASSERT(node.size() == 2);
+        ASSERT(node["x"]);
+        ASSERT(node["y"]);
+
+        out.x = node["x"].as<double>();
+        out.y = node["y"].as<double>();
+
+        RCLCPP_INFO(LOGGER, "Loaded Point.");
+        return true;
+    }
+};
+
+template<>
 struct convert<BBox> {
     /**
      * - - 0.0 # x_min
@@ -68,6 +91,38 @@ struct convert<BBox> {
 };
 
 template<>
+struct convert<Polygon> {
+    /**
+     * - - x: 0.0  # x_1
+     *     y: 0.0  # y_1
+     *   - x: -1.0 # x_2
+     *     y: 1.0  # y_2
+     *   - x: 0.0  # x_3
+     *     y: 2.0  # y_3
+     *   - x: 1.0  # x_4
+     *     y: 1.0  # y_4
+     * @param node
+     * @param out
+     * @return parsed bounding box
+     */
+    static bool decode(const Node &node, Polygon &out) {
+        ASSERT(node.size() >= 3);  // 3 verteces or more
+        ASSERT(node.IsSequence());
+
+        for (auto&& vertex : node)
+        {
+            out.points.push_back(vertex.as<Point2D>());
+        }
+
+        // TODO: check for convexity
+        // ASSERT(); 
+
+        RCLCPP_INFO(LOGGER, "Loaded Polygon.");
+        return true;
+    }
+};
+
+template<>
 struct convert<MissionActivationArea> {
     /**
      * activation_area:
@@ -88,16 +143,31 @@ struct convert<MissionActivationArea> {
         }
         
         if (out.active) {
-            ASSERT(node.size() == 2); // active and bboxes
+            ASSERT(node.size() >= 2); // active and (bboxes and/or polygon)
+            ASSERT(node.size() <= 3); // active and (bboxes and/or polygon)
 
             // active = true, everything else must be ok
             auto bboxes = node[ID_ACTIVATION_AREA_BOUNDING_BOXES];
-            ASSERT(bboxes);
-            ASSERT(bboxes.IsSequence());
-            ASSERT(bboxes.size() > 0);
+            auto polygons = node[ID_ACTIVATION_AREA_POLYGONS];
 
-            for (auto &&bbox : bboxes) {
-                out.bounding_boxes.push_back(bbox.as<BBox>());
+            ASSERT(bboxes || polygons);
+            
+            if (bboxes) {
+                ASSERT(bboxes.IsSequence());
+                ASSERT(bboxes.size() > 0);
+
+                for (auto &&bbox : bboxes) {
+                    out.bounding_boxes.push_back(bbox.as<BBox>());
+                }
+            }
+
+            if (polygons) {
+                ASSERT(polygons.IsSequence());
+                ASSERT(polygons.size() > 0);
+
+                for (auto &&polygon : polygons) {
+                    out.polygons.push_back(polygon.as<Polygon>());
+                }
             }
 
             RCLCPP_INFO(LOGGER, "Loaded MissionActivationArea.bounding_boxes.size(): %d", out.bounding_boxes.size());
@@ -353,13 +423,21 @@ struct convert<TrackZone> {
             return false;
         }
 
-        out.bbox = node[ID_ZONE_BBOX].as<BBox>();
+        ASSERT(node[ID_ZONE_BBOX] || node[ID_ZONE_POLYGON]);
+        // Prioritize polygon over bbox, but keep only one of the two.
+        if (node[ID_ZONE_POLYGON]) {
+            out.polygon = node[ID_ZONE_POLYGON].as<Polygon>();
+            out.has_polygon = true;
+
+        } else if (node[ID_ZONE_BBOX]) {
+            out.bbox = node[ID_ZONE_BBOX].as<BBox>();
+            out.has_bbox = true;
+        }
         
         RCLCPP_INFO(LOGGER, "Loaded TrackZone.id: %d", out.id);
         return true;
     }
 };
-
 
 template<>
 struct convert<TrackZonesDescription> {
@@ -381,7 +459,7 @@ struct convert<TrackZonesDescription> {
         for (auto &&zone : zones)
         {
             auto zone_node = zone.as<TrackZone>();
-            // Assert unique mission_code
+            // Assert unique zone_id
             ASSERT(out.find(zone_node.id) == out.end());
 
             out.insert({ zone_node.id, zone_node });
