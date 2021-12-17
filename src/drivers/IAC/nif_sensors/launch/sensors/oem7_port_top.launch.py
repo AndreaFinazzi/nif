@@ -12,8 +12,8 @@ from ament_index_python.packages import get_package_share_directory
 PKG = "novatel_oem7_driver"
 
 def get_cfg_path(cfg):
-    return os.path.join(get_package_share_directory(PKG), "config", cfg )
-    
+    return os.path.join(get_package_share_directory("nif_sensors"), "novatel_oem7_driver", "config", cfg )
+
 
 def load_yaml(p):
     with open(p, 'r') as f:
@@ -50,7 +50,7 @@ def generate_launch_description():
                     get_params("std_init_commands.yaml"   ),
                     {
                     'oem7_msg_decoder'   : 'Oem7MessageDecoder',
-                    'oem7_max_io_errors' : 3,
+                    'oem7_max_io_errors' : 100,
                     'oem7_if'            : 'Oem7ReceiverPort',
                     'oem7_port_name'     : LaunchConfiguration('oem7_port_name'),
                     'oem7_port_baud'     : LaunchConfiguration('oem7_port_baud')

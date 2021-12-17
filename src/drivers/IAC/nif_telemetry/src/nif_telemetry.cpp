@@ -44,6 +44,29 @@ class Telemetry : public rclcpp::Node
       send_telemetry_socket(io_service_main),
       recv_basestation_socket(io_service_main)
     {
+      this->declare_parameter("enable_udp", true);
+      this->declare_parameter("ego_ip", "10.42.4.200");
+      this->declare_parameter("bst_ip","10.42.4.79");
+
+      this->declare_parameter("ego_port", 23531);
+      this->declare_parameter("bst_port",23431);
+
+      // setup UDP interfaces
+      this->udp_enabled = this->get_parameter("enable_udp").as_bool();
+
+      send_telemetry_ip = this->get_parameter("bst_ip").as_string();
+      send_telemetry_port = this->get_parameter("bst_port").as_int();
+      send_telemetry_socket.open(ip::udp::v4());
+      send_telemetry_endpoint = ip::udp::endpoint(
+          ip::address::from_string(send_telemetry_ip), send_telemetry_port);
+      RCLCPP_INFO(this->get_logger(),
+                  "Established connection to send telemetry to : %s:%u",
+                  send_telemetry_ip.c_str(), send_telemetry_port);
+
+      recv_basestation_ip = this->get_parameter("ego_ip").as_string();
+      recv_basestation_port = this->get_parameter("ego_port").as_int();;
+
+
       // setup QOS to be best effort
       auto qos = rclcpp::QoS(rclcpp::QoSInitialization(RMW_QOS_POLICY_HISTORY_KEEP_LAST, 1));
       qos.best_effort();
@@ -98,6 +121,8 @@ class Telemetry : public rclcpp::Node
       sub_wall_distance_outer = this->create_subscription<std_msgs::msg::Float32>(
         "/detected_outer_distance", nif::common::constants::QOS_SENSOR_DATA, std::bind(&Telemetry::wall_distance_outer_callback, this, std::placeholders::_1));
 
+    if (this->udp_enabled) {
+
     //  Republish joystick command from UDP
       pub_joystick_command =
           this->create_publisher<deep_orange_msgs::msg::JoystickCommand>(
@@ -110,25 +135,6 @@ class Telemetry : public rclcpp::Node
       // timer which handles receiving from base station
       rec_bs_timer_ = this->create_wall_timer(
           5ms, std::bind(&Telemetry::rec_bs_callback, this));
-
-      this->declare_parameter("ego_ip", "10.42.4.200");
-      this->declare_parameter("bst_ip","10.42.4.79");
-
-      this->declare_parameter("ego_port", 23531);
-      this->declare_parameter("bst_port",23431);
-
-      // setup UDP interfaces
-      send_telemetry_ip = this->get_parameter("bst_ip").as_string();
-      send_telemetry_port = this->get_parameter("bst_port").as_int();
-      send_telemetry_socket.open(ip::udp::v4());
-      send_telemetry_endpoint = ip::udp::endpoint(
-          ip::address::from_string(send_telemetry_ip), send_telemetry_port);
-      RCLCPP_INFO(this->get_logger(),
-                  "Established connection to send telemetry to : %s:%u",
-                  send_telemetry_ip.c_str(), send_telemetry_port);
-
-      recv_basestation_ip = this->get_parameter("ego_ip").as_string();
-      recv_basestation_port = this->get_parameter("ego_port").as_int();;
       recv_basestation_socket.open(ip::udp::v4());
       recv_basestation_endpoint =
           ip::udp::endpoint(ip::address::from_string(recv_basestation_ip),
@@ -141,6 +147,7 @@ class Telemetry : public rclcpp::Node
           this->get_logger(),
           "Established connection to receive basestation commands on : %s:%u",
           recv_basestation_ip.c_str(), recv_basestation_port);
+    }
 
       timer_ = this->create_wall_timer(
         50ms, std::bind(&Telemetry::timer_callback, this));
@@ -515,6 +522,8 @@ class Telemetry : public rclcpp::Node
     deep_orange_msgs::msg::TireReport in_tire_report;
 
     // udp stuff
+    bool udp_enabled = true;
+
     io_service io_service_main;
     ip::udp::socket send_telemetry_socket;
     ip::udp::socket recv_basestation_socket;

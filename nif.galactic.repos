@@ -47,5 +47,5 @@ repositories:
 
   src/external/camera_perception:
     type: git
-    url: https://github.com/PITT-MIT-IAC/Camera_Perception.git
+    url: https:///$GH_TOKEN@github.com/PITT-MIT-IAC/Camera_Perception.git
     version: kaist-main

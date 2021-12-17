@@ -887,7 +887,7 @@ void DKGraphPlannerNode::Planning() {
     next = m_PredSuccMap[next];
     FinalPathQue.push_back(next);
   }
-  m_FinalNodes.clear();
+  m_FinalNodes.clear(); // !Q: Clear node 0 from final nodes
   for (auto final : FinalPathQue) {
     if (final == 0)
       continue;

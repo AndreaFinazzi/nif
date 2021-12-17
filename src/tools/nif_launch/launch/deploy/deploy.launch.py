@@ -145,11 +145,11 @@ def generate_launch_description():
         ],
     )
 
-    nif_telemetry_node = Node(
-        package='nif_telemetry',
-        executable='telemetry',
-        output='screen',
-    )
+    # nif_telemetry_node = Node(
+    #     package='nif_telemetry',
+    #     executable='telemetry',
+    #     output='screen',
+    # )
 
     # Localization
     nif_localization_launch = IncludeLaunchDescription(
@@ -217,7 +217,7 @@ def generate_launch_description():
         ],
         parameters=[{
             'max_ddes_vel_dt_default'   : 3.0,
-            'lateral_tire_model_factor' : 0.8,
+            'lateral_tire_model_factor' : 0.9,
         }]
     )
 
@@ -426,7 +426,7 @@ def generate_launch_description():
         socketcan_receiver_launch,
         socketcan_sender_launch,
         raptor_node,
-        nif_telemetry_node,
+        # nif_telemetry_node,
 
         nif_global_param_node,
         nif_system_status_manager_node,

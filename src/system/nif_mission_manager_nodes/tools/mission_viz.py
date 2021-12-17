@@ -161,6 +161,7 @@ if __name__ == "__main__":
     line_1 = os.path.join(waypoint_manager_path, 'maps',TRACK_NAME,'raceline.csv',)
     line_2 = os.path.join(waypoint_manager_path, 'maps',TRACK_NAME,'right_side_center.csv',)
     line_3 = os.path.join(waypoint_manager_path, 'maps',TRACK_NAME,'left_side_center.csv',)
+    line_4 = os.path.join(waypoint_manager_path, 'maps',TRACK_NAME,'right_side_center_noopt.csv',)
 
     # raceline = os.path.join(waypoint_manager_path, 'inputs/traj_ltpl_cl',TRACK_NAME,'traj_race_cl.csv',)
     graph = os.path.join(waypoint_manager_path, 'inputs/track_offline_graphs',TRACK_NAME,'stored_graph.pckl')
@@ -246,6 +247,7 @@ if __name__ == "__main__":
     WPTFileVisualizer(line_1, "raceline")
     WPTFileVisualizer(line_2, "right_side_center")
     WPTFileVisualizer(line_3, "left_side_center")
+    WPTFileVisualizer(line_4, "right_side_center_noopt")
 
     dot.view()
 

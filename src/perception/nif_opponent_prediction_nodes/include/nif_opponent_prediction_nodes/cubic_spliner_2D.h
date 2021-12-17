@@ -26,7 +26,7 @@ public:
   CubicSpliner2D(std::vector<double> &points_x, std::vector<double> &points_y);
   ~CubicSpliner2D() {}
 
-  const std::vector<double> &points_s() const { return points_s_; }
+  std::vector<double> &points_s() { return points_s_; }
 
   std::tuple<double, double> calculate_position(double point_s);
   double calculate_curvature(double point_s);

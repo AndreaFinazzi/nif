@@ -18,16 +18,15 @@
 #define OBJECT_TRACKING_UKF_H
 
 #include "Eigen/Dense"
-#include <vector>
-#include <string>
 #include <fstream>
-#include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+#include <string>
+#include <vector>
 
 #include "nif_msgs/msg/detected_object.hpp"
 
-enum TrackingState : int
-{
+enum TrackingState : int {
   Die = 0,       // No longer tracking
   Init = 1,      // Start tracking
   Stable = 4,    // Stable tracking
@@ -35,15 +34,13 @@ enum TrackingState : int
   Lost = 10,     // About to lose target
 };
 
-enum MotionModel : int
-{
+enum MotionModel : int {
   CV = 0,   // constant velocity
   CTRV = 1, // constant turn rate and velocity
   RM = 2,   // random motion
 };
 
-class UKF
-{
+class UKF {
   /*
   cv: Constant Velocity
   ctrv: Constatnt Turn Rate and Velocity
@@ -244,7 +241,8 @@ public:
 
   void updateYawWithHighProb();
 
-  void initialize(const Eigen::VectorXd &z, const double timestamp, const int target_ind);
+  void initialize(const Eigen::VectorXd &z, const double timestamp,
+                  const int target_ind);
 
   void updateModeProb(const std::vector<double> &lambda_vec);
 
@@ -260,39 +258,52 @@ public:
 
   void findMaxZandS(Eigen::VectorXd &max_det_z, Eigen::MatrixXd &max_det_s);
 
-  void updateMeasurementForCTRV(const std::vector<nif_msgs::msg::DetectedObject> &object_vec);
+  void updateMeasurementForCTRV(
+      const std::vector<nif_msgs::msg::DetectedObject> &object_vec);
 
   void uppateForCTRV();
 
-  void updateEachMotion(const double detection_probability, const double gate_probability, const double gating_thres,
-                        const std::vector<nif_msgs::msg::DetectedObject> &object_vec, std::vector<double> &lambda_vec);
+  void
+  updateEachMotion(const double detection_probability,
+                   const double gate_probability, const double gating_thres,
+                   const std::vector<nif_msgs::msg::DetectedObject> &object_vec,
+                   std::vector<double> &lambda_vec);
 
   void updateSUKF(const std::vector<nif_msgs::msg::DetectedObject> &object_vec);
 
-  void updateIMMUKF(const double detection_probability, const double gate_probability, const double gating_thres,
-                    const std::vector<nif_msgs::msg::DetectedObject> &object_vec);
+  void
+  updateIMMUKF(const double detection_probability,
+               const double gate_probability, const double gating_thres,
+               const std::vector<nif_msgs::msg::DetectedObject> &object_vec);
 
-  void ctrv(const double p_x, const double p_y, const double v, const double yaw, const double yawd,
-            const double delta_t, std::vector<double> &state);
+  void ctrv(const double p_x, const double p_y, const double v,
+            const double yaw, const double yawd, const double delta_t,
+            std::vector<double> &state);
 
-  void cv(const double p_x, const double p_y, const double v, const double yaw, const double yawd, const double delta_t,
-          std::vector<double> &state);
+  void cv(const double p_x, const double p_y, const double v, const double yaw,
+          const double yawd, const double delta_t, std::vector<double> &state);
 
-  void randomMotion(const double p_x, const double p_y, const double v, const double yaw, const double yawd,
-                    const double delta_t, std::vector<double> &state);
+  void randomMotion(const double p_x, const double p_y, const double v,
+                    const double yaw, const double yawd, const double delta_t,
+                    std::vector<double> &state);
 
   void initCovarQs(const double dt, const double yaw);
 
   void predictionMotion(const double delta_t, const int model_ind);
 
-  void checkLaneDirectionAvailability(const nif_msgs::msg::DetectedObject &in_object,
-                                      const double lane_direction_chi_thres, const bool use_sukf);
+  void
+  checkLaneDirectionAvailability(const nif_msgs::msg::DetectedObject &in_object,
+                                 const double lane_direction_chi_thres,
+                                 const bool use_sukf);
 
-  void predictionLidarMeasurement(const int motion_ind, const int num_meas_state);
+  void predictionLidarMeasurement(const int motion_ind,
+                                  const int num_meas_state);
 
-  double calculateNIS(const nif_msgs::msg::DetectedObject &in_object, const int motion_ind);
+  double calculateNIS(const nif_msgs::msg::DetectedObject &in_object,
+                      const int motion_ind);
 
-  bool isLaneDirectionAvailable(const nif_msgs::msg::DetectedObject &in_object, const int motion_ind,
+  bool isLaneDirectionAvailable(const nif_msgs::msg::DetectedObject &in_object,
+                                const int motion_ind,
                                 const double lane_direction_chi_thres);
 
   // void updateKalmanGain(const int motion_ind, const int num_meas_state);
@@ -300,10 +311,12 @@ public:
 
   double normalizeAngle(const double angle);
 
-  void update(const bool use_sukf, const double detection_probability, const double gate_probability,
-              const double gating_thres, const std::vector<nif_msgs::msg::DetectedObject> &object_vec);
+  void update(const bool use_sukf, const double detection_probability,
+              const double gate_probability, const double gating_thres,
+              const std::vector<nif_msgs::msg::DetectedObject> &object_vec);
 
-  void prediction(const bool use_sukf, const bool has_subscribed_vectormap, const double dt);
+  void prediction(const bool use_sukf, const bool has_subscribed_vectormap,
+                  const double dt);
 };
 
 #endif /* UKF_H */

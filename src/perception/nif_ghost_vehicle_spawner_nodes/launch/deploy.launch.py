@@ -35,28 +35,36 @@ def get_share_file(package_name, file_name):
     return os.path.join(get_package_share_directory(package_name), file_name)
 
 def generate_launch_description():
-
+  
     config_file_lor = (
         os.path.join(
-            get_package_share_directory("nif_waypoint_manager_nodes"),
+            get_package_share_directory("nif_ghost_vehicle_spawner_nodes"),
             "config",
-            "mission",
-            "lor_new.yaml",
+            "LVMS_SIM.yaml",
         ),
     )
 
     config_file_ims = (
         os.path.join(
-            get_package_share_directory("nif_waypoint_manager_nodes"),
+            get_package_share_directory("nif_ghost_vehicle_spawner_nodes"),
             "config",
-            "mission",
-            "ims_new.yaml",
+            "LVMS_SIM.yaml",
         ),
     )
 
-    nif_base_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            get_package_share_directory('nif_launch') + '/launch/deploy/nif_base.launch.py'
+    config_file_lvms_sim = (
+        os.path.join(
+            get_package_share_directory("nif_ghost_vehicle_spawner_nodes"),
+            "config",
+            "LVMS_SIM.yaml",
+        ),
+    )
+
+    config_file_lvms = (
+        os.path.join(
+            get_package_share_directory("nif_ghost_vehicle_spawner_nodes"),
+            "config",
+            "LVMS.yaml",
         ),
     )
 
@@ -66,31 +74,34 @@ def generate_launch_description():
         config_file = config_file_lor
     elif track == IMS:
         config_file = config_file_ims
+    elif track == LVMS:
+        config_file = config_file_lvms
+    elif track == LVMS_SIM:
+        config_file = config_file_lvms_sim
     else:
         raise RuntimeError("ERROR: invalid track provided: {}".format(track))
 
     param_file_argument = DeclareLaunchArgument(
-        'nif_waypoint_manager_param_file',
+        'nif_ghost_vehicle_spawner_param_file',
         default_value=config_file,
         description='Path to config file for waypoint manager'
     )
 
-    waypoint_manager_node = Node(
-        package='nif_waypoint_manager_nodes',
-        executable='nif_waypoint_manager_nodes_exe',
+    ghost_spawner_node = Node(
+        package='nif_ghost_vehicle_spawner_nodes',
+        executable='nif_ghost_vehicle_spawner_nodes_exe',
         output='screen',
-        # parameters=[
-        #     LaunchConfiguration('nif_waypoint_manager_param_file')
-        # ],
+        parameters=[
+            LaunchConfiguration('nif_ghost_vehicle_spawner_param_file')
+        ],
         remappings=[
-            ('topic_ego_odometry', '/aw_localization/ekf/odom'),
-            ('wpt_manager/maptrack_path/global', '/planning/path_global'),
-            ('wpt_manager/maptrack_path/body', '/planning/path_body')
+            ('out_perception_result', '/ghost/perception'),
+            ('out_marker', '/ghost/marker'),
+            ('out_odometry', '/ghost/odometry'),
         ]
     )
 
     return LaunchDescription([
-        nif_base_launch,
-        # param_file_argument,
-        waypoint_manager_node
+        param_file_argument,
+        ghost_spawner_node
     ])

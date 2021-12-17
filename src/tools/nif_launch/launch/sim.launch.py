@@ -131,6 +131,9 @@ def generate_launch_description():
         package='nif_telemetry',
         executable='telemetry',
         output='screen',
+        parameters=[{
+            'enable_udp': False
+        }]
     )
 
     # Localization

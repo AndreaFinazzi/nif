@@ -35,30 +35,53 @@ def get_share_file(package_name, file_name):
     return os.path.join(get_package_share_directory(package_name), file_name)
 
 def generate_launch_description():
-
+  
     config_file_lor = (
         os.path.join(
-            get_package_share_directory("nif_waypoint_manager_nodes"),
+            get_package_share_directory("nif_opponent_prediction_nodes"),
             "config",
-            "mission",
-            "lor_new.yaml",
+            "LVMS_SIM.yaml",
         ),
     )
 
     config_file_ims = (
         os.path.join(
-            get_package_share_directory("nif_waypoint_manager_nodes"),
+            get_package_share_directory("nif_opponent_prediction_nodes"),
             "config",
-            "mission",
-            "ims_new.yaml",
+            "LVMS_SIM.yaml",
         ),
     )
 
-    nif_base_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            get_package_share_directory('nif_launch') + '/launch/deploy/nif_base.launch.py'
+    config_file_lvms_sim = (
+        os.path.join(
+            get_package_share_directory("nif_opponent_prediction_nodes"),
+            "config",
+            "LVMS_SIM.yaml",
         ),
     )
+
+    config_file_lvms = (
+        os.path.join(
+            get_package_share_directory("nif_opponent_prediction_nodes"),
+            "config",
+            "LVMS.yaml",
+        ),
+    )
+
+    ref_line_file_lvms = os.path.join(
+            get_package_share_directory("nif_waypoint_manager_nodes"),
+            "maps",
+            "LVMS",
+            "centerline.csv"
+        )
+
+    ref_line_file_lvms_sim = os.path.join(
+            get_package_share_directory("nif_waypoint_manager_nodes"),
+            "maps",
+            "LVMS_SIM",
+            "centerline.csv"
+        )
+
 
     config_file = None
 
@@ -66,31 +89,38 @@ def generate_launch_description():
         config_file = config_file_lor
     elif track == IMS:
         config_file = config_file_ims
+    elif track == LVMS:
+        config_file = config_file_lvms
+        ref_line_file = ref_line_file_lvms
+    elif track == LVMS_SIM:
+        config_file = config_file_lvms_sim
+        ref_line_file = ref_line_file_lvms_sim
     else:
         raise RuntimeError("ERROR: invalid track provided: {}".format(track))
 
     param_file_argument = DeclareLaunchArgument(
-        'nif_waypoint_manager_param_file',
+        'nif_prediction_param_file',
         default_value=config_file,
         description='Path to config file for waypoint manager'
     )
 
-    waypoint_manager_node = Node(
-        package='nif_waypoint_manager_nodes',
-        executable='nif_waypoint_manager_nodes_exe',
+    prediction_node = Node(
+        package='nif_opponent_prediction_nodes',
+        executable='nif_opponent_prediction_nodes_exe',
         output='screen',
-        # parameters=[
-        #     LaunchConfiguration('nif_waypoint_manager_param_file')
-        # ],
+        parameters=[
+            LaunchConfiguration('nif_prediction_param_file'),
+            {
+                'ref_line_file_path' : ref_line_file
+            }
+        ],
         remappings=[
-            ('topic_ego_odometry', '/aw_localization/ekf/odom'),
-            ('wpt_manager/maptrack_path/global', '/planning/path_global'),
-            ('wpt_manager/maptrack_path/body', '/planning/path_body')
+            ('out_perception_result', '/ghost/perception'),
+            ('out_marker', '/out_marker'),
         ]
     )
 
     return LaunchDescription([
-        nif_base_launch,
-        # param_file_argument,
-        waypoint_manager_node
+        param_file_argument,
+        prediction_node
     ])

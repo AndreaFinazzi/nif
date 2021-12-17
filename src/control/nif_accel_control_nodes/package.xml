@@ -14,7 +14,6 @@
   <depend>sensor_msgs</depend>
   <depend>raptor_dbw_msgs</depend>
   <depend>deep_orange_msgs</depend>
-  <depend>bvs_msgs</depend>
   <depend>launch_xml</depend>
   <depend>nif_msgs</depend>
   <depend>nif_utils</depend>
