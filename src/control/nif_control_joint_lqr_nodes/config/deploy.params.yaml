@@ -16,3 +16,4 @@
     invert_steering: false
     pure_pursuit_1st_vel_m: 20.0
     pure_pursuit_max_max_dist_m: 20.0
+    use_acc: true # if true, min(node_output,acc_cmd) is published. 
