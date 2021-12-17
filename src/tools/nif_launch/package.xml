@@ -29,6 +29,9 @@
     <exec_depend>nif_lgsvl_simulation</exec_depend>
     <exec_depend>nif_costmap_generator</exec_depend>
     <exec_depend>nif_dk_graph_planner</exec_depend>
+    <exec_depend>nif_ghost_vehicle_spawner_nodes</exec_depend>
+    <exec_depend>nif_opponent_prediction_nodes</exec_depend>
+    <exec_depend>nif_objects_tracker_nodes</exec_depend>
 
     <exec_depend>nif_telemetry</exec_depend>
     <exec_depend>autoware_auto_msgs</exec_depend>
@@ -39,13 +42,6 @@
 
     <exec_depend>nif_sensors</exec_depend>
     <exec_depend>ros2_luminar</exec_depend>
-
-    <exec_depend>bvs_common</exec_depend>
-    <exec_depend>bvs_long_control</exec_depend>
-    <exec_depend>bvs_utils</exec_depend>
-    <exec_depend>bvs_safety</exec_depend>
-    <exec_depend>bvs_control</exec_depend>
-    <exec_depend>bvs_localization</exec_depend>
 
     <test_depend>ament_cmake_gtest</test_depend>
     <test_depend>ament_lint_auto</test_depend>

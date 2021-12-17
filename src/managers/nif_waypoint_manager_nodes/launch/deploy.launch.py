@@ -77,7 +77,6 @@ def generate_launch_description():
             LaunchConfiguration('nif_waypoint_manager_param_file')
         ],
         remappings=[
-            # ('topic_ego_odometry', '/bvs_localization/ltp_odom'),
             ('topic_ego_odometry', '/aw_localization/ekf/odom'),
             ('wpt_manager/maptrack_path/global', '/planning/path_global'),
             ('wpt_manager/maptrack_path/body', '/planning/path_body')
