@@ -5,12 +5,12 @@ using namespace nif::perception;
 FrenetBasedOpponentPredictor::FrenetBasedOpponentPredictor(
     const string& node_name)
   : Node(node_name),
-      m_prediction_valid_flg(false),
-      m_opponent_target_path_valid_flg(false),
-      m_config_valid_flg(false),
-      m_initialize_done_flg(false)
-  
-  {
+    m_prediction_valid_flg(false),
+    m_opponent_target_path_valid_flg(false),
+    m_config_valid_flg(false),
+    m_initialize_done_flg(false)
+
+{
   this->declare_parameter("ref_line_file_path", "");
   this->declare_parameter("path_spline_interval", 1.0);
   this->declare_parameter("prediction_horizon_s", 4.0);
@@ -18,17 +18,15 @@ FrenetBasedOpponentPredictor::FrenetBasedOpponentPredictor(
   this->declare_parameter("oppo_vel_bias_mps", 0.5);
   this->declare_parameter("m_defender_vel_mps", 15.0);
 
-
   // TODO
   m_opponent_status_topic_name = "/ghost/perception";
   m_ego_status_topic_name = "aw_localization/ekf/odom";
   m_defender_vel_topic_name = "/defender_vel";
   m_predicted_trajectory_topic_name = "/oppo/prediction";
   m_predicted_trajectory_vis_topic_name = "/oppo/vis/prediction";
-  
+
   m_opponent_global_progress = 0.0;
   m_opponent_cte = 0.0;
-
 
   m_predicted_output_in_global.header.frame_id =
       common::frame_id::localization::ODOM;
@@ -37,14 +35,18 @@ FrenetBasedOpponentPredictor::FrenetBasedOpponentPredictor(
   m_predicted_output_in_local.header.frame_id =
       common::frame_id::localization::BASE_LINK;
 
-
   // TODO : Testing
   // NOTE : load center line as a reference
-  m_centerline_ref_file_path = this->get_parameter("ref_line_file_path").as_string();
-  m_config_path_spline_interval_m = this->get_parameter("path_spline_interval").as_double();
-  m_config_prediction_horizon_s = this->get_parameter("prediction_horizon_s").as_double();
-  m_config_prediction_sampling_time_s = this->get_parameter("prediction_sampling_time").as_double();
-  m_config_oppo_vel_bias_mps = this->get_parameter("oppo_vel_bias_mps").as_double();
+  m_centerline_ref_file_path =
+      this->get_parameter("ref_line_file_path").as_string();
+  m_config_path_spline_interval_m =
+      this->get_parameter("path_spline_interval").as_double();
+  m_config_prediction_horizon_s =
+      this->get_parameter("prediction_horizon_s").as_double();
+  m_config_prediction_sampling_time_s =
+      this->get_parameter("prediction_sampling_time").as_double();
+  m_config_oppo_vel_bias_mps =
+      this->get_parameter("oppo_vel_bias_mps").as_double();
   m_defender_vel_mps = this->get_parameter("m_defender_vel_mps").as_double();
 
   if (m_centerline_ref_file_path == "") {
@@ -65,7 +67,9 @@ FrenetBasedOpponentPredictor::FrenetBasedOpponentPredictor(
 
   // Assign splined full target path in global coordinate (in nav_msg path)
   auto splined_result = m_frenet_generator_ptr->apply_cubic_spliner(
-      m_centerline_path_x, m_centerline_path_y, m_config_path_spline_interval_m);
+      m_centerline_path_x,
+      m_centerline_path_y,
+      m_config_path_spline_interval_m);
 
   m_splined_center_path_x = get<0>(splined_result);
   m_splined_center_path_y = get<1>(splined_result);
@@ -106,8 +110,9 @@ FrenetBasedOpponentPredictor::FrenetBasedOpponentPredictor(
   m_initialize_done_flg = true;
 
   this->parameters_callback_handle = this->add_on_set_parameters_callback(
-    std::bind(&FrenetBasedOpponentPredictor::parametersCallback, this, std::placeholders::_1));
-
+      std::bind(&FrenetBasedOpponentPredictor::parametersCallback,
+                this,
+                std::placeholders::_1));
 }
 
 void FrenetBasedOpponentPredictor::defenderVelCallback(
@@ -232,20 +237,19 @@ void FrenetBasedOpponentPredictor::predict() {
   // 2. Generate minimum jerk frenet path which is parallel to the
   // centerline
 
-  std::cout << "oppo cte : " << m_opponent_cte << std::endl;
-
   std::tuple<std::shared_ptr<FrenetPath>,
              std::vector<std::shared_ptr<FrenetPath>>>
       frenet_path_generation_result = m_frenet_generator_ptr->calc_frenet_paths(
-          m_opponent_cte,                         // current_position_d
-          m_opponent_global_progress,             // current_position_s
-          0.0,                                    // current_velocity_d
-          m_defender_vel_mps,                     // current_velocity_s
-          0.0,                                    // current_acceleration_d
-          m_centerline_splined_model,             // cubic_spliner_2D
-          m_config_prediction_horizon_s,            // Prediction horizon
-          m_config_prediction_horizon_s + 0.01,     // Max max horizon (we want only one here)
-          m_config_prediction_sampling_time_s,      // 
+          m_opponent_cte,                // current_position_d
+          m_opponent_global_progress,    // current_position_s
+          0.0,                           // current_velocity_d
+          m_defender_vel_mps,            // current_velocity_s
+          0.0,                           // current_acceleration_d
+          m_centerline_splined_model,    // cubic_spliner_2D
+          m_config_prediction_horizon_s, // Prediction horizon
+          m_config_prediction_horizon_s +
+              0.01, // Max max horizon (we want only one here)
+          m_config_prediction_sampling_time_s, //
           m_opponent_cte,
           m_opponent_cte + 0.01,
           0.1);
@@ -273,16 +277,18 @@ void FrenetBasedOpponentPredictor::predict() {
     }
 
     m_predicted_output_in_global.trajectory_path = traj_global;
-    // m_predicted_output_in_global.trajectory_timestamp_array = predicted_frenet_path->time();
+    // m_predicted_output_in_global.trajectory_timestamp_array =
+    // predicted_frenet_path->time();
     m_predicted_output_in_global.trajectory_timestamp_array.clear();
-    for(int i =0; i < predicted_frenet_path->time().size(); i++){
-      m_predicted_output_in_global.trajectory_timestamp_array.push_back(predicted_frenet_path->time()[i]);
+    for (int i = 0; i < predicted_frenet_path->time().size(); i++) {
+      m_predicted_output_in_global.trajectory_timestamp_array.push_back(
+          predicted_frenet_path->time()[i]);
     }
 
-    m_predicted_output_in_global.trajectory_type = nif_msgs::msg::DynamicTrajectory::TRAJECTORY_TYPE_PREDICTION;
+    m_predicted_output_in_global.trajectory_type =
+        nif_msgs::msg::DynamicTrajectory::TRAJECTORY_TYPE_PREDICTION;
     m_predicted_output_in_global_vis = traj_global;
 
-    
   } else {
     std::cout << "predicted frenet path length is zero" << std::endl;
   }
@@ -340,54 +346,48 @@ FrenetBasedOpponentPredictor::loadCSVFile(const string wpt_file_path_) {
 
 rcl_interfaces::msg::SetParametersResult
 FrenetBasedOpponentPredictor::parametersCallback(
-        const std::vector<rclcpp::Parameter> &vector) {
-    rcl_interfaces::msg::SetParametersResult result;
-    result.successful = false;
-    result.reason = "";
-    for (const auto &param : vector) 
-    {
-        if (param.get_name() == "path_spline_interval") {
-            if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
-                if (param.as_double() >= 0.0 && param.as_double() <= 10.0)
-                {
-                    this->m_config_path_spline_interval_m = param.as_double();
-                    result.successful = true;
-                }
-            }
-        } else if (param.get_name() == "prediction_horizon_s") {
-            if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
-                if (param.as_double() >= 0.0 && param.as_double() <= 10.0)
-                {
-                    this->m_config_prediction_horizon_s = param.as_double();
-                    result.successful = true;
-                }
-            }
-        } else if (param.get_name() == "prediction_sampling_time") {
-            if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
-                if (param.as_double() >= 0.0 && param.as_double() <= 10.0)
-                {
-                    this->m_config_prediction_sampling_time_s = param.as_double();
-                    result.successful = true;
-                }
-            }
-        } else if (param.get_name() == "oppo_vel_bias_mps") {
-            if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
-                if (param.as_double() >= 0.0 && param.as_double() <= 10.0)
-                {
-                    this->m_config_oppo_vel_bias_mps = param.as_double();
-                    result.successful = true;
-                }
-            }
-        } else if (param.get_name() == "m_defender_vel_mps") {
-            if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
-                if (param.as_double() >= 0.0 && param.as_double() <= 100.0)
-                {
-                    this->m_defender_vel_mps = param.as_double();
-                    result.successful = true;
-                }
-            }
+    const std::vector<rclcpp::Parameter>& vector) {
+  rcl_interfaces::msg::SetParametersResult result;
+  result.successful = false;
+  result.reason = "";
+  for (const auto& param : vector) {
+    if (param.get_name() == "path_spline_interval") {
+      if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
+        if (param.as_double() >= 0.0 && param.as_double() <= 10.0) {
+          this->m_config_path_spline_interval_m = param.as_double();
+          result.successful = true;
         }
+      }
+    } else if (param.get_name() == "prediction_horizon_s") {
+      if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
+        if (param.as_double() >= 0.0 && param.as_double() <= 10.0) {
+          this->m_config_prediction_horizon_s = param.as_double();
+          result.successful = true;
+        }
+      }
+    } else if (param.get_name() == "prediction_sampling_time") {
+      if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
+        if (param.as_double() >= 0.0 && param.as_double() <= 10.0) {
+          this->m_config_prediction_sampling_time_s = param.as_double();
+          result.successful = true;
+        }
+      }
+    } else if (param.get_name() == "oppo_vel_bias_mps") {
+      if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
+        if (param.as_double() >= 0.0 && param.as_double() <= 10.0) {
+          this->m_config_oppo_vel_bias_mps = param.as_double();
+          result.successful = true;
+        }
+      }
+    } else if (param.get_name() == "m_defender_vel_mps") {
+      if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
+        if (param.as_double() >= 0.0 && param.as_double() <= 100.0) {
+          this->m_defender_vel_mps = param.as_double();
+          result.successful = true;
+        }
+      }
     }
+  }
 
-    return result;
+  return result;
 }
