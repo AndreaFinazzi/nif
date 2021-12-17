@@ -170,7 +170,9 @@ public:
         auto now = this->now();
 
         nif_msgs::msg::Perception3DArray perception_array_out_msg{};
-        
+        perception_array_out_msg.header.stamp = now;
+        perception_array_out_msg.header.frame_id = this->getBodyFrameId();
+
         for (auto const& [vehicle_id, vehicle_state] : vehicle_state_by_id) // C++17 
         {
             rclcpp::Duration dt = now - vehicle_state->t_prev;

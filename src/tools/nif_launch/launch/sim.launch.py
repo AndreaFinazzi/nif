@@ -255,6 +255,7 @@ def generate_launch_description():
             ## Should be True on real car
             'engine_based_throttle_enabled' : False, 
             'gear.track': "IMS",
+            'lateral_error_deadband_m': 1.0,
         }]
     )
 

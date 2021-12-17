@@ -183,16 +183,18 @@ class LGSVLSubscriberNode(BaseNode):
         # self.get_logger().info('Subscribed imu_bottom')
 
     def callback_vehicleodometry(self, msg : VehicleOdometry):
-        wheel_speed_msg = WheelSpeedReport()
-        wheel_speed_msg.header = msg.header
-        vel_kph = msg.velocity * 3.6 # / 3.0 # Correction factor (completely empirical)
-        wheel_speed_msg.front_left = vel_kph
-        wheel_speed_msg.front_right = vel_kph
-        wheel_speed_msg.rear_left = vel_kph
-        wheel_speed_msg.rear_right = vel_kph
+        # wheel_speed_msg = WheelSpeedReport()
+        # wheel_speed_msg.header = msg.header
+        # vel_kph = msg.velocity * 3.6 # / 3.0 # Correction factor (completely empirical)
+        # wheel_speed_msg.front_left = vel_kph
+        # wheel_speed_msg.front_right = vel_kph
+        # wheel_speed_msg.rear_left = vel_kph
+        # wheel_speed_msg.rear_right = vel_kph
 
-        self.pub_wheel_speed.publish(wheel_speed_msg)
+        # self.pub_wheel_speed.publish(wheel_speed_msg)
         # self.get_logger().info('Subscribed vehicleodometry')
+        pass
+
 
     def callback_gps_top(self, msg):
         noise = [self.random_noise_position(), self.random_noise_heading()]
@@ -312,6 +314,17 @@ class LGSVLSubscriberNode(BaseNode):
         qe = Quaternion_Euler(q=quat)
         self.heading_deg = math.degrees(qe.ToEuler().z)
 
+        wheel_speed_msg = WheelSpeedReport()
+        wheel_speed_msg.header = msg.header
+        vel_kph = msg.twist.twist.linear.x * 3.6
+        wheel_speed_msg.front_left = vel_kph
+        wheel_speed_msg.front_right = vel_kph
+        wheel_speed_msg.rear_left = vel_kph
+        wheel_speed_msg.rear_right = vel_kph
+
+        self.pub_wheel_speed.publish(wheel_speed_msg)
+        # self.get_logger().info('Subscribed vehicleodometry')
+
         # options: "enu", "ned"
         convert_seu_to = "enu" if self.use_enu else "ned"
         convert_seu_to = "seu"
@@ -388,7 +401,7 @@ class LGSVLSubscriberNode(BaseNode):
         tfs.transform.rotation.y = msg.pose.pose.orientation.y
         tfs.transform.rotation.z = msg.pose.pose.orientation.z
         tfs.transform.rotation.w = msg.pose.pose.orientation.w
-        # self._tf_publisher.sendTransform(tfs)
+        self._tf_publisher.sendTransform(tfs)
 
 def main(args=None):
     rclpy.init(args=args)
