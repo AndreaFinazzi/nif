@@ -12,7 +12,7 @@ def get_share_file(package_name, file_name):
 
 def generate_launch_description():
 
-    idm_acc_param_file = os.path.join(
+    acc_rosparam_file = os.path.join(
         get_package_share_directory('nif_adaptive_cruise_control_node'),
         'config',
         'rosparam.yaml'
@@ -20,8 +20,14 @@ def generate_launch_description():
 
     nif_adaptive_cruise_control_param = DeclareLaunchArgument(
         'nif_adaptive_cruise_control_param',
-        default_value=idm_acc_param_file,
+        default_value=acc_rosparam_file,
         description='Path to config file for nif_adaptive_cruise_control_param'
+    )
+
+    idm_acc_param_file = os.path.join(
+        get_package_share_directory('nif_adaptive_cruise_control_node'),
+        'config',
+        'idm_acc_config.yaml'
     )
 
     idm_based_control_node = Node(
@@ -29,11 +35,15 @@ def generate_launch_description():
         executable='nif_adaptive_cruise_control_node_exe',
         output='screen',
         parameters=[
-            LaunchConfiguration('nif_adaptive_cruise_control_param')
+            LaunchConfiguration('nif_adaptive_cruise_control_param'),
+            {
+                'idm_acc_config_file': idm_acc_param_file
+            }
             ],
         remappings=[
-            ('input_perception_msg_topic_name', '/in_topic_name'),
-            ('idm_acc_config_file', 'file_path'),
+            ('in_perception_array', '/tracking/objects'),
+            ('in_maptrack_in_body', '/planning/path_body'),
+            ('out_acc_acceleration', '/control/acc/accel_cmd'),
         ]
     )
 

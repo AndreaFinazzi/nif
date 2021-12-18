@@ -150,13 +150,22 @@ double IDM::getParamVehLen() {
 
 void IDM::calcAccel(double ego_vel_, double gap_, double cipv_vel_rel_) {
   // Calculate ACC command using IDM
-  auto cipv_vel_rel =
-      -1 * cipv_vel_rel_; // in IDM, other_v_rel == ego_v - other_v
+  auto cipv_vel_rel =  ego_vel_ - cipv_vel_rel_; // in IDM, other_v_rel == ego_v - other_v
+
+
+  std::cout << "cipv_vel_rel : " << cipv_vel_rel << std::endl; 
 
   if (m_estop_flg) {
     cipv_vel_rel_ = ego_vel_;
   }
   ego_vel_ = std::max(ego_vel_, 0.0);
+
+  double tmp = m_idm_param.s1 * sqrt(ego_vel_ / m_idm_param.v_desired) +
+      m_idm_param.time_headway * ego_vel_ +
+      ego_vel_ * cipv_vel_rel /
+          (2 * sqrt(m_idm_param.accel_max * m_idm_param.decel_desired));;
+
+  std::cout << "tmp : " << tmp << std::endl;
 
   auto desired_gap = m_idm_param.s0 +
       m_idm_param.s1 * sqrt(ego_vel_ / m_idm_param.v_desired) +

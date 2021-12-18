@@ -263,7 +263,12 @@ void FrenetBasedOpponentPredictor::predict() {
   std::shared_ptr<FrenetPath>& predicted_frenet_path =
       std::get<0>(frenet_path_generation_result);
 
+  //DynamicTrajectory initialize
   m_predicted_output_in_global.trajectory_path.poses.clear();
+  m_predicted_output_in_global.trajectory_velocity.clear();
+  m_predicted_output_in_global.trajectory_timestamp_array.clear();
+  m_predicted_output_in_global.trajectory_global_progress.clear();
+
   m_predicted_output_in_global_vis.poses.clear();
 
   nav_msgs::msg::Path traj_global;
@@ -279,17 +284,16 @@ void FrenetBasedOpponentPredictor::predict() {
 
       ps.pose.position.x = predicted_frenet_path->points_x()[i];
       ps.pose.position.y = predicted_frenet_path->points_y()[i];
+      ps.pose.orientation = nif::common::utils::coordination::eular2quat(predicted_frenet_path->yaw()[i],
+                                                                        0.0, 0.0);
+      m_predicted_output_in_global.trajectory_timestamp_array.push_back(
+          predicted_frenet_path->time()[i]);
+      m_predicted_output_in_global.trajectory_global_progress.push_back(
+          predicted_frenet_path->points_s([i]);
       traj_global.poses.push_back(ps);
     }
 
     m_predicted_output_in_global.trajectory_path = traj_global;
-    // m_predicted_output_in_global.trajectory_timestamp_array =
-    // predicted_frenet_path->time();
-    m_predicted_output_in_global.trajectory_timestamp_array.clear();
-    for (int i = 0; i < predicted_frenet_path->time().size(); i++) {
-      m_predicted_output_in_global.trajectory_timestamp_array.push_back(
-          predicted_frenet_path->time()[i]);
-    }
 
     m_predicted_output_in_global.trajectory_type =
         nif_msgs::msg::DynamicTrajectory::TRAJECTORY_TYPE_PREDICTION;

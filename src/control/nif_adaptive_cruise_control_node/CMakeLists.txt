@@ -19,7 +19,6 @@ ament_auto_find_build_dependencies()
 ament_auto_add_library(${PROJECT_NAME} SHARED
         src/idm.cpp
         src/adaptive_cruise_node.cpp
-        src/adaptive_cruise_node_main.cpp
         )
 
 ament_auto_add_executable(${PROJECT_NAME}_exe

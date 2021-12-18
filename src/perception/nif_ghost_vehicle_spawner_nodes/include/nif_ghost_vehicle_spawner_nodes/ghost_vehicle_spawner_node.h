@@ -185,6 +185,8 @@ public:
             vehicle_state->odometry.pose.pose.position.y = vehicle_state->odometry.pose.pose.position.y 
                 + ( TIMER_PERIOD_S * vehicle_state->velocity_u_vector_in_global[1] * vehicle_state->velocity_mps);
 
+            vehicle_state->odometry.pose.pose.position.z = 0.0;
+
 
             // TODO update odometry linear twist
     //      vehicle.update_velocity_vector();
@@ -200,17 +202,16 @@ public:
             double mag = sqrt(d_x * d_x + d_y * d_y);
             vehicle_state->velocity_u_vector_in_global[0] = d_x / mag; 
             vehicle_state->velocity_u_vector_in_global[1] = d_y / mag; 
+            vehicle_state->velocity_u_vector_in_global[2] = 0.0; 
 
             // Update orientation
-            vehicle_state->odometry.pose.pose.orientation = next_wpt_in_global.orientation;
-
-            // vehicle_state->pose_in_ego_body = nif::common::utils::coordination::convertToFrame(
-            //     this->getEgoOdometry().pose.pose,
-            //     vehicle_state->odometry.pose.pose).pose;
+            vehicle_state->odometry.pose.pose.orientation.z = next_wpt_in_global.orientation.z;
+            vehicle_state->odometry.pose.pose.orientation.w = next_wpt_in_global.orientation.w;
 
             vehicle_state->pose_in_ego_body = nif::common::utils::coordination::getPtGlobaltoBody(
-                this->getEgoOdometry(),
-                vehicle_state->odometry.pose.pose).pose;
+                    this->getEgoOdometry(),
+                    vehicle_state->odometry.pose.pose)
+                .pose;
 
             vehicle_state->t_prev = now;
 
@@ -219,7 +220,7 @@ public:
             perception_out_msg.header.frame_id = this->getBodyFrameId();
             perception_out_msg.header.stamp = now;
             perception_out_msg.id = vehicle_id;
-            perception_out_msg.obj_velocity_in_local.linear;
+            // perception_out_msg.obj_velocity_in_local.linear;
             perception_out_msg.detection_result_3d.center = vehicle_state->pose_in_ego_body;
             perception_out_msg.detection_result_3d.size.x = 4.0;
             perception_out_msg.detection_result_3d.size.y = 2.0;
@@ -257,7 +258,7 @@ public:
     */
     unsigned int create_vehicle(
         std::string&& maptrack_id, \
-        const double relatvie_velocity_mps = 0, 
+        const double velocity_mps = 0, 
         unsigned int waypoint_index = 0) 
         {
             unsigned int vehicle_id = next_vehicle_id++;
@@ -268,13 +269,7 @@ public:
             odometry.child_frame_id = "oppo_" + std::to_string(vehicle_id) + "_base_link";
             auto& wpt_manager = this->wpt_manager_by_id[maptrack_id];
             odometry.pose.pose = wpt_manager->getPoseStampedAtIndex(0).pose;
-            // tf2::Transform t_ego_odom_in_global;
-            // t_ego_odom_in_global.setOrigin(this->getEgoOdometry().pose.pose.position); 
-            // t_ego_odom_in_global.setRotation(this->getEgoOdometry().pose.pose.orientation); 
-            // pose_in_ego_body = nif::common::utils::coordination::convertToFrame(
-                // this->getEgoOdometry().pose.pose,
-                // odometry.pose.pose).pose;
-
+            
             pose_in_ego_body = nif::common::utils::coordination::getPtGlobaltoBody(
                 this->getEgoOdometry(),
                 odometry.pose.pose).pose;
@@ -285,7 +280,7 @@ public:
                 odometry,
                 pose_in_ego_body,
                 {0.0, 0.0, 0.0}, // Velocity vector
-                relatvie_velocity_mps,
+                velocity_mps,
                 std::forward<std::string>(maptrack_id), // TODO verify this one
                 waypoint_index,
                 this->now()
@@ -297,6 +292,7 @@ public:
             double mag = sqrt(d_x * d_x + d_y * d_y);
             vehicle_state_by_id[vehicle_id]->velocity_u_vector_in_global[0] = d_x / mag; 
             vehicle_state_by_id[vehicle_id]->velocity_u_vector_in_global[1] = d_y / mag; 
+            vehicle_state_by_id[vehicle_id]->velocity_u_vector_in_global[2] = 0.0; 
 
             return vehicle_id;
         }

@@ -107,10 +107,10 @@ class LGSVLSubscriberNode(BaseNode):
 
 
         # Vehicle ground truth state
-        self.sub_ground_truth_state = self.create_subscription(Odometry, '/sensor/odom_ground_truth', self.callback_ground_truth_state, rclpy.qos.qos_profile_sensor_data)
+        self.sub_ground_truth_state = self.create_subscription(Odometry, '/sensor/gps_ground_truth', self.callback_ground_truth_state, rclpy.qos.qos_profile_sensor_data)
+        self.pub_ground_truth_state = self.create_publisher(Odometry, '/sensor/odom_ground_truth', rclpy.qos.qos_profile_sensor_data)
         self.pub_odom_converted = self.create_publisher(Odometry, '/sensor/odom_converted', rclpy.qos.qos_profile_sensor_data)
         self._tf_publisher = TransformBroadcaster(self)
-
     # def callback(self, msg):
     # self.get_logger().info('Subscribed GPS ODOM: {}'.format(msg.pose.pose.position.x))
 
@@ -309,7 +309,9 @@ class LGSVLSubscriberNode(BaseNode):
         odom_converted.pose.pose.orientation.y = 0.0  # msg.pose.pose.orientation.y
         odom_converted.pose.pose.orientation.z = msg.pose.pose.orientation.z
         odom_converted.pose.pose.orientation.w = msg.pose.pose.orientation.w
-        
+        odom_converted.twist = msg.twist
+        self.pub_ground_truth_state.publish(odom_converted)
+
         quat = Quaternion(x=0.0, y=0.0, z=msg.pose.pose.orientation.z, w=msg.pose.pose.orientation.w)
         qe = Quaternion_Euler(q=quat)
         self.heading_deg = math.degrees(qe.ToEuler().z)

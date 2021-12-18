@@ -25,20 +25,20 @@ IMMObjectTrackerNode::IMMObjectTrackerNode(const std::string &node_name_)
 
   tracked_output_publisher =
       this->create_publisher<nif_msgs::msg::Perception3DArray>(
-          "output_topic_name", nif::common::constants::QOS_SENSOR_DATA);
+          "out_detected_object", nif::common::constants::QOS_SENSOR_DATA);
 
   tracked_output_vis_publisher =
       this->create_publisher<visualization_msgs::msg::MarkerArray>(
-          "output_vis_topic_name", nif::common::constants::QOS_SENSOR_DATA);
+          "output_vis", nif::common::constants::QOS_SENSOR_DATA);
 
   detection_result_subscription =
       this->create_subscription<nif_msgs::msg::Perception3DArray>(
-          "in_perception_topic_name", nif::common::constants::QOS_SENSOR_DATA,
+          "in_perception", nif::common::constants::QOS_SENSOR_DATA,
           std::bind(&IMMObjectTrackerNode::detectionCallback, this,
                     std::placeholders::_1));
 
   ego_odom_subscription = this->create_subscription<nav_msgs::msg::Odometry>(
-      "in_ego_odom_topic_name", nif::common::constants::QOS_SENSOR_DATA,
+      "in_ego_odom", nif::common::constants::QOS_SENSOR_DATA,
       std::bind(&IMMObjectTrackerNode::egoOdomCallback, this,
                 std::placeholders::_1));
 
@@ -46,20 +46,21 @@ IMMObjectTrackerNode::IMMObjectTrackerNode(const std::string &node_name_)
   // success to initialize the tracker
 }
 
+// Not used
 IMMObjectTrackerNode::IMMObjectTrackerNode(
     const std::string &node_name_, const std::string &tracker_config_file_path_)
     : Node(node_name_), tracker_config_file_path(tracker_config_file_path_) {
   tracked_output_publisher =
       this->create_publisher<nif_msgs::msg::Perception3DArray>(
-          "output_topic_name", nif::common::constants::QOS_SENSOR_DATA);
+          "output", nif::common::constants::QOS_SENSOR_DATA);
 
   detection_result_subscription =
       this->create_subscription<nif_msgs::msg::Perception3DArray>(
-          "input_topic_name", nif::common::constants::QOS_SENSOR_DATA,
+          "input", nif::common::constants::QOS_SENSOR_DATA,
           std::bind(&IMMObjectTrackerNode::detectionCallback, this,
                     std::placeholders::_1));
   ego_odom_subscription = this->create_subscription<nav_msgs::msg::Odometry>(
-      "ego_odom_topic_name", nif::common::constants::QOS_SENSOR_DATA,
+      "ego_odom", nif::common::constants::QOS_SENSOR_DATA,
       std::bind(&IMMObjectTrackerNode::egoOdomCallback, this,
                 std::placeholders::_1));
 

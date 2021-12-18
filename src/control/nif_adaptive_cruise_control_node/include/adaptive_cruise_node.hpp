@@ -35,6 +35,7 @@ public:
   void
   perceptionCallback(const nif_msgs::msg::Perception3DArray::SharedPtr det_msg);
   void maptrackBodyCallback(const nav_msgs::msg::Path::SharedPtr msg);
+  void predictionCallback(const nif_msgs::msg::DynamicTrajectory::SharedPtr msg);
 
 private:
   /* data */
@@ -46,6 +47,8 @@ private:
 
   nif_msgs::msg::DetectedObjectArray m_det_result;
   nif_msgs::msg::Perception3DArray m_perception_result;
+  nif_msgs::msg::DynamicTrajectory m_prediction_result;
+
   nav_msgs::msg::Odometry m_ego_odom;
   nav_msgs::msg::Path m_maptrack_body;
 
@@ -56,10 +59,10 @@ private:
   std::shared_ptr<IDM> m_idm_prt;
 
   // detection result subscriber
-  rclcpp::Subscription<nif_msgs::msg::DetectedObjectArray>::SharedPtr
-      m_detection_subscriber;
   rclcpp::Subscription<nif_msgs::msg::Perception3DArray>::SharedPtr
       m_perception_subscriber;
+  rclcpp::Subscription<nif_msgs::msg::DynamicTrajectory>::SharedPtr
+      m_prediction_subscriber;
   rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr
       m_maptrack_body_subscriber;
 

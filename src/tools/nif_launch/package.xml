@@ -32,6 +32,7 @@
     <exec_depend>nif_ghost_vehicle_spawner_nodes</exec_depend>
     <exec_depend>nif_opponent_prediction_nodes</exec_depend>
     <exec_depend>nif_objects_tracker_nodes</exec_depend>
+    <exec_depend>nif_adaptive_cruise_control_node</exec_depend>
 
     <exec_depend>nif_telemetry</exec_depend>
     <exec_depend>autoware_auto_msgs</exec_depend>
