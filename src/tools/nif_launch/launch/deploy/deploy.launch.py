@@ -24,18 +24,27 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
+
 IMS = 0
 LOR = 1
-
+IMS_SIM = 2
+LVMS = 3
+LVMS_SIM = 4
 track = None
 
 # get which track we are at
 track_id = os.environ.get('TRACK').strip()
 
-if track_id == "IMS":
+if track_id == "IMS" or track_id == "ims":
     track = IMS
-elif track_id == "LOR":
+elif track_id == "LOR" or track_id == "lor":
     track = LOR
+elif track_id == "IMS_SIM" or track_id == "ims_sim":
+    track = IMS_SIM
+elif track_id == "LVMS" or track_id == "lvms":
+    track = LVMS
+elif track_id == "LVMS_SIM" or track_id == "lvms_sim":
+    track = LVMS_SIM
 else:
     raise RuntimeError("ERROR: Invalid track {}".format(track_id))
 
@@ -106,7 +115,7 @@ def generate_launch_description():
                 file_name='launch/socket_can_receiver.launch.py'
             )
         ]),
-        launch_arguments={'interface': 'can2'}.items()
+        launch_arguments={'interface': 'can0'}.items()
     )
 
     socketcan_sender_launch = IncludeLaunchDescription(
@@ -116,7 +125,7 @@ def generate_launch_description():
                 file_name='launch/socket_can_sender.launch.py'
             )
         ]),
-        launch_arguments={'interface': 'can2'}.items()
+        launch_arguments={'interface': 'can0'}.items()
     )
 
     raptor_node = Node(
@@ -136,11 +145,11 @@ def generate_launch_description():
         ],
     )
 
-    nif_telemetry_node = Node(
-        package='nif_telemetry',
-        executable='telemetry',
-        output='screen',
-    )
+    # nif_telemetry_node = Node(
+    #     package='nif_telemetry',
+    #     executable='telemetry',
+    #     output='screen',
+    # )
 
     # Localization
     nif_localization_launch = IncludeLaunchDescription(
@@ -181,9 +190,9 @@ def generate_launch_description():
         remappings=[
             ('in_control_cmd', '/control_pool/control_cmd'),
             ('in_override_control_cmd', '/control_pool/override_cmd'),
-            ('in_perception_steering', '/wall_following_steering_cmd'),
-            ('in_wall_distance_inner', '/detected_inner_distance'),
-            ('in_wall_distance_outer', '/detected_outer_distance'),
+            ('in_perception_steering', '/no'),
+            ('in_wall_distance_inner', '/no'),
+            ('in_wall_distance_outer', '/no'),
             ('out_control_cmd', '/control_safety_layer/out/control_cmd'),
             ('out_steering_control_cmd', '/joystick/steering_cmd'),
             ('out_accelerator_control_cmd', '/joystick/accelerator_cmd'),
@@ -208,7 +217,7 @@ def generate_launch_description():
         ],
         parameters=[{
             'max_ddes_vel_dt_default'   : 3.0,
-            'lateral_tire_model_factor' : 0.8,
+            'lateral_tire_model_factor' : 0.9,
         }]
     )
 
@@ -253,6 +262,8 @@ def generate_launch_description():
         gear_track = 'LOR'
     elif track == IMS:
         gear_track = 'IMS'
+    elif track == LVMS:
+        gear_track = 'LVMS'
 
     nif_accel_control_node = Node(
         package='nif_accel_control_nodes',
@@ -276,6 +287,8 @@ def generate_launch_description():
         global_params_file = 'params_LOR.global.yaml'
     elif track == IMS:
         global_params_file = 'params_IMS.global.yaml'
+    elif track == LVMS:
+        global_params_file = 'params_LVMS.global.yaml'
     else:
         raise RuntimeError("ERROR: invalid track provided: {}".format(track))
 
@@ -327,7 +340,7 @@ def generate_launch_description():
             get_package_share_directory("nif_waypoint_manager_nodes"),
             "config",
             "mission",
-            "lor_new.yaml",
+            "lor.yaml",
         ),
     )
 
@@ -336,7 +349,16 @@ def generate_launch_description():
             get_package_share_directory("nif_waypoint_manager_nodes"),
             "config",
             "mission",
-            "ims_new.yaml", 
+            "ims.yaml", 
+        ),
+    )
+
+    wpt_config_file_lvms = (
+        os.path.join(
+            get_package_share_directory("nif_waypoint_manager_nodes"),
+            "config",
+            "mission",
+            "lvms.yaml", 
         ),
     )
 
@@ -346,6 +368,8 @@ def generate_launch_description():
         config_file = wpt_config_file_lor
     elif track == IMS:
         config_file = wpt_config_file_ims
+    elif track == LVMS:
+        config_file = wpt_config_file_lvms
     else:
         raise RuntimeError("ERROR: invalid track provided: {}".format(track))
 
@@ -402,7 +426,7 @@ def generate_launch_description():
         socketcan_receiver_launch,
         socketcan_sender_launch,
         raptor_node,
-        nif_telemetry_node,
+        # nif_telemetry_node,
 
         nif_global_param_node,
         nif_system_status_manager_node,

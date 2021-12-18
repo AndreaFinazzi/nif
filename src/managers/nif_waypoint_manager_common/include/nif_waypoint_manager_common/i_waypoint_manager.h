@@ -25,6 +25,9 @@ public:
 
   vector<c_wpt> &getListOfWPT() { return m_wpt_list; }
   c_wpt &getDesiredWPT() { return c_desired_wpt; }
+
+  geometry_msgs::msg::PoseStamped& getPoseStampedAtIndex(const unsigned int index);
+
   nav_msgs::msg::Path &getDesiredWPTInNavMsg() {
     return m_desired_wpt_in_nav_path;
   }

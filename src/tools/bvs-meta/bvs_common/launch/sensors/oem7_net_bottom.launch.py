@@ -36,7 +36,6 @@ def generate_launch_description():
                     get_params("std_oem7_raw_msgs.yaml"   ),
                     get_params("std_msg_topics.yaml"      ),
                     get_params("oem7_supported_imus.yaml" ),
-                    # get_params("std_init_commands_noins.yaml"   ),
                     get_params("std_init_commands.yaml"   ),
 
                     {

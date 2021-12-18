@@ -14,16 +14,20 @@
 
 nif::managers::WaypointManagerMissionSelectiveNode::
     WaypointManagerMissionSelectiveNode(const std::string &node_name_)
-    : IBaseNode(node_name_, common::NodeType::PLANNING) {
+    : IBaseNode(node_name_, common::NodeType::PLANNING)
+{
 
   std::string package_share_directory;
 
-  try {
+  try
+  {
     // This value shouldn't be used, it's as a backup if a config param is
     // missing.
     package_share_directory = ament_index_cpp::get_package_share_directory(
         "nif_waypoint_manager_nodes");
-  } catch (std::exception e) {
+  }
+  catch (std::exception e)
+  {
     RCLCPP_FATAL(this->get_logger(), "Can't get package_share_directory");
   }
   package_share_directory = package_share_directory.append("/maps/LOR/");
@@ -90,16 +94,20 @@ nif::managers::WaypointManagerMissionSelectiveNode::
     WaypointManagerMissionSelectiveNode(
         const std::string &node_name_,
         const std::shared_ptr<WaypointManagerMissionSelective> wpt_manager_ptr)
-    : WaypointManagerMissionSelectiveNode(node_name_) {
+    : WaypointManagerMissionSelectiveNode(node_name_)
+{
   this->setWaypointManager(wpt_manager_ptr);
 }
 
 void nif::managers::WaypointManagerMissionSelectiveNode::obstacleCallback(
-    const visualization_msgs::msg::MarkerArray::SharedPtr obj_array) {
+    const visualization_msgs::msg::MarkerArray::SharedPtr obj_array)
+{
   this->wpt_manager->setObstacle(*obj_array);
 }
 
-void nif::managers::WaypointManagerMissionSelectiveNode::timerCallback() try {
+void nif::managers::WaypointManagerMissionSelectiveNode::timerCallback()
+try
+{
   //  RCLCPP_DEBUG(this->get_logger(), "WaypointManagerMissionSelectiveNode
   //  timer callback");
 
@@ -120,15 +128,22 @@ void nif::managers::WaypointManagerMissionSelectiveNode::timerCallback() try {
   m_map_track_body_publisher->publish(path_in_body);
 
   if (path_in_body.poses.size() >= this->maptrack_size_safety_threshold &&
-      path_in_global.poses.size() >= this->maptrack_size_safety_threshold) {
+      path_in_global.poses.size() >= this->maptrack_size_safety_threshold)
+  {
     this->setNodeStatus(common::NODE_OK);
-  } else {
+  }
+  else
+  {
     this->setNodeStatus(common::NODE_ERROR);
   }
-} catch (std::exception &e) {
+}
+catch (std::exception &e)
+{
   RCLCPP_ERROR(this->get_logger(), e.what());
   this->setNodeStatus(common::NODE_FATAL_ERROR);
-} catch (...) {
+}
+catch (...)
+{
   RCLCPP_ERROR(
       this->get_logger(),
       "Unknown exception thrown in WaypointManagerMissionSelectiveNode.");

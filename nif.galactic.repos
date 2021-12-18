@@ -1,0 +1,51 @@
+repositories:
+  src/external/nif_msgs:
+    type: git
+    url: https://github.com/AndreaFinazzi/nif_msgs.git
+    version: main
+
+#  src/external/deep_orange_msgs:
+#    type: git
+#    url: https://gitlab.com/IACBaseSoftware/deep_orange_msgs.git
+#    version: master
+
+#  src/external/raptor-dbw-ros2:
+#    type: git
+#    url: https://gitlab.com/IACBaseSoftware/raptor-dbw-ros2.git
+#    version: master
+
+#   src/external/official-novatel-driver:
+#     type: git
+# #    url: https://oauth2:$GL_TOKEN@gitlab.com/IACBaseSoftware/official-novatel-driver.git
+#     url: https://$GH_TOKEN@github.com/PITT-MIT-IAC/official-novatel-driver.git
+#     version: galactic
+
+  src/external/ros2_luminar_drivers:
+    type: git
+    url: https://oauth2:$GL_TOKEN@gitlab.com/IACBaseSoftware/ros2_luminar_drivers.git
+    version: main
+
+#  src/external/bvs-meta:
+#    type: git
+#    url: https://$GH_TOKEN@github.com/PITT-MIT-IAC/bvs-meta.git
+#    version: dev
+
+  src/external/perception_pcl:
+    type: git
+    url: https://github.com/ros-perception/perception_pcl.git
+    version: galactic
+
+  src/external/lgsvl_bridge:
+    type: git
+    url: https://github.com/lgsvl/ros2-lgsvl-bridge.git
+    version: galactic-devel
+
+  src/external/swri-novatel-driver:
+    type: git
+    url: https://github.com/swri-robotics/novatel_gps_driver.git
+    version: dashing-devel
+
+  src/external/camera_perception:
+    type: git
+    url: https:///$GH_TOKEN@github.com/PITT-MIT-IAC/Camera_Perception.git
+    version: kaist-main

@@ -6,23 +6,29 @@ from launch.substitutions import LaunchConfiguration
 from launch.actions import DeclareLaunchArgument
 
 
+
 IMS = 0
 LOR = 1
-LG_SVL = 2
+IMS_SIM = 2
+LVMS = 3
+LVMS_SIM = 4
 track = None
 
 # get which track we are at
 track_id = os.environ.get('TRACK').strip()
 
-if track_id == "IMS":
+if track_id == "IMS" or track_id == "ims":
     track = IMS
-elif track_id == "LOR":
+elif track_id == "LOR" or track_id == "lor":
     track = LOR
-elif track_id == "LG_SVL":
-    track = LG_SVL
+elif track_id == "IMS_SIM" or track_id == "ims_sim":
+    track = IMS_SIM
+elif track_id == "LVMS" or track_id == "lvms":
+    track = LVMS
+elif track_id == "LVMS_SIM" or track_id == "lvms_sim":
+    track = LVMS_SIM
 else:
     raise RuntimeError("ERROR: Invalid track {}".format(track_id))
-
 
 def get_share_file(package_name, file_name):
     return os.path.join(get_package_share_directory(package_name), file_name)
@@ -38,9 +44,15 @@ def generate_launch_description():
     elif track == IMS:
         missions_file = 'transitions.ims.yaml'
         zones_file = 'zones.ims.yaml'
-    elif track == LG_SVL:
-        missions_file = 'transitions.sim.yaml'
-        zones_file = 'zones.sim.yaml'
+    elif track == IMS_SIM:
+        missions_file = 'transitions.ims_sim.yaml'
+        zones_file = 'zones.ims_sim.yaml'
+    elif track == LVMS:
+        missions_file = 'transitions.lvms.yaml'
+        zones_file = 'zones.lvms.yaml'
+    elif track == LVMS_SIM:
+        missions_file = 'transitions.lvms_sim.yaml'
+        zones_file = 'zones.lvms_sim.yaml'
     else:
         raise RuntimeError("ERROR: invalid track provided: {}".format(track))
 
@@ -65,24 +77,24 @@ def generate_launch_description():
             
             "missions_file_path": mm_missions_default_file,
             "velocity.zero": 0.0,
-            "velocity.max": 45.0,
-            "velocity.avoidance": 30.0,
-            "velocity.warmup": 25.0,
-            "velocity.pit_in": 10.0,
-            "velocity.pit_out": 10.0,
-            "velocity.slow_drive": 25.0,
+            "velocity.max": 30.0,
+            "velocity.avoidance": 15.0,
+            "velocity.warmup": 15.0,
+            "velocity.pit_in": 12.0,
+            "velocity.pit_out": 12.0,
+            "velocity.slow_drive": 15.0,
             # RC interface params
             "listen_to_override": False,
             "listen_to_nominal": True,
 
             # Mission avoidance auto switch
-            "mission.avoidance.auto_switch": True,
+            "mission.avoidance.auto_switch": False,
             "mission.avoidance.lap_count_min": 4,
             "mission.avoidance.previous_track_flag": 1,
             "mission.avoidance.lap_distance_min": 0,
             "mission.avoidance.lap_distance_max": 0,
 
-            "mission.warmup.auto_switch": True,
+            "mission.warmup.auto_switch": False,
 
         }],
         remappings=[

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-. /opt/ros/foxy/setup.bash
+. /opt/ros/$ROS_DISTRO/setup.bash
 . install/setup.bash
 
 colcon test --base-paths src/* "$@"

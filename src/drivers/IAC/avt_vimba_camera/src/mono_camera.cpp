@@ -296,7 +296,7 @@ MonoCamera::MonoCamera(const std::string& node_name,
                           use_ros_timestamp_descriptor);
 
   // callback for parms
-  this->set_on_parameters_set_callback(
+  this->add_on_set_parameters_callback(
       std::bind(&MonoCamera::parametersCallback, this, std::placeholders::_1));
 
   // create an image publisher w/QoS profile

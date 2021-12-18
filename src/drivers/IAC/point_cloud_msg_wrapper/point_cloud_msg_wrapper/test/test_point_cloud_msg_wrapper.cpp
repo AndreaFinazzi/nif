@@ -28,6 +28,11 @@
 #include <limits>
 #include <tuple>
 
+#ifndef TYPED_TEST_SUITE
+// backwards compability with old gtest versions
+#define TYPED_TEST_SUITE TYPED_TEST_CASE
+#endif
+
 namespace
 {
 struct PointX;
@@ -116,7 +121,7 @@ using AllPointTypes = ::testing::Types<
   CustomAlignedPoint,
   GeometryPointXYZ>;
 // cppcheck-suppress syntaxError - trailing comma is the only way to remove the compiler warning.
-TYPED_TEST_CASE(PointCloudMsgWrapperTest, AllPointTypes, );
+TYPED_TEST_SUITE(PointCloudMsgWrapperTest, AllPointTypes, );
 
 using point_cloud_msg_wrapper::PointCloud2View;
 using point_cloud_msg_wrapper::PointCloud2Modifier;

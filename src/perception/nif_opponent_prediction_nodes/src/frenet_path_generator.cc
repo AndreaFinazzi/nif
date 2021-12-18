@@ -15,7 +15,7 @@
 #define MIN_T                                                                  \
   2.0 // min prediction time [m] ----------------> python code에서 floating \
                                 // point가 잘 못되서 +- 0.1을 해줌
-#define TARGET_SPEED 10.0 / 3.6 // target speed [m/s]
+#define TARGET_SPEED 300.0 / 3.6 // target speed [m/s]
 #define D_T_S 5.0 / 3.6         // target speed sampling length [m/s]
 #define N_S_SAMPLE 0            // sampling number of target speed
 #define ROBOT_RADIUS 2.0        // robot radius [m]
@@ -92,8 +92,8 @@ FrenetPathGenerator::generate_frenet_paths(double current_position_d,
                                              third_derivative_d);
       }
 
-      double target_velocity_s = TARGET_SPEED - D_T_S * N_S_SAMPLE;
-      while (target_velocity_s <= TARGET_SPEED + D_T_S * N_S_SAMPLE) {
+      double target_velocity_s = current_velocity_s;
+      while (target_velocity_s <= current_velocity_s) {
         std::shared_ptr<FrenetPath> frenet_path_target_velocity_s(
             new FrenetPath(*frenet_path));
 
@@ -188,9 +188,9 @@ FrenetPathGenerator::generate_frenet_paths_v2(
     double left_margin = -MAX_ROAD_WIDTH,
     double right_margin = MAX_ROAD_WIDTH,
     double width_d = D_ROAD_W) {
-  assert(left_margin >= 0);
-  assert(right_margin <= 0);
-  assert(width_d <= 0);
+  // assert(left_margin >= 0);
+  // assert(right_margin <= 0);
+  // assert(width_d <= 0);
   // left margin should be set negative
   // right margin should be set positive
   // width_d should be set negative
@@ -200,7 +200,7 @@ FrenetPathGenerator::generate_frenet_paths_v2(
   double expected_position_d = left_margin;
   while (expected_position_d <= right_margin) {
     double time = min_t;
-    while (time < max_t) {
+    while (time <= max_t) {
       std::shared_ptr<FrenetPath> frenet_path(new FrenetPath());
 
       std::shared_ptr<QuinticPolynomial> quintic_polynomial_lateral(
@@ -213,7 +213,7 @@ FrenetPathGenerator::generate_frenet_paths_v2(
                                 time));
 
       double frenet_path_time_i = 0.0;
-      while (frenet_path_time_i < time) {
+      while (frenet_path_time_i <= time) {
         frenet_path->push_back_time(frenet_path_time_i);
         frenet_path_time_i += dt;
       }
@@ -242,8 +242,8 @@ FrenetPathGenerator::generate_frenet_paths_v2(
                                              third_derivative_d);
       }
 
-      double target_velocity_s = TARGET_SPEED - D_T_S * N_S_SAMPLE;
-      while (target_velocity_s <= TARGET_SPEED + D_T_S * N_S_SAMPLE) {
+      double target_velocity_s = current_velocity_s;
+      while (target_velocity_s <= current_velocity_s) {
         std::shared_ptr<FrenetPath> frenet_path_target_velocity_s(
             new FrenetPath(*frenet_path));
 
@@ -329,6 +329,9 @@ void FrenetPathGenerator::calculate_global_paths(
     std::vector<std::shared_ptr<FrenetPath>>& frenet_paths,
     std::shared_ptr<CubicSpliner2D>& cubic_spliner_2D) {
   for (int i = 0; i < frenet_paths.size(); i++) {
+    // NOTE : Suspicious part
+    double max_progress = cubic_spliner_2D->points_s().back();
+
     std::shared_ptr<FrenetPath>& frenet_path = frenet_paths[i];
 
     if (!frenet_path->points_s().empty()) {
@@ -336,6 +339,10 @@ void FrenetPathGenerator::calculate_global_paths(
       const std::vector<double>& points_s = frenet_path->points_s();
       for (int j = 0; j < frenet_path->points_s().size(); j++) {
         double point_s = points_s[j];
+
+        if (point_s > max_progress) {
+          point_s -= max_progress;
+        }
 
         std::tuple<double, double> position =
             cubic_spliner_2D->calculate_position(point_s);

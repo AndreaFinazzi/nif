@@ -54,7 +54,7 @@ SystemStatusManagerNode::SystemStatusManagerNode(
     this->parameters_callback_handle = this->add_on_set_parameters_callback(
             std::bind(&SystemStatusManagerNode::parametersCallback, this, std::placeholders::_1));
 
-    // Inintializa to failure state
+    // Inintialize to failure state
     this->system_status_msg.health_status.communication_failure = true;
     this->system_status_msg.health_status.localization_failure = true;
     this->system_status_msg.health_status.system_failure = true;
@@ -328,7 +328,7 @@ bool SystemStatusManagerNode::commsHeartbeatOk() {
 }
 
 bool SystemStatusManagerNode::localizationOk() {
-    bool loc_error_trigger = !this->hasLocalizationStatus() || ( this->localization_status.localization_status_code >= 200 );
+    bool loc_error_trigger = !this->hasLocalizationStatus() || ( this->localization_status.localization_status_code >= 100 );
 
     return !loc_error_trigger;
 }
