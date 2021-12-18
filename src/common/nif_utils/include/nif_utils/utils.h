@@ -16,7 +16,8 @@
 #include "nav_msgs/msg/path.hpp"
 #include "nif_common/constants.h"
 #include "rclcpp/rclcpp.hpp"
-#include <rclcpp/parameter.hpp>
+#include "tf2/LinearMath/Transform.h"
+#include "tf2/convert.h"
 #include <string>
 
 namespace nif {
@@ -127,39 +128,45 @@ constexpr inline const T& clip(const T& min, const T& max, const T& target) {
 namespace coordination {
 
 inline double quat2yaw(const geometry_msgs::msg::Quaternion& data);
+inline geometry_msgs::msg::Quaternion eular2quat(double yaw, double pitch, double roll);
 
 inline double angle_wrap(double diff);
 
 geometry_msgs::msg::PoseStamped
-getPtBodytoGlobal(const nav_msgs::msg::Odometry& current_pose_,
+getPtBodytoGlobal(const nav_msgs::msg::Odometry& current_odom_,
                   const geometry_msgs::msg::PoseStamped& point_in_body_);
 
 geometry_msgs::msg::PoseStamped
 getPtBodytoGlobal(
-    const nav_msgs::msg::Odometry& current_pose_,
+    const nav_msgs::msg::Odometry& current_odom_,
+    const geometry_msgs::msg::Pose& point_in_body_);
+
+geometry_msgs::msg::Pose
+getPtBodytoGlobal(
+    const geometry_msgs::msg::Pose& current_pose_,
     const geometry_msgs::msg::Pose& point_in_body_);
 
 geometry_msgs::msg::PoseStamped
-getPtGlobaltoBody(const nav_msgs::msg::Odometry& current_pose_,
+getPtGlobaltoBody(const nav_msgs::msg::Odometry& current_odom_,
                   const geometry_msgs::msg::PoseStamped& point_in_global_);
 
 geometry_msgs::msg::PoseStamped
 getPtGlobaltoBody(
-    const nav_msgs::msg::Odometry& current_pose_,
+    const nav_msgs::msg::Odometry& current_odom_,
     const geometry_msgs::msg::Pose& point_in_global_);
 
+__attribute_deprecated__
 geometry_msgs::msg::PoseStamped
-getPtGlobaltoBody(const nav_msgs::msg::Odometry& current_pose_,
+getPtGlobaltoBody(const nav_msgs::msg::Odometry& current_odom_,
                   const double& global_x_,
                   const double& global_y_);
 
-// geometry_msgs::msg::PoseStamped
-// convertToFrame(
-//   const geometry_msgs::msg::Pose& origin_frame,
-//   const geometry_msgs::msg::Pose& destination_frame);
+geometry_msgs::msg::Pose
+getPtGlobaltoBody(
+  const geometry_msgs::msg::Pose& current_pose_,
+  const geometry_msgs::msg::Pose& point_in_global_);
 
-
-nav_msgs::msg::Path getPathGlobaltoBody(const nav_msgs::msg::Odometry& current_pose_,
+nav_msgs::msg::Path getPathGlobaltoBody(const nav_msgs::msg::Odometry& current_odom_,
                                         const nav_msgs::msg::Path& path_in_global_);
 
 } // namespace coordination
