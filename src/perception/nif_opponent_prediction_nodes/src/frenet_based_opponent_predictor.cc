@@ -284,12 +284,12 @@ void FrenetBasedOpponentPredictor::predict() {
 
       ps.pose.position.x = predicted_frenet_path->points_x()[i];
       ps.pose.position.y = predicted_frenet_path->points_y()[i];
-      ps.pose.orientation = nif::common::utils::coordination::eular2quat(predicted_frenet_path->yaw()[i],
+      ps.pose.orientation = nif::common::utils::coordination::euler2quat(predicted_frenet_path->yaw()[i],
                                                                         0.0, 0.0);
       m_predicted_output_in_global.trajectory_timestamp_array.push_back(
           predicted_frenet_path->time()[i]);
       m_predicted_output_in_global.trajectory_global_progress.push_back(
-          predicted_frenet_path->points_s([i]);
+          predicted_frenet_path->points_s()[i]);
       traj_global.poses.push_back(ps);
     }
 

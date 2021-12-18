@@ -780,7 +780,7 @@ FrenetPathGenerator::convert_paht_to_traj_curv(nav_msgs::msg::Path& path_,
     ps.pose.position.x = point_x;
     ps.pose.position.y = point_y;
     ps.pose.orientation =
-        nif::common::utils::coordination::ToQuaternion(yaw, 0.0, 0.0);
+        nif::common::utils::coordination::euler2quat(yaw, 0.0, 0.0);
 
     out_traj.trajectory_path.poses.push_back(ps);
 
