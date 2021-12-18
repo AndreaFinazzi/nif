@@ -5,7 +5,7 @@
 // Created by usrg on 6/24/21.
 //
 
-#include "nif_dynamic_planning_nodes/dynamic_planning_node_v2.h"
+#include "nif_dynamic_planning_nodes/adaptive_dynamic_planning_node_v2.h"
 #include "nif_common/constants.h"
 #include "nif_utils/utils.h"
 #include "rcutils/error_handling.h"
@@ -15,7 +15,7 @@
 using namespace nif::planning;
 using namespace std;
 
-DynamicPlannerNode::DynamicPlannerNode(const std::string& node_name_)
+AdaptiveDynamicPlannerNode::AdaptiveDynamicPlannerNode(const std::string& node_name_)
   : IBaseNode(node_name_, common::NodeType::PLANNING) {
   m_config_load_success = false;
 
@@ -101,7 +101,7 @@ DynamicPlannerNode::DynamicPlannerNode(const std::string& node_name_)
   m_det_sub = this->create_subscription<nif_msgs::msg::Perception3D>(
       "tracking_output_topic_name",
       common::constants::QOS_PLANNING,
-      std::bind(&DynamicPlannerNode::detectionResultCallback,
+      std::bind(&AdaptiveDynamicPlannerNode::detectionResultCallback,
                 this,
                 std::placeholders::_1));
 
@@ -109,28 +109,28 @@ DynamicPlannerNode::DynamicPlannerNode(const std::string& node_name_)
   // m_maptrack_body_sub = this->create_subscription<nav_msgs::msg::Path>(
   //     "maptrack_body_topic_name",
   //     common::constants::QOS_PLANNING,
-  //     std::bind(&DynamicPlannerNode::mapTrackBodyCallback,
+  //     std::bind(&AdaptiveDynamicPlannerNode::mapTrackBodyCallback,
   //               this,
   //               std::placeholders::_1));
   // m_maptrack_global_sub = this->create_subscription<nav_msgs::msg::Path>(
   //     "maptrack_global_topic_name",
   //     common::constants::QOS_PLANNING,
-  //     std::bind(&DynamicPlannerNode::mapTrackGlobalCallback,
+  //     std::bind(&AdaptiveDynamicPlannerNode::mapTrackGlobalCallback,
   //               this,
   //               std::placeholders::_1));
 
   m_oppo_pred_sub = this->create_subscription<nif_msgs::msg::DynamicTrajectory>(
       "prediction_output_topic_name",
       common::constants::QOS_PLANNING,
-      std::bind(&DynamicPlannerNode::predictionResultCallback,
+      std::bind(&AdaptiveDynamicPlannerNode::predictionResultCallback,
                 this,
                 std::placeholders::_1));
 
   m_planner_timer = this->create_wall_timer(
-      20ms, std::bind(&DynamicPlannerNode::timer_callback, this)); // 50 hz
+      20ms, std::bind(&AdaptiveDynamicPlannerNode::timer_callback, this)); // 50 hz
 }
 
-void DynamicPlannerNode::loadConfig(const std::string& planning_config_file_) {
+void AdaptiveDynamicPlannerNode::loadConfig(const std::string& planning_config_file_) {
   m_planning_config_file_path =
       this->get_parameter("planning_config_file_path").as_string();
 
@@ -251,7 +251,7 @@ void DynamicPlannerNode::loadConfig(const std::string& planning_config_file_) {
 }
 
 tuple<vector<double>, vector<double>>
-DynamicPlannerNode::loadCSVfile(const std::string& wpt_file_path_) {
+AdaptiveDynamicPlannerNode::loadCSVfile(const std::string& wpt_file_path_) {
   ifstream inputFile(wpt_file_path_);
   vector<double> vec_x, vec_y;
   while (inputFile) {
@@ -295,7 +295,7 @@ DynamicPlannerNode::loadCSVfile(const std::string& wpt_file_path_) {
   return std::make_tuple(vec_x, vec_y);
 }
 
-void DynamicPlannerNode::detectionResultCallback(
+void AdaptiveDynamicPlannerNode::detectionResultCallback(
     const nif_msgs::msg::Perception3D::SharedPtr msg) {
   if (m_det_callback_first_run) {
     m_cur_det = *msg;
@@ -305,15 +305,15 @@ void DynamicPlannerNode::detectionResultCallback(
     m_cur_det = *msg;
   }
 }
-void DynamicPlannerNode::mapTrackBodyCallback(
+void AdaptiveDynamicPlannerNode::mapTrackBodyCallback(
     const nav_msgs::msg::Path::SharedPtr msg) {
   m_maptrack_body = *msg;
 }
-void DynamicPlannerNode::mapTrackGlobalCallback(
+void AdaptiveDynamicPlannerNode::mapTrackGlobalCallback(
     const nav_msgs::msg::Path::SharedPtr msg) {
   m_maptrack_global = *msg;
 }
-void DynamicPlannerNode::predictionResultCallback(
+void AdaptiveDynamicPlannerNode::predictionResultCallback(
     const nif_msgs::msg::DynamicTrajectory::SharedPtr msg) {
   if (m_oppo_pred_callback_first_run) {
     m_cur_oppo_pred_result = *msg;
@@ -324,7 +324,7 @@ void DynamicPlannerNode::predictionResultCallback(
   }
 }
 
-void DynamicPlannerNode::timer_callback() {
+void AdaptiveDynamicPlannerNode::timer_callback() {
   if (m_timer_callback_first_run) {
     m_cur_decision = PLANNING_DECISION_TYPE::STRAIGHT;
     m_cur_overtaking_action = PLANNING_ACTION_TYPE::DRIVING;
@@ -685,7 +685,7 @@ void DynamicPlannerNode::timer_callback() {
   publishTrajectory();
 }
 
-void DynamicPlannerNode ::timer_callback_v2() {
+void AdaptiveDynamicPlannerNode ::timer_callback_v2() {
   // step -1 : Calculate the current index (on the previous output)
   // step 0 : check previous result (just checking the collision at the moment.
   // Do we have to compute the progress agian? )
@@ -850,7 +850,7 @@ void DynamicPlannerNode ::timer_callback_v2() {
     }
   }
 }
-void DynamicPlannerNode::publishTrajectory() {
+void AdaptiveDynamicPlannerNode::publishTrajectory() {
   // m_cur_ego_planned_result_body.header.stamp = this->now();
   // m_cur_ego_planned_result_global.header.stamp = this->now();
 
@@ -924,7 +924,7 @@ void DynamicPlannerNode::publishTrajectory() {
   // m_ego_traj_global_pub->publish(m_cur_ego_planned_result_global);
 }
 
-void DynamicPlannerNode::initOutputTrajectory() {
+void AdaptiveDynamicPlannerNode::initOutputTrajectory() {
   // Init output message (frame_id, reserve size)
   m_cur_ego_planned_result_body.header.frame_id =
       nif::common::frame_id::localization::BASE_LINK;
@@ -955,7 +955,7 @@ void DynamicPlannerNode::initOutputTrajectory() {
 }
 
 double
-DynamicPlannerNode::getProgress(const geometry_msgs::msg::Pose& pt_global_,
+AdaptiveDynamicPlannerNode::getProgress(const geometry_msgs::msg::Pose& pt_global_,
                                 pcl::KdTreeFLANN<pcl::PointXY>& target_tree_) {
   double progress;
 
@@ -977,7 +977,7 @@ DynamicPlannerNode::getProgress(const geometry_msgs::msg::Pose& pt_global_,
 }
 
 double
-DynamicPlannerNode::getProgress(const double& pt_x_,
+AdaptiveDynamicPlannerNode::getProgress(const double& pt_x_,
                                 const double& pt_y_,
                                 pcl::KdTreeFLANN<pcl::PointXY>& target_tree_) {
   double progress;
@@ -1000,7 +1000,7 @@ DynamicPlannerNode::getProgress(const double& pt_x_,
 }
 
 double
-DynamicPlannerNode::getCurIdx(const double& pt_x_,
+AdaptiveDynamicPlannerNode::getCurIdx(const double& pt_x_,
                               const double& pt_y_,
                               pcl::KdTreeFLANN<pcl::PointXY>& target_tree_) {
   double progress;
@@ -1022,7 +1022,7 @@ DynamicPlannerNode::getCurIdx(const double& pt_x_,
   return index;
 }
 
-double DynamicPlannerNode::calcCTE(const geometry_msgs::msg::Pose& pt_global_,
+double AdaptiveDynamicPlannerNode::calcCTE(const geometry_msgs::msg::Pose& pt_global_,
                                    pcl::KdTreeFLANN<pcl::PointXY>& target_tree_,
                                    pcl::PointCloud<pcl::PointXY>::Ptr& pc_) {
   double cte = 0;
@@ -1066,7 +1066,7 @@ double DynamicPlannerNode::calcCTE(const geometry_msgs::msg::Pose& pt_global_,
 }
 
 pcl::PointCloud<pcl::PointXY>::Ptr
-DynamicPlannerNode::genPointCloudFromVec(vector<double>& x_,
+AdaptiveDynamicPlannerNode::genPointCloudFromVec(vector<double>& x_,
                                          vector<double>& y_) {
   pcl::PointCloud<pcl::PointXY>::Ptr cloud(new pcl::PointCloud<pcl::PointXY>);
 
@@ -1082,7 +1082,7 @@ DynamicPlannerNode::genPointCloudFromVec(vector<double>& x_,
   return cloud;
 }
 
-double DynamicPlannerNode::calcProgressDiff(
+double AdaptiveDynamicPlannerNode::calcProgressDiff(
     const geometry_msgs::msg::Pose& ego_pt_global_,
     const geometry_msgs::msg::Pose& target_pt_global_,
     pcl::KdTreeFLANN<pcl::PointXY>& target_tree_) {
@@ -1094,7 +1094,7 @@ double DynamicPlannerNode::calcProgressDiff(
 }
 
 nav_msgs::msg::Path
-DynamicPlannerNode::xyyawVec2Path(std::vector<double>& x_,
+AdaptiveDynamicPlannerNode::xyyawVec2Path(std::vector<double>& x_,
                                   std::vector<double>& y_,
                                   std::vector<double>& yaw_rad_) {
   nav_msgs::msg::Path output;
@@ -1113,7 +1113,7 @@ DynamicPlannerNode::xyyawVec2Path(std::vector<double>& x_,
   return output;
 }
 
-tuple<double, double> DynamicPlannerNode::calcProgressNCTE(
+tuple<double, double> AdaptiveDynamicPlannerNode::calcProgressNCTE(
     const geometry_msgs::msg::Pose& pt_global_,
     pcl::KdTreeFLANN<pcl::PointXY>& target_tree_,
     pcl::PointCloud<pcl::PointXY>::Ptr& pc_) {
@@ -1157,7 +1157,7 @@ tuple<double, double> DynamicPlannerNode::calcProgressNCTE(
   return std::make_tuple(progress, cte);
 }
 
-std::shared_ptr<FrenetPath> DynamicPlannerNode::getFrenetToRacingLine() {
+std::shared_ptr<FrenetPath> AdaptiveDynamicPlannerNode::getFrenetToRacingLine() {
   // Generate trajectory segment from current odom to racing line.
   auto progressNcte = calcProgressNCTE(
       m_ego_odom.pose.pose, m_racineline_path_kdtree, m_racingline_path_pc);
@@ -1183,7 +1183,7 @@ std::shared_ptr<FrenetPath> DynamicPlannerNode::getFrenetToRacingLine() {
   return std::get<0>(frenet_path_generation_result);
 }
 
-double DynamicPlannerNode::calcProgressDiff(
+double AdaptiveDynamicPlannerNode::calcProgressDiff(
     const nif_msgs::msg::DynamicTrajectory& ego_traj_,
     const nif_msgs::msg::DynamicTrajectory& oppo_traj_,
     pcl::KdTreeFLANN<pcl::PointXY>& target_tree_) {
@@ -1192,7 +1192,7 @@ double DynamicPlannerNode::calcProgressDiff(
   // 2. At the specific
 }
 
-int DynamicPlannerNode::calcCurIdxFromDynamicTraj(
+int AdaptiveDynamicPlannerNode::calcCurIdxFromDynamicTraj(
     const nif_msgs::msg::DynamicTrajectory& msg) {
   int cur_idx = 0;
   double min_dist = 1000000000;
@@ -1212,7 +1212,7 @@ int DynamicPlannerNode::calcCurIdxFromDynamicTraj(
   return cur_idx;
 }
 
-bool DynamicPlannerNode::collisionCheckBTWtrajs(
+bool AdaptiveDynamicPlannerNode::collisionCheckBTWtrajs(
     const nif_msgs::msg::DynamicTrajectory& ego_traj_,
     const nif_msgs::msg::DynamicTrajectory& oppo_traj_,
     const double collision_dist_boundary,
@@ -1248,7 +1248,7 @@ bool DynamicPlannerNode::collisionCheckBTWtrajs(
   return is_collision;
 }
 
-bool DynamicPlannerNode::collisionCheckBTWtrajsNFrenet(
+bool AdaptiveDynamicPlannerNode::collisionCheckBTWtrajsNFrenet(
     std::shared_ptr<FrenetPath> ego_frenet_traj_,
     const nif_msgs::msg::DynamicTrajectory& oppo_traj_,
     const double collision_dist_boundary,
@@ -1287,7 +1287,7 @@ bool DynamicPlannerNode::collisionCheckBTWtrajsNFrenet(
   return is_collision;
 }
 
-nif_msgs::msg::DynamicTrajectory DynamicPlannerNode::stitchFrenetToPath(
+nif_msgs::msg::DynamicTrajectory AdaptiveDynamicPlannerNode::stitchFrenetToPath(
     std::shared_ptr<FrenetPath>& frenet_segment_,
     pcl::KdTreeFLANN<pcl::PointXY>& target_tree_,
     nav_msgs::msg::Path& target_path_) {
