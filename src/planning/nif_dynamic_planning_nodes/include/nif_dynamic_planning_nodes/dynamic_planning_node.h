@@ -188,6 +188,7 @@ private:
   nif_msgs::msg::DynamicTrajectory m_cur_planned_traj;
 
   std::string m_planning_config_file_path;
+  int m_planning_rate;
 
   bool m_config_load_success;
   // configuration param for planning

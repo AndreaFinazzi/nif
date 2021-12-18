@@ -8,6 +8,7 @@
 #include "nif_dynamic_planning_nodes/dynamic_planning_node_v2.h"
 #include "nif_common/constants.h"
 #include "nif_utils/utils.h"
+#include <ament_index_cpp/get_package_share_directory.hpp>
 #include "rcutils/error_handling.h"
 #include <stdlib.h>
 
@@ -18,13 +19,21 @@ DynamicPlannerNode::DynamicPlannerNode(const std::string& node_name_)
   : IBaseNode(node_name_, common::NodeType::PLANNING) {
   m_config_load_success = false;
 
+  std::string package_share_directory;
+  try {
+    // This value shouldn't be used, it's as a backup if a config param is
+    // missing.
+    package_share_directory = ament_index_cpp::get_package_share_directory(
+        "nif_dynamic_planning_nodes");
+  } catch (std::exception e) {
+    RCLCPP_FATAL(this->get_logger(), "Can't get package_share_directory");
+  }
+  package_share_directory = package_share_directory.append("/");
+
   this->declare_parameter("config_file_path", "config/planner_config.yaml");
-  this->declare_parameter("tracked_topic_name", "tracked/objects");
-  this->declare_parameter("prediction_topic_name", "prediction/output");
-
+  this->declare_parameter("maps_path_root", "");
   this->get_parameter("config_file_path", this->m_planning_config_file_path);
-  this->get_parameter("tracked_topic_name", this->m_tracking_topic_name);
-  this->get_parameter("prediction_topic_name", this->m_prediction_topic_name);
+  this->get_parameter("maps_path_root", this->m_map_root_path);
 
   // Load param
   loadConfig(m_planning_config_file_path);
@@ -90,7 +99,7 @@ DynamicPlannerNode::DynamicPlannerNode(const std::string& node_name_)
 
   // Initialize subscribers & publisher
   m_det_sub = this->create_subscription<nif_msgs::msg::Perception3D>(
-      m_tracking_topic_name,
+      "tracking_output_topic_name",
       common::constants::QOS_PLANNING,
       std::bind(&DynamicPlannerNode::detectionResultCallback,
                 this,
@@ -111,114 +120,7 @@ DynamicPlannerNode::DynamicPlannerNode(const std::string& node_name_)
   //               std::placeholders::_1));
 
   m_oppo_pred_sub = this->create_subscription<nif_msgs::msg::DynamicTrajectory>(
-      m_prediction_topic_name,
-      common::constants::QOS_PLANNING,
-      std::bind(&DynamicPlannerNode::predictionResultCallback,
-                this,
-                std::placeholders::_1));
-
-  m_planner_timer = this->create_wall_timer(
-      20ms, std::bind(&DynamicPlannerNode::timer_callback, this)); // 50 hz
-}
-
-DynamicPlannerNode::DynamicPlannerNode(const std::string& node_name_,
-                                       const std::string& planning_config_file_)
-  : IBaseNode(node_name_, common::NodeType::PLANNING) {
-  m_config_load_success = false;
-  m_planning_config_file_path = planning_config_file_;
-
-  this->declare_parameter("tracked_topic_name", "tracked/objects");
-  this->declare_parameter("prediction_topic_name", "prediction/output");
-
-  this->get_parameter("tracked_topic_name", this->m_tracking_topic_name);
-  this->get_parameter("prediction_topic_name", this->m_prediction_topic_name);
-
-  // Load param
-  loadConfig(m_planning_config_file_path);
-  m_config_load_success = true;
-  m_det_callback_first_run = true;
-  m_oppo_pred_callback_first_run = true;
-  m_timer_callback_first_run = true;
-
-  // Init output trajectories
-  initOutputTrajectory();
-
-  // Init spliner & spline modeling for racing line
-  auto racingline_xy = loadCSVfile(m_racingline_file_path);
-  auto racingline_x_vec = get<0>(racingline_xy);
-  auto racingline_y_vec = get<1>(racingline_xy);
-  m_racingline_spline_data = m_frenet_generator_ptr->apply_cubic_spliner(
-      racingline_x_vec, racingline_y_vec, m_config_spline_interval);
-
-  m_racingline_x_vec = get<0>(m_racingline_spline_data);
-  m_racingline_y_vec = get<1>(m_racingline_spline_data);
-  m_racingline_path_pc = genPointCloudFromVec(get<0>(m_racingline_spline_data),
-                                              get<1>(m_racingline_spline_data));
-  m_racineline_path_kdtree.setInputCloud(m_racingline_path_pc);
-
-  m_racingline_path = xyyawVec2Path(get<0>(m_racingline_spline_data),
-                                    get<1>(m_racingline_spline_data),
-                                    get<2>(m_racingline_spline_data));
-
-  m_racingline_dtraj.header = m_racingline_path.header;
-  m_racingline_dtraj.trajectory_path = m_racingline_path;
-
-  // Init spliner & spline modeling for every overtaking path candidates
-  for (int candidate_idx = 0; candidate_idx < m_num_overtaking_candidates;
-       candidate_idx++) {
-    auto wpt_xy =
-        loadCSVfile(m_overtaking_candidates_file_path_vec[candidate_idx]);
-    auto path_x_vec = get<0>(wpt_xy);
-    auto path_y_vec = get<1>(wpt_xy);
-    auto splined_result = m_frenet_generator_ptr->apply_cubic_spliner(
-        path_x_vec, path_y_vec, m_config_spline_interval);
-
-    m_overtaking_candidates_spline_data_vec.push_back(splined_result);
-    m_overtaking_candidates_spline_model_vec.push_back(get<4>(splined_result));
-
-    auto pc =
-        genPointCloudFromVec(get<0>(splined_result), get<1>(splined_result));
-    m_overtaking_candidates_path_pc_vec.push_back(pc);
-
-    pcl::KdTreeFLANN<pcl::PointXY> kdtree;
-    kdtree.setInputCloud(pc);
-    m_overtaking_candidates_path_kdtree_vec.push_back(kdtree);
-
-    auto candidate_path = xyyawVec2Path(
-        get<0>(splined_result), get<1>(splined_result), get<2>(splined_result));
-
-    m_overtaking_candidates_path_vec.push_back(candidate_path);
-
-    nif_msgs::msg::DynamicTrajectory tmp;
-    tmp.header = candidate_path.header;
-    tmp.trajectory_path = candidate_path;
-    m_overkaing_candidates_dtraj_vec.push_back(tmp);
-  }
-
-  // Initialize subscribers & publisher
-  m_det_sub = this->create_subscription<nif_msgs::msg::Perception3D>(
-      m_tracking_topic_name,
-      common::constants::QOS_PLANNING,
-      std::bind(&DynamicPlannerNode::detectionResultCallback,
-                this,
-                std::placeholders::_1));
-
-  // deprecated
-  // m_maptrack_body_sub = this->create_subscription<nav_msgs::msg::Path>(
-  //     "maptrack_body_topic_name",
-  //     common::constants::QOS_PLANNING,
-  //     std::bind(&DynamicPlannerNode::mapTrackBodyCallback,
-  //               this,
-  //               std::placeholders::_1));
-  // m_maptrack_global_sub = this->create_subscription<nav_msgs::msg::Path>(
-  //     "maptrack_global_topic_name",
-  //     common::constants::QOS_PLANNING,
-  //     std::bind(&DynamicPlannerNode::mapTrackGlobalCallback,
-  //               this,
-  //               std::placeholders::_1));
-
-  m_oppo_pred_sub = this->create_subscription<nif_msgs::msg::DynamicTrajectory>(
-      m_prediction_topic_name,
+      "prediction_output_topic_name",
       common::constants::QOS_PLANNING,
       std::bind(&DynamicPlannerNode::predictionResultCallback,
                 this,
@@ -1204,7 +1106,7 @@ DynamicPlannerNode::xyyawVec2Path(std::vector<double>& x_,
     pt.pose.position.y = y_[i];
     pt.pose.position.z = 0.0;
     pt.pose.orientation =
-        nif::common::utils::coordination::ToQuaternion(yaw_rad_[i], 0.0, 0.0);
+        nif::common::utils::coordination::euler2quat(yaw_rad_[i], 0.0, 0.0);
     output.poses.push_back(pt);
   }
 
@@ -1407,7 +1309,7 @@ nif_msgs::msg::DynamicTrajectory DynamicPlannerNode::stitchFrenetToPath(
     ps.pose.position.x = vec_x[i];
     ps.pose.position.y = vec_y[i];
     ps.pose.orientation =
-        nif::common::utils::coordination::ToQuaternion(vec_yaw[i], 0.0, 0.0);
+        nif::common::utils::coordination::euler2quat(vec_yaw[i], 0.0, 0.0);
 
     out.trajectory_path.poses.push_back(ps);
   }

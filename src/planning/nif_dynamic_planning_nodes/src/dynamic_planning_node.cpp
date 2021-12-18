@@ -828,7 +828,7 @@ DynamicPlannerNode::xyyawVec2Path(std::vector<double>& x_,
     pt.pose.position.y = y_[i];
     pt.pose.position.z = 0.0;
     pt.pose.orientation =
-        nif::common::utils::coordination::ToQuaternion(yaw_rad_[i], 0.0, 0.0);
+        nif::common::utils::coordination::euler2quat(yaw_rad_[i], 0.0, 0.0);
     output.poses.push_back(pt);
   }
 

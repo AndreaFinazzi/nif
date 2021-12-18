@@ -60,8 +60,6 @@ class DynamicPlannerNode : public nif::common::IBaseNode {
 
 public:
   DynamicPlannerNode(const std::string& node_name_);
-  DynamicPlannerNode(const std::string& node_name_,
-                     const std::string& planning_config_file_);
 
   void
   detectionResultCallback(const nif_msgs::msg::Perception3D::SharedPtr msg);
@@ -229,6 +227,7 @@ private:
   std::string m_planning_config_file_path;
   std::string m_tracking_topic_name;
   std::string m_prediction_topic_name;
+  std::string m_map_root_path;
 
   bool m_config_load_success;
   // configuration param for planning

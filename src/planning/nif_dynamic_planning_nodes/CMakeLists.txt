@@ -26,7 +26,7 @@ include_directories(
 ament_auto_add_library(${PROJECT_NAME} SHARED
         src/dynamic_planning_node_v2.cpp)
 
-ament_auto_add_executable(planner_node_exe
+ament_auto_add_executable(${PROJECT_NAME}_exe
         src/dynamic_planning_node_main.cpp)
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${YAML_CPP_INCLUDE_DIR})
