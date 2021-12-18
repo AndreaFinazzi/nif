@@ -56,7 +56,7 @@ inline double nif::common::utils::coordination::quat2yaw(
                1 - 2 * (data.y * data.y + data.z * data.z));
 }
 
-inline geometry_msgs::msg::Quaternion nif::common::utils::coordination::euler2quat(
+geometry_msgs::msg::Quaternion nif::common::utils::coordination::euler2quat(
   double yaw, double pitch, double roll) // yaw (Z), pitch (Y), roll (X)
 {
     // Abbreviations for the various angular functions

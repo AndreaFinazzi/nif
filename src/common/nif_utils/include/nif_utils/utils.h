@@ -128,10 +128,8 @@ constexpr inline const T& clip(const T& min, const T& max, const T& target) {
 namespace coordination {
 
 inline double quat2yaw(const geometry_msgs::msg::Quaternion& data);
-inline geometry_msgs::msg::Quaternion euler2quat(double yaw, double pitch, double roll);
 
-geometry_msgs::msg::Quaternion
-ToQuaternion(double yaw, double pitch, double roll);
+geometry_msgs::msg::Quaternion euler2quat(double yaw, double pitch, double roll);
 
 inline double angle_wrap(double diff);
 
