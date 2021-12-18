@@ -13,3 +13,8 @@ planning_params:
     overtaking_longitudinal_margin: 15.0 # [m]
     overtaking_lateral_margin: 2.0 # [m]
     merging_longitudinal_margin: 15.0 # [m]
+    merging_allow_dist_to_racingline: 1.0 # [m] : maximum euclidean distance allowes merging back to the raceline
+
+collision_checking_params:
+    overlap_checking_dist_bound: 5.0 # [m] 
+    overlap_checking_time_bound: 1.0 # [sec]

@@ -13,6 +13,7 @@
 #include "nav_msgs/msg/path.hpp"
 #include "nif_common/constants.h"
 #include "nif_common/types.h"
+#include "nif_common/vehicle_model.h"
 #include "nif_common_nodes/i_base_node.h"
 #include "nif_frame_id/frame_id.h"
 #include "nif_msgs/msg/dynamic_trajectory.hpp"
@@ -58,9 +59,9 @@ class DynamicPlannerNode : public nif::common::IBaseNode {
   };
 
 public:
+  DynamicPlannerNode(const std::string& node_name_);
   DynamicPlannerNode(const std::string& node_name_,
-                     const std::string& planning_config_file_,
-                     const int& num_cadidate_paths_);
+                     const std::string& planning_config_file_);
 
   void
   detectionResultCallback(const nif_msgs::msg::Perception3D::SharedPtr msg);
@@ -199,6 +200,8 @@ private:
 
   int m_num_overtaking_candidates; // number of lines for overtaking
   std::vector<nav_msgs::msg::Path> m_overtaking_candidates_path_vec;
+  std::vector<nif_msgs::msg::DynamicTrajectory>
+      m_overkaing_candidates_dtraj_vec;
   std::vector<pcl::PointCloud<pcl::PointXY>::Ptr>
       m_overtaking_candidates_path_pc_vec; // for kdtree search
   std::vector<pcl::KdTreeFLANN<pcl::PointXY>>
@@ -213,6 +216,7 @@ private:
   std::string m_racingline_file_path;
   std::vector<double> m_racingline_x_vec, m_racingline_y_vec;
   nav_msgs::msg::Path m_racingline_path;
+  nif_msgs::msg::DynamicTrajectory m_racingline_dtraj;
   pcl::PointCloud<pcl::PointXY>::Ptr m_racingline_path_pc;
   pcl::KdTreeFLANN<pcl::PointXY> m_racineline_path_kdtree;
   FrenetPathGenerator::CubicSpliner2DResult m_racingline_spline_data;
@@ -223,6 +227,8 @@ private:
   nif_msgs::msg::DynamicTrajectory m_cur_planned_traj; // full path
 
   std::string m_planning_config_file_path;
+  std::string m_tracking_topic_name;
+  std::string m_prediction_topic_name;
 
   bool m_config_load_success;
   // configuration param for planning
@@ -239,6 +245,9 @@ private:
                                                // merging
   double m_config_follow_enable_dist;          // [m]
   double m_config_spline_interval;             // [m]
+  double m_config_merge_allow_dist;            // [m]
+  double m_config_overlap_checking_dist_bound; // [m]
+  double m_config_overlap_checking_time_bound; // [sec]
 
   shared_ptr<FrenetPathGenerator> m_frenet_generator_ptr;
 
