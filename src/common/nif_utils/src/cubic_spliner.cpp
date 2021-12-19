@@ -84,7 +84,7 @@ CubicSpliner::calculate_matrix_B(std::vector<double>& delta_x) {
 
 double CubicSpliner::calculate_zeroth_derivative(double time) {
   if (time < points_x_[0]) {
-    assert(0 && "Out of range");
+    throw std::runtime_error("calculate_zeroth_derivative::time out of range.");
   } else if (time > points_x_.back()) {
     return -1;
   }
@@ -107,7 +107,7 @@ double CubicSpliner::calculate_zeroth_derivative(double time) {
 
 double CubicSpliner::calculate_first_derivative(double time) {
   if (time < points_x_[0]) {
-    assert(0 && "Out of range");
+    throw std::runtime_error("calculate_zeroth_derivative::time out of range.");
   } else if (time > points_x_.back()) {
     return 0;
   }
@@ -122,7 +122,7 @@ double CubicSpliner::calculate_first_derivative(double time) {
 
 double CubicSpliner::calculate_second_derivative(double time) {
   if (time < points_x_[0]) {
-    assert(0 && "Out of range");
+    throw std::runtime_error("calculate_zeroth_derivative::time out of range.");
   } else if (time > points_x_.back()) {
     return 0;
   }

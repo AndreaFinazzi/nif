@@ -78,7 +78,7 @@ public:
                                     double spline_interval);
 
   nif_msgs::msg::DynamicTrajectory
-  convert_paht_to_traj_curv(nav_msgs::msg::Path& path_,
+  convert_path_to_traj_curv(nav_msgs::msg::Path& path_,
                             double max_lateral_acceleration_,
                             double spline_interval_);
 

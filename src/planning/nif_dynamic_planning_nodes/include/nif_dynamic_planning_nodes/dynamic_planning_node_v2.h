@@ -75,9 +75,13 @@ public:
 
   void timer_callback();
   void timer_callback_v2();
+  void timer_callback_debug();
   void publishTrajectory();
+  void publishPlannedTrajectory(bool vis_);
   void initOutputTrajectory();
   bool setDrivingMode();
+
+  void publishEmptyTrajectory();
 
   bool checkOverTake();
 
@@ -161,6 +165,21 @@ private:
       m_ego_traj_body_pub;
   rclcpp::Publisher<nif_msgs::msg::DynamicTrajectory>::SharedPtr
       m_ego_traj_global_pub;
+  // Ego's planned output DynamicTrajectory for visualization
+  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr
+      m_ego_traj_body_vis_pub;
+  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr
+      m_ego_traj_global_vis_pub;
+
+      rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr
+      m_ego_traj_global_vis_debug_pub1;
+      rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr
+      m_ego_traj_global_vis_debug_pub2;
+      rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr
+      m_ego_traj_global_vis_debug_pub3;
+
+rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr
+      m_debug_vis_pub;
   // output timer
   rclcpp::TimerBase::SharedPtr m_planner_timer;
   bool m_timer_callback_first_run;
@@ -179,6 +198,9 @@ private:
   nif_msgs::msg::DynamicTrajectory m_prev_ego_planned_result_body;
   nif_msgs::msg::DynamicTrajectory m_cur_ego_planned_result_global;
   nif_msgs::msg::DynamicTrajectory m_prev_ego_planned_result_global;
+
+  nav_msgs::msg::Path m_ego_planned_vis_path_body;
+  nav_msgs::msg::Path m_ego_planned_vis_path_global;
 
   double m_ego_progress, m_oppo_progress;           // [m]
   double m_ego_cur_speed_mps, m_oppo_cur_speed_mps; // [mps]
@@ -228,6 +250,8 @@ private:
   std::string m_tracking_topic_name;
   std::string m_prediction_topic_name;
   std::string m_map_root_path;
+
+  bool m_vis_flg;
 
   bool m_config_load_success;
   // configuration param for planning

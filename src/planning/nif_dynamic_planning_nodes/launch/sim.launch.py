@@ -36,37 +36,33 @@ def get_share_file(package_name, file_name):
 
 def generate_launch_description():
   
-    config_file_lor = (
-        os.path.join(
+    config_file_lor = os.path.join(
             get_package_share_directory("nif_dynamic_planning_nodes"),
             "config",
+            'IMS',
             "planner_config.yaml",
-        ),
-    )
+        )
 
-    config_file_ims = (
-        os.path.join(
+    config_file_ims = os.path.join(
             get_package_share_directory("nif_dynamic_planning_nodes"),
             "config",
+            'IMS',
             "planner_config.yaml",
-        ),
-    )
+        )
 
-    config_file_lvms_sim = (
-        os.path.join(
+    config_file_lvms_sim = os.path.join(
             get_package_share_directory("nif_dynamic_planning_nodes"),
             "config",
+            'LVMS_SIM',
             "planner_config.yaml",
-        ),
-    )
+        )
 
-    config_file_lvms = (
-        os.path.join(
+    config_file_lvms = os.path.join(
             get_package_share_directory("nif_dynamic_planning_nodes"),
             "config",
+            'LVMS',
             "planner_config.yaml",
-        ),
-    )
+        )
 
     maps_path_root = get_package_share_directory("nif_waypoint_manager_nodes")
         
@@ -93,14 +89,19 @@ def generate_launch_description():
         executable='nif_dynamic_planning_nodes_exe',
         output='screen',
         parameters=[
-            LaunchConfiguration('nif_dynamic_planning_param_file'),
             {
-                'maps_path_root': maps_path_root         
+                'planning_config_file_path': config_file,
+                'maps_path_root': maps_path_root,
+                'vis_flg': True         
             }
         ],
         remappings=[
             ('tracking_output_topic_name', '/tracking/objects'),
             ('prediction_output_topic_name', '/oppo/prediction'),
+            ('out_trajectory_body', '/planning/dynamic/traj_body'),
+            ('out_trajectory_global', '/planning/dynamic/traj_global'),
+            ('out_trajectory_vis_body', '/planning/dynamic/vis/traj_body'),
+            ('out_trajectory_vis_global', '/planning/dynamic/vis/traj_global'),
         ]
     )
 

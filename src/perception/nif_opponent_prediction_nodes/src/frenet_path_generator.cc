@@ -735,18 +735,18 @@ FrenetPathGenerator::apply_cubic_spliner_from_nav_path(
 }
 
 nif_msgs::msg::DynamicTrajectory
-FrenetPathGenerator::convert_paht_to_traj_curv(nav_msgs::msg::Path& path_,
+FrenetPathGenerator::convert_path_to_traj_curv(nav_msgs::msg::Path& path_,
                                                double max_lateral_acceleration_,
                                                double spline_interval_) {
   nif_msgs::msg::DynamicTrajectory out_traj;
   out_traj.header = path_.header;
 
-  vector<double> points_x;
-  vector<double> points_y;
+  vector<double> points_x(200);
+  vector<double> points_y(200);
 
-  for (int i = 0; i < path_.poses.size(); i++) {
-    points_x.push_back(path_.poses[i].pose.position.x);
-    points_y.push_back(path_.poses[i].pose.position.y);
+  for (int i = 0; i < 200; i++) {
+    points_x[i] = path_.poses[i].pose.position.x;
+    points_y[i] = path_.poses[i].pose.position.y;
   }
 
   std::shared_ptr<CubicSpliner2D> cubic_spliner_2D(
@@ -766,6 +766,7 @@ FrenetPathGenerator::convert_paht_to_traj_curv(nav_msgs::msg::Path& path_,
   vector<double> curv_vel_vec;
   vector<double> time_to_arrival_vec;
 
+  int i = 0;
   while (point_s < point_s_end) {
     std::tuple<double, double> position =
         cubic_spliner_2D->calculate_position(point_s);
@@ -799,8 +800,11 @@ FrenetPathGenerator::convert_paht_to_traj_curv(nav_msgs::msg::Path& path_,
     // cubic_spliner_s.push_back(point_s);
 
     point_s += spline_interval_;
+    i++;
   }
 
+  std::cout << "i: " << i << std::endl;
+  std::cout << "point_x.size(): " << points_x.size() << std::endl;
   // out_traj.trajectory_velocity = curv_vel_vec;
   // out_traj.trajectory_timestamp_array = time_to_arrival_vec;
 

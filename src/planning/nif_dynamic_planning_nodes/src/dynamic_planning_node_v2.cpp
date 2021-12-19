@@ -17,6 +17,7 @@ using namespace std;
 
 DynamicPlannerNode::DynamicPlannerNode(const std::string& node_name_)
   : IBaseNode(node_name_, common::NodeType::PLANNING) {
+
   m_config_load_success = false;
 
   std::string package_share_directory;
@@ -30,10 +31,19 @@ DynamicPlannerNode::DynamicPlannerNode(const std::string& node_name_)
   }
   package_share_directory = package_share_directory.append("/");
 
-  this->declare_parameter("config_file_path", "config/planner_config.yaml");
+  this->declare_parameter("planning_config_file_path", "");
   this->declare_parameter("maps_path_root", "");
-  this->get_parameter("config_file_path", this->m_planning_config_file_path);
+  this->declare_parameter("vis_flg", true);
+
   this->get_parameter("maps_path_root", this->m_map_root_path);
+  this->m_map_root_path.append("/");
+  m_planning_config_file_path =
+      this->get_parameter("planning_config_file_path").as_string();
+  m_vis_flg = this->get_parameter("vis_flg").as_bool();
+
+  if (m_planning_config_file_path.empty())
+    throw std::runtime_error(
+        "Parameter m_planning_config_file_path not declared, or empty.");
 
   // Load param
   loadConfig(m_planning_config_file_path);
@@ -44,6 +54,11 @@ DynamicPlannerNode::DynamicPlannerNode(const std::string& node_name_)
 
   // Init output trajectories
   initOutputTrajectory();
+
+  // m_racingline_file_path = 
+  //   this->m_map_root_path.append(m_racingline_file_path);
+
+  m_racingline_file_path = this->m_map_root_path + m_racingline_file_path;
 
   // Init spliner & spline modeling for racing line
   auto racingline_xy = loadCSVfile(m_racingline_file_path);
@@ -65,11 +80,24 @@ DynamicPlannerNode::DynamicPlannerNode(const std::string& node_name_)
   m_racingline_dtraj.header = m_racingline_path.header;
   m_racingline_dtraj.trajectory_path = m_racingline_path;
 
+  std::cout << "[DYNAMICPLANNER] raceline loaded..." << std::endl;
+  std::cout << "[DYNAMICPLANNER] Loading path candidates..." << std::endl;
+
   // Init spliner & spline modeling for every overtaking path candidates
   for (int candidate_idx = 0; candidate_idx < m_num_overtaking_candidates;
        candidate_idx++) {
+    // m_overtaking_candidates_file_path_vec[candidate_idx] = 
+    //   this->m_map_root_path.append(m_overtaking_candidates_file_path_vec[candidate_idx]);
+
+    m_overtaking_candidates_file_path_vec[candidate_idx] = 
+      this->m_map_root_path + m_overtaking_candidates_file_path_vec[candidate_idx];
+
+    std::cout << "[DYNAMICPLANNER] Loading " << m_overtaking_candidates_alias_vec[candidate_idx] << std::endl;
+    
+
     auto wpt_xy =
         loadCSVfile(m_overtaking_candidates_file_path_vec[candidate_idx]);
+
     auto path_x_vec = get<0>(wpt_xy);
     auto path_y_vec = get<1>(wpt_xy);
     auto splined_result = m_frenet_generator_ptr->apply_cubic_spliner(
@@ -97,27 +125,15 @@ DynamicPlannerNode::DynamicPlannerNode(const std::string& node_name_)
     m_overkaing_candidates_dtraj_vec.push_back(tmp);
   }
 
-  // Initialize subscribers & publisher
+  std::cout << "[DYNAMICPLANNER] Loaded all the pathes" << std::endl;
+
+  // INITIALIZE SUBSCRIBERS & PUBLISHER
   m_det_sub = this->create_subscription<nif_msgs::msg::Perception3D>(
       "tracking_output_topic_name",
       common::constants::QOS_PLANNING,
       std::bind(&DynamicPlannerNode::detectionResultCallback,
                 this,
                 std::placeholders::_1));
-
-  // deprecated
-  // m_maptrack_body_sub = this->create_subscription<nav_msgs::msg::Path>(
-  //     "maptrack_body_topic_name",
-  //     common::constants::QOS_PLANNING,
-  //     std::bind(&DynamicPlannerNode::mapTrackBodyCallback,
-  //               this,
-  //               std::placeholders::_1));
-  // m_maptrack_global_sub = this->create_subscription<nav_msgs::msg::Path>(
-  //     "maptrack_global_topic_name",
-  //     common::constants::QOS_PLANNING,
-  //     std::bind(&DynamicPlannerNode::mapTrackGlobalCallback,
-  //               this,
-  //               std::placeholders::_1));
 
   m_oppo_pred_sub = this->create_subscription<nif_msgs::msg::DynamicTrajectory>(
       "prediction_output_topic_name",
@@ -126,23 +142,39 @@ DynamicPlannerNode::DynamicPlannerNode(const std::string& node_name_)
                 this,
                 std::placeholders::_1));
 
+  m_ego_traj_body_pub = this->create_publisher<nif_msgs::msg::DynamicTrajectory>(
+      "out_trajectory_body", common::constants::QOS_PLANNING);
+  m_ego_traj_global_pub = this->create_publisher<nif_msgs::msg::DynamicTrajectory>(
+      "out_trajectory_global", common::constants::QOS_PLANNING);
+  m_ego_traj_body_vis_pub = this->create_publisher<nav_msgs::msg::Path>(
+      "out_trajectory_vis_body", common::constants::QOS_PLANNING);
+  m_ego_traj_global_vis_pub = this->create_publisher<nav_msgs::msg::Path>(
+      "out_trajectory_vis_global", common::constants::QOS_PLANNING);
+  m_debug_vis_pub = this->create_publisher<nav_msgs::msg::Path>(
+      "planning/debug", common::constants::QOS_PLANNING);
+
+
+      m_ego_traj_global_vis_debug_pub1 = this->create_publisher<nav_msgs::msg::Path>(
+      "planning/debug1", common::constants::QOS_PLANNING);
+      m_ego_traj_global_vis_debug_pub2 = this->create_publisher<nav_msgs::msg::Path>(
+      "planning/debug2", common::constants::QOS_PLANNING);
+      m_ego_traj_global_vis_debug_pub3 = this->create_publisher<nav_msgs::msg::Path>(
+      "planning/debug3", common::constants::QOS_PLANNING);
+
   m_planner_timer = this->create_wall_timer(
-      20ms, std::bind(&DynamicPlannerNode::timer_callback, this)); // 50 hz
+      20ms, std::bind(&DynamicPlannerNode::timer_callback_debug, this)); // 50 hz
+
+  std::cout << "[DYNAMICPLANNER] Initialization done." << std::endl;
+  
 }
 
 void DynamicPlannerNode::loadConfig(const std::string& planning_config_file_) {
-  m_planning_config_file_path =
-      this->get_parameter("planning_config_file_path").as_string();
-
-  if (m_planning_config_file_path.empty())
-    throw std::runtime_error(
-        "Parameter m_planning_config_file_path not declared, or empty.");
 
   RCLCPP_INFO(get_logger(),
               "Loading planning params: %s",
-              m_planning_config_file_path.c_str());
+              planning_config_file_.c_str());
 
-  YAML::Node config = YAML::LoadFile(m_planning_config_file_path);
+  YAML::Node config = YAML::LoadFile(planning_config_file_);
 
   if (!config["path_candidates_param"]) {
     throw std::runtime_error(
@@ -173,7 +205,7 @@ void DynamicPlannerNode::loadConfig(const std::string& planning_config_file_) {
   if (m_overtaking_candidates_file_path_vec.size() !=
       m_overtaking_candidates_alias_vec.size()) {
     throw std::runtime_error(
-        "path_candidates_param is not properly setted. Check config file.");
+        "path_candidates_param is not properly set. Check config file.");
   }
 
   m_num_overtaking_candidates = m_overtaking_candidates_file_path_vec.size();
@@ -200,9 +232,9 @@ void DynamicPlannerNode::loadConfig(const std::string& planning_config_file_) {
   // collision_checking_params
   YAML::Node collision_checking_params = config["collision_checking_params"];
   m_config_overlap_checking_dist_bound =
-      planning_params["overlap_checking_dist_bound"].as<double>();
+      collision_checking_params["overlap_checking_dist_bound"].as<double>();
   m_config_overlap_checking_time_bound =
-      planning_params["overlap_checking_time_bound"].as<double>();
+      collision_checking_params["overlap_checking_time_bound"].as<double>();
 
   // minimal checking
   if (m_config_planning_dt <= 0.0) {
@@ -251,9 +283,11 @@ void DynamicPlannerNode::loadConfig(const std::string& planning_config_file_) {
 }
 
 tuple<vector<double>, vector<double>>
-DynamicPlannerNode::loadCSVfile(const std::string& wpt_file_path_) {
+DynamicPlannerNode::loadCSVfile(const std::string& wpt_file_path_) 
+{
   ifstream inputFile(wpt_file_path_);
   vector<double> vec_x, vec_y;
+
   while (inputFile) {
     string s;
     if (!getline(inputFile, s))
@@ -297,22 +331,26 @@ DynamicPlannerNode::loadCSVfile(const std::string& wpt_file_path_) {
 
 void DynamicPlannerNode::detectionResultCallback(
     const nif_msgs::msg::Perception3D::SharedPtr msg) {
+  
   if (m_det_callback_first_run) {
-    m_cur_det = *msg;
     m_det_callback_first_run = false;
   } else {
     m_prev_det = m_cur_det;
-    m_cur_det = *msg;
   }
+  
+  m_cur_det = *msg;
 }
+
 void DynamicPlannerNode::mapTrackBodyCallback(
     const nav_msgs::msg::Path::SharedPtr msg) {
   m_maptrack_body = *msg;
 }
+
 void DynamicPlannerNode::mapTrackGlobalCallback(
     const nav_msgs::msg::Path::SharedPtr msg) {
   m_maptrack_global = *msg;
 }
+
 void DynamicPlannerNode::predictionResultCallback(
     const nif_msgs::msg::DynamicTrajectory::SharedPtr msg) {
   if (m_oppo_pred_callback_first_run) {
@@ -686,6 +724,7 @@ void DynamicPlannerNode::timer_callback() {
 }
 
 void DynamicPlannerNode ::timer_callback_v2() {
+
   // step -1 : Calculate the current index (on the previous output)
   // step 0 : check previous result (just checking the collision at the moment.
   // Do we have to compute the progress agian? )
@@ -706,6 +745,9 @@ void DynamicPlannerNode ::timer_callback_v2() {
   START FROM HERE
   */
 
+  // update ego odometry
+  m_ego_odom = this->getEgoOdometry();
+
   //  Check wheter we are close enough to the racing line
   bool is_close_racingline =
       (calcCTE(m_ego_odom.pose.pose,
@@ -723,24 +765,32 @@ void DynamicPlannerNode ::timer_callback_v2() {
                                       m_cur_oppo_pred_result,
                                       m_config_overlap_checking_dist_bound,
                                       m_config_overlap_checking_time_bound);
+
     if (!collision_raceline) {
+
       // change the defualt path to the racing line
       m_cur_planned_traj = m_racingline_dtraj;
-
-    } else {
-      // check another pathes
+      publishPlannedTrajectory(m_vis_flg);
+      return;
     }
   }
+
+  std::cout << "callback 6" << std::endl;
 
   // step -1
   m_ego_cur_idx_in_planned_traj = calcCurIdxFromDynamicTraj(m_cur_planned_traj);
 
+  std::cout << "callback 7" << std::endl;
+
   // step 0
   // Velocity profiling (do with the curvature based as a start point)
-  auto ego_traj = m_frenet_generator_ptr->convert_paht_to_traj_curv(
+  auto ego_traj = m_frenet_generator_ptr->convert_path_to_traj_curv(
       m_cur_planned_traj.trajectory_path,
       m_config_max_accel,
       m_config_spline_interval);
+
+      std::cout << "callback 8" << std::endl;
+
 
   // collision check btw two trajectories
   auto is_collision =
@@ -749,8 +799,15 @@ void DynamicPlannerNode ::timer_callback_v2() {
                              m_config_overlap_checking_dist_bound,
                              m_config_overlap_checking_time_bound);
 
+      std::cout << "callback 9" << std::endl;
+
+  is_collision = true;
+
   if (!is_collision) {
     // keep current planned traj
+    publishPlannedTrajectory(m_vis_flg);
+      std::cout << "callback 10" << std::endl;
+
     return;
   } else {
     vector<std::shared_ptr<FrenetPath>> collision_free_frenet_vec;
@@ -799,11 +856,19 @@ void DynamicPlannerNode ::timer_callback_v2() {
       }
     }
 
+      std::cout << "callback 11" << std::endl;
+
+
     // step 1.2-1 : if all path cancled, stop
     if (collision_free_frenet_vec.empty()) {
       // (not publishing anything)
+      std::cout << "All colliding...publish empth path" << std::endl;
+      publishEmptyTrajectory();
       return;
     } else {
+
+      std::cout << "callback 12" << std::endl;
+
       // step 1.3 : Calculate the progress for each trajectory
 
       for (int collision_free_frenet_idx = 0;
@@ -822,6 +887,8 @@ void DynamicPlannerNode ::timer_callback_v2() {
         // TODO : progress wrapping
 
         collision_free_frenet_progress_vec.push_back(progress);
+      std::cout << "callback 13" << std::endl;
+
       }
 
       auto maximum_progress_frenet_idx =
@@ -839,6 +906,23 @@ void DynamicPlannerNode ::timer_callback_v2() {
       auto stitch_target_path_candidate = m_overtaking_candidates_path_vec
           [stitch_target_path_candidate_idx]; // nav_msgs::msg::Path
 
+      std::cout << "callback 14" << std::endl;
+
+      nav_msgs::msg::Path debug_frenet_seg_path;
+      debug_frenet_seg_path.header.frame_id = "odom";
+
+      for(int i =0; i < stitch_frenet_segment->points_x().size(); i++){
+        geometry_msgs::msg::PoseStamped ps;
+        ps.header.frame_id = "odom";
+        ps.pose.position.x = stitch_frenet_segment->points_x()[i];
+        ps.pose.position.y = stitch_frenet_segment->points_y()[i];
+        debug_frenet_seg_path.poses.push_back(ps);
+      }
+
+      m_debug_vis_pub->publish(debug_frenet_seg_path);
+      
+
+
       // step 1-5 : Update current trajectory
       m_cur_planned_traj = stitchFrenetToPath(
           stitch_frenet_segment,
@@ -846,10 +930,187 @@ void DynamicPlannerNode ::timer_callback_v2() {
               [stitch_target_path_candidate_idx],
           m_overtaking_candidates_path_vec[stitch_target_path_candidate_idx]);
 
-      // step 1-6 : Publish
+      std::cout << "callback 15" << std::endl;
+
     }
   }
+  // step 1-6 : Publish
+  publishPlannedTrajectory(m_vis_flg);
 }
+
+void DynamicPlannerNode ::timer_callback_debug() {
+
+  vector<std::shared_ptr<FrenetPath>> frenet_vec;
+
+  m_ego_odom = this->getEgoOdometry();
+
+                std::cout << "here -1" << std::endl;
+
+
+
+  for (int path_candidate_idx = 0;
+        path_candidate_idx < m_overtaking_candidates_path_vec.size();
+        path_candidate_idx++) {
+    // step 1.1 : Generate the frenet candidates to all wpt
+    auto progressNcte = calcProgressNCTE(
+        m_ego_odom.pose.pose,
+        m_overtaking_candidates_path_kdtree_vec[path_candidate_idx],
+        m_overtaking_candidates_path_pc_vec[path_candidate_idx]);
+
+    std::tuple<std::shared_ptr<FrenetPath>,
+                std::vector<std::shared_ptr<FrenetPath>>>
+        frenet_path_generation_result =
+            m_frenet_generator_ptr->calc_frenet_paths(
+                get<1>(progressNcte),            // current_position_d
+                get<0>(progressNcte),            // current_position_s
+                0.0,                             // current_velocity_d
+                std::max(m_ego_odom.twist.twist.linear.x, 5.0), // current_velocity_s
+                0.0,                             // current_acceleration_d
+                m_overtaking_candidates_spline_model_vec
+                    [path_candidate_idx], // cubic_spliner_2D
+                m_config_planning_horizon,
+                m_config_planning_horizon + 0.01,
+                m_config_planning_dt,
+                0.0,
+                0.0001,
+                0.1);
+
+                std::cout << "here 1" << std::endl;
+
+    std::shared_ptr<FrenetPath> frenet_candidate =
+        std::get<0>(frenet_path_generation_result);
+
+        if(path_candidate_idx ==0) {
+          nav_msgs::msg::Path debug_frenet_seg_path;
+      debug_frenet_seg_path.header.frame_id = "odom";
+
+      for(int i =0; i < frenet_candidate->points_x().size(); i++){
+        geometry_msgs::msg::PoseStamped ps;
+        ps.header.frame_id = "odom";
+        ps.pose.position.x = frenet_candidate->points_x()[i];
+        ps.pose.position.y = frenet_candidate->points_y()[i];
+        debug_frenet_seg_path.poses.push_back(ps);
+      }
+
+                std::cout << "here 2" << std::endl;
+
+
+      m_ego_traj_global_vis_debug_pub1->publish(debug_frenet_seg_path);
+        }
+        if(path_candidate_idx ==1) {
+          nav_msgs::msg::Path debug_frenet_seg_path;
+      debug_frenet_seg_path.header.frame_id = "odom";
+
+      for(int i =0; i < frenet_candidate->points_x().size(); i++){
+        geometry_msgs::msg::PoseStamped ps;
+        ps.header.frame_id = "odom";
+        ps.pose.position.x = frenet_candidate->points_x()[i];
+        ps.pose.position.y = frenet_candidate->points_y()[i];
+        debug_frenet_seg_path.poses.push_back(ps);
+      }
+
+      m_ego_traj_global_vis_debug_pub2->publish(debug_frenet_seg_path);
+                std::cout << "here 3" << std::endl;
+
+        }
+        if(path_candidate_idx ==2) {
+          nav_msgs::msg::Path debug_frenet_seg_path;
+      debug_frenet_seg_path.header.frame_id = "odom";
+
+      for(int i =0; i < frenet_candidate->points_x().size(); i++){
+        geometry_msgs::msg::PoseStamped ps;
+        ps.header.frame_id = "odom";
+        ps.pose.position.x = frenet_candidate->points_x()[i];
+        ps.pose.position.y = frenet_candidate->points_y()[i];
+        debug_frenet_seg_path.poses.push_back(ps);
+      }
+                std::cout << "here 4" << std::endl;
+
+      m_ego_traj_global_vis_debug_pub3->publish(debug_frenet_seg_path);
+        }
+  }
+}
+
+void DynamicPlannerNode::publishEmptyTrajectory() {
+  nif_msgs::msg::DynamicTrajectory empty_traj;
+  nav_msgs::msg::Path empty_path;
+  
+  empty_traj.header.stamp = this->now();
+  empty_path.header.stamp = this->now();
+
+  empty_traj.header.frame_id = nif::common::frame_id::localization::BASE_LINK;
+  m_ego_traj_body_pub->publish(empty_traj);
+  
+  empty_traj.header.frame_id = nif::common::frame_id::localization::ODOM;
+  m_ego_traj_global_pub->publish(empty_traj);
+  
+  empty_path.header.frame_id = nif::common::frame_id::localization::BASE_LINK;
+  m_ego_traj_body_vis_pub->publish(empty_path);
+  
+  empty_path.header.frame_id = nif::common::frame_id::localization::ODOM;
+  m_ego_traj_global_vis_pub->publish(m_ego_planned_vis_path_global);
+}
+
+void DynamicPlannerNode::publishPlannedTrajectory(bool vis_flg_) {
+  m_cur_ego_planned_result_body.trajectory_path.poses.clear();
+  m_cur_ego_planned_result_global.trajectory_path.poses.clear();
+  
+  m_cur_ego_planned_result_body.header.stamp = this->now();
+  m_cur_ego_planned_result_body.header.frame_id = 
+                                nif::common::frame_id::localization::BASE_LINK;
+  m_cur_ego_planned_result_global.header.stamp = this->now();
+  m_cur_ego_planned_result_global.header.frame_id = 
+                                nif::common::frame_id::localization::ODOM;
+
+  m_cur_ego_planned_result_body.trajectory_type =
+      nif_msgs::msg::DynamicTrajectory::TRAJECTORY_TYPE_PLANNING;
+  m_cur_ego_planned_result_global.trajectory_type =
+      nif_msgs::msg::DynamicTrajectory::TRAJECTORY_TYPE_PLANNING;
+
+  // Current idx
+  m_ego_cur_idx_in_planned_traj = calcCurIdxFromDynamicTraj(m_cur_planned_traj);
+
+  int tmp_wpt_len = 100;
+
+  for(int wpt_idx = 0; wpt_idx < tmp_wpt_len; wpt_idx++) {
+    geometry_msgs::msg::PoseStamped ps_body;
+    geometry_msgs::msg::PoseStamped ps_global;
+
+    int target_idx_in_full_path = m_ego_cur_idx_in_planned_traj + wpt_idx;
+    // index wrapping
+    if(target_idx_in_full_path >= m_cur_planned_traj.trajectory_path.poses.size()){
+      target_idx_in_full_path -= m_cur_planned_traj.trajectory_path.poses.size();
+    }
+
+    ps_global = m_cur_planned_traj.trajectory_path.poses[target_idx_in_full_path];
+    ps_global.header.frame_id = nif::common::frame_id::localization::ODOM;
+
+    ps_body = common::utils::coordination::getPtGlobaltoBody(m_ego_odom,ps_global);
+    ps_body.header.frame_id = nif::common::frame_id::localization::BASE_LINK;
+
+    m_cur_ego_planned_result_body.trajectory_path.poses.push_back(ps_body);
+    m_cur_ego_planned_result_global.trajectory_path.poses.push_back(ps_global);
+
+    // TODO : no idea to assign the velocity, time, progress.... FIX THIS NEAR SOON!!!
+  }
+  m_ego_traj_body_pub->publish(m_cur_ego_planned_result_body);
+  m_ego_traj_global_pub->publish(m_cur_ego_planned_result_global);
+
+  if(vis_flg_) {
+    m_ego_planned_vis_path_body = m_cur_ego_planned_result_body.trajectory_path;
+    m_ego_planned_vis_path_global = m_cur_ego_planned_result_global.trajectory_path;
+
+    m_ego_planned_vis_path_body.header.frame_id = nif::common::frame_id::localization::BASE_LINK;
+    m_ego_planned_vis_path_global.header.frame_id = nif::common::frame_id::localization::ODOM;
+
+    m_ego_planned_vis_path_body.header.stamp = this->now();
+    m_ego_planned_vis_path_global.header.stamp = this->now();
+
+    m_ego_traj_body_vis_pub->publish(m_ego_planned_vis_path_body);
+    m_ego_traj_global_vis_pub->publish(m_ego_planned_vis_path_global);
+  }
+}
+
 void DynamicPlannerNode::publishTrajectory() {
   // m_cur_ego_planned_result_body.header.stamp = this->now();
   // m_cur_ego_planned_result_global.header.stamp = this->now();
@@ -942,8 +1203,14 @@ void DynamicPlannerNode::initOutputTrajectory() {
         nif::common::frame_id::localization::BASE_LINK;
     zero_pt_global.header.frame_id = nif::common::frame_id::localization::ODOM;
 
+    init_path_body.poses.clear();
+    init_path_global.poses.clear();
+
     init_path_body.poses.push_back(zero_pt_body);
     init_path_global.poses.push_back(zero_pt_global);
+
+    m_cur_ego_planned_result_body.trajectory_timestamp_array.clear();
+    m_cur_ego_planned_result_global.trajectory_timestamp_array.clear();
 
     m_cur_ego_planned_result_body.trajectory_timestamp_array.push_back(
         i * m_config_planning_dt);
