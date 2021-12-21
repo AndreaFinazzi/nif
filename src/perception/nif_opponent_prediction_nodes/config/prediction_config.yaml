@@ -1,0 +1,6 @@
+prediction_config_param:
+    reference_file_path: 'path_centerline'
+    prediction_horizon: 4.0 # [sec]
+    opponent_vel_x_bias: 0.5 # [mps]
+    path_spline_interval: 1.0 # [m]
+    prediction_sampling_time: 0.2 #[sec]

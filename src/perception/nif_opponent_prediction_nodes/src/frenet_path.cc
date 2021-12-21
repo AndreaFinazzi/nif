@@ -23,8 +23,7 @@ FrenetPath::FrenetPath(FrenetPath &frenet_path)
 void FrenetPath::push_back_derivatives_d(double zeroth_derivative,
                                          double first_derivative,
                                          double second_derivative,
-                                         double third_derivative)
-{
+                                         double third_derivative) {
   points_d_.push_back(zeroth_derivative);
   first_derivative_d_.push_back(first_derivative);
   second_derivative_d_.push_back(second_derivative);
@@ -34,8 +33,7 @@ void FrenetPath::push_back_derivatives_d(double zeroth_derivative,
 void FrenetPath::push_back_derivatives_s(double zeroth_derivative,
                                          double first_derivative,
                                          double second_derivative,
-                                         double third_derivative)
-{
+                                         double third_derivative) {
   points_s_.push_back(zeroth_derivative);
   first_derivative_s_.push_back(first_derivative);
   second_derivative_s_.push_back(second_derivative);
