@@ -795,8 +795,6 @@ void DynamicPlannerNode ::timer_callback_v2() {
       ego_traj, m_cur_oppo_pred_result, m_config_overlap_checking_dist_bound,
       m_config_overlap_checking_time_bound);
 
-  is_collision = true;
-
   if (!is_collision) {
     // keep current planned traj
     publishPlannedTrajectory(m_vis_flg);

@@ -128,11 +128,12 @@ void FrenetBasedOpponentPredictor::opponentStatusCallback(
 
     auto& perception_el = msg->perception_list[0];
     m_opponent_status = perception_el;
+
     m_defender_vel_mps = perception_el.obj_velocity_in_local.linear.x +
-        m_ego_status.twist.twist.linear.x +
+        // m_ego_status.twist.twist.linear.x + // Only if tracking result is relative to ego.
         m_config_oppo_vel_bias_mps; // NOTE : should be mps / absolute vel
 
-    m_defender_vel_mps = m_defender_vel_default_mps;
+    m_defender_vel_mps = std::max(m_defender_vel_mps, 0.5);
 
     // Do prediction when the oppponent's status is callbacked
     this->predict();
