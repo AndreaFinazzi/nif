@@ -47,8 +47,8 @@ const float KPH_TO_MPH_FACTOR = 0.621371;
  * @param b Point/Pose/PoseStamped
  * @return Euclidean distance between Point/Pose/PoseStamped
  */
-double calEuclideanDistance(const geometry_msgs::msg::PoseStamped& a,
-                            const geometry_msgs::msg::PoseStamped& b);
+double calEuclideanDistance(const geometry_msgs::msg::PoseStamped &a,
+                            const geometry_msgs::msg::PoseStamped &b);
 
 /**
  * Calculate Euclidean distance between Point/Pose/PoseStamped
@@ -56,8 +56,8 @@ double calEuclideanDistance(const geometry_msgs::msg::PoseStamped& a,
  * @param b Point/Pose/PoseStamped
  * @return Euclidean distance between Point/Pose/PoseStamped
  */
-double calEuclideanDistance(const geometry_msgs::msg::Pose& a,
-                            const geometry_msgs::msg::Pose& b);
+double calEuclideanDistance(const geometry_msgs::msg::Pose &a,
+                            const geometry_msgs::msg::Pose &b);
 
 /**
  * Calculate Euclidean distance between Point/Pose/PoseStamped
@@ -65,8 +65,8 @@ double calEuclideanDistance(const geometry_msgs::msg::Pose& a,
  * @param b Point/Pose/PoseStamped
  * @return Euclidean distance between Point/Pose/PoseStamped
  */
-double calEuclideanDistance(const geometry_msgs::msg::Point& a,
-                            const geometry_msgs::msg::Point& b);
+double calEuclideanDistance(const geometry_msgs::msg::Point &a,
+                            const geometry_msgs::msg::Point &b);
 
 //    TODO: fix static override problems
 //    double calEuclideanDistance(const std::vector<double,double>& a, const
@@ -97,7 +97,7 @@ double mph2mps(double mph);
 
 namespace io {
 //  TODO: define precisely (do we need this?)
-std::vector<rclcpp::Parameter>& readConfig(std::string& file_name);
+std::vector<rclcpp::Parameter> &readConfig(std::string &file_name);
 
 } // namespace io
 
@@ -119,7 +119,7 @@ namespace numeric {
  * @return Clipped value.
  */
 template <typename T>
-constexpr inline const T& clip(const T& min, const T& max, const T& target) {
+constexpr inline const T &clip(const T &min, const T &max, const T &target) {
   return std::max<T>(min, std::min<T>(target, max));
 }
 
@@ -127,57 +127,56 @@ constexpr inline const T& clip(const T& min, const T& max, const T& target) {
 
 namespace coordination {
 
-inline double quat2yaw(const geometry_msgs::msg::Quaternion& data);
+inline double quat2yaw(const geometry_msgs::msg::Quaternion &data) {
+  return atan2(2 * (data.w * data.z + data.x * data.y),
+               1 - 2 * (data.y * data.y + data.z * data.z));
+};
 
-geometry_msgs::msg::Quaternion euler2quat(double yaw, double pitch, double roll);
+geometry_msgs::msg::Quaternion euler2quat(double yaw, double pitch,
+                                          double roll);
 
 inline double angle_wrap(double diff);
 
 geometry_msgs::msg::PoseStamped
-getPtBodytoGlobal(const nav_msgs::msg::Odometry& current_odom_,
-                  const geometry_msgs::msg::PoseStamped& point_in_body_);
+getPtBodytoGlobal(const nav_msgs::msg::Odometry &current_odom_,
+                  const geometry_msgs::msg::PoseStamped &point_in_body_);
 
 geometry_msgs::msg::PoseStamped
-getPtBodytoGlobal(
-    const nav_msgs::msg::Odometry& current_odom_,
-    const geometry_msgs::msg::Pose& point_in_body_);
+getPtBodytoGlobal(const nav_msgs::msg::Odometry &current_odom_,
+                  const geometry_msgs::msg::Pose &point_in_body_);
 
 geometry_msgs::msg::Pose
-getPtBodytoGlobal(
-    const geometry_msgs::msg::Pose& current_pose_,
-    const geometry_msgs::msg::Pose& point_in_body_);
+getPtBodytoGlobal(const geometry_msgs::msg::Pose &current_pose_,
+                  const geometry_msgs::msg::Pose &point_in_body_);
 
 geometry_msgs::msg::PoseStamped
-getPtGlobaltoBody(const nav_msgs::msg::Odometry& current_odom_,
-                  const geometry_msgs::msg::PoseStamped& point_in_global_);
+getPtGlobaltoBody(const nav_msgs::msg::Odometry &current_odom_,
+                  const geometry_msgs::msg::PoseStamped &point_in_global_);
 
 geometry_msgs::msg::PoseStamped
-getPtGlobaltoBody(
-    const nav_msgs::msg::Odometry& current_odom_,
-    const geometry_msgs::msg::Pose& point_in_global_);
+getPtGlobaltoBody(const nav_msgs::msg::Odometry &current_odom_,
+                  const geometry_msgs::msg::Pose &point_in_global_);
 
-__attribute_deprecated__
-geometry_msgs::msg::PoseStamped
-getPtGlobaltoBody(const nav_msgs::msg::Odometry& current_odom_,
-                  const double& global_x_,
-                  const double& global_y_);
+__attribute_deprecated__ geometry_msgs::msg::PoseStamped
+getPtGlobaltoBody(const nav_msgs::msg::Odometry &current_odom_,
+                  const double &global_x_, const double &global_y_);
 
 geometry_msgs::msg::Pose
-getPtGlobaltoBody(
-  const geometry_msgs::msg::Pose& current_pose_,
-  const geometry_msgs::msg::Pose& point_in_global_);
+getPtGlobaltoBody(const geometry_msgs::msg::Pose &current_pose_,
+                  const geometry_msgs::msg::Pose &point_in_global_);
 
-nav_msgs::msg::Path getPathGlobaltoBody(const nav_msgs::msg::Odometry& current_odom_,
-                                        const nav_msgs::msg::Path& path_in_global_);
+nav_msgs::msg::Path
+getPathGlobaltoBody(const nav_msgs::msg::Odometry &current_odom_,
+                    const nav_msgs::msg::Path &path_in_global_);
 
 } // namespace coordination
 
 namespace naming {
 
-inline const std::string getGlobalParamName(const std::string& param_name) {
+inline const std::string getGlobalParamName(const std::string &param_name) {
   return nif::common::constants::parameters::DELIMITER +
-      nif::common::constants::parameters::GLOBAL_PARAMETERS_NODE_NAME +
-      nif::common::constants::parameters::DELIMITER + param_name;
+         nif::common::constants::parameters::GLOBAL_PARAMETERS_NODE_NAME +
+         nif::common::constants::parameters::DELIMITER + param_name;
 }
 
 } // namespace naming
