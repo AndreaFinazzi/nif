@@ -5,7 +5,7 @@
 // Created by usrg on 6/24/21.
 //
 
-#include "nif_dynamic_planning_nodes/dynamic_planning_node_v2.h"
+#include "nif_dynamic_planning_nodes/dynamic_planning_node_v3.h"
 #include "nif_common/constants.h"
 #include "nif_utils/utils.h"
 #include "rcutils/error_handling.h"
@@ -15,7 +15,7 @@
 using namespace nif::planning;
 using namespace std;
 
-DynamicPlannerNode::DynamicPlannerNode(const std::string &node_name_)
+DynamicPlannerNodeV3::DynamicPlannerNodeV3(const std::string &node_name_)
     : IBaseNode(node_name_, common::NodeType::PLANNING) {
   m_config_load_success = false;
 
@@ -130,12 +130,12 @@ DynamicPlannerNode::DynamicPlannerNode(const std::string &node_name_)
   // INITIALIZE SUBSCRIBERS & PUBLISHER
   m_det_sub = this->create_subscription<nif_msgs::msg::Perception3D>(
       "tracking_output_topic_name", common::constants::QOS_PLANNING,
-      std::bind(&DynamicPlannerNode::detectionResultCallback, this,
+      std::bind(&DynamicPlannerNodeV3::detectionResultCallback, this,
                 std::placeholders::_1));
 
   m_oppo_pred_sub = this->create_subscription<nif_msgs::msg::DynamicTrajectory>(
       "prediction_output_topic_name", common::constants::QOS_PLANNING,
-      std::bind(&DynamicPlannerNode::predictionResultCallback, this,
+      std::bind(&DynamicPlannerNodeV3::predictionResultCallback, this,
                 std::placeholders::_1));
 
   m_ego_traj_body_pub =
@@ -162,12 +162,13 @@ DynamicPlannerNode::DynamicPlannerNode(const std::string &node_name_)
           "planning/debug3", common::constants::QOS_PLANNING);
 
   m_planner_timer = this->create_wall_timer(
-      20ms, std::bind(&DynamicPlannerNode::timer_callback_v2, this)); // 50 hz
+      20ms, std::bind(&DynamicPlannerNodeV3::timer_callback, this)); // 50 hz
 
   std::cout << "[DYNAMICPLANNER] Initialization done." << std::endl;
 }
 
-void DynamicPlannerNode::loadConfig(const std::string &planning_config_file_) {
+void DynamicPlannerNodeV3::loadConfig(
+    const std::string &planning_config_file_) {
   RCLCPP_INFO(get_logger(), "Loading planning params: %s",
               planning_config_file_.c_str());
 
@@ -280,7 +281,7 @@ void DynamicPlannerNode::loadConfig(const std::string &planning_config_file_) {
 }
 
 tuple<vector<double>, vector<double>>
-DynamicPlannerNode::loadCSVfile(const std::string &wpt_file_path_) {
+DynamicPlannerNodeV3::loadCSVfile(const std::string &wpt_file_path_) {
   ifstream inputFile(wpt_file_path_);
   vector<double> vec_x, vec_y;
 
@@ -325,7 +326,7 @@ DynamicPlannerNode::loadCSVfile(const std::string &wpt_file_path_) {
   return std::make_tuple(vec_x, vec_y);
 }
 
-void DynamicPlannerNode::detectionResultCallback(
+void DynamicPlannerNodeV3::detectionResultCallback(
     const nif_msgs::msg::Perception3D::SharedPtr msg) {
   if (m_det_callback_first_run) {
     m_det_callback_first_run = false;
@@ -336,17 +337,17 @@ void DynamicPlannerNode::detectionResultCallback(
   m_cur_det = *msg;
 }
 
-void DynamicPlannerNode::mapTrackBodyCallback(
+void DynamicPlannerNodeV3::mapTrackBodyCallback(
     const nav_msgs::msg::Path::SharedPtr msg) {
   m_maptrack_body = *msg;
 }
 
-void DynamicPlannerNode::mapTrackGlobalCallback(
+void DynamicPlannerNodeV3::mapTrackGlobalCallback(
     const nav_msgs::msg::Path::SharedPtr msg) {
   m_maptrack_global = *msg;
 }
 
-void DynamicPlannerNode::predictionResultCallback(
+void DynamicPlannerNodeV3::predictionResultCallback(
     const nif_msgs::msg::DynamicTrajectory::SharedPtr msg) {
   if (m_oppo_pred_callback_first_run) {
     m_cur_oppo_pred_result = *msg;
@@ -357,402 +358,35 @@ void DynamicPlannerNode::predictionResultCallback(
   }
 }
 
-// //////////
-// deprecated
-// //////////
-// void DynamicPlannerNode::timer_callback() {
-//   if (m_timer_callback_first_run) {
-//     m_cur_decision = PLANNING_DECISION_TYPE::STRAIGHT;
-//     m_cur_overtaking_action = PLANNING_ACTION_TYPE::DRIVING;
-//     m_cur_ego_planned_result_body.trajectory_path = m_maptrack_body;
-//     m_cur_ego_planned_result_global.trajectory_path = m_maptrack_global;
-//     m_timer_callback_first_run = false;
-//     publishTrajectory();
-//     return;
-//   }
-
-//   // update ego odometry
-//   m_ego_odom = this->getEgoOdometry();
-
-//   m_prev_decision = m_cur_decision;
-//   m_prev_overtaking_action = m_cur_overtaking_action;
-//   m_prev_ego_planned_result_body = m_cur_ego_planned_result_body;
-//   m_prev_ego_planned_result_global = m_cur_ego_planned_result_global;
-
-//   if (m_emergency_flg) {
-//     // TODO : do something, safe stop, emergency trajectory planning
-//     m_cur_decision = PLANNING_DECISION_TYPE::ESTOP;
-//     m_cur_overtaking_action = PLANNING_ACTION_TYPE::DRIVING;
-//     // temporary just sending empty traj
-//     nav_msgs::msg::Path empty_path;
-//     m_cur_ego_planned_result_body.trajectory_path = empty_path;
-//     m_cur_ego_planned_result_global.trajectory_path = empty_path;
-//     publishTrajectory();
-//     return;
-//   }
-
-//   if (m_cur_det.id == -1) {
-//     // NO OPPONENT CASE
-//     // TODO : empty detection result --> this should be implemented
-//     // in the perception side
-//     m_cur_decision = PLANNING_DECISION_TYPE::STRAIGHT;
-//     m_cur_overtaking_action = PLANNING_ACTION_TYPE::DRIVING;
-
-//     // By pass maptrack to velocity planner
-//     // currently timestamp arry is uniformly sampled based on planning
-//     // horizon.In the velocity planner side, just drive as fast as possible
-//     when
-//     // decision type is straight.
-//     m_cur_ego_planned_result_body.trajectory_path = m_maptrack_body;
-//     m_cur_ego_planned_result_global.trajectory_path = m_maptrack_global;
-
-//   } else {
-//     //////////////////////
-//     // DECION AND ACITION
-//     //////////////////////
-
-//     // Before comparing the progress, plan the frenet trajectory to the
-//     racing
-//     // line.
-//     auto ego_fp_racingline = this->getFrenetToRacingLine();
-
-//     // velocity profiling the ego_frenetpath_to_racingline
-//     // TODO : velocity_profiling
-//     // Based on frenet path's and waypoint's curvatures, we can implement the
-//     // velocity profiler here.
-//     // Let's assume that the output of velocity profiler is a
-//     // nif_msgs::msg::DynamicTrajectory which is the same format of the
-//     // prediction node.
-
-//     //
-
-//     auto progress_diff = calcProgressDiff(m_ego_odom.pose.pose,
-//                                           m_cur_det.detection_result_3d.center,
-//                                           m_racineline_path_kdtree);
-
-//     if (!m_overtake_allowed_flg) {
-//       /*
-//     STATUS DESCRIPTION :
-//       1. There is a opponent in front.
-//       2. Overtaking is not allowed by mission manager
-
-//     POSSIBLE DECISIONS(previous and current) AND ACTIONS
-//       CASE 1
-//         PREVIOUS DECISIONS  : STRAIGHT / FOLLOW
-//         DECISIONS           : STRAIGHT / FOLLOW / ESTOP
-//         ACTIONS             : DRIVING
-
-//         ** PAIRING (prev - cur-decision - action)
-//           1. (STRAIGHT - STRAIGHT - DRIVING)
-//           2. (STRAIGHT - FOLLOW - DRIVING)
-//           3. (FOLLOW - STRAIGHT - DRIVING)
-//           4. (FOLLOW - FOLLOW - DRIVING)
-//           5. (STRAIGHT - ESTOP - DRIVING)
-//           6. (FOLLOW - ESTOP - DRIVING)
-
-//       CASE 2
-//         PREVIOUS DECISIONS  : RIGHT / LEFT
-//         DECISIONS           : RIGHT / LEFT / ESTOP
-//         ACTIONS             : SIDE-BY-SIDE
-
-//         ** PAIRING (prev - cur-decision - action)
-//           1. (RIGHT - RIGHT - SIDE-BY-SIDE)
-//           2. (LEFT - LEFT - SIDE-BY-SIDE)
-//           3. (RIGHT - ESTOP - DRIVING)
-//           4. (LEFT - ESTOP - DRIVING)
-
-//       CASE 3
-//         PREVIOUS DECISIONS  : RIGHT / LEFT
-//         DECISIONS           : STRAIGHT / FOLLOW / ESTOP
-//         ACTIONS             : FINISH OT / ABORT OT
-
-//         ** PAIRING (prev - cur-decision - action)
-//           1. (RIGHT - STRAIGHT - FINISH OT)
-//           2. (RIGHT - FOLLOW - ABORT OT)
-//           3. (LEFT - STRAIGHT - FINISH OT)
-//           4. (LEFT - FOLLOW - ABORT OT)
-//           5. (RIGHT - ESTOP - DRIVING)
-//           6. (LEFT - ESTOP - DRIVING)
-//     */
-
-//       if (m_prev_decision == PLANNING_DECISION_TYPE::STRAIGHT ||
-//           m_prev_decision == PLANNING_DECISION_TYPE::FOLLOW) {
-//         ///////////////
-//         // CASE 1 CODE
-//         ///////////////
-
-//         // decision making (via progress comparison)
-//         if (progress_diff < 0.0) {
-//           // Ego vehicle is in front of the opponent.
-//           m_cur_decision = PLANNING_DECISION_TYPE::STRAIGHT;
-//           m_cur_overtaking_action = PLANNING_ACTION_TYPE::DRIVING;
-//           // by passing maptrack
-//           m_cur_ego_planned_result_body.trajectory_path = m_maptrack_body;
-//           m_cur_ego_planned_result_global.trajectory_path =
-//           m_maptrack_global;
-//         } else if (progress_diff < m_config_follow_enable_dist) {
-//           // close enougth to enable the ACC
-//           m_cur_decision = PLANNING_DECISION_TYPE::FOLLOW;
-//           m_cur_overtaking_action = PLANNING_ACTION_TYPE::DRIVING;
-//           // TODO : by passing maptrack, ACC should be handled in the control
-//           // side
-//           m_cur_ego_planned_result_body.trajectory_path = m_maptrack_body;
-//           m_cur_ego_planned_result_global.trajectory_path =
-//           m_maptrack_global;
-//         } else {
-//           // far from the opponent
-//           m_cur_decision = PLANNING_DECISION_TYPE::STRAIGHT;
-//           m_cur_overtaking_action = PLANNING_ACTION_TYPE::DRIVING;
-//           m_cur_ego_planned_result_body.trajectory_path = m_maptrack_body;
-//           m_cur_ego_planned_result_global.trajectory_path =
-//           m_maptrack_global;
-//         }
-//       } else if (m_prev_decision == PLANNING_DECISION_TYPE::RIGHT ||
-//                  m_prev_decision == PLANNING_DECISION_TYPE::LEFT) {
-//         ///////////////////
-//         // CASE 2 & 3 CODE
-//         ///////////////////
-
-//         if (progress_diff < 0.0 &&
-//             m_config_merging_longitudinal_margin < abs(progress_diff)) {
-//           // ego vehicle is in front of the opponent and the distance is safe
-//           // enough to merge to the racing line
-//           m_cur_decision = PLANNING_DECISION_TYPE::STRAIGHT;
-//           m_cur_overtaking_action = PLANNING_ACTION_TYPE::FINISH_OVERTAKING;
-//           // TODO : assign path, merging path is needed
-//           // Generate trajectory segment from current odom to racing line.
-//           auto predicted_frenet_path = this->getFrenetToRacingLine();
-
-//           m_cur_ego_planned_result_body.trajectory_path.poses.clear();
-//           m_cur_ego_planned_result_global.trajectory_path.poses.clear();
-
-//           if (!predicted_frenet_path->points_x().empty()) {
-//             for (int i = 0; i < predicted_frenet_path->points_x().size();
-//             i++) {
-//               geometry_msgs::msg::PoseStamped ps;
-//               std_msgs::msg::Header header;
-//               header.frame_id = common::frame_id::localization::ODOM;
-//               ps.pose.position.x = predicted_frenet_path->points_x()[i];
-//               ps.pose.position.y = predicted_frenet_path->points_y()[i];
-
-//               m_cur_ego_planned_result_global.trajectory_path.poses.push_back(
-//                   ps);
-//               m_cur_ego_planned_result_body.trajectory_timestamp_array
-//                   .push_back(predicted_frenet_path->time()[i]);
-//               m_cur_ego_planned_result_global.trajectory_timestamp_array
-//                   .push_back(predicted_frenet_path->time()[i]);
-//             }
-
-//             m_cur_ego_planned_result_body.trajectory_path =
-//                 nif::common::utils::coordination::getPathGlobaltoBody(
-//                     m_ego_odom,
-//                     m_cur_ego_planned_result_global.trajectory_path);
-
-//             // TODO : Stitch with the racing line
-//           }
-//         } else {
-//           bool is_side_by_side_available = false;
-//           // TODO : Need to decide SIDE-BY-SIDE or ABORT OT
-
-//           if (is_side_by_side_available) {
-//             m_cur_decision = m_prev_decision;
-//             m_cur_overtaking_action = PLANNING_ACTION_TYPE::SIDE_BY_SIDE;
-//             // TODO : assign path
-//           } else {
-//             m_cur_decision = PLANNING_DECISION_TYPE::FOLLOW;
-//             m_cur_overtaking_action = PLANNING_ACTION_TYPE::ABORT_OVERTAKING;
-//             // TODO : by passing maptrack, ACC should be handled in the
-//             // control side
-//             m_cur_ego_planned_result_body.trajectory_path = m_maptrack_body;
-//             m_cur_ego_planned_result_global.trajectory_path =
-//             m_maptrack_global;
-//           }
-//         }
-
-//       } else {
-//         /////////
-//         // ESTOP
-//         /////////
-
-//         m_cur_decision = PLANNING_DECISION_TYPE::ESTOP;
-//         m_cur_overtaking_action = PLANNING_ACTION_TYPE::DRIVING;
-//         // TODO : temporary just sending empty traj
-//         nav_msgs::msg::Path empty_path;
-//         m_cur_ego_planned_result_body.trajectory_path = empty_path;
-//         m_cur_ego_planned_result_global.trajectory_path = empty_path;
-//         publishTrajectory();
-//       }
-//     } else {
-//       /*
-//     STATUS DESCRIPTION :
-//       1. There is a opponent in front.
-//       2. Overtaking is allowed by mission manager
-
-//     POSSIBLE DECISIONS(previous and current) AND ACTIONS
-//       CASE 1
-//         PREVIOUS DECISIONS  : STRAIGHT
-//         DECISIONS           : STRAIGHT / FOLLOW / ESTOP
-//         ACTIONS             : DRIVING
-
-//       ** PAIRING (prev - cur-decision - action)
-//         1. (STRAIGHT - STRAIGHT - DRIVING)
-//         2. (STRAIGHT - FOLLOW - DRIVING)
-//         3. (STRAIGHT - ESTOP - DRIVING)
-
-//       CASE 2
-//         PREVIOUS DECISIONS  : FOLLOW
-//         DECISIONS           : FOLLOW / RIGHT / LEFT / ESTOP
-//         ACTIONS             : START OT / DRIVING
-
-//       ** PAIRING (prev - cur-decision - action)
-//         1. (FOLLOW - FOLLOW - DRIVING)
-//         2. (FOLLOW - RIGHT/LEFT - START OT)
-//         3. (FOLLOW - ESTOP - DRIVING)
-
-//       CASE 3
-//         PREVIOUS DECISIONS  : RIGHT / LEFT
-//         DECISIONS           : RIGHT / LEFT / ESTOP
-//         ACTIONS             : SIDE-BY-SIDE / DRIVING
-
-//       ** PAIRING (prev - cur-decision - action)
-//         1. (RIGHT - RIGHT - SIDE-BY-SIDE)
-//         2. (LEFT - LEFT - SIDE-BY-SIDE)
-//         3. (RIGHT/LEFT - ESTOP - DRIVING)
-
-//       CASE 4
-//         PREVIOUS DECISIONS  : RIGHT / LEFT
-//         DECISIONS           : STRAIGHT / FOLLOW / ESTOP
-//         ACTIONS             : FINISH OT / ABORT OT / DRIVING
-
-//       ** PAIRING (prev - cur-decision - action)
-//         1. (RIGHT/LEFT - STRAIGHT - FINISH OT)
-//         2. (RIGHT/LEFT - FOLLOW - ABORT OT)
-//         3. (RIGHT/LEFT - ESTOP - DRIVING)
-//     */
-//       if (m_prev_decision == PLANNING_DECISION_TYPE::STRAIGHT) {
-//         ///////////////
-//         // CASE 1 CODE
-//         ///////////////
-//         // decision making (via progress comparison)
-//         if (progress_diff < 0.0) {
-//           m_cur_decision = PLANNING_DECISION_TYPE::STRAIGHT;
-//           m_cur_overtaking_action = PLANNING_ACTION_TYPE::DRIVING;
-//           m_cur_ego_planned_result_body.trajectory_path = m_maptrack_body;
-//           m_cur_ego_planned_result_global.trajectory_path =
-//           m_maptrack_global;
-//         } else if (progress_diff < m_config_follow_enable_dist) {
-//           // close enougth to enable the ACC
-//           m_cur_decision = PLANNING_DECISION_TYPE::FOLLOW;
-//           m_cur_overtaking_action = PLANNING_ACTION_TYPE::DRIVING;
-//           // TODO : by passing maptrack, ACC should be handled in the control
-//           // side
-//           m_cur_ego_planned_result_body.trajectory_path = m_maptrack_body;
-//           m_cur_ego_planned_result_global.trajectory_path =
-//           m_maptrack_global;
-//         } else {
-//           // far from the opponent
-//           m_cur_decision = PLANNING_DECISION_TYPE::STRAIGHT;
-//           m_cur_overtaking_action = PLANNING_ACTION_TYPE::DRIVING;
-//           m_cur_ego_planned_result_body.trajectory_path = m_maptrack_body;
-//           m_cur_ego_planned_result_global.trajectory_path =
-//           m_maptrack_global;
-//         }
-//       } else if (m_prev_decision == PLANNING_DECISION_TYPE::FOLLOW) {
-//         ///////////////
-//         // CASE 2 CODE
-//         ///////////////
-
-//         bool is_left_overtaking_available = false;
-//         bool is_right_overtaking_available = false;
-//         // TODO : check whether overtaking is available or not, both sides
-//         // Check left side first
-
-//         if (is_left_overtaking_available) {
-//           m_cur_decision = PLANNING_DECISION_TYPE::LEFT;
-//           m_cur_overtaking_action = PLANNING_ACTION_TYPE::START_OVERTAKING;
-//           // TODO : assign path
-//         } else if (is_right_overtaking_available) {
-//           m_cur_decision = PLANNING_DECISION_TYPE::RIGHT;
-//           m_cur_overtaking_action = PLANNING_ACTION_TYPE::START_OVERTAKING;
-//           // TODO : assign path
-//         } else {
-//           // overtake unavailable
-//           m_cur_decision = PLANNING_DECISION_TYPE::FOLLOW;
-//           m_cur_overtaking_action = PLANNING_ACTION_TYPE::DRIVING;
-//           // TODO : by passing maptrack, ACC should be handled in the control
-//           // side
-//           m_cur_ego_planned_result_body.trajectory_path = m_maptrack_body;
-//           m_cur_ego_planned_result_global.trajectory_path =
-//           m_maptrack_global;
-//         }
-//       } else if (m_prev_decision == PLANNING_DECISION_TYPE::RIGHT ||
-//                  m_prev_decision == PLANNING_DECISION_TYPE::LEFT) {
-//         //////////////////
-//         // CASE 3 & 4 CODE
-//         //////////////////
-
-//         if (progress_diff < 0.0 &&
-//             m_config_merging_longitudinal_margin < abs(progress_diff)) {
-//           // ego vehicle is in front of the opponent and the distance is safe
-//           // enough to merge to the racing line
-//           m_cur_decision = PLANNING_DECISION_TYPE::STRAIGHT;
-//           m_cur_overtaking_action = PLANNING_ACTION_TYPE::FINISH_OVERTAKING;
-//           // TODO : assign path, merging path is needed
-//         } else {
-//           bool is_side_by_side_available = false;
-//           // TODO : Need to decide SIDE-BY-SIDE or ABORT OT
-
-//           if (is_side_by_side_available) {
-//             m_cur_decision = m_prev_decision;
-//             m_cur_overtaking_action = PLANNING_ACTION_TYPE::SIDE_BY_SIDE;
-//             // TODO : assign path
-//           } else {
-//             m_cur_decision = PLANNING_DECISION_TYPE::FOLLOW;
-//             m_cur_overtaking_action = PLANNING_ACTION_TYPE::ABORT_OVERTAKING;
-//             // TODO : by passing maptrack, ACC should be handled in the
-//             control
-//             // side
-//             m_cur_ego_planned_result_body.trajectory_path = m_maptrack_body;
-//             m_cur_ego_planned_result_global.trajectory_path =
-//             m_maptrack_global;
-//           }
-//         }
-
-//       } else {
-//         /////////
-//         // ESTOP
-//         /////////
-
-//         m_cur_decision = PLANNING_DECISION_TYPE::ESTOP;
-//         m_cur_overtaking_action = PLANNING_ACTION_TYPE::DRIVING;
-//         // TODO : temporary just sending empty traj
-//         initOutputTrajectory(); // all path points are assigned with zero
-//         publishTrajectory();
-//       }
-//     }
-//   }
-//   publishTrajectory();
-// }
-
-void DynamicPlannerNode ::timer_callback_v2() {
-  // step -1 : Calculate the current index (on the previous output)
-  // step 0 : check previous result (just checking the collision at the moment.
-  // Do we have to compute the progress agian? )
-  //  step 0 out : boolean (keep current plan or not)
-
-  // if you dont keep the previous plan,
-  // step 1.1 : Generate the frenet candidates to all wpt
-  // step 1.2 : Filer out colliding trajectories
-  // step 1.2-1 : if all path cancled, stop (not publishing anything)
-  // step 1.2 out : Set of non-colliding trajectories
-  // step 1.3 : Calculate the progress for each trajectory
-  // step 1.3-1 : Choose one trajectory based on certain cost/progress function
-  // step 1-4 : Stitch frenet candidate with static waypoints
-  // step 1-5 : Update current trajectory
-  // step 1-6 : Publish
-
+void DynamicPlannerNodeV3 ::timer_callback() {
   /*
-  START FROM HERE
+  Main flow of this approach is as follows:
+
+        0. Check whether current trajectory has a collision within the certain
+        time window.
+            1. If there is no collision, follow the current planned trajectory
+            as fast as we can.
+            2. Else, generate the ACC trajectory and store this.
+
+        1. Based on the opponent's predicted trajectory, find the side-by-side
+        position at certain time.
+
+        2. At that time, ego vehicle's desired velocity is assigned based on the
+        remaind distance upto end of the passing zone. (+ margin) --> Also
+        desired acceleration can be assigned but let's start from the zero
+        desired acceleration as the moment.
+
+        3. Given desired position and velocity(w acceleration), do planning
+        using quintic_polynomials model.
+
+        4. Check whether the planned trajectory collides with the opponent's
+        predicted trajectory using distance and time terms.
+            1. If no collision, check whether the planned trajectory obeys the
+            pre-defined constraints with respective to acceleration and
+            jerkness.
+                1. If yes, execute the overtaking trajectory. DONE
+                2. If no, execute the acc trajectory. DONE
+            2. It there is collision, execute the acc trajectory. DONE
   */
 
   // update ego odometry
@@ -776,6 +410,9 @@ void DynamicPlannerNode ::timer_callback_v2() {
     if (!collision_raceline) {
       // change the defualt path to the racing line
       m_cur_planned_traj = m_racingline_dtraj;
+      // TODO: velocity profiling with limited length
+      // HERE
+      // ALSO AT SOME POINT, FORCE UPDATE IS NEEDED FOR SAFETY
       publishPlannedTrajectory(m_vis_flg);
       return;
     }
@@ -789,135 +426,9 @@ void DynamicPlannerNode ::timer_callback_v2() {
   auto ego_traj = m_frenet_generator_ptr->convert_path_to_traj_curv(
       m_cur_planned_traj.trajectory_path, m_ego_cur_idx_in_planned_traj,
       m_config_max_accel, m_config_spline_interval);
-
-  // collision check btw two trajectories
-  auto is_collision = collisionCheckBTWtrajs(
-      ego_traj, m_cur_oppo_pred_result, m_config_overlap_checking_dist_bound,
-      m_config_overlap_checking_time_bound);
-
-  is_collision = true;
-
-  if (!is_collision) {
-    // keep current planned traj
-    publishPlannedTrajectory(m_vis_flg);
-
-    return;
-  } else {
-    vector<std::shared_ptr<FrenetPath>> collision_free_frenet_vec;
-    vector<double> collision_free_frenet_progress_vec;
-    vector<int> collision_free_frenet_index_vec;
-
-    for (int path_candidate_idx = 0;
-         path_candidate_idx < m_overtaking_candidates_path_vec.size();
-         path_candidate_idx++) {
-      // step 1.1 : Generate the frenet candidates to all wpt
-      // auto progressNcte = calcProgressNCTE(
-      //     m_ego_odom.pose.pose,
-      //     m_overtaking_candidates_path_kdtree_vec[path_candidate_idx],
-      //     m_overtaking_candidates_path_pc_vec[path_candidate_idx]);
-
-      // Use another function
-      auto progressNcte = calcProgressNCTE(
-          m_ego_odom.pose.pose,
-          m_overtaking_candidates_path_vec[path_candidate_idx]);
-
-      std::tuple<std::shared_ptr<FrenetPath>,
-                 std::vector<std::shared_ptr<FrenetPath>>>
-          frenet_path_generation_result =
-              m_frenet_generator_ptr->calc_frenet_paths(
-                  get<1>(progressNcte),            // current_position_d
-                  get<0>(progressNcte),            // current_position_s
-                  0.0,                             // current_velocity_d
-                  m_ego_odom.twist.twist.linear.x, // current_velocity_s
-                  0.0,                             // current_acceleration_d
-                  m_overtaking_candidates_spline_model_vec
-                      [path_candidate_idx], // cubic_spliner_2D
-                  m_config_planning_horizon, m_config_planning_horizon + 0.01,
-                  m_config_planning_dt, 0.0, 0.0001, 0.1);
-
-      std::shared_ptr<FrenetPath> frenet_candidate =
-          std::get<0>(frenet_path_generation_result);
-
-      auto is_collision = collisionCheckBTWtrajsNFrenet(
-          frenet_candidate, m_cur_oppo_pred_result,
-          m_config_overlap_checking_dist_bound,
-          m_config_overlap_checking_time_bound);
-
-      if (!is_collision) {
-        collision_free_frenet_vec.push_back(frenet_candidate);
-        collision_free_frenet_index_vec.push_back(path_candidate_idx);
-      }
-    }
-
-    // step 1.2-1 : if all path cancled, stop
-    if (collision_free_frenet_vec.empty()) {
-      // (not publishing anything)
-      std::cout << "All colliding...publish empth path" << std::endl;
-      publishEmptyTrajectory();
-      return;
-    } else {
-
-      // step 1.3 : Calculate the progress for each trajectory
-
-      for (int collision_free_frenet_idx = 0;
-           collision_free_frenet_idx < collision_free_frenet_vec.size();
-           collision_free_frenet_idx++) {
-        auto progress =
-            getProgress(collision_free_frenet_vec[collision_free_frenet_idx]
-                            ->points_x()
-                            .back(),
-                        collision_free_frenet_vec[collision_free_frenet_idx]
-                            ->points_y()
-                            .back(),
-                        m_racineline_path_kdtree);
-
-        // At the moment, we only care about the progress.
-        // TODO : progress wrapping
-
-        collision_free_frenet_progress_vec.push_back(progress);
-      }
-
-      auto maximum_progress_frenet_idx =
-          std::max_element(collision_free_frenet_progress_vec.begin(),
-                           collision_free_frenet_progress_vec.end()) -
-          collision_free_frenet_progress_vec.begin();
-
-      auto stitch_target_path_candidate_idx =
-          collision_free_frenet_index_vec[maximum_progress_frenet_idx];
-
-      // step 1-4 : Stitch frenet candidate with static waypoints
-
-      auto stitch_frenet_segment = collision_free_frenet_vec
-          [maximum_progress_frenet_idx]; // std::shared_ptr<FrenetPath>
-      auto stitch_target_path_candidate = m_overtaking_candidates_path_vec
-          [stitch_target_path_candidate_idx]; // nav_msgs::msg::Path
-
-      nav_msgs::msg::Path debug_frenet_seg_path;
-      debug_frenet_seg_path.header.frame_id = "odom";
-
-      for (int i = 0; i < stitch_frenet_segment->points_x().size(); i++) {
-        geometry_msgs::msg::PoseStamped ps;
-        ps.header.frame_id = "odom";
-        ps.pose.position.x = stitch_frenet_segment->points_x()[i];
-        ps.pose.position.y = stitch_frenet_segment->points_y()[i];
-        debug_frenet_seg_path.poses.push_back(ps);
-      }
-
-      m_debug_vis_pub->publish(debug_frenet_seg_path);
-
-      // step 1-5 : Update current trajectory
-      m_cur_planned_traj = stitchFrenetToPath(
-          stitch_frenet_segment,
-          m_overtaking_candidates_path_kdtree_vec
-              [stitch_target_path_candidate_idx],
-          m_overtaking_candidates_path_vec[stitch_target_path_candidate_idx]);
-    }
-  }
-  // step 1-6 : Publish
-  publishPlannedTrajectory(m_vis_flg);
 }
 
-void DynamicPlannerNode ::timer_callback_debug() {
+void DynamicPlannerNodeV3 ::timer_callback_debug() {
   vector<std::shared_ptr<FrenetPath>> frenet_vec;
 
   // m_ego_odom = this->getEgoOdometry();
@@ -1009,7 +520,7 @@ void DynamicPlannerNode ::timer_callback_debug() {
   }
 }
 
-void DynamicPlannerNode::publishEmptyTrajectory() {
+void DynamicPlannerNodeV3::publishEmptyTrajectory() {
   nif_msgs::msg::DynamicTrajectory empty_traj;
   nav_msgs::msg::Path empty_path;
 
@@ -1029,7 +540,7 @@ void DynamicPlannerNode::publishEmptyTrajectory() {
   m_ego_traj_global_vis_pub->publish(m_ego_planned_vis_path_global);
 }
 
-void DynamicPlannerNode::publishPlannedTrajectory(bool vis_flg_) {
+void DynamicPlannerNodeV3::publishPlannedTrajectory(bool vis_flg_) {
   m_cur_ego_planned_result_body.trajectory_path.poses.clear();
   m_cur_ego_planned_result_global.trajectory_path.poses.clear();
 
@@ -1097,7 +608,7 @@ void DynamicPlannerNode::publishPlannedTrajectory(bool vis_flg_) {
   }
 }
 
-void DynamicPlannerNode::publishTrajectory() {
+void DynamicPlannerNodeV3::publishTrajectory() {
   // m_cur_ego_planned_result_body.header.stamp = this->now();
   // m_cur_ego_planned_result_global.header.stamp = this->now();
 
@@ -1171,7 +682,7 @@ void DynamicPlannerNode::publishTrajectory() {
   // m_ego_traj_global_pub->publish(m_cur_ego_planned_result_global);
 }
 
-void DynamicPlannerNode::initOutputTrajectory() {
+void DynamicPlannerNodeV3::initOutputTrajectory() {
   // Init output message (frame_id, reserve size)
   m_cur_ego_planned_result_body.header.frame_id =
       nif::common::frame_id::localization::BASE_LINK;
@@ -1207,9 +718,9 @@ void DynamicPlannerNode::initOutputTrajectory() {
   m_cur_ego_planned_result_global.trajectory_path = init_path_global;
 }
 
-double
-DynamicPlannerNode::getProgress(const geometry_msgs::msg::Pose &pt_global_,
-                                pcl::KdTreeFLANN<pcl::PointXY> &target_tree_) {
+double DynamicPlannerNodeV3::getProgress(
+    const geometry_msgs::msg::Pose &pt_global_,
+    pcl::KdTreeFLANN<pcl::PointXY> &target_tree_) {
   double progress;
 
   std::vector<int> pointId_vector;
@@ -1229,9 +740,9 @@ DynamicPlannerNode::getProgress(const geometry_msgs::msg::Pose &pt_global_,
   return index * m_config_spline_interval;
 }
 
-double
-DynamicPlannerNode::getProgress(const double &pt_x_, const double &pt_y_,
-                                pcl::KdTreeFLANN<pcl::PointXY> &target_tree_) {
+double DynamicPlannerNodeV3::getProgress(
+    const double &pt_x_, const double &pt_y_,
+    pcl::KdTreeFLANN<pcl::PointXY> &target_tree_) {
   double progress;
 
   std::vector<int> pointId_vector;
@@ -1252,8 +763,8 @@ DynamicPlannerNode::getProgress(const double &pt_x_, const double &pt_y_,
 }
 
 double
-DynamicPlannerNode::getCurIdx(const double &pt_x_, const double &pt_y_,
-                              pcl::KdTreeFLANN<pcl::PointXY> &target_tree_) {
+DynamicPlannerNodeV3::getCurIdx(const double &pt_x_, const double &pt_y_,
+                                pcl::KdTreeFLANN<pcl::PointXY> &target_tree_) {
   double progress;
 
   std::vector<int> pointId_vector;
@@ -1273,9 +784,10 @@ DynamicPlannerNode::getCurIdx(const double &pt_x_, const double &pt_y_,
   return index;
 }
 
-double DynamicPlannerNode::calcCTE(const geometry_msgs::msg::Pose &pt_global_,
-                                   pcl::KdTreeFLANN<pcl::PointXY> &target_tree_,
-                                   pcl::PointCloud<pcl::PointXY>::Ptr &pc_) {
+double
+DynamicPlannerNodeV3::calcCTE(const geometry_msgs::msg::Pose &pt_global_,
+                              pcl::KdTreeFLANN<pcl::PointXY> &target_tree_,
+                              pcl::PointCloud<pcl::PointXY>::Ptr &pc_) {
   double cte = 0;
   double progress;
   int sign;
@@ -1317,8 +829,8 @@ double DynamicPlannerNode::calcCTE(const geometry_msgs::msg::Pose &pt_global_,
 }
 
 pcl::PointCloud<pcl::PointXY>::Ptr
-DynamicPlannerNode::genPointCloudFromVec(vector<double> &x_,
-                                         vector<double> &y_) {
+DynamicPlannerNodeV3::genPointCloudFromVec(vector<double> &x_,
+                                           vector<double> &y_) {
   pcl::PointCloud<pcl::PointXY>::Ptr cloud(new pcl::PointCloud<pcl::PointXY>);
 
   // Generate pointcloud data
@@ -1333,7 +845,7 @@ DynamicPlannerNode::genPointCloudFromVec(vector<double> &x_,
   return cloud;
 }
 
-double DynamicPlannerNode::calcProgressDiff(
+double DynamicPlannerNodeV3::calcProgressDiff(
     const geometry_msgs::msg::Pose &ego_pt_global_,
     const geometry_msgs::msg::Pose &target_pt_global_,
     pcl::KdTreeFLANN<pcl::PointXY> &target_tree_) {
@@ -1345,9 +857,9 @@ double DynamicPlannerNode::calcProgressDiff(
 }
 
 nav_msgs::msg::Path
-DynamicPlannerNode::xyyawVec2Path(std::vector<double> &x_,
-                                  std::vector<double> &y_,
-                                  std::vector<double> &yaw_rad_) {
+DynamicPlannerNodeV3::xyyawVec2Path(std::vector<double> &x_,
+                                    std::vector<double> &y_,
+                                    std::vector<double> &yaw_rad_) {
   nav_msgs::msg::Path output;
   output.header.frame_id = nif::common::frame_id::localization::ODOM;
 
@@ -1364,7 +876,7 @@ DynamicPlannerNode::xyyawVec2Path(std::vector<double> &x_,
   return output;
 }
 
-tuple<double, double> DynamicPlannerNode::calcProgressNCTE(
+tuple<double, double> DynamicPlannerNodeV3::calcProgressNCTE(
     const geometry_msgs::msg::Pose &pt_global_,
     pcl::KdTreeFLANN<pcl::PointXY> &target_tree_,
     pcl::PointCloud<pcl::PointXY>::Ptr &pc_) {
@@ -1408,9 +920,9 @@ tuple<double, double> DynamicPlannerNode::calcProgressNCTE(
   return std::make_tuple(progress, cte);
 }
 
-tuple<double, double>
-DynamicPlannerNode::calcProgressNCTE(const geometry_msgs::msg::Pose &pt_global_,
-                                     nav_msgs::msg::Path &target_path_) {
+tuple<double, double> DynamicPlannerNodeV3::calcProgressNCTE(
+    const geometry_msgs::msg::Pose &pt_global_,
+    nav_msgs::msg::Path &target_path_) {
   double cte = 0;
   double progress;
   int sign;
@@ -1461,7 +973,7 @@ DynamicPlannerNode::calcProgressNCTE(const geometry_msgs::msg::Pose &pt_global_,
   return std::make_tuple(progress, cte);
 }
 
-std::shared_ptr<FrenetPath> DynamicPlannerNode::getFrenetToRacingLine() {
+std::shared_ptr<FrenetPath> DynamicPlannerNodeV3::getFrenetToRacingLine() {
   // Generate trajectory segment from current odom to racing line.
   auto progressNcte = calcProgressNCTE(
       m_ego_odom.pose.pose, m_racineline_path_kdtree, m_racingline_path_pc);
@@ -1483,7 +995,7 @@ std::shared_ptr<FrenetPath> DynamicPlannerNode::getFrenetToRacingLine() {
   return std::get<0>(frenet_path_generation_result);
 }
 
-double DynamicPlannerNode::calcProgressDiff(
+double DynamicPlannerNodeV3::calcProgressDiff(
     const nif_msgs::msg::DynamicTrajectory &ego_traj_,
     const nif_msgs::msg::DynamicTrajectory &oppo_traj_,
     pcl::KdTreeFLANN<pcl::PointXY> &target_tree_) {
@@ -1492,7 +1004,7 @@ double DynamicPlannerNode::calcProgressDiff(
   // 2. At the specific
 }
 
-int DynamicPlannerNode::calcCurIdxFromDynamicTraj(
+int DynamicPlannerNodeV3::calcCurIdxFromDynamicTraj(
     const nif_msgs::msg::DynamicTrajectory &msg) {
   int cur_idx = 0;
   double min_dist = 1000000000;
@@ -1512,7 +1024,7 @@ int DynamicPlannerNode::calcCurIdxFromDynamicTraj(
   return cur_idx;
 }
 
-bool DynamicPlannerNode::collisionCheckBTWtrajs(
+bool DynamicPlannerNodeV3::collisionCheckBTWtrajs(
     const nif_msgs::msg::DynamicTrajectory &ego_traj_,
     const nif_msgs::msg::DynamicTrajectory &oppo_traj_,
     const double collision_dist_boundary,
@@ -1547,7 +1059,7 @@ bool DynamicPlannerNode::collisionCheckBTWtrajs(
   return is_collision;
 }
 
-bool DynamicPlannerNode::collisionCheckBTWtrajsNFrenet(
+bool DynamicPlannerNodeV3::collisionCheckBTWtrajsNFrenet(
     std::shared_ptr<FrenetPath> ego_frenet_traj_,
     const nif_msgs::msg::DynamicTrajectory &oppo_traj_,
     const double collision_dist_boundary,
@@ -1586,7 +1098,7 @@ bool DynamicPlannerNode::collisionCheckBTWtrajsNFrenet(
   return is_collision;
 }
 
-nif_msgs::msg::DynamicTrajectory DynamicPlannerNode::stitchFrenetToPath(
+nif_msgs::msg::DynamicTrajectory DynamicPlannerNodeV3::stitchFrenetToPath(
     std::shared_ptr<FrenetPath> &frenet_segment_,
     pcl::KdTreeFLANN<pcl::PointXY> &target_tree_,
     nav_msgs::msg::Path &target_path_) {
