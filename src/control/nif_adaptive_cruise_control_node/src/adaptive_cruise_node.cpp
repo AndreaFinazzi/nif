@@ -6,8 +6,8 @@
 
 using namespace nif::control;
 
-IDMACCNode::IDMACCNode(const std::string& node_name_)
-  : IBaseNode(node_name_, common::NodeType::CONTROL) {
+IDMACCNode::IDMACCNode(const std::string &node_name_)
+    : IBaseNode(node_name_, common::NodeType::CONTROL) {
   std::string package_share_directory;
 
   try {
@@ -28,23 +28,20 @@ IDMACCNode::IDMACCNode(const std::string& node_name_)
 
   m_perception_subscriber =
       this->create_subscription<nif_msgs::msg::Perception3DArray>(
-          "in_perception_array",
-          nif::common::constants::QOS_SENSOR_DATA,
-          std::bind(
-              &IDMACCNode::perceptionCallback, this, std::placeholders::_1));
+          "in_perception_array", nif::common::constants::QOS_SENSOR_DATA,
+          std::bind(&IDMACCNode::perceptionCallback, this,
+                    std::placeholders::_1));
 
   m_prediction_subscriber =
       this->create_subscription<nif_msgs::msg::DynamicTrajectory>(
-          "in_prediction_array",
-          nif::common::constants::QOS_SENSOR_DATA,
-          std::bind(
-              &IDMACCNode::predictionCallback, this, std::placeholders::_1));
-  
+          "in_prediction_array", nif::common::constants::QOS_SENSOR_DATA,
+          std::bind(&IDMACCNode::predictionCallback, this,
+                    std::placeholders::_1));
+
   m_maptrack_body_subscriber = this->create_subscription<nav_msgs::msg::Path>(
-      "in_maptrack_in_body",
-      nif::common::constants::QOS_PLANNING,
-      std::bind(
-          &IDMACCNode::maptrackBodyCallback, this, std::placeholders::_1));
+      "in_maptrack_in_body", nif::common::constants::QOS_PLANNING,
+      std::bind(&IDMACCNode::maptrackBodyCallback, this,
+                std::placeholders::_1));
 
   // IDM LIB initialize
   // 1. with defualt config
@@ -54,10 +51,9 @@ IDMACCNode::IDMACCNode(const std::string& node_name_)
 }
 
 void IDMACCNode::predictionCallback(
-  const nif_msgs::msg::DynamicTrajectory::SharedPtr msg) {
-    m_prediction_result = *msg;
+    const nif_msgs::msg::DynamicTrajectory::SharedPtr msg) {
+  m_prediction_result = *msg;
 }
-
 
 void IDMACCNode::maptrackBodyCallback(
     const nav_msgs::msg::Path::SharedPtr msg) {
@@ -70,9 +66,9 @@ void IDMACCNode::maptrackBodyCallback(
 //   int cipv_idx = 0;
 
 //   // Calc acc cmd
-//   // m_veh_speed_mps = this->getEgoPowertrainState().vehicle_speed_kmph / 3.6;
-//   m_ego_odom = this->getEgoOdometry();
-//   m_veh_speed_mps = m_ego_odom.twist.twist.linear.x;
+//   // m_veh_speed_mps = this->getEgoPowertrainState().vehicle_speed_kmph
+//   / 3.6; m_ego_odom = this->getEgoOdometry(); m_veh_speed_mps =
+//   m_ego_odom.twist.twist.linear.x;
 
 //   // TODO : Assigning CIPV
 //   // NOTE : In CES, there is only one opponent on the track.
@@ -90,20 +86,22 @@ void IDMACCNode::maptrackBodyCallback(
 //       // NOTE : This is just for the test. Proecssing of CIPC data should be
 //       // done.
 
-//       // TODO : The way to calculate the progress gap btw the ego and opponent.
-//       double progress_gap = 0.0;
+//       // TODO : The way to calculate the progress gap btw the ego and
+//       opponent. double progress_gap = 0.0;
 
 //       // Approach 1. (longitudinal-wise distance directly from the perception
 //       // result)
 //       progress_gap = det_msg->objects[cipv_idx].pose.position.x;
 //       if (progress_gap < 0.0) {
-//         // when the car is behind us, don't care about the ACC. Set the progress
+//         // when the car is behind us, don't care about the ACC. Set the
+//         progress
 //         // gap as INF
 //         progress_gap = nif::common::constants::numeric::INF;
 //       }
 
 //       // Approach 2. (Based on our future trajectory, calculate the progress.
-//       // But when the case that we want to overtake, the progress gap might be
+//       // But when the case that we want to overtake, the progress gap might
+//       be
 //       // wrong.)
 //       m_idm_prt->calcAccel(m_veh_speed_mps,
 //                            progress_gap,
@@ -130,17 +128,23 @@ void IDMACCNode::perceptionCallback(
   // TODO : ASSUMING THAT ONLY CIPV INFORMATION IS IN THE MESSAGE
   int cipv_idx = 0;
 
-  // std::cout << "body cipv x : " << m_perception_result.perception_list[cipv_idx].detection_result_3d.center.position.x << std::endl;
+  // std::cout << "body cipv x : " <<
+  // m_perception_result.perception_list[cipv_idx].detection_result_3d.center.position.x
+  // << std::endl;
 
-  if(sqrt(pow(m_perception_result.perception_list[cipv_idx].detection_result_3d.center.position.x,2)
-    + pow(m_perception_result.perception_list[cipv_idx].detection_result_3d.center.position.y,2)) > 100.0) {
+  if (sqrt(pow(m_perception_result.perception_list[cipv_idx]
+                   .detection_result_3d.center.position.x,
+               2) +
+           pow(m_perception_result.perception_list[cipv_idx]
+                   .detection_result_3d.center.position.y,
+               2)) > 100.0) {
     // opponent is behind us. dont care about the ACC
     m_acc_cmd = m_idm_prt->getParamAccelMax();
     std_msgs::msg::Float32 out;
     out.data = m_acc_cmd;
     m_acc_cmd_publisher->publish(out);
     return;
-  } 
+  }
 
   // Calc acc cmd
   m_veh_speed_mps = this->getEgoOdometry().twist.twist.linear.x;
@@ -159,7 +163,6 @@ void IDMACCNode::perceptionCallback(
   // * double check that the detection message is represent in body frame (if
   // no, converte to the body frame)
 
-
   if (this->hasEgoOdometry() && this->hasEgoPowertrainState()) {
     if (msg->perception_list.size() != 0) {
       // NOTE : This is just for the test. Proecssing of CIPC data should be
@@ -177,15 +180,13 @@ void IDMACCNode::perceptionCallback(
         // gap as INF
         progress_gap = nif::common::constants::numeric::INF;
         std::cout << "INF" << std::endl;
-        
       }
 
       // Approach 2. (Based on our future trajectory, calculate the progress.
       // But when the case that we want to overtake, the progress gap might be
       // wrong.)
       m_idm_prt->calcAccel(
-          m_veh_speed_mps,
-          progress_gap,
+          m_veh_speed_mps, progress_gap,
           msg->perception_list[cipv_idx].obj_velocity_in_local.linear.x);
 
       m_acc_cmd = m_idm_prt->getACCCmd();
