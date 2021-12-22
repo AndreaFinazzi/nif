@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(nif_points_clustering)
+project(nif_radar_clustering_nodes)
 # set(CMAKE_CXX_FLAGS "-W -Wall -O3 -std=c++11 -DNDEBUG")
 
 # Default to C++14
@@ -18,6 +18,7 @@ set( CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -fPIC" )
 find_package(PCL REQUIRED QUIET)
 find_package(CUDA REQUIRED)
 find_package(yaml-cpp REQUIRED)
+find_package(nif_gpu_euclidean_clustering REQUIRED)
 
 include_directories(
   include
@@ -29,35 +30,22 @@ find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
 
 # Library
-ament_auto_add_library(lidar_clustering SHARED
-        src/lidar_euclidean_cluster_detect.cpp)
+ament_auto_add_library(${PROJECT_NAME} SHARED
+  # src/radar_euclidean_cluster_node.cpp
+  src/aptiv_interface_node.cpp
+  )
 
-ament_auto_add_executable(${PROJECT_NAME}_exe
-  src/nif_points_clustering_main.cpp)
+# ament_auto_add_executable(${PROJECT_NAME}_exe
+  # src/nif_radar_clustering_main.cpp
+  # )
 
-
-message("-- USING ACCELERATED CLUSTERING --")
-message("Version: " ${CUDA_VERSION})
-message("Library: " ${CUDA_CUDA_LIBRARY})
-message("Runtime: " ${CUDA_CUDART_LIBRARY})
-
-target_compile_definitions(lidar_clustering PRIVATE
+target_compile_definitions(${PROJECT_NAME} PRIVATE
     GPU_CLUSTERING=1
 )
 
-cuda_add_library(gpu_euclidean_clustering
-  # include/nif_points_clustering/gpu_euclidean_clustering.h
-  src/gpu_euclidean_clustering.cu
-)
-
-target_link_libraries(lidar_clustering
-  gpu_euclidean_clustering
+target_link_libraries(${PROJECT_NAME}
+  nif_gpu_euclidean_clustering
   ${PCL_LIBRARIES}
-)
-
-target_link_libraries(${PROJECT_NAME}_exe
-  # gpu_euclidean_clustering  
-  lidar_clustering
 )
 
 if(BUILD_TESTING)
@@ -69,7 +57,7 @@ if(BUILD_TESTING)
           )
 
   target_include_directories(${PROJECT_NAME}_test PRIVATE "include")
-  target_link_libraries(${PROJECT_NAME}_test lidar_clustering) #gpu_euclidean_clustering)
+  target_link_libraries(${PROJECT_NAME}_test ${PROJECT_NAME})
   ament_target_dependencies(${PROJECT_NAME}_test
           "rclcpp")
 endif()

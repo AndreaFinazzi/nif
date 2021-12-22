@@ -10,7 +10,7 @@ from launch_ros.actions import Node
 def generate_launch_description():
 
     params_file = os.path.join(
-            get_package_share_directory("nif_points_clustering"),
+            get_package_share_directory("nif_points_clustering_nodes"),
             "config",
             "config.yaml"
         )
@@ -23,8 +23,8 @@ def generate_launch_description():
     )
 
     points_clustering_node =  Node(
-                package="nif_points_clustering",
-                executable="nif_points_clustering_exe",
+                package="nif_points_clustering_nodes",
+                executable="nif_points_clustering_nodes_exe",
                 output="screen",
                 respawn=True,
                 emulate_tty=True,

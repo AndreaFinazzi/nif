@@ -7,7 +7,7 @@
  ============================================================================
  */
 
-#include "nif_points_clustering/gpu_euclidean_clustering.h"
+#include "nif_gpu_euclidean_clustering/gpu_euclidean_clustering.h"
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <thrust/device_ptr.h>

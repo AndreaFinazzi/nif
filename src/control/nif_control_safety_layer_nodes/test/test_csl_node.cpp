@@ -62,8 +62,7 @@ TEST_F(sanity_check, testone) {
     }
     // spin one more time for good measure
     exec.spin_some(std::chrono::milliseconds(100LL));
-
-    exec.spin();
+    
   }
 
 

@@ -401,7 +401,7 @@ def generate_launch_description():
 
     nif_points_clustering = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            get_share_file("nif_points_clustering", 'launch/deploy.launch.py')
+            get_share_file("nif_points_clustering_nodes", 'launch/deploy.launch.py')
         )
     )
 

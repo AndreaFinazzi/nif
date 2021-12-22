@@ -1,3 +1,5 @@
+
+  
 import os
 from ament_index_python import get_package_share_directory
 from launch import LaunchDescription
@@ -42,6 +44,8 @@ def generate_launch_description():
         track_subdir = "ims"
     elif track == LVMS:
         track_subdir = "lvms"
+    elif track == LVMS_SIM:
+        track_subdir = "lvms_sim"
     else:
         raise RuntimeError("ERROR: invalid track provided: {}".format(track))
 
@@ -83,7 +87,7 @@ def generate_launch_description():
                 namespace=ns,
                 parameters=[{
                     # global map loader
-                    'globalmap_file_name' : global_map,
+                    # 'globalmap_file_name' : global_map,
                     'trajectory_pcd_file' : trajectory_map,
                     'use_trajectory' : True,
 

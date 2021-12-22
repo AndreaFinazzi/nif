@@ -1,16 +1,16 @@
-#include <nif_points_clustering/lidar_euclidean_cluster_detect.h>
+#include <nif_points_clustering_nodes/lidar_euclidean_cluster_node.h>
 
 #ifdef GPU_CLUSTERING
 
-#include "nif_points_clustering/gpu_euclidean_clustering.h"
+#include "nif_gpu_euclidean_clustering/gpu_euclidean_clustering.h"
 
 #endif
 
 #define __APP_NAME__ "euclidean_clustering"
 
 // Constructor
-PointsClustering::PointsClustering()
-    : Node("nif_points_clustering")
+RadarClusteringNode::RadarClusteringNode(const std::string& node_name)
+    : Node(node_name)
 {
   this->declare_parameter<int>("cluster_size_min", 10);
   this->declare_parameter<int>("cluster_size_max", 2000);
@@ -23,7 +23,7 @@ PointsClustering::PointsClustering()
   this->m_height_filter_thres =
       this->get_parameter("height_filter_thres").as_double();
 
-  pubClusterPoints = this->create_publisher<sensor_msgs::msg::PointCloud2>(
+  pubClusterPoints = this->create_publisher<radar>(
       "out_clustered_points", nif::common::constants::QOS_SENSOR_DATA);
   pubSimpleheightMap = this->create_publisher<sensor_msgs::msg::PointCloud2>(
       "out_simple_heightmap_points", nif::common::constants::QOS_SENSOR_DATA);
@@ -35,27 +35,14 @@ PointsClustering::PointsClustering()
   pubClusteredCenterPoints = this->create_publisher<sensor_msgs::msg::PointCloud2>(
       "out_clustered_center_points", nif::common::constants::QOS_SENSOR_DATA);
 
-  subInputPoints = this->create_subscription<sensor_msgs::msg::PointCloud2>(
-      "in_lidar_points", nif::common::constants::QOS_SENSOR_DATA,
-      std::bind(&PointsClustering::PointsCallback, this,
-                std::placeholders::_1));
-  subLeftPoints = this->create_subscription<sensor_msgs::msg::PointCloud2>(
-      "in_left_points", nif::common::constants::QOS_SENSOR_DATA,
-      std::bind(&PointsClustering::LeftPointsCallback, this,
-                std::placeholders::_1));
-  subRightPoints = this->create_subscription<sensor_msgs::msg::PointCloud2>(
-      "in_right_points", nif::common::constants::QOS_SENSOR_DATA,
-      std::bind(&PointsClustering::RightPointsCallback, this,
-                std::placeholders::_1));
-
   using namespace std::chrono_literals; // NOLINT
   sub_timer_ = this->create_wall_timer(
-      30ms, std::bind(&PointsClustering::timer_callback, this));
+      30ms, std::bind(&RadarClusteringNode::timer_callback, this));
 }
 
-PointsClustering::~PointsClustering() {}
+RadarClusteringNode::~RadarClusteringNode() {}
 
-void PointsClustering::timer_callback() {
+void RadarClusteringNode::timer_callback() {
 
   std::lock_guard<std::mutex> sensor_lock(sensor_mtx);
 
@@ -63,7 +50,6 @@ void PointsClustering::timer_callback() {
     return;
 
   //simple height map filter
-  m_simpleHeightmapPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
   for (auto point : m_inPoints->points)
   {
     pcl::PointXYZI point_buf;
@@ -75,52 +61,6 @@ void PointsClustering::timer_callback() {
       m_simpleHeightmapPoints->points.push_back(point_buf);
     }
   }
-
-  // pcl::PointCloud<pcl::PointXYZI>::Ptr RightToMergedPoints(
-  //     new pcl::PointCloud<pcl::PointXYZI>);
-  // if(bRightPoints)
-  // {
-  //   pcl::PointCloud<pcl::PointXYZI>::Ptr RightDownsampledPoints(
-  //       new pcl::PointCloud<pcl::PointXYZI>);
-  //   RightDownsampledPoints = downsample(m_RightPoints, 0.05);
-  //   for (auto point : RightDownsampledPoints->points) {
-  //     if (fabs(point.y) < 2.0 && point.z > m_height_filter_thres &&
-  //         point.z < 0.5 && point.x > -5.0 && point.x < 0.5) {
-  //       RightToMergedPoints->points.push_back(point);
-  //     }
-  //   }
-  //   *m_simpleHeightmapPoints += *RightToMergedPoints;
-  // }
-  // pcl::PointCloud<pcl::PointXYZI>::Ptr LeftToMergedPoints(
-  //     new pcl::PointCloud<pcl::PointXYZI>);
-  // if (bLeftPoints) {
-  //   pcl::PointCloud<pcl::PointXYZI>::Ptr LeftDownsampledPoints(
-  //       new pcl::PointCloud<pcl::PointXYZI>);
-  //   LeftDownsampledPoints = downsample(m_LeftPoints, 0.05);
-  //   for (auto point : LeftDownsampledPoints->points) {
-  //     if (fabs(point.y) < 2.0 && point.z > m_height_filter_thres &&
-  //         point.z < 0.5 && point.x > -5.0 && point.x < 0.5) {
-  //       LeftToMergedPoints->points.push_back(point);
-  //     }
-  //   }
-  //   *m_simpleHeightmapPoints += *LeftToMergedPoints;
-  // }
-
-
-  sensor_msgs::msg::PointCloud2 cloud_simple_heightmap_msg;
-  pcl::toROSMsg(*m_simpleHeightmapPoints, cloud_simple_heightmap_msg);
-  cloud_simple_heightmap_msg.header.frame_id =
-      nif::common::frame_id::localization::BASE_LINK;
-  cloud_simple_heightmap_msg.header.stamp = this->now();
-  pubSimpleheightMap->publish(cloud_simple_heightmap_msg);
-
-  
-  pcl::PointCloud<pcl::PointXYZI>::Ptr registeredPoints(
-      new pcl::PointCloud<pcl::PointXYZI>);
-  pcl::PointCloud<pcl::PointXYZI>::Ptr inflationedPoints(
-      new pcl::PointCloud<pcl::PointXYZI>);
-  pcl::PointCloud<pcl::PointXYZI>::Ptr centerPoints(
-      new pcl::PointCloud<pcl::PointXYZI>);
 
   visualization_msgs::msg::MarkerArray clustered_array;
   clusterAndColorGpu(m_simpleHeightmapPoints, registeredPoints,
@@ -158,7 +98,7 @@ void PointsClustering::timer_callback() {
   pubClusteredArray->publish(clustered_array);
 }
 
-void PointsClustering::PointsCallback(
+void RadarClusteringNode::PointsCallback(
     const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
   std::lock_guard<std::mutex> sensor_lock(sensor_mtx);
 
@@ -174,7 +114,7 @@ void PointsClustering::PointsCallback(
   // std::cout << "callback" << std::endl;
 }
 
-void PointsClustering::LeftPointsCallback(
+void RadarClusteringNode::LeftPointsCallback(
     const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
 
   m_LeftPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
@@ -182,7 +122,7 @@ void PointsClustering::LeftPointsCallback(
   bLeftPoints = true;
 }
 
-void PointsClustering::RightPointsCallback(
+void RadarClusteringNode::RightPointsCallback(
     const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
 
   m_RightPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
@@ -190,7 +130,7 @@ void PointsClustering::RightPointsCallback(
   bRightPoints = true;
 }
 
-void PointsClustering::clusterAndColorGpu(
+void RadarClusteringNode::clusterAndColorGpu(
     const pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud_ptr,
     pcl::PointCloud<pcl::PointXYZI>::Ptr out_cloud_ptr,
     visualization_msgs::msg::MarkerArray& out_clustered_array,
@@ -252,7 +192,7 @@ void PointsClustering::clusterAndColorGpu(
   // return clusters;
 }
 
-void PointsClustering::SetCloud(
+void RadarClusteringNode::SetCloud(
     const pcl::PointCloud<pcl::PointXYZI>::Ptr in_origin_cloud_ptr,
     pcl::PointCloud<pcl::PointXYZI>::Ptr register_cloud_ptr,
     const std::vector<int> &in_cluster_indices,
@@ -349,7 +289,7 @@ void PointsClustering::SetCloud(
 }
 
 pcl::PointCloud<pcl::PointXYZI>::Ptr
-PointsClustering::downsample(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud,
+RadarClusteringNode::downsample(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud,
                              double resolution) {
   pcl::PointCloud<pcl::PointXYZI>::Ptr filtered(
       new pcl::PointCloud<pcl::PointXYZI>);
@@ -361,7 +301,7 @@ PointsClustering::downsample(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud,
 }
 
 // Calculate gaussian interpolation.
-void PointsClustering::createGaussianWorld(
+void RadarClusteringNode::createGaussianWorld(
     visualization_msgs::msg::MarkerArray& marker_array_in, double inflation_x,
     double inflation_y, pcl::PointCloud<pcl::PointXYZI>::Ptr &points_out) {
 

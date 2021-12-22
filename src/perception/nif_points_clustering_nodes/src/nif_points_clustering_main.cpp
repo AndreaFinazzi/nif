@@ -1,4 +1,4 @@
-#include <nif_points_clustering/lidar_euclidean_cluster_detect.h>
+#include <nif_points_clustering_nodes/lidar_euclidean_cluster_detect.h>
 
 int main(int argc, char **argv) {
   rclcpp::init(argc, argv);

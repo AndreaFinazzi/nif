@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="3">
-  <name>nif_points_clustering</name>
+  <name>nif_points_clustering_nodes</name>
   <version>0.1.1</version>
-  <description>The nif_points_clustering package</description>
+  <description>The nif_points_clustering_nodes package</description>
   <maintainer email="lee.dk@kaist.ac.kr">DaegyuLee</maintainer>
   <license>BSD</license>
 
@@ -29,6 +29,7 @@
   <depend>nif_common_nodes</depend>
   <depend>nif_localization_minimal</depend>
   <depend>nif_frame_id</depend>
+  <depend>nif_gpu_euclidean_clustering</depend>
 
   <export>
     <build_type>ament_cmake</build_type>
