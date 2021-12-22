@@ -25,6 +25,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "rcutils/error_handling.h"
 #include "std_msgs/msg/float32.hpp"
+#include "velocity_profile/velocity_profiler.hpp"
 #include <math.h>
 #include <string>
 #include <vector>
@@ -91,8 +92,38 @@ public:
   double getProgress(const double &pt_x_, const double &pt_y_,
                      pcl::KdTreeFLANN<pcl::PointXY> &target_tree_);
 
+  //  ---------------------------
+
+  double getProgress(const geometry_msgs::msg::Pose &pt_global_,
+                     const nif_msgs::msg::DynamicTrajectory &target_traj);
+
+  double getProgress(const double &pt_x_, const double &pt_y_,
+                     const nif_msgs::msg::DynamicTrajectory &target_traj);
+
+  nav_msgs::msg::Path
+  getIntervalPath(const geometry_msgs::msg::Pose &start_global_,
+                  const geometry_msgs::msg::Pose &end_global_,
+                  const nif_msgs::msg::DynamicTrajectory
+                      &target_traj); // Inside here, progress wrapping is done.
+
+  nav_msgs::msg::Path
+  getIntervalPath(const double &start_x_, const double &start_y_,
+                  const double &end_x_, const double &end_y_,
+                  const nif_msgs::msg::DynamicTrajectory
+                      &target_traj); // Inside here, progress wrapping is done.
+
+  nav_msgs::msg::Path getCertainLenOfPathSeg(
+      const double &start_x_, const double &start_y_,
+      const nav_msgs::msg::Path &target_path_,
+      const int &length); //// Inside here, index wrapping is done.
+
+  //  ---------------------------
+
   double getCurIdx(const double &pt_x_, const double &pt_y_,
                    pcl::KdTreeFLANN<pcl::PointXY> &target_tree_);
+
+  double getCurIdx(const double &pt_x_, const double &pt_y_,
+                   const nav_msgs::msg::Path &target_path_);
 
   double calcCTE(const geometry_msgs::msg::Pose &pt_global_,
                  pcl::KdTreeFLANN<pcl::PointXY> &target_tree_,
@@ -128,10 +159,6 @@ public:
 
   std::shared_ptr<FrenetPath> getFrenetToRacingLine();
 
-  double calcProgressDiff(const nif_msgs::msg::DynamicTrajectory &ego_traj_,
-                          const nif_msgs::msg::DynamicTrajectory &oppo_traj_,
-                          pcl::KdTreeFLANN<pcl::PointXY> &target_tree_);
-
   bool collisionCheckBTWtrajs(
       const nif_msgs::msg::DynamicTrajectory &ego_traj_,
       const nif_msgs::msg::DynamicTrajectory &oppo_traj_,
@@ -149,6 +176,10 @@ public:
   nif_msgs::msg::DynamicTrajectory
   stitchFrenetToPath(std::shared_ptr<FrenetPath> &frenet_segment_,
                      pcl::KdTreeFLANN<pcl::PointXY> &target_tree_,
+                     nav_msgs::msg::Path &target_path_);
+
+  nif_msgs::msg::DynamicTrajectory
+  stitchFrenetToPath(std::shared_ptr<FrenetPath> &frenet_segment_,
                      nav_msgs::msg::Path &target_path_);
 
 private:
@@ -183,8 +214,8 @@ private:
   rclcpp::TimerBase::SharedPtr m_planner_timer;
   bool m_timer_callback_first_run;
 
-  nif_msgs::msg::Perception3D m_cur_det;
-  nif_msgs::msg::Perception3D m_prev_det;
+  nif_msgs::msg::Perception3D m_cur_det_global;
+  nif_msgs::msg::Perception3D m_prev_det_global;
   bool m_det_callback_first_run;
 
   nif_msgs::msg::DynamicTrajectory m_cur_oppo_pred_result;
@@ -231,6 +262,7 @@ private:
       m_overtaking_candidates_spline_data_vec;
   std::vector<std::shared_ptr<CubicSpliner2D>>
       m_overtaking_candidates_spline_model_vec;
+  std::vector<double> m_overtaking_candidates_full_progress_vec;
 
   std::string m_racingline_file_path;
   std::vector<double> m_racingline_x_vec, m_racingline_y_vec;
@@ -239,6 +271,7 @@ private:
   pcl::PointCloud<pcl::PointXY>::Ptr m_racingline_path_pc;
   pcl::KdTreeFLANN<pcl::PointXY> m_racineline_path_kdtree;
   FrenetPathGenerator::CubicSpliner2DResult m_racingline_spline_data;
+  double m_racingline_full_progress;
 
   // OUTPUT
   int m_planned_traj_len;
@@ -272,6 +305,7 @@ private:
   double m_config_overlap_checking_time_bound; // [sec]
 
   shared_ptr<FrenetPathGenerator> m_frenet_generator_ptr;
+  shared_ptr<velocity_profiler> m_velocity_profiler_ptr;
 
   nav_msgs::msg::Odometry m_ego_odom;
 };
