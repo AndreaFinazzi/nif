@@ -1,4 +1,5 @@
 <?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="2">
   <name>nif_sensors</name>
   <version>0.0.1</version>
@@ -11,5 +12,13 @@
   <url type="website">http://www.novatel.com</url>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
-
+  
+  <exec_depend>aptiv_esr_ros2</exec_depend>
+  <exec_depend>novatel_oem7_driver</exec_depend>
+  <exec_depend>ros2_luminar</exec_depend>
+  <exec_depend>avt_vimba_camera</exec_depend>
+  
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
 </package>

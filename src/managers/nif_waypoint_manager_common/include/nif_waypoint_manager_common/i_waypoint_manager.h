@@ -37,17 +37,13 @@ public:
   nav_msgs::msg::Path &getDesiredMapTrackInGlobal() {
     return m_desired_maptrack_in_global;
   }
-  geometry_msgs::msg::PoseStamped
-  getPtBodytoGlobal(geometry_msgs::msg::PoseStamped &point_in_body_);
 
   nav_msgs::msg::Path getPathBodytoGlobal(nav_msgs::msg::Path &path_in_body_);
-
-  geometry_msgs::msg::PoseStamped getPtGlobaltoBody(
-      const geometry_msgs::msg::PoseStamped &point_in_global_) const;
 
   nav_msgs::msg::Path getPathGlobaltoBody(nav_msgs::msg::Path &path_in_global_);
 
   void setCurrentOdometry(const nav_msgs::msg::Odometry &ego_vehicle_odom);
+  void setCurrentOdometry(const geometry_msgs::msg::Pose &ego_vehicle_pose);
 
   void setSizeOfMapTrack(int size_of_map_track_) {
     m_size_of_map_track = size_of_map_track_;
@@ -60,6 +56,14 @@ public:
 
   unsigned int getCurrentIdx(const nav_msgs::msg::Path &reference_path,
                              const nav_msgs::msg::Odometry &ego_vehicle_odom);
+
+  void setCurrentIdx(const nav_msgs::msg::Path &reference_path,
+                     const geometry_msgs::msg::Pose &ego_vehicle_pose);
+
+  unsigned int getCurrentIdx(const nav_msgs::msg::Path &reference_path,
+                             const geometry_msgs::msg::Pose &ego_vehicle_pose);
+
+  unsigned int getCurrentIdx(const geometry_msgs::msg::Pose &ego_vehicle_pose);
 
   int getWPTIdx(nav_msgs::msg::Path &reference_path,
                 geometry_msgs::msg::PoseStamped &target_pose);
@@ -96,7 +100,7 @@ private:
   nav_msgs::msg::Path
       m_desired_maptrack_in_global; // dynamically updated path (if not updated,
                                     // set as a default one)
-  nav_msgs::msg::Odometry
+  geometry_msgs::msg::Pose
       m_current_pose; // current vehicle pose, this should be updated as fast as
                       // possible in the node subscriber
 

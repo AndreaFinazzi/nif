@@ -38,6 +38,22 @@ double nif::common::utils::geometry::calEuclideanDistance(
   return calEuclideanDistance(a.pose, b.pose);
 }
 
+double nif::common::utils::geometry::calEuclideanDistanceSquared(
+    const geometry_msgs::msg::Point& a, const geometry_msgs::msg::Point& b) {
+  return pow((a.x - b.x), 2) + pow((a.y - b.y), 2) + pow((a.z - b.z), 2);
+}
+
+double nif::common::utils::geometry::calEuclideanDistanceSquared(
+    const geometry_msgs::msg::Pose& a, const geometry_msgs::msg::Pose& b) {
+  return calEuclideanDistanceSquared(a.position, b.position);
+}
+
+double nif::common::utils::geometry::calEuclideanDistanceSquared(
+    const geometry_msgs::msg::PoseStamped& a,
+    const geometry_msgs::msg::PoseStamped& b) {
+  return calEuclideanDistanceSquared(a.pose, b.pose);
+}
+
 double nif::common::utils::geometry::mph2kph(const double mph) {
   return MPH_TO_KPH_FACTOR * mph;
 }
@@ -149,6 +165,18 @@ nif::common::utils::coordination::getPtBodytoGlobal(
   return point_in_global;
 }
 
+geometry_msgs::msg::PoseStamped
+nif::common::utils::coordination::getPtStampedBodytoGlobal(
+  const geometry_msgs::msg::Pose& current_pose_,
+  const geometry_msgs::msg::Pose& point_in_body_)
+{
+    geometry_msgs::msg::PoseStamped point_in_global_stamped{};
+
+    point_in_global_stamped.pose = getPtBodytoGlobal(current_pose_, point_in_body_);
+
+    return point_in_global_stamped;
+}
+
 // ================================ TO BODY ================================
 
 
@@ -231,6 +259,17 @@ nif::common::utils::coordination::getPtGlobaltoBody(
   return point_in_body;
 }
 
+geometry_msgs::msg::PoseStamped
+nif::common::utils::coordination::getPtStampedGlobaltoBody(
+  const geometry_msgs::msg::Pose& current_pose_,
+  const geometry_msgs::msg::Pose& point_in_global_)
+{
+    geometry_msgs::msg::PoseStamped point_in_body_stamped{};
+
+    point_in_body_stamped.pose = getPtGlobaltoBody(current_pose_, point_in_global_);
+
+    return point_in_body_stamped;
+}
 
 nav_msgs::msg::Path nif::common::utils::coordination::getPathGlobaltoBody(
     const nav_msgs::msg::Odometry& current_pose_,
@@ -249,3 +288,15 @@ nav_msgs::msg::Path nif::common::utils::coordination::getPathGlobaltoBody(
   return path_in_body;
 }
 
+geometry_msgs::msg::Point nif::common::utils::algebra::calCrossProduct(
+    const geometry_msgs::msg::Point& vector_a,
+    const geometry_msgs::msg::Point& vector_b
+) {
+  geometry_msgs::msg::Point vector_c{};
+
+  vector_c.x = vector_a.y * vector_b.z - vector_a.z * vector_b.y;
+  vector_c.y = vector_a.z * vector_b.x - vector_a.x * vector_b.z;
+  vector_c.z = vector_a.x * vector_b.y - vector_a.y * vector_b.x;
+
+  return vector_c;
+}
