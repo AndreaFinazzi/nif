@@ -1446,6 +1446,7 @@ void DynamicPlannerNode ::timer_callback() {
                     m_ego_odom.pose.pose.position.x,
                     m_ego_odom.pose.pose.position.y,
                     m_cur_planned_traj.trajectory_path, 400);
+                
                 auto cur_traj = m_velocity_profiler_ptr->velProfileForAcc(
                     m_ego_odom, m_cur_oppo_pred_result,
                     m_cur_det_global.obj_velocity_in_global.linear.x,
