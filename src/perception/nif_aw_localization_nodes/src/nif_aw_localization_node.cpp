@@ -552,10 +552,8 @@ void AWLocalizationNode::timerCallback()
 
   } else {
     RCLCPP_DEBUG(this->get_logger(), "Waiting for -[/novatel_bottom/bestpos]");
-    RCLCPP_DEBUG(this->get_logger(), "            -[/novatel_bottom/inspva]");
-    RCLCPP_DEBUG(this->get_logger(), "            -[/novatel_bottom/imu/data]");
-    RCLCPP_DEBUG(this->get_logger(),
-                 "            -[/raptor_dbw_interface/wheel_speed_report]");
+    RCLCPP_DEBUG(this->get_logger(), "            -[/novatel_bottom/rawimux]");
+    RCLCPP_DEBUG(this->get_logger(), "            -[/raptor_dbw_interface/wheel_speed_report]");
   }
 }
 

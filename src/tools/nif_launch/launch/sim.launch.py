@@ -197,7 +197,7 @@ def generate_launch_description():
             # ('in_reference_path', 'planning/path_global'),
             ('in_ego_odometry', '/sensor/odom_ground_truth'),
             ('in_wheel_speed_report', 'raptor_dbw_interface/wheel_speed_report'),
-            ('in_imu_data', 'novatel_bottom/imu/data'),
+            ('in_imu_data', 'novatel_bottom/rawimux'),
             ('in_steering_report', 'raptor_dbw_interface/steering_report'),
             ('in_control_error', 'control_joint_lqr/lqr_error')
         ],
@@ -251,7 +251,7 @@ def generate_launch_description():
         executable='nif_accel_control_nodes_exe',
         output='screen',
         remappings=[
-            ('/in_imu_data', '/novatel_bottom/imu/data')
+            ('/in_imu_data', '/novatel_bottom/rawimux')
         ],
         parameters=[{
             ## Should be True on real car
