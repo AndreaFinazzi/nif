@@ -18,6 +18,7 @@
 #include "nif_frame_id/frame_id.h"
 #include "nif_msgs/msg/dynamic_trajectory.hpp"
 #include "nif_msgs/msg/perception3_d.hpp"
+#include "nif_msgs/msg/system_status.hpp"
 #include "nif_opponent_prediction_nodes/cubic_spliner_2D.h"
 #include "nif_opponent_prediction_nodes/frenet_path.h"
 #include "nif_opponent_prediction_nodes/frenet_path_generator.h"
@@ -75,10 +76,10 @@ public:
   loadCSVfile(const std::string &wpt_file_path_);
 
   void timer_callback();
-  void timer_callback_v2();
-  void timer_callback_debug();
   void publishTrajectory();
   void publishPlannedTrajectory(bool vis_);
+  void publishPlannedTrajectory(nif_msgs::msg::DynamicTrajectory &traj_,
+                                bool is_acc_, bool vis_);
   void initOutputTrajectory();
   bool setDrivingMode();
 
@@ -248,6 +249,7 @@ private:
   PLANNING_ACTION_TYPE m_cur_overtaking_action;
   PLANNING_ACTION_TYPE m_prev_overtaking_action;
 
+  // path candidate
   int m_num_overtaking_candidates; // number of lines for overtaking
   std::vector<nav_msgs::msg::Path> m_overtaking_candidates_path_vec;
   std::vector<nif_msgs::msg::DynamicTrajectory>
@@ -264,6 +266,7 @@ private:
       m_overtaking_candidates_spline_model_vec;
   std::vector<double> m_overtaking_candidates_full_progress_vec;
 
+  // racing line
   std::string m_racingline_file_path;
   std::vector<double> m_racingline_x_vec, m_racingline_y_vec;
   nav_msgs::msg::Path m_racingline_path;
@@ -273,12 +276,35 @@ private:
   FrenetPathGenerator::CubicSpliner2DResult m_racingline_spline_data;
   double m_racingline_full_progress;
 
+  // mission & waypoint mananger
+  std::string m_warmup_file_path;
+  std::vector<double> m_warmup_x_vec, m_warmup_y_vec;
+  nav_msgs::msg::Path m_warmup_path;
+  nif_msgs::msg::DynamicTrajectory m_warmup_dtraj;
+  pcl::PointCloud<pcl::PointXY>::Ptr m_warmup_path_pc;
+  pcl::KdTreeFLANN<pcl::PointXY> m_warmup_path_kdtree;
+  FrenetPathGenerator::CubicSpliner2DResult m_warmup_spline_data;
+  double m_warmup_full_progress;
+
+  std::string m_pit_file_path;
+  std::vector<double> m_pit_x_vec, m_pit_y_vec;
+  nav_msgs::msg::Path m_pit_path;
+  nif_msgs::msg::DynamicTrajectory m_pit_dtraj;
+  pcl::PointCloud<pcl::PointXY>::Ptr m_pit_path_pc;
+  pcl::KdTreeFLANN<pcl::PointXY> m_pit_path_kdtree;
+  FrenetPathGenerator::CubicSpliner2DResult m_pit_spline_data;
+  double m_pit_full_progress;
+
+
+  int m_maptrack_size;
+
   // OUTPUT
   int m_planned_traj_len;
   int m_ego_cur_idx_in_planned_traj;
   nif_msgs::msg::DynamicTrajectory m_cur_planned_traj; // full path
 
   std::string m_planning_config_file_path;
+  std::string m_velocity_profile_config_file_path;
   std::string m_tracking_topic_name;
   std::string m_prediction_topic_name;
   std::string m_map_root_path;
@@ -308,6 +334,7 @@ private:
   shared_ptr<velocity_profiler> m_velocity_profiler_ptr;
 
   nav_msgs::msg::Odometry m_ego_odom;
+  nif_msgs::msg::SystemStatus m_ego_system_status;
 };
 
 } // namespace planning

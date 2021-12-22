@@ -31,19 +31,17 @@ bool velocity_profiler::parseConfig(const std::string &config_file_path_) {
   m_constraint_max_accel =
       velocity_profiling_param["constraint_max_accel"].as<double>();
   m_constraint_max_lat_accel =
-      velocity_profiling_param["m_constraint_max_lat_accel"].as<double>();
+      velocity_profiling_param["constraint_max_lat_accel"].as<double>();
   m_constraint_max_deccel =
       velocity_profiling_param["constraint_max_deccel"].as<double>();
   m_constraint_max_vel =
       velocity_profiling_param["constraint_max_vel"].as<double>();
-
   m_config_use_veh_model =
       velocity_profiling_param["config_use_veh_model"].as<bool>();
   m_config_use_acc_model =
       velocity_profiling_param["config_use_acc_model"].as<bool>();
   m_config_use_curvature_model =
       velocity_profiling_param["config_use_curvature_model"].as<bool>();
-
   m_config_dt = velocity_profiling_param["config_dt"].as<double>();
 
   m_acc_config_s0 = velocity_profiling_param["acc_config_s0"].as<double>();
