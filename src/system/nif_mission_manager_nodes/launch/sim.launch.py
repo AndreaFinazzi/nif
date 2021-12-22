@@ -81,21 +81,21 @@ def generate_launch_description():
             "velocity.max": 45.0,
             "velocity.avoidance": 30.0,
             "velocity.warmup": 25.0,
-            "velocity.pit_in": 10.0,
-            "velocity.pit_out": 10.0,
-            "velocity.slow_drive": 25.0,
+            "velocity.pit_in": 20.0,
+            "velocity.pit_out": 20.0,
+            "velocity.slow_drive": 30.0,
             # RC interface params
             "listen_to_override": True,
             "listen_to_nominal": False,
 
             # Mission avoidance auto switch
-            "mission.avoidance.auto_switch": True,
+            "mission.avoidance.auto_switch": False,
             "mission.avoidance.lap_count_min": 3,
             "mission.avoidance.previous_track_flag": 1,
             "mission.avoidance.lap_distance_min": 0,
             "mission.avoidance.lap_distance_max": 0,
 
-            "mission.warmup.auto_switch": True,
+            "mission.warmup.auto_switch": False,
 
         }],
         remappings=[
