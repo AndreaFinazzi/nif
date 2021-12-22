@@ -61,7 +61,7 @@ UKF::UKF()
   std_laspy_ = 0.15;
 
   // time when the state is true, in us
-  time_ = 0.0;
+  time_ = rclcpp::Time(0);
 
   // predicted sigma points matrix
   x_sig_pred_cv_ = Eigen::MatrixXd(num_state_, 2 * num_state_ + 1);
@@ -198,7 +198,7 @@ double UKF::normalizeAngle(const double angle) {
   return normalized_angle;
 }
 
-void UKF::initialize(const Eigen::VectorXd &z, const double timestamp,
+void UKF::initialize(const Eigen::VectorXd &z, const rclcpp::Time timestamp,
                      const int target_id) {
   ukf_id_ = target_id;
 
@@ -407,7 +407,7 @@ void UKF::interaction() {
               (p_pre_rm + (x_pre_rm - x_rm_) * (x_pre_rm - x_rm_).transpose());
 }
 
-void UKF::predictionSUKF(const double dt, const bool has_subscribed_vectormap) {
+void UKF::predictionSUKF(const rclcpp::Duration dt, const bool has_subscribed_vectormap) {
   /*****************************************************************************
    *  Init covariance Q if it is necessary
    ****************************************************************************/
@@ -425,7 +425,7 @@ void UKF::predictionSUKF(const double dt, const bool has_subscribed_vectormap) {
   }
 }
 
-void UKF::predictionIMMUKF(const double dt,
+void UKF::predictionIMMUKF(const rclcpp::Duration dt,
                            const bool has_subscribed_vectormap) {
   /*****************************************************************************
    *  Init covariance Q if it is needed
@@ -745,21 +745,22 @@ void UKF::updateIMMUKF(
 }
 
 void UKF::ctrv(const double p_x, const double p_y, const double v,
-               const double yaw, const double yawd, const double delta_t,
+               const double yaw, const double yawd, const rclcpp::Duration dt,
                std::vector<double> &state) {
   // predicted state values
   double px_p, py_p;
+  double delta_t_s = dt.seconds();
 
   // avoid division by zero
   if (fabs(yawd) > 0.001) {
-    px_p = p_x + v / yawd * (sin(yaw + yawd * delta_t) - sin(yaw));
-    py_p = p_y + v / yawd * (cos(yaw) - cos(yaw + yawd * delta_t));
+    px_p = p_x + v / yawd * (sin(yaw + yawd * delta_t_s) - sin(yaw));
+    py_p = p_y + v / yawd * (cos(yaw) - cos(yaw + yawd * delta_t_s));
   } else {
-    px_p = p_x + v * delta_t * cos(yaw);
-    py_p = p_y + v * delta_t * sin(yaw);
+    px_p = p_x + v * delta_t_s * cos(yaw);
+    py_p = p_y + v * delta_t_s * sin(yaw);
   }
   double v_p = v;
-  double yaw_p = yaw + yawd * delta_t;
+  double yaw_p = yaw + yawd * delta_t_s;
   double yawd_p = yawd;
 
   while (yaw_p > M_PI)
@@ -775,12 +776,14 @@ void UKF::ctrv(const double p_x, const double p_y, const double v,
 }
 
 void UKF::cv(const double p_x, const double p_y, const double v,
-             const double yaw, const double yawd, const double delta_t,
+             const double yaw, const double yawd, const rclcpp::Duration dt,
              std::vector<double> &state) {
   // Reference: Bayesian Environment Representation, Prediction, and Criticality
   // Assessment for Driver Assistance Systems, 2016
-  double px_p = p_x + v * cos(yaw) * delta_t;
-  double py_p = p_y + v * sin(yaw) * delta_t;
+  double delta_t_s = dt.seconds();
+
+  double px_p = p_x + v * cos(yaw) * delta_t_s;
+  double py_p = p_y + v * sin(yaw) * delta_t_s;
   double v_p = v;
   double yaw_p = yaw;
   double yawd_p = 0;
@@ -794,9 +797,11 @@ void UKF::cv(const double p_x, const double p_y, const double v,
 
 void UKF::randomMotion(const double p_x, const double p_y, const double v,
                        const double yaw, const double yawd,
-                       const double delta_t, std::vector<double> &state) {
+                       const rclcpp::Duration dt, std::vector<double> &state) {
   // Reference: Bayesian Environment Representation, Prediction, and Criticality
   // Assessment for Driver Assistance Systems, 2016
+  double delta_t_s = dt.seconds();
+
   double px_p = p_x;
   double py_p = p_y;
   double v_p = 0.0;
@@ -810,13 +815,14 @@ void UKF::randomMotion(const double p_x, const double p_y, const double v,
   state[4] = yawd_p;
 }
 
-void UKF::initCovarQs(const double dt, const double yaw) {
+void UKF::initCovarQs(const rclcpp::Duration dt, const double yaw) {
   if (tracking_num_ != TrackingState::Init) {
     return;
   }
-  double dt_2 = dt * dt;
-  double dt_3 = dt_2 * dt;
-  double dt_4 = dt_3 * dt;
+  double dt_s = dt.nanoseconds() * 1e-9;
+  double dt_2 = dt_s * dt_s;
+  double dt_3 = dt_2 * dt_s;
+  double dt_4 = dt_3 * dt_s;
   double cos_yaw = cos(yaw);
   double sin_yaw = sin(yaw);
   double cos_2_yaw = cos(yaw) * cos(yaw);
@@ -860,7 +866,7 @@ void UKF::initCovarQs(const double dt, const double yaw) {
       dt_2 * rm_var_yawdd;
 }
 
-void UKF::predictionMotion(const double delta_t, const int model_ind) {
+void UKF::predictionMotion(const rclcpp::Duration dt, const int model_ind) {
   /*****************************************************************************
    *  Initialize model parameters
    ****************************************************************************/
@@ -928,11 +934,11 @@ void UKF::predictionMotion(const double delta_t, const int model_ind) {
 
     std::vector<double> state(5);
     if (model_ind == MotionModel::CV)
-      cv(p_x, p_y, v, yaw, yawd, delta_t, state);
+      cv(p_x, p_y, v, yaw, yawd, dt, state);
     else if (model_ind == MotionModel::CTRV)
-      ctrv(p_x, p_y, v, yaw, yawd, delta_t, state);
+      ctrv(p_x, p_y, v, yaw, yawd, dt, state);
     else
-      randomMotion(p_x, p_y, v, yaw, yawd, delta_t, state);
+      randomMotion(p_x, p_y, v, yaw, yawd, dt, state);
 
     // write predicted sigma point into right column
     x_sig_pred(0, i) = state[0];
@@ -1225,7 +1231,7 @@ void UKF::checkLaneDirectionAvailability(
 }
 
 void UKF::prediction(const bool use_sukf, const bool has_subscribed_vectormap,
-                     const double dt) {
+                     const rclcpp::Duration dt) {
   if (use_sukf) {
     predictionSUKF(dt, has_subscribed_vectormap);
   } else {

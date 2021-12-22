@@ -2,8 +2,7 @@
 
 #include <math.h>
 
-Quaternion::Quaternion(double yaw, double pitch, double roll)
-{
+Quaternion::Quaternion(double yaw, double pitch, double roll) {
   double cy = cos(yaw * 0.5);
   double sy = sin(yaw * 0.5);
   double cp = cos(pitch * 0.5);

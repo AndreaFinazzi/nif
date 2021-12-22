@@ -3,8 +3,7 @@
 
 CubicSpliner2D::CubicSpliner2D(std::vector<double> &points_x,
                                std::vector<double> &points_y)
-    : points_x_(points_x), points_y_(points_y)
-{
+    : points_x_(points_x), points_y_(points_y) {
   assert(points_x_.size() == points_y_.size());
 
   calculate_points_s(points_x_, points_y_);
@@ -16,8 +15,7 @@ CubicSpliner2D::CubicSpliner2D(std::vector<double> &points_x,
 }
 
 void CubicSpliner2D::calculate_points_s(std::vector<double> &points_x,
-                                        std::vector<double> &points_y)
-{
+                                        std::vector<double> &points_y) {
   assert(points_x.size() == points_y.size());
 
   std::vector<double> delta_x(points_x.size());
@@ -32,8 +30,7 @@ void CubicSpliner2D::calculate_points_s(std::vector<double> &points_x,
 
   points_s_.push_back(0);
 
-  for (auto itr = delta_x.begin(); itr != delta_x.end(); itr++)
-  {
+  for (auto itr = delta_x.begin(); itr != delta_x.end(); itr++) {
     int i = itr - delta_x.begin();
 
     double delta_s_i = hypot(delta_x[i], delta_y[i]);
@@ -44,8 +41,7 @@ void CubicSpliner2D::calculate_points_s(std::vector<double> &points_x,
   }
 }
 
-std::tuple<double, double> CubicSpliner2D::calculate_position(double point_s)
-{
+std::tuple<double, double> CubicSpliner2D::calculate_position(double point_s) {
   double point_x = cubic_spliner_sx_->calculate_zeroth_derivative(point_s);
   double point_y = cubic_spliner_sy_->calculate_zeroth_derivative(point_s);
 
@@ -54,8 +50,7 @@ std::tuple<double, double> CubicSpliner2D::calculate_position(double point_s)
   return std::make_tuple(point_x, point_y);
 }
 
-double CubicSpliner2D::calculate_curvature(double point_s)
-{
+double CubicSpliner2D::calculate_curvature(double point_s) {
   double first_derivative_x =
       cubic_spliner_sx_->calculate_first_derivative(point_s);
   double second_derivative_x =
@@ -75,8 +70,7 @@ double CubicSpliner2D::calculate_curvature(double point_s)
   return curvature;
 }
 
-double CubicSpliner2D::calculate_yaw(double point_s)
-{
+double CubicSpliner2D::calculate_yaw(double point_s) {
   double first_derivative_x =
       cubic_spliner_sx_->calculate_first_derivative(point_s);
   double first_derivative_y =

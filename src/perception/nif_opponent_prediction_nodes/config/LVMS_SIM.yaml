@@ -1,0 +1,7 @@
+/**:
+  ros__parameters:
+      path_spline_interval: 1.0
+      prediction_horizon_s: 4.0
+      prediction_sampling_time: 0.2
+      oppo_vel_bias_mps: 0.5
+      m_defender_vel_mps: 15.0

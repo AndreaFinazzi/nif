@@ -376,7 +376,6 @@ void DKGraphPlannerNode::CallbackOdometry(
     int current_layer_for_starting_node;
     GetIntensityInfo(m_veh_x, m_veh_y, m_FullIndexedPoints,
                      current_layer_for_starting_node); // to get current layer
-
     // !Q: m_FirstNodeContainPoints ???
     GetIntensityInfo(m_veh_x, m_veh_y, m_FirstNodeContainPoints,
                      m_ClosestFirstNodeId); // to get current first node id
@@ -960,11 +959,11 @@ void DKGraphPlannerNode::ToPathMsg() {
                          final_id.nodes[final_id.nodes.size() - 1].y);
     }
   }
-  // BestLayer XY visualize(should be end of each ways)
-  pcl::PointCloud<pcl::PointXYZI>::Ptr best_xy_points(
-      new pcl::PointCloud<pcl::PointXYZI>);
+  // BestLayer XY visualize (should be end of each ways)
+  pcl::PointCloud<pcl::PointXYZI>::Ptr best_xy_points(new pcl::PointCloud<pcl::PointXYZI>);
   int cnt2 = 0;
-  for (auto xy : m_BestLayerXYArray) {
+  for(auto xy : m_BestLayerXYArray)
+  {
     pcl::PointXYZI point_buf;
     point_buf.x = xy.second.first;
     point_buf.y = xy.second.second;

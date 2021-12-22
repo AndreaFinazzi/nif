@@ -21,6 +21,12 @@ public:
   double calculate_second_derivative(double time);
   double calculate_third_derivative(double time);
 
+  double calc_point(double time) {
+    return coefficient_a0_ + coefficient_a1_ * time +
+           coefficient_a2_ * pow(time, 2) + coefficient_a3_ * pow(time, 3) +
+           coefficient_a4_ * pow(time, 4) + coefficient_a5_ * pow(time, 5);
+  }
+
 private:
   // f(x) = a5x^5 + a4x^4 + a3x^3 + a2x^2 + a1x + a0
   // coefficient_a0_: a0

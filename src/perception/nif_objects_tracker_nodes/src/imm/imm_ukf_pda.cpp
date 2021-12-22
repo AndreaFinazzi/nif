@@ -89,6 +89,7 @@ void ImmUkfPda::setDetectionResult(
   tracker(transformed_input, detected_objects_output);
   transformPoseToLocal(detected_objects_output);
 
+
   tracked_object_ = detected_objects_output;
 }
 
@@ -118,6 +119,11 @@ ImmUkfPda::getTrackedResult(nif_msgs::msg::DetectedObjectArray &input) {
     p3d.detection_result_3d.center.position.z =
         tracked_object_.objects[det_idx].pose.position.z;
 
+    p3d.detection_result_3d.center.orientation.x = tracked_object_.objects[det_idx].pose.orientation.x;
+    p3d.detection_result_3d.center.orientation.y = tracked_object_.objects[det_idx].pose.orientation.y;
+    p3d.detection_result_3d.center.orientation.z = tracked_object_.objects[det_idx].pose.orientation.z;
+    p3d.detection_result_3d.center.orientation.w = tracked_object_.objects[det_idx].pose.orientation.w;
+
     p3d.obj_velocity_in_local = tracked_object_.objects[det_idx].velocity;
     out_tracked_objects.perception_list.push_back(p3d);
   }
@@ -132,6 +138,8 @@ void ImmUkfPda::setEgoOdom(const nav_msgs::msg::Odometry &odom_) {
 void ImmUkfPda::transformPoseToGlobal(
     const nif_msgs::msg::DetectedObjectArray &input,
     nif_msgs::msg::DetectedObjectArray &transformed_input) {
+  
+  input_header_ = input.header;
   transformed_input.header = input_header_;
 
   for (auto const &object : input.objects) {
@@ -271,7 +279,10 @@ void ImmUkfPda::updateBehaviorState(const UKF &target,
 }
 
 void ImmUkfPda::initTracker(const nif_msgs::msg::DetectedObjectArray &input,
-                            double timestamp) {
+                            const rclcpp::Time timestamp) {
+  
+  timestamp_ = timestamp;
+
   for (size_t i = 0; i < input.objects.size(); i++) {
     double px = input.objects[i].pose.position.x;
     double py = input.objects[i].pose.position.y;
@@ -283,19 +294,21 @@ void ImmUkfPda::initTracker(const nif_msgs::msg::DetectedObjectArray &input,
     targets_.push_back(ukf);
     target_id_++;
   }
-  timestamp_ = timestamp;
+
   init_ = true;
 }
 
 void ImmUkfPda::secondInit(
     UKF &target, const std::vector<nif_msgs::msg::DetectedObject> &object_vec,
-    double dt) {
+    const rclcpp::Duration dt) {
   if (object_vec.size() == 0) {
     target.tracking_num_ = TrackingState::Die;
     return;
   }
   // record init measurement for env classification
   target.init_meas_ << target.x_merge_(0), target.x_merge_(1);
+
+  double dt_s = dt.seconds();
 
   // state update
   double target_x = object_vec[0].pose.position.x;
@@ -305,7 +318,7 @@ void ImmUkfPda::secondInit(
   double target_yaw = atan2(target_diff_y, target_diff_x);
   double dist =
       sqrt(target_diff_x * target_diff_x + target_diff_y * target_diff_y);
-  double target_v = dist / dt;
+  double target_v = dist / dt_s;
 
   while (target_yaw > M_PI)
     target_yaw -= 2. * M_PI;
@@ -353,7 +366,7 @@ void ImmUkfPda::updateTrackingNum(
 }
 
 bool ImmUkfPda::probabilisticDataAssociation(
-    const nif_msgs::msg::DetectedObjectArray &input, const double dt,
+    const nif_msgs::msg::DetectedObjectArray &input, const rclcpp::Duration dt,
     std::vector<bool> &matching_vec,
     std::vector<nif_msgs::msg::DetectedObject> &object_vec, UKF &target) {
   double det_s = 0;
@@ -405,7 +418,7 @@ bool ImmUkfPda::probabilisticDataAssociation(
   return success;
 }
 
-void ImmUkfPda::makeNewTargets(const double timestamp,
+void ImmUkfPda::makeNewTargets(const rclcpp::Time timestamp,
                                const nif_msgs::msg::DetectedObjectArray &input,
                                const std::vector<bool> &matching_vec) {
   for (size_t i = 0; i < input.objects.size(); i++) {
@@ -662,8 +675,8 @@ void ImmUkfPda::dumpResultText(
 void ImmUkfPda::tracker(
     const nif_msgs::msg::DetectedObjectArray &input,
     nif_msgs::msg::DetectedObjectArray &detected_objects_output) {
-  // double timestamp = input.header.stamp.toSec();
-  double timestamp = input.header.stamp.sec;
+
+  rclcpp::Time timestamp = input.header.stamp;
   std::vector<bool> matching_vec(input.objects.size(), false);
 
   if (!init_) {
@@ -672,7 +685,7 @@ void ImmUkfPda::tracker(
     return;
   }
 
-  double dt = (timestamp - timestamp_);
+  rclcpp::Duration dt = timestamp - timestamp_;
   timestamp_ = timestamp;
 
   // start UKF process
@@ -695,6 +708,7 @@ void ImmUkfPda::tracker(
     std::vector<nif_msgs::msg::DetectedObject> object_vec;
     bool success = probabilisticDataAssociation(input, dt, matching_vec,
                                                 object_vec, targets_[i]);
+
     if (!success) {
       continue;
     }

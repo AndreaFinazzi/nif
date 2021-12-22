@@ -531,7 +531,7 @@ void AWLocalizationNode::timerCallback()
     /* publish ekf result */
     publishEstimateResult();
  
-  if(m_localization_status.uncertainty > 5.0)
+  if(m_localization_status.uncertainty > 2.0)
   {
     m_localization_status.localization_status_code =
             nif_msgs::msg::LocalizationStatus::UNCERTAINTY_TOO_HIGH;

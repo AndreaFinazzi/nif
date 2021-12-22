@@ -30,6 +30,7 @@ RUN ( \
 RUN cd /opt && echo $GH_TOKEN && echo $GL_TOKEN && \
     git clone --recurse-submodules https://$GH_TOKEN@github.com/AndreaFinazzi/nif.git && \
     cd nif && echo $GL_TOKEN > .secret.gitlab && echo $GH_TOKEN > .secret.github && \
+    apt-get update && \
     ROS_DISTRO=$ROS_DISTRO ./nifupdate
 
 # GTSAM lib install

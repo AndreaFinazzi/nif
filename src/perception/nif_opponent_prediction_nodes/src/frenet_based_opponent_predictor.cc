@@ -47,7 +47,7 @@ FrenetBasedOpponentPredictor::FrenetBasedOpponentPredictor(
       this->get_parameter("prediction_sampling_time").as_double();
   m_config_oppo_vel_bias_mps =
       this->get_parameter("oppo_vel_bias_mps").as_double();
-  m_defender_vel_mps = this->get_parameter("m_defender_vel_mps").as_double();
+  m_defender_vel_default_mps = this->get_parameter("m_defender_vel_mps").as_double();
 
   if (m_centerline_ref_file_path == "") {
     // initialization failed
@@ -81,7 +81,7 @@ FrenetBasedOpponentPredictor::FrenetBasedOpponentPredictor(
 
   // Initialize subscribers & publisher
   m_sub_opponent_status =
-      this->create_subscription<common::msgs::PerceptionResult>(
+      this->create_subscription<common::msgs::PerceptionResultList>(
           m_opponent_status_topic_name,
           common::constants::QOS_PLANNING,
           std::bind(&FrenetBasedOpponentPredictor::opponentStatusCallback,
@@ -122,20 +122,27 @@ void FrenetBasedOpponentPredictor::defenderVelCallback(
 }
 
 void FrenetBasedOpponentPredictor::opponentStatusCallback(
-    const common::msgs::PerceptionResult::SharedPtr msg) {
-  m_opponent_status = *msg;
+    const common::msgs::PerceptionResultList::SharedPtr msg) {
+  if (msg->perception_list.size() > 0) 
+  {
 
-  m_defender_vel_mps = msg->obj_velocity_in_local.linear.x +
-      m_ego_status.twist.twist.linear.x +
-      m_config_oppo_vel_bias_mps; // NOTE : should be mps / absolute vel
+    auto& perception_el = msg->perception_list[0];
+    m_opponent_status = perception_el;
 
-  // Do prediction when the oppponent's status is callbacked
-  this->predict();
+    m_defender_vel_mps = perception_el.obj_velocity_in_local.linear.x +
+        // m_ego_status.twist.twist.linear.x + // Only if tracking result is relative to ego.
+        m_config_oppo_vel_bias_mps; // NOTE : should be mps / absolute vel
 
-  // TODO: publish predicted trajectory
+    m_defender_vel_mps = std::max(m_defender_vel_mps, 0.5);
 
-  m_pub_predicted_trajectory->publish(m_predicted_output_in_global);
-  m_pub_predicted_trajectory_vis->publish(m_predicted_output_in_global_vis);
+    // Do prediction when the oppponent's status is callbacked
+    this->predict();
+
+    // TODO: publish predicted trajectory
+
+    m_pub_predicted_trajectory->publish(m_predicted_output_in_global);
+    m_pub_predicted_trajectory_vis->publish(m_predicted_output_in_global_vis);
+  }
 }
 
 void FrenetBasedOpponentPredictor::calcOpponentProgress() {
@@ -257,7 +264,12 @@ void FrenetBasedOpponentPredictor::predict() {
   std::shared_ptr<FrenetPath>& predicted_frenet_path =
       std::get<0>(frenet_path_generation_result);
 
+  //DynamicTrajectory initialize
   m_predicted_output_in_global.trajectory_path.poses.clear();
+  m_predicted_output_in_global.trajectory_velocity.clear();
+  m_predicted_output_in_global.trajectory_timestamp_array.clear();
+  m_predicted_output_in_global.trajectory_global_progress.clear();
+
   m_predicted_output_in_global_vis.poses.clear();
 
   nav_msgs::msg::Path traj_global;
@@ -273,17 +285,16 @@ void FrenetBasedOpponentPredictor::predict() {
 
       ps.pose.position.x = predicted_frenet_path->points_x()[i];
       ps.pose.position.y = predicted_frenet_path->points_y()[i];
+      ps.pose.orientation = nif::common::utils::coordination::euler2quat(predicted_frenet_path->yaw()[i],
+                                                                        0.0, 0.0);
+      m_predicted_output_in_global.trajectory_timestamp_array.push_back(
+          predicted_frenet_path->time()[i]);
+      m_predicted_output_in_global.trajectory_global_progress.push_back(
+          predicted_frenet_path->points_s()[i]);
       traj_global.poses.push_back(ps);
     }
 
     m_predicted_output_in_global.trajectory_path = traj_global;
-    // m_predicted_output_in_global.trajectory_timestamp_array =
-    // predicted_frenet_path->time();
-    m_predicted_output_in_global.trajectory_timestamp_array.clear();
-    for (int i = 0; i < predicted_frenet_path->time().size(); i++) {
-      m_predicted_output_in_global.trajectory_timestamp_array.push_back(
-          predicted_frenet_path->time()[i]);
-    }
 
     m_predicted_output_in_global.trajectory_type =
         nif_msgs::msg::DynamicTrajectory::TRAJECTORY_TYPE_PREDICTION;
@@ -382,7 +393,7 @@ FrenetBasedOpponentPredictor::parametersCallback(
     } else if (param.get_name() == "m_defender_vel_mps") {
       if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
         if (param.as_double() >= 0.0 && param.as_double() <= 100.0) {
-          this->m_defender_vel_mps = param.as_double();
+          this->m_defender_vel_default_mps = param.as_double();
           result.successful = true;
         }
       }

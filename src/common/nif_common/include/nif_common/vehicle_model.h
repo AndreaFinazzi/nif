@@ -18,22 +18,22 @@ namespace vehicle_param {
 /**
  * Vehicle wheel base length in meter
  */
-const double VEH_WHEEL_BASE = 5.0;
+const double VEH_WHEEL_BASE = 4.921;
 
 /**
  * Vehicle width in meter
  */
-const double VEH_WIDTH = 5.0;
+const double VEH_WIDTH = 1.886;
 
 /**
  * Vehicle hight length in meter
  */
-const double VEH_HEIGHT = 5.0;
+const double VEH_HEIGHT = 1.156;
 
 /**
  * Vehicle mass in kg
  */
-const double VEH_MASS_KG = 5.0;
+const double VEH_MASS_KG = 780.0;
 
 /**
  * Steering ratio between steering wheel angle and steer angle.
@@ -211,11 +211,11 @@ const std::vector<int> reference_rpm_vector{
 const std::vector<double> speed_at_reference_rpm_vector{
     0,
     0,
-    2571/8.55671738,
-    2946/8.55671738,
-    3230/8.55671738,
-    3444/8.55671738,
-    3704/8.55671738,
+    2571 / 8.55671738,
+    2946 / 8.55671738,
+    3230 / 8.55671738,
+    3444 / 8.55671738,
+    3704 / 8.55671738,
 };
 } // namespace safe_downshift
 
@@ -241,11 +241,11 @@ const std::vector<int> reference_rpm_vector{
 const std::vector<double> speed_at_reference_rpm_vector{
     0,
     0,
-    4499/8.55671738,
-    5155/8.55671738,
-    5651/8.55671738,
-    6026/8.55671738,
-    6482/8.55671738,
+    4499 / 8.55671738,
+    5155 / 8.55671738,
+    5651 / 8.55671738,
+    6026 / 8.55671738,
+    6482 / 8.55671738,
 };
 } // namespace aggressive_downshift_DONT_USE_THIS_NOW
 
@@ -269,12 +269,12 @@ const std::vector<int> max_rpm_vector{
 
 const std::vector<double> speed_at_max_rpm_vector{
     0,
-    4000/8.55671738,
-    4000/8.55671738,
-    4000/8.55671738,
-    4000/8.55671738,
-    4000/8.55671738,
-    10000000/8.55671738,
+    4000 / 8.55671738,
+    4000 / 8.55671738,
+    4000 / 8.55671738,
+    4000 / 8.55671738,
+    4000 / 8.55671738,
+    10000000 / 8.55671738,
 };
 } // namespace safe_upshift
 

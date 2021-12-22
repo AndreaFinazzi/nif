@@ -131,6 +131,9 @@ def generate_launch_description():
         package='nif_telemetry',
         executable='telemetry',
         output='screen',
+        parameters=[{
+            'enable_udp': False
+        }]
     )
 
     # Localization
@@ -190,7 +193,8 @@ def generate_launch_description():
         output='screen',
         remappings=[
             ('out_desired_velocity', 'velocity_planner/des_vel'),
-            ('in_reference_path', 'planning/path_global'),
+            ('in_reference_path', 'planning/dynamic/vis/traj_global'),
+            # ('in_reference_path', 'planning/path_global'),
             ('in_ego_odometry', '/sensor/odom_ground_truth'),
             ('in_wheel_speed_report', 'raptor_dbw_interface/wheel_speed_report'),
             ('in_imu_data', 'novatel_bottom/imu/data'),
@@ -237,7 +241,8 @@ def generate_launch_description():
         remappings=[
             ('in_control_cmd_prev', '/control_safety_layer/out/control_cmd'),
             ('out_control_cmd', '/control_pool/control_cmd'),
-            ('in_reference_path', 'planning/path_global'),
+            ('in_reference_path', 'planning/dynamic/vis/traj_global'),
+            # ('in_reference_path', 'planning/path_global'),
         ]
     )
 
@@ -252,6 +257,7 @@ def generate_launch_description():
             ## Should be True on real car
             'engine_based_throttle_enabled' : False, 
             'gear.track': "IMS",
+            'lateral_error_deadband_m': 1.0,
         }]
     )
 

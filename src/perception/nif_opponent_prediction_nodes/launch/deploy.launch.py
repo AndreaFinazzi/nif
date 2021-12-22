@@ -115,8 +115,11 @@ def generate_launch_description():
             }
         ],
         remappings=[
-            ('out_perception_result', '/ghost/perception'),
-            ('out_marker', '/out_marker'),
+            ('/ghost/perception', '/ghost/perception'),
+            ('/aw_localization/ekf/odom', '/aw_localization/ekf/odom'),
+            ('/defender_vel', '/defender_vel'),
+            ('/oppo/prediction', '/oppo/prediction'),
+            ('/oppo/vis/prediction', '/oppo/vis/prediction'),
         ]
     )
 

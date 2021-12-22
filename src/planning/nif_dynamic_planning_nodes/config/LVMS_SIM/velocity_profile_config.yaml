@@ -1,0 +1,21 @@
+velocity_profiling_param:
+  constraint_max_t: 4.0
+  constraint_min_t: 2.0
+  constraint_max_accel: 2.0
+  constraint_max_lat_accel: 2.0 
+  constraint_max_deccel: -5.0 # must be negative
+  constraint_max_vel: 83.3333 # 300kph
+  config_use_veh_model: false
+  config_use_acc_model: true
+  config_use_curvature_model: true
+  config_dt: 0.2
+
+adaptive_cruise_control_param:
+  acc_config_s0: 20.0
+  acc_config_s1: 0.0
+  acc_config_v_desired: 50.0
+  acc_config_time_headway: 2.0
+  acc_config_accel_max: 2.0
+  acc_config_decel_desired: 5.0
+  acc_config_delta: 4.0
+  acc_config_veh_l: 5.0

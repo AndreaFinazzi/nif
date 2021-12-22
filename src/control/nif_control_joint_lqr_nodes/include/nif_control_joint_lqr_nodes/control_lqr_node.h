@@ -30,13 +30,18 @@ namespace control {
 
 class ControlLQRNode : public nif::control::IControllerNode {
 public:
-  explicit ControlLQRNode(const std::string &node_name);
+  explicit ControlLQRNode(const std::string& node_name);
 
   void publishSteerAccelDiagnostics(
-      bool lqr_command_valid, bool valid_path, bool valid_odom,
-      bool valid_wpt_distance, bool valid_target_position,
-      double lqr_steering_command, double lqr_accel_command,
-      double track_distance, unsigned int lqr_tracking_idx,
+      bool lqr_command_valid,
+      bool valid_path,
+      bool valid_odom,
+      bool valid_wpt_distance,
+      bool valid_target_position,
+      double lqr_steering_command,
+      double lqr_accel_command,
+      double track_distance,
+      unsigned int lqr_tracking_idx,
       geometry_msgs::msg::PoseStamped lqr_track_point,
       joint_lqr::lqr::JointLQR::ErrorMatrix lqr_err_cog,
       joint_lqr::lqr::JointLQR::ErrorMatrix lqr_err);
@@ -50,10 +55,15 @@ public:
   //   desired_vx_ = msg->data;
   // }
 
+  // ACC
+  void accCMDCallback(const std_msgs::msg::Float32::SharedPtr msg) {
+    acc_accel_cmd_mpss = msg->data;
+  }
+
   void velocityCallback(
       const raptor_dbw_msgs::msg::WheelSpeedReport::SharedPtr msg) {
     current_speed_ms_ = (msg->front_left + msg->front_right) * 0.5 *
-                        nif::common::constants::KPH2MS;
+        nif::common::constants::KPH2MS;
   }
 
   void
@@ -115,6 +125,8 @@ private:
   rclcpp::Subscription<std_msgs::msg::UInt8>::SharedPtr gear_sub_;
   rclcpp::Subscription<deep_orange_msgs::msg::PtReport>::SharedPtr
       pt_report_sub_;
+  // ACC
+  rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr acc_sub_;
 
   //! Lateral LQR Controller
   joint_lqr::lqr::JointLQR::Ptr joint_lqr_;
@@ -136,6 +148,9 @@ private:
 
   //! Desired Velocity from Velocity Planner
   double desired_vx_;
+
+  // ACC
+  double acc_accel_cmd_mpss;
 
   //! LQR Tracking State
   unsigned int lqr_tracking_idx_ = 0;
@@ -164,6 +179,8 @@ private:
   bool invert_steering_;
   bool m_use_mission_max_vel_;
 
+  // ACC enable ros param
+  bool m_use_acc;
 
   nif::common::msgs::ControlCmd::SharedPtr solve() override;
 
