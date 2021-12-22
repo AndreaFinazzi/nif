@@ -102,6 +102,8 @@ def generate_launch_description():
             ('out_trajectory_global', '/planning/dynamic/traj_global'),
             ('out_trajectory_vis_body', '/planning/dynamic/vis/traj_body'),
             ('out_trajectory_vis_global', '/planning/dynamic/vis/traj_global'),
+            ('wptmanager_output_topic_name_global', '/wptmanager_maptrack_global'),
+            ('wptmanager_output_topic_name_body', '/wptmanager_maptrack_body'),
         ]
     )
 
