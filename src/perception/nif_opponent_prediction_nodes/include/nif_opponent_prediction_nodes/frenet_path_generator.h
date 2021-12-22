@@ -54,6 +54,14 @@ public:
                     double min_t, double max_t, double dt, double left_margin,
                     double right_margin, double width_d);
 
+  std::vector<std::shared_ptr<FrenetPath>> calc_frenet_paths_multi_longi(
+      double current_position_d, double current_position_s,
+      double current_velocity_d, double current_velocity_s,
+      double current_acceleration_d,
+      std::shared_ptr<CubicSpliner2D> &cubic_spliner_2D, double min_t,
+      double max_t, double dt, double left_margin, double right_margin,
+      double width_d);
+
   CubicSpliner2DResult apply_cubic_spliner(std::vector<double> &points_x,
                                            std::vector<double> &points_y,
                                            double spline_interval);

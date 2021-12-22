@@ -165,6 +165,7 @@ FrenetPathGenerator::generate_frenet_paths_v2(
     double current_acceleration_d, double min_t, double max_t, double dt,
     double left_margin = -MAX_ROAD_WIDTH, double right_margin = MAX_ROAD_WIDTH,
     double width_d = D_ROAD_W) {
+
   // assert(left_margin >= 0);
   // assert(right_margin <= 0);
   // assert(width_d <= 0);
@@ -545,16 +546,12 @@ FrenetPathGenerator::calc_frenet_paths(
     std::shared_ptr<CubicSpliner2D> &cubic_spliner_2D, double min_t = 2.0,
     double max_t = 4.01, double dt = 0.2, double left_margin = -1.0,
     double right_margin = 1.0, double width_d = 0.2) {
+
   std::vector<std::shared_ptr<FrenetPath>> frenet_paths =
       generate_frenet_paths_v2(current_position_d, current_position_s,
                                current_velocity_d, current_velocity_s,
                                current_acceleration_d, min_t, max_t, dt,
                                left_margin, right_margin, width_d);
-
-  // std::vector<std::shared_ptr<FrenetPath>> frenet_paths =
-  //     generate_frenet_paths_v2(current_position_d, current_position_s,
-  //                              current_velocity_d, current_velocity_s,
-  //                              current_acceleration_d, min_t, max_t, dt);
 
   calculate_global_paths(frenet_paths, cubic_spliner_2D);
 
@@ -578,6 +575,26 @@ FrenetPathGenerator::calc_frenet_paths(
     std::shared_ptr<FrenetPath> empty_path(new FrenetPath(-1.1, -1.0));
     return std::make_tuple(empty_path, frenet_paths);
   }
+}
+
+std::vector<std::shared_ptr<FrenetPath>>
+FrenetPathGenerator::calc_frenet_paths_multi_longi(
+    double current_position_d, double current_position_s,
+    double current_velocity_d, double current_velocity_s,
+    double current_acceleration_d,
+    std::shared_ptr<CubicSpliner2D> &cubic_spliner_2D, double min_t,
+    double max_t, double dt, double left_margin, double right_margin,
+    double width_d) {
+
+  std::vector<std::shared_ptr<FrenetPath>> frenet_paths =
+      generate_frenet_paths_v2(current_position_d, current_position_s,
+                               current_velocity_d, current_velocity_s,
+                               current_acceleration_d, min_t, max_t, dt,
+                               left_margin, right_margin, width_d);
+
+  calculate_global_paths(frenet_paths, cubic_spliner_2D);
+
+  return frenet_paths;
 }
 
 FrenetPathGenerator::CubicSpliner2DResult
@@ -715,12 +732,15 @@ FrenetPathGenerator::convert_path_to_traj_curv(nav_msgs::msg::Path &path_,
 
     out_traj.trajectory_path.poses.push_back(ps);
 
-    double curv_vel = (float)(std::min(
+    double curv_vel_max = (float)(std::min(
         300 / 3.6, sqrt(abs(max_lateral_acceleration_) / abs(curvature))));
 
-    estimated_time_to_arrvie += spline_interval_ / (curv_vel + 1e-6);
+    estimated_time_to_arrvie += spline_interval_ / (curv_vel_max + 1e-6);
 
-    out_traj.trajectory_velocity.push_back(curv_vel);
+    // TODO : integrate step limiter
+    // TODO : integrate acc
+
+    out_traj.trajectory_velocity.push_back(curv_vel_max);
     out_traj.trajectory_timestamp_array.push_back(estimated_time_to_arrvie);
 
     // cubic_spliner_x.push_back(point_x);
@@ -747,6 +767,10 @@ nif_msgs::msg::DynamicTrajectory FrenetPathGenerator::convert_path_to_traj_curv(
   out_traj.header = path_.header;
 
   int len = 200;
+
+  if (len > path_.poses.size()) {
+    len = path_.poses.size();
+  }
 
   vector<double> points_x(len);
   vector<double> points_y(len);
