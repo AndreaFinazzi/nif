@@ -14,6 +14,8 @@
 #include "nif_utils/utils.h"
 #include "nif_common/types.h"
 #include "nif_waypoint_manager_minimal/waypoint_manager_minimal.h"
+#include "delphi_esr_msgs/msg/esr_track.hpp"
+#include "visualization_msgs/msg/marker.hpp"
 
 namespace nif {
 namespace perception {
@@ -30,12 +32,18 @@ private:
 
     void perceptionArrayCallback(
         const nif_msgs::msg::Perception3DArray::SharedPtr msg);
+    void radarTrackCallback(
+        const delphi_esr_msgs::msg::EsrTrack::SharedPtr msg);
 
     bool poseInBodyIsValid(
         const geometry_msgs::msg::Pose &point_in_body);
 
     rclcpp::Subscription<nif_msgs::msg::Perception3DArray>::SharedPtr sub_perception_array;
     rclcpp::Publisher<nif_msgs::msg::Perception3DArray>::SharedPtr pub_filtered_perception_array;
+
+    rclcpp::Subscription<delphi_esr_msgs::msg::EsrTrack>::SharedPtr sub_radar_track;
+    rclcpp::Publisher<delphi_esr_msgs::msg::EsrTrack>::SharedPtr pub_filtered_radar_track;
+    rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr pub_filtered_radar_track_vis;
 
     std::unique_ptr<WaypointManagerMinimal> wpt_manager_inner;
     std::unique_ptr<WaypointManagerMinimal> wpt_manager_outer;

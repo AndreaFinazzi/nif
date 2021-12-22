@@ -74,16 +74,25 @@ def generate_launch_description():
                     'file_path_inner_line' : file_path_inner_line,
                     'file_path_outer_line' : file_path_outer_line,
 
+                    # Filters out the tracks under a certain distance from the track geofences
                     'distance_filter_active': True,
-                    'distance_filter_threshold_m': 0.5,
+                    'distance_filter_threshold_m': 1.5,
 
+                    # Filters out the tracks outside the track boundaries
                     'boundaries_filter_active': True,
-                    
+
+                    # Filters out the tracks considered static
+                    # 'velocity_filter_active': True,
+                    # 'velocity_filter_confidence_mps': 1.5,
                     }],
 
                 remappings=[
                     ("in_perception_array", "/ghost/perception"),
                     ("out_filtered_perception_array", "/ghost/perception/filtered"),
+
+                    ("in_radar_track", "/radar_front/esr_track"),
+                    ("out_filtered_radar_track", "/radar_front/esr_track/filtered"),
+                    ("out_filtered_radar_track_vis", "/radar_front/esr_track/filtered/vis"),
                 ]
             )
 

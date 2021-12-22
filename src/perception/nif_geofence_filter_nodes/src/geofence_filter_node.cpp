@@ -39,6 +39,18 @@ GeofenceFilterNode::GeofenceFilterNode(const std::string &node_name_)
     pub_filtered_perception_array = this->create_publisher<nif_msgs::msg::Perception3DArray>(
         "out_filtered_perception_array", nif::common::constants::QOS_SENSOR_DATA);
 
+    sub_radar_track = this->create_subscription<delphi_esr_msgs::msg::EsrTrack>(
+        "in_radar_track", nif::common::constants::QOS_SENSOR_DATA,
+        std::bind(&GeofenceFilterNode::radarTrackCallback, this,
+                  std::placeholders::_1));
+
+    pub_filtered_radar_track = this->create_publisher<delphi_esr_msgs::msg::EsrTrack>(
+        "out_filtered_radar_track", nif::common::constants::QOS_SENSOR_DATA);
+
+    pub_filtered_radar_track_vis = this->create_publisher<visualization_msgs::msg::Marker>(
+        "out_filtered_radar_track_vis", nif::common::constants::QOS_SENSOR_DATA);
+
+    
     int spline_interval = 1;
 
     // Load waypoints
@@ -71,6 +83,38 @@ void GeofenceFilterNode::perceptionArrayCallback(
   
   this->pub_filtered_perception_array->publish(msg_out);
 }
+
+void GeofenceFilterNode::radarTrackCallback(
+    const delphi_esr_msgs::msg::EsrTrack::SharedPtr msg) {
+      geometry_msgs::msg::Pose pose_in_body{};
+
+      pose_in_body.position.x = msg->track_range * cos( 2 * M_PI * msg->track_angle / 360);
+      pose_in_body.position.y = msg->track_range * sin( 2 * M_PI * msg->track_angle / 360);
+
+      if (this->poseInBodyIsValid(pose_in_body))
+      {
+        visualization_msgs::msg::Marker track_vis{};
+        track_vis.header = msg->header;
+        track_vis.id = msg->track_id;
+        track_vis.lifetime = rclcpp::Duration(0, 0.1e+9);
+
+        track_vis.pose = pose_in_body;
+
+        track_vis.scale.x = 1.0;
+        track_vis.scale.y = 1.0;
+        track_vis.scale.z = 3.0;
+
+        float colorcode = ((track_vis.id - 0x500) / (0x53F - 0x500)); // [0, 1]
+        track_vis.color.b = 1 - colorcode;
+        track_vis.color.g = colorcode;
+        track_vis.color.r = 0.0;
+        track_vis.color.a = 1;
+
+        this->pub_filtered_radar_track->publish(*msg);
+        this->pub_filtered_radar_track_vis->publish(track_vis);
+      }
+    }
+
 
 bool GeofenceFilterNode::poseInBodyIsValid(
   const geometry_msgs::msg::Pose &point_in_body)
