@@ -42,7 +42,7 @@ def generate_launch_description():
     )
 
     dbc_file_path = get_share_file(
-        package_name='raptor_dbw_can', file_name='launch/CAN1_INDY_V6.dbc'
+        package_name='raptor_dbw_can', file_name='launch/CAN1_INDY_V8.dbc'
     )
 
     ssc_interface_param = DeclareLaunchArgument(

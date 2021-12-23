@@ -33,6 +33,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/JoystickCommand.msg"
   "msg/DiagnosticReport.msg"
   "msg/LapTimeReport.msg"
+  "msg/RestOfFieldReport.msg"
   DEPENDENCIES builtin_interfaces
   ADD_LINTER_TESTS
 )
