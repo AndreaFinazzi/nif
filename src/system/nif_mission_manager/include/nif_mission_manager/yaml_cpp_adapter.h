@@ -170,7 +170,7 @@ struct convert<MissionActivationArea> {
                 }
             }
 
-            RCLCPP_INFO(LOGGER, "Loaded MissionActivationArea.bounding_boxes.size(): %d", out.bounding_boxes.size());
+            RCLCPP_INFO(LOGGER, "Loaded MissionActivationArea.bounding_boxes.size(): %ld", out.bounding_boxes.size());
         }
         return true;
     }
@@ -246,7 +246,7 @@ struct convert<MissionAllowedTransitions> {
                 ASSERT(nif::common::msgs::isMissionCodeInRange(mission_code));
             }
 
-            RCLCPP_INFO(LOGGER, "Loaded MissionAllowedTransitions.from.size(): %d", out.from.size());
+            RCLCPP_INFO(LOGGER, "Loaded MissionAllowedTransitions.from.size(): %ld", out.from.size());
         }
         
         return true;
@@ -281,7 +281,7 @@ struct convert<MissionTimeout> {
 
             out.duration_ms = duration_ms.as<long int>();
 
-            RCLCPP_INFO(LOGGER, "Loaded MissionTimeout.duration_ms: %d", out.duration_ms);
+            RCLCPP_INFO(LOGGER, "Loaded MissionTimeout.duration_ms: %ld", out.duration_ms);
         }
         return true;
     }

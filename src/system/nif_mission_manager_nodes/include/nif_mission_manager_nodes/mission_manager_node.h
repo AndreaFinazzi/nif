@@ -118,7 +118,7 @@ private:
    * @return the mission encoding.
    */
   MissionStatus::_mission_status_code_type getMissionStatusCode();
-  MissionStatus::_mission_status_code_type getMissionVehFlagNull(); 
+  MissionStatus::_mission_status_code_type getMissionVehFlagNull(bool defender_mode = false); 
   rcl_interfaces::msg::SetParametersResult
   parametersCallback(
           const std::vector<rclcpp::Parameter> &vector);

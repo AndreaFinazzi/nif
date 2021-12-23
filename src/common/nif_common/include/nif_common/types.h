@@ -105,21 +105,40 @@ using TerrainState = nif_msgs::msg::TerrainStatus;
  * This message contains the race flag information from the race control.
  * TODO: should be changed based on the bag file
  */
-using RCFlagSummary = deep_orange_msgs::msg::BaseToCarSummary;
-using OverrideRCFlagSummary = deep_orange_msgs::msg::BaseToCarSummary;
+      using RCFlagSummary = deep_orange_msgs::msg::BaseToCarSummary;
+      using OverrideRCFlagSummary = deep_orange_msgs::msg::BaseToCarSummary;
 
-static bool isTrackFlagInRange(
-    nif::common::msgs::RCFlagSummary::_track_flag_type track_flag) {
-  if (track_flag == RCFlagSummary::TRACK_FLAG_NULL ||
-      track_flag == RCFlagSummary::TRACK_FLAG_RED ||
-      track_flag == RCFlagSummary::TRACK_FLAG_ORANGE ||
-      track_flag == RCFlagSummary::TRACK_FLAG_YELLOW ||
-      track_flag == RCFlagSummary::TRACK_FLAG_GREEN)
-    return true;
-  return false;
-}
+      static bool isTrackFlagInRange(nif::common::msgs::RCFlagSummary::_track_flag_type track_flag)
+      {
+        if (
+            track_flag == RCFlagSummary::TRACK_FLAG_NULL    ||
+            track_flag == RCFlagSummary::TRACK_FLAG_RED     ||
+            track_flag == RCFlagSummary::TRACK_FLAG_ORANGE  ||
+            track_flag == RCFlagSummary::TRACK_FLAG_YELLOW  ||
+            track_flag == RCFlagSummary::TRACK_FLAG_GREEN   ||
+            track_flag == RCFlagSummary::TRACK_FLAG_BLUE    ||
+            track_flag == RCFlagSummary::TRACK_FLAG_WAVING_GREEN 
+            )
+          return true;
+        return false;
+      }
 
-/**
+      static bool isVehFlagInRange(nif::common::msgs::RCFlagSummary::_veh_flag_type veh_flag)
+      {
+        if (
+            veh_flag == RCFlagSummary::VEH_FLAG_NULL        ||
+            veh_flag == RCFlagSummary::VEH_FLAG_BLANK       ||
+            veh_flag == RCFlagSummary::VEH_FLAG_BLACK       ||
+            veh_flag == RCFlagSummary::VEH_FLAG_CHECKERED   ||
+            veh_flag == RCFlagSummary::VEH_FLAG_DEFENDER    ||
+            veh_flag == RCFlagSummary::VEH_FLAG_PINK        ||
+            veh_flag == RCFlagSummary::VEH_FLAG_ATTACKER    ||
+            veh_flag == RCFlagSummary::VEH_FLAG_PURPLE 
+            )
+          return true;
+        return false;
+      }
+      /**
  * This message contains the autonomy status information which should updated
  * in the ??.
  */
@@ -201,50 +220,54 @@ using Trajectory = nif_msgs::msg::DynamicTrajectory;
 /**
  * Message produced by a Path Planner
  */
-using Path = nav_msgs::msg::Path;
+      using Path = nav_msgs::msg::Path;
 
-// using VehicleKinematicState =
-// autoware_auto_msgs::msg::VehicleKinematicState;
+      // using VehicleKinematicState =
+      // autoware_auto_msgs::msg::VehicleKinematicState;
 
-static bool isMissionCodeInRange(
-    nif::common::msgs::MissionStatus::_mission_status_code_type mission_code) {
-  if (mission_code == MissionStatus::MISSION_RACE ||
-      mission_code == MissionStatus::MISSION_STANDBY ||
-      mission_code == MissionStatus::MISSION_PIT_IN ||
-      mission_code == MissionStatus::MISSION_PIT_STANDBY ||
-      mission_code == MissionStatus::MISSION_PIT_OUT ||
-      mission_code == MissionStatus::MISSION_PIT_TO_TRACK ||
-      mission_code == MissionStatus::MISSION_SLOW_DRIVE ||
-      mission_code == MissionStatus::MISSION_COMMANDED_STOP ||
-      mission_code == MissionStatus::MISSION_EMERGENCY_STOP ||
-      mission_code == MissionStatus::MISSION_COLLISION_AVOIDNACE ||
-      mission_code == MissionStatus::MISSION_TIRE_WARMUP ||
-      mission_code == MissionStatus::MISSION_TEST ||
-      mission_code == MissionStatus::MISSION_INIT ||
-      mission_code == MissionStatus::MISSION_PIT_INIT ||
-      mission_code == MissionStatus::MISSION_DEFAULT)
-    return true;
-  return false;
-}
+      static bool isMissionCodeInRange(nif::common::msgs::MissionStatus::_mission_status_code_type mission_code)
+      {
+        if (
+            mission_code == MissionStatus::MISSION_RACE ||
+            mission_code == MissionStatus::MISSION_KEEP_POSITION ||
+            mission_code == MissionStatus::MISSION_CONSTANT_SPEED ||
+            mission_code == MissionStatus::MISSION_STANDBY ||
+            mission_code == MissionStatus::MISSION_PIT_IN ||
+            mission_code == MissionStatus::MISSION_PIT_STANDBY ||
+            mission_code == MissionStatus::MISSION_PIT_OUT ||
+            mission_code == MissionStatus::MISSION_PIT_TO_TRACK ||
+            mission_code == MissionStatus::MISSION_SLOW_DRIVE ||
+            mission_code == MissionStatus::MISSION_COMMANDED_STOP ||
+            mission_code == MissionStatus::MISSION_EMERGENCY_STOP ||
+            mission_code == MissionStatus::MISSION_COLLISION_AVOIDNACE ||
+            mission_code == MissionStatus::MISSION_TIRE_WARMUP ||
+            mission_code == MissionStatus::MISSION_TEST ||
+            mission_code == MissionStatus::MISSION_INIT ||
+            mission_code == MissionStatus::MISSION_PIT_INIT ||
+            mission_code == MissionStatus::MISSION_DEFAULT)
+          return true;
+        return false;
+      }
 
-} // namespace msgs
+    } // namespace msgs
 
-namespace types {
+    namespace types
+    {
 
-using t_node_id = uint16_t;
+      using t_node_id = uint16_t;
 
-template <typename T>
-using t_oppo_collection =
-    std::array<T, nif::common::constants::NUMBER_OF_OPPO_MAX>;
+      template <typename T>
+      using t_oppo_collection =
+          std::array<T, nif::common::constants::NUMBER_OF_OPPO_MAX>;
 
-using t_oppo_collection_states =
-    t_oppo_collection<nif::common::msgs::PerceptionResult>;
+      using t_oppo_collection_states =
+          t_oppo_collection<nif::common::msgs::PerceptionResult>;
 
-using t_clock_period_ns = std::chrono::nanoseconds;
-using t_clock_period_us = std::chrono::microseconds;
-using t_clock_period_ms = std::chrono::milliseconds;
+      using t_clock_period_ns = std::chrono::nanoseconds;
+      using t_clock_period_us = std::chrono::microseconds;
+      using t_clock_period_ms = std::chrono::milliseconds;
 
-} // namespace types
-} // namespace common
+    } // namespace types
+  }   // namespace common
 } // namespace nif
 #endif // NIFCOMMON_TYPES_H
