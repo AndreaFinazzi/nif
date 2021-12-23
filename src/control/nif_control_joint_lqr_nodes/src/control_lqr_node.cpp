@@ -84,7 +84,7 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
   // Use mission status maximum desired velocity
   this->declare_parameter("use_mission_max_vel", true);
   // Use ACC cmd
-  this->declare_parameter("use_acc", true);
+  this->declare_parameter("use_acc", false);
 
   // Create Joint LQR Controller from yaml file
   std::string lqr_config_file =

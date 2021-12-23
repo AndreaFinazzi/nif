@@ -13,6 +13,7 @@ missions:
       from:
         - 0   # MISSION_RACE
         - 5   # MISSION_KEEP_POSITION
+        - 10  # MISSION_CONSTANT_SPEED
         - 75  # MISSION_PIT_TO_TRACK
         - 128 # MISSION_SLOW_DRIVE
         - 200 # MISSION_COMMANDED_STOP
@@ -30,6 +31,25 @@ missions:
       from:
         - 0   # MISSION_RACE
         - 5   # MISSION_KEEP_POSITION
+        - 10  # MISSION_CONSTANT_SPEED
+        - 75  # MISSION_PIT_TO_TRACK
+        - 128 # MISSION_SLOW_DRIVE
+        - 200 # MISSION_COMMANDED_STOP
+        - 400 # MISSION_COLLISION_AVOIDNACE
+        - 500 # MISSION_WARMUP
+        - 777 # MISSION_TEST
+
+  - mission_code: 10 # MISSION_CONSTANT_SPEED
+    active: true
+    fallback:
+      active: true
+      mission_code: 128 # MISSION_SLOW_DRIVE
+    allowed_transitions:
+      active: true
+      from:
+        - 0   # MISSION_RACE
+        - 5   # MISSION_KEEP_POSITION
+        - 10  # MISSION_CONSTANT_SPEED
         - 75  # MISSION_PIT_TO_TRACK
         - 128 # MISSION_SLOW_DRIVE
         - 200 # MISSION_COMMANDED_STOP
@@ -46,6 +66,8 @@ missions:
       active: true
       from:
         - 0   # MISSION_RACE
+        - 5   # MISSION_KEEP_POSITION
+        - 10  # MISSION_CONSTANT_SPEED
         - 75  # MISSION_PIT_TO_TRACK
         - 128 # MISSION_SLOW_DRIVE
         - 200 # MISSION_COMMANDED_STOP
@@ -61,6 +83,8 @@ missions:
       active: true
       from:
         - 0   # MISSION_RACE
+        - 5   # MISSION_KEEP_POSITION
+        - 10  # MISSION_CONSTANT_SPEED
         - 75  # MISSION_PIT_TO_TRACK
         - 128 # MISSION_SLOW_DRIVE
         - 200 # MISSION_COMMANDED_STOP
@@ -77,6 +101,8 @@ missions:
       active: true
       from:
         - 0   # MISSION_RACE
+        - 5   # MISSION_KEEP_POSITION
+        - 10  # MISSION_CONSTANT_SPEED
         - 75  # MISSION_PIT_TO_TRACK
         - 128 # MISSION_SLOW_DRIVE
         - 200 # MISSION_COMMANDED_STOP
@@ -112,6 +138,8 @@ missions:
       active: true
       from:
         - 0   # MISSION_RACE
+        - 5   # MISSION_KEEP_POSITION
+        - 10  # MISSION_CONSTANT_SPEED
         - 50  # MISSION_STANDBY
         - 60  # MISSION_PIT_IN
         - 128 # MISSION_SLOW_DRIVE
@@ -217,6 +245,8 @@ missions:
       active: true # ignore
       from:
         - 0   # MISSION_RACE
+        - 5   # MISSION_KEEP_POSITION
+        - 10  # MISSION_CONSTANT_SPEED
         - 50  # MISSION_STANDBY
         - 75  # MISSION_PIT_TO_TRACK
         - 200 # MISSION_COMMANDED_STOP

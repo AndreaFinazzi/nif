@@ -19,6 +19,8 @@ MissionManagerNode::MissionManagerNode(
 
     this->declare_parameter("velocity.zero", 0.0);
     this->declare_parameter("velocity.max", 37.0);
+    this->declare_parameter("velocity.keep_position", 37.0);
+    this->declare_parameter("velocity.constant", 37.0);
     this->declare_parameter("velocity.avoidance", 20.0);
     this->declare_parameter("velocity.warmup", 20.0);
     this->declare_parameter("velocity.pit_in", 8.0);
@@ -55,6 +57,8 @@ MissionManagerNode::MissionManagerNode(
 
     this->velocity_zero = this->get_parameter("velocity.zero").as_double();
     this->velocity_max = this->get_parameter("velocity.max").as_double();
+    this->velocity_keep_position = this->get_parameter("velocity.keep_position").as_double();
+    this->velocity_constant = this->get_parameter("velocity.constant").as_double();
     this->velocity_avoidance = this->get_parameter("velocity.avoidance").as_double();
     this->velocity_warmup = this->get_parameter("velocity.warmup").as_double();
     this->velocity_pit_in = this->get_parameter("velocity.pit_in").as_double();
@@ -421,6 +425,22 @@ MissionManagerNode::parametersCallback(
                     result.successful = true;
                 }
             }
+        } else if (param.get_name() == "velocity.keep_position") {
+            if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
+                if (param.as_double() >= 0.0 && param.as_double() <= 67.0) // TODO implement switching policy, if needed
+                {
+                    this->velocity_keep_position = param.as_double();
+                    result.successful = true;
+                }
+            }
+        } else if (param.get_name() == "velocity.constant") {
+            if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
+                if (param.as_double() >= 0.0 && param.as_double() <= 67.0) // TODO implement switching policy, if needed
+                {
+                    this->velocity_constant = param.as_double();
+                    result.successful = true;
+                }
+            }
         } else if (param.get_name() == "velocity.pit_in") {
             if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
                 if (param.as_double() >= 0.0 && param.as_double() <= 20.0) // TODO implement switching policy, if needed
@@ -520,6 +540,14 @@ double nif::system::MissionManagerNode::getMissionMaxVelocityMps(
             max_vel_mps = this->velocity_warmup;
             break;
             
+        case MissionStatus::MISSION_KEEP_POSITION:
+            max_vel_mps = this->velocity_keep_position;
+            break;
+        
+        case MissionStatus::MISSION_CONSTANT_SPEED:
+            max_vel_mps = this->velocity_constant;
+            break;
+
         default:
             max_vel_mps = this->velocity_zero;
             break;

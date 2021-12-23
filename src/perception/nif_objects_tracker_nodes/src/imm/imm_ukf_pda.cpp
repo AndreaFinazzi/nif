@@ -124,7 +124,8 @@ ImmUkfPda::getTrackedResult(nif_msgs::msg::DetectedObjectArray &input) {
     p3d.detection_result_3d.center.orientation.z = tracked_object_.objects[det_idx].pose.orientation.z;
     p3d.detection_result_3d.center.orientation.w = tracked_object_.objects[det_idx].pose.orientation.w;
 
-    p3d.obj_velocity_in_local = tracked_object_.objects[det_idx].velocity;
+    p3d.obj_velocity_in_global = tracked_object_.objects[det_idx].velocity;
+    // TODO: assign local vel
     out_tracked_objects.perception_list.push_back(p3d);
   }
 

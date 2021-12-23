@@ -171,7 +171,12 @@ def generate_launch_description():
         package='nif_control_safety_layer_nodes',
         executable='nif_control_safety_layer_nodes_exe',
         output='screen',
-        parameters=[LaunchConfiguration('control_safety_layer_param_file')],
+        parameters=[
+            LaunchConfiguration('control_safety_layer_param_file'),
+            {
+                "buffer_empty_counter_threshold": 100
+            }
+            ],
         remappings=[
             ('in_control_cmd', '/control_pool/control_cmd'),
             ('in_override_control_cmd', '/control_pool/override_cmd'),
@@ -197,7 +202,7 @@ def generate_launch_description():
             # ('in_reference_path', 'planning/path_global'),
             ('in_ego_odometry', '/sensor/odom_ground_truth'),
             ('in_wheel_speed_report', 'raptor_dbw_interface/wheel_speed_report'),
-            ('in_imu_data', 'novatel_bottom/imu/data'),
+            ('in_imu_data', 'novatel_bottom/rawimux'),
             ('in_steering_report', 'raptor_dbw_interface/steering_report'),
             ('in_control_error', 'control_joint_lqr/lqr_error')
         ],
@@ -241,8 +246,8 @@ def generate_launch_description():
         remappings=[
             ('in_control_cmd_prev', '/control_safety_layer/out/control_cmd'),
             ('out_control_cmd', '/control_pool/control_cmd'),
-            ('in_reference_path', 'planning/dynamic/vis/traj_global'),
-            # ('in_reference_path', 'planning/path_global'),
+            ('in_reference_path', '/planning/dynamic/vis/traj_global'),
+            ('in_reference_trajectory', '/planning/dynamic/traj_global'),
         ]
     )
 
@@ -251,7 +256,7 @@ def generate_launch_description():
         executable='nif_accel_control_nodes_exe',
         output='screen',
         remappings=[
-            ('/in_imu_data', '/novatel_bottom/imu/data')
+            ('/in_imu_data', '/novatel_bottom/rawimux')
         ],
         parameters=[{
             ## Should be True on real car
@@ -418,9 +423,9 @@ def generate_launch_description():
         )
     )
 
-    nif_dk_planner_launch = IncludeLaunchDescription(
+    nif_dynamic_planner_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            get_share_file("nif_dk_graph_planner", 'launch/deploy.launch.py')
+            get_share_file("nif_dynamic_planning_nodes", 'launch/sim.launch.py')
         )
     )
 
@@ -452,5 +457,5 @@ def generate_launch_description():
         nif_mission_manager_launch,
         nif_waypoint_manager_node,
         lgsvl_simulation_launch,
-        nif_dk_planner_launch
+        # nif_dynamic_planner_launch
     ])

@@ -107,9 +107,9 @@ FrenetBasedOpponentPredictor::FrenetBasedOpponentPredictor(
 
 void FrenetBasedOpponentPredictor::defenderVelCallback(
     const std_msgs::msg::Float32::SharedPtr msg) {
-  m_defender_vel_mps =
-      msg->data +
-      m_config_oppo_vel_bias_mps; // NOTE : should be mps / absolute vel
+  // m_defender_vel_mps =
+  //     msg->data +
+  //     m_config_oppo_vel_bias_mps; // NOTE : should be mps / absolute vel
 }
 
 void FrenetBasedOpponentPredictor::opponentStatusCallback(
@@ -120,12 +120,12 @@ void FrenetBasedOpponentPredictor::opponentStatusCallback(
     m_opponent_status = perception_el;
 
     m_defender_vel_mps =
-        perception_el.obj_velocity_in_local.linear.x +
+        abs(perception_el.obj_velocity_in_global.linear.x) +
         // m_ego_status.twist.twist.linear.x + // Only if tracking result is
         // relative to ego.
         m_config_oppo_vel_bias_mps; // NOTE : should be mps / absolute vel
 
-    m_defender_vel_mps = std::max(m_defender_vel_mps, 0.5);
+    m_defender_vel_mps = std::max(abs(m_defender_vel_mps), 0.5);
 
     // Do prediction when the oppponent's status is callbacked
     this->predict();

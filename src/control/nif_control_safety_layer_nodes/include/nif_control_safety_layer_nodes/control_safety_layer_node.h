@@ -275,6 +275,8 @@ public:
     this->control_cmd.braking_control_cmd.data = 0.0;
     this->control_cmd.gear_control_cmd.data = 1;
 
+    RCLCPP_WARN(this->get_logger(), "buffer_empty_counter_threshold = %d", this->buffer_empty_counter_threshold);
+
     this->setNodeStatus(common::NODE_INITIALIZED);
   }
 
@@ -463,7 +465,10 @@ private:
     int counter_hb = 0;
 
     int buffer_empty_counter = 0;
-    int buffer_empty_counter_threshold = 20;
+
+//  !!!!!!!!!!!!!! REVERTO TO 20 TWENTY !!!!!!!!!!!!!!
+    int buffer_empty_counter_threshold = 100;
+//  !!!!!!!!!!!!!! REVERTO TO 20 TWENTY !!!!!!!!!!!!!!
 
     double init_tick_ = -1.0;
     double init_vel_ = -1.0;

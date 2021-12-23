@@ -48,6 +48,8 @@ private:
   // Mission and safe localization parameters
   double velocity_zero = 0.0;
   double velocity_max = 0.0;
+  double velocity_keep_position = 0.0;
+  double velocity_constant = 0.0;
   double velocity_avoidance = 0.0;
   double velocity_warmup = 0.0;
   double velocity_pit_in = 0.0;

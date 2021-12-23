@@ -64,7 +64,7 @@ public:
   DynamicPlannerNode(const std::string &node_name_);
 
   void
-  detectionResultCallback(const nif_msgs::msg::Perception3D::SharedPtr msg);
+  detectionResultCallback(const nif::common::msgs::PerceptionResultList::SharedPtr msg);
   void mapTrackBodyCallback(const nav_msgs::msg::Path::SharedPtr msg);
   void mapTrackGlobalCallback(const nav_msgs::msg::Path::SharedPtr msg);
   void predictionResultCallback(
@@ -185,7 +185,7 @@ public:
 
 private:
   // Opponent perception result (not prediction result)
-  rclcpp::Subscription<nif_msgs::msg::Perception3D>::SharedPtr m_det_sub;
+  rclcpp::Subscription<nif::common::msgs::PerceptionResultList>::SharedPtr m_det_sub;
   // Map track from wpt manager
   rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr m_maptrack_body_sub;
   // Map track from wpt manager
