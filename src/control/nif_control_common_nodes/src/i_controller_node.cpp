@@ -6,7 +6,9 @@
 using nif_msgs::msg::MissionStatus;
 
 nif::control::IControllerNode::IControllerNode(const std::string &node_name)
-    : nif::common::IBaseSynchronizedNode(node_name, common::NodeType::CONTROL, common::constants::SYNC_PERIOD_DEFAULT_US) {
+    : nif::common::IBaseSynchronizedNode(
+          node_name, common::NodeType::CONTROL,
+          common::constants::SYNC_PERIOD_DEFAULT_US) {
 
   //  ==== DECLARE PARAMETERS ====
 
@@ -21,19 +23,19 @@ nif::control::IControllerNode::IControllerNode(const std::string &node_name)
   this->reference_trajectory_sub =
       this->create_subscription<nif::common::msgs::Trajectory>(
           "in_reference_trajectory", nif::common::constants::QOS_PLANNING,
-        std::bind(&IControllerNode::referenceTrajectoryCallback, this,
-                  std::placeholders::_1));
-
-  this->reference_path_sub =
-      this->create_subscription<nif::common::msgs::Path>(
-          "in_reference_path", nif::common::constants::QOS_PLANNING,
-          std::bind(&IControllerNode::referencePathCallback, this,
+          std::bind(&IControllerNode::referenceTrajectoryCallback, this,
                     std::placeholders::_1));
 
-  this->desired_velocity_sub = this->create_subscription<std_msgs::msg::Float32>(
-          "velocity_planner/des_vel", nif::common::constants::QOS_CONTROL_CMD,
-      std::bind(&IControllerNode::desiredVelocityCallback, this,
+  this->reference_path_sub = this->create_subscription<nif::common::msgs::Path>(
+      "in_reference_path", nif::common::constants::QOS_PLANNING,
+      std::bind(&IControllerNode::referencePathCallback, this,
                 std::placeholders::_1));
+
+  this->desired_velocity_sub =
+      this->create_subscription<std_msgs::msg::Float32>(
+          "velocity_planner/des_vel", nif::common::constants::QOS_CONTROL_CMD,
+          std::bind(&IControllerNode::desiredVelocityCallback, this,
+                    std::placeholders::_1));
 
   this->control_cmd_pub = this->create_publisher<nif::common::msgs::ControlCmd>(
       "out_control_cmd", nif::common::constants::QOS_CONTROL_CMD);
@@ -50,10 +52,8 @@ void nif::control::IControllerNode::run() {
   if (msg) {
     msg->header.stamp = this->now();
     this->control_cmd_pub->publish(*msg);
-
   }
 }
-
 
 void nif::control::IControllerNode::controlCmdPrevCallback(
     const nif::common::msgs::ControlCmd::SharedPtr msg) {
@@ -67,6 +67,28 @@ void nif::control::IControllerNode::referenceTrajectoryCallback(
   this->has_reference_trajectory = true;
   this->reference_trajectory_update_time = this->now();
   this->reference_trajectory = msg;
+
+  if (this->reference_trajectory &&
+      !this->reference_trajectory->trajectory_path.poses.empty()) {
+    auto last_point = this->reference_trajectory->trajectory_path.poses.back();
+
+    if (this->reference_trajectory && this->hasEgoOdometry())
+      if (this->reference_trajectory->header.frame_id ==
+          this->getBodyFrameId()) {
+        this->reference_trajectory_last_point_distance =
+            sqrt(pow(last_point.pose.position.x, 2) +
+                 pow(last_point.pose.position.y, 2));
+      } else {
+        this->reference_trajectory_last_point_distance =
+            sqrt(pow(this->getEgoOdometry().pose.pose.position.x -
+                         last_point.pose.position.x,
+                     2) +
+                 pow(this->getEgoOdometry().pose.pose.position.y -
+                         last_point.pose.position.y,
+                     2));
+      }
+  }
+
   this->afterReferenceTrajectoryCallback();
 }
 
@@ -76,20 +98,22 @@ void nif::control::IControllerNode::referencePathCallback(
   this->reference_path_update_time = this->now();
   this->reference_path = msg;
 
-  if (this->reference_path && !this->reference_path->poses.empty())
-  {
+  if (this->reference_path && !this->reference_path->poses.empty()) {
     auto last_point = this->reference_path->poses.back();
 
     if (this->reference_path && this->hasEgoOdometry())
-      if(this->reference_path->header.frame_id == this->getBodyFrameId()) {
-        this->reference_path_last_point_distance = sqrt(
-        pow(last_point.pose.position.x, 2) +
-        pow(last_point.pose.position.y, 2));
-      }
-      else {
-        this->reference_path_last_point_distance = sqrt(
-        pow(this->getEgoOdometry().pose.pose.position.x - last_point.pose.position.x, 2) +
-        pow(this->getEgoOdometry().pose.pose.position.y - last_point.pose.position.y, 2));
+      if (this->reference_path->header.frame_id == this->getBodyFrameId()) {
+        this->reference_path_last_point_distance =
+            sqrt(pow(last_point.pose.position.x, 2) +
+                 pow(last_point.pose.position.y, 2));
+      } else {
+        this->reference_path_last_point_distance =
+            sqrt(pow(this->getEgoOdometry().pose.pose.position.x -
+                         last_point.pose.position.x,
+                     2) +
+                 pow(this->getEgoOdometry().pose.pose.position.y -
+                         last_point.pose.position.y,
+                     2));
       }
   }
 
@@ -101,13 +125,14 @@ void nif::control::IControllerNode::desiredVelocityCallback(
   this->has_desired_velocity = true;
   this->desired_velocity_update_time = this->now();
 
-    // CHECK MISSION CONDITIONS
-    if (this->hasSystemStatus()) {
-      if (msg->data > this->getSystemStatus().mission_status.max_velocity_mps) {
-        this->desired_velocity->data =  this->getSystemStatus().mission_status.max_velocity_mps;
-      } else {
-        this->desired_velocity->data = msg->data;
-      }
+  // CHECK MISSION CONDITIONS
+  if (this->hasSystemStatus()) {
+    if (msg->data > this->getSystemStatus().mission_status.max_velocity_mps) {
+      this->desired_velocity->data =
+          this->getSystemStatus().mission_status.max_velocity_mps;
+    } else {
+      this->desired_velocity->data = msg->data;
+    }
   } else {
     this->desired_velocity->data = 0;
   }
@@ -180,8 +205,12 @@ bool nif::control::IControllerNode::hasDesiredVelocity() const {
   return has_desired_velocity;
 }
 
-double nif::control::IControllerNode::getReferencePathLastPointDistance() const {
+double
+nif::control::IControllerNode::getReferencePathLastPointDistance() const {
   return reference_path_last_point_distance;
-}  
+}
 
-
+double
+nif::control::IControllerNode::getReferenceTrajLastPointDistance() const {
+  return reference_path_last_point_distance;
+}
