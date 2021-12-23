@@ -175,6 +175,7 @@ MissionStatus::_mission_status_code_type MissionManagerNode::getMissionStatusCod
       break;
 
     case RCFlagSummary::VEH_FLAG_BLACK:
+//  VEH BLACK FLAG START
         switch (this->rc_flag_summary.track_flag)
         {
         case RCFlagSummary::TRACK_FLAG_RED: // TODO ASK TO RC WHAT SHOULD HAPPEN HERE
@@ -216,6 +217,7 @@ MissionStatus::_mission_status_code_type MissionManagerNode::getMissionStatusCod
         }
         
         return MissionStatus::MISSION_PIT_STANDBY;
+//  VEH BLACK FLAG END
         break;
     
     case RCFlagSummary::VEH_FLAG_CHECKERED:
@@ -230,6 +232,16 @@ MissionStatus::_mission_status_code_type MissionManagerNode::getMissionStatusCod
 
       break; // VEH_FLAG_BLANK
     
+    case RCFlagSummary::VEH_FLAG_DEFENDER:
+        return getMissionVehFlagNull(true); // defender_mode on
+
+      break; // VEH_FLAG_BLANK
+    
+    case RCFlagSummary::VEH_FLAG_ATTACKER:
+        return getMissionVehFlagNull();
+
+      break; // VEH_FLAG_BLANK
+
     default:
       return MissionStatus::MISSION_COMMANDED_STOP;
       break;
@@ -239,7 +251,7 @@ MissionStatus::_mission_status_code_type MissionManagerNode::getMissionStatusCod
   }
 }
 
-MissionStatus::_mission_status_code_type MissionManagerNode::getMissionVehFlagNull()
+MissionStatus::_mission_status_code_type MissionManagerNode::getMissionVehFlagNull(bool defender_mode)
 {
     switch (this->rc_flag_summary.track_flag)
       {
@@ -303,8 +315,36 @@ MissionStatus::_mission_status_code_type MissionManagerNode::getMissionVehFlagNu
                 // TODO If on track, RACE should be set and maintained.
                 if (this->is_warmup_enabled)
                     return MissionStatus::MISSION_TIRE_WARMUP;
+                
                 if (this->is_avoidance_enabled)
                     return MissionStatus::MISSION_COLLISION_AVOIDNACE;
+
+                if (defender_mode)
+                    return MissionStatus::MISSION_CONSTANT_SPEED;
+
+                return MissionStatus::MISSION_KEEP_POSITION;
+            }
+            break;
+
+        case RCFlagSummary::TRACK_FLAG_BLUE:
+            if (this->missionIs(MissionStatus::MISSION_PIT_IN)) {
+                return MissionStatus::MISSION_PIT_STANDBY;
+            } else {
+                if (defender_mode)
+                    return MissionStatus::MISSION_CONSTANT_SPEED;
+                
+                return MissionStatus::MISSION_KEEP_POSITION;
+            }
+            break;
+
+        case RCFlagSummary::TRACK_FLAG_WAVING_GREEN:
+            if (this->missionIs(MissionStatus::MISSION_PIT_IN)) {
+                return MissionStatus::MISSION_PIT_STANDBY;
+            } else {
+                // TODO If on track, RACE should be set and maintained.
+                if (defender_mode)
+                    return MissionStatus::MISSION_CONSTANT_SPEED;
+                
                 return MissionStatus::MISSION_RACE;
             }
             break;

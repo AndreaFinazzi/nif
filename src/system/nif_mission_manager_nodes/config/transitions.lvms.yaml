@@ -12,6 +12,24 @@ missions:
       active: true
       from:
         - 0   # MISSION_RACE
+        - 5   # MISSION_KEEP_POSITION
+        - 75  # MISSION_PIT_TO_TRACK
+        - 128 # MISSION_SLOW_DRIVE
+        - 200 # MISSION_COMMANDED_STOP
+        - 400 # MISSION_COLLISION_AVOIDNACE
+        - 500 # MISSION_WARMUP
+        - 777 # MISSION_TEST
+
+  - mission_code: 5 # MISSION_KEEP_POSITION
+    active: true
+    fallback:
+      active: true
+      mission_code: 128 # MISSION_SLOW_DRIVE
+    allowed_transitions:
+      active: true
+      from:
+        - 0   # MISSION_RACE
+        - 5   # MISSION_KEEP_POSITION
         - 75  # MISSION_PIT_TO_TRACK
         - 128 # MISSION_SLOW_DRIVE
         - 200 # MISSION_COMMANDED_STOP

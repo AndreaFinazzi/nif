@@ -118,15 +118,33 @@ namespace nif
       static bool isTrackFlagInRange(nif::common::msgs::RCFlagSummary::_track_flag_type track_flag)
       {
         if (
-            track_flag == RCFlagSummary::TRACK_FLAG_NULL ||
-            track_flag == RCFlagSummary::TRACK_FLAG_RED ||
-            track_flag == RCFlagSummary::TRACK_FLAG_ORANGE ||
-            track_flag == RCFlagSummary::TRACK_FLAG_YELLOW ||
-            track_flag == RCFlagSummary::TRACK_FLAG_GREEN)
+            track_flag == RCFlagSummary::TRACK_FLAG_NULL    ||
+            track_flag == RCFlagSummary::TRACK_FLAG_RED     ||
+            track_flag == RCFlagSummary::TRACK_FLAG_ORANGE  ||
+            track_flag == RCFlagSummary::TRACK_FLAG_YELLOW  ||
+            track_flag == RCFlagSummary::TRACK_FLAG_GREEN   ||
+            track_flag == RCFlagSummary::TRACK_FLAG_BLUE    ||
+            track_flag == RCFlagSummary::TRACK_FLAG_WAVING_GREEN 
+            )
           return true;
         return false;
       }
 
+      static bool isVehFlagInRange(nif::common::msgs::RCFlagSummary::_veh_flag_type veh_flag)
+      {
+        if (
+            veh_flag == RCFlagSummary::VEH_FLAG_NULL        ||
+            veh_flag == RCFlagSummary::VEH_FLAG_BLANK       ||
+            veh_flag == RCFlagSummary::VEH_FLAG_BLACK       ||
+            veh_flag == RCFlagSummary::VEH_FLAG_CHECKERED   ||
+            veh_flag == RCFlagSummary::VEH_FLAG_DEFENDER    ||
+            veh_flag == RCFlagSummary::VEH_FLAG_PINK        ||
+            veh_flag == RCFlagSummary::VEH_FLAG_ATTACKER    ||
+            veh_flag == RCFlagSummary::VEH_FLAG_PURPLE 
+            )
+          return true;
+        return false;
+      }
       /**
  * This message contains the autonomy status information which should updated
  * in the ??.
@@ -217,6 +235,8 @@ namespace nif
       {
         if (
             mission_code == MissionStatus::MISSION_RACE ||
+            mission_code == MissionStatus::MISSION_KEEP_POSITION ||
+            mission_code == MissionStatus::MISSION_CONSTANT_SPEED ||
             mission_code == MissionStatus::MISSION_STANDBY ||
             mission_code == MissionStatus::MISSION_PIT_IN ||
             mission_code == MissionStatus::MISSION_PIT_STANDBY ||
