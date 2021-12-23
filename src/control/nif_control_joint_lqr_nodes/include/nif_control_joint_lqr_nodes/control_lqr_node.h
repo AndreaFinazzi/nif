@@ -30,18 +30,13 @@ namespace control {
 
 class ControlLQRNode : public nif::control::IControllerNode {
 public:
-  explicit ControlLQRNode(const std::string& node_name);
+  explicit ControlLQRNode(const std::string &node_name);
 
   void publishSteerAccelDiagnostics(
-      bool lqr_command_valid,
-      bool valid_path,
-      bool valid_odom,
-      bool valid_wpt_distance,
-      bool valid_target_position,
-      double lqr_steering_command,
-      double lqr_accel_command,
-      double track_distance,
-      unsigned int lqr_tracking_idx,
+      bool lqr_command_valid, bool valid_path, bool valid_odom,
+      bool valid_wpt_distance, bool valid_target_position,
+      double lqr_steering_command, double lqr_accel_command,
+      double track_distance, unsigned int lqr_tracking_idx,
       geometry_msgs::msg::PoseStamped lqr_track_point,
       joint_lqr::lqr::JointLQR::ErrorMatrix lqr_err_cog,
       joint_lqr::lqr::JointLQR::ErrorMatrix lqr_err);
@@ -63,7 +58,7 @@ public:
   void velocityCallback(
       const raptor_dbw_msgs::msg::WheelSpeedReport::SharedPtr msg) {
     current_speed_ms_ = (msg->front_left + msg->front_right) * 0.5 *
-        nif::common::constants::KPH2MS;
+                        nif::common::constants::KPH2MS;
   }
 
   void
