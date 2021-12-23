@@ -1,12 +1,15 @@
 #ifndef __VELOCITY_PROFILER_H__
 #define __VELOCITY_PROFILER_H__
 
+#include <cmath>
 #include <algorithm>
 #include <cstdint>
 #include <iostream>
 #include <math.h>
 #include <nif_opponent_prediction_nodes/frenet_path_generator.h>
 #include <yaml-cpp/yaml.h>
+
+#include "nif_vehicle_dynamics_manager/tire_manager.hpp"
 
 class velocity_profiler {
 private:
@@ -36,12 +39,15 @@ private:
   double m_acc_config_decel_desired;
   double m_acc_config_delta;
   double m_acc_config_veh_l;
+  double m_lat_tire_factor;
 
   nav_msgs::msg::Odometry m_cur_odom;
   nav_msgs::msg::Path m_profile_target_path;
 
   nif_msgs::msg::DynamicTrajectory m_profiled_traj;
   nif_msgs::msg::DynamicTrajectory m_predicted_cipv_traj;
+
+  TireManager m_tire_manager;
 
 public:
   velocity_profiler(std::string config_file_path_);

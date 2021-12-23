@@ -14,6 +14,7 @@ endif()
 find_package(ament_cmake_auto REQUIRED)
 find_package(PCL REQUIRED)
 find_package(yaml-cpp REQUIRED)
+find_package(nif_vehicle_dynamics_manager)
 ament_auto_find_build_dependencies()
 
 include_directories(
