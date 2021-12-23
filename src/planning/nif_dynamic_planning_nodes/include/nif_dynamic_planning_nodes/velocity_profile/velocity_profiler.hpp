@@ -1,13 +1,13 @@
 #ifndef __VELOCITY_PROFILER_H__
 #define __VELOCITY_PROFILER_H__
 
+#include "nif_common/constants.h"
 #include <algorithm>
 #include <cstdint>
 #include <iostream>
 #include <math.h>
 #include <nif_opponent_prediction_nodes/frenet_path_generator.h>
 #include <yaml-cpp/yaml.h>
-#include "nif_common/constants.h"
 
 class velocity_profiler {
 private:
@@ -61,12 +61,12 @@ public:
   bool parseConfig(const std::string &config_file_path_);
 
   /**
-   * @brief Return the index of the first element greater-equal value in the array, 
-   * or the index of the last element if none is greater-equal value. 
-   * 
-   * @param vec 
-   * @param value 
-   * @return int 
+   * @brief Return the index of the first element greater-equal value in the
+   * array, or the index of the last element if none is greater-equal value.
+   *
+   * @param vec
+   * @param value
+   * @return int
    */
   inline int closest(std::vector<float> const &vec, double value) {
     auto it = std::lower_bound(vec.begin(), vec.end(), value);
