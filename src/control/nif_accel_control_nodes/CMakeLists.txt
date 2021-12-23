@@ -38,34 +38,3 @@ endif()
 
 ament_auto_package(INSTALL_TO_SHARE
         launch)
-
-# # find dependencies
-# find_package(ament_cmake REQUIRED)
-# find_package(rclcpp REQUIRED)
-# find_package(std_msgs REQUIRED)
-# find_package(raptor_dbw_msgs REQUIRED)
-# find_package(deep_orange_msgs REQUIRED)
-# find_package(bvs_msgs REQUIRED)
-# find_package(vehicle_dynamics_manager REQUIRED)
-
-# include_directories(include)
-
-# add_executable(accel_controller src/accel_control_node.cpp src/control_model.cpp src/TractionABS.cpp)
-# ament_target_dependencies(accel_controller rclcpp std_msgs raptor_dbw_msgs deep_orange_msgs bvs_msgs)
-# install(
-#   TARGETS accel_controller
-#   DESTINATION lib/${PROJECT_NAME}
-# )
-
-# install(DIRECTORY
-#   config
-#   DESTINATION share/${PROJECT_NAME}
-# )
-
-# if(BUILD_TESTING)
-#   find_package(ament_lint_auto REQUIRED)
-#   set(ament_cmake_copyright_FOUND TRUE)
-#   ament_lint_auto_find_test_dependencies()
-# endif()
-
-# ament_package()

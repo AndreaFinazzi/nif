@@ -1,0 +1,13 @@
+{
+  "n_sqp": 8,
+  "n_reset": 5,
+  "sqp_mixing": 0.9,
+  "n_sim": 60000,
+  "Ts": 0.01,
+  "v0": 77,
+  "model_path": "Params/model_iac_01_measured_Cr2.json",
+  "cost_path": "Params/cost_iac_measured_01_ego1.json",
+  "bounds_path": "Params/bounds_iac.json",
+  "track_path": "Params/track_iac_01_raceline_in_cen.json",
+  "normalization_path": "Params/normalization_iac.json"
+}

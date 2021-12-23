@@ -1,6 +1,6 @@
 /**:
   ros__parameters:
-    use_inspva_heading: true
+    use_inspva_heading: false
     bestvel_heading_update_velocity_thres : 2.0
 
     show_debug_info : false
@@ -32,5 +32,5 @@
 
     top_to_bottom_bias_x : -1.05
     top_to_bottom_bias_y : 0.62
-    use_bestvel_for_speed : false 
+    use_bestvel_for_speed : true 
 

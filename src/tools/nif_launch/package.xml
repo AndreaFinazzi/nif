@@ -46,13 +46,6 @@
     <exec_depend>nif_sensors</exec_depend>
     <exec_depend>ros2_luminar</exec_depend>
 
-    <exec_depend>bvs_common</exec_depend>
-    <exec_depend>bvs_long_control</exec_depend>
-    <exec_depend>bvs_utils</exec_depend>
-    <exec_depend>bvs_safety</exec_depend>
-    <exec_depend>bvs_control</exec_depend>
-    <exec_depend>bvs_localization</exec_depend>
-
     <test_depend>ament_cmake_gtest</test_depend>
     <test_depend>ament_lint_auto</test_depend>
     <test_depend>ament_lint_common</test_depend>

@@ -23,9 +23,10 @@ protected:
       const std::string &node_name,
       const NodeType node_type,
       const std::chrono::duration<DurationRepT, DurationT> period = constants::SYNC_PERIOD_DEFAULT_US,
-      const rclcpp::NodeOptions &options = rclcpp::NodeOptions{})
+      const rclcpp::NodeOptions &options = rclcpp::NodeOptions{},
+      const bool register_to_system_manager = true)
 
-      : IBaseNode(node_name, node_type, options),
+      : IBaseNode(node_name, node_type, options, register_to_system_manager),
         gclock_period_ns(
             std::chrono::duration_cast<decltype(gclock_period_ns)>(period)),
         gclock_period_duration(period)

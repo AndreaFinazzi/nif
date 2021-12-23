@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>nif_adaptive_cruise_control_node</name>
+  <version>0.0.0</version>
+  <description>Intelligent Driver Model based adaptive cruise control node</description>
+  <maintainer email="cy.jung@kaist.ac.kr">Chanyoung Jung</maintainer>
+  <license>Apache License 2.0</license>
+
+  <buildtool_depend>ament_cmake_auto</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>std_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>raptor_dbw_msgs</depend>
+  <depend>deep_orange_msgs</depend>
+  <depend>bvs_msgs</depend>
+  <depend>launch_xml</depend>
+  <depend>nif_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>nif_utils</depend>
+  <depend>nif_common</depend>
+  <depend>nif_common_nodes</depend>
+  <depend>autoware_auto_msgs</depend>
+  <depend>yaml-cpp</depend>
+  <depend>ament_index_cpp</depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

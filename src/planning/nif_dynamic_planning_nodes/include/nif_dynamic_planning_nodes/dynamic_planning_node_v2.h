@@ -59,7 +59,7 @@ class DynamicPlannerNode : public nif::common::IBaseNode {
   };
 
 public:
-  DynamicPlannerNode(const std::string& node_name_);
+  DynamicPlannerNode(const std::string &node_name_);
 
   void
   detectionResultCallback(const nif_msgs::msg::Perception3D::SharedPtr msg);
@@ -68,10 +68,10 @@ public:
   void predictionResultCallback(
       const nif_msgs::msg::DynamicTrajectory::SharedPtr msg);
 
-  void loadConfig(const std::string& planning_config_file_);
+  void loadConfig(const std::string &planning_config_file_);
 
   tuple<vector<double>, vector<double>>
-  loadCSVfile(const std::string& wpt_file_path_);
+  loadCSVfile(const std::string &wpt_file_path_);
 
   void timer_callback();
   void timer_callback_v2();
@@ -85,69 +85,71 @@ public:
 
   bool checkOverTake();
 
-  double getProgress(const geometry_msgs::msg::Pose& pt_global_,
-                     pcl::KdTreeFLANN<pcl::PointXY>& target_tree_);
+  double getProgress(const geometry_msgs::msg::Pose &pt_global_,
+                     pcl::KdTreeFLANN<pcl::PointXY> &target_tree_);
 
-  double getProgress(const double& pt_x_,
-                     const double& pt_y_,
-                     pcl::KdTreeFLANN<pcl::PointXY>& target_tree_);
+  double getProgress(const double &pt_x_, const double &pt_y_,
+                     pcl::KdTreeFLANN<pcl::PointXY> &target_tree_);
 
-  double getCurIdx(const double& pt_x_,
-                   const double& pt_y_,
-                   pcl::KdTreeFLANN<pcl::PointXY>& target_tree_);
+  double getCurIdx(const double &pt_x_, const double &pt_y_,
+                   pcl::KdTreeFLANN<pcl::PointXY> &target_tree_);
 
-  double calcCTE(const geometry_msgs::msg::Pose& pt_global_,
-                 pcl::KdTreeFLANN<pcl::PointXY>& target_tree_,
-                 pcl::PointCloud<pcl::PointXY>::Ptr& pc_);
+  double calcCTE(const geometry_msgs::msg::Pose &pt_global_,
+                 pcl::KdTreeFLANN<pcl::PointXY> &target_tree_,
+                 pcl::PointCloud<pcl::PointXY>::Ptr &pc_);
 
   tuple<double, double>
-  calcProgressNCTE(const geometry_msgs::msg::Pose& pt_global_,
-                   pcl::KdTreeFLANN<pcl::PointXY>& target_tree_,
-                   pcl::PointCloud<pcl::PointXY>::Ptr& pc_);
+  calcProgressNCTE(const geometry_msgs::msg::Pose &pt_global_,
+                   pcl::KdTreeFLANN<pcl::PointXY> &target_tree_,
+                   pcl::PointCloud<pcl::PointXY>::Ptr &pc_);
+
+  tuple<double, double>
+  calcProgressNCTE(const geometry_msgs::msg::Pose &pt_global_,
+                   nav_msgs::msg::Path &target_path_);
 
   double calcProgressDiff(
-      const geometry_msgs::msg::Pose& ego_pt_global_,
-      const geometry_msgs::msg::Pose& target_pt_global_,
-      pcl::KdTreeFLANN<pcl::PointXY>&
-          target_tree_); // negative : ego vehicle is in front of the vehicle
-                         // positive : target is in front of the ego vehicle
+      const geometry_msgs::msg::Pose &ego_pt_global_,
+      const geometry_msgs::msg::Pose &target_pt_global_,
+      pcl::KdTreeFLANN<pcl::PointXY>
+          &target_tree_); // negative : ego vehicle is in front of the vehicle
+                          // positive : target is in front of the ego vehicle
 
-  nav_msgs::msg::Path xyyawVec2Path(std::vector<double>& x_,
-                                    std::vector<double>& y_,
-                                    std::vector<double>& yaw_rad_);
+  nav_msgs::msg::Path xyyawVec2Path(std::vector<double> &x_,
+                                    std::vector<double> &y_,
+                                    std::vector<double> &yaw_rad_);
 
-  pcl::PointCloud<pcl::PointXY>::Ptr genPointCloudFromVec(vector<double>& x_,
-                                                          vector<double>& y_);
+  pcl::PointCloud<pcl::PointXY>::Ptr genPointCloudFromVec(vector<double> &x_,
+                                                          vector<double> &y_);
 
-  int calcCurIdxFromDynamicTraj(const nif_msgs::msg::DynamicTrajectory& msg);
+  int calcCurIdxFromDynamicTraj(const nif_msgs::msg::DynamicTrajectory &msg);
 
-  void registerPath(nav_msgs::msg::Path& frenet_segment_,
-                    nav_msgs::msg::Path& origin_path_);
+  void registerPath(nav_msgs::msg::Path &frenet_segment_,
+                    nav_msgs::msg::Path &origin_path_);
 
   std::shared_ptr<FrenetPath> getFrenetToRacingLine();
 
-  double calcProgressDiff(const nif_msgs::msg::DynamicTrajectory& ego_traj_,
-                          const nif_msgs::msg::DynamicTrajectory& oppo_traj_,
-                          pcl::KdTreeFLANN<pcl::PointXY>& target_tree_);
+  double calcProgressDiff(const nif_msgs::msg::DynamicTrajectory &ego_traj_,
+                          const nif_msgs::msg::DynamicTrajectory &oppo_traj_,
+                          pcl::KdTreeFLANN<pcl::PointXY> &target_tree_);
 
   bool collisionCheckBTWtrajs(
-      const nif_msgs::msg::DynamicTrajectory& ego_traj_,
-      const nif_msgs::msg::DynamicTrajectory& oppo_traj_,
+      const nif_msgs::msg::DynamicTrajectory &ego_traj_,
+      const nif_msgs::msg::DynamicTrajectory &oppo_traj_,
       const double collision_dist_boundary,
       const double
           collision_time_boundary); // if there is collision, return true.
 
   bool collisionCheckBTWtrajsNFrenet(
       std::shared_ptr<FrenetPath> ego_frenet_traj_,
-      const nif_msgs::msg::DynamicTrajectory& oppo_traj_,
+      const nif_msgs::msg::DynamicTrajectory &oppo_traj_,
       const double collision_dist_boundary,
       const double
           collision_time_boundary); // if there is collision, return true.
 
   nif_msgs::msg::DynamicTrajectory
-  stitchFrenetToPath(std::shared_ptr<FrenetPath>& frenet_segment_,
-                     pcl::KdTreeFLANN<pcl::PointXY>& target_tree_,
-                     nav_msgs::msg::Path& target_path_);
+  stitchFrenetToPath(std::shared_ptr<FrenetPath> &frenet_segment_,
+                     pcl::KdTreeFLANN<pcl::PointXY> &target_tree_,
+                     nav_msgs::msg::Path &target_path_);
 
 private:
   // Opponent perception result (not prediction result)
@@ -166,20 +168,17 @@ private:
   rclcpp::Publisher<nif_msgs::msg::DynamicTrajectory>::SharedPtr
       m_ego_traj_global_pub;
   // Ego's planned output DynamicTrajectory for visualization
-  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr
-      m_ego_traj_body_vis_pub;
-  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr
-      m_ego_traj_global_vis_pub;
+  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr m_ego_traj_body_vis_pub;
+  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr m_ego_traj_global_vis_pub;
 
-      rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr
+  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr
       m_ego_traj_global_vis_debug_pub1;
-      rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr
+  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr
       m_ego_traj_global_vis_debug_pub2;
-      rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr
+  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr
       m_ego_traj_global_vis_debug_pub3;
 
-rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr
-      m_debug_vis_pub;
+  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr m_debug_vis_pub;
   // output timer
   rclcpp::TimerBase::SharedPtr m_planner_timer;
   bool m_timer_callback_first_run;

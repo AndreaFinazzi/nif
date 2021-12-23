@@ -45,6 +45,16 @@ IWaypointManager::IWaypointManager(const vector<string> &wpt_file_path_list_,
   m_desired_wpt_in_nav_path = c_desired_wpt.getWPTinNavPath();
 }
 
+geometry_msgs::msg::PoseStamped& IWaypointManager::getPoseStampedAtIndex(
+  const unsigned int index
+) {
+  if (index < m_default_wpt_in_nav_path.poses.size()) {
+    return m_default_wpt_in_nav_path.poses[index];
+  } else {
+    return m_default_wpt_in_nav_path.poses[index % m_default_wpt_in_nav_path.poses.size()];
+  }
+}
+
 void IWaypointManager::setCurrentOdometry(
     const nav_msgs::msg::Odometry &ego_vehicle_odom) {
   m_current_pose = ego_vehicle_odom;

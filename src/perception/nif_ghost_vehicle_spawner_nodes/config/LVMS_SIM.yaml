@@ -1,0 +1,17 @@
+/**:
+  ros__parameters:
+    file_ids_list: 
+      - 'center'
+      - 'left_center'
+      - 'right_center'
+      - 'race'      
+      - 'pit'
+    # Refer to nif_waypoint_manager_nodes directory structure
+    file_path_list:
+      - 'maps/LVMS_SIM/centerline.csv'
+      - 'maps/LVMS_SIM/left_side_center.csv'
+      - 'maps/LVMS_SIM/right_side_center.csv'
+      - 'maps/LVMS_SIM/race_line.csv'
+      - 'maps/LVMS_SIM/pit_lane.csv'
+    spline_interval: 1.0 # in [m]
+    maptrack_size: 200 # in index level

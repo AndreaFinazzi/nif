@@ -3,10 +3,11 @@
 // for explanation of functions onSegment(), orientation() and doIntersect()
 #include <iostream>
 #include <vector>
-using namespace std;
 
 // Define Infinite (Using INT_MAX caused overflow problems)
-#define INF 99999999
+#define L_INF 99999999
+
+using namespace std;
 
 namespace nif
 {
@@ -93,7 +94,7 @@ namespace nif
                         return false;
 
                     // Create a point for line segment from p to infinite
-                    Point2D extreme = {INF, p.y};
+                    Point2D extreme = {L_INF, p.y};
 
                     // Count intersections of the above line with sides of polygon
                     int count = 0, i = 0;
@@ -137,7 +138,7 @@ namespace nif
                         return false;
 
                     // Create a point for line segment from p to infinite
-                    Point2D extreme = {INF, p.y};
+                    Point2D extreme = {L_INF, p.y};
 
                     // Count intersections of the above line with sides of polygon
                     int count = 0, i = 0;
@@ -169,3 +170,5 @@ namespace nif
         }
     }
 }
+
+#undef L_INF

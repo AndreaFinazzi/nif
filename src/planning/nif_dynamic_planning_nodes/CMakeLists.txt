@@ -14,6 +14,7 @@ endif()
 find_package(ament_cmake_auto REQUIRED)
 find_package(PCL REQUIRED)
 find_package(yaml-cpp REQUIRED)
+find_package(nif_vehicle_dynamics_manager)
 ament_auto_find_build_dependencies()
 
 include_directories(
@@ -24,7 +25,9 @@ include_directories(
 
 # Library
 ament_auto_add_library(${PROJECT_NAME} SHARED
-        src/dynamic_planning_node_v2.cpp)
+        src/quintic_polynomials_planner.cpp
+        src/dynamic_planning_node_v2.cpp
+        )
 
 ament_auto_add_executable(${PROJECT_NAME}_exe
         src/dynamic_planning_node_main.cpp)

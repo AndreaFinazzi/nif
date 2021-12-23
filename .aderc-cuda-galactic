@@ -3,6 +3,6 @@ export ADE_GITLAB=gitlab.com
 export ADE_REGISTRY=registry.gitlab.com
 export ADE_DISABLE_NVIDIA_DOCKER=false
 export ADE_IMAGES="
-  ghcr.io/andreafinazzi/nif:galactic
+  ghcr.io/andreafinazzi/nif:master
 "
 export ROS_DISTRO=galactic

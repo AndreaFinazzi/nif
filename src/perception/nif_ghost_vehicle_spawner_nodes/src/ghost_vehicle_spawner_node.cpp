@@ -1,0 +1,1 @@
+#include "nif_ghost_vehicle_spawner_nodes/ghost_vehicle_spawner_node.h"
