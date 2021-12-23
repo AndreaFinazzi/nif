@@ -42,7 +42,7 @@ def generate_launch_description():
     )
 
     dbc_file_path = get_share_file(
-        package_name='raptor_dbw_can', file_name='launch/CAN1_INDY_V6.dbc'
+        package_name='raptor_dbw_can', file_name='launch/CAN1_INDY_V8.dbc'
     )
 
     ssc_interface_param = DeclareLaunchArgument(
@@ -171,7 +171,12 @@ def generate_launch_description():
         package='nif_control_safety_layer_nodes',
         executable='nif_control_safety_layer_nodes_exe',
         output='screen',
-        parameters=[LaunchConfiguration('control_safety_layer_param_file')],
+        parameters=[
+            LaunchConfiguration('control_safety_layer_param_file'),
+            {
+                "buffer_empty_counter_threshold": 100
+            }
+            ],
         remappings=[
             ('in_control_cmd', '/control_pool/control_cmd'),
             ('in_override_control_cmd', '/control_pool/override_cmd'),
@@ -241,8 +246,8 @@ def generate_launch_description():
         remappings=[
             ('in_control_cmd_prev', '/control_safety_layer/out/control_cmd'),
             ('out_control_cmd', '/control_pool/control_cmd'),
-            ('in_reference_path', 'planning/dynamic/vis/traj_global'),
-            # ('in_reference_path', 'planning/path_global'),
+            ('in_reference_path', '/planning/dynamic/vis/traj_global'),
+            ('in_reference_trajectory', '/planning/dynamic/traj_global'),
         ]
     )
 
@@ -418,9 +423,9 @@ def generate_launch_description():
         )
     )
 
-    nif_dk_planner_launch = IncludeLaunchDescription(
+    nif_dynamic_planner_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            get_share_file("nif_dk_graph_planner", 'launch/deploy.launch.py')
+            get_share_file("nif_dynamic_planning_nodes", 'launch/sim.launch.py')
         )
     )
 
@@ -452,5 +457,5 @@ def generate_launch_description():
         nif_mission_manager_launch,
         nif_waypoint_manager_node,
         lgsvl_simulation_launch,
-        nif_dk_planner_launch
+        # nif_dynamic_planner_launch
     ])

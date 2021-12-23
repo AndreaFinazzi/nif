@@ -3,12 +3,10 @@
 using namespace nif::perception;
 
 FrenetBasedOpponentPredictor::FrenetBasedOpponentPredictor(
-    const string& node_name)
-  : Node(node_name),
-    m_prediction_valid_flg(false),
-    m_opponent_target_path_valid_flg(false),
-    m_config_valid_flg(false),
-    m_initialize_done_flg(false)
+    const string &node_name)
+    : Node(node_name), m_prediction_valid_flg(false),
+      m_opponent_target_path_valid_flg(false), m_config_valid_flg(false),
+      m_initialize_done_flg(false)
 
 {
   this->declare_parameter("ref_line_file_path", "");
@@ -47,7 +45,8 @@ FrenetBasedOpponentPredictor::FrenetBasedOpponentPredictor(
       this->get_parameter("prediction_sampling_time").as_double();
   m_config_oppo_vel_bias_mps =
       this->get_parameter("oppo_vel_bias_mps").as_double();
-  m_defender_vel_default_mps = this->get_parameter("m_defender_vel_mps").as_double();
+  m_defender_vel_default_mps =
+      this->get_parameter("m_defender_vel_mps").as_double();
 
   if (m_centerline_ref_file_path == "") {
     // initialization failed
@@ -67,8 +66,7 @@ FrenetBasedOpponentPredictor::FrenetBasedOpponentPredictor(
 
   // Assign splined full target path in global coordinate (in nav_msg path)
   auto splined_result = m_frenet_generator_ptr->apply_cubic_spliner(
-      m_centerline_path_x,
-      m_centerline_path_y,
+      m_centerline_path_x, m_centerline_path_y,
       m_config_path_spline_interval_m);
 
   m_splined_center_path_x = get<0>(splined_result);
@@ -82,26 +80,19 @@ FrenetBasedOpponentPredictor::FrenetBasedOpponentPredictor(
   // Initialize subscribers & publisher
   m_sub_opponent_status =
       this->create_subscription<common::msgs::PerceptionResultList>(
-          m_opponent_status_topic_name,
-          common::constants::QOS_PLANNING,
-          std::bind(&FrenetBasedOpponentPredictor::opponentStatusCallback,
-                    this,
+          m_opponent_status_topic_name, common::constants::QOS_PLANNING,
+          std::bind(&FrenetBasedOpponentPredictor::opponentStatusCallback, this,
                     std::placeholders::_1));
   m_sub_ego_status = this->create_subscription<nav_msgs::msg::Odometry>(
-      m_ego_status_topic_name,
-      common::constants::QOS_EGO_ODOMETRY,
-      std::bind(&FrenetBasedOpponentPredictor::egoStatusCallback,
-                this,
+      m_ego_status_topic_name, common::constants::QOS_EGO_ODOMETRY,
+      std::bind(&FrenetBasedOpponentPredictor::egoStatusCallback, this,
                 std::placeholders::_1));
   m_sub_defender_vel = this->create_subscription<std_msgs::msg::Float32>(
-      m_defender_vel_topic_name,
-      common::constants::QOS_PLANNING,
-      std::bind(&FrenetBasedOpponentPredictor::defenderVelCallback,
-                this,
+      m_defender_vel_topic_name, common::constants::QOS_PLANNING,
+      std::bind(&FrenetBasedOpponentPredictor::defenderVelCallback, this,
                 std::placeholders::_1));
-  m_pub_predicted_trajectory =
-      this->create_publisher<common::msgs::NIF_Trajectory>(
-          m_predicted_trajectory_topic_name, common::constants::QOS_PLANNING);
+  m_pub_predicted_trajectory = this->create_publisher<common::msgs::Trajectory>(
+      m_predicted_trajectory_topic_name, common::constants::QOS_PLANNING);
   m_pub_predicted_trajectory_vis = this->create_publisher<nav_msgs::msg::Path>(
       m_predicted_trajectory_vis_topic_name, common::constants::QOS_PLANNING);
 
@@ -110,30 +101,31 @@ FrenetBasedOpponentPredictor::FrenetBasedOpponentPredictor(
   m_initialize_done_flg = true;
 
   this->parameters_callback_handle = this->add_on_set_parameters_callback(
-      std::bind(&FrenetBasedOpponentPredictor::parametersCallback,
-                this,
+      std::bind(&FrenetBasedOpponentPredictor::parametersCallback, this,
                 std::placeholders::_1));
 }
 
 void FrenetBasedOpponentPredictor::defenderVelCallback(
     const std_msgs::msg::Float32::SharedPtr msg) {
-  m_defender_vel_mps = msg->data +
-      m_config_oppo_vel_bias_mps; // NOTE : should be mps / absolute vel
+  // m_defender_vel_mps =
+  //     msg->data +
+  //     m_config_oppo_vel_bias_mps; // NOTE : should be mps / absolute vel
 }
 
 void FrenetBasedOpponentPredictor::opponentStatusCallback(
     const common::msgs::PerceptionResultList::SharedPtr msg) {
-  if (msg->perception_list.size() > 0) 
-  {
+  if (msg->perception_list.size() > 0) {
 
-    auto& perception_el = msg->perception_list[0];
+    auto &perception_el = msg->perception_list[0];
     m_opponent_status = perception_el;
 
-    m_defender_vel_mps = perception_el.obj_velocity_in_local.linear.x +
-        // m_ego_status.twist.twist.linear.x + // Only if tracking result is relative to ego.
+    m_defender_vel_mps =
+        abs(perception_el.obj_velocity_in_global.linear.x) +
+        // m_ego_status.twist.twist.linear.x + // Only if tracking result is
+        // relative to ego.
         m_config_oppo_vel_bias_mps; // NOTE : should be mps / absolute vel
 
-    m_defender_vel_mps = std::max(m_defender_vel_mps, 0.5);
+    m_defender_vel_mps = std::max(abs(m_defender_vel_mps), 0.5);
 
     // Do prediction when the oppponent's status is callbacked
     this->predict();
@@ -194,11 +186,11 @@ void FrenetBasedOpponentPredictor::calcOpponentProgress() {
   int sign = 1;
   // global to local transform
   auto local_pt = nif::common::utils::coordination::getPtGlobaltoBody(
-      m_ego_status,
-      m_centerline_path_x[opponent_index],
+      m_ego_status, m_centerline_path_x[opponent_index],
       m_centerline_path_y[opponent_index]);
 
-  auto cross_product = local_pt.pose.position.x *
+  auto cross_product =
+      local_pt.pose.position.x *
           m_opponent_status.detection_result_3d.center.position.y -
       local_pt.pose.position.y *
           m_opponent_status.detection_result_3d.center.position.x;
@@ -211,7 +203,7 @@ void FrenetBasedOpponentPredictor::calcOpponentProgress() {
 }
 
 double FrenetBasedOpponentPredictor::calcProgress(
-    geometry_msgs::msg::PoseStamped& pt_) {
+    geometry_msgs::msg::PoseStamped &pt_) {
   if (m_centerline_path_x.size() == 0) {
     // empty target path
     std::cout << "center path is empty.." << std::endl;
@@ -257,14 +249,12 @@ void FrenetBasedOpponentPredictor::predict() {
           m_config_prediction_horizon_s +
               0.01, // Max max horizon (we want only one here)
           m_config_prediction_sampling_time_s, //
-          m_opponent_cte,
-          m_opponent_cte + 0.01,
-          0.1);
+          m_opponent_cte, m_opponent_cte + 0.01, 0.1);
 
-  std::shared_ptr<FrenetPath>& predicted_frenet_path =
+  std::shared_ptr<FrenetPath> &predicted_frenet_path =
       std::get<0>(frenet_path_generation_result);
 
-  //DynamicTrajectory initialize
+  // DynamicTrajectory initialize
   m_predicted_output_in_global.trajectory_path.poses.clear();
   m_predicted_output_in_global.trajectory_velocity.clear();
   m_predicted_output_in_global.trajectory_timestamp_array.clear();
@@ -285,8 +275,8 @@ void FrenetBasedOpponentPredictor::predict() {
 
       ps.pose.position.x = predicted_frenet_path->points_x()[i];
       ps.pose.position.y = predicted_frenet_path->points_y()[i];
-      ps.pose.orientation = nif::common::utils::coordination::euler2quat(predicted_frenet_path->yaw()[i],
-                                                                        0.0, 0.0);
+      ps.pose.orientation = nif::common::utils::coordination::euler2quat(
+          predicted_frenet_path->yaw()[i], 0.0, 0.0);
       m_predicted_output_in_global.trajectory_timestamp_array.push_back(
           predicted_frenet_path->time()[i]);
       m_predicted_output_in_global.trajectory_global_progress.push_back(
@@ -357,11 +347,11 @@ FrenetBasedOpponentPredictor::loadCSVFile(const string wpt_file_path_) {
 
 rcl_interfaces::msg::SetParametersResult
 FrenetBasedOpponentPredictor::parametersCallback(
-    const std::vector<rclcpp::Parameter>& vector) {
+    const std::vector<rclcpp::Parameter> &vector) {
   rcl_interfaces::msg::SetParametersResult result;
   result.successful = false;
   result.reason = "";
-  for (const auto& param : vector) {
+  for (const auto &param : vector) {
     if (param.get_name() == "path_spline_interval") {
       if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
         if (param.as_double() >= 0.0 && param.as_double() <= 10.0) {

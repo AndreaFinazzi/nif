@@ -58,4 +58,4 @@ repositories:
   src/external/aptiv_esr_ros2:
     type: git
     url: https://oauth2:$GL_TOKEN@gitlab.com/IACBaseSoftware/aptive_esr_ros.git
-    version: d69d6322
+    version: vehicle-4

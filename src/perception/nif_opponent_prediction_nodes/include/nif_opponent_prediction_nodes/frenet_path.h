@@ -17,15 +17,13 @@
 #include "quartic_polynomial.h"
 #include "quintic_polynomial.h"
 
-class FrenetPath
-{
+class FrenetPath {
 public:
   FrenetPath() {}
   FrenetPath(FrenetPath &frenet_path);
 
   // Constructs an empty Frenet path
-  FrenetPath(double point_d, double point_s)
-  {
+  FrenetPath(double point_d, double point_s) {
     points_d_.push_back(point_d);
     points_s_.push_back(point_s);
   }
@@ -45,40 +43,32 @@ public:
   void push_back_point_y(double point_y) { points_y_.push_back(point_y); }
   void push_back_yaw(double yaw) { yaw_.push_back(yaw); }
 
-  void push_back_delta_velocity(double delta_velocity)
-  {
+  void push_back_delta_velocity(double delta_velocity) {
     delta_velocity_.push_back(delta_velocity);
   }
-  void push_back_curvature(double curvature)
-  {
+  void push_back_curvature(double curvature) {
     curvature_.push_back(curvature);
   }
 
   const std::vector<double> &points_d() const { return points_d_; }
-  const std::vector<double> &first_derivative_d() const
-  {
+  const std::vector<double> &first_derivative_d() const {
     return first_derivative_d_;
   }
-  const std::vector<double> &second_derivative_d() const
-  {
+  const std::vector<double> &second_derivative_d() const {
     return second_derivative_d_;
   }
-  const std::vector<double> &third_derivative_d() const
-  {
+  const std::vector<double> &third_derivative_d() const {
     return third_derivative_d_;
   }
 
   const std::vector<double> &points_s() const { return points_s_; }
-  const std::vector<double> &first_derivative_s() const
-  {
+  const std::vector<double> &first_derivative_s() const {
     return first_derivative_s_;
   }
-  const std::vector<double> &second_derivative_s() const
-  {
+  const std::vector<double> &second_derivative_s() const {
     return second_derivative_s_;
   }
-  const std::vector<double> &third_derivative_s() const
-  {
+  const std::vector<double> &third_derivative_s() const {
     return third_derivative_s_;
   }
 

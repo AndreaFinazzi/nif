@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.5)
 project(nif_dynamic_planning_nodes)
 
-# Default to C++14
+# Default to C++17
 if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 14)
+  set(CMAKE_CXX_STANDARD 17)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -18,13 +18,17 @@ ament_auto_find_build_dependencies()
 
 include_directories(
   include
+  include/velocity_profile
   ${PCL_INCLUDE_DIRS}
   ${YAML_CPP_INCLUDEDIR}
 )
 
 # Library
 ament_auto_add_library(${PROJECT_NAME} SHARED
-        src/dynamic_planning_node_v2.cpp)
+        src/velocity_profile/velocity_profiler.cpp
+        src/quintic_polynomials_planner.cpp
+        src/dynamic_planning_node_v2.cpp
+        )
 
 ament_auto_add_executable(${PROJECT_NAME}_exe
         src/dynamic_planning_node_main.cpp)

@@ -60,7 +60,7 @@ def generate_launch_description():
     )
 
     dbc_file_path = get_share_file(
-        package_name='raptor_dbw_can', file_name='launch/CAN1_INDY_V6.dbc'
+        package_name='raptor_dbw_can', file_name='launch/CAN1_INDY_V8.dbc'
     )
 
     ssc_interface_param = DeclareLaunchArgument(
@@ -405,12 +405,6 @@ def generate_launch_description():
         )
     )
 
-    nif_dk_planner_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            get_share_file("nif_dk_graph_planner", 'launch/deploy.launch.py')
-        )
-    )
-
 ### NIF MULTILAYER PLANNER END #############################
 
     return LaunchDescription([
@@ -438,6 +432,5 @@ def generate_launch_description():
         nif_accel_control_node,
         nif_mission_manager_launch,
         nif_waypoint_manager_node,
-        nif_points_clustering,
-        nif_dk_planner_launch
+        nif_points_clustering
 ])

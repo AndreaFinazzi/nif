@@ -7,8 +7,7 @@ QuarticPolynomial::QuarticPolynomial(double current_position,
                                      double current_acceleration,
                                      double expected_velocity,
                                      double expected_acceleration,
-                                     double time)
-{
+                                     double time) {
   coefficient_a0_ = current_position;
   coefficient_a1_ = current_velocity;
   coefficient_a2_ = current_acceleration / 2.0;
@@ -31,27 +30,23 @@ QuarticPolynomial::QuarticPolynomial(double current_position,
   coefficient_a4_ = matrix_x.at<double>(1, 0);
 }
 
-double QuarticPolynomial::calculate_zeroth_derivative(double time)
-{
+double QuarticPolynomial::calculate_zeroth_derivative(double time) {
   return coefficient_a0_ + coefficient_a1_ * time +
          coefficient_a2_ * pow(time, 2) + coefficient_a3_ * pow(time, 3) +
          coefficient_a4_ * pow(time, 4);
 }
 
-double QuarticPolynomial::calculate_first_derivative(double time)
-{
+double QuarticPolynomial::calculate_first_derivative(double time) {
   return coefficient_a1_ + 2 * coefficient_a2_ * time +
          3 * coefficient_a3_ * pow(time, 2) +
          4 * coefficient_a4_ * pow(time, 3);
 }
 
-double QuarticPolynomial::calculate_second_derivative(double time)
-{
+double QuarticPolynomial::calculate_second_derivative(double time) {
   return 2 * coefficient_a2_ + 6 * coefficient_a3_ * time +
          12 * coefficient_a4_ * pow(time, 2);
 }
 
-double QuarticPolynomial::calculate_third_derivative(double time)
-{
+double QuarticPolynomial::calculate_third_derivative(double time) {
   return 6 * coefficient_a3_ + 24 * coefficient_a4_ * time;
 }

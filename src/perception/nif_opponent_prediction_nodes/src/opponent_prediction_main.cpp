@@ -10,13 +10,13 @@
 #include "nif_utils/utils.h"
 #include "rcutils/error_handling.h"
 
-int32_t main(int32_t argc, char** argv) {
+int32_t main(int32_t argc, char **argv) {
   rclcpp::init(argc, argv);
 
   using nif::perception::FrenetBasedOpponentPredictor;
   using namespace nif::common::constants;
 
-  const char* node_name = "opponent_predictor_node";
+  const char *node_name = "opponent_predictor_node";
 
   rclcpp::Node::SharedPtr nd;
 
@@ -27,7 +27,7 @@ int32_t main(int32_t argc, char** argv) {
     rclcpp::NodeOptions options;
 
     nd = std::make_shared<FrenetBasedOpponentPredictor>(node_name);
-  } catch (std::exception& e) {
+  } catch (std::exception &e) {
     RCLCPP_FATAL(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
                  "FATAL ERROR during node initialization: ABORTING.\n%s",
                  e.what());
@@ -38,8 +38,7 @@ int32_t main(int32_t argc, char** argv) {
   rclcpp::shutdown();
 
   RCLCPP_INFO(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
-              "Shutting down %s [FrenetBasedOpponentPredictor]",
-              node_name);
+              "Shutting down %s [FrenetBasedOpponentPredictor]", node_name);
 
   return 0;
 }

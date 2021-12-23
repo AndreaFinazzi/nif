@@ -61,7 +61,7 @@ def get_share_file(package_name, file_name):
 
 def generate_launch_description():
     dbc_file_path = get_share_file(
-        package_name='raptor_dbw_can', file_name='launch/CAN1_INDY_V6.dbc'
+        package_name='raptor_dbw_can', file_name='launch/CAN1_INDY_V8.dbc'
     )
 
     raptor_node = Node(

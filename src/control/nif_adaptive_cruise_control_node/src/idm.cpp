@@ -16,14 +16,14 @@ IDM::IDM() {
   m_init_done_flg = true;
 }
 
-IDM::IDM(const std::string& config_file_path_) {
+IDM::IDM(const std::string &config_file_path_) {
   m_idm_config_file_path = config_file_path_;
 
   loadConfig(m_idm_config_file_path);
   m_init_done_flg = true;
 }
 
-void IDM::loadConfig(const std::string& config_file_path_) {
+void IDM::loadConfig(const std::string &config_file_path_) {
   YAML::Node config = YAML::LoadFile(config_file_path_);
 
   if (!config["acc_config_param"]) {
@@ -83,20 +83,12 @@ void IDM::loadConfig(const std::string& config_file_path_) {
   }
 }
 
-void IDM::setParams(const IDM_PARAM& param_) {
-  m_idm_param = param_;
-}
+void IDM::setParams(const IDM_PARAM &param_) { m_idm_param = param_; }
 
-IDM_PARAM IDM::getParams() {
-  return m_idm_param;
-}
+IDM_PARAM IDM::getParams() { return m_idm_param; }
 
-void IDM::setParamS0(const double s0_) {
-  m_idm_param.s0 = s0_;
-}
-void IDM::setParamS1(const double s1_) {
-  m_idm_param.s1 = s1_;
-}
+void IDM::setParamS0(const double s0_) { m_idm_param.s0 = s0_; }
+void IDM::setParamS1(const double s1_) { m_idm_param.s1 = s1_; }
 void IDM::setParamVDesired(const double v_desired_) {
   m_idm_param.v_desired = v_desired_;
 }
@@ -112,63 +104,34 @@ void IDM::setParamDecelDesired(const double decel_desired_) {
 void IDM::setParamAccelDelta(const double delta_) {
   m_idm_param.delta = delta_;
 }
-void IDM::setParamVehLen(const double veh_l_) {
-  m_idm_param.veh_l = veh_l_;
-}
-void IDM::setEgoVel(double ego_vel_) {
-  m_ego_vel_abs = ego_vel_;
-}
+void IDM::setParamVehLen(const double veh_l_) { m_idm_param.veh_l = veh_l_; }
+void IDM::setEgoVel(double ego_vel_) { m_ego_vel_abs = ego_vel_; }
 void IDM::setOppoStatus(double gap_, double cipv_vel_rel_) {
   m_cur_gap = gap_;
   m_cipv_vel_rel = cipv_vel_rel_;
 }
 
-double IDM::getParamS0() {
-  return m_idm_param.s0;
-}
-double IDM::getParamS1() {
-  return m_idm_param.s1;
-}
-double IDM::getParamVDesired() {
-  return m_idm_param.v_desired;
-}
-double IDM::getParamTimeHeadway() {
-  return m_idm_param.time_headway;
-}
-double IDM::getParamAccelMax() {
-  return m_idm_param.accel_max;
-}
-double IDM::getParamDecelDesired() {
-  return m_idm_param.decel_desired;
-}
-double IDM::getParamAccelDelta() {
-  return m_idm_param.delta;
-}
-double IDM::getParamVehLen() {
-  return m_idm_param.veh_l;
-}
+double IDM::getParamS0() { return m_idm_param.s0; }
+double IDM::getParamS1() { return m_idm_param.s1; }
+double IDM::getParamVDesired() { return m_idm_param.v_desired; }
+double IDM::getParamTimeHeadway() { return m_idm_param.time_headway; }
+double IDM::getParamAccelMax() { return m_idm_param.accel_max; }
+double IDM::getParamDecelDesired() { return m_idm_param.decel_desired; }
+double IDM::getParamAccelDelta() { return m_idm_param.delta; }
+double IDM::getParamVehLen() { return m_idm_param.veh_l; }
 
 void IDM::calcAccel(double ego_vel_, double gap_, double cipv_vel_rel_) {
   // Calculate ACC command using IDM
-  auto cipv_vel_rel =  ego_vel_ - cipv_vel_rel_; // in IDM, other_v_rel == ego_v - other_v
-
-
-  std::cout << "cipv_vel_rel : " << cipv_vel_rel << std::endl; 
+  auto cipv_vel_rel =
+      ego_vel_ - cipv_vel_rel_; // in IDM, other_v_rel == ego_v - other_v
 
   if (m_estop_flg) {
     cipv_vel_rel_ = ego_vel_;
   }
   ego_vel_ = std::max(ego_vel_, 0.0);
 
-  double tmp = m_idm_param.s1 * sqrt(ego_vel_ / m_idm_param.v_desired) +
-      m_idm_param.time_headway * ego_vel_ +
-      ego_vel_ * cipv_vel_rel /
-          (2 * sqrt(m_idm_param.accel_max * m_idm_param.decel_desired));;
-
-  std::cout << "tmp : " << tmp << std::endl;
-
-  auto desired_gap = m_idm_param.s0 +
-      m_idm_param.s1 * sqrt(ego_vel_ / m_idm_param.v_desired) +
+  auto desired_gap =
+      m_idm_param.s0 + m_idm_param.s1 * sqrt(ego_vel_ / m_idm_param.v_desired) +
       m_idm_param.time_headway * ego_vel_ +
       ego_vel_ * cipv_vel_rel /
           (2 * sqrt(m_idm_param.accel_max * m_idm_param.decel_desired));
@@ -179,13 +142,12 @@ void IDM::calcAccel(double ego_vel_, double gap_, double cipv_vel_rel_) {
     curr_gap = 0.5 * m_idm_param.s0;
   }
 
-  m_desired_accel = m_idm_param.accel_max *
+  m_desired_accel =
+      m_idm_param.accel_max *
       (1 - pow((ego_vel_ / m_idm_param.v_desired), m_idm_param.delta) -
        pow((desired_gap / curr_gap), 2));
-  m_desired_accel = std::clamp(
-      m_desired_accel, -1 * m_idm_param.decel_desired, m_idm_param.accel_max);
+  m_desired_accel = std::clamp(m_desired_accel, -1 * m_idm_param.decel_desired,
+                               m_idm_param.accel_max);
 }
 
-double IDM::getACCCmd() {
-  return m_desired_accel;
-}
+double IDM::getACCCmd() { return m_desired_accel; }

@@ -81,8 +81,10 @@ void nif::control::ControlSafetyLayerNode::run() {
 
   if (this->wall_distance_outer > 0.0 &&
       this->wall_distance_outer < this->wall_distance_min_threshold_m &&
-      (this->missionIs(MissionStatus::MISSION_RACE) ||
-       this->missionIs(MissionStatus::MISSION_SLOW_DRIVE) ||
+      (this->missionIs(MissionStatus::MISSION_RACE)           ||
+       this->missionIs(MissionStatus::MISSION_KEEP_POSITION)  ||
+       this->missionIs(MissionStatus::MISSION_CONSTANT_SPEED)  ||
+       this->missionIs(MissionStatus::MISSION_SLOW_DRIVE)     ||
        this->missionIs(MissionStatus::MISSION_COMMANDED_STOP))) {
     this->emergency_wall_distance = true;
   } else {
