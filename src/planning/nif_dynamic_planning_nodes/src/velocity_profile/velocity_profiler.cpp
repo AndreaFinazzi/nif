@@ -204,9 +204,7 @@ velocity_profiler::velProfile(const nav_msgs::msg::Odometry &odom_,
 
     double point_x = std::get<0>(position);
     double point_y = std::get<1>(position);
-
     double yaw = cubic_spliner_2D->calculate_yaw(point_s);
-
     double curvature = cubic_spliner_2D->calculate_curvature(point_s);
 
     geometry_msgs::msg::PoseStamped ps;
@@ -261,6 +259,16 @@ velocity_profiler::velProfile(const nav_msgs::msg::Odometry &odom_,
 
     point_s += spline_interval_;
   }
+
+  // std::vector<double> delta_curvature(cubic_spliner_curvature.size());
+  // std::adjacent_difference(cubic_spliner_curvature.begin(), cubic_spliner_curvature.end(), delta_curvature.begin());
+  // delta_curvature.erase(delta_curvature.begin());
+
+  auto is_too_curvy = std::any_of(cubic_spliner_curvature.begin(), cubic_spliner_curvature.end(),
+                    [&](double curvature) { return (abs(curvature) > 0.1 );});
+
+  std::cout << "is too curvy? : " << is_too_curvy << std::endl;
+
   return out_traj;
 }
 
