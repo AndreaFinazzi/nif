@@ -25,6 +25,7 @@
 #include "nif_utils/utils.h"
 #include "rclcpp/rclcpp.hpp"
 #include "rcutils/error_handling.h"
+#include "separating_axis_theorem/separating_axis_theorem.hpp"
 #include "std_msgs/msg/float32.hpp"
 #include "velocity_profile/velocity_profiler.hpp"
 #include <cmath>
@@ -189,6 +190,13 @@ public:
       const double collision_dist_boundary,
       const double
           collision_time_boundary); // if there is collision, return true.
+
+  bool
+  collisionCheckBTWtrajs(const nif_msgs::msg::DynamicTrajectory &ego_traj_,
+                         const nif_msgs::msg::DynamicTrajectory &oppo_traj_,
+                         const double collision_dist_boundary,
+                         const double collision_time_boundary,
+                         bool use_sat_); // if there is collision, return true.
 
   bool collisionCheckBTWtrajsNFrenet(
       std::shared_ptr<FrenetPath> ego_frenet_traj_,

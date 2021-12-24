@@ -27,7 +27,6 @@ include_directories(
 ament_auto_add_library(${PROJECT_NAME} SHARED
         src/velocity_profile/velocity_profiler.cpp
         src/quintic_polynomials_planner.cpp
-        src/separating_axis_theorem/separating_axis_theorem.cpp
         src/dynamic_planning_node_v2.cpp
         )
 

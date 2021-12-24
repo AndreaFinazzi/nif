@@ -1,1 +1,0 @@
-#include <nif_dynamic_planning_nodes/separating_axis_theorem/separating_axis_theorem.hpp>

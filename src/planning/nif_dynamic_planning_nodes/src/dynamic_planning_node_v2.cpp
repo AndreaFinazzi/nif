@@ -1295,10 +1295,10 @@ void DynamicPlannerNode::timer_callback() {
           auto race_traj = m_velocity_profiler_ptr->velProfile(
               m_ego_odom, raceline_path_seg, 1.0);
 
-          auto collision_raceline =
-              collisionCheckBTWtrajs(race_traj, m_cur_oppo_pred_result,
-                                     m_config_overlap_checking_dist_bound,
-                                     m_config_overlap_checking_time_bound);
+          auto collision_raceline = collisionCheckBTWtrajs(
+              race_traj, m_cur_oppo_pred_result,
+              m_config_overlap_checking_dist_bound,
+              m_config_overlap_checking_time_bound, true);
 
           if (!collision_raceline) {
             // Change the defualt path to the racing line
@@ -1337,7 +1337,7 @@ void DynamicPlannerNode::timer_callback() {
         auto is_collision =
             collisionCheckBTWtrajs(cur_traj, m_cur_oppo_pred_result,
                                    m_config_overlap_checking_dist_bound,
-                                   m_config_overlap_checking_time_bound);
+                                   m_config_overlap_checking_time_bound, true);
 
         if (!is_collision) {
           // keep current planned traj
@@ -1385,26 +1385,80 @@ void DynamicPlannerNode::timer_callback() {
               //  jerky)
               auto frenet_candidate = frenet_path_generation_result[frenet_idx];
 
-              auto is_collision = collisionCheckBTWtrajsNFrenet(
-                  frenet_candidate, m_cur_oppo_pred_result,
+              // auto is_collision = collisionCheckBTWtrajsNFrenet(
+              //     frenet_candidate, m_cur_oppo_pred_result,
+              //     m_config_overlap_checking_dist_bound,
+              //     m_config_overlap_checking_time_bound);
+              // if (!is_collision) {
+              //   // TODO: Currently, if the frenet path is collision-free, we
+              //   // just follow that path to overtake.
+              //   m_cur_planned_traj = stitchFrenetToPath(
+              //       frenet_candidate,
+              //       m_overtaking_candidates_path_vec[path_candidate_idx]);
+              //   auto cur_path_seg = getCertainLenOfPathSeg(
+              //       m_ego_odom.pose.pose.position.x,
+              //       m_ego_odom.pose.pose.position.y,
+              //       m_cur_planned_traj.trajectory_path, 200);
+              //   auto cur_traj = m_velocity_profiler_ptr->velProfile(
+              //       m_ego_odom, cur_path_seg, 1.0);
+              //   // Publish cur_traj
+              //   // publishPlannedTrajectory(cur_traj, false, true);
+              //   TARGET_PATH_TYPE path_type;
+              //   if (m_overtaking_candidates_alias_vec[path_candidate_idx] ==
+              //       "raceline") {
+              //     path_type = TARGET_PATH_TYPE::PATH_RACELINE;
+              //   } else if (m_overtaking_candidates_alias_vec
+              //                  [path_candidate_idx] == "center") {
+              //     path_type = TARGET_PATH_TYPE::PATH_CENTER;
+              //   } else if (m_overtaking_candidates_alias_vec
+              //                  [path_candidate_idx] == "right") {
+              //     path_type = TARGET_PATH_TYPE::PATH_RIGHT;
+              //   } else if (m_overtaking_candidates_alias_vec
+              //                  [path_candidate_idx] == "left") {
+              //     path_type = TARGET_PATH_TYPE::PATH_LEFT;
+              //   } else if (m_overtaking_candidates_alias_vec
+              //                  [path_candidate_idx] == "center_right") {
+              //     path_type = TARGET_PATH_TYPE::PATH_CENTER_RIGHT;
+              //   } else if (m_overtaking_candidates_alias_vec
+              //                  [path_candidate_idx] == "center_left") {
+              //     path_type = TARGET_PATH_TYPE::PATH_CENTER_LEFT;
+              //   } else if (m_overtaking_candidates_alias_vec
+              //                  [path_candidate_idx] == "race_ready") {
+              //     path_type = TARGET_PATH_TYPE::PATH_RACE_READY;
+              //   } else {
+              //     std::cout << "Unknown path type." << std::endl;
+              //   }
+              //   publishPlannedTrajectory(
+              //       cur_traj, LONGITUDINAL_PLANNING_TYPE::STRAIGHT,
+              //       LATERAL_PLANNING_TYPE::CHANGE_PATH, path_type, true);
+              //   return;
+              //   collision_free_frenet_vec.push_back(frenet_candidate);
+              //   collision_free_frenet_index_vec.push_back(path_candidate_idx);
+              // }
+
+              ///////////////
+              // New vertsion
+              ///////////////
+
+              // TODO: Currently, if the frenet path is collision-free, we
+              // just follow that path to overtake.
+              m_cur_planned_traj = stitchFrenetToPath(
+                  frenet_candidate,
+                  m_overtaking_candidates_path_vec[path_candidate_idx]);
+
+              auto cur_path_seg = getCertainLenOfPathSeg(
+                  m_ego_odom.pose.pose.position.x,
+                  m_ego_odom.pose.pose.position.y,
+                  m_cur_planned_traj.trajectory_path, 200);
+              auto cur_traj = m_velocity_profiler_ptr->velProfile(
+                  m_ego_odom, cur_path_seg, 1.0);
+
+              auto has_collision = collisionCheckBTWtrajs(
+                  cur_traj, m_cur_oppo_pred_result,
                   m_config_overlap_checking_dist_bound,
-                  m_config_overlap_checking_time_bound);
+                  m_config_overlap_checking_time_bound, true);
 
-              if (!is_collision) {
-
-                // TODO: Currently, if the frenet path is collision-free, we
-                // just follow that path to overtake.
-                m_cur_planned_traj = stitchFrenetToPath(
-                    frenet_candidate,
-                    m_overtaking_candidates_path_vec[path_candidate_idx]);
-
-                auto cur_path_seg = getCertainLenOfPathSeg(
-                    m_ego_odom.pose.pose.position.x,
-                    m_ego_odom.pose.pose.position.y,
-                    m_cur_planned_traj.trajectory_path, 200);
-                auto cur_traj = m_velocity_profiler_ptr->velProfile(
-                    m_ego_odom, cur_path_seg, 1.0);
-
+              if (!has_collision) {
                 // Publish cur_traj
                 // publishPlannedTrajectory(cur_traj, false, true);
                 TARGET_PATH_TYPE path_type;
@@ -1437,10 +1491,10 @@ void DynamicPlannerNode::timer_callback() {
                     cur_traj, LONGITUDINAL_PLANNING_TYPE::STRAIGHT,
                     LATERAL_PLANNING_TYPE::CHANGE_PATH, path_type, true);
                 return;
-
-                collision_free_frenet_vec.push_back(frenet_candidate);
-                collision_free_frenet_index_vec.push_back(path_candidate_idx);
               }
+
+              collision_free_frenet_vec.push_back(frenet_candidate);
+              collision_free_frenet_index_vec.push_back(path_candidate_idx);
             }
           }
 
@@ -1765,5 +1819,55 @@ void DynamicPlannerNode::timer_callback() {
     // ESTOP
     nif::common::NodeStatusCode node_status = nif::common::NODE_INITIALIZED;
     this->setNodeStatus(node_status);
+  }
+}
+
+bool DynamicPlannerNode::collisionCheckBTWtrajs(
+    const nif_msgs::msg::DynamicTrajectory &ego_traj_,
+    const nif_msgs::msg::DynamicTrajectory &oppo_traj_,
+    const double collision_dist_boundary, const double collision_time_boundary,
+    bool use_sat_) {
+
+  double collision_time_filetered = collision_time_boundary;
+  if (collision_time_filetered < 1.0) {
+    std::cout << "Too risky. Set to 1 sec as default" << std::endl;
+    collision_time_filetered = 1.0;
+  }
+
+  if (!use_sat_) { // if there is collision, return true
+
+    bool is_collision = false;
+    for (int ego_traj_idx = 0;
+         ego_traj_idx < ego_traj_.trajectory_path.poses.size();
+         ego_traj_idx++) {
+      for (int oppo_traj_idx = 0;
+           oppo_traj_idx < oppo_traj_.trajectory_path.poses.size();
+           oppo_traj_idx++) {
+        double dist = sqrt(
+            pow((ego_traj_.trajectory_path.poses[ego_traj_idx].pose.position.x -
+                 oppo_traj_.trajectory_path.poses[oppo_traj_idx]
+                     .pose.position.x),
+                2) +
+            pow((ego_traj_.trajectory_path.poses[ego_traj_idx].pose.position.y -
+                 oppo_traj_.trajectory_path.poses[oppo_traj_idx]
+                     .pose.position.y),
+                2));
+
+        double time_diff =
+            abs(ego_traj_.trajectory_timestamp_array[ego_traj_idx] -
+                oppo_traj_.trajectory_timestamp_array[oppo_traj_idx]);
+
+        if (dist < collision_dist_boundary &&
+            time_diff < collision_time_filetered) {
+          is_collision = true;
+          return is_collision;
+        }
+      }
+    }
+    return is_collision;
+  } else {
+    // USE SAT
+    return nif::planning::sat::separating_axis_intersect_traj(
+        ego_traj_, oppo_traj_, collision_time_filetered);
   }
 }

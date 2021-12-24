@@ -1,6 +1,7 @@
 #ifndef __SEPARATING_AXIS_THEOREM_H__
 #define __SEPARATING_AXIS_THEOREM_H__
 
+#include "nif_msgs/msg/dynamic_trajectory.hpp"
 #include <algorithm>
 #include <cmath>
 #include <iostream>
@@ -18,7 +19,9 @@ typedef struct {
 } Vector2;
 
 // Returns the dot products of two vectors
-double dot(const Vector2 &A, const Vector2 &B) { return A.x * B.x + A.y * B.y; }
+double sat_dot(const Vector2 &A, const Vector2 &B) {
+  return A.x * B.x + A.y * B.y;
+}
 
 std::vector<Vector2> calculate_bounds(const double x, const double y,
                                       const double yaw,
@@ -76,8 +79,8 @@ void compute_projections(const std::vector<Vector2> &bounds_a,
   projections_b.reserve(bounds_b.size());
 
   for (size_t j = 0; j < bounds_a.size(); j++) {
-    const double projection_a = dot(axis_normalised, bounds_a[j]);
-    const double projection_b = dot(axis_normalised, bounds_b[j]);
+    const double projection_a = sat_dot(axis_normalised, bounds_a[j]);
+    const double projection_b = sat_dot(axis_normalised, bounds_b[j]);
     projections_a.push_back(projection_a);
     projections_b.push_back(projection_b);
   }
@@ -156,6 +159,66 @@ bool separating_axis_intersect(const std::vector<Vector2> &bounds_a,
 
   // Intersects
   return true;
+}
+
+// Check if two trajectories intersect
+bool separating_axis_intersect_traj(
+    const nif_msgs::msg::DynamicTrajectory &traj_a_,
+    const nif_msgs::msg::DynamicTrajectory &traj_b_,
+    const double time_diff_tres = 2.0) {
+
+  bool has_collision = true;
+
+  const double centre_to_front = 3.0;
+  const double centre_to_rear = 3.0;
+  const double centre_to_side = 2.0;
+
+  for (int traj_idx_a = 0; traj_idx_a < traj_a_.trajectory_path.poses.size();
+       traj_idx_a++) {
+    for (int traj_idx_b = 0; traj_idx_b < traj_b_.trajectory_path.poses.size();
+         traj_idx_b++) {
+
+      // To save the computation power
+      if (nif::common::utils::geometry::calEuclideanDistance(
+              traj_a_.trajectory_path.poses[traj_idx_a].pose,
+              traj_b_.trajectory_path.poses[traj_idx_b].pose) > 10) {
+        // If two point is far from each other more than XX meter, we don't have
+        // to check with SAT
+        continue;
+      }
+
+      auto bound_a = calculate_bounds(
+          traj_a_.trajectory_path.poses[traj_idx_a].pose.position.x,
+          traj_a_.trajectory_path.poses[traj_idx_a].pose.position.y,
+          nif::common::utils::coordination::quat2yaw(
+              traj_a_.trajectory_path.poses[traj_idx_a].pose.orientation),
+          centre_to_front, centre_to_rear, centre_to_side);
+
+      auto bound_b = calculate_bounds(
+          traj_b_.trajectory_path.poses[traj_idx_b].pose.position.x,
+          traj_b_.trajectory_path.poses[traj_idx_b].pose.position.y,
+          nif::common::utils::coordination::quat2yaw(
+              traj_b_.trajectory_path.poses[traj_idx_b].pose.orientation),
+          centre_to_front, centre_to_rear, centre_to_side);
+
+      if (separating_axis_intersect(bound_a, bound_b) == true) {
+        // Two polygons intersect
+        // check the time difference
+        if (abs(traj_a_.trajectory_timestamp_array[traj_idx_a] -
+                traj_b_.trajectory_timestamp_array[traj_idx_b]) <
+            time_diff_tres) {
+          // Case :  two polygons intersect and time is closer. Consider as a
+          // collision
+          has_collision = true;
+          return has_collision;
+        } else {
+          continue;
+        }
+      }
+    }
+  }
+
+  return has_collision;
 }
 
 } // namespace sat
