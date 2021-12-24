@@ -50,6 +50,22 @@ public:
   //   desired_vx_ = msg->data;
   // }
 
+  /**
+   * @brief Return the index of the first element greater-equal value in the
+   * array, or the index of the last element if none is greater-equal value.
+   *
+   * @param vec
+   * @param value
+   * @return int
+   */
+  inline int closest(std::vector<float> const &vec, double value) {
+    auto it = std::lower_bound(vec.begin(), vec.end(), value);
+    if (it == vec.end()) {
+      return *(--it);
+    }
+    return *it;
+  };
+
   // ACC
   void accCMDCallback(const std_msgs::msg::Float32::SharedPtr msg) {
     acc_accel_cmd_mpss = msg->data;

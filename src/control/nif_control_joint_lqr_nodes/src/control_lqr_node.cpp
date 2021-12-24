@@ -288,9 +288,33 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
            rclcpp::Duration(1, 0))) {
         // TODO: Review this with Hyunki
         // FIXME:
-        l_desired_velocity = this->getReferenceTrajectory()
-                                 ->trajectory_velocity[lqr_tracking_idx_];
+        // l_desired_velocity = this->getReferenceTrajectory()
+        //                          ->trajectory_velocity[lqr_tracking_idx_];
+
+        ////////////////////////////////////
+        // Look-ahead time implementation //
+        ////////////////////////////////////
+        double test_lookahead_time = 0.8;
+        // step 1. Search the nearest time within the trajectory's timestamp
+        // array
+        auto closest_time_idx = this->closest(
+            this->getReferenceTrajectory()->trajectory_timestamp_array,
+            test_lookahead_time);
+
+        // step 2. Safety feature
+        auto time_differ =
+            abs(this->getReferenceTrajectory()
+                    ->trajectory_timestamp_array[closest_time_idx] -
+                test_lookahead_time);
+
+        if (time_differ < 2) {
+          l_desired_velocity = this->getReferenceTrajectory()
+                                   ->trajectory_velocity[closest_time_idx];
+        } else {
+          l_desired_velocity = 0.0;
+        }
       }
+
       if (!m_use_mission_max_vel_) {
         // if not using mission status maximum velocity,
         // directly use des_vel from velocity planner
