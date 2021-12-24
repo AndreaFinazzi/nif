@@ -8,7 +8,7 @@
 // #define MAX_ROAD_WIDTH 1.0   // maximum road width [m]
 #define MAX_ROAD_WIDTH 0.5 // maximum road width [m]
 #define D_ROAD_W 0.5       // road width sampling length [m]
-#define DT 0.2             // time tick [s]
+#define DT 0.5             // time tick [s]
 #define MAX_T                                                                  \
   4.01 // max prediction time [m] ----------------> python code에서 floating \
        // point가 잘 못되서 +- 0.1을 해줌
@@ -247,26 +247,30 @@ FrenetPathGenerator::generate_frenet_paths_v2(
               third_derivative_s);
         }
 
+        // double jerk_d = 0;
+        // const std::vector<double> &third_derivative_d =
+        //     frenet_path_target_velocity_s->third_derivative_d();
+        // for (auto itr = third_derivative_d.begin();
+        //      itr != third_derivative_d.end(); itr++) {
+        //   jerk_d += pow(*itr, 2);
+        // }
+
+        // double jerk_s = 0;
+        // const std::vector<double> &third_derivative_s =
+        //     frenet_path_target_velocity_s->third_derivative_s();
+        // for (auto itr = third_derivative_s.begin();
+        //      itr != third_derivative_s.end(); itr++) {
+        //   jerk_s += pow(*itr, 2);
+        // }
+
+        // double delta_velocity =
+        //     pow(TARGET_SPEED -
+        //             frenet_path_target_velocity_s->first_derivative_s().back(),
+        //         2);
+
         double jerk_d = 0;
-        const std::vector<double> &third_derivative_d =
-            frenet_path_target_velocity_s->third_derivative_d();
-        for (auto itr = third_derivative_d.begin();
-             itr != third_derivative_d.end(); itr++) {
-          jerk_d += pow(*itr, 2);
-        }
-
         double jerk_s = 0;
-        const std::vector<double> &third_derivative_s =
-            frenet_path_target_velocity_s->third_derivative_s();
-        for (auto itr = third_derivative_s.begin();
-             itr != third_derivative_s.end(); itr++) {
-          jerk_s += pow(*itr, 2);
-        }
-
-        double delta_velocity =
-            pow(TARGET_SPEED -
-                    frenet_path_target_velocity_s->first_derivative_s().back(),
-                2);
+        double delta_velocity = 0;
 
         double cost_d = K_J * jerk_d + K_T * time +
                         K_D * pow(frenet_path->points_d().back(), 2);
@@ -282,7 +286,7 @@ FrenetPathGenerator::generate_frenet_paths_v2(
         target_velocity_s += D_T_S;
       }
 
-      time += dt;
+      time += DT;
     }
     expected_position_d += width_d;
   }

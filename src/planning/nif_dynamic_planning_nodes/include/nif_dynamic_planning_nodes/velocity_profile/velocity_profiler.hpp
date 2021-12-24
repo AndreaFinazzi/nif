@@ -1,13 +1,16 @@
 #ifndef __VELOCITY_PROFILER_H__
 #define __VELOCITY_PROFILER_H__
 
+#include "nif_common/constants.h"
+#include "nif_vehicle_dynamics_manager/tire_manager.hpp"
 #include <algorithm>
 #include <cstdint>
 #include <iostream>
 #include <math.h>
 #include <nif_opponent_prediction_nodes/frenet_path_generator.h>
 #include <yaml-cpp/yaml.h>
-#include "nif_common/constants.h"
+
+#define MIN_SPEED_MPS 1.0
 
 class velocity_profiler {
 private:
@@ -44,6 +47,11 @@ private:
   nif_msgs::msg::DynamicTrajectory m_profiled_traj;
   nif_msgs::msg::DynamicTrajectory m_predicted_cipv_traj;
 
+  // Tire dynamics
+  double m_lat_tire_factor = 1.0; // "Parameter lateral_tire_model_factor must
+                                  // be lower or equal than 1.0 "
+  TireManager m_tire_manager;
+
 public:
   velocity_profiler(std::string config_file_path_);
 
@@ -60,26 +68,16 @@ public:
   bool checkConfig();
   bool parseConfig(const std::string &config_file_path_);
 
-  /**
-   * @brief Return the index of the first element greater-equal value in the array, 
-   * or the index of the last element if none is greater-equal value. 
-   * 
-   * @param vec 
-   * @param value 
-   * @return int 
-   */
-  inline int closest(std::vector<float> const &vec, double value) {
-    auto it = std::lower_bound(vec.begin(), vec.end(), value);
-    if (it == vec.end()) {
-      return *(--it);
-    }
-    return *it;
-  };
-
   nif_msgs::msg::DynamicTrajectory
   velProfile(const nav_msgs::msg::Odometry &odom_,
              const nav_msgs::msg::Path &target_path_,
              const double &spline_interval_);
+
+  nif_msgs::msg::DynamicTrajectory
+  velProfilewithDynamics(const nav_msgs::msg::Odometry &odom_,
+                         const nav_msgs::msg::Path &target_path_,
+                         const double &spline_interval_);
+
   nif_msgs::msg::DynamicTrajectory
   velProfileForAcc(const nav_msgs::msg::Odometry &odom_,
                    const nif_msgs::msg::DynamicTrajectory &cipv_predicted_traj_,

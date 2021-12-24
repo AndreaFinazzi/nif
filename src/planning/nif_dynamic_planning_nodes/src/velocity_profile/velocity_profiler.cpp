@@ -217,20 +217,32 @@ velocity_profiler::velProfile(const nav_msgs::msg::Odometry &odom_,
     out_traj.trajectory_path.poses.push_back(ps);
 
     if (point_s == 0.0) {
-      out_traj.trajectory_velocity.push_back(odom_.twist.twist.linear.x);
+      out_traj.trajectory_velocity.push_back(
+          std::max(odom_.twist.twist.linear.x, MIN_SPEED_MPS));
     } else {
 
-      double curve_vel = m_constraint_max_vel;
-      if(abs(curvature) > 0.000001) {
-        curve_vel = std::min(m_constraint_max_vel,
+      double curve_vel =
+          std::min(m_constraint_max_vel,
                    sqrt(abs(m_constraint_max_lat_accel) / abs(curvature)));
+
+      double step_limited_vel = 0.0;
+      if (curve_vel < out_traj.trajectory_velocity.back()) {
+        // deceleration case
+        step_limited_vel =
+            std::min(curve_vel, out_traj.trajectory_velocity.back() +
+                                    (spline_interval_ /
+                                     out_traj.trajectory_velocity.back()) *
+                                        (-1 * abs(m_constraint_max_deccel)));
+      } else {
+        // acceleration case
+        step_limited_vel =
+            std::min(curve_vel, out_traj.trajectory_velocity.back() +
+                                    (spline_interval_ /
+                                     out_traj.trajectory_velocity.back()) *
+                                        abs(m_constraint_max_accel));
       }
-      double step_limited_vel =
-          std::min(curve_vel, out_traj.trajectory_velocity.back() +
-                                  (spline_interval_ /
-                                   out_traj.trajectory_velocity.back()) *
-                                      m_constraint_max_accel);
-      double vel = std::max(step_limited_vel, 0.0);
+
+      double vel = std::max(step_limited_vel, MIN_SPEED_MPS);
       out_traj.trajectory_velocity.push_back(vel);
     }
 
@@ -239,8 +251,7 @@ velocity_profiler::velProfile(const nav_msgs::msg::Odometry &odom_,
     } else {
       out_traj.trajectory_timestamp_array.push_back(
           out_traj.trajectory_timestamp_array.back() +
-          (spline_interval_ /
-           (out_traj.trajectory_velocity.back() + 1e-6)));
+          (spline_interval_ / (out_traj.trajectory_velocity.back())));
     }
 
     cubic_spliner_x.push_back(point_x);
@@ -263,23 +274,22 @@ nif_msgs::msg::DynamicTrajectory velocity_profiler::velProfileForAcc(
 
   auto naive_gap = 0.;
 
-  if(!cipv_predicted_traj_.trajectory_path.poses.empty())
-  {
-    naive_gap= sqrt(pow(odom_.pose.pose.position.x -
-                    cipv_predicted_traj_.trajectory_path.poses.front()
-                        .pose.position.x,
-                2) +
-            pow(odom_.pose.pose.position.y -
-                    cipv_predicted_traj_.trajectory_path.poses.front()
-                        .pose.position.y,
-                2));
+  if (!cipv_predicted_traj_.trajectory_path.poses.empty()) {
+    naive_gap = sqrt(pow(odom_.pose.pose.position.x -
+                             cipv_predicted_traj_.trajectory_path.poses.front()
+                                 .pose.position.x,
+                         2) +
+                     pow(odom_.pose.pose.position.y -
+                             cipv_predicted_traj_.trajectory_path.poses.front()
+                                 .pose.position.y,
+                         2));
   } else {
-    naive_gap = nif::common::constants::numeric::INF ;
+    naive_gap = nif::common::constants::numeric::INF;
   }
 
   if (naive_gap > 120.0) {
     //   Dont care about the ACC
-    return velProfile(odom_, target_path_, spline_interval_);
+    return velProfilewithDynamics(odom_, target_path_, spline_interval_);
   } else {
     // Care about the ACC in the trajectory planning
     std::vector<double> target_path_x(target_path_.poses.size(), 0.0);
@@ -323,35 +333,49 @@ nif_msgs::msg::DynamicTrajectory velocity_profiler::velProfileForAcc(
 
       if (point_s == 0.0) {
         out_traj.trajectory_velocity.push_back(
-            odom_.twist.twist.linear.x);
+            std::max(odom_.twist.twist.linear.x, MIN_SPEED_MPS));
         out_traj.trajectory_timestamp_array.push_back(0.0);
       } else {
+        // Curvauture-based velocity
         double curve_vel =
-            std::min(m_constraint_max_vel,
+            std::min(m_constraint_max_vel / 3.6,
                      sqrt(abs(m_constraint_max_lat_accel) / abs(curvature)));
 
-        // TODO check decelerating scenarios
-        double step_limited_vel = std::min(
-            curve_vel, out_traj.trajectory_velocity.back() +
-                           (spline_interval_ /
-                            out_traj.trajectory_velocity.back()) *
-                               m_constraint_max_accel);
+        // Dynamics-based velocity
+        // - use zero-acceleration (no weight transfer effect)
+        double a_lon = 0.0;
+        double a_lat = 0.0;
+        // - use zero-bank angle
+        double bank_angle = 0.0;
+        // - estimate desired steering angle w.r.t each path point
+        double desired_steering_angle =
+            atan2(m_tire_manager.L * curvature, 1.0);
+        // - estimate desried yaw rate w.r.t. each path point
+        double desired_yaw_rate =
+            curve_vel * sin(desired_steering_angle) / m_tire_manager.L;
+        // - estimate maximum lateral acceleration
+        double a_lat_max = m_tire_manager.ComputeLateralAccelLimit(
+            a_lon, a_lat, desired_yaw_rate, desired_steering_angle, curve_vel,
+            bank_angle);
+        // - compute desired velocity based on lateral dynamics equation
+        double dyn_vel = std::min(m_constraint_max_vel,
+                                  sqrt(abs(a_lat_max) / abs(curvature)));
 
         auto naive_idm_desired_gap =
             m_acc_config_s0 +
             m_acc_config_s1 * sqrt(out_traj.trajectory_velocity.back() /
                                    m_acc_config_v_desired) +
-            m_acc_config_time_headway *
-                out_traj.trajectory_velocity.back() +
+            m_acc_config_time_headway * out_traj.trajectory_velocity.back() +
             out_traj.trajectory_velocity.back() *
                 (out_traj.trajectory_velocity.back() - cipv_vel_abs_) /
-                (2 * sqrt(m_constraint_max_accel *
-                          (-1 * m_acc_config_decel_desired)));
+                (2 * sqrt(m_constraint_max_accel * m_acc_config_decel_desired));
 
         auto predictided_oppo_pose =
-            cipv_predicted_traj_.trajectory_path.poses[closest(
-                cipv_predicted_traj_.trajectory_timestamp_array,
-                out_traj.trajectory_timestamp_array.back())];
+            cipv_predicted_traj_.trajectory_path
+                .poses[
+                  nif::common::utils::closestIndex(
+                              cipv_predicted_traj_.trajectory_timestamp_array,
+                               out_traj.trajectory_timestamp_array.back())];
 
         auto naive_cur_gap = std::max(
             sqrt(pow(predictided_oppo_pose.pose.position.x - point_x, 2) +
@@ -361,28 +385,26 @@ nif_msgs::msg::DynamicTrajectory velocity_profiler::velProfileForAcc(
         auto acc_desired_accel =
             m_constraint_max_accel *
             (1 -
-             pow((out_traj.trajectory_velocity.back() /
-                  m_acc_config_v_desired),
+             pow((out_traj.trajectory_velocity.back() / m_acc_config_v_desired),
                  m_acc_config_delta) -
              pow((naive_idm_desired_gap / naive_cur_gap), 2));
 
         acc_desired_accel = std::clamp(
             acc_desired_accel, m_constraint_max_deccel, m_constraint_max_accel);
 
-        auto acc_limited_vel = std::min(
-            step_limited_vel, out_traj.trajectory_velocity.back() +
+        auto acc_limited_vel =
+            std::min(dyn_vel, out_traj.trajectory_velocity.back() +
                                   (spline_interval_ /
                                    out_traj.trajectory_velocity.back()) *
                                       acc_desired_accel);
 
-      double vel = std::max(acc_limited_vel, 0.0);
+        double vel = std::max(acc_limited_vel, MIN_SPEED_MPS);
 
         out_traj.trajectory_velocity.push_back(vel);
 
         out_traj.trajectory_timestamp_array.push_back(
             out_traj.trajectory_timestamp_array.back() +
-            (spline_interval_ /
-             (out_traj.trajectory_velocity.back() + 1e-6)));
+            (spline_interval_ / (out_traj.trajectory_velocity.back())));
       }
 
       cubic_spliner_x.push_back(point_x);
@@ -394,4 +416,119 @@ nif_msgs::msg::DynamicTrajectory velocity_profiler::velProfileForAcc(
     }
     return out_traj;
   }
+}
+
+nif_msgs::msg::DynamicTrajectory velocity_profiler::velProfilewithDynamics(
+    const nav_msgs::msg::Odometry &odom_,
+    const nav_msgs::msg::Path &target_path_, const double &spline_interval_) {
+  nif_msgs::msg::DynamicTrajectory out_traj;
+
+  std::vector<double> target_path_x(target_path_.poses.size(), 0.0);
+  std::vector<double> target_path_y(target_path_.poses.size(), 0.0);
+
+  out_traj.trajectory_path.poses.clear();
+  out_traj.trajectory_timestamp_array.clear();
+  out_traj.trajectory_velocity.clear();
+
+  for (int i = 0; i < target_path_.poses.size(); i++) {
+    target_path_x[i] = target_path_.poses[i].pose.position.x;
+    target_path_y[i] = target_path_.poses[i].pose.position.y;
+  }
+
+  std::shared_ptr<CubicSpliner2D> cubic_spliner_2D(
+      new CubicSpliner2D(target_path_x, target_path_y));
+
+  std::vector<double> cubic_spliner_x;
+  std::vector<double> cubic_spliner_y;
+  std::vector<double> cubic_spliner_yaw;
+  std::vector<double> cubic_spliner_curvature;
+
+  double point_s = 0.0;
+  double point_s_end = cubic_spliner_2D->points_s().back();
+
+  while (point_s < point_s_end) {
+    std::tuple<double, double> position =
+        cubic_spliner_2D->calculate_position(point_s);
+
+    double point_x = std::get<0>(position);
+    double point_y = std::get<1>(position);
+
+    double yaw = cubic_spliner_2D->calculate_yaw(point_s);
+
+    double curvature = cubic_spliner_2D->calculate_curvature(point_s);
+
+    geometry_msgs::msg::PoseStamped ps;
+    ps.pose.position.x = point_x;
+    ps.pose.position.y = point_y;
+    ps.pose.orientation =
+        nif::common::utils::coordination::euler2quat(yaw, 0.0, 0.0);
+    out_traj.trajectory_path.poses.push_back(ps);
+
+    if (point_s == 0.0) {
+      out_traj.trajectory_velocity.push_back(
+          std::max(odom_.twist.twist.linear.x, MIN_SPEED_MPS));
+    } else {
+
+      // Curvauture-based velocity
+      double curve_vel =
+          std::min(m_constraint_max_vel / 3.6,
+                   sqrt(abs(m_constraint_max_lat_accel) / abs(curvature)));
+
+      // Dynamics-based velocity
+      // - use zero-acceleration (no weight transfer effect)
+      double a_lon = 0.0;
+      double a_lat = 0.0;
+      // - use zero-bank angle
+      double bank_angle = 0.0;
+      // - estimate desired steering angle w.r.t each path point
+      double desired_steering_angle = atan2(m_tire_manager.L * curvature, 1.0);
+      // - estimate desried yaw rate w.r.t. each path point
+      double desired_yaw_rate =
+          curve_vel * sin(desired_steering_angle) / m_tire_manager.L;
+      // - estimate maximum lateral acceleration
+      double a_lat_max = m_tire_manager.ComputeLateralAccelLimit(
+          a_lon, a_lat, desired_yaw_rate, desired_steering_angle, curve_vel,
+          bank_angle);
+      // - compute desired velocity based on lateral dynamics equation
+      double dyn_vel =
+          std::min(m_constraint_max_vel, sqrt(abs(a_lat_max) / abs(curvature)));
+
+      double step_limited_vel = 0.0;
+      if (dyn_vel < out_traj.trajectory_velocity.back()) {
+        // deceleration case
+        step_limited_vel =
+            std::min(dyn_vel, out_traj.trajectory_velocity.back() +
+                                  (spline_interval_ /
+                                   out_traj.trajectory_velocity.back()) *
+                                      (-1 * abs(m_constraint_max_deccel)));
+      } else {
+        // acceleration case
+        step_limited_vel =
+            std::min(dyn_vel, out_traj.trajectory_velocity.back() +
+                                  (spline_interval_ /
+                                   out_traj.trajectory_velocity.back()) *
+                                      abs(m_constraint_max_accel));
+      }
+
+      double vel = std::max(step_limited_vel, MIN_SPEED_MPS);
+
+      out_traj.trajectory_velocity.push_back(vel);
+    }
+
+    if (point_s == 0.0) {
+      out_traj.trajectory_timestamp_array.push_back(0.0);
+    } else {
+      out_traj.trajectory_timestamp_array.push_back(
+          out_traj.trajectory_timestamp_array.back() +
+          (spline_interval_ / (out_traj.trajectory_velocity.back())));
+    }
+
+    cubic_spliner_x.push_back(point_x);
+    cubic_spliner_y.push_back(point_y);
+    cubic_spliner_yaw.push_back(yaw);
+    cubic_spliner_curvature.push_back(curvature);
+
+    point_s += spline_interval_;
+  }
+  return out_traj;
 }
