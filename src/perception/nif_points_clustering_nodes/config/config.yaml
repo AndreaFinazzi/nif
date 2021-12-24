@@ -1,4 +1,4 @@
-**/:
+/**:
   ros__parameters:
     cluster_size_min : 20
     cluster_size_max : 10000

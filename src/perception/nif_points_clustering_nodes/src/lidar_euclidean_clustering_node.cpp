@@ -1,8 +1,8 @@
-#include <nif_points_clustering_nodes/lidar_euclidean_cluster_node.h>
+#include <nif_points_clustering_nodes/lidar_euclidean_clustering_node.h>
 
 #ifdef GPU_CLUSTERING
 
-#include "gpu_euclidean_clustering/gpu_euclidean_clustering.h"
+#include "nif_gpu_euclidean_clustering/gpu_euclidean_clustering.h"
 
 #endif
 

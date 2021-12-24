@@ -18,7 +18,7 @@ set( CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -fPIC" )
 find_package(PCL REQUIRED QUIET)
 find_package(CUDA REQUIRED)
 find_package(yaml-cpp REQUIRED)
-find_package(nif_gpu_euclidean_clustering REQUIRED)
+# find_package(nif_gpu_euclidean_clustering REQUIRED)
 
 include_directories(
   include
@@ -35,18 +35,19 @@ ament_auto_add_library(${PROJECT_NAME} SHARED
   src/aptiv_interface_node.cpp
   )
 
-# ament_auto_add_executable(${PROJECT_NAME}_exe
-  # src/nif_radar_clustering_main.cpp
-  # )
+ament_auto_add_executable(aptiv_esr_interface_exe
+  src/aptiv_esr_interface_main.cpp
+  )
 
-target_compile_definitions(${PROJECT_NAME} PRIVATE
-    GPU_CLUSTERING=1
-)
-
-target_link_libraries(${PROJECT_NAME}
-  nif_gpu_euclidean_clustering
-  ${PCL_LIBRARIES}
-)
+# target_compile_definitions(${PROJECT_NAME} PRIVATE
+#     GPU_CLUSTERING=1
+# )
+# ament_target_dependencies(${PROJECT_NAME}
+#   nif_gpu_euclidean_clustering
+# )
+# target_link_libraries(${PROJECT_NAME}
+#   nif_gpu_euclidean_clustering
+# )
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
