@@ -27,6 +27,7 @@
 #include "rcutils/error_handling.h"
 #include "std_msgs/msg/float32.hpp"
 #include "velocity_profile/velocity_profiler.hpp"
+#include <cmath>
 #include <math.h>
 #include <string>
 #include <vector>
@@ -40,6 +41,12 @@ using namespace std;
 
 namespace nif {
 namespace planning {
+
+#define SEC_4 4.0
+#define SEC_3 3.0
+#define SEC_2 2.0
+#define SEC_1 1.0
+#define SAMPLING_TIME 0.2
 
 class DynamicPlannerNode : public nif::common::IBaseNode {
   enum PLANNING_DECISION_TYPE {
@@ -63,8 +70,8 @@ class DynamicPlannerNode : public nif::common::IBaseNode {
 public:
   DynamicPlannerNode(const std::string &node_name_);
 
-  void
-  detectionResultCallback(const nif::common::msgs::PerceptionResultList::SharedPtr msg);
+  void detectionResultCallback(
+      const nif::common::msgs::PerceptionResultList::SharedPtr msg);
   void mapTrackBodyCallback(const nav_msgs::msg::Path::SharedPtr msg);
   void mapTrackGlobalCallback(const nav_msgs::msg::Path::SharedPtr msg);
   void predictionResultCallback(
@@ -76,6 +83,7 @@ public:
   loadCSVfile(const std::string &wpt_file_path_);
 
   void timer_callback();
+  void timer_callback_debug();
   void publishTrajectory();
   void publishPlannedTrajectory(bool vis_);
   void publishPlannedTrajectory(nif_msgs::msg::DynamicTrajectory &traj_,
@@ -185,7 +193,8 @@ public:
 
 private:
   // Opponent perception result (not prediction result)
-  rclcpp::Subscription<nif::common::msgs::PerceptionResultList>::SharedPtr m_det_sub;
+  rclcpp::Subscription<nif::common::msgs::PerceptionResultList>::SharedPtr
+      m_det_sub;
   // Map track from wpt manager
   rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr m_maptrack_body_sub;
   // Map track from wpt manager
@@ -294,7 +303,6 @@ private:
   pcl::KdTreeFLANN<pcl::PointXY> m_pit_path_kdtree;
   FrenetPathGenerator::CubicSpliner2DResult m_pit_spline_data;
   double m_pit_full_progress;
-
 
   int m_maptrack_size;
 
