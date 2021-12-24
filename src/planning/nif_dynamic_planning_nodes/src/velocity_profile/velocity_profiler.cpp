@@ -289,7 +289,8 @@ nif_msgs::msg::DynamicTrajectory velocity_profiler::velProfileForAcc(
 
   if (naive_gap > 120.0) {
     //   Dont care about the ACC
-    return velProfilewithDynamics(odom_, target_path_, spline_interval_);
+    // return velProfilewithDynamics(odom_, target_path_, spline_interval_);
+    return velProfile(odom_, target_path_, spline_interval_);
   } else {
     // Care about the ACC in the trajectory planning
     std::vector<double> target_path_x(target_path_.poses.size(), 0.0);
@@ -372,10 +373,9 @@ nif_msgs::msg::DynamicTrajectory velocity_profiler::velProfileForAcc(
 
         auto predictided_oppo_pose =
             cipv_predicted_traj_.trajectory_path
-                .poses[
-                  nif::common::utils::closestIndex(
-                              cipv_predicted_traj_.trajectory_timestamp_array,
-                               out_traj.trajectory_timestamp_array.back())];
+                .poses[nif::common::utils::closestIndex(
+                    cipv_predicted_traj_.trajectory_timestamp_array,
+                    out_traj.trajectory_timestamp_array.back())];
 
         auto naive_cur_gap = std::max(
             sqrt(pow(predictided_oppo_pose.pose.position.x - point_x, 2) +

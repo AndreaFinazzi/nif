@@ -49,13 +49,14 @@ namespace planning {
 #define SAMPLING_TIME 0.2
 
 class DynamicPlannerNode : public nif::common::IBaseNode {
-  enum PLANNING_DECISION_TYPE {
-    STRAIGHT, // follow the original racing line
-    FOLLOW,   // stay behind the opponent
-    RIGHT,    // overtake to the right
-    LEFT,     // overtake to the left
-    ESTOP     // emergency stop
-  };
+  // deprecated
+  //   enum PLANNING_DECISION_TYPE {
+  //     STRAIGHT, // follow the original racing line
+  //     FOLLOW,   // stay behind the opponent
+  //     RIGHT,    // overtake to the right
+  //     LEFT,     // overtake to the left
+  //     ESTOP     // emergency stop
+  //   };
   enum PLANNING_ACTION_TYPE {
     DRIVING,           // Without overtaking, driving
     START_OVERTAKING,  // Start overtaking to the right or left. (Before merging
@@ -66,6 +67,17 @@ class DynamicPlannerNode : public nif::common::IBaseNode {
     ABORT_OVERTAKING // Tried to overtake but somehow it failed. Merging back to
                      // the original racing line
   };
+  enum TARGET_PATH_TYPE {
+    PATH_RACELINE,
+    PATH_CENTER,
+    PATH_RIGHT,
+    PATH_LEFT,
+    PATH_CENTER_RIGHT,
+    PATH_CENTER_LEFT,
+    PATH_RACE_READY
+  };
+  enum LATERAL_PLANNING_TYPE { KEEP, MERGE, CHANGE_PATH };
+  enum LONGITUDINAL_PLANNING_TYPE { STRAIGHT, FOLLOW, ESTOP };
 
 public:
   DynamicPlannerNode(const std::string &node_name_);
@@ -88,6 +100,9 @@ public:
   void publishPlannedTrajectory(bool vis_);
   void publishPlannedTrajectory(nif_msgs::msg::DynamicTrajectory &traj_,
                                 bool is_acc_, bool vis_);
+  void publishPlannedTrajectory(nif_msgs::msg::DynamicTrajectory &traj_,
+                                int32_t longi_type_, int32_t lat_type_,
+                                int target_path_, bool vis_);
   void initOutputTrajectory();
   bool setDrivingMode();
 
@@ -251,9 +266,6 @@ private:
 
   bool m_overtake_allowed_flg; // Set by "system status manager". default : true
   bool m_emergency_flg;        // TODO : If emergency flag is true, then what?
-
-  PLANNING_DECISION_TYPE m_cur_decision;
-  PLANNING_DECISION_TYPE m_prev_decision;
 
   PLANNING_ACTION_TYPE m_cur_overtaking_action;
   PLANNING_ACTION_TYPE m_prev_overtaking_action;

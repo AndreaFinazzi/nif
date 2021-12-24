@@ -4,7 +4,7 @@ waypoint_manager_param:
   maptrack_size: 200
 
 path_candidates_param:
-  racingline_path: 'maps/LVMS_SIM/race_line.csv'
+  racingline_path: 'maps/LVMS_SIM/race_line.csv' # must follow this naming convention
   overtaking_candidate_path_alias_array: [
     'right_center',
     'center',

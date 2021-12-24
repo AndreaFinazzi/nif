@@ -76,9 +76,10 @@ DynamicPlannerNode::DynamicPlannerNode(const std::string &node_name_)
       racingline_x_vec, racingline_y_vec, m_config_spline_interval);
   m_racingline_x_vec = get<0>(m_racingline_spline_data);
   m_racingline_y_vec = get<1>(m_racingline_spline_data);
-  m_racingline_path_pc = genPointCloudFromVec(get<0>(m_racingline_spline_data),
-                                              get<1>(m_racingline_spline_data));
-  m_racineline_path_kdtree.setInputCloud(m_racingline_path_pc);
+  // m_racingline_path_pc =
+  // genPointCloudFromVec(get<0>(m_racingline_spline_data),
+  //                                             get<1>(m_racingline_spline_data));
+  // m_racineline_path_kdtree.setInputCloud(m_racingline_path_pc);
   m_racingline_path = xyyawVec2Path(get<0>(m_racingline_spline_data),
                                     get<1>(m_racingline_spline_data),
                                     get<2>(m_racingline_spline_data));
@@ -109,12 +110,12 @@ DynamicPlannerNode::DynamicPlannerNode(const std::string &node_name_)
         path_x_vec, path_y_vec, m_config_spline_interval);
     m_overtaking_candidates_spline_data_vec.push_back(splined_result);
     m_overtaking_candidates_spline_model_vec.push_back(get<4>(splined_result));
-    auto pc =
-        genPointCloudFromVec(get<0>(splined_result), get<1>(splined_result));
-    m_overtaking_candidates_path_pc_vec.push_back(pc);
-    pcl::KdTreeFLANN<pcl::PointXY> kdtree;
-    kdtree.setInputCloud(pc);
-    m_overtaking_candidates_path_kdtree_vec.push_back(kdtree);
+    // auto pc =
+    //     genPointCloudFromVec(get<0>(splined_result), get<1>(splined_result));
+    // m_overtaking_candidates_path_pc_vec.push_back(pc);
+    // pcl::KdTreeFLANN<pcl::PointXY> kdtree;
+    // kdtree.setInputCloud(pc);
+    // m_overtaking_candidates_path_kdtree_vec.push_back(kdtree);
     auto candidate_path = xyyawVec2Path(
         get<0>(splined_result), get<1>(splined_result), get<2>(splined_result));
     auto full_progress = get<4>(splined_result)->points_s().back();
@@ -1102,7 +1103,6 @@ nav_msgs::msg::Path DynamicPlannerNode::getCertainLenOfPathSeg(
     }
     out.poses[idx] = target_path_.poses[idx_on_target_path];
   }
-
   return out;
 }
 
@@ -1146,6 +1146,84 @@ void DynamicPlannerNode::timer_callback_debug() {
     std::cout << "  vel is  " << cur_traj.trajectory_velocity[i] << std::endl;
   }
   std::cout << "--------------" << std::endl;
+}
+
+void DynamicPlannerNode::publishPlannedTrajectory(
+    nif_msgs::msg::DynamicTrajectory &traj_, bool is_acc_, bool vis_) {
+  traj_.header.frame_id = nif::common::frame_id::localization::ODOM;
+  traj_.trajectory_type = traj_.TRAJECTORY_TYPE_PLANNING;
+
+  if (is_acc_) {
+    traj_.longi_planning_type = traj_.LONGITUDINAL_PLANNING_TYPE_FOLLOW;
+  } else {
+    traj_.longi_planning_type = traj_.LONGITUDINAL_PLANNING_TYPE_STRAIGHT;
+  }
+
+  traj_.trajectory_path.header.frame_id = traj_.header.frame_id;
+  m_ego_traj_global_pub->publish(traj_);
+
+  if (vis_) {
+    m_ego_planned_vis_path_global = traj_.trajectory_path;
+    m_ego_planned_vis_path_global.header.frame_id =
+        nif::common::frame_id::localization::ODOM;
+    m_ego_planned_vis_path_global.header.stamp = this->now();
+    m_ego_traj_global_vis_pub->publish(m_ego_planned_vis_path_global);
+  }
+}
+
+void DynamicPlannerNode::publishPlannedTrajectory(
+    nif_msgs::msg::DynamicTrajectory &traj_, int longi_type_, int lat_type_,
+    int target_path_, bool vis_) {
+
+  traj_.header.frame_id = nif::common::frame_id::localization::ODOM;
+  traj_.trajectory_type = traj_.TRAJECTORY_TYPE_PLANNING;
+
+  if (longi_type_ == LONGITUDINAL_PLANNING_TYPE::STRAIGHT) {
+    traj_.longi_planning_type = traj_.LONGITUDINAL_PLANNING_TYPE_STRAIGHT;
+  } else if (longi_type_ == LONGITUDINAL_PLANNING_TYPE::FOLLOW) {
+    traj_.longi_planning_type = traj_.LONGITUDINAL_PLANNING_TYPE_FOLLOW;
+  } else if (longi_type_ == LONGITUDINAL_PLANNING_TYPE::ESTOP) {
+    traj_.longi_planning_type = traj_.LONGITUDINAL_PLANNING_TYPE_ESTOP;
+  } else {
+    std::cout << "Unknown type of longitudinal control type." << std::endl;
+  }
+
+  if (lat_type_ == LATERAL_PLANNING_TYPE::KEEP) {
+    traj_.lat_planning_type = traj_.LATERAL_PLANNING_TYPE_KEEP;
+  } else if (lat_type_ == LATERAL_PLANNING_TYPE::MERGE) {
+    traj_.lat_planning_type = traj_.LATERAL_PLANNING_TYPE_MERGE;
+  } else if (lat_type_ == LATERAL_PLANNING_TYPE::CHANGE_PATH) {
+    traj_.lat_planning_type = traj_.LATERAL_PLANNING_TYPE_CHANGE_PATH;
+  } else {
+    std::cout << "Unknown type of lateral control type." << std::endl;
+  }
+
+  if (target_path_ == TARGET_PATH_TYPE::PATH_CENTER) {
+    traj_.planning_target_path_type = traj_.PLANNING_TARGET_PATH_CENTER;
+  } else if (target_path_ == TARGET_PATH_TYPE::PATH_RIGHT) {
+    traj_.planning_target_path_type = traj_.PLANNING_TARGET_PATH_RIGHT;
+  } else if (target_path_ == TARGET_PATH_TYPE::PATH_LEFT) {
+    traj_.planning_target_path_type = traj_.PLANNING_TARGET_PATH_LEFT;
+  } else if (target_path_ == TARGET_PATH_TYPE::PATH_CENTER_RIGHT) {
+    traj_.planning_target_path_type = traj_.PLANNING_TARGET_PATH_CENTER_RIGHT;
+  } else if (target_path_ == TARGET_PATH_TYPE::PATH_CENTER_LEFT) {
+    traj_.planning_target_path_type = traj_.PLANNING_TARGET_PATH_CENTER_LEFT;
+  } else if (target_path_ == TARGET_PATH_TYPE::PATH_RACE_READY) {
+    traj_.planning_target_path_type = traj_.PLANNING_TARGET_PATH_RACE_READY;
+  } else {
+    std::cout << "Unknown type of target path." << std::endl;
+  }
+
+  traj_.trajectory_path.header.frame_id = traj_.header.frame_id;
+  m_ego_traj_global_pub->publish(traj_);
+
+  if (vis_) {
+    m_ego_planned_vis_path_global = traj_.trajectory_path;
+    m_ego_planned_vis_path_global.header.frame_id =
+        nif::common::frame_id::localization::ODOM;
+    m_ego_planned_vis_path_global.header.stamp = this->now();
+    m_ego_traj_global_vis_pub->publish(m_ego_planned_vis_path_global);
+  }
 }
 
 void DynamicPlannerNode::timer_callback() {
@@ -1193,19 +1271,18 @@ void DynamicPlannerNode::timer_callback() {
       //     m_maptrack_global, 1.0);
 
       // Publish cur_traj
-      publishPlannedTrajectory(cur_traj, false, true);
+      publishPlannedTrajectory(cur_traj, LONGITUDINAL_PLANNING_TYPE::STRAIGHT,
+                               LATERAL_PLANNING_TYPE::KEEP,
+                               TARGET_PATH_TYPE::PATH_RACE_READY, true);
       return;
 
     } else {
       if (mission_status.mission_status_code ==
           nif::common::MissionStatus::MISSION_RACE) {
-        //  Check wheter we are close enough to the racing line
-        // bool is_close_racingline =
-        //     (calcCTE(m_ego_odom.pose.pose, m_racineline_path_kdtree,
-        //              m_racingline_path_pc) < 0.5);
 
         bool is_close_racingline =
-            (get<1>(calcProgressNCTE(m_ego_odom.pose.pose, m_racingline_path)) < 0.5);
+            (get<1>(calcProgressNCTE(m_ego_odom.pose.pose, m_racingline_path)) <
+             0.5);
 
         if (is_close_racingline) {
 
@@ -1236,7 +1313,10 @@ void DynamicPlannerNode::timer_callback() {
                 m_ego_odom, cur_path_seg, 1.0);
 
             // Publish cur_traj
-            publishPlannedTrajectory(cur_traj, false, true);
+            publishPlannedTrajectory(cur_traj,
+                                     LONGITUDINAL_PLANNING_TYPE::STRAIGHT,
+                                     LATERAL_PLANNING_TYPE::MERGE,
+                                     TARGET_PATH_TYPE::PATH_RACELINE, true);
             return;
           }
         }
@@ -1250,8 +1330,8 @@ void DynamicPlannerNode::timer_callback() {
         auto cur_path_seg = getCertainLenOfPathSeg(
             m_ego_odom.pose.pose.position.x, m_ego_odom.pose.pose.position.y,
             m_cur_planned_traj.trajectory_path, 200);
-        auto cur_traj = m_velocity_profiler_ptr->velProfile(
-            m_ego_odom, cur_path_seg, 1.0);
+        auto cur_traj =
+            m_velocity_profiler_ptr->velProfile(m_ego_odom, cur_path_seg, 1.0);
 
         // Collision check btw two trajectories
         auto is_collision =
@@ -1263,7 +1343,10 @@ void DynamicPlannerNode::timer_callback() {
           // keep current planned traj
           // not considering the ACC in this case
           // Publish cur_traj
-          publishPlannedTrajectory(cur_traj, false, true);
+          // publishPlannedTrajectory(cur_traj, false, true);
+          publishPlannedTrajectory(cur_traj,
+                                   LONGITUDINAL_PLANNING_TYPE::STRAIGHT,
+                                   LATERAL_PLANNING_TYPE::KEEP, -1, true);
           return;
         } else {
           vector<std::shared_ptr<FrenetPath>> collision_free_frenet_vec;
@@ -1286,38 +1369,18 @@ void DynamicPlannerNode::timer_callback() {
             std::vector<std::shared_ptr<FrenetPath>>
                 frenet_path_generation_result =
                     m_frenet_generator_ptr->calc_frenet_paths_multi_longi(
-                        get<1>(progressNcte),            // current_position_d
-                        get<0>(progressNcte),            // current_position_s
-                        0.0,                             // current_velocity_d
-                        m_ego_odom.twist.twist.linear.x, // current_velocity_s
-                        0.0, // current_acceleration_d
+                        get<1>(progressNcte), // current_position_d
+                        get<0>(progressNcte), // current_position_s
+                        0.0,                  // current_velocity_d
+                        std::max(m_ego_odom.twist.twist.linear.x,
+                                 MIN_SPEED_MPS), // current_velocity_s
+                        0.0,                     // current_acceleration_d
                         m_overtaking_candidates_spline_model_vec
                             [path_candidate_idx], // cubicSplineModel
                         SEC_2, SEC_3 + 0.01, SAMPLING_TIME, 0.0, 0.0001, 0.1);
 
-            // For debug
-            // nav_msgs::msg::Path tmp;
-            // tmp.header.frame_id = "odom";
-            // for (int frenet_idx = 0;
-            //      frenet_idx < frenet_path_generation_result.size();
-            //      frenet_idx++) {
-            //   for (int i = 0;
-            //        i <
-            //        frenet_path_generation_result[frenet_idx]->points_x().size();
-            //        i++) {
-            //     geometry_msgs::msg::PoseStamped ps;
-            //     ps.pose.position.x =
-            //         frenet_path_generation_result[frenet_idx]->points_x()[i];
-            //     ps.pose.position.y =
-            //         frenet_path_generation_result[frenet_idx]->points_y()[i];
-            //     tmp.poses.push_back(ps);
-            //   }
-            // }
-            // m_ego_traj_global_vis_debug_pub1->publish(tmp);
-
             for (int frenet_idx = frenet_path_generation_result.size() - 1;
-                 frenet_idx >= 0;
-                 frenet_idx--) {
+                 frenet_idx >= 0; frenet_idx--) {
               //  Check collision in order of longer path (which means less
               //  jerky)
               auto frenet_candidate = frenet_path_generation_result[frenet_idx];
@@ -1343,7 +1406,36 @@ void DynamicPlannerNode::timer_callback() {
                     m_ego_odom, cur_path_seg, 1.0);
 
                 // Publish cur_traj
-                publishPlannedTrajectory(cur_traj, false, true);
+                // publishPlannedTrajectory(cur_traj, false, true);
+                TARGET_PATH_TYPE path_type;
+                if (m_overtaking_candidates_alias_vec[path_candidate_idx] ==
+                    "raceline") {
+                  path_type = TARGET_PATH_TYPE::PATH_RACELINE;
+                } else if (m_overtaking_candidates_alias_vec
+                               [path_candidate_idx] == "center") {
+                  path_type = TARGET_PATH_TYPE::PATH_CENTER;
+                } else if (m_overtaking_candidates_alias_vec
+                               [path_candidate_idx] == "right") {
+                  path_type = TARGET_PATH_TYPE::PATH_RIGHT;
+                } else if (m_overtaking_candidates_alias_vec
+                               [path_candidate_idx] == "left") {
+                  path_type = TARGET_PATH_TYPE::PATH_LEFT;
+                } else if (m_overtaking_candidates_alias_vec
+                               [path_candidate_idx] == "center_right") {
+                  path_type = TARGET_PATH_TYPE::PATH_CENTER_RIGHT;
+                } else if (m_overtaking_candidates_alias_vec
+                               [path_candidate_idx] == "center_left") {
+                  path_type = TARGET_PATH_TYPE::PATH_CENTER_LEFT;
+                } else if (m_overtaking_candidates_alias_vec
+                               [path_candidate_idx] == "race_ready") {
+                  path_type = TARGET_PATH_TYPE::PATH_RACE_READY;
+                } else {
+                  std::cout << "Unknown path type." << std::endl;
+                }
+
+                publishPlannedTrajectory(
+                    cur_traj, LONGITUDINAL_PLANNING_TYPE::STRAIGHT,
+                    LATERAL_PLANNING_TYPE::CHANGE_PATH, path_type, true);
                 return;
 
                 collision_free_frenet_vec.push_back(frenet_candidate);
@@ -1367,7 +1459,9 @@ void DynamicPlannerNode::timer_callback() {
                 1.0);
 
             // Publish cur_traj
-            publishPlannedTrajectory(cur_traj, true, true);
+            publishPlannedTrajectory(cur_traj,
+                                     LONGITUDINAL_PLANNING_TYPE::FOLLOW,
+                                     LATERAL_PLANNING_TYPE::KEEP, -1, true);
             return;
           } else {
 
@@ -1397,9 +1491,8 @@ void DynamicPlannerNode::timer_callback() {
                                          m_ego_odom.pose.pose.position.y,
                                          stitched_path.trajectory_path, 200);
 
-              auto planned_traj =
-                  m_velocity_profiler_ptr->velProfile(
-                      m_ego_odom, path_seg, 1.0);
+              auto planned_traj = m_velocity_profiler_ptr->velProfile(
+                  m_ego_odom, path_seg, 1.0);
 
               stitched_traj_vec[collision_free_frenet_idx] = stitched_path;
               planned_traj_vec[collision_free_frenet_idx] = planned_traj;
@@ -1415,8 +1508,46 @@ void DynamicPlannerNode::timer_callback() {
             m_cur_planned_traj = stitched_traj_vec[naive_max_progree_path_idx];
 
             // Publish cur_traj
+            // publishPlannedTrajectory(cur_traj, false, true);
+            TARGET_PATH_TYPE path_type;
+            if (m_overtaking_candidates_alias_vec
+                    [collision_free_frenet_index_vec
+                         [naive_max_progree_path_idx]] == "raceline") {
+              path_type = TARGET_PATH_TYPE::PATH_RACELINE;
+            } else if (m_overtaking_candidates_alias_vec
+                           [collision_free_frenet_index_vec
+                                [naive_max_progree_path_idx]] == "center") {
+              path_type = TARGET_PATH_TYPE::PATH_CENTER;
+            } else if (m_overtaking_candidates_alias_vec
+                           [collision_free_frenet_index_vec
+                                [naive_max_progree_path_idx]] == "right") {
+              path_type = TARGET_PATH_TYPE::PATH_RIGHT;
+            } else if (m_overtaking_candidates_alias_vec
+                           [collision_free_frenet_index_vec
+                                [naive_max_progree_path_idx]] == "left") {
+              path_type = TARGET_PATH_TYPE::PATH_LEFT;
+            } else if (m_overtaking_candidates_alias_vec
+                           [collision_free_frenet_index_vec
+                                [naive_max_progree_path_idx]] ==
+                       "center_right") {
+              path_type = TARGET_PATH_TYPE::PATH_CENTER_RIGHT;
+            } else if (m_overtaking_candidates_alias_vec
+                           [collision_free_frenet_index_vec
+                                [naive_max_progree_path_idx]] ==
+                       "center_left") {
+              path_type = TARGET_PATH_TYPE::PATH_CENTER_LEFT;
+            } else if (m_overtaking_candidates_alias_vec
+                           [collision_free_frenet_index_vec
+                                [naive_max_progree_path_idx]] == "race_ready") {
+              path_type = TARGET_PATH_TYPE::PATH_RACE_READY;
+            } else {
+              std::cout << "Unknown path type." << std::endl;
+            }
+
             publishPlannedTrajectory(
-                planned_traj_vec[naive_max_progree_path_idx], false, true);
+                cur_traj, LONGITUDINAL_PLANNING_TYPE::STRAIGHT,
+                LATERAL_PLANNING_TYPE::CHANGE_PATH, path_type, true);
+
             return;
           }
         }
@@ -1430,7 +1561,8 @@ void DynamicPlannerNode::timer_callback() {
         //              m_racingline_path_pc) < 0.5);
 
         bool is_close_racingline =
-            (get<1>(calcProgressNCTE(m_ego_odom.pose.pose, m_racingline_path)) < 0.5);
+            (get<1>(calcProgressNCTE(m_ego_odom.pose.pose, m_racingline_path)) <
+             0.5);
 
         if (is_close_racingline) {
           // change the defualt path to the racing line
@@ -1446,7 +1578,10 @@ void DynamicPlannerNode::timer_callback() {
               1.0);
 
           // Publish cur_traj
-          publishPlannedTrajectory(cur_traj, true, true);
+          // publishPlannedTrajectory(cur_traj, true, true);
+          publishPlannedTrajectory(cur_traj, LONGITUDINAL_PLANNING_TYPE::FOLLOW,
+                                   LATERAL_PLANNING_TYPE::KEEP,
+                                   TARGET_PATH_TYPE::PATH_RACELINE, true);
           return;
 
         } else {
@@ -1487,7 +1622,35 @@ void DynamicPlannerNode::timer_callback() {
                   cur_path_seg, 1.0);
 
               // Publish cur_traj
-              publishPlannedTrajectory(cur_traj, true, true);
+              // publishPlannedTrajectory(cur_traj, true, true);
+              TARGET_PATH_TYPE path_type;
+              if (m_overtaking_candidates_alias_vec[path_candidates_idx] ==
+                  "raceline") {
+                path_type = TARGET_PATH_TYPE::PATH_RACELINE;
+              } else if (m_overtaking_candidates_alias_vec
+                             [path_candidates_idx] == "center") {
+                path_type = TARGET_PATH_TYPE::PATH_CENTER;
+              } else if (m_overtaking_candidates_alias_vec
+                             [path_candidates_idx] == "right") {
+                path_type = TARGET_PATH_TYPE::PATH_RIGHT;
+              } else if (m_overtaking_candidates_alias_vec
+                             [path_candidates_idx] == "left") {
+                path_type = TARGET_PATH_TYPE::PATH_LEFT;
+              } else if (m_overtaking_candidates_alias_vec
+                             [path_candidates_idx] == "center_right") {
+                path_type = TARGET_PATH_TYPE::PATH_CENTER_RIGHT;
+              } else if (m_overtaking_candidates_alias_vec
+                             [path_candidates_idx] == "center_left") {
+                path_type = TARGET_PATH_TYPE::PATH_CENTER_LEFT;
+              } else if (m_overtaking_candidates_alias_vec
+                             [path_candidates_idx] == "race_ready") {
+                path_type = TARGET_PATH_TYPE::PATH_RACE_READY;
+              } else {
+                std::cout << "Unknown path type." << std::endl;
+              }
+              publishPlannedTrajectory(
+                  cur_traj, LONGITUDINAL_PLANNING_TYPE::FOLLOW,
+                  LATERAL_PLANNING_TYPE::CHANGE_PATH, path_type, true);
               return;
             }
           }
@@ -1508,11 +1671,12 @@ void DynamicPlannerNode::timer_callback() {
           std::vector<std::shared_ptr<FrenetPath>>
               frenet_path_generation_result =
                   m_frenet_generator_ptr->calc_frenet_paths_multi_longi(
-                      get<1>(progressNcte),            // current_position_d
-                      get<0>(progressNcte),            // current_position_s
-                      0.0,                             // current_velocity_d
-                      m_ego_odom.twist.twist.linear.x, // current_velocity_s
-                      0.0,                             // current_acceleration_d
+                      get<1>(progressNcte), // current_position_d
+                      get<0>(progressNcte), // current_position_s
+                      0.0,                  // current_velocity_d
+                      std::max(m_ego_odom.twist.twist.linear.x,
+                               MIN_SPEED_MPS), // current_velocity_s
+                      0.0,                     // current_acceleration_d
                       m_overtaking_candidates_spline_model_vec
                           [closest_path_candidate_ind], // cubicSplineModel
                       SEC_4, SEC_4 + 0.01, SAMPLING_TIME, 0.0, 0.0001, 0.1);
@@ -1529,7 +1693,35 @@ void DynamicPlannerNode::timer_callback() {
               m_ego_odom, m_cur_oppo_pred_result,
               m_cur_det_global.obj_velocity_in_global.linear.x, path_seg, 1.0);
 
-          publishPlannedTrajectory(cur_traj, true, true);
+          // publishPlannedTrajectory(cur_traj, true, true);
+          TARGET_PATH_TYPE path_type;
+          if (m_overtaking_candidates_alias_vec[closest_path_candidate_ind] ==
+              "raceline") {
+            path_type = TARGET_PATH_TYPE::PATH_RACELINE;
+          } else if (m_overtaking_candidates_alias_vec
+                         [closest_path_candidate_ind] == "center") {
+            path_type = TARGET_PATH_TYPE::PATH_CENTER;
+          } else if (m_overtaking_candidates_alias_vec
+                         [closest_path_candidate_ind] == "right") {
+            path_type = TARGET_PATH_TYPE::PATH_RIGHT;
+          } else if (m_overtaking_candidates_alias_vec
+                         [closest_path_candidate_ind] == "left") {
+            path_type = TARGET_PATH_TYPE::PATH_LEFT;
+          } else if (m_overtaking_candidates_alias_vec
+                         [closest_path_candidate_ind] == "center_right") {
+            path_type = TARGET_PATH_TYPE::PATH_CENTER_RIGHT;
+          } else if (m_overtaking_candidates_alias_vec
+                         [closest_path_candidate_ind] == "center_left") {
+            path_type = TARGET_PATH_TYPE::PATH_CENTER_LEFT;
+          } else if (m_overtaking_candidates_alias_vec
+                         [closest_path_candidate_ind] == "race_ready") {
+            path_type = TARGET_PATH_TYPE::PATH_RACE_READY;
+          } else {
+            std::cout << "Unknown path type." << std::endl;
+          }
+          publishPlannedTrajectory(cur_traj, LONGITUDINAL_PLANNING_TYPE::FOLLOW,
+                                   LATERAL_PLANNING_TYPE::CHANGE_PATH,
+                                   path_type, true);
           return;
         }
       } else {
@@ -1545,7 +1737,8 @@ void DynamicPlannerNode::timer_callback() {
         //              m_racingline_path_pc) < 0.5);
 
         bool is_close_racingline =
-            (get<1>(calcProgressNCTE(m_ego_odom.pose.pose, m_racingline_path)) < 0.5);
+            (get<1>(calcProgressNCTE(m_ego_odom.pose.pose, m_racingline_path)) <
+             0.5);
 
         if (is_close_racingline) {
           // change the defualt path to the racing line
@@ -1565,87 +1758,6 @@ void DynamicPlannerNode::timer_callback() {
           return;
 
         } else {
-          // Collision free path and the least jerky path as a reference line
-          bool done_flg = false;
-          vector<double> cte_vec;
-
-          cte_vec.resize(m_overkaing_candidates_dtraj_vec.size());
-
-          for (int path_candidates_idx = 0;
-               path_candidates_idx < m_overkaing_candidates_dtraj_vec.size();
-               path_candidates_idx++) {
-            //  Check whether we are super close to one of the candidate
-            auto progressNcte = calcProgressNCTE(
-                m_ego_odom.pose.pose,
-                m_overkaing_candidates_dtraj_vec[path_candidates_idx]
-                    .trajectory_path);
-
-            auto cte = std::get<1>(progressNcte);
-
-            cte_vec[path_candidates_idx] = cte;
-
-            // TODO: currently, hard coded but make this as a configuration
-            // later
-            if (cte < 0.5) {
-              // change the planned path to the
-              m_cur_planned_traj =
-                  m_overkaing_candidates_dtraj_vec[path_candidates_idx];
-
-              auto cur_path_seg = getCertainLenOfPathSeg(
-                  m_ego_odom.pose.pose.position.x,
-                  m_ego_odom.pose.pose.position.y,
-                  m_cur_planned_traj.trajectory_path, 200);
-
-              auto cur_traj = m_velocity_profiler_ptr->velProfileForAcc(
-                  m_ego_odom, m_cur_oppo_pred_result,
-                  m_cur_det_global.obj_velocity_in_global.linear.x,
-                  cur_path_seg, 1.0);
-
-              // Publish cur_traj
-              publishPlannedTrajectory(cur_traj, true, true);
-              return;
-            }
-          }
-          // All candidates are far from the ego position
-          // Need to generate smooth path and ACC
-          // Choose closest path candidate as a reference path
-          // FIXME: Need improvement
-
-          // step 1.1 : Generate the frenet candidates to all wpt
-          auto closest_path_candidate_ind =
-              std::min_element(cte_vec.begin(), cte_vec.end()) -
-              cte_vec.begin();
-          auto progressNcte = calcProgressNCTE(
-              m_ego_odom.pose.pose,
-              m_overtaking_candidates_path_vec[closest_path_candidate_ind]);
-
-          // planning only max : 4 sec
-          std::vector<std::shared_ptr<FrenetPath>>
-              frenet_path_generation_result =
-                  m_frenet_generator_ptr->calc_frenet_paths_multi_longi(
-                      get<1>(progressNcte),            // current_position_d
-                      get<0>(progressNcte),            // current_position_s
-                      0.0,                             // current_velocity_d
-                      m_ego_odom.twist.twist.linear.x, // current_velocity_s
-                      0.0,                             // current_acceleration_d
-                      m_overtaking_candidates_spline_model_vec
-                          [closest_path_candidate_ind], // cubicSplineModel
-                      SEC_4, SEC_4 + 0.01, SAMPLING_TIME, 0.0, 0.0001, 0.1);
-
-          auto stitched_path = stitchFrenetToPath(
-              frenet_path_generation_result[0],
-              m_overtaking_candidates_path_vec[closest_path_candidate_ind]);
-
-          auto path_seg = getCertainLenOfPathSeg(
-              m_ego_odom.pose.pose.position.x, m_ego_odom.pose.pose.position.y,
-              stitched_path.trajectory_path, 200);
-
-          auto cur_traj = m_velocity_profiler_ptr->velProfileForAcc(
-              m_ego_odom, m_cur_oppo_pred_result,
-              m_cur_det_global.obj_velocity_in_global.linear.x, path_seg, 1.0);
-
-          publishPlannedTrajectory(cur_traj, true, true);
-          return;
         }
       }
     }
@@ -1653,28 +1765,5 @@ void DynamicPlannerNode::timer_callback() {
     // ESTOP
     nif::common::NodeStatusCode node_status = nif::common::NODE_INITIALIZED;
     this->setNodeStatus(node_status);
-  }
-}
-
-void DynamicPlannerNode::publishPlannedTrajectory(
-    nif_msgs::msg::DynamicTrajectory &traj_, bool is_acc_, bool vis_) {
-  traj_.header.frame_id = nif::common::frame_id::localization::ODOM;
-  traj_.trajectory_type = traj_.TRAJECTORY_TYPE_PLANNING;
-
-  if (is_acc_) {
-    traj_.planning_decision_type = traj_.PLANNING_DECISION_TYPE_FOLLOW;
-  } else {
-    traj_.planning_decision_type = traj_.PLANNING_DECISION_TYPE_STRAIGHT;
-  }
-
-  traj_.trajectory_path.header.frame_id = traj_.header.frame_id;
-  m_ego_traj_global_pub->publish(traj_);
-
-  if (vis_) {
-    m_ego_planned_vis_path_global = traj_.trajectory_path;
-    m_ego_planned_vis_path_global.header.frame_id =
-        nif::common::frame_id::localization::ODOM;
-    m_ego_planned_vis_path_global.header.stamp = this->now();
-    m_ego_traj_global_vis_pub->publish(m_ego_planned_vis_path_global);
   }
 }
