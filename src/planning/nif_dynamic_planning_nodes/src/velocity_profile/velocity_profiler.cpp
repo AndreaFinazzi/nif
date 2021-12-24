@@ -260,12 +260,9 @@ velocity_profiler::velProfile(const nav_msgs::msg::Odometry &odom_,
     point_s += spline_interval_;
   }
 
-  // std::vector<double> delta_curvature(cubic_spliner_curvature.size());
-  // std::adjacent_difference(cubic_spliner_curvature.begin(), cubic_spliner_curvature.end(), delta_curvature.begin());
-  // delta_curvature.erase(delta_curvature.begin());
-
-  auto is_too_curvy = std::any_of(cubic_spliner_curvature.begin(), cubic_spliner_curvature.end(),
-                    [&](double curvature) { return (abs(curvature) > 0.1 );});
+  auto is_too_curvy = std::any_of(
+      cubic_spliner_curvature.begin(), cubic_spliner_curvature.end(),
+      [&](double curvature) { return (abs(curvature) > 0.1); });
 
   std::cout << "is too curvy? : " << is_too_curvy << std::endl;
 
@@ -347,28 +344,28 @@ nif_msgs::msg::DynamicTrajectory velocity_profiler::velProfileForAcc(
       } else {
         // Curvauture-based velocity
         double curve_vel =
-            std::min(m_constraint_max_vel / 3.6,
+            std::min(m_constraint_max_vel,
                      sqrt(abs(m_constraint_max_lat_accel) / abs(curvature)));
 
-        // Dynamics-based velocity
-        // - use zero-acceleration (no weight transfer effect)
-        double a_lon = 0.0;
-        double a_lat = 0.0;
-        // - use zero-bank angle
-        double bank_angle = 0.0;
-        // - estimate desired steering angle w.r.t each path point
-        double desired_steering_angle =
-            atan2(m_tire_manager.L * curvature, 1.0);
-        // - estimate desried yaw rate w.r.t. each path point
-        double desired_yaw_rate =
-            curve_vel * sin(desired_steering_angle) / m_tire_manager.L;
-        // - estimate maximum lateral acceleration
-        double a_lat_max = m_tire_manager.ComputeLateralAccelLimit(
-            a_lon, a_lat, desired_yaw_rate, desired_steering_angle, curve_vel,
-            bank_angle);
-        // - compute desired velocity based on lateral dynamics equation
-        double dyn_vel = std::min(m_constraint_max_vel,
-                                  sqrt(abs(a_lat_max) / abs(curvature)));
+        // // Dynamics-based velocity
+        // // - use zero-acceleration (no weight transfer effect)
+        // double a_lon = 0.0;
+        // double a_lat = 0.0;
+        // // - use zero-bank angle
+        // double bank_angle = 0.0;
+        // // - estimate desired steering angle w.r.t each path point
+        // double desired_steering_angle =
+        //     atan2(m_tire_manager.L * curvature, 1.0);
+        // // - estimate desried yaw rate w.r.t. each path point
+        // double desired_yaw_rate =
+        //     curve_vel * sin(desired_steering_angle) / m_tire_manager.L;
+        // // - estimate maximum lateral acceleration
+        // double a_lat_max = m_tire_manager.ComputeLateralAccelLimit(
+        //     a_lon, a_lat, desired_yaw_rate, desired_steering_angle,
+        //     curve_vel, bank_angle);
+        // // - compute desired velocity based on lateral dynamics equation
+        // double dyn_vel = std::min(m_constraint_max_vel,
+        //                           sqrt(abs(a_lat_max) / abs(curvature)));
 
         auto naive_idm_desired_gap =
             m_acc_config_s0 +
@@ -400,11 +397,17 @@ nif_msgs::msg::DynamicTrajectory velocity_profiler::velProfileForAcc(
         acc_desired_accel = std::clamp(
             acc_desired_accel, m_constraint_max_deccel, m_constraint_max_accel);
 
+        // auto acc_limited_vel =
+        //     std::min(dyn_vel, out_traj.trajectory_velocity.back() +
+        //                           (spline_interval_ /
+        //                            out_traj.trajectory_velocity.back()) *
+        //                               acc_desired_accel);
+
         auto acc_limited_vel =
-            std::min(dyn_vel, out_traj.trajectory_velocity.back() +
-                                  (spline_interval_ /
-                                   out_traj.trajectory_velocity.back()) *
-                                      acc_desired_accel);
+            std::min(curve_vel, out_traj.trajectory_velocity.back() +
+                                    (spline_interval_ /
+                                     out_traj.trajectory_velocity.back()) *
+                                        acc_desired_accel);
 
         double vel = std::max(acc_limited_vel, MIN_SPEED_MPS);
 
@@ -422,6 +425,13 @@ nif_msgs::msg::DynamicTrajectory velocity_profiler::velProfileForAcc(
 
       point_s += spline_interval_;
     }
+
+    auto is_too_curvy = std::any_of(
+        cubic_spliner_curvature.begin(), cubic_spliner_curvature.end(),
+        [&](double curvature) { return (abs(curvature) > 0.1); });
+
+    std::cout << "is too curvy? : " << is_too_curvy << std::endl;
+
     return out_traj;
   }
 }
