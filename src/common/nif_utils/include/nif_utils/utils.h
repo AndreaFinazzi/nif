@@ -24,6 +24,24 @@ namespace nif {
 namespace common {
 namespace utils {
 
+/**
+ * @brief Return the index of the first element greater-equal value in the
+ * array, or the index of the last element if none is greater-equal value.
+ *
+ * @param vec
+ * @param value
+ * @return int
+ */
+inline int closestIndex(std::vector<float> const &vec, double value) {
+  auto it = std::lower_bound(vec.begin(), vec.end(), value);
+  if (it == vec.end()) {
+    return distance(vec.begin(), --it);
+  }
+  
+  return distance(vec.begin(), it);
+};
+
+
 namespace time {
 /**
  * Time in seconds

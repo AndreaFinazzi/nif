@@ -297,7 +297,7 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
         double test_lookahead_time = 0.8;
         // step 1. Search the nearest time within the trajectory's timestamp
         // array
-        auto closest_time_idx = this->closest(
+        auto closest_time_idx = nif::common::utils::closestIndex(
             this->getReferenceTrajectory()->trajectory_timestamp_array,
             test_lookahead_time);
 
@@ -310,6 +310,8 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
         if (time_differ < 2) {
           l_desired_velocity = this->getReferenceTrajectory()
                                    ->trajectory_velocity[closest_time_idx];
+            if (l_desired_velocity < 1.5)
+                l_desired_velocity = 0.0;
         } else {
           l_desired_velocity = 0.0;
         }

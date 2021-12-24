@@ -68,22 +68,6 @@ public:
   bool checkConfig();
   bool parseConfig(const std::string &config_file_path_);
 
-  /**
-   * @brief Return the index of the first element greater-equal value in the
-   * array, or the index of the last element if none is greater-equal value.
-   *
-   * @param vec
-   * @param value
-   * @return int
-   */
-  inline int closest(std::vector<float> const &vec, double value) {
-    auto it = std::lower_bound(vec.begin(), vec.end(), value);
-    if (it == vec.end()) {
-      return *(--it);
-    }
-    return *it;
-  };
-
   nif_msgs::msg::DynamicTrajectory
   velProfile(const nav_msgs::msg::Odometry &odom_,
              const nav_msgs::msg::Path &target_path_,

@@ -2,8 +2,8 @@ velocity_profiling_param:
   constraint_max_t: 4.0
   constraint_min_t: 2.0
   constraint_max_accel: 4.0
-  constraint_max_lat_accel: 20.0  # set to higher value and cut down from the tire dynamics model
-  constraint_max_decel: -5.0      # must be negative
+  constraint_max_lat_accel: 10.0  # set to higher value and cut down from the tire dynamics model
+  constraint_max_decel: -10.0      # must be negative
   constraint_max_vel: 83.3333     # 300kph
   config_use_veh_model: false
   config_use_acc_model: true
@@ -15,7 +15,7 @@ adaptive_cruise_control_param:
   acc_config_s1: 0.0              #
   acc_config_v_desired: 60.0      # desired velocity v 0 {\displaystyle v_{0}} v_{0}: the velocity the vehicle would drive at in free traffic 
   acc_config_time_headway: 2.0    # desired time headway T {\displaystyle T} T: the minimum possible time to the vehicle in front
-  acc_config_accel_max: 3.0       # acceleration a {\displaystyle a} a: the maximum vehicle acceleration
-  acc_config_decel_desired: 5.0   # comfortable braking deceleration b {\displaystyle b} b: a positive number
+  acc_config_accel_max: 5.0       # acceleration a {\displaystyle a} a: the maximum vehicle acceleration
+  acc_config_decel_desired: 10.0   # comfortable braking deceleration b {\displaystyle b} b: a positive number
   acc_config_delta: 4.0           # The exponent δ {\displaystyle \delta } \delta is usually set to 4. 
   acc_config_veh_l: 4.7

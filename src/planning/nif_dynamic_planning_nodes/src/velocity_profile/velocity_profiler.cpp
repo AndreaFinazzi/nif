@@ -372,7 +372,9 @@ nif_msgs::msg::DynamicTrajectory velocity_profiler::velProfileForAcc(
 
         auto predictided_oppo_pose =
             cipv_predicted_traj_.trajectory_path
-                .poses[closest(cipv_predicted_traj_.trajectory_timestamp_array,
+                .poses[
+                  nif::common::utils::closestIndex(
+                              cipv_predicted_traj_.trajectory_timestamp_array,
                                out_traj.trajectory_timestamp_array.back())];
 
         auto naive_cur_gap = std::max(
