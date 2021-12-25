@@ -82,8 +82,8 @@ def generate_launch_description():
                     'boundaries_filter_active': True,
 
                     # Filters out the tracks considered static
-                    # 'velocity_filter_active': True,
-                    # 'velocity_filter_confidence_mps': 1.5,
+                    'range_rate_filter_active': True,
+                    'range_rate_filter_threshold_mps': 3.0,
                     }],
 
                 remappings=[

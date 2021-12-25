@@ -22,6 +22,9 @@ GeofenceFilterNode::GeofenceFilterNode(const std::string &node_name_)
 
     this->declare_parameter<bool>("boundaries_filter_active", true);
 
+    this->declare_parameter<bool>("range_rate_filter_active", true);
+    this->declare_parameter<double>("range_rate_filter_threshold_mps", 1.0);
+
     auto file_path_inner_line = this->get_parameter("file_path_inner_line").as_string();
     auto file_path_outer_line = this->get_parameter("file_path_outer_line").as_string();
 
@@ -30,6 +33,9 @@ GeofenceFilterNode::GeofenceFilterNode(const std::string &node_name_)
     this->distance_filter_threshold_m_squared = pow(this->distance_filter_threshold_m, 2);
 
     this->boundaries_filter_active = this->get_parameter("boundaries_filter_active").as_bool();
+
+    this->range_rate_filter_active = this->get_parameter("range_rate_filter_active").as_bool();
+    this->range_rate_filter_threshold_mps = this->get_parameter("range_rate_filter_threshold_mps").as_double();
 
     sub_perception_array = this->create_subscription<nif_msgs::msg::Perception3DArray>(
         "in_perception_array", nif::common::constants::QOS_SENSOR_DATA,
@@ -67,6 +73,9 @@ GeofenceFilterNode::GeofenceFilterNode(const std::string &node_name_)
                         this->getBodyFrameId(),
                         this->getGlobalFrameId(),
                         spline_interval);
+
+    this->parameters_callback_handle = this->add_on_set_parameters_callback(
+        std::bind(&GeofenceFilterNode::parametersCallback, this, std::placeholders::_1));
 }
 
 void GeofenceFilterNode::perceptionArrayCallback(
@@ -76,7 +85,7 @@ void GeofenceFilterNode::perceptionArrayCallback(
   msg_out.header = msg->header;
 
   for (auto&& object : msg->perception_list) {
-    if (this->poseInBodyIsValid(object.detection_result_3d.center))
+    if (this->poseInBodyIsValid(object.detection_result_3d.center, object.obj_velocity_in_local.linear.x))
       msg_out.perception_list.push_back(object);
 
   }
@@ -91,7 +100,7 @@ void GeofenceFilterNode::radarTrackCallback(
       pose_in_body.position.x = msg->track_range * cos( 2 * M_PI * msg->track_angle / 360);
       pose_in_body.position.y = msg->track_range * sin( 2 * M_PI * msg->track_angle / 360);
 
-      if (this->poseInBodyIsValid(pose_in_body))
+      if (this->poseInBodyIsValid(pose_in_body, msg->track_range_rate))
       {
         visualization_msgs::msg::Marker track_vis{};
         track_vis.header = msg->header;
@@ -117,7 +126,8 @@ void GeofenceFilterNode::radarTrackCallback(
 
 
 bool GeofenceFilterNode::poseInBodyIsValid(
-  const geometry_msgs::msg::Pose &point_in_body)
+  const geometry_msgs::msg::Pose &point_in_body, 
+  double r_dot)
 {
   auto object_pose_in_global = nif::common::utils::coordination::getPtBodytoGlobal(
     this->getEgoOdometry(),
@@ -206,5 +216,70 @@ bool GeofenceFilterNode::poseInBodyIsValid(
       }
   }
 
+  // filter by range rate
+  // TODO update considering external info abou t the speed of the desired target
+  // !!!!!!! WARNING this can be very dangerous, it filters out  static obstacles! !!!!!!!!!
+  if (this->range_rate_filter_active) 
+  {
+    if (this->getEgoOdometry().twist.twist.linear.x + r_dot < this->range_rate_filter_threshold_mps )
+      return false; // Likely a wall point
+  }
+
   return true;
+}
+
+rcl_interfaces::msg::SetParametersResult
+nif::perception::GeofenceFilterNode::parametersCallback(
+    const std::vector<rclcpp::Parameter> &vector) {
+  rcl_interfaces::msg::SetParametersResult result;
+  result.successful = false;
+  result.reason = "";
+  for (const auto &param : vector) {
+    if (param.get_name() == "distance_filter_active") {
+      if (param.get_type() == rclcpp::ParameterType::PARAMETER_BOOL) {
+        if (true) // TODO implement switching policy, if needed
+        {
+          this->distance_filter_active = param.as_bool();
+          result.successful = true;
+        }
+      }
+    } else if (param.get_name() == "boundaries_filter_active") {
+      if (param.get_type() == rclcpp::ParameterType::PARAMETER_BOOL) {
+        if (true) {
+          this->boundaries_filter_active = param.as_bool();
+          result.successful = true;
+        }
+      }
+    } else if (param.get_name() == "range_rate_filter_active") {
+      if (param.get_type() == rclcpp::ParameterType::PARAMETER_BOOL) {
+        if (true) {
+          this->range_rate_filter_active = param.as_bool();
+          result.successful = true;
+        }
+      }
+    } else if (param.get_name() == "distance_filter_threshold_m") {
+      if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
+        if (true) {
+          this->distance_filter_threshold_m = param.as_double();
+          this->distance_filter_threshold_m_squared = pow(this->distance_filter_threshold_m, 2);
+          result.successful = true;
+        }
+      }
+    } else if (param.get_name() == "boundaries_filter_threshold_m") {
+      if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
+        if (true) {
+          this->boundaries_filter_threshold_m = param.as_double();
+          result.successful = true;
+        }
+      }
+    } else if (param.get_name() == "range_rate_filter_threshold_mps") {
+      if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
+        if (true) {
+          this->range_rate_filter_threshold_mps = param.as_double();
+          result.successful = true;
+        }
+      }
+    }
+  }
+  return result;
 }

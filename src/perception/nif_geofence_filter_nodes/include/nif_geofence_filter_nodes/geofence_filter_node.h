@@ -36,7 +36,14 @@ private:
         const delphi_esr_msgs::msg::EsrTrack::SharedPtr msg);
 
     bool poseInBodyIsValid(
-        const geometry_msgs::msg::Pose &point_in_body);
+        const geometry_msgs::msg::Pose &point_in_body,
+        double r_dot = 0);
+
+    rcl_interfaces::msg::SetParametersResult
+    parametersCallback(
+    const std::vector<rclcpp::Parameter> &vector);
+
+    OnSetParametersCallbackHandle::SharedPtr parameters_callback_handle;
 
     rclcpp::Subscription<nif_msgs::msg::Perception3DArray>::SharedPtr sub_perception_array;
     rclcpp::Publisher<nif_msgs::msg::Perception3DArray>::SharedPtr pub_filtered_perception_array;
@@ -56,8 +63,10 @@ private:
     double boundaries_filter_threshold_m; 
     double boundaries_filter_threshold_m_squared; 
 
-};
+    bool range_rate_filter_active; 
+    double range_rate_filter_threshold_mps; 
 
+};  
 } // namespace perception
 } // namespace nif
 
