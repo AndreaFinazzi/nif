@@ -264,9 +264,12 @@ velocity_profiler::velProfile(const nav_msgs::msg::Odometry &odom_,
       cubic_spliner_curvature.begin(), cubic_spliner_curvature.end(),
       [&](double curvature) { return (abs(curvature) > 0.1); });
 
-  std::cout << "is too curvy? : " << is_too_curvy << std::endl;
-
-  return out_traj;
+  if (is_too_curvy) {
+    nif_msgs::msg::DynamicTrajectory empty_traj;
+    return empty_traj;
+  } else {
+    return out_traj;
+  }
 }
 
 nif_msgs::msg::DynamicTrajectory velocity_profiler::velProfileForAcc(

@@ -305,25 +305,6 @@ private:
   FrenetPathGenerator::CubicSpliner2DResult m_racingline_spline_data;
   double m_racingline_full_progress;
 
-  // mission & waypoint mananger
-  std::string m_warmup_file_path;
-  std::vector<double> m_warmup_x_vec, m_warmup_y_vec;
-  nav_msgs::msg::Path m_warmup_path;
-  nif_msgs::msg::DynamicTrajectory m_warmup_dtraj;
-  pcl::PointCloud<pcl::PointXY>::Ptr m_warmup_path_pc;
-  pcl::KdTreeFLANN<pcl::PointXY> m_warmup_path_kdtree;
-  FrenetPathGenerator::CubicSpliner2DResult m_warmup_spline_data;
-  double m_warmup_full_progress;
-
-  std::string m_pit_file_path;
-  std::vector<double> m_pit_x_vec, m_pit_y_vec;
-  nav_msgs::msg::Path m_pit_path;
-  nif_msgs::msg::DynamicTrajectory m_pit_dtraj;
-  pcl::PointCloud<pcl::PointXY>::Ptr m_pit_path_pc;
-  pcl::KdTreeFLANN<pcl::PointXY> m_pit_path_kdtree;
-  FrenetPathGenerator::CubicSpliner2DResult m_pit_spline_data;
-  double m_pit_full_progress;
-
   int m_maptrack_size;
 
   // OUTPUT
@@ -357,6 +338,9 @@ private:
   double m_config_merge_allow_dist;            // [m]
   double m_config_overlap_checking_dist_bound; // [m]
   double m_config_overlap_checking_time_bound; // [sec]
+
+  // under consideration
+  const double m_acceptable_slip_angle_rad = 0.0872665; // 5 deg
 
   shared_ptr<FrenetPathGenerator> m_frenet_generator_ptr;
   shared_ptr<velocity_profiler> m_velocity_profiler_ptr;
