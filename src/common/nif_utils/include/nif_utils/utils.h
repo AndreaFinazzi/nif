@@ -91,6 +91,38 @@ double calEuclideanDistance(const geometry_msgs::msg::Point &a,
 //    std::vector<double,double>& b);
 
 /**
+ * Calculate squared Euclidean distance between two PoseStamped
+ * @param a Point/Pose/PoseStamped
+ * @param b Point/Pose/PoseStamped
+ * @return Euclidean distance between Point/Pose/PoseStamped
+ */
+double calEuclideanDistanceSquared(const geometry_msgs::msg::PoseStamped& a,
+                            const geometry_msgs::msg::PoseStamped& b);
+
+/**
+ * Calculate squared Euclidean distance between two Pose
+ * @param a Point/Pose/PoseStamped
+ * @param b Point/Pose/PoseStamped
+ * @return Euclidean distance between Point/Pose/PoseStamped
+ */
+double calEuclideanDistanceSquared(const geometry_msgs::msg::Pose& a,
+                            const geometry_msgs::msg::Pose& b);
+
+/**
+ * Calculate squared Euclidean distance between two Point
+ * @param a Point/Pose/PoseStamped
+ * @param b Point/Pose/PoseStamped
+ * @return Euclidean distance between Point/Pose/PoseStamped
+ */
+double calEuclideanDistanceSquared(const geometry_msgs::msg::Point& a,
+                            const geometry_msgs::msg::Point& b);
+
+//    TODO: fix static override problems
+//    double calEuclideanDistance(const std::vector<double,double>& a, const
+//    std::vector<double,double>& b);
+
+
+/**
  * Convert linear velocity from miles-per-hour to kilometers-per-hour
  * @param mph Linear velocity in miles-per-hour
  * @return Linear velocity in kilometers-per-hour
@@ -168,8 +200,13 @@ getPtBodytoGlobal(const geometry_msgs::msg::Pose &current_pose_,
                   const geometry_msgs::msg::Pose &point_in_body_);
 
 geometry_msgs::msg::PoseStamped
-getPtGlobaltoBody(const nav_msgs::msg::Odometry &current_odom_,
-                  const geometry_msgs::msg::PoseStamped &point_in_global_);
+getPtStampedBodytoGlobal(
+  const geometry_msgs::msg::Pose& current_pose_,
+  const geometry_msgs::msg::Pose& point_in_body_);
+
+geometry_msgs::msg::PoseStamped
+getPtGlobaltoBody(const nav_msgs::msg::Odometry& current_odom_,
+                  const geometry_msgs::msg::PoseStamped& point_in_global_);
 
 geometry_msgs::msg::PoseStamped
 getPtGlobaltoBody(const nav_msgs::msg::Odometry &current_odom_,
@@ -183,9 +220,13 @@ geometry_msgs::msg::Pose
 getPtGlobaltoBody(const geometry_msgs::msg::Pose &current_pose_,
                   const geometry_msgs::msg::Pose &point_in_global_);
 
-nav_msgs::msg::Path
-getPathGlobaltoBody(const nav_msgs::msg::Odometry &current_odom_,
-                    const nav_msgs::msg::Path &path_in_global_);
+geometry_msgs::msg::PoseStamped
+getPtStampedGlobaltoBody(
+  const geometry_msgs::msg::Pose& current_pose_,
+  const geometry_msgs::msg::Pose& point_in_global_);
+
+nav_msgs::msg::Path getPathGlobaltoBody(const nav_msgs::msg::Odometry& current_odom_,
+                                        const nav_msgs::msg::Path& path_in_global_);
 
 } // namespace coordination
 
@@ -198,6 +239,20 @@ inline const std::string getGlobalParamName(const std::string &param_name) {
 }
 
 } // namespace naming
+
+namespace algebra {
+  /**
+   * Calculate cross-product
+   * @param vector_a Point/Pose/PoseStamped
+   * @param vector_b Point/Pose/PoseStamped
+   * @return Cross-product vector_c = vector_a x vector_b
+   */
+  geometry_msgs::msg::Point calCrossProduct(
+    const geometry_msgs::msg::Point& vector_a,
+    const geometry_msgs::msg::Point& vector_b);
+
+} // namespace algebra
+
 
 } // namespace utils
 } // namespace common

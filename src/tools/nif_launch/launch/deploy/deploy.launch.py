@@ -211,7 +211,7 @@ def generate_launch_description():
             ('in_reference_path', 'planning/path_global'),
             ('in_ego_odometry', '/aw_localization/ekf/odom'),
             ('in_wheel_speed_report', 'raptor_dbw_interface/wheel_speed_report'),
-            ('in_imu_data', 'novatel_bottom/imu/data'),
+            ('in_imu_data', 'novatel_bottom/rawimux'),
             ('in_steering_report', 'raptor_dbw_interface/steering_report'),
             ('in_control_error', 'control_joint_lqr/lqr_error')
         ],
@@ -270,7 +270,7 @@ def generate_launch_description():
         executable='nif_accel_control_nodes_exe',
         output='screen',
         remappings=[
-            ('/in_imu_data', '/novatel_bottom/imu/data')
+            ('/in_imu_data', '/novatel_bottom/rawimux')
         ],
         parameters=[{
             'engine_based_throttle_enabled' : True, 
@@ -319,8 +319,6 @@ def generate_launch_description():
         executable='nif_system_status_manager_nodes_exe',
         remappings=[
             ('in_joystick_cmd', '/joystick/command'),
-            ('in_novatel_bestpos', '/novatel_bottom/bestpos'),
-            ('in_novatel_insstdev', '/novatel_bottom/insstdev'),
             ('in_localization_status', '/aw_localization/ekf/status'),
             ('in_mission_status', '/system/mission'),
             ('out_system_status', '/system/status'),
@@ -403,7 +401,7 @@ def generate_launch_description():
 
     nif_points_clustering = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            get_share_file("nif_points_clustering", 'launch/deploy.launch.py')
+            get_share_file("nif_points_clustering_nodes", 'launch/deploy.launch.py')
         )
     )
 

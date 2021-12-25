@@ -65,7 +65,7 @@ def generate_launch_description():
         executable='nif_accel_control_nodes_exe',
         output='screen',
         remappings=[
-            ('/in_imu_data', '/novatel_bottom/imu/data')
+            ('/in_imu_data', '/novatel_bottom/rawimux')
         ],
         parameters=[{
             'engine_based_throttle_enabled' : True, 

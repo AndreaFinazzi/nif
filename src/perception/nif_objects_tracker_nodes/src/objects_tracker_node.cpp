@@ -110,7 +110,7 @@ void IMMObjectTrackerNode::detectionCallback(
     vis_marker.pose.orientation.y = tracked_objects.perception_list[tracked_obj_idx].detection_result_3d.center.orientation.y;
     vis_marker.pose.orientation.z = tracked_objects.perception_list[tracked_obj_idx].detection_result_3d.center.orientation.z;
     vis_marker.pose.orientation.w = tracked_objects.perception_list[tracked_obj_idx].detection_result_3d.center.orientation.w;
-    vis_marker.scale.x = tracked_objects.perception_list[tracked_obj_idx].obj_velocity_in_local.linear.x;
+    vis_marker.scale.x = 1.0 + tracked_objects.perception_list[tracked_obj_idx].obj_velocity_in_local.linear.x;
     vis_marker.scale.y = 1.0;
     vis_marker.scale.z = 1.0;
     vis_marker.color.r = double((tracked_obj_idx + 1.0) / tracked_objects.perception_list.size());
@@ -118,6 +118,7 @@ void IMMObjectTrackerNode::detectionCallback(
     vis_marker.color.b = 0;
     vis_marker.color.a = 1.0;
 
+    vis_marker.lifetime = rclcpp::Duration(0.1e+9);
     vis_marker_array.markers.push_back(vis_marker);
   }
   tracked_output_vis_publisher->publish(vis_marker_array);

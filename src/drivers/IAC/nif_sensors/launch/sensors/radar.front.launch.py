@@ -133,8 +133,8 @@ def generate_launch_description():
                 ('/esr_vehicle3', '/radar_front/esr_vehicle3'),
                 ('/esr_vehicle4', '/radar_front/esr_vehicle4'),
                 ('/esr_vehicle5', '/radar_front/esr_vehicle5'),
-                ('corrimu', '/novatel_bottom/corrimu'),
-                ('best_vel', '/novatel_bottom/bestvel'),
+                ('in_imu', '/novatel_bottom/rawimux'),
+                ('in_best_vel', '/novatel_bottom/bestvel'),
         ]
     )
 

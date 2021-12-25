@@ -1,3 +1,4 @@
+from typing import Match
 from xml.etree.ElementTree import Element, SubElement, ElementTree, dump
 from xml.etree.ElementTree import parse
 import glob
@@ -76,15 +77,21 @@ def parse_configs():
                         help='check headers name')
     parser.add_argument('--optional_dir', type=str, default='',
                         help='optionally add directory name')
+    parser.add_argument('--track', type=str, default='LVMS',
+                        help='Track ID (e.g. LVMS)')
 
-    # lon_0, lat_0 = -86.235148, 39.809786  #indy
-    lon_0, lat_0 = -86.3418060783425, 39.8125900071711  #Lucas Oil Racing
-    # lon_0, lat_0 = -86.23524024, 39.79312996  #LGSVL
-    
     nedPoints = []
 
     configs = edict(vars(parser.parse_args()))
-
+    tracks_ecef_origin = {
+            'IMS': (-86.235148, 39.809786),  #indy
+            'LOR': (-86.3418060783425, 39.8125900071711),  #Lucas Oil Racing
+            'LGSVL': (-86.23524024, 39.79312996),  #LGSVL
+            'LVMS': (-115.015914, 36.268252),  #LVMS
+            'LVMS_SIM': (-115.01206308896546, 36.27395157819169),  #LVMS_SIM
+        }
+    
+    (lon_0, lat_0) = tracks_ecef_origin.get(configs.track, (0.0, 0.0)) 
     
     if(configs.optional_dir == ''):
         root_path = './wpt' 

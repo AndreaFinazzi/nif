@@ -205,18 +205,21 @@ void EgoShapeFilterNode::timer_callback() {
   */
   InverseMap(m_CloudShapeFiltered, CloudInverseBoth, CloudInverseWeakerThres,
              CloudInverseLeft, CloudInverseRight, min_x, min_y, resolution_);
+
   //both
   sensor_msgs::msg::PointCloud2 cloud_inverse_msg;
   pcl::toROSMsg(*CloudInverseBoth, cloud_inverse_msg);
   cloud_inverse_msg.header.frame_id = BASE_LINK;
   cloud_inverse_msg.header.stamp = this->now();
   pub_inverse_points->publish(cloud_inverse_msg);
+
   // left
   sensor_msgs::msg::PointCloud2 left_cloud_inverse_msg;
   pcl::toROSMsg(*CloudInverseLeft, left_cloud_inverse_msg);
   left_cloud_inverse_msg.header.frame_id = BASE_LINK;
   left_cloud_inverse_msg.header.stamp = this->now();
   pub_inverse_left_points->publish(left_cloud_inverse_msg);
+
   // right
   sensor_msgs::msg::PointCloud2 right_cloud_inverse_msg;
   pcl::toROSMsg(*CloudInverseRight, right_cloud_inverse_msg);

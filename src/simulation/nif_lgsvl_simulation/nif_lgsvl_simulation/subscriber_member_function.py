@@ -85,8 +85,8 @@ class LGSVLSubscriberNode(BaseNode):
         self.sub_laser_meter_flash_c = self.create_subscription(PointCloud2, self.namespace + '/sensor/laser_meter_flash_c', self.callback_laser_meter_flash_c, rclpy.qos.qos_profile_sensor_data)
 
         # IMU subscriptions
-        self.sub_imu_top = self.create_subscription(Imu, self.namespace + '/novatel_top/imu/data', self.callback_imu_top, rclpy.qos.qos_profile_sensor_data)
-        self.sub_imu_bottom = self.create_subscription(Imu, self.namespace + '/novatel_bottom/imu/data', self.callback_imu_bottom, rclpy.qos.qos_profile_sensor_data)
+        self.sub_imu_top = self.create_subscription(Imu, self.namespace + '/novatel_top/rawimux', self.callback_imu_top, rclpy.qos.qos_profile_sensor_data)
+        self.sub_imu_bottom = self.create_subscription(Imu, self.namespace + '/novatel_bottom/rawimux', self.callback_imu_bottom, rclpy.qos.qos_profile_sensor_data)
 
         # Vehicle odometry subsciptions (includes front/rear wheel angles and velocity)
         self.sub_vehicleodometry = self.create_subscription(VehicleOdometry, self.namespace + '/sensor/odometry', self.callback_vehicleodometry, rclpy.qos.qos_profile_sensor_data)

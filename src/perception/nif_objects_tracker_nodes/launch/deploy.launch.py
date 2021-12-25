@@ -36,9 +36,10 @@ def generate_launch_description():
             LaunchConfiguration('nif_objects_tracker_nodes_param_file')
         ],
         remappings=[
-            ('in_ego_odom_topic_name', '/aw_localization/ekf/odom'),
-            ('in_perception_topic_name', '/ghost/perception'),
-            ('out_detected_object_topic_name', '/tracking/objects'),
+            ('in_ego_odom', '/aw_localization/ekf/odom'),
+            ('in_perception', '/out_perception_list'),
+            ('out_detected_object', '/tracking/objects'),
+            ('output_vis', 'tracking/vis/markers')
         ]
     )
 

@@ -357,22 +357,7 @@ nif::control::ControlSafetyLayerNode::parametersCallback(
   result.successful = false;
   result.reason = "";
   for (const auto &param : vector) {
-    if (param.get_name() == "lat_autonomy_enabled") {
-      if (param.get_type() == rclcpp::ParameterType::PARAMETER_BOOL) {
-        if (true) // TODO implement switching policy, if needed
-        {
-          //                    this->lat_autonomy_enabled = param.as_bool();
-          result.successful = false;
-        }
-      }
-    } else if (param.get_name() == "long_autonomy_enabled") {
-      if (param.get_type() == rclcpp::ParameterType::PARAMETER_BOOL) {
-        if (true) {
-          //                    this->long_autonomy_enabled = param.as_bool();
-          result.successful = false;
-        }
-      }
-    } else if (param.get_name() == "max_steering_angle_deg") {
+    if (param.get_name() == "max_steering_angle_deg") {
       if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
         if (true) {
           this->max_steering_angle_deg = param.as_double();
