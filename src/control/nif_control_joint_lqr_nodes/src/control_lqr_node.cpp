@@ -30,7 +30,10 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
           "control_joint_lqr/track_point", nif::common::constants::QOS_DEFAULT);
   lqr_error_pub_ = this->create_publisher<std_msgs::msg::Float32MultiArray>(
       "control_joint_lqr/lqr_error", nif::common::constants::QOS_DEFAULT);
-
+  lqr_desired_velocity_mps_pub_ =
+      this->create_publisher<std_msgs::msg::Float32>(
+          "control_joint_lqr/desired_velocity_mps",
+          nif::common::constants::QOS_DEFAULT);
   // Subscribers
   velocity_sub_ =
       this->create_subscription<raptor_dbw_msgs::msg::WheelSpeedReport>(
@@ -140,7 +143,8 @@ void ControlLQRNode::publishSteerAccelDiagnostics(
     double track_distance, unsigned int lqr_tracking_idx,
     geometry_msgs::msg::PoseStamped lqr_track_point,
     joint_lqr::lqr::JointLQR::ErrorMatrix lqr_err_cog,
-    joint_lqr::lqr::JointLQR::ErrorMatrix lqr_err) {
+    joint_lqr::lqr::JointLQR::ErrorMatrix lqr_err,
+    double desired_velocity_mps) {
   std_msgs::msg::Bool command_valid_msg;
   command_valid_msg.data = lqr_command_valid;
   lqr_command_valid_pub_->publish(command_valid_msg);
@@ -181,6 +185,10 @@ void ControlLQRNode::publishSteerAccelDiagnostics(
   error_cog_array_msg.data.push_back(error_array_msg.data[3]);
   error_cog_array_msg.data.push_back(error_array_msg.data[4]);
   lqr_error_pub_->publish(error_cog_array_msg);
+
+std_msgs::msg::Float32 des_vel_msg{};
+des_vel_msg.data = desired_velocity_mps;
+  lqr_desired_velocity_mps_pub_->publish(des_vel_msg);
 }
 
 nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
@@ -270,11 +278,11 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
         this->getEgoOdometry());
     valid_target_position = M_PI * 3 / 4. > std::abs(target_point_azimuth);
 
+    double l_desired_velocity = 0.0;
     if (valid_wpt_distance && valid_target_position) {
       valid_tracking_result = true;
       // Run LQR :)
       // Desired velocity check
-      double l_desired_velocity = 0.0;
 
       // deprecated
       //   if (this->hasDesiredVelocity() &&
@@ -379,7 +387,7 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
                                  track_distance, lqr_tracking_idx_,
                                  this->getReferenceTrajectory()
                                      ->trajectory_path.poses[lqr_tracking_idx_],
-                                 error_COG, error);
+                                 error_COG, error, l_desired_velocity);
   }
 
   if (!this->hasSystemStatus() ||
