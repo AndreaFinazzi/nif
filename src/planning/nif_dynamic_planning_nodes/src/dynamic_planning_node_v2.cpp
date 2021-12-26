@@ -1297,7 +1297,6 @@ void DynamicPlannerNode::timer_callback() {
       this->getSystemStatus().mission_status.max_velocity_mps;
 
   // Mission maximum vel set to the profiler
-  // m_velocity_profiler_ptr->setConstraintMaxVel(mission_max_vel);
   auto flg = m_velocity_profiler_obj.setConstraintMaxVel(mission_max_vel);
 
   auto allowable_maximum_vy = abs(tan(m_acceptable_slip_angle_rad)) *
@@ -1341,22 +1340,59 @@ void DynamicPlannerNode::timer_callback() {
 
         if (cur_idx_on_previous_path >= m_reset_wpt_idx &&
             m_reset_wpt_idx != NULL && m_reset_target_path_idx != NULL) {
-          m_cur_planned_traj.trajectory_path =
-              m_overtaking_candidates_path_vec[m_reset_target_path_idx];
-          m_reset_wpt_idx = NULL;
-          m_reset_target_path_idx = NULL;
+          if (m_reset_target_path_idx != -1) {
+            // target path is one of the overtaking path candidates
+            m_cur_planned_traj.trajectory_path =
+                m_overtaking_candidates_path_vec[m_reset_target_path_idx];
+            m_reset_wpt_idx = NULL;
+            m_reset_target_path_idx = NULL;
+          } else {
+            // target path is the racing line
+            m_cur_planned_traj.trajectory_path = m_racingline_path;
+            m_reset_wpt_idx = NULL;
+            m_reset_target_path_idx = NULL;
+          }
         }
 
+        auto progreeNCTE_racingline =
+            calcProgressNCTE(m_ego_odom.pose.pose, m_racingline_path);
         bool is_close_racingline =
-            (get<1>(calcProgressNCTE(m_ego_odom.pose.pose, m_racingline_path)) <
-             m_config_merge_allow_dist);
+            (get<1>(progreeNCTE_racingline) < m_config_merge_allow_dist);
 
         if (is_close_racingline) {
+          // Merging frenet segment generation
+          // Generate single frenet path segment
+          std::vector<std::shared_ptr<FrenetPath>>
+              frenet_path_generation_result =
+                  m_frenet_generator_ptr->calc_frenet_paths_multi_longi(
+                      get<1>(progreeNCTE_racingline), // current_position_d
+                      get<0>(progreeNCTE_racingline), // current_position_s
+                      0.0,                            // current_velocity_d
+                      std::max(m_ego_odom.twist.twist.linear.x,
+                               MIN_SPEED_MPS), // current_velocity_s
+                      0.0,                     // current_acceleration_d
+                      get<4>(m_racingline_spline_data), // cubicSplineModel
+                      std::max(abs(get<1>(progreeNCTE_racingline) /
+                                   allowable_maximum_vy),
+                               1.0),
+                      std::max(abs(get<1>(progreeNCTE_racingline) /
+                                   allowable_maximum_vy),
+                               1.0) +
+                          0.01,
+                      SAMPLING_TIME,
+                      0.0,
+                      0.0001,
+                      0.1);
+
+          auto stitched_path = stitchFrenetToPath(
+              frenet_path_generation_result[0], m_racingline_path);
+
           auto raceline_path_seg =
               getCertainLenOfPathSeg(m_ego_odom.pose.pose.position.x,
                                      m_ego_odom.pose.pose.position.y,
-                                     m_racingline_path,
+                                     stitched_path,
                                      200);
+
           // Convert to the trajectory with the velocity profiling
           // (without considering ACC)
           auto race_traj = m_velocity_profiler_obj.velProfile(
@@ -1370,10 +1406,14 @@ void DynamicPlannerNode::timer_callback() {
           if (!has_collision) {
             // Change the defualt path to the racing line (full path)
             // Not considering the ACC in this case
-            m_cur_planned_traj.trajectory_path =
-                m_racingline_dtraj.trajectory_path;
-            m_reset_wpt_idx = NULL;
-            m_reset_target_path_idx = NULL;
+            m_cur_planned_traj = stitched_path;
+            m_reset_wpt_idx =
+                getCurIdx(frenet_path_generation_result[0]->points_x().back(),
+                          frenet_path_generation_result[0]->points_y().back(),
+                          m_cur_planned_traj.trajectory_path);
+
+            // TODO: reset target path index -1 means the racing line
+            m_reset_target_path_idx = -1;
 
             // Publish cur_traj
             publishPlannedTrajectory(race_traj,
@@ -1472,8 +1512,6 @@ void DynamicPlannerNode::timer_callback() {
                                          stitched_path.trajectory_path,
                                          200);
 
-              // auto cur_traj = m_velocity_profiler_ptr->velProfile(
-              //     m_ego_odom, cur_path_seg, 1.0);
               auto cur_traj = m_velocity_profiler_obj.velProfile(
                   m_ego_odom, cur_path_seg, 1.0);
 
