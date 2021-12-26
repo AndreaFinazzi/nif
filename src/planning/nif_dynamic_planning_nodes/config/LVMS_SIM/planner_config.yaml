@@ -30,4 +30,4 @@ planning_params:
 
 collision_checking_params:
   overlap_checking_dist_bound: 2.5 # [m] 
-  overlap_checking_time_bound: 2.0 # [sec]
+  overlap_checking_time_bound: 1.0 # [sec]
