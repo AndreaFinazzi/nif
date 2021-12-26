@@ -286,6 +286,7 @@ def generate_launch_description():
     nif_global_param = os.path.join(
         get_package_share_directory('nif_launch'),
         'config',
+        'deploy',
         global_params_file
     )
 
@@ -457,5 +458,5 @@ def generate_launch_description():
         nif_mission_manager_launch,
         nif_waypoint_manager_node,
         lgsvl_simulation_launch,
-        # nif_dynamic_planner_launch
+        nif_dynamic_planner_launch
     ])
