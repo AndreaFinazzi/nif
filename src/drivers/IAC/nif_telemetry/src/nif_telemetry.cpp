@@ -100,7 +100,7 @@ class Telemetry : public rclcpp::Node
       sub_command_brake = this->create_subscription<std_msgs::msg::Float32>(
         "/joystick/brake_cmd", nif::common::constants::QOS_SENSOR_DATA, std::bind(&Telemetry::command_brake_callback, this, std::placeholders::_1));
       sub_command_desired_velocity = this->create_subscription<std_msgs::msg::Float32>(
-        "/velocity_planner/des_vel", nif::common::constants::QOS_SENSOR_DATA, std::bind(&Telemetry::command_desired_velocity_callback, this, std::placeholders::_1));
+        "/control_joint_lqr/desired_velocity_mps", nif::common::constants::QOS_SENSOR_DATA, std::bind(&Telemetry::command_desired_velocity_callback, this, std::placeholders::_1));
       sub_command_gear = this->create_subscription<std_msgs::msg::UInt8>(
         "/joystick/gear_cmd", nif::common::constants::QOS_SENSOR_DATA, std::bind(&Telemetry::command_gear_callback, this, std::placeholders::_1));
 
