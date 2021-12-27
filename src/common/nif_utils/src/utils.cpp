@@ -23,8 +23,15 @@ double nif::common::utils::time::secs(rclcpp::Duration t) {
 }
 
 double nif::common::utils::geometry::calEuclideanDistance(
+      double a_x, double a_y, double a_z,
+      double b_x, double b_y, double b_z)
+{
+  return sqrt(pow((a_x - b_x), 2) + pow((a_y - b_y), 2) + pow((a_z - b_z), 2));
+}
+
+double nif::common::utils::geometry::calEuclideanDistance(
     const geometry_msgs::msg::Point &a, const geometry_msgs::msg::Point &b) {
-  return sqrt(pow((a.x - b.x), 2) + pow((a.y - b.y), 2) + pow((a.z - b.z), 2));
+  return calEuclideanDistance(a.x, a.y, a.z, b.x, b.y, b.z);
 }
 
 double nif::common::utils::geometry::calEuclideanDistance(
@@ -37,6 +44,8 @@ double nif::common::utils::geometry::calEuclideanDistance(
     const geometry_msgs::msg::PoseStamped &b) {
   return calEuclideanDistance(a.pose, b.pose);
 }
+
+
 
 double nif::common::utils::geometry::calEuclideanDistanceSquared(
     const geometry_msgs::msg::Point& a, const geometry_msgs::msg::Point& b) {
@@ -198,9 +207,10 @@ nif::common::utils::coordination::getPtGlobaltoBody(
   return point_in_body_stamped;
 }
 
-__attribute_deprecated__ geometry_msgs::msg::PoseStamped
+geometry_msgs::msg::PoseStamped
 nif::common::utils::coordination::getPtGlobaltoBody(
-    const nav_msgs::msg::Odometry &current_odom_, const double &global_x_,
+    const nav_msgs::msg::Odometry &current_odom_, 
+    const double &global_x_,
     const double &global_y_) {
   geometry_msgs::msg::Pose pose_in_global{};
   pose_in_global.position.x = global_x_;

@@ -86,6 +86,20 @@ double calEuclideanDistance(const geometry_msgs::msg::Pose &a,
 double calEuclideanDistance(const geometry_msgs::msg::Point &a,
                             const geometry_msgs::msg::Point &b);
 
+
+/**
+ * Calculate Euclidean distance between Point/Pose/PoseStamped
+ * @param a_x (double) point a x coordinate
+ * @param a_y (double) point a y coordinate
+ * @param a_z (double) point a z coordinate
+ * @param b_x (double) point b x coordinate
+ * @param b_y (double) point b y coordinate
+ * @param b_z (double) point b z coordinate
+ * @return Euclidean distance between Point/Pose/PoseStamped
+ */
+double calEuclideanDistance(double a_x, double a_y, double a_z,
+                            double b_x, double b_y, double b_z);
+
 //    TODO: fix static override problems
 //    double calEuclideanDistance(const std::vector<double,double>& a, const
 //    std::vector<double,double>& b);
@@ -212,7 +226,7 @@ geometry_msgs::msg::PoseStamped
 getPtGlobaltoBody(const nav_msgs::msg::Odometry &current_odom_,
                   const geometry_msgs::msg::Pose &point_in_global_);
 
-__attribute_deprecated__ geometry_msgs::msg::PoseStamped
+geometry_msgs::msg::PoseStamped
 getPtGlobaltoBody(const nav_msgs::msg::Odometry &current_odom_,
                   const double &global_x_, const double &global_y_);
 
