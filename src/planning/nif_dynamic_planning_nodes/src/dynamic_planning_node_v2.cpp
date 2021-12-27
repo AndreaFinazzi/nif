@@ -999,7 +999,7 @@ nif_msgs::msg::DynamicTrajectory DynamicPlannerNode::stitchFrenetToPath(
   auto cloest_pt_idx_wrt_segment_start_pt =
       getCurIdx(vec_x[0], vec_y[0], target_path_);
   auto cloest_pt_idx_wrt_segment_end_pt =
-      getCurIdx(vec_x.back(), vec_y.back(), target_path_);
+      getCurIdx(vec_x.back(), vec_y.back(), target_path_) + 2;
 
   for (int i = 0; i < vec_x.size(); i++) {
     geometry_msgs::msg::PoseStamped ps;
