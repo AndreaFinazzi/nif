@@ -2,19 +2,19 @@
 #define __VELOCITY_PROFILER_H__d
 
 #include "nif_common/constants.h"
+#include "nif_msgs/msg/dynamic_trajectory.hpp"
+#include "nif_opponent_prediction_nodes/frenet_path_generator.h"
 #include "nif_vehicle_dynamics_manager/tire_manager.hpp"
 #include <algorithm>
 #include <cstdint>
 #include <iostream>
 #include <math.h>
-#include "nif_opponent_prediction_nodes/frenet_path_generator.h"
 #include <yaml-cpp/yaml.h>
-#include "nif_msgs/msg/dynamic_trajectory.hpp"
 
-#define MIN_SPEED_MPS 1.0
+// #define MIN_SPEED_MPS 1.0
+#define MIN_SPEED_MPS 3.0
 
-class velocity_profiler
-{
+class velocity_profiler {
 public:
   velocity_profiler();
   ~velocity_profiler() {}
@@ -32,27 +32,24 @@ public:
   bool setConstraintMaxVel(double value_);    // [mps]
 
   bool checkConfig();
-  bool parseConfig_(std::string & config_file_path_);
+  bool parseConfig_(std::string &config_file_path_);
 
   nif_msgs::msg::DynamicTrajectory
-  velProfile(
-    const nav_msgs::msg::Odometry & odom_,
-    const nav_msgs::msg::Path & target_path_,
-    const double & spline_interval_);
+  velProfile(const nav_msgs::msg::Odometry &odom_,
+             const nav_msgs::msg::Path &target_path_,
+             const double &spline_interval_);
 
   nif_msgs::msg::DynamicTrajectory
-  velProfilewithDynamics(
-    const nav_msgs::msg::Odometry & odom_,
-    const nav_msgs::msg::Path & target_path_,
-    const double & spline_interval_);
+  velProfilewithDynamics(const nav_msgs::msg::Odometry &odom_,
+                         const nav_msgs::msg::Path &target_path_,
+                         const double &spline_interval_);
 
   nif_msgs::msg::DynamicTrajectory
-  velProfileForAcc(
-    const nav_msgs::msg::Odometry & odom_,
-    const nif_msgs::msg::DynamicTrajectory & cipv_predicted_traj_,
-    const double & cipv_vel_abs_,
-    const nav_msgs::msg::Path & target_path_,
-    const double & spline_interval_);
+  velProfileForAcc(const nav_msgs::msg::Odometry &odom_,
+                   const nif_msgs::msg::DynamicTrajectory &cipv_predicted_traj_,
+                   const double &cipv_vel_abs_,
+                   const nav_msgs::msg::Path &target_path_,
+                   const double &spline_interval_);
 
 private:
   /* data */

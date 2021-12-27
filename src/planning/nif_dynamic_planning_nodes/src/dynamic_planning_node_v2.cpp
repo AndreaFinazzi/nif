@@ -1452,10 +1452,10 @@ void DynamicPlannerNode::timer_callback() {
                       get<4>(m_racingline_spline_data), // cubicSplineModel
                       std::max(abs(get<1>(progreeNCTE_racingline) /
                                    allowable_maximum_vy),
-                               1.0),
+                               2.0),
                       std::max(abs(get<1>(progreeNCTE_racingline) /
                                    allowable_maximum_vy),
-                               1.0) +
+                               2.0) +
                           0.01,
                       SAMPLING_TIME, 0.0, 0.0001, 0.1);
 
@@ -1492,14 +1492,10 @@ void DynamicPlannerNode::timer_callback() {
         bool is_close_racingline =
             (get<1>(progreeNCTE_racingline) < m_config_merge_allow_dist);
 
-        if (is_close_racingline && // phisically close
-            m_last_update_target_path_alias !=
-                "raceline" && // current target path is not racing line
-            m_last_lat_planning_type ==
-                LATERAL_PLANNING_TYPE::KEEP && // alligned with target path
-                                               // (condition 1)
-            m_reset_target_path_idx !=
-                NULL) { // alligned with target path (condition 2)
+        if (is_close_racingline &&
+            m_last_update_target_path_alias != "raceline" &&
+            m_last_lat_planning_type == LATERAL_PLANNING_TYPE::KEEP &&
+            m_reset_target_path_idx == NULL) {
           // Merging frenet segment generation
           // Generate single frenet path segment
           std::vector<std::shared_ptr<FrenetPath>>
@@ -1514,10 +1510,10 @@ void DynamicPlannerNode::timer_callback() {
                       get<4>(m_racingline_spline_data), // cubicSplineModel
                       std::max(abs(get<1>(progreeNCTE_racingline) /
                                    allowable_maximum_vy),
-                               1.0),
+                               2.0),
                       std::max(abs(get<1>(progreeNCTE_racingline) /
                                    allowable_maximum_vy),
-                               1.0) +
+                               2.0) +
                           0.01,
                       SAMPLING_TIME, 0.0, 0.0001, 0.1);
 
@@ -1618,10 +1614,10 @@ void DynamicPlannerNode::timer_callback() {
                             [path_candidate_idx], // cubicSplineModel
                         std::max(
                             abs(get<1>(progressNcte) / allowable_maximum_vy),
-                            1.0),
+                            2.0),
                         std::max(
                             abs(get<1>(progressNcte) / allowable_maximum_vy),
-                            1.0) +
+                            2.0) +
                             2.0 + 0.01,
                         SAMPLING_TIME, 0.0, 0.0001, 0.1);
 
@@ -1791,10 +1787,10 @@ void DynamicPlannerNode::timer_callback() {
                       get<4>(m_racingline_spline_data), // cubicSplineModel
                       std::max(abs(get<1>(progreeNCTE_racingline) /
                                    allowable_maximum_vy),
-                               1.0),
+                               2.0),
                       std::max(abs(get<1>(progreeNCTE_racingline) /
                                    allowable_maximum_vy),
-                               1.0) +
+                               2.0) +
                           0.01,
                       SAMPLING_TIME, 0.0, 0.0001, 0.1);
 
@@ -1866,15 +1862,15 @@ void DynamicPlannerNode::timer_callback() {
                       get<4>(m_defenderline_spline_data), // cubicSplineModel
                       std::max(abs(get<1>(progreeNCTE_defenderline) /
                                    allowable_maximum_vy),
-                               1.0),
+                               2.0),
                       std::max(abs(get<1>(progreeNCTE_defenderline) /
                                    allowable_maximum_vy),
-                               1.0) +
+                               2.0) +
                           0.01,
                       SAMPLING_TIME, 0.0, 0.0001, 0.1);
 
           auto stitched_path = stitchFrenetToPath(
-              frenet_path_generation_result[0], m_racingline_path);
+              frenet_path_generation_result[0], m_defenderline_path);
 
           m_cur_planned_traj = stitched_path;
           m_last_update_target_path_alias = "defender";
