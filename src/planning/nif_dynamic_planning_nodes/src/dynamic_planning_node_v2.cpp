@@ -1423,8 +1423,10 @@ void DynamicPlannerNode::timer_callback() {
           m_ego_odom, m_maptrack_global, 1.0);
 
       m_last_update_target_path_alias = "race_ready";
-      publishPlannedTrajectory(cur_traj, LONGITUDINAL_PLANNING_TYPE::STRAIGHT,
-                               LATERAL_PLANNING_TYPE::KEEP, true);
+      m_last_lat_planning_type = LATERAL_PLANNING_TYPE::KEEP;
+      m_last_long_planning_type = LONGITUDINAL_PLANNING_TYPE::STRAIGHT;
+      publishPlannedTrajectory(cur_traj, m_last_long_planning_type,
+                               m_last_lat_planning_type, true);
       return;
     } else {
       if (mission_status.mission_status_code ==
@@ -1490,8 +1492,14 @@ void DynamicPlannerNode::timer_callback() {
         bool is_close_racingline =
             (get<1>(progreeNCTE_racingline) < m_config_merge_allow_dist);
 
-        if (is_close_racingline &&
-            m_last_update_target_path_alias != "raceline") {
+        if (is_close_racingline && // phisically close
+            m_last_update_target_path_alias !=
+                "raceline" && // current target path is not racing line
+            m_last_lat_planning_type ==
+                LATERAL_PLANNING_TYPE::KEEP && // alligned with target path
+                                               // (condition 1)
+            m_reset_target_path_idx !=
+                NULL) { // alligned with target path (condition 2)
           // Merging frenet segment generation
           // Generate single frenet path segment
           std::vector<std::shared_ptr<FrenetPath>>
@@ -1540,11 +1548,12 @@ void DynamicPlannerNode::timer_callback() {
 
             // TODO: reset target path index -1 means the racing line
             m_last_update_target_path_alias = "raceline";
+            m_last_lat_planning_type = LATERAL_PLANNING_TYPE::MERGE;
+            m_last_long_planning_type = LONGITUDINAL_PLANNING_TYPE::STRAIGHT;
             m_reset_target_path_idx = RESET_PATH_TYPE::RACE_LINE;
 
-            publishPlannedTrajectory(race_traj,
-                                     LONGITUDINAL_PLANNING_TYPE::STRAIGHT,
-                                     LATERAL_PLANNING_TYPE::MERGE, true);
+            publishPlannedTrajectory(race_traj, m_last_long_planning_type,
+                                     m_last_lat_planning_type, true);
             return;
           }
         }
@@ -1571,9 +1580,10 @@ void DynamicPlannerNode::timer_callback() {
           // Keep current planned traj
           // not considering the ACC in this case
           ///////////////////////////////////////
-          publishPlannedTrajectory(cur_traj,
-                                   LONGITUDINAL_PLANNING_TYPE::STRAIGHT,
-                                   LATERAL_PLANNING_TYPE::KEEP, true);
+          m_last_lat_planning_type = LATERAL_PLANNING_TYPE::KEEP;
+          m_last_long_planning_type = LONGITUDINAL_PLANNING_TYPE::STRAIGHT;
+          publishPlannedTrajectory(cur_traj, m_last_long_planning_type,
+                                   m_last_lat_planning_type, true);
           return;
         } else {
           /////////////////////////////////
@@ -1648,9 +1658,11 @@ void DynamicPlannerNode::timer_callback() {
 
                 m_last_update_target_path_alias =
                     m_overtaking_candidates_alias_vec[path_candidate_idx];
-                publishPlannedTrajectory(
-                    cur_traj, LONGITUDINAL_PLANNING_TYPE::STRAIGHT,
-                    LATERAL_PLANNING_TYPE::CHANGE_PATH, true);
+                m_last_lat_planning_type = LATERAL_PLANNING_TYPE::CHANGE_PATH;
+                m_last_long_planning_type =
+                    LONGITUDINAL_PLANNING_TYPE::STRAIGHT;
+                publishPlannedTrajectory(cur_traj, m_last_long_planning_type,
+                                         m_last_lat_planning_type, true);
                 // FIXME: Currently, if there is a collision free path, we
                 // change the path immediately.
                 return;
@@ -1680,9 +1692,10 @@ void DynamicPlannerNode::timer_callback() {
 
             // Publish cur_traj
             // Keep previous plan and do ACC
-            publishPlannedTrajectory(cur_traj,
-                                     LONGITUDINAL_PLANNING_TYPE::FOLLOW,
-                                     LATERAL_PLANNING_TYPE::KEEP, true);
+            m_last_lat_planning_type = LATERAL_PLANNING_TYPE::KEEP;
+            m_last_long_planning_type = LONGITUDINAL_PLANNING_TYPE::FOLLOW;
+            publishPlannedTrajectory(cur_traj, m_last_long_planning_type,
+                                     m_last_lat_planning_type, true);
             return;
           } else {
             // ////////////////////////////////////////////////////////
@@ -1743,9 +1756,10 @@ void DynamicPlannerNode::timer_callback() {
                 collision_free_frenet_index_vec[naive_max_progree_path_idx];
             m_last_update_target_path_alias = m_overtaking_candidates_alias_vec
                 [collision_free_frenet_index_vec[naive_max_progree_path_idx]];
-            publishPlannedTrajectory(cur_traj,
-                                     LONGITUDINAL_PLANNING_TYPE::STRAIGHT,
-                                     LATERAL_PLANNING_TYPE::CHANGE_PATH, true);
+            m_last_lat_planning_type = LATERAL_PLANNING_TYPE::CHANGE_PATH;
+            m_last_long_planning_type = LONGITUDINAL_PLANNING_TYPE::STRAIGHT;
+            publishPlannedTrajectory(cur_traj, m_last_long_planning_type,
+                                     m_last_lat_planning_type, true);
 
             return;
           }
@@ -1816,8 +1830,10 @@ void DynamicPlannerNode::timer_callback() {
             1.0);
 
         // Publish cur_traj
-        publishPlannedTrajectory(cur_traj, LONGITUDINAL_PLANNING_TYPE::FOLLOW,
-                                 LATERAL_PLANNING_TYPE::KEEP, true);
+        m_last_lat_planning_type = LATERAL_PLANNING_TYPE::KEEP;
+        m_last_long_planning_type = LONGITUDINAL_PLANNING_TYPE::FOLLOW;
+        publishPlannedTrajectory(cur_traj, m_last_long_planning_type,
+                                 m_last_lat_planning_type, true);
         return;
       } else {
         ///////////////////
@@ -1891,8 +1907,10 @@ void DynamicPlannerNode::timer_callback() {
             1.0);
 
         // Publish cur_traj
-        publishPlannedTrajectory(cur_traj, LONGITUDINAL_PLANNING_TYPE::FOLLOW,
-                                 LATERAL_PLANNING_TYPE::KEEP, true);
+        m_last_lat_planning_type = LATERAL_PLANNING_TYPE::KEEP;
+        m_last_long_planning_type = LONGITUDINAL_PLANNING_TYPE::FOLLOW;
+        publishPlannedTrajectory(cur_traj, m_last_long_planning_type,
+                                 m_last_lat_planning_type, true);
         return;
       }
     }

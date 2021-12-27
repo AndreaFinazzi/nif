@@ -366,6 +366,8 @@ private:
   int m_reset_wpt_idx = NULL;
   int m_reset_target_path_idx = NULL;
   string m_last_update_target_path_alias;
+  LATERAL_PLANNING_TYPE m_last_lat_planning_type;
+  LONGITUDINAL_PLANNING_TYPE m_last_long_planning_type;
 };
 
 } // namespace planning

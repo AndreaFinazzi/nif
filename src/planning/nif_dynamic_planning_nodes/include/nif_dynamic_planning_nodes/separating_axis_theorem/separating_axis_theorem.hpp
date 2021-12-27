@@ -2,6 +2,7 @@
 #define __SEPARATING_AXIS_THEOREM_H__
 
 #include "nif_msgs/msg/dynamic_trajectory.hpp"
+#include "nif_utils/utils.h"
 #include <algorithm>
 #include <cmath>
 #include <iostream>
@@ -215,6 +216,83 @@ bool separating_axis_intersect_traj(
           continue;
         }
       }
+    }
+  }
+
+  return has_collision;
+}
+
+/** Check if two trajectories intersect
+ * @param ref_traj_ Reference trajectory : ego_traj (Collsion check based on
+ * this trajectory's timestamp array).
+ * @param target_traj_ Target trajectory : opponent_traj (Find closest timestamp
+ * within this timestamp array)
+ * @return (boolean) has_collision
+ * **/
+bool separating_axis_intersect_traj_v2(
+    const nif_msgs::msg::DynamicTrajectory &ref_traj_,
+    const nif_msgs::msg::DynamicTrajectory &target_traj_,
+    const double max_check_time_ = 6.0, const double time_diff_tres_ = 1.0) {
+
+  bool has_collision = true;
+
+  const double centre_to_front = 3.0;
+  const double centre_to_rear = 3.0;
+  const double centre_to_side = 1.5;
+
+  for (int ref_traj_idx = 0;
+       ref_traj_idx < ref_traj_.trajectory_timestamp_array.size();
+       ref_traj_idx++) {
+    auto ref_timestamp = ref_traj_.trajectory_timestamp_array[ref_traj_idx];
+
+    if (ref_timestamp > max_check_time_) {
+      continue;
+    }
+
+    auto closest_idx_on_target_traj = nif::common::utils::closestIndex(
+        target_traj_.trajectory_timestamp_array, ref_timestamp);
+
+    if (abs(ref_timestamp -
+            target_traj_
+                .trajectory_timestamp_array[closest_idx_on_target_traj]) >
+        time_diff_tres_) {
+      continue;
+    }
+
+    auto dist = sqrt(
+        pow(ref_traj_.trajectory_path.poses[ref_traj_idx].pose.position.x -
+                target_traj_.trajectory_path.poses[closest_idx_on_target_traj]
+                    .pose.position.x,
+            2) +
+        pow(ref_traj_.trajectory_path.poses[ref_traj_idx].pose.position.y -
+                target_traj_.trajectory_path.poses[closest_idx_on_target_traj]
+                    .pose.position.y,
+            2));
+
+    if (dist > 12.0) {
+      continue;
+    }
+
+    auto bound_a = calculate_bounds(
+        ref_traj_.trajectory_path.poses[ref_traj_idx].pose.position.x,
+        ref_traj_.trajectory_path.poses[ref_traj_idx].pose.position.y,
+        nif::common::utils::coordination::quat2yaw(
+            ref_traj_.trajectory_path.poses[ref_traj_idx].pose.orientation),
+        centre_to_front, centre_to_rear, centre_to_side);
+
+    auto bound_b = calculate_bounds(
+        target_traj_.trajectory_path.poses[closest_idx_on_target_traj]
+            .pose.position.x,
+        target_traj_.trajectory_path.poses[closest_idx_on_target_traj]
+            .pose.position.y,
+        nif::common::utils::coordination::quat2yaw(
+            target_traj_.trajectory_path.poses[closest_idx_on_target_traj]
+                .pose.orientation),
+        centre_to_front, centre_to_rear, centre_to_side);
+
+    if (separating_axis_intersect(bound_a, bound_b) == true) {
+      has_collision = true;
+      return has_collision;
     }
   }
 
