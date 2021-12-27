@@ -174,7 +174,7 @@ void FrenetBasedOpponentPredictor::calcOpponentProgress() {
 
   m_opponent_global_progress = m_progress_vec[opponent_index];
 
-  m_opponent_cte = min_dist;
+  m_opponent_cte = -1 * min_dist;
 }
 
 double FrenetBasedOpponentPredictor::calcProgress(
