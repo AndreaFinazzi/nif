@@ -64,7 +64,7 @@ private:
   nav_msgs::msg::Path m_opponent_target_path;         // without orientation
   nav_msgs::msg::Path m_opponent_splined_target_path; // with orientation
 
-  string m_centerline_ref_file_path, m_prediction_config_file_path;
+  string m_refline_ref_file_path, m_prediction_config_file_path;
 
   double m_opponent_global_progress; // progress indicator ragarding to the
                                      // opponent_target_path path
@@ -72,8 +72,8 @@ private:
 
   vector<double> m_progress_vec;
 
-  vector<double> m_centerline_path_x,
-      m_centerline_path_y; // full path without splining
+  vector<double> m_refline_path_x,
+      m_refline_path_y; // full path without splining
   vector<double> m_opponent_local_maptrack_path_x,
       m_opponent_local_maptrack_path_y; // local path without splining
 
@@ -82,7 +82,7 @@ private:
       m_splined_center_path_curvature; // full path with splining
   vector<double> m_opponent_splined_local_maptrack_path_x,
       m_opponent_splined_local_maptrack_path_y; // local path with splining
-  std::shared_ptr<CubicSpliner2D> m_centerline_splined_model;
+  std::shared_ptr<CubicSpliner2D> m_refline_splined_model;
 
   nif_msgs::msg::Perception3D m_opponent_status; // in global
   nav_msgs::msg::Odometry m_ego_status;

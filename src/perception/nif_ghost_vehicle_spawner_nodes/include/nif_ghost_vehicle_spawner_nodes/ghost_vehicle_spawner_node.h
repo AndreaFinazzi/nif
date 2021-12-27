@@ -232,6 +232,7 @@ public:
             marker_out_msg.pose = vehicle_state->pose_in_ego_body;
             marker_out_msg.header.frame_id = this->getBodyFrameId();
             marker_out_msg.header.stamp = now;
+            
             marker_out_msg.id = vehicle_id;
             marker_out_msg.scale.x = 4.0;
             marker_out_msg.scale.y = 2.0;
@@ -242,6 +243,7 @@ public:
             marker_out_msg.color.g = 0.0;
             marker_out_msg.color.b = 1.0;
 
+            marker_out_msg.lifetime = rclcpp::Duration(0.05e+9);
     //      Inject random noise to solution
     //      pub->publish(perception_result);
             this->marker_pub->publish(marker_out_msg);
