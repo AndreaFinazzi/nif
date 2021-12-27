@@ -1490,7 +1490,8 @@ void DynamicPlannerNode::timer_callback() {
         bool is_close_racingline =
             (get<1>(progreeNCTE_racingline) < m_config_merge_allow_dist);
 
-        if (is_close_racingline) {
+        if (is_close_racingline &&
+            m_last_update_target_path_alias != "raceline") {
           // Merging frenet segment generation
           // Generate single frenet path segment
           std::vector<std::shared_ptr<FrenetPath>>
