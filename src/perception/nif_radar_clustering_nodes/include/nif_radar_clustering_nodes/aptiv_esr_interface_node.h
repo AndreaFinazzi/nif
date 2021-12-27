@@ -71,12 +71,14 @@ void timer_callback() {
         __MUTEX__.lock();
 
         this->radar_track_list_msg_ptr->detections.resize(next_index);
-        this->perception_list_msg_ptr->perception_list.resize(next_index);        
+        this->perception_list_msg_ptr->perception_list.resize(next_index);
 
-        this->radar_msgs_tracks_pub->publish(std::move(this->radar_track_list_msg_ptr));
-        this->perception_list_pub->publish(std::move(this->perception_list_msg_ptr));
+        if (!this->radar_track_list_msg_ptr->detections.empty()) {
+            this->radar_msgs_tracks_pub->publish(std::move(this->radar_track_list_msg_ptr));
+            this->perception_list_pub->publish(std::move(this->perception_list_msg_ptr));
 
-        this->dataInit();
+            this->dataInit();
+        }
 
         __MUTEX__.unlock();
 }

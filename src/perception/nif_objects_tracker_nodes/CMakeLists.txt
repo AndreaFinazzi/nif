@@ -19,6 +19,7 @@ ament_auto_add_library(${PROJECT_NAME} SHARED
         src/objects_tracker_node.cpp
         src/imm/ukf.cpp
         src/imm/imm_ukf_pda.cpp
+        src/perception_concat_node.cpp
         )
 
 ament_auto_add_executable(${PROJECT_NAME}_exe

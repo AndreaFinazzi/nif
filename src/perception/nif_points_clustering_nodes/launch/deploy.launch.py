@@ -38,8 +38,8 @@ def generate_launch_description():
                     ("out_clustered_points", "/clustered_points"),
                     ("out_inflation_points", "/inflated_points"),
                     ("out_clustered_center_points", "/cluster_center_points"),
-                    ("out_clustered_array", "/clustered_markers")
-                    
+                    ("out_clustered_array", "/clustered_markers"),
+                    ("out_clustered_array", "/clustered/perception_list")    
                 ]
     )
 

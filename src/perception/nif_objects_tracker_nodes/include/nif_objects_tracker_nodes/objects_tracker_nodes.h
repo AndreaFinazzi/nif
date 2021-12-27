@@ -23,6 +23,9 @@
 #include "visualization_msgs/msg/marker.hpp"
 #include "visualization_msgs/msg/marker_array.hpp"
 
+namespace nif {
+namespace perception {
+
 class IMMObjectTrackerNode : public rclcpp::Node {
 public:
   IMMObjectTrackerNode(const std::string &node_name_);
@@ -33,7 +36,7 @@ private:
   // void
   // detectionCallback(const nif_msgs::msg::DetectedObjectArray::SharedPtr msg);
 
-  void detectionCallback(const nif_msgs::msg::Perception3DArray::SharedPtr msg);
+  void detectionCallback(const nif_msgs::msg::Perception3DArray::UniquePtr msg);
   void egoOdomCallback(const nav_msgs::msg::Odometry::SharedPtr msg);
 
   rclcpp::Publisher<nif_msgs::msg::Perception3DArray>::SharedPtr
@@ -57,4 +60,6 @@ private:
   nav_msgs::msg::Odometry ego_odom;
 };
 
-#endif
+} // namespace perception
+} // namespace nif
+#endif //OBJECT_TRACKER_H

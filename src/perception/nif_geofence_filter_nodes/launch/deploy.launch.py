@@ -87,8 +87,8 @@ def generate_launch_description():
                     }],
 
                 remappings=[
-                    ("in_perception_array", "/ghost/perception"),
-                    ("out_filtered_perception_array", "/ghost/perception/filtered"),
+                    ("in_perception_array", "/clustered/perception_list"),
+                    ("out_filtered_perception_array", "/clustered/perception_list/filtered"),
 
                     ("in_radar_track", "/radar_front/esr_track"),
                     ("out_filtered_radar_track", "/radar_front/esr_track/filtered"),

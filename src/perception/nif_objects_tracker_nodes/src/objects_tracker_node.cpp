@@ -5,8 +5,10 @@
 #include "nif_objects_tracker_nodes/objects_tracker_nodes.h"
 #include "nif_common/constants.h"
 
+using nif::perception::IMMObjectTrackerNode;
+
 IMMObjectTrackerNode::IMMObjectTrackerNode(const std::string &node_name_)
-    : Node(node_name_) {
+    : Node(node_name_, rclcpp::NodeOptions().use_intra_process_comms(true)) {
   std::string package_share_directory;
   try {
     // This value shouldn't be used, it's as a backup if a config param is
@@ -69,7 +71,7 @@ IMMObjectTrackerNode::IMMObjectTrackerNode(
 }
 
 void IMMObjectTrackerNode::detectionCallback(
-    const nif_msgs::msg::Perception3DArray::SharedPtr msg) {
+    const nif_msgs::msg::Perception3DArray::UniquePtr msg) {
 
   // TODO : Set the latest ego position to the tracker
   tracker_ptr->setEgoOdom(ego_odom);

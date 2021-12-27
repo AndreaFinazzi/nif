@@ -115,11 +115,11 @@ def generate_launch_description():
             }
         ],
         remappings=[
-            ('/ghost/perception', '/ghost/perception'),
-            ('/aw_localization/ekf/odom', '/aw_localization/ekf/odom'),
-            ('/defender_vel', '/defender_vel'),
-            ('/oppo/prediction', '/oppo/prediction'),
-            ('/oppo/vis/prediction', '/oppo/vis/prediction'),
+            ('in_perception_list', '/tracking/objects'),
+            ('in_ego_odom', '/aw_localization/ekf/odom'),
+            ('defender_vel', '/null'),
+            ('out_predictionn', '/oppo/prediction'),
+            ('out_prediction_vis', '/oppo/vis/prediction'),
         ]
     )
 

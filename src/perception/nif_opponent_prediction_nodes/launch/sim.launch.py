@@ -72,14 +72,14 @@ def generate_launch_description():
             get_package_share_directory("nif_waypoint_manager_nodes"),
             "maps",
             "LVMS",
-            "centerline.csv"
+            "trackboundary_left.csv"
         )
 
     ref_line_file_lvms_sim = os.path.join(
             get_package_share_directory("nif_waypoint_manager_nodes"),
             "maps",
             "LVMS_SIM",
-            "centerline.csv"
+            "trackboundary_left.csv"
         )
 
 
@@ -115,11 +115,11 @@ def generate_launch_description():
             }
         ],
         remappings=[
-            ('/ghost/perception', '/tracking/objects'),
-            ('/aw_localization/ekf/odom', '/sensor/odom_ground_truth'),
-            ('/defender_vel', '/defender_vel'),
-            ('/oppo/prediction', '/oppo/prediction'),
-            ('/oppo/vis/prediction', '/oppo/vis/prediction'),
+            ('in_perception_list', '/tracking/objects'),
+            ('in_ego_odom', '/sensor/odom_ground_truth'),
+            ('defender_vel', '/null'),
+            ('out_predictionn', '/oppo/prediction'),
+            ('out_prediction_vis', '/oppo/vis/prediction'),
         ]
     )
 

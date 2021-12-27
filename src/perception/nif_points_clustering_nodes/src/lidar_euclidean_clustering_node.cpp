@@ -34,6 +34,8 @@ PointsClustering::PointsClustering()
           "out_clustered_array", nif::common::constants::QOS_SENSOR_DATA);
   pubClusteredCenterPoints = this->create_publisher<sensor_msgs::msg::PointCloud2>(
       "out_clustered_center_points", nif::common::constants::QOS_SENSOR_DATA);
+  pubPerceptionList = this->create_publisher<nif::common::msgs::PerceptionResultList>(
+      "out_perception_list", nif::common::constants::QOS_SENSOR_DATA);
 
   subInputPoints = this->create_subscription<sensor_msgs::msg::PointCloud2>(
       "in_lidar_points", nif::common::constants::QOS_SENSOR_DATA,
@@ -76,35 +78,35 @@ void PointsClustering::timer_callback() {
     }
   }
 
-  // pcl::PointCloud<pcl::PointXYZI>::Ptr RightToMergedPoints(
-  //     new pcl::PointCloud<pcl::PointXYZI>);
-  // if(bRightPoints)
-  // {
-  //   pcl::PointCloud<pcl::PointXYZI>::Ptr RightDownsampledPoints(
-  //       new pcl::PointCloud<pcl::PointXYZI>);
-  //   RightDownsampledPoints = downsample(m_RightPoints, 0.05);
-  //   for (auto point : RightDownsampledPoints->points) {
-  //     if (fabs(point.y) < 2.0 && point.z > m_height_filter_thres &&
-  //         point.z < 0.5 && point.x > -5.0 && point.x < 0.5) {
-  //       RightToMergedPoints->points.push_back(point);
-  //     }
-  //   }
-  //   *m_simpleHeightmapPoints += *RightToMergedPoints;
-  // }
-  // pcl::PointCloud<pcl::PointXYZI>::Ptr LeftToMergedPoints(
-  //     new pcl::PointCloud<pcl::PointXYZI>);
-  // if (bLeftPoints) {
-  //   pcl::PointCloud<pcl::PointXYZI>::Ptr LeftDownsampledPoints(
-  //       new pcl::PointCloud<pcl::PointXYZI>);
-  //   LeftDownsampledPoints = downsample(m_LeftPoints, 0.05);
-  //   for (auto point : LeftDownsampledPoints->points) {
-  //     if (fabs(point.y) < 2.0 && point.z > m_height_filter_thres &&
-  //         point.z < 0.5 && point.x > -5.0 && point.x < 0.5) {
-  //       LeftToMergedPoints->points.push_back(point);
-  //     }
-  //   }
-  //   *m_simpleHeightmapPoints += *LeftToMergedPoints;
-  // }
+  pcl::PointCloud<pcl::PointXYZI>::Ptr RightToMergedPoints(
+      new pcl::PointCloud<pcl::PointXYZI>);
+  if(bRightPoints)
+  {
+    pcl::PointCloud<pcl::PointXYZI>::Ptr RightDownsampledPoints(
+        new pcl::PointCloud<pcl::PointXYZI>);
+    RightDownsampledPoints = downsample(m_RightPoints, 0.05);
+    for (auto point : RightDownsampledPoints->points) {
+      if (fabs(point.y) < 2.0 && point.z > m_height_filter_thres &&
+          point.z < 0.5 && point.x > -5.0 && point.x < 0.5) {
+        RightToMergedPoints->points.push_back(point);
+      }
+    }
+    *m_simpleHeightmapPoints += *RightToMergedPoints;
+  }
+  pcl::PointCloud<pcl::PointXYZI>::Ptr LeftToMergedPoints(
+      new pcl::PointCloud<pcl::PointXYZI>);
+  if (bLeftPoints) {
+    pcl::PointCloud<pcl::PointXYZI>::Ptr LeftDownsampledPoints(
+        new pcl::PointCloud<pcl::PointXYZI>);
+    LeftDownsampledPoints = downsample(m_LeftPoints, 0.05);
+    for (auto point : LeftDownsampledPoints->points) {
+      if (fabs(point.y) < 2.0 && point.z > m_height_filter_thres &&
+          point.z < 0.5 && point.x > -5.0 && point.x < 0.5) {
+        LeftToMergedPoints->points.push_back(point);
+      }
+    }
+    *m_simpleHeightmapPoints += *LeftToMergedPoints;
+  }
 
 
   sensor_msgs::msg::PointCloud2 cloud_simple_heightmap_msg;
@@ -121,17 +123,23 @@ void PointsClustering::timer_callback() {
       new pcl::PointCloud<pcl::PointXYZI>);
   pcl::PointCloud<pcl::PointXYZI>::Ptr centerPoints(
       new pcl::PointCloud<pcl::PointXYZI>);
-
+  nif::common::msgs::PerceptionResultList perception_msg{};
+  
   visualization_msgs::msg::MarkerArray clustered_array;
   clusterAndColorGpu(m_simpleHeightmapPoints, registeredPoints,
                      clustered_array, m_max_cluster_distance);
 
+  int i = 0;
+  perception_msg.perception_list.resize(clustered_array.markers.size());
   for (auto marker : clustered_array.markers)
   {
     pcl::PointXYZI point_buf;
     point_buf.x = marker.pose.position.x;
     point_buf.y = marker.pose.position.y;
     centerPoints->points.push_back(point_buf);
+    
+    perception_msg.perception_list[i].header = marker.header;
+    perception_msg.perception_list[i].detection_result_3d.center = marker.pose;
   }
 
   createGaussianWorld(clustered_array, 7.0, 3.0, inflationedPoints);
@@ -156,6 +164,8 @@ void PointsClustering::timer_callback() {
   pubClusteredCenterPoints->publish(cloud_cluster_center_msg);
 
   pubClusteredArray->publish(clustered_array);
+
+  pubPerceptionList->publish(perception_msg);
 }
 
 void PointsClustering::PointsCallback(

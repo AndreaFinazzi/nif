@@ -84,6 +84,7 @@ private:
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr
       pubClusteredArray;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubClusteredCenterPoints;
+  rclcpp::Publisher<nif::common::msgs::PerceptionResultList>::SharedPtr pubPerceptionList;
 
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr subInputPoints;
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr subLeftPoints;

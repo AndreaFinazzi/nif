@@ -17,11 +17,11 @@ FrenetBasedOpponentPredictor::FrenetBasedOpponentPredictor(
   this->declare_parameter("m_defender_vel_mps", 15.0);
 
   // TODO
-  m_opponent_status_topic_name = "/ghost/perception";
-  m_ego_status_topic_name = "aw_localization/ekf/odom";
-  m_defender_vel_topic_name = "/defender_vel";
-  m_predicted_trajectory_topic_name = "/oppo/prediction";
-  m_predicted_trajectory_vis_topic_name = "/oppo/vis/prediction";
+  m_opponent_status_topic_name = "in_perception_list";
+  m_ego_status_topic_name = "in_ego_odom";
+  m_defender_vel_topic_name = "defender_vel";
+  m_predicted_trajectory_topic_name = "out_predictionn";
+  m_predicted_trajectory_vis_topic_name = "out_prediction_vis";
 
   m_opponent_global_progress = 0.0;
   m_opponent_cte = 0.0;

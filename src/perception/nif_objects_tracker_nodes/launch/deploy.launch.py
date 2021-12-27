@@ -37,9 +37,12 @@ def generate_launch_description():
         ],
         remappings=[
             ('in_ego_odom', '/aw_localization/ekf/odom'),
-            ('in_perception', '/out_perception_list'),
+            ('in_perception', '/perception/concat'),
             ('out_detected_object', '/tracking/objects'),
-            ('output_vis', 'tracking/vis/markers')
+            ('output_vis', 'tracking/vis/markers'),
+            ('concat_in_radar_list', '/radar_front/perception_list'),
+            ('concat_in_lidar_list', '/clustered/perception_list/filtered'),
+            ('concat_out_perception_list', '/perception/concat'),
         ]
     )
 

@@ -17,8 +17,8 @@ def generate_launch_description():
                 emulate_tty=True,
                 remappings=[
                     ("in_radar_track", "/radar_front/esr_track/filtered"),
-                    ("out_perception_list", "out_perception_list"),
-                    ("out_track_list", "out_track_list"),
+                    ("out_perception_list", "/radar_front/perception_list"),
+                    ("out_track_list", "/out_track_list"),
                     
                 ]
     )
