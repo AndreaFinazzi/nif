@@ -40,10 +40,8 @@
 
 using namespace std;
 
-namespace nif
-{
-namespace planning
-{
+namespace nif {
+namespace planning {
 
 #define SEC_4 4.0
 #define SEC_3 3.0
@@ -51,8 +49,7 @@ namespace planning
 #define SEC_1 1.0
 #define SAMPLING_TIME 0.2
 
-class DynamicPlannerNode : public nif::common::IBaseNode
-{
+class DynamicPlannerNode : public nif::common::IBaseNode {
   // deprecated
   //   enum PLANNING_DECISION_TYPE {
   //     STRAIGHT, // follow the original racing line
@@ -61,8 +58,7 @@ class DynamicPlannerNode : public nif::common::IBaseNode
   //     LEFT,     // overtake to the left
   //     ESTOP     // emergency stop
   //   };
-  enum PLANNING_ACTION_TYPE
-  {
+  enum PLANNING_ACTION_TYPE {
     DRIVING,           // Without overtaking, driving
     START_OVERTAKING,  // Start overtaking to the right or left. (Before merging
                        // to the another line)
@@ -72,45 +68,49 @@ class DynamicPlannerNode : public nif::common::IBaseNode
     ABORT_OVERTAKING // Tried to overtake but somehow it failed. Merging back to
                      // the original racing line
   };
-  enum TARGET_PATH_TYPE
-  {
+  enum TARGET_PATH_TYPE {
     PATH_RACELINE,
     PATH_CENTER,
     PATH_RIGHT,
     PATH_LEFT,
     PATH_CENTER_RIGHT,
     PATH_CENTER_LEFT,
-    PATH_RACE_READY
+    PATH_RACE_READY,
+    PATH_DEFENDER
   };
   enum LATERAL_PLANNING_TYPE { KEEP, MERGE, CHANGE_PATH };
   enum LONGITUDINAL_PLANNING_TYPE { STRAIGHT, FOLLOW, ESTOP };
+  enum RESET_PATH_TYPE { RACE_LINE = -1, DEFENDER_LINE = -2 };
 
 public:
-  DynamicPlannerNode(const std::string & node_name_);
+  DynamicPlannerNode(const std::string &node_name_);
 
   void detectionResultCallback(
-    const nif::common::msgs::PerceptionResultList::SharedPtr msg);
+      const nif::common::msgs::PerceptionResultList::SharedPtr msg);
   void mapTrackBodyCallback(const nav_msgs::msg::Path::SharedPtr msg);
   void mapTrackGlobalCallback(const nav_msgs::msg::Path::SharedPtr msg);
   void predictionResultCallback(
-    const nif_msgs::msg::DynamicTrajectory::SharedPtr msg);
+      const nif_msgs::msg::DynamicTrajectory::SharedPtr msg);
 
-  void loadConfig(const std::string & planning_config_file_);
+  void loadConfig(const std::string &planning_config_file_);
 
   tuple<vector<double>, vector<double>>
-  loadCSVfile(const std::string & wpt_file_path_);
+  loadCSVfile(const std::string &wpt_file_path_);
+
+  void checkSwitchToStaticWPT(int cur_wpt_idx_);
 
   void timer_callback();
   void timer_callback_debug();
   void publishTrajectory();
   void publishPlannedTrajectory(bool vis_);
-  void publishPlannedTrajectory(
-    nif_msgs::msg::DynamicTrajectory & traj_,
-    bool is_acc_, bool vis_);
-  void publishPlannedTrajectory(
-    nif_msgs::msg::DynamicTrajectory & traj_,
-    int32_t longi_type_, int32_t lat_type_,
-    int target_path_, bool vis_);
+  void publishPlannedTrajectory(nif_msgs::msg::DynamicTrajectory &traj_,
+                                bool is_acc_, bool vis_);
+  void publishPlannedTrajectory(nif_msgs::msg::DynamicTrajectory &traj_,
+                                int32_t longi_type_, int32_t lat_type_,
+                                int target_path_, bool vis_);
+  void publishPlannedTrajectory(nif_msgs::msg::DynamicTrajectory &traj_,
+                                int32_t longi_type_, int32_t lat_type_,
+                                bool vis_);
   void initOutputTrajectory();
   bool setDrivingMode();
 
@@ -118,153 +118,136 @@ public:
 
   bool checkOverTake();
 
-  double getProgress(
-    const geometry_msgs::msg::Pose & pt_global_,
-    pcl::KdTreeFLANN<pcl::PointXY> & target_tree_);
+  double getProgress(const geometry_msgs::msg::Pose &pt_global_,
+                     pcl::KdTreeFLANN<pcl::PointXY> &target_tree_);
 
-  double getProgress(
-    const double & pt_x_, const double & pt_y_,
-    pcl::KdTreeFLANN<pcl::PointXY> & target_tree_);
+  double getProgress(const double &pt_x_, const double &pt_y_,
+                     pcl::KdTreeFLANN<pcl::PointXY> &target_tree_);
 
   //  ---------------------------
 
-  double getProgress(
-    const geometry_msgs::msg::Pose & pt_global_,
-    const nif_msgs::msg::DynamicTrajectory & target_traj);
+  double getProgress(const geometry_msgs::msg::Pose &pt_global_,
+                     const nif_msgs::msg::DynamicTrajectory &target_traj);
 
-  double getProgress(
-    const double & pt_x_, const double & pt_y_,
-    const nif_msgs::msg::DynamicTrajectory & target_traj);
+  double getProgress(const double &pt_x_, const double &pt_y_,
+                     const nif_msgs::msg::DynamicTrajectory &target_traj);
 
   nav_msgs::msg::Path
-  getIntervalPath(
-    const geometry_msgs::msg::Pose & start_global_,
-    const geometry_msgs::msg::Pose & end_global_,
-    const nif_msgs::msg::DynamicTrajectory
-    & target_traj);                  // Inside here, progress wrapping is done.
+  getIntervalPath(const geometry_msgs::msg::Pose &start_global_,
+                  const geometry_msgs::msg::Pose &end_global_,
+                  const nif_msgs::msg::DynamicTrajectory
+                      &target_traj); // Inside here, progress wrapping is done.
 
   nav_msgs::msg::Path
-  getIntervalPath(
-    const double & start_x_, const double & start_y_,
-    const double & end_x_, const double & end_y_,
-    const nif_msgs::msg::DynamicTrajectory
-    & target_traj);                  // Inside here, progress wrapping is done.
+  getIntervalPath(const double &start_x_, const double &start_y_,
+                  const double &end_x_, const double &end_y_,
+                  const nif_msgs::msg::DynamicTrajectory
+                      &target_traj); // Inside here, progress wrapping is done.
 
   nav_msgs::msg::Path getCertainLenOfPathSeg(
-    const double & start_x_, const double & start_y_,
-    const nav_msgs::msg::Path & target_path_,
-    const int & length);  //// Inside here, index wrapping is done.
+      const double &start_x_, const double &start_y_,
+      const nav_msgs::msg::Path &target_path_,
+      const int &length); //// Inside here, index wrapping is done.
 
   //  ---------------------------
 
-  double getCurIdx(
-    const double & pt_x_, const double & pt_y_,
-    pcl::KdTreeFLANN<pcl::PointXY> & target_tree_);
+  double getCurIdx(const double &pt_x_, const double &pt_y_,
+                   pcl::KdTreeFLANN<pcl::PointXY> &target_tree_);
 
-  double getCurIdx(
-    const double & pt_x_, const double & pt_y_,
-    const nav_msgs::msg::Path & target_path_);
+  double getCurIdx(const double &pt_x_, const double &pt_y_,
+                   const nav_msgs::msg::Path &target_path_);
 
-  double calcCTE(
-    const geometry_msgs::msg::Pose & pt_global_,
-    pcl::KdTreeFLANN<pcl::PointXY> & target_tree_,
-    pcl::PointCloud<pcl::PointXY>::Ptr & pc_);
+  double calcCTE(const geometry_msgs::msg::Pose &pt_global_,
+                 pcl::KdTreeFLANN<pcl::PointXY> &target_tree_,
+                 pcl::PointCloud<pcl::PointXY>::Ptr &pc_);
 
   tuple<double, double>
-  calcProgressNCTE(
-    const geometry_msgs::msg::Pose & pt_global_,
-    pcl::KdTreeFLANN<pcl::PointXY> & target_tree_,
-    pcl::PointCloud<pcl::PointXY>::Ptr & pc_);
+  calcProgressNCTE(const geometry_msgs::msg::Pose &pt_global_,
+                   pcl::KdTreeFLANN<pcl::PointXY> &target_tree_,
+                   pcl::PointCloud<pcl::PointXY>::Ptr &pc_);
 
   tuple<double, double>
-  calcProgressNCTE(
-    const geometry_msgs::msg::Pose & pt_global_,
-    nav_msgs::msg::Path & target_path_);
+  calcProgressNCTE(const geometry_msgs::msg::Pose &pt_global_,
+                   nav_msgs::msg::Path &target_path_);
 
   double calcProgressDiff(
-    const geometry_msgs::msg::Pose & ego_pt_global_,
-    const geometry_msgs::msg::Pose & target_pt_global_,
-    pcl::KdTreeFLANN<pcl::PointXY>
-    & target_tree_);      // negative : ego vehicle is in front of the vehicle
+      const geometry_msgs::msg::Pose &ego_pt_global_,
+      const geometry_msgs::msg::Pose &target_pt_global_,
+      pcl::KdTreeFLANN<pcl::PointXY>
+          &target_tree_); // negative : ego vehicle is in front of the vehicle
                           // positive : target is in front of the ego vehicle
 
-  nav_msgs::msg::Path xyyawVec2Path(
-    std::vector<double> & x_,
-    std::vector<double> & y_,
-    std::vector<double> & yaw_rad_);
+  nav_msgs::msg::Path xyyawVec2Path(std::vector<double> &x_,
+                                    std::vector<double> &y_,
+                                    std::vector<double> &yaw_rad_);
 
-  pcl::PointCloud<pcl::PointXY>::Ptr genPointCloudFromVec(
-    vector<double> & x_,
-    vector<double> & y_);
+  pcl::PointCloud<pcl::PointXY>::Ptr genPointCloudFromVec(vector<double> &x_,
+                                                          vector<double> &y_);
 
-  int calcCurIdxFromDynamicTraj(const nif_msgs::msg::DynamicTrajectory & msg);
+  int calcCurIdxFromDynamicTraj(const nif_msgs::msg::DynamicTrajectory &msg);
 
-  void registerPath(
-    nav_msgs::msg::Path & frenet_segment_,
-    nav_msgs::msg::Path & origin_path_);
+  void registerPath(nav_msgs::msg::Path &frenet_segment_,
+                    nav_msgs::msg::Path &origin_path_);
 
   std::shared_ptr<FrenetPath> getFrenetToRacingLine();
 
   bool collisionCheckBTWtrajs(
-    const nif_msgs::msg::DynamicTrajectory & ego_traj_,
-    const nif_msgs::msg::DynamicTrajectory & oppo_traj_,
-    const double collision_dist_boundary,
-    const double
-    collision_time_boundary);       // if there is collision, return true.
+      const nif_msgs::msg::DynamicTrajectory &ego_traj_,
+      const nif_msgs::msg::DynamicTrajectory &oppo_traj_,
+      const double collision_dist_boundary,
+      const double
+          collision_time_boundary); // if there is collision, return true.
 
   bool
-  collisionCheckBTWtrajs(
-    const nif_msgs::msg::DynamicTrajectory & ego_traj_,
-    const nif_msgs::msg::DynamicTrajectory & oppo_traj_,
-    const double collision_dist_boundary,
-    const double collision_time_boundary,
-    bool use_sat_);                      // if there is collision, return true.
+  collisionCheckBTWtrajs(const nif_msgs::msg::DynamicTrajectory &ego_traj_,
+                         const nif_msgs::msg::DynamicTrajectory &oppo_traj_,
+                         const double collision_dist_boundary,
+                         const double collision_time_boundary,
+                         bool use_sat_); // if there is collision, return true.
 
   bool collisionCheckBTWtrajsNFrenet(
-    std::shared_ptr<FrenetPath> ego_frenet_traj_,
-    const nif_msgs::msg::DynamicTrajectory & oppo_traj_,
-    const double collision_dist_boundary,
-    const double
-    collision_time_boundary);       // if there is collision, return true.
+      std::shared_ptr<FrenetPath> ego_frenet_traj_,
+      const nif_msgs::msg::DynamicTrajectory &oppo_traj_,
+      const double collision_dist_boundary,
+      const double
+          collision_time_boundary); // if there is collision, return true.
 
   nif_msgs::msg::DynamicTrajectory
-  stitchFrenetToPath(
-    std::shared_ptr<FrenetPath> & frenet_segment_,
-    pcl::KdTreeFLANN<pcl::PointXY> & target_tree_,
-    nav_msgs::msg::Path & target_path_);
+  stitchFrenetToPath(std::shared_ptr<FrenetPath> &frenet_segment_,
+                     pcl::KdTreeFLANN<pcl::PointXY> &target_tree_,
+                     nav_msgs::msg::Path &target_path_);
 
   nif_msgs::msg::DynamicTrajectory
-  stitchFrenetToPath(
-    std::shared_ptr<FrenetPath> & frenet_segment_,
-    nav_msgs::msg::Path & target_path_);
+  stitchFrenetToPath(std::shared_ptr<FrenetPath> &frenet_segment_,
+                     nav_msgs::msg::Path &target_path_);
 
 private:
   // Opponent perception result (not prediction result)
   rclcpp::Subscription<nif::common::msgs::PerceptionResultList>::SharedPtr
-    m_det_sub;
+      m_det_sub;
   // Map track from wpt manager
   rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr m_maptrack_body_sub;
   // Map track from wpt manager
   rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr m_maptrack_global_sub;
   // Opponent's future DynamicTrajectory result
   rclcpp::Subscription<nif_msgs::msg::DynamicTrajectory>::SharedPtr
-    m_oppo_pred_sub;
+      m_oppo_pred_sub;
 
   // Ego's planned output DynamicTrajectory
   rclcpp::Publisher<nif_msgs::msg::DynamicTrajectory>::SharedPtr
-    m_ego_traj_body_pub;
+      m_ego_traj_body_pub;
   rclcpp::Publisher<nif_msgs::msg::DynamicTrajectory>::SharedPtr
-    m_ego_traj_global_pub;
+      m_ego_traj_global_pub;
   // Ego's planned output DynamicTrajectory for visualization
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr m_ego_traj_body_vis_pub;
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr m_ego_traj_global_vis_pub;
 
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr
-    m_ego_traj_global_vis_debug_pub1;
+      m_ego_traj_global_vis_debug_pub1;
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr
-    m_ego_traj_global_vis_debug_pub2;
+      m_ego_traj_global_vis_debug_pub2;
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr
-    m_ego_traj_global_vis_debug_pub3;
+      m_ego_traj_global_vis_debug_pub3;
 
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr m_debug_vis_pub;
   // output timer
@@ -292,42 +275,46 @@ private:
   double m_ego_progress, m_oppo_progress;           // [m]
   double m_ego_cur_speed_mps, m_oppo_cur_speed_mps; // [mps]
 
-  // TODO : check this unit (it can be used as a term for consistency of path
-  // planning) --> positive : left / negative : right
   double m_cur_steer_angle;
-
-  bool m_overtake_allowed_flg; // Set by "system status manager". default : true
-  bool m_emergency_flg;        // TODO : If emergency flag is true, then what?
 
   PLANNING_ACTION_TYPE m_cur_overtaking_action;
   PLANNING_ACTION_TYPE m_prev_overtaking_action;
 
-  // path candidate
+  /////////////////////////////
+  // OVERTKAING PATH CANDIDATES
+  /////////////////////////////
   int m_num_overtaking_candidates; // number of lines for overtaking
   std::vector<nav_msgs::msg::Path> m_overtaking_candidates_path_vec;
   std::vector<nif_msgs::msg::DynamicTrajectory>
-  m_overkaing_candidates_dtraj_vec;
-  std::vector<pcl::PointCloud<pcl::PointXY>::Ptr>
-  m_overtaking_candidates_path_pc_vec;     // for kdtree search
-  std::vector<pcl::KdTreeFLANN<pcl::PointXY>>
-  m_overtaking_candidates_path_kdtree_vec;
+      m_overkaing_candidates_dtraj_vec;
   std::vector<std::string> m_overtaking_candidates_file_path_vec;
   std::vector<std::string> m_overtaking_candidates_alias_vec;
   std::vector<FrenetPathGenerator::CubicSpliner2DResult>
-  m_overtaking_candidates_spline_data_vec;
+      m_overtaking_candidates_spline_data_vec;
   std::vector<std::shared_ptr<CubicSpliner2D>>
-  m_overtaking_candidates_spline_model_vec;
+      m_overtaking_candidates_spline_model_vec;
   std::vector<double> m_overtaking_candidates_full_progress_vec;
 
-  // racing line
+  //////////////
+  // RACING LINE
+  //////////////
   std::string m_racingline_file_path;
   std::vector<double> m_racingline_x_vec, m_racingline_y_vec;
   nav_msgs::msg::Path m_racingline_path;
   nif_msgs::msg::DynamicTrajectory m_racingline_dtraj;
-  pcl::PointCloud<pcl::PointXY>::Ptr m_racingline_path_pc;
-  pcl::KdTreeFLANN<pcl::PointXY> m_racineline_path_kdtree;
   FrenetPathGenerator::CubicSpliner2DResult m_racingline_spline_data;
   double m_racingline_full_progress;
+
+  ////////////////
+  // DEFENDER LINE
+  ////////////////
+  std::string m_defenderline_file_path;
+  std::vector<double> m_defenderline_x_vec, m_defenderline_y_vec;
+  nav_msgs::msg::Path m_defenderline_path;
+  nif_msgs::msg::DynamicTrajectory m_defenderline_dtraj;
+  FrenetPathGenerator::CubicSpliner2DResult m_defenderline_spline_data;
+  double m_defenderline_full_progress;
+  bool m_defender_mode_first_callback = false;
 
   int m_maptrack_size;
 
@@ -367,7 +354,7 @@ private:
   const double m_acceptable_slip_angle_rad = 0.0872665; // 5 deg
 
   shared_ptr<FrenetPathGenerator> m_frenet_generator_ptr;
-//   shared_ptr<velocity_profiler> m_velocity_profiler_ptr;
+  //   shared_ptr<velocity_profiler> m_velocity_profiler_ptr;
 
   velocity_profiler m_velocity_profiler_obj;
 
@@ -378,6 +365,7 @@ private:
 
   int m_reset_wpt_idx = NULL;
   int m_reset_target_path_idx = NULL;
+  string m_last_update_target_path_alias;
 };
 
 } // namespace planning

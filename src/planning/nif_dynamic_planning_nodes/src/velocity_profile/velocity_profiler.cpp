@@ -307,6 +307,7 @@ velocity_profiler::velProfile(const nav_msgs::msg::Odometry& odom_,
   // } else {
   //   return out_traj;
   // }
+
   return out_traj;
 }
 
