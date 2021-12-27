@@ -93,6 +93,12 @@ void IMMObjectTrackerNode::detectionCallback(
 
   tracked_objects = tracker_ptr->getTrackedResult(tmp_array);
   tracked_objects.header = msg->header;
+
+  for (auto&& obj : tracked_objects.perception_list) {
+    // TODO WARNING this transform is not always correct
+    obj.obj_velocity_in_local.linear.x = obj.obj_velocity_in_global.linear.x - ego_odom.twist.twist.linear.x;
+  }
+
   tracked_output_publisher->publish(tracked_objects);
 
   // Visualization

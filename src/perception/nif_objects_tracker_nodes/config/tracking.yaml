@@ -4,6 +4,6 @@ detection_probability: 0.9
 life_time_thres: 30
 static_velocity_thres: 0.5
 static_num_history_thres: 3
-prevent_explosion_thres: 1000
+prevent_explosion_thres: 500
 use_sukf: false
 tracking_frame: "odom"

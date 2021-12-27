@@ -7,12 +7,15 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-namespace joint_lqr {
-namespace lqr {
+namespace joint_lqr
+{
+namespace lqr
+{
 
-JointLQR::JointLQR(std::string config_file) { loadConfig(config_file); }
+JointLQR::JointLQR(std::string config_file) {loadConfig(config_file);}
 
-void JointLQR::loadConfig(std::string config_file) {
+void JointLQR::loadConfig(std::string config_file)
+{
   YAML::Node config = YAML::LoadFile(config_file);
 
   //! A few checks for a valid yaml, let YAML throw the rest if any values are
@@ -28,9 +31,9 @@ void JointLQR::loadConfig(std::string config_file) {
   //! apply model parameters to member variable, model.
   // JointDynamics::ModelParams model;
   model.cornering_stiffness_front =
-      model_params["cornering_stiffness_front"].as<double>();
+    model_params["cornering_stiffness_front"].as<double>();
   model.cornering_stiffness_rear =
-      model_params["cornering_stiffness_rear"].as<double>();
+    model_params["cornering_stiffness_rear"].as<double>();
   model.mass = model_params["mass"].as<double>();
   model.length_front = model_params["length_front"].as<double>();
   model.length_rear = model_params["length_rear"].as<double>();
@@ -68,13 +71,15 @@ void JointLQR::loadConfig(std::string config_file) {
   matrices_ = new_matrices;
 } /* loadConfig() */
 
-JointLQR::ErrorMatrix JointLQR::computeError(JointLQR::StateMatrix state,
-                                             JointLQR::GoalMatrix goal) {
+JointLQR::ErrorMatrix JointLQR::computeError(
+  JointLQR::StateMatrix state,
+  JointLQR::GoalMatrix goal)
+{
   //! Do some frame shifting
   double x_goal_shift = goal(0, 0) - state(0, 0);
   double y_goal_shift = goal(1, 0) - state(1, 0);
   double y_goal = x_goal_shift * std::sin(-state(4, 0)) +
-                  y_goal_shift * std::cos(-state(4, 0));
+    y_goal_shift * std::cos(-state(4, 0));
   double yaw_error = wrap_angle(state(4, 0) - goal(2, 0));
   double v_error = state(2, 0) - goal(3, 0);
 
@@ -91,8 +96,10 @@ JointLQR::ErrorMatrix JointLQR::computeError(JointLQR::StateMatrix state,
 }
 
 JointLQR::ControlVector
-JointLQR::computeFFControl(JointLQR::ErrorMatrix error,
-                           JointLQR::StateMatrix state) {
+JointLQR::computeFFControl(
+  JointLQR::ErrorMatrix error,
+  JointLQR::StateMatrix state)
+{
   //! Compute feedforward control for the compensation of linearization
   JointLQR::ControlVector FFControl;
   // Feedforward control
@@ -112,9 +119,9 @@ JointLQR::computeFFControl(JointLQR::ErrorMatrix error,
   //  2./m * Cd*vx*error_v - Cr/mass - 1./mass * Cd*vx**2 - vy*yaw_rate;
   // TODO: Rolling resistance should be considered as Fz-dependent term.
   double accel_ff =
-      2. / model.mass * model.drag_coeff * state(2, 0) * error(4, 0) -
-      1. / model.mass * model.drag_coeff * std::pow(state(2, 0), 2) -
-      state(3, 0) * state(5, 0);
+    2. / model.mass * model.drag_coeff * state(2, 0) * error(4, 0) -
+    1. / model.mass * model.drag_coeff * std::pow(state(2, 0), 2) -
+    state(3, 0) * state(5, 0);
 
   // Negative as 'u = -Kx - uff'
   FFControl(0, 0) = -steer_ff;
@@ -126,12 +133,14 @@ JointLQR::computeFFControl(JointLQR::ErrorMatrix error,
   return FFControl;
 }
 
-JointLQR::ControlVector JointLQR::process(JointLQR::ErrorMatrix error,
-                                          double x_vel_body) {
+JointLQR::ControlVector JointLQR::process(
+  JointLQR::ErrorMatrix error,
+  double x_vel_body)
+{
   JointLQR::KMatrix matrix;
   // Find the tier where the upper limit is higher than the current velocity
   // If no tier contains this velocity it will use the last tier
-  for (const auto &matrice : matrices_) {
+  for (const auto & matrice : matrices_) {
     matrix = matrice.second;
     if (matrice.first > x_vel_body) {
       break;
@@ -151,27 +160,36 @@ JointLQR::ControlVector JointLQR::process(JointLQR::ErrorMatrix error,
   // RCLCPP_INFO(rclcpp::get_logger("joint_lqr_solver"),
   //             "\nmatrix K e vx     : %f", matrix(1, 4));
 
-  RCLCPP_DEBUG(rclcpp::get_logger("joint_lqr_solver"),
-               "matrix K e y        : %f", matrix(0, 0));
-  RCLCPP_DEBUG(rclcpp::get_logger("joint_lqr_solver"),
-               "\nmatrix K e ydot   : %f", matrix(0, 1));
-  RCLCPP_DEBUG(rclcpp::get_logger("joint_lqr_solver"),
-               "\nmatrix K e yaw    : %f", matrix(0, 2));
-  RCLCPP_DEBUG(rclcpp::get_logger("joint_lqr_solver"),
-               "\nmatrix K e yawdot : %f", matrix(0, 3));
-  RCLCPP_DEBUG(rclcpp::get_logger("joint_lqr_solver"),
-               "\nmatrix K e vx     : %f", matrix(1, 4));
+  RCLCPP_DEBUG(
+    rclcpp::get_logger("joint_lqr_solver"),
+    "matrix K e y        : %f", matrix(0, 0));
+  RCLCPP_DEBUG(
+    rclcpp::get_logger("joint_lqr_solver"),
+    "\nmatrix K e ydot   : %f", matrix(0, 1));
+  RCLCPP_DEBUG(
+    rclcpp::get_logger("joint_lqr_solver"),
+    "\nmatrix K e yaw    : %f", matrix(0, 2));
+  RCLCPP_DEBUG(
+    rclcpp::get_logger("joint_lqr_solver"),
+    "\nmatrix K e yawdot : %f", matrix(0, 3));
+  RCLCPP_DEBUG(
+    rclcpp::get_logger("joint_lqr_solver"),
+    "\nmatrix K e vx     : %f", matrix(1, 4));
 
-  RCLCPP_DEBUG(rclcpp::get_logger("joint_lqr_solver"),
-               "\nFeedback    - steer : %f", FBControl(0, 0));
-  RCLCPP_DEBUG(rclcpp::get_logger("joint_lqr_solver"),
-               "\nFeedback    - accel : %f", FBControl(1, 0));
+  RCLCPP_DEBUG(
+    rclcpp::get_logger("joint_lqr_solver"),
+    "\nFeedback    - steer : %f", FBControl(0, 0));
+  RCLCPP_DEBUG(
+    rclcpp::get_logger("joint_lqr_solver"),
+    "\nFeedback    - accel : %f", FBControl(1, 0));
 
   return FBControl;
 }
 
-JointLQR::ControlVector JointLQR::process(JointLQR::StateMatrix state,
-                                          JointLQR::GoalMatrix goal) {
+JointLQR::ControlVector JointLQR::process(
+  JointLQR::StateMatrix state,
+  JointLQR::GoalMatrix goal)
+{
   // Convert to error matrix, x vel body
   // and call the other process function
   auto error = computeError(state, goal);
@@ -181,9 +199,10 @@ JointLQR::ControlVector JointLQR::process(JointLQR::StateMatrix state,
   return feedback_cmd + feedforward_cmd;
 }
 
-JointLQR::KMatrices &JointLQR::getKMatrices() { return matrices_; }
+JointLQR::KMatrices & JointLQR::getKMatrices() {return matrices_;}
 
-double JointLQR::wrap_angle(double theta) {
+double JointLQR::wrap_angle(double theta)
+{
   while (theta >= M_PI) {
     theta -= 2.0 * M_PI;
   }

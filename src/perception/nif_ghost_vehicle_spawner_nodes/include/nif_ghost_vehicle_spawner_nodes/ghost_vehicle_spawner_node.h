@@ -232,6 +232,7 @@ public:
             marker_out_msg.pose = vehicle_state->pose_in_ego_body;
             marker_out_msg.header.frame_id = this->getBodyFrameId();
             marker_out_msg.header.stamp = now;
+            
             marker_out_msg.id = vehicle_id;
             marker_out_msg.scale.x = 4.0;
             marker_out_msg.scale.y = 2.0;
@@ -242,6 +243,7 @@ public:
             marker_out_msg.color.g = 0.0;
             marker_out_msg.color.b = 1.0;
 
+            marker_out_msg.lifetime = rclcpp::Duration(0.05e+9);
     //      Inject random noise to solution
     //      pub->publish(perception_result);
             this->marker_pub->publish(marker_out_msg);
@@ -307,7 +309,9 @@ public:
     void update_vehicle_pose(const unsigned int vehicle_id, const geometry_msgs::msg::Pose pose_in_ego_body);
     void update_vehicle_pose(const unsigned int vehicle_id, const nif::utils::geometry::Point2D point_in_body);
     
-    void update_vehicle_maptrack(const unsigned int vehicle_id, const std::string& maptrack_id);
+    void update_vehicle_maptrack(const unsigned int vehicle_id, const std::string& maptrack_id) {
+        vehicle_state_by_id[vehicle_id]->maptrack_id = maptrack_id;
+    }
     
     void destroy_vehicle(const unsigned int vehicle_id)
     {
@@ -350,7 +354,6 @@ public:
         nif_msgs::srv::GhostVehicleUpdateVelocity::Response::SharedPtr response
     ) 
     {
-        bool success = false;
         if (vehicle_state_by_id.find(request->vehicle_id) != vehicle_state_by_id.end())
         {
             this->update_vehicle_velocity(request->vehicle_id, request->velocity_mps);
@@ -358,10 +361,10 @@ public:
             {
                 response->success = true;
                 response->message = "OK: vehicle velocity updated successfully.";
+                return;
             }
-        } else {
             response->success = false;
-            response->message = "ERROR: invalid vehicle_id.";
+            response->message = "ERROR: invalid argument.";
         }
     }
     
@@ -375,7 +378,23 @@ public:
         const std::shared_ptr<rmw_request_id_t> request_header,
         const nif_msgs::srv::GhostVehicleUpdateMaptrack::Request::SharedPtr request,
         nif_msgs::srv::GhostVehicleUpdateMaptrack::Response::SharedPtr response
-    ) {}
+    ) 
+    {
+
+        if (vehicle_state_by_id.find(request->vehicle_id) != vehicle_state_by_id.end() && 
+            this->wpt_manager_by_id.find(request->maptrack_id) != this->wpt_manager_by_id.end())
+        {
+            this->update_vehicle_maptrack(request->vehicle_id, request->maptrack_id);
+            if (vehicle_state_by_id[request->vehicle_id]->maptrack_id == request->maptrack_id)
+            {
+                response->success = true;
+                response->message = "OK: vehicle maptrack updated successfully.";
+                return;
+            }
+        }
+        response->success = false;
+        response->message = "ERROR: invalid argument.";
+    }
     
     void service_handler_destroy_vehicle(
         const std::shared_ptr<rmw_request_id_t> request_header,

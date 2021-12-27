@@ -35,7 +35,7 @@ FrenetBasedOpponentPredictor::FrenetBasedOpponentPredictor(
 
   // TODO : Testing
   // NOTE : load center line as a reference
-  m_centerline_ref_file_path =
+  m_refline_ref_file_path =
       this->get_parameter("ref_line_file_path").as_string();
   m_config_path_spline_interval_m =
       this->get_parameter("path_spline_interval").as_double();
@@ -48,7 +48,7 @@ FrenetBasedOpponentPredictor::FrenetBasedOpponentPredictor(
   m_defender_vel_default_mps =
       this->get_parameter("m_defender_vel_mps").as_double();
 
-  if (m_centerline_ref_file_path == "") {
+  if (m_refline_ref_file_path == "") {
     // initialization failed
     throw std::runtime_error("Frenet based Opponent predictor : Initialization "
                              "failed (Empty path).");
@@ -60,22 +60,22 @@ FrenetBasedOpponentPredictor::FrenetBasedOpponentPredictor(
 
   // Load opponent's target path based on predefined static file <csv> (THIS
   // ASSUMPTION IS DANGEROUS, THIS SHOULD BE IMPROVED)
-  auto wpt_xy = loadCSVFile(m_centerline_ref_file_path);
-  m_centerline_path_x = get<0>(wpt_xy);
-  m_centerline_path_y = get<1>(wpt_xy);
+  auto wpt_xy = loadCSVFile(m_refline_ref_file_path);
+  m_refline_path_x = get<0>(wpt_xy);
+  m_refline_path_y = get<1>(wpt_xy);
 
   // Assign splined full target path in global coordinate (in nav_msg path)
   auto splined_result = m_frenet_generator_ptr->apply_cubic_spliner(
-      m_centerline_path_x, m_centerline_path_y,
+      m_refline_path_x, m_refline_path_y,
       m_config_path_spline_interval_m);
 
   m_splined_center_path_x = get<0>(splined_result);
   m_splined_center_path_y = get<1>(splined_result);
   m_splined_center_path_yaw = get<2>(splined_result);
   m_splined_center_path_curvature = get<3>(splined_result);
-  m_centerline_splined_model = get<4>(splined_result);
+  m_refline_splined_model = get<4>(splined_result);
 
-  m_progress_vec = m_centerline_splined_model->points_s();
+  m_progress_vec = m_refline_splined_model->points_s();
 
   // Initialize subscribers & publisher
   m_sub_opponent_status =
@@ -114,8 +114,8 @@ void FrenetBasedOpponentPredictor::defenderVelCallback(
 
 void FrenetBasedOpponentPredictor::opponentStatusCallback(
     const common::msgs::PerceptionResultList::SharedPtr msg) {
-  if (msg->perception_list.size() > 0) {
-
+  if (!msg->perception_list.empty()) {
+    // TODO prediction over the full set
     auto &perception_el = msg->perception_list[0];
     m_opponent_status = perception_el;
 
@@ -138,12 +138,10 @@ void FrenetBasedOpponentPredictor::opponentStatusCallback(
 }
 
 void FrenetBasedOpponentPredictor::calcOpponentProgress() {
-  if (m_centerline_path_x.size() == 0) {
+  if (m_refline_path_x.size() == 0) {
     // empty target path
-    std::cout << "center path is empty.." << std::endl;
+    RCLCPP_ERROR(this->get_logger(), "reference path is empty..");
   }
-
-  // TODO : opponent position (body to global)
 
   geometry_msgs::msg::PoseStamped ps_local;
   ps_local.pose = m_opponent_status.detection_result_3d.center;
@@ -152,69 +150,46 @@ void FrenetBasedOpponentPredictor::calcOpponentProgress() {
       m_ego_status, ps_local);
 
   nif_msgs::msg::Perception3D opponent_status_global;
-  opponent_status_global = m_opponent_status;
-  opponent_status_global.detection_result_3d.center = global_ps.pose;
+  opponent_status_global = m_opponent_status; // metadata copy
+  opponent_status_global.detection_result_3d.center = global_ps.pose; // overwrite pose with global
 
   // calc closest index
   double min_dist = common::constants::numeric::INF;
   int opponent_index = 0;
-  for (int i = 0; i < m_centerline_path_x.size(); i++) {
-    double path_x = m_centerline_path_x[i];
-    double path_y = m_centerline_path_y[i];
+  for (int i = 0; i < m_refline_path_x.size(); i++) {
 
-    double dist =
-        sqrt(pow(opponent_status_global.detection_result_3d.center.position.x -
-                     path_x,
-                 2) +
-             pow(opponent_status_global.detection_result_3d.center.position.y -
-                     path_y,
-                 2));
+    double dist = nif::common::utils::geometry::calEuclideanDistance(
+      opponent_status_global.detection_result_3d.center.position.x, 
+      opponent_status_global.detection_result_3d.center.position.y, 
+      opponent_status_global.detection_result_3d.center.position.z,
+      m_refline_path_x[i],
+      m_refline_path_y[i],
+      0.0
+    );
     if (min_dist > dist) {
       min_dist = dist;
       opponent_index = i;
     }
   }
 
-  // m_opponent_global_progress =
-  //     (opponent_index * m_config_path_spline_interval_m * 1.0);
-
   m_opponent_global_progress = m_progress_vec[opponent_index];
 
-  // positive : opponent is in the left side of the centerline
-  // negative : opponent is in the right side of the centerline
-  // Sign calculation
-  int sign = 1;
-  // global to local transform
-  auto local_pt = nif::common::utils::coordination::getPtGlobaltoBody(
-      m_ego_status, m_centerline_path_x[opponent_index],
-      m_centerline_path_y[opponent_index]);
-
-  auto cross_product =
-      local_pt.pose.position.x *
-          m_opponent_status.detection_result_3d.center.position.y -
-      local_pt.pose.position.y *
-          m_opponent_status.detection_result_3d.center.position.x;
-  if (cross_product < 0) {
-    sign = -1;
-  } else {
-    sign = 1;
-  }
-  m_opponent_cte = min_dist * sign;
+  m_opponent_cte = min_dist;
 }
 
 double FrenetBasedOpponentPredictor::calcProgress(
     geometry_msgs::msg::PoseStamped &pt_) {
-  if (m_centerline_path_x.size() == 0) {
+  if (m_refline_path_x.size() == 0) {
     // empty target path
-    std::cout << "center path is empty.." << std::endl;
+    RCLCPP_ERROR(this->get_logger(), "reference path is empty..");
   }
 
   // calc closest index
   double min_dist = common::constants::numeric::INF;
   int pt_index = 0;
-  for (int i = 0; i < m_centerline_path_x.size(); i++) {
-    double path_x = m_centerline_path_x[i];
-    double path_y = m_centerline_path_y[i];
+  for (int i = 0; i < m_refline_path_x.size(); i++) {
+    double path_x = m_refline_path_x[i];
+    double path_y = m_refline_path_y[i];
 
     double dist = sqrt(pow(pt_.pose.position.x - path_x, 2) +
                        pow(pt_.pose.position.y - path_y, 2));
@@ -234,8 +209,7 @@ void FrenetBasedOpponentPredictor::predict() {
   this->calcOpponentProgress();
 
   // 2. Generate minimum jerk frenet path which is parallel to the
-  // centerline
-
+  // refline
   std::tuple<std::shared_ptr<FrenetPath>,
              std::vector<std::shared_ptr<FrenetPath>>>
       frenet_path_generation_result = m_frenet_generator_ptr->calc_frenet_paths(
@@ -244,7 +218,7 @@ void FrenetBasedOpponentPredictor::predict() {
           0.0,                           // current_velocity_d
           m_defender_vel_mps,            // current_velocity_s
           0.0,                           // current_acceleration_d
-          m_centerline_splined_model,    // cubic_spliner_2D
+          m_refline_splined_model,    // cubic_spliner_2D
           m_config_prediction_horizon_s, // Prediction horizon
           m_config_prediction_horizon_s +
               0.01, // Max max horizon (we want only one here)
@@ -291,7 +265,7 @@ void FrenetBasedOpponentPredictor::predict() {
     m_predicted_output_in_global_vis = traj_global;
 
   } else {
-    std::cout << "predicted frenet path length is zero" << std::endl;
+    RCLCPP_ERROR(this->get_logger(), "predicted frenet path length is zero");
   }
 }
 
@@ -323,7 +297,7 @@ FrenetBasedOpponentPredictor::loadCSVFile(const string wpt_file_path_) {
             vec_y.push_back(stof(line));
           }
         } catch (const invalid_argument e) {
-          cout << "NaN found in file " << wpt_file_path_ << endl;
+          RCLCPP_ERROR(this->get_logger(), "NaN found in file;");
           e.what();
           nan_flg = true;
         }

@@ -39,7 +39,8 @@ public:
       double track_distance, unsigned int lqr_tracking_idx,
       geometry_msgs::msg::PoseStamped lqr_track_point,
       joint_lqr::lqr::JointLQR::ErrorMatrix lqr_err_cog,
-      joint_lqr::lqr::JointLQR::ErrorMatrix lqr_err);
+      joint_lqr::lqr::JointLQR::ErrorMatrix lqr_err,
+      double desired_velocity_mps);
 
   /** ROS Callbacks / Subscription Interface **/
   void afterReferencePathCallback() override {
@@ -102,6 +103,7 @@ private:
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr
       lqr_tracking_point_pub_;
   rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr lqr_error_pub_;
+  rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr lqr_desired_velocity_mps_pub_;
   //! Command Publishers
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr steering_command_pub_;
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr throttle_command_pub_;
