@@ -23,8 +23,8 @@ FrenetBasedOpponentPredictor::FrenetBasedOpponentPredictor(
   m_predicted_trajectory_topic_name = "out_predictionn";
   m_predicted_trajectory_vis_topic_name = "out_prediction_vis";
 
-  m_opponent_global_progress = 0.0;
-  m_opponent_cte = 0.0;
+  m_last_percep_oppo_global_progress = 0.0;
+  m_last_percep_oppo_cte = 0.0;
 
   m_predicted_output_in_global.header.frame_id =
       common::frame_id::localization::ODOM;
@@ -102,6 +102,71 @@ FrenetBasedOpponentPredictor::FrenetBasedOpponentPredictor(
   this->parameters_callback_handle = this->add_on_set_parameters_callback(
       std::bind(&FrenetBasedOpponentPredictor::parametersCallback, this,
                 std::placeholders::_1));
+
+  m_predictor_timer = this->create_wall_timer(
+      20ms,
+      std::bind(&FrenetBasedOpponentPredictor::timer_callback, this)); // 50 hz
+  // m_test_timer = this->create_wall_timer(
+  //     1000ms, std::bind(&FrenetBasedOpponentPredictor::timer_callback_test,
+  //                       this)); // 50 hz
+}
+
+void FrenetBasedOpponentPredictor::timer_callback_test() {
+
+  // test
+  rclcpp::Publisher<common::msgs::PerceptionResultList>::SharedPtr
+      pub_test_oppo_list;
+  pub_test_oppo_list =
+      this->create_publisher<common::msgs::PerceptionResultList>(
+          "/tracking/objects", common::constants::QOS_PLANNING);
+
+  test_cnt = test_cnt + 1;
+
+  // publish opponent
+  common::msgs::PerceptionResultList test_oppo_list;
+  common::msgs::PerceptionResult test_oppo;
+
+  test_oppo.obj_velocity_in_global.linear.x = 1.0;
+
+  if (test_cnt >= m_refline_path_x.size()) {
+    test_cnt -= m_refline_path_x.size();
+  }
+
+  test_oppo.detection_result_3d.center.position.x = m_refline_path_x[test_cnt];
+  test_oppo.detection_result_3d.center.position.y = m_refline_path_y[test_cnt];
+  test_oppo.detection_result_3d.center.position.z = 0;
+
+  test_oppo_list.perception_list.push_back(test_oppo);
+  pub_test_oppo_list->publish(test_oppo_list);
+
+  std::cout << "test pub" << std::endl;
+}
+
+void FrenetBasedOpponentPredictor::timer_callback() {
+  if (!m_perception_callback_first_run) {
+
+    m_percep_callback_elapsed_sec =
+        (std::chrono::system_clock::now() - m_last_percep_callback_time);
+
+    if (m_percep_callback_elapsed_sec.count() < 0) {
+      // perception has an update.
+      return;
+    } else {
+      // prediction
+
+      // step 1. estimating the progress based on the last percepted
+      // information
+      auto estimated_progress =
+          m_last_percep_oppo_global_progress +
+          m_percep_callback_elapsed_sec.count() * m_defender_vel_mps;
+
+      auto estimated_cte = m_last_percep_oppo_cte;
+      predict_bls(estimated_progress, estimated_cte);
+    }
+
+  } else {
+    // wait until the perception callback runs at least once.
+  }
 }
 
 void FrenetBasedOpponentPredictor::defenderVelCallback(
@@ -113,26 +178,105 @@ void FrenetBasedOpponentPredictor::defenderVelCallback(
 
 void FrenetBasedOpponentPredictor::opponentStatusCallback(
     const common::msgs::PerceptionResultList::SharedPtr msg) {
+
   if (!msg->perception_list.empty()) {
-    // TODO prediction over the full set
+
+    if (m_perception_callback_first_run) {
+      m_perception_callback_first_run = false;
+    }
+
+    m_last_percep_callback_time = std::chrono::system_clock::now();
+
     auto &perception_el = msg->perception_list[0];
-    m_opponent_status = perception_el;
 
-    m_defender_vel_mps =
-        abs(perception_el.obj_velocity_in_global.linear.x) +
-        // m_ego_status.twist.twist.linear.x + // Only if tracking result is
-        // relative to ego.
-        m_config_oppo_vel_bias_mps; // NOTE : should be mps / absolute vel
+    // valid check
+    if (perception_el.obj_velocity_in_global.linear.x != NAN &&
+        perception_el.obj_velocity_in_local.linear.x != NAN &&
+        perception_el.detection_result_3d.center.position.x != NAN &&
+        perception_el.detection_result_3d.center.position.y != NAN &&
+        perception_el.detection_result_3d.center.orientation.x != NAN &&
+        perception_el.detection_result_3d.center.orientation.y != NAN &&
+        perception_el.detection_result_3d.center.orientation.z != NAN &&
+        perception_el.detection_result_3d.center.orientation.w != NAN) {
 
-    m_defender_vel_mps = std::max(abs(m_defender_vel_mps), 0.5);
+      m_opponent_status = perception_el;
+      m_defender_vel_mps = abs(perception_el.obj_velocity_in_global.linear.x) +
+                           m_config_oppo_vel_bias_mps; // mps / absolute vel
+      m_defender_vel_mps = std::max(abs(m_defender_vel_mps), 0.5);
+      this->predict();
+      m_pub_predicted_trajectory->publish(m_predicted_output_in_global);
+      m_pub_predicted_trajectory_vis->publish(m_predicted_output_in_global_vis);
 
-    // Do prediction when the oppponent's status is callbacked
-    this->predict();
+    } else if (perception_el.obj_velocity_in_global.linear.x == NAN &&
+               perception_el.obj_velocity_in_local.linear.x == NAN &&
+               perception_el.detection_result_3d.center.position.x != NAN &&
+               perception_el.detection_result_3d.center.position.y != NAN &&
+               perception_el.detection_result_3d.center.orientation.x != NAN &&
+               perception_el.detection_result_3d.center.orientation.y != NAN &&
+               perception_el.detection_result_3d.center.orientation.z != NAN &&
+               perception_el.detection_result_3d.center.orientation.w != NAN) {
+      // Position is ok but velocity has a problem (from tracking)
+      m_opponent_status.detection_result_3d = perception_el.detection_result_3d;
+      // Keep the last detection velocity
+      this->predict();
+      m_pub_predicted_trajectory->publish(m_predicted_output_in_global);
+      m_pub_predicted_trajectory_vis->publish(m_predicted_output_in_global_vis);
+    } else {
+      // Do not update the m_opponent_status
+    }
+  }
+}
 
-    // TODO: publish predicted trajectory
+void FrenetBasedOpponentPredictor::predict_bls(double estimated_progress_,
+                                               double estimated_cte_) {
+  std::tuple<std::shared_ptr<FrenetPath>,
+             std::vector<std::shared_ptr<FrenetPath>>>
+      frenet_path_generation_result = m_frenet_generator_ptr->calc_frenet_paths(
+          estimated_cte_,                // current_position_d
+          estimated_progress_,           // current_position_s
+          0.0,                           // current_velocity_d
+          m_defender_vel_mps,            // current_velocity_s
+          0.0,                           // current_acceleration_d
+          m_refline_splined_model,       // cubic_spliner_2D
+          m_config_prediction_horizon_s, // Prediction horizon
+          m_config_prediction_horizon_s +
+              0.01, // Max max horizon (we want only one here)
+          m_config_prediction_sampling_time_s, //
+          estimated_cte_, estimated_cte_ + 0.01, 0.1);
 
-    m_pub_predicted_trajectory->publish(m_predicted_output_in_global);
-    m_pub_predicted_trajectory_vis->publish(m_predicted_output_in_global_vis);
+  std::shared_ptr<FrenetPath> &predicted_frenet_path =
+      std::get<0>(frenet_path_generation_result);
+
+  // DynamicTrajectory initialize
+  nif_msgs::msg::DynamicTrajectory
+      bls_dtraj; // beyond line of sight dynamic trajectory
+  nav_msgs::msg::Path bls_path;
+
+  if (!predicted_frenet_path->points_x().empty()) {
+
+    for (int i = 0; i < predicted_frenet_path->points_x().size(); i++) {
+      geometry_msgs::msg::PoseStamped ps;
+      ps.header.frame_id = common::frame_id::localization::ODOM;
+
+      ps.pose.position.x = predicted_frenet_path->points_x()[i];
+      ps.pose.position.y = predicted_frenet_path->points_y()[i];
+      ps.pose.orientation = nif::common::utils::coordination::euler2quat(
+          predicted_frenet_path->yaw()[i], 0.0, 0.0);
+      m_predicted_output_in_global.trajectory_timestamp_array.push_back(
+          predicted_frenet_path->time()[i]);
+      m_predicted_output_in_global.trajectory_global_progress.push_back(
+          predicted_frenet_path->points_s()[i]);
+      bls_path.poses.push_back(ps);
+    }
+
+    bls_dtraj.header.frame_id = common::frame_id::localization::ODOM;
+    bls_path.header.frame_id = common::frame_id::localization::ODOM;
+    bls_dtraj.trajectory_path = bls_path;
+    bls_dtraj.trajectory_type = nif_msgs::msg::DynamicTrajectory::
+        TRAJECTORY_TYPE_PREDICTION_BEYOND_LINE_OF_SIGHT;
+
+    m_pub_predicted_trajectory->publish(bls_dtraj);
+    m_pub_predicted_trajectory_vis->publish(bls_path);
   }
 }
 
@@ -145,13 +289,14 @@ void FrenetBasedOpponentPredictor::calcOpponentProgress() {
   geometry_msgs::msg::PoseStamped ps_local;
   ps_local.pose = m_opponent_status.detection_result_3d.center;
 
-  auto global_ps = nif::common::utils::coordination::getPtBodytoGlobal(
-      m_ego_status, ps_local);
+  m_last_percep_oppo_global_ps =
+      nif::common::utils::coordination::getPtBodytoGlobal(m_ego_status,
+                                                          ps_local);
 
   nif_msgs::msg::Perception3D opponent_status_global;
   opponent_status_global = m_opponent_status; // metadata copy
   opponent_status_global.detection_result_3d.center =
-      global_ps.pose; // overwrite pose with global
+      m_last_percep_oppo_global_ps.pose; // overwrite pose with global
 
   // calc closest index
   double min_dist = common::constants::numeric::INF;
@@ -169,9 +314,9 @@ void FrenetBasedOpponentPredictor::calcOpponentProgress() {
     }
   }
 
-  m_opponent_global_progress = m_progress_vec[opponent_index];
+  m_last_percep_oppo_global_progress = m_progress_vec[opponent_index];
 
-  m_opponent_cte = -1 * min_dist;
+  m_last_percep_oppo_cte = -1 * min_dist;
 }
 
 double FrenetBasedOpponentPredictor::calcProgress(
@@ -211,17 +356,17 @@ void FrenetBasedOpponentPredictor::predict() {
   std::tuple<std::shared_ptr<FrenetPath>,
              std::vector<std::shared_ptr<FrenetPath>>>
       frenet_path_generation_result = m_frenet_generator_ptr->calc_frenet_paths(
-          m_opponent_cte,                // current_position_d
-          m_opponent_global_progress,    // current_position_s
-          0.0,                           // current_velocity_d
-          m_defender_vel_mps,            // current_velocity_s
-          0.0,                           // current_acceleration_d
-          m_refline_splined_model,       // cubic_spliner_2D
-          m_config_prediction_horizon_s, // Prediction horizon
+          m_last_percep_oppo_cte,             // current_position_d
+          m_last_percep_oppo_global_progress, // current_position_s
+          0.0,                                // current_velocity_d
+          m_defender_vel_mps,                 // current_velocity_s
+          0.0,                                // current_acceleration_d
+          m_refline_splined_model,            // cubic_spliner_2D
+          m_config_prediction_horizon_s,      // Prediction horizon
           m_config_prediction_horizon_s +
               0.01, // Max max horizon (we want only one here)
           m_config_prediction_sampling_time_s, //
-          m_opponent_cte, m_opponent_cte + 0.01, 0.1);
+          m_last_percep_oppo_cte, m_last_percep_oppo_cte + 0.01, 0.1);
 
   std::shared_ptr<FrenetPath> &predicted_frenet_path =
       std::get<0>(frenet_path_generation_result);
