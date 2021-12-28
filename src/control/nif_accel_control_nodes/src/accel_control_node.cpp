@@ -391,18 +391,18 @@ void AccelControl::publishThrottleBrake() {
 // !!!! UNCOMMENT TO ENABLE LATERAL ERROR SCALEDOWN FACTOR !!!!
   // Release throttle w.r.t. lateral error
   // - only when speed is large enough
-  // double error_ratio = 0.0;
-  // double curr_speed = this->speed_;
-  // if (curr_speed > this->m_error_factor_vel_thres_mps) {
-  //   if (abs(m_error_y) > m_lateral_error_deadband_m) {
-  //     error_ratio =
-  //         std::min(abs(m_error_y) - m_lateral_error_deadband_m, m_ERROR_Y_MAX) /
-  //         m_ERROR_Y_MAX; // [0.0~1.0] ratio
-  //   }
+  double error_ratio = 0.0;
+  double curr_speed = this->speed_;
+  if (curr_speed > this->m_error_factor_vel_thres_mps) {
+    if (abs(m_error_y) > m_lateral_error_deadband_m) {
+      error_ratio =
+          std::min(abs(m_error_y) - m_lateral_error_deadband_m, m_ERROR_Y_MAX) /
+          m_ERROR_Y_MAX; // [0.0~1.0] ratio
+    }
 
-  //   double error_gain = 1.0 - 0.5 * error_ratio; // [1.0~0.5] gain
-  //   this->throttle_cmd.data = error_gain * this->throttle_cmd.data;
-  // }
+    double error_gain = 1.0 - 0.5 * error_ratio; // [1.0~0.5] gain
+    this->throttle_cmd.data = error_gain * this->throttle_cmd.data;
+  }
 // !!!! UNCOMMENT TO ENABLE LATERAL ERROR SCALEDOWN FACTOR !!!!
 
   this->throttle_cmd.data =

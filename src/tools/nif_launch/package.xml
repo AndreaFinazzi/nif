@@ -36,6 +36,7 @@
     <exec_depend>nif_adaptive_cruise_control_node</exec_depend>
     <exec_depend>nif_dynamic_planning_nodes</exec_depend>
     <exec_depend>nif_radar_clustering_nodes</exec_depend>
+    <exec_depend>nif_geofence_filter_nodes</exec_depend>
 
     <exec_depend>nif_telemetry</exec_depend>
     <exec_depend>autoware_auto_msgs</exec_depend>

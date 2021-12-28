@@ -154,7 +154,7 @@ DbwNode::DbwNode(const rclcpp::NodeOptions & options)
   pub_pt_report_ = this->create_publisher<deep_orange_msgs::msg::PtReport>("pt_report", 10);
   pub_diag_report_ = this->create_publisher<deep_orange_msgs::msg::DiagnosticReport>("diag_report", 10);
   pub_timing_report_ = this->create_publisher<deep_orange_msgs::msg::LapTimeReport>("lap_time_report", 10);
-  pub_rest_of_field_ = this->create_publisher<deep_orange_msgs::msg::RestOfFieldReport>("lap_time_report", 10);
+  pub_rest_of_field_ = this->create_publisher<deep_orange_msgs::msg::RestOfFieldReport>("rest_of_field_report", 10);
 
   // autoware auto msg
 
