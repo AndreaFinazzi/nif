@@ -206,11 +206,26 @@ velocity_profiler::velProfileWCollisionChecking(
     const double checking_dist_bound_, const double checking_time_bound_,
     const bool use_sat_, const double &spline_interval_) {
 
+  // ----------------------------------------------------
+  // ----------------- Minimal checking -----------------
+  // ----------------------------------------------------
   double collision_time_filetered = checking_time_bound_;
+  double collision_dist_filetered = checking_dist_bound_;
   if (collision_time_filetered < 1.0) {
     std::cout << "Too risky. Set to 1 sec as default" << std::endl;
     collision_time_filetered = 1.0;
   }
+  if (collision_dist_filetered < 1.0) {
+    std::cout << "Too risky. Set to 1 meter as default" << std::endl;
+    collision_dist_filetered = 1.0;
+  }
+  if (target_path_.poses.empty()) {
+    std::cout << "[velProfileWCollisionChecking] Fatal error. Return empty path"
+              << std::endl;
+    nif_msgs::msg::DynamicTrajectory empty_path;
+    return empty_path;
+  }
+  // ----------------------------------------------------
 
   nif_msgs::msg::DynamicTrajectory out_traj;
 
@@ -255,8 +270,10 @@ velocity_profiler::velProfileWCollisionChecking(
     out_traj.trajectory_path.poses.push_back(ps);
 
     if (point_s == 0.0) {
-      out_traj.trajectory_velocity.push_back(
-          std::max(odom_.twist.twist.linear.x, MIN_SPEED_MPS));
+      // out_traj.trajectory_velocity.push_back(
+      //     std::max(odom_.twist.twist.linear.x, MIN_SPEED_MPS));
+      out_traj.trajectory_velocity.push_back(odom_.twist.twist.linear.x);
+      out_traj.trajectory_timestamp_array.push_back(0.0);
     } else {
       double curve_vel =
           std::min(m_constraint_max_vel,
@@ -279,24 +296,19 @@ velocity_profiler::velProfileWCollisionChecking(
                                         abs(m_constraint_max_accel));
       }
 
-      double vel = std::max(step_limited_vel, MIN_SPEED_MPS);
-      out_traj.trajectory_velocity.push_back(vel);
+      // double vel = std::max(step_limited_vel, MIN_SPEED_MPS);
+      // out_traj.trajectory_velocity.push_back(vel);
+      out_traj.trajectory_velocity.push_back(step_limited_vel);
     }
 
-    if (point_s == 0.0) {
-      out_traj.trajectory_timestamp_array.push_back(0.0);
-    } else {
-      out_traj.trajectory_timestamp_array.push_back(
-          out_traj.trajectory_timestamp_array.back() +
-          (spline_interval_ / (out_traj.trajectory_velocity.back())));
-    }
-
-    cubic_spliner_x.push_back(point_x);
-    cubic_spliner_y.push_back(point_y);
-    cubic_spliner_yaw.push_back(yaw);
-    cubic_spliner_curvature.push_back(curvature);
-
-    point_s += spline_interval_;
+    // out_traj.trajectory_timestamp_array.push_back(
+    //     out_traj.trajectory_timestamp_array.back() +
+    //     (spline_interval_ / (out_traj.trajectory_velocity.back())));
+    out_traj.trajectory_timestamp_array.push_back(
+        out_traj.trajectory_timestamp_array.back() +
+        (spline_interval_ /
+         (std::max(double(out_traj.trajectory_velocity.back()),
+                   MIN_SPEED_MPS))));
 
     // ------------------------------------------------------------
     // -------------------- Collision checking --------------------
@@ -428,6 +440,13 @@ velocity_profiler::velProfileWCollisionChecking(
       out_traj.has_collision = has_collision;
       break;
     }
+
+    cubic_spliner_x.push_back(point_x);
+    cubic_spliner_y.push_back(point_y);
+    cubic_spliner_yaw.push_back(yaw);
+    cubic_spliner_curvature.push_back(curvature);
+
+    point_s += spline_interval_;
   }
   return out_traj;
 }
