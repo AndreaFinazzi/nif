@@ -12,6 +12,8 @@
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <stdlib.h>
 
+
+
 using namespace nif::planning;
 using namespace std;
 
@@ -158,7 +160,7 @@ DynamicPlannerNode::DynamicPlannerNode(const std::string &node_name_)
     }
   }
 
-  RCLCPP_INFO(this->get_logger(), "[DYNAMICPLANNER] All paths are loaded...")
+  RCLCPP_INFO(this->get_logger(), "[DYNAMICPLANNER] All paths are loaded...");
 
   // INITIALIZE SUBSCRIBERS & PUBLISHER
   m_det_sub =
@@ -205,7 +207,7 @@ DynamicPlannerNode::DynamicPlannerNode(const std::string &node_name_)
   m_planner_timer = this->create_wall_timer(
       20ms, std::bind(&DynamicPlannerNode::timer_callback, this)); // 50 hz
 
-  RCLCPP_INFO(this->get_logger(), "[DYNAMICPLANNER] Initialization done." << std::endl;
+  RCLCPP_INFO(this->get_logger(), "[DYNAMICPLANNER] Initialization done.");
 
   this->setNodeStatus(nif::common::NODE_INITIALIZED);
 }
