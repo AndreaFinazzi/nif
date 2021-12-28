@@ -354,6 +354,7 @@ private:
 
   // under consideration
   const double m_acceptable_slip_angle_rad = 0.0872665; // 5 deg
+  const double m_merging_back_gap_thres = 15.0;         // meter
 
   shared_ptr<FrenetPathGenerator> m_frenet_generator_ptr;
   //   shared_ptr<velocity_profiler> m_velocity_profiler_ptr;

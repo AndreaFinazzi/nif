@@ -56,6 +56,68 @@ inline std::vector<Vector2> calculate_bounds(const double x, const double y,
           rear_right_point};
 }
 
+inline std::vector<Vector2> calculate_bounds_extended(
+    const double cur_x, const double cur_y, const double cur_yaw,
+    const double after_x, const double after_y, const double after_yaw,
+    const double centre_to_front, const double centre_to_rear,
+    const double centre_to_side) {
+
+  Vector2 cur_front_right_point;
+  cur_front_right_point.x =
+      cur_x + centre_to_side * sin(cur_yaw) + centre_to_front * cos(cur_yaw);
+  cur_front_right_point.y =
+      cur_y - centre_to_side * cos(cur_yaw) + centre_to_front * sin(cur_yaw);
+
+  Vector2 cur_front_left_point;
+  cur_front_left_point.x =
+      cur_x - centre_to_side * sin(cur_yaw) + centre_to_front * cos(cur_yaw);
+  cur_front_left_point.y =
+      cur_y + centre_to_side * cos(cur_yaw) + centre_to_front * sin(cur_yaw);
+
+  Vector2 cur_rear_left_point;
+  cur_rear_left_point.x =
+      cur_x - centre_to_side * sin(cur_yaw) - centre_to_rear * cos(cur_yaw);
+  cur_rear_left_point.y =
+      cur_y + centre_to_side * cos(cur_yaw) - centre_to_rear * sin(cur_yaw);
+
+  Vector2 cur_rear_right_point;
+  cur_rear_right_point.x =
+      cur_x + centre_to_side * sin(cur_yaw) - centre_to_rear * cos(cur_yaw);
+  cur_rear_right_point.y =
+      cur_y - centre_to_side * cos(cur_yaw) - centre_to_rear * sin(cur_yaw);
+
+  // --------------------------------------------------------------------
+
+  Vector2 after_front_right_point;
+  after_front_right_point.x = after_x + centre_to_side * sin(after_yaw) +
+                              centre_to_front * cos(after_yaw);
+  after_front_right_point.y = after_y - centre_to_side * cos(after_yaw) +
+                              centre_to_front * sin(after_yaw);
+
+  Vector2 after_front_left_point;
+  after_front_left_point.x = after_x - centre_to_side * sin(after_yaw) +
+                             centre_to_front * cos(after_yaw);
+  after_front_left_point.y = after_y + centre_to_side * cos(after_yaw) +
+                             centre_to_front * sin(after_yaw);
+
+  // Vector2 after_rear_left_point;
+  // after_rear_left_point.x = after_x - centre_to_side * sin(after_yaw) -
+  //                           centre_to_rear * cos(after_yaw);
+  // after_rear_left_point.y = after_y + centre_to_side * cos(after_yaw) -
+  //                           centre_to_rear * sin(after_yaw);
+
+  // Vector2 after_rear_right_point;
+  // after_rear_right_point.x = after_x + centre_to_side * sin(after_yaw) -
+  //                            centre_to_rear * cos(after_yaw);
+  // after_rear_right_point.y = after_y - centre_to_side * cos(after_yaw) -
+  //                            centre_to_rear * sin(after_yaw);
+
+  return {
+      cur_rear_left_point,     cur_rear_right_point,   cur_front_right_point,
+      after_front_right_point, after_front_left_point, cur_front_left_point,
+  };
+}
+
 // Linear transform to find the orthogonal vector of the edge
 inline Vector2
 calculate_normalised_projection_axis(const Vector2 &current_point,
@@ -235,12 +297,12 @@ inline bool separating_axis_intersect_traj_v2(
     const nif_msgs::msg::DynamicTrajectory &target_traj_,
     const double max_check_time_ = 6.0, const double time_diff_tres_ = 1.0) {
 
-
   auto start = std::chrono::system_clock::now();
   std::cout << "Called " << std::endl;
-  std::cout << "len ref " << ref_traj_.trajectory_timestamp_array.size() <<  std::endl;
-  std::cout << "len target " << target_traj_.trajectory_timestamp_array.size()  << std::endl;
-
+  std::cout << "len ref " << ref_traj_.trajectory_timestamp_array.size()
+            << std::endl;
+  std::cout << "len target " << target_traj_.trajectory_timestamp_array.size()
+            << std::endl;
 
   bool has_collision = false;
 
@@ -286,9 +348,7 @@ inline bool separating_axis_intersect_traj_v2(
       continue;
     }
 
-
     auto start2 = std::chrono::system_clock::now();
-
 
     auto bound_a = calculate_bounds(
         ref_traj_.trajectory_path.poses[ref_traj_idx].pose.position.x,
@@ -308,7 +368,7 @@ inline bool separating_axis_intersect_traj_v2(
         centre_to_front, centre_to_rear, centre_to_side);
 
     auto end2 = std::chrono::system_clock::now();
-    
+
     auto start3 = std::chrono::system_clock::now();
 
     if (separating_axis_intersect(bound_a, bound_b) == true) {
@@ -319,7 +379,7 @@ inline bool separating_axis_intersect_traj_v2(
 
   auto end = std::chrono::system_clock::now();
 
-  std::chrono::duration<double> elapsed_seconds = end-start;
+  std::chrono::duration<double> elapsed_seconds = end - start;
 
   // std::cout << "time diff ; " << elapsed_seconds.count()  << std::endl;
 

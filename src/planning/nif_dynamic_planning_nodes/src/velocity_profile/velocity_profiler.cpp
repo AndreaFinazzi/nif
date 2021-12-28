@@ -16,7 +16,6 @@ velocity_profiler::velocity_profiler() {
   m_acc_config_decel_desired = 12.0;
   m_acc_config_delta = 4.0;
   m_acc_config_veh_l = 4.7;
-
 }
 
 velocity_profiler::velocity_profiler(std::string config_file_path_) {
@@ -61,7 +60,6 @@ bool velocity_profiler::parseConfig_(std::string &config_file_path_) {
       velocity_profiling_param["config_use_curvature_model"].as<bool>();
   m_config_dt = velocity_profiling_param["config_dt"].as<double>();
 
-
   YAML::Node adaptive_cruise_control_param =
       config["adaptive_cruise_control_param"];
 
@@ -79,7 +77,6 @@ bool velocity_profiler::parseConfig_(std::string &config_file_path_) {
       adaptive_cruise_control_param["acc_config_delta"].as<double>();
   m_acc_config_veh_l =
       adaptive_cruise_control_param["acc_config_veh_l"].as<double>();
-
 
   if (m_constraint_max_t < m_constraint_min_t) {
     throw std::runtime_error("m_constraint_max_t can not be less than "
@@ -208,9 +205,14 @@ velocity_profiler::velProfileWCollisionChecking(
     const nif_msgs::msg::DynamicTrajectory &oppo_predicted_path_,
     const double checking_dist_bound_, const double checking_time_bound_,
     const bool use_sat_, const double &spline_interval_) {
-  nif_msgs::msg::DynamicTrajectory out_traj;
 
-  auto start = std::chrono::system_clock::now();
+  double collision_time_filetered = checking_time_bound_;
+  if (collision_time_filetered < 1.0) {
+    std::cout << "Too risky. Set to 1 sec as default" << std::endl;
+    collision_time_filetered = 1.0;
+  }
+
+  nif_msgs::msg::DynamicTrajectory out_traj;
 
   std::vector<double> target_path_x(target_path_.poses.size(), 0.0);
   std::vector<double> target_path_y(target_path_.poses.size(), 0.0);
@@ -220,15 +222,8 @@ velocity_profiler::velProfileWCollisionChecking(
     target_path_y[i] = target_path_.poses[i].pose.position.y;
   }
 
-  auto start1 = std::chrono::system_clock::now();
-
   std::shared_ptr<CubicSpliner2D> cubic_spliner_2D(
       new CubicSpliner2D(target_path_x, target_path_y));
-
-  auto start2 = std::chrono::system_clock::now();
-
-  std::chrono::duration<double> elapsed_seconds = start1 - start;
-  std::chrono::duration<double> elapsed_seconds1 = start2 - start1;
 
   std::vector<double> cubic_spliner_x;
   std::vector<double> cubic_spliner_y;
@@ -239,6 +234,11 @@ velocity_profiler::velProfileWCollisionChecking(
   double point_s_end = cubic_spliner_2D->points_s().back();
 
   while (point_s < point_s_end) {
+
+    //-----------------------------------------------------------------------
+    //  ------------ point generation and velocity profiling ----------------
+    //-----------------------------------------------------------------------
+
     std::tuple<double, double> position =
         cubic_spliner_2D->calculate_position(point_s);
 
@@ -298,12 +298,9 @@ velocity_profiler::velProfileWCollisionChecking(
 
     point_s += spline_interval_;
 
-    // Collision checking
-    double collision_time_filetered = checking_time_bound_;
-    if (collision_time_filetered < 1.0) {
-      std::cout << "Too risky. Set to 1 sec as default" << std::endl;
-      collision_time_filetered = 1.0;
-    }
+    // ------------------------------------------------------------
+    // -------------------- Collision checking --------------------
+    // ------------------------------------------------------------
 
     bool has_collision = false;
 
@@ -333,43 +330,65 @@ velocity_profiler::velProfileWCollisionChecking(
           }
         }
       } else {
-        // USE SAT
-
+        // USE SAT for collision checking
         auto ref_timestamp = out_traj.trajectory_timestamp_array.back();
         auto closest_idx_on_target_traj = nif::common::utils::closestIndex(
             oppo_predicted_path_.trajectory_timestamp_array, ref_timestamp);
 
-        if (abs(ref_timestamp -
-                oppo_predicted_path_
-                    .trajectory_timestamp_array[closest_idx_on_target_traj]) >
-            checking_time_bound_) {
-          continue;
-        }
+        // if (abs(ref_timestamp -
+        //         oppo_predicted_path_
+        //             .trajectory_timestamp_array[closest_idx_on_target_traj])
+        //             >
+        //     checking_time_bound_) {
+        //   continue;
+        // }
 
-        auto dist = sqrt(
-            pow(cubic_spliner_x.back() - oppo_predicted_path_.trajectory_path
-                                             .poses[closest_idx_on_target_traj]
-                                             .pose.position.x,
-                2) +
-            pow(cubic_spliner_y.back() - oppo_predicted_path_.trajectory_path
-                                             .poses[closest_idx_on_target_traj]
-                                             .pose.position.y,
-                2));
+        auto closest_idx_on_target_traj_ahead =
+            nif::common::utils::closestIndex(
+                oppo_predicted_path_.trajectory_timestamp_array,
+                ref_timestamp + 0.4); // after 0.4 sec, testing
 
-        if (dist > checking_dist_bound_) {
-          continue;
-        }
+        // auto dist = sqrt(
+        //     pow(cubic_spliner_x.back() - oppo_predicted_path_.trajectory_path
+        //                                      .poses[closest_idx_on_target_traj]
+        //                                      .pose.position.x,
+        //         2) +
+        //     pow(cubic_spliner_y.back() - oppo_predicted_path_.trajectory_path
+        //                                      .poses[closest_idx_on_target_traj]
+        //                                      .pose.position.y,
+        //         2));
 
-        const double centre_to_front = 5.5;
-        const double centre_to_rear = 5.0;
-        const double centre_to_side = 1.5;
+        // if (dist > checking_dist_bound_) {
+        //   continue;
+        // }
+
+        const double ego_centre_to_front = 5.0;
+        const double ego_centre_to_rear = 1.0;
+        const double ego_centre_to_side = 1.5;
+
+        const double oppo_centre_to_front = 5.0;
+        const double oppo_centre_to_rear = 3.0;
+        const double oppo_centre_to_side = 1.5;
 
         auto bound_ego = nif::planning::sat::calculate_bounds(
             cubic_spliner_x.back(), cubic_spliner_y.back(),
-            cubic_spliner_yaw.back(), centre_to_front, centre_to_rear,
-            centre_to_side);
+            cubic_spliner_yaw.back(), ego_centre_to_front, ego_centre_to_rear,
+            ego_centre_to_side);
 
-        auto bound_oppo = nif::planning::sat::calculate_bounds(
+        // auto bound_oppo = nif::planning::sat::calculate_bounds(
+        //     oppo_predicted_path_.trajectory_path
+        //         .poses[closest_idx_on_target_traj]
+        //         .pose.position.x,
+        //     oppo_predicted_path_.trajectory_path
+        //         .poses[closest_idx_on_target_traj]
+        //         .pose.position.y,
+        //     nif::common::utils::coordination::quat2yaw(
+        //         oppo_predicted_path_.trajectory_path
+        //             .poses[closest_idx_on_target_traj]
+        //             .pose.orientation),
+        //     oppo_centre_to_front, oppo_centre_to_rear, oppo_centre_to_side);
+
+        auto bound_oppo = nif::planning::sat::calculate_bounds_extended(
             oppo_predicted_path_.trajectory_path
                 .poses[closest_idx_on_target_traj]
                 .pose.position.x,
@@ -380,7 +399,18 @@ velocity_profiler::velProfileWCollisionChecking(
                 oppo_predicted_path_.trajectory_path
                     .poses[closest_idx_on_target_traj]
                     .pose.orientation),
-            centre_to_front, centre_to_rear, centre_to_side);
+
+            oppo_predicted_path_.trajectory_path
+                .poses[closest_idx_on_target_traj_ahead]
+                .pose.position.x,
+            oppo_predicted_path_.trajectory_path
+                .poses[closest_idx_on_target_traj_ahead]
+                .pose.position.y,
+            nif::common::utils::coordination::quat2yaw(
+                oppo_predicted_path_.trajectory_path
+                    .poses[closest_idx_on_target_traj_ahead]
+                    .pose.orientation),
+            oppo_centre_to_front, oppo_centre_to_rear, oppo_centre_to_side);
 
         if (nif::planning::sat::separating_axis_intersect(bound_ego,
                                                           bound_oppo) == true) {
@@ -388,27 +418,44 @@ velocity_profiler::velProfileWCollisionChecking(
           break;
         }
       }
+      if (has_collision) {
+        out_traj.has_collision = true;
+        break;
+      }
     }
 
     if (has_collision) {
-      out_traj.has_collision = true;
-      return out_traj;
+      out_traj.has_collision = has_collision;
+      break;
     }
   }
+  return out_traj;
 }
 
 nif_msgs::msg::DynamicTrajectory
 velocity_profiler::velProfile(const nav_msgs::msg::Odometry &odom_,
                               const nav_msgs::msg::Path &target_path_,
-                              const double &spline_interval_) {
+                              const double &spline_interval_const_) {
+
+  //-----------------------------------------------------------------
+  // ----------------- Safety check (minimal) -----------------------
+  //-----------------------------------------------------------------
+  double spline_interval_ = spline_interval_const_;
+  if (spline_interval_ <= 0) {
+    // can not be less than zero, set to 1.0 (default)
+    spline_interval_ = 1.0;
+  }
+  if (target_path_.poses.size() < 4) {
+    // return empty path
+    nif_msgs::msg::DynamicTrajectory empty_path;
+    return empty_path;
+  }
+  //-----------------------------------------------------------------
+
   nif_msgs::msg::DynamicTrajectory out_traj;
 
   std::vector<double> target_path_x(target_path_.poses.size(), 0.0);
   std::vector<double> target_path_y(target_path_.poses.size(), 0.0);
-
-  out_traj.trajectory_path.poses.clear();
-  out_traj.trajectory_timestamp_array.clear();
-  out_traj.trajectory_velocity.clear();
 
   for (int i = 0; i < target_path_.poses.size(); i++) {
     target_path_x[i] = target_path_.poses[i].pose.position.x;
@@ -440,11 +487,14 @@ velocity_profiler::velProfile(const nav_msgs::msg::Odometry &odom_,
     ps.pose.position.y = point_y;
     ps.pose.orientation =
         nif::common::utils::coordination::euler2quat(yaw, 0.0, 0.0);
+
     out_traj.trajectory_path.poses.push_back(ps);
 
     if (point_s == 0.0) {
-      out_traj.trajectory_velocity.push_back(
-          std::max(odom_.twist.twist.linear.x, MIN_SPEED_MPS));
+      // out_traj.trajectory_velocity.push_back(
+      //     std::max(odom_.twist.twist.linear.x, MIN_SPEED_MPS));
+      out_traj.trajectory_velocity.push_back(odom_.twist.twist.linear.x);
+      out_traj.trajectory_timestamp_array.push_back(0.0);
     } else {
       double curve_vel =
           std::min(m_constraint_max_vel,
@@ -467,16 +517,18 @@ velocity_profiler::velProfile(const nav_msgs::msg::Odometry &odom_,
                                         abs(m_constraint_max_accel));
       }
 
-      double vel = std::max(step_limited_vel, MIN_SPEED_MPS);
-      out_traj.trajectory_velocity.push_back(vel);
-    }
+      // double vel = std::max(step_limited_vel, MIN_SPEED_MPS);
+      // out_traj.trajectory_velocity.push_back(vel);
+      out_traj.trajectory_velocity.push_back(step_limited_vel);
 
-    if (point_s == 0.0) {
-      out_traj.trajectory_timestamp_array.push_back(0.0);
-    } else {
+      // out_traj.trajectory_timestamp_array.push_back(
+      //     out_traj.trajectory_timestamp_array.back() +
+      //     (spline_interval_ / (out_traj.trajectory_velocity.back())));
       out_traj.trajectory_timestamp_array.push_back(
           out_traj.trajectory_timestamp_array.back() +
-          (spline_interval_ / (out_traj.trajectory_velocity.back())));
+          (spline_interval_ /
+           (std::max(double(out_traj.trajectory_velocity.back()),
+                     MIN_SPEED_MPS))));
     }
 
     cubic_spliner_x.push_back(point_x);
@@ -491,13 +543,6 @@ velocity_profiler::velProfile(const nav_msgs::msg::Odometry &odom_,
       cubic_spliner_curvature.begin(), cubic_spliner_curvature.end(),
       [&](double curvature) { return abs(curvature) > 0.1; });
 
-  // if (is_too_curvy) {
-  //   nif_msgs::msg::DynamicTrajectory empty_traj;
-  //   return empty_traj;
-  // } else {
-  //   return out_traj;
-  // }
-
   return out_traj;
 }
 
@@ -505,11 +550,28 @@ nif_msgs::msg::DynamicTrajectory velocity_profiler::velProfileForAcc(
     const nav_msgs::msg::Odometry &odom_,
     const nif_msgs::msg::DynamicTrajectory &cipv_predicted_traj_,
     const double &cipv_vel_abs_, const nav_msgs::msg::Path &target_path_,
-    const double &spline_interval_) {
-  nif_msgs::msg::DynamicTrajectory out_traj;
+    const double &spline_interval_tmp) {
 
-  auto naive_gap = 0.;
+  // ---------------------------------------------
+  // ------------- Minimal checking --------------
+  // ---------------------------------------------
+  double spline_interval_ = spline_interval_tmp;
+  if (target_path_.poses.empty()) {
+    std::cout << "Inside of the velProfileForAcc, CRITICAL BUG HAS BEEN HIT. "
+                 "target path is empty. Return empty trajectory."
+              << std::endl;
+    nif_msgs::msg::DynamicTrajectory empty_traj;
+    return empty_traj;
+  }
+  if (spline_interval_tmp <= 0) {
+    std::cout << "Inside of the velProfileForAcc, spline interval can not be "
+                 "less than zero. Set to 1.0 (default)."
+              << std::endl;
+    spline_interval_ = 1.0;
+  }
+  // ---------------------------------------------
 
+  auto naive_gap = nif::common::constants::numeric::INF;
   if (!cipv_predicted_traj_.trajectory_path.poses.empty()) {
     naive_gap = sqrt(pow(odom_.pose.pose.position.x -
                              cipv_predicted_traj_.trajectory_path.poses.front()
@@ -519,22 +581,18 @@ nif_msgs::msg::DynamicTrajectory velocity_profiler::velProfileForAcc(
                              cipv_predicted_traj_.trajectory_path.poses.front()
                                  .pose.position.y,
                          2));
-  } else {
-    naive_gap = nif::common::constants::numeric::INF;
   }
 
   if (naive_gap > 300.0) {
-    //   Dont care about the ACC
+    // Dont care about the ACC
     // return velProfilewithDynamics(odom_, target_path_, spline_interval_);
     return velProfile(odom_, target_path_, spline_interval_);
   } else {
     // Care about the ACC in the trajectory planning
+    nif_msgs::msg::DynamicTrajectory out_traj;
+
     std::vector<double> target_path_x(target_path_.poses.size(), 0.0);
     std::vector<double> target_path_y(target_path_.poses.size(), 0.0);
-
-    out_traj.trajectory_path.poses.clear();
-    out_traj.trajectory_timestamp_array.clear();
-    out_traj.trajectory_velocity.clear();
 
     for (int i = 0; i < target_path_.poses.size(); i++) {
       target_path_x[i] = target_path_.poses[i].pose.position.x;
@@ -569,8 +627,9 @@ nif_msgs::msg::DynamicTrajectory velocity_profiler::velProfileForAcc(
       out_traj.trajectory_path.poses.push_back(ps);
 
       if (point_s == 0.0) {
-        out_traj.trajectory_velocity.push_back(
-            std::max(odom_.twist.twist.linear.x, MIN_SPEED_MPS));
+        // out_traj.trajectory_velocity.push_back(
+        //     std::max(odom_.twist.twist.linear.x, MIN_SPEED_MPS));
+        out_traj.trajectory_velocity.push_back(odom_.twist.twist.linear.x);
         out_traj.trajectory_timestamp_array.push_back(0.0);
       } else {
         // Curvauture-based velocity
@@ -640,13 +699,18 @@ nif_msgs::msg::DynamicTrajectory velocity_profiler::velProfileForAcc(
                                      out_traj.trajectory_velocity.back()) *
                                         acc_desired_accel);
 
-        double vel = std::max(acc_limited_vel, MIN_SPEED_MPS);
+        // double vel = std::max(acc_limited_vel, MIN_SPEED_MPS);
+        // out_traj.trajectory_velocity.push_back(vel);
+        out_traj.trajectory_velocity.push_back(acc_limited_vel);
 
-        out_traj.trajectory_velocity.push_back(vel);
-
+        // out_traj.trajectory_timestamp_array.push_back(
+        //     out_traj.trajectory_timestamp_array.back() +
+        //     (spline_interval_ / (out_traj.trajectory_velocity.back())));
         out_traj.trajectory_timestamp_array.push_back(
             out_traj.trajectory_timestamp_array.back() +
-            (spline_interval_ / (out_traj.trajectory_velocity.back())));
+            (spline_interval_ /
+             (std::max(double(out_traj.trajectory_velocity.back()),
+                       MIN_SPEED_MPS))));
       }
 
       cubic_spliner_x.push_back(point_x);
@@ -660,8 +724,6 @@ nif_msgs::msg::DynamicTrajectory velocity_profiler::velProfileForAcc(
     auto is_too_curvy = std::any_of(
         cubic_spliner_curvature.begin(), cubic_spliner_curvature.end(),
         [&](double curvature) { return abs(curvature) > 0.1; });
-
-    // std::cout << "is too curvy? : " << is_too_curvy << std::endl;
 
     return out_traj;
   }
