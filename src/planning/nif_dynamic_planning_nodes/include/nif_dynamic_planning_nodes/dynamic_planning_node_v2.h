@@ -25,7 +25,7 @@
 #include "nif_utils/utils.h"
 #include "rclcpp/rclcpp.hpp"
 #include "rcutils/error_handling.h"
-#include "separating_axis_theorem/separating_axis_theorem.hpp"
+// #include "separating_axis_theorem/separating_axis_theorem.hpp"
 #include "std_msgs/msg/float32.hpp"
 #include "velocity_profile/velocity_profiler.hpp"
 #include <cmath>
@@ -304,6 +304,8 @@ private:
   nif_msgs::msg::DynamicTrajectory m_racingline_dtraj;
   FrenetPathGenerator::CubicSpliner2DResult m_racingline_spline_data;
   double m_racingline_full_progress;
+  pcl::PointCloud<pcl::PointXY>::Ptr m_racingline_path_pc;
+  pcl::KdTreeFLANN<pcl::PointXY> m_racineline_path_kdtree;
 
   ////////////////
   // DEFENDER LINE

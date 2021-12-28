@@ -3,12 +3,12 @@
 
 #include "nif_common/types.h"
 // #include "nif_utils/amathutils_lib/amathutils.hpp"
+#include "nif_msgs/msg/dynamic_trajectory.hpp"
 #include <assert.h>
 #include <float.h>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <nav_msgs/msg/odometry.hpp>
 #include <nav_msgs/msg/path.hpp>
-#include "nif_msgs/msg/dynamic_trajectory.hpp"
 
 #include <fstream>
 #include <iostream>
@@ -31,20 +31,21 @@ namespace nif {
 namespace perception {
 class FrenetBasedOpponentPredictor : public rclcpp::Node {
 public:
-FrenetBasedOpponentPredictor(const string& node_name);
+  FrenetBasedOpponentPredictor(const string &node_name);
   ~FrenetBasedOpponentPredictor() {}
 
-  void setOpponentStatus(const nif_msgs::msg::Perception3D& oppo_status_) {
+  void setOpponentStatus(const nif_msgs::msg::Perception3D &oppo_status_) {
     m_opponent_status = oppo_status_;
   }
 
-  void setEgoStatus(const nav_msgs::msg::Odometry& ego_status_) {
+  void setEgoStatus(const nav_msgs::msg::Odometry &ego_status_) {
     m_ego_status = ego_status_;
   }
 
   void predict();
+  void predict_bls(double estimated_progress_, double estimated_cte_);
   void calcOpponentProgress();
-  double calcProgress(geometry_msgs::msg::PoseStamped& pt_);
+  double calcProgress(geometry_msgs::msg::PoseStamped &pt_);
 
   tuple<vector<double>, vector<double>>
   loadCSVFile(const string wpt_file_path_);
@@ -56,19 +57,28 @@ FrenetBasedOpponentPredictor(const string& node_name);
     return m_predicted_output_in_local;
   }
 
-  void opponentStatusCallback(const common::msgs::PerceptionResultList::SharedPtr msg);
+  void opponentStatusCallback(
+      const common::msgs::PerceptionResultList::SharedPtr msg);
   void egoStatusCallback(const nav_msgs::msg::Odometry::SharedPtr msg);
   void defenderVelCallback(const std_msgs::msg::Float32::SharedPtr msg);
 
+  void timer_callback();
+  void timer_callback_test();
+
 private:
+  rclcpp::TimerBase::SharedPtr m_predictor_timer;
+  rclcpp::TimerBase::SharedPtr m_test_timer;
+
+  geometry_msgs::msg::PoseStamped m_last_percep_oppo_global_ps;
+
   nav_msgs::msg::Path m_opponent_target_path;         // without orientation
   nav_msgs::msg::Path m_opponent_splined_target_path; // with orientation
 
   string m_refline_ref_file_path, m_prediction_config_file_path;
 
-  double m_opponent_global_progress; // progress indicator ragarding to the
-                                     // opponent_target_path path
-  double m_opponent_cte;
+  double m_last_percep_oppo_global_progress; // progress indicator ragarding to
+                                             // the opponent_target_path path
+  double m_last_percep_oppo_cte;
 
   vector<double> m_progress_vec;
 
@@ -85,6 +95,10 @@ private:
   std::shared_ptr<CubicSpliner2D> m_refline_splined_model;
 
   nif_msgs::msg::Perception3D m_opponent_status; // in global
+  std::chrono::system_clock::time_point m_last_percep_callback_time;
+  std::chrono::duration<double> m_percep_callback_elapsed_sec;
+  bool m_perception_callback_first_run = true;
+
   nav_msgs::msg::Odometry m_ego_status;
 
   double m_config_path_spline_interval_m;
@@ -112,10 +126,11 @@ private:
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr m_sub_ego_status;
   rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr m_sub_defender_vel;
 
-  rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr parameters_callback_handle;
+  rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr
+      parameters_callback_handle;
 
-  rcl_interfaces::msg::SetParametersResult parametersCallback(
-          const std::vector<rclcpp::Parameter> &vector);
+  rcl_interfaces::msg::SetParametersResult
+  parametersCallback(const std::vector<rclcpp::Parameter> &vector);
 
   string m_opponent_status_topic_name, m_ego_status_topic_name,
       m_defender_vel_topic_name;
@@ -127,6 +142,8 @@ private:
       m_pub_predicted_trajectory_vis;
   string m_predicted_trajectory_topic_name;
   string m_predicted_trajectory_vis_topic_name;
+
+  int test_cnt = 0;
 };
 } // namespace perception
 } // namespace nif

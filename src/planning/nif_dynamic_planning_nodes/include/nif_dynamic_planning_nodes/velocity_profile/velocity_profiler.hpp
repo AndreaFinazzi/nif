@@ -2,6 +2,9 @@
 #define __VELOCITY_PROFILER_H__d
 
 #include "nif_common/constants.h"
+// #include
+// "nif_dynamic_planning_nodes/separating_axis_theorem/separating_axis_theorem.hpp"
+#include "../separating_axis_theorem/separating_axis_theorem.hpp"
 #include "nif_msgs/msg/dynamic_trajectory.hpp"
 #include "nif_opponent_prediction_nodes/frenet_path_generator.h"
 #include "nif_vehicle_dynamics_manager/tire_manager.hpp"
@@ -38,6 +41,13 @@ public:
   velProfile(const nav_msgs::msg::Odometry &odom_,
              const nav_msgs::msg::Path &target_path_,
              const double &spline_interval_);
+
+  nif_msgs::msg::DynamicTrajectory velProfileWCollisionChecking(
+      const nav_msgs::msg::Odometry &odom_,
+      const nav_msgs::msg::Path &target_path_,
+      const nif_msgs::msg::DynamicTrajectory &oppo_predicted_path_,
+      const double checking_dist_bound_, const double checking_time_bound_,
+      const bool use_sat_, const double &spline_interval_);
 
   nif_msgs::msg::DynamicTrajectory
   velProfilewithDynamics(const nav_msgs::msg::Odometry &odom_,
