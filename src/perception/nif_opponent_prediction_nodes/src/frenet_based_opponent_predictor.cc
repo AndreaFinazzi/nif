@@ -188,16 +188,22 @@ double FrenetBasedOpponentPredictor::calcProgress(
   double min_dist = common::constants::numeric::INF;
   int pt_index = 0;
   for (int i = 0; i < m_refline_path_x.size(); i++) {
-    double path_x = m_refline_path_x[i];
-    double path_y = m_refline_path_y[i];
 
-    double dist = sqrt(pow(pt_.pose.position.x - path_x, 2) +
-                       pow(pt_.pose.position.y - path_y, 2));
+    double dist = nif::common::utils::geometry::calEuclideanDistance(
+      pt_.pose.position.x,
+      pt_.pose.position.y,
+      pt_.pose.position.z,
+      m_refline_path_x[i],
+      m_refline_path_y[i],
+      0.0
+    );
+
     if (min_dist > dist) {
       min_dist = dist;
       pt_index = i;
     }
   }
+
   auto progress = (pt_index * m_config_path_spline_interval_m * 1.0);
   return progress;
 }
@@ -213,17 +219,17 @@ void FrenetBasedOpponentPredictor::predict() {
   std::tuple<std::shared_ptr<FrenetPath>,
              std::vector<std::shared_ptr<FrenetPath>>>
       frenet_path_generation_result = m_frenet_generator_ptr->calc_frenet_paths(
-          m_opponent_cte,                // current_position_d
-          m_opponent_global_progress,    // current_position_s
-          0.0,                           // current_velocity_d
-          m_defender_vel_mps,            // current_velocity_s
-          0.0,                           // current_acceleration_d
-          m_refline_splined_model,    // cubic_spliner_2D
-          m_config_prediction_horizon_s, // Prediction horizon
-          m_config_prediction_horizon_s +
-              0.01, // Max max horizon (we want only one here)
-          m_config_prediction_sampling_time_s, //
-          m_opponent_cte, m_opponent_cte + 0.01, 0.1);
+          m_opponent_cte,                       // current_position_d
+          m_opponent_global_progress,           // current_position_s
+          0.0,                                  // current_velocity_d
+          m_defender_vel_mps,                   // current_velocity_s
+          0.0,                                  // current_acceleration_d
+          m_refline_splined_model,              // cubic_spliner_2D
+          m_config_prediction_horizon_s,        // Prediction horizon
+          m_config_prediction_horizon_s + 0.01, // Max max horizon (we want only one here)
+          m_config_prediction_sampling_time_s,  //
+          m_opponent_cte, m_opponent_cte + 0.01, 
+          0.1);
 
   std::shared_ptr<FrenetPath> &predicted_frenet_path =
       std::get<0>(frenet_path_generation_result);
@@ -244,8 +250,6 @@ void FrenetBasedOpponentPredictor::predict() {
     for (int i = 0; i < predicted_frenet_path->points_x().size(); i++) {
       geometry_msgs::msg::PoseStamped ps;
       ps.header.frame_id = common::frame_id::localization::ODOM;
-      std_msgs::msg::Header header;
-      header.frame_id = common::frame_id::localization::ODOM;
 
       ps.pose.position.x = predicted_frenet_path->points_x()[i];
       ps.pose.position.y = predicted_frenet_path->points_y()[i];
@@ -262,6 +266,7 @@ void FrenetBasedOpponentPredictor::predict() {
 
     m_predicted_output_in_global.trajectory_type =
         nif_msgs::msg::DynamicTrajectory::TRAJECTORY_TYPE_PREDICTION;
+        
     m_predicted_output_in_global_vis = traj_global;
 
   } else {
@@ -307,7 +312,7 @@ FrenetBasedOpponentPredictor::loadCSVFile(const string wpt_file_path_) {
   }
 
   if (!inputFile.eof()) {
-    cerr << "Could not read file " << wpt_file_path_ << "\n";
+    RCLCPP_ERROR(this->get_logger(), "Could not read file %s", wpt_file_path_);
     __throw_invalid_argument("File not found.");
   }
 

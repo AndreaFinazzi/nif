@@ -234,23 +234,35 @@ bool separating_axis_intersect_traj_v2(
     const nif_msgs::msg::DynamicTrajectory &target_traj_,
     const double max_check_time_ = 6.0, const double time_diff_tres_ = 1.0) {
 
-  bool has_collision = true;
 
-  const double centre_to_front = 3.0;
-  const double centre_to_rear = 3.0;
+  auto start = std::chrono::system_clock::now();
+  std::cout << "Called " << std::endl;
+  std::cout << "len ref " << ref_traj_.trajectory_timestamp_array.size() <<  std::endl;
+  std::cout << "len target " << target_traj_.trajectory_timestamp_array.size()  << std::endl;
+
+
+  bool has_collision = false;
+
+  const double centre_to_front = 5.5;
+  const double centre_to_rear = 5.0;
   const double centre_to_side = 1.5;
 
   for (int ref_traj_idx = 0;
        ref_traj_idx < ref_traj_.trajectory_timestamp_array.size();
        ref_traj_idx++) {
+
     auto ref_timestamp = ref_traj_.trajectory_timestamp_array[ref_traj_idx];
 
     if (ref_timestamp > max_check_time_) {
       continue;
     }
 
+    auto start1 = std::chrono::system_clock::now();
+
     auto closest_idx_on_target_traj = nif::common::utils::closestIndex(
         target_traj_.trajectory_timestamp_array, ref_timestamp);
+
+    auto end1 = std::chrono::system_clock::now();
 
     if (abs(ref_timestamp -
             target_traj_
@@ -273,6 +285,10 @@ bool separating_axis_intersect_traj_v2(
       continue;
     }
 
+
+    auto start2 = std::chrono::system_clock::now();
+
+
     auto bound_a = calculate_bounds(
         ref_traj_.trajectory_path.poses[ref_traj_idx].pose.position.x,
         ref_traj_.trajectory_path.poses[ref_traj_idx].pose.position.y,
@@ -290,11 +306,21 @@ bool separating_axis_intersect_traj_v2(
                 .pose.orientation),
         centre_to_front, centre_to_rear, centre_to_side);
 
+    auto end2 = std::chrono::system_clock::now();
+    
+    auto start3 = std::chrono::system_clock::now();
+
     if (separating_axis_intersect(bound_a, bound_b) == true) {
       has_collision = true;
       return has_collision;
     }
   }
+
+  auto end = std::chrono::system_clock::now();
+
+  std::chrono::duration<double> elapsed_seconds = end-start;
+
+  // std::cout << "time diff ; " << elapsed_seconds.count()  << std::endl;
 
   return has_collision;
 }

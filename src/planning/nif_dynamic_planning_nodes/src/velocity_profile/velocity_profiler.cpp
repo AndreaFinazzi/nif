@@ -1,7 +1,6 @@
 #include "nif_dynamic_planning_nodes/velocity_profile/velocity_profiler.hpp"
 
 velocity_profiler::velocity_profiler() {
-  std::cout << "here" << std::endl;
   m_constraint_max_t = 4.0;
   m_constraint_min_t = 2.0;
   m_constraint_max_accel = 4.0;
@@ -18,7 +17,6 @@ velocity_profiler::velocity_profiler() {
   m_acc_config_delta = 4.0;
   m_acc_config_veh_l = 4.7;
 
-  std::cout << "vel profiler end" << std::endl;
 }
 
 velocity_profiler::velocity_profiler(std::string config_file_path_) {
