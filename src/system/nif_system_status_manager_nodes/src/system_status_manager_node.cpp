@@ -173,12 +173,14 @@ void SystemStatusManagerNode::registerNodeServiceHandler(
         const nif_msgs::srv::RegisterNodeStatus::Request::SharedPtr request,
         nif_msgs::srv::RegisterNodeStatus::Response::SharedPtr response) {
 //  Request data check
-    if (
-            !request->node_name.empty() &&
-            this->status_index_by_name.find(request->node_name) == this->status_index_by_name.end() &&
+    if (!request->node_name.empty() &&
+        isNodeTypeInRange(static_cast<NodeType>(request->node_type)) &&
+        !request->status_topic_name.empty()) {
+        
+        if (this->status_index_by_name.find(request->node_name) != this->status_index_by_name.end())
             // Process only if not already subscribed
-            isNodeTypeInRange(static_cast<NodeType>(request->node_type)) &&
-            !request->status_topic_name.empty()) {
+            RCLCPP_ERROR(this->get_logger(), "DUPLICATE NODE DETECTED.");
+
         auto node_id = this->newStatusRecord(request);
 
         if (node_id > 0) {

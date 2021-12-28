@@ -36,10 +36,13 @@ def generate_launch_description():
             LaunchConfiguration('nif_objects_tracker_nodes_param_file')
         ],
         remappings=[
-            ('in_ego_odom', '/sensor/odom_ground_truth'),
+            ('in_ego_odom', '/aw_localization/ekf/odom'),
             ('in_perception', '/ghost/perception'),
             ('out_detected_object', '/tracking/objects'),
             ('output_vis', 'tracking/vis/markers'),
+            ('concat_in_radar_list', '/radar_front/perception_list'),
+            ('concat_in_lidar_list', '/clustered/perception_list/filtered'),
+            ('concat_out_perception_list', '/perception/concat'),
         ]
     )
 

@@ -94,7 +94,6 @@ double EngineMapAccelController::CurrentControl(double desired_acceleration,
       m_engine_manager.inverseEngineModel(engine_speed, desired_engine_torque);
 
   cmd = pedalToCmd_ * desired_throttle_position; // [0~100]
-  // std::cout << "---------------------------------cmd : " << cmd << std::endl;
 
   return SaturateCmd(cmd);
 }

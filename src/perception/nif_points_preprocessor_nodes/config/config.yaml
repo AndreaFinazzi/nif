@@ -14,11 +14,11 @@ nif_ego_shape_filter_node:
     front_lower_distance : 2.5
     left_upper_distance : 30.0
     right_upper_distance : 30.0
-    rear_upper_distance : 30.0
-    front_upper_distance : 50.0
+    rear_upper_distance : 60.0
+    front_upper_distance : 100.0
     height_lower_distance : -0.5
     height_upper_distance : 1.0
-    resolution : 0.20 #0.25
+    resolution : 0.40 #0.25
     count_threshold : 3.0 #origin  //cov_map : 0.1 //count_map : 3.
 
 

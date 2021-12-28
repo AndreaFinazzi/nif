@@ -512,9 +512,6 @@ void AWLocalizationNode::timerCallback()
       measurementUpdatePose(bestpos_time_last_update, correction_x, 
                             correction_y, correction_yaw);
 
-      // std::cout << "correction_yaw : " << correction_yaw << std::endl;
-      // std::cout << "CurrentEstimated : " << CurrentEstimated.yaw << std::endl;
-
       bottom_gps_update = false;
       top_gps_update = false;
     }
@@ -1130,9 +1127,7 @@ void AWLocalizationNode::measurementUpdatePose(rclcpp::Time measurement_time_,
       normalizeYaw(yaw - ekf_yaw); //  normalize the error not to exceed 2 pi
    
   yaw = yaw_error + ekf_yaw;
-  // std::cout << yaw << ", " << yaw_error << ", "
-  //           << ekf_yaw << std::endl;
-                   /* Set measurement matrix */
+
   Eigen::MatrixXd y(dim_y, 1);
   Eigen::MatrixXd y_correction(2, 1);
 
@@ -1252,9 +1247,6 @@ void AWLocalizationNode::measurementUpdatePose(rclcpp::Time measurement_time_,
   /* In order to avoid a large change at the time of updating, measuremeent
    * update is performed by dividing at every step. */
   R *= (ekf_rate_ / pose_rate_);
-
-  // std::cout << "ekf_rate_: "  << ekf_rate_ << std::endl;
-  // std::cout << "pose_rate_: " << pose_rate_ << std::endl;
 
   ekf_.updateWithDelay(y, C, R, delay_step);
 

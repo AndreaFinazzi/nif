@@ -127,9 +127,6 @@ JointLQR::computeFFControl(
   FFControl(0, 0) = -steer_ff;
   FFControl(1, 0) = -accel_ff;
 
-  // std::cout << "Feedforward - steer : " << FFControl(0, 0);
-  // std::cout << "\nFeedforward - accel : " << FFControl(1, 0) << std::endl;
-
   return FFControl;
 }
 

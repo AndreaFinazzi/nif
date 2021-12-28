@@ -229,10 +229,10 @@ MissionStatus::_mission_status_code_type MissionManagerNode::getMissionStatusCod
       break;
 
     case RCFlagSummary::VEH_FLAG_BLANK:
-        return getMissionVehFlagNull();      
+        return getMissionVehFlagNull(true);      
 
     case RCFlagSummary::VEH_FLAG_NULL:
-        return getMissionVehFlagNull();
+        return getMissionVehFlagNull(true);
 
       break; // VEH_FLAG_BLANK
     
@@ -242,7 +242,7 @@ MissionStatus::_mission_status_code_type MissionManagerNode::getMissionStatusCod
       break; // VEH_FLAG_BLANK
     
     case RCFlagSummary::VEH_FLAG_ATTACKER:
-        return getMissionVehFlagNull();
+        return getMissionVehFlagNull(false);
 
       break; // VEH_FLAG_BLANK
 

@@ -30,6 +30,7 @@
   <depend>nif_localization_minimal</depend>
   <depend>nif_frame_id</depend>
   <depend>nif_gpu_euclidean_clustering</depend>
+  <depend>nif_points_preprocessor_nodes</depend>
 
   <export>
     <build_type>ament_cmake</build_type>

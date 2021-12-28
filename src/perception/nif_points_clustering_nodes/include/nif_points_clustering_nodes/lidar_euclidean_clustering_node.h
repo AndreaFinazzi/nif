@@ -16,7 +16,7 @@
 #include "nif_common/types.h"
 #include "nif_common_nodes/i_base_node.h"
 #include "nif_frame_id/frame_id.h"
-
+#include "nif_points_preprocessor_nodes/tools.h"
 
 // PCL library
 #include <pcl/common/common.h>
@@ -66,7 +66,7 @@ private:
                 const std::vector<int> &in_cluster_indices, 
                 visualization_msgs::msg::MarkerArray &out_clustered_array,
                 int ind);
-  pcl::PointCloud<pcl::PointXYZI>::Ptr
+  void
   downsample(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud,
              double resolution);
   void createGaussianWorld(visualization_msgs::msg::MarkerArray& marker_array_in, double inflation_x,
@@ -102,8 +102,12 @@ private:
   bool bRightPoints = false;
   bool bLeftPoints = false;
 
+  std::mutex sensor_mtx_f;
+  std::mutex sensor_mtx_r;
+  std::mutex sensor_mtx_l;
 
-  std::mutex sensor_mtx;
+  std::vector<tf2::Transform> transfrom_list = 
+    nif::perception::tools::get_av21_lidar_transform_list();
 };
 
 #endif // LIDAR_CLUSTERING_H

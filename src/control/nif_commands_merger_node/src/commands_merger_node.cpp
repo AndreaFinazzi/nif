@@ -82,7 +82,6 @@ CommandsMergerNode::CommandsMergerNode() : Node("CommandsMergerNode") {
 
 void CommandsMergerNode::lateralControlCmdCallback(
     const std_msgs::msg::Float32::SharedPtr lat_msg, int sub_lat_idx) {
-  std::cout << "lat callback with lateral index " << sub_lat_idx << std::endl;
   recieved_steer_cmd_vec[sub_lat_idx] = lat_msg->data;
 
   ////////////////////////////////////////////////////////
@@ -95,8 +94,6 @@ void CommandsMergerNode::lateralControlCmdCallback(
 
   last_control_cmd.desired_steer_cmd.data = desired_steer_cmd;
   last_control_cmd.desired_velocity_cmd.data = desired_velocity_cmd;
-
-  std::cout << "published " << desired_steer_cmd << std::endl;
 
   publishers_vec_command_cmd[sub_lat_idx]->publish(last_control_cmd);
 }

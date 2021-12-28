@@ -149,7 +149,6 @@ void IDMACCNode::perceptionCallback(
   // Calc acc cmd
   m_veh_speed_mps = this->getEgoOdometry().twist.twist.linear.x;
 
-  std::cout << "ego speed : " << m_veh_speed_mps << std::endl;
   m_ego_odom = this->getEgoOdometry();
 
   // TODO : Assigning CIPV
@@ -179,7 +178,6 @@ void IDMACCNode::perceptionCallback(
         // when the car is behind us, don't care about the ACC. Set the progress
         // gap as INF
         progress_gap = nif::common::constants::numeric::INF;
-        std::cout << "INF" << std::endl;
       }
 
       // Approach 2. (Based on our future trajectory, calculate the progress.
@@ -192,7 +190,6 @@ void IDMACCNode::perceptionCallback(
       m_acc_cmd = m_idm_prt->getACCCmd();
     } else {
       m_acc_cmd = m_idm_prt->getParamAccelMax();
-      std::cout << "size 0" << std::endl;
     }
   } else {
     // abnormal situation

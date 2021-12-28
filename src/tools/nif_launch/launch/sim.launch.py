@@ -174,7 +174,7 @@ def generate_launch_description():
         parameters=[
             LaunchConfiguration('control_safety_layer_param_file'),
             {
-                "buffer_empty_counter_threshold": 100
+                "buffer_empty_counter_threshold": 10
             }
             ],
         remappings=[
@@ -192,26 +192,26 @@ def generate_launch_description():
         ]
     )
 
-    nif_velocity_planning_node = Node(
-        package='nif_velocity_planning_node',
-        executable='nif_velocity_planning_node_exe',
-        output='screen',
-        remappings=[
-            ('out_desired_velocity', 'velocity_planner/des_vel'),
-            ('in_reference_path', 'planning/dynamic/vis/traj_global'),
-            # ('in_reference_path', 'planning/path_global'),
-            ('in_ego_odometry', '/sensor/odom_ground_truth'),
-            ('in_wheel_speed_report', 'raptor_dbw_interface/wheel_speed_report'),
-            ('in_imu_data', 'novatel_bottom/rawimux'),
-            ('in_steering_report', 'raptor_dbw_interface/steering_report'),
-            ('in_control_error', 'control_joint_lqr/lqr_error')
-        ],
-        parameters=[{
-                'odometry_timeout_sec' : 0.5,
-                'path_timeout_sec' : 1.0,
-                'lateral_tire_model_factor' : 1.0,
-            }]
-    )
+    # nif_velocity_planning_node = Node(
+    #     package='nif_velocity_planning_node',
+    #     executable='nif_velocity_planning_node_exe',
+    #     output='screen',
+    #     remappings=[
+    #         ('out_desired_velocity', 'velocity_planner/des_vel'),
+    #         ('in_reference_path', 'planning/dynamic/vis/traj_global'),
+    #         # ('in_reference_path', 'planning/path_global'),
+    #         ('in_ego_odometry', '/sensor/odom_ground_truth'),
+    #         ('in_wheel_speed_report', 'raptor_dbw_interface/wheel_speed_report'),
+    #         ('in_imu_data', 'novatel_bottom/rawimux'),
+    #         ('in_steering_report', 'raptor_dbw_interface/steering_report'),
+    #         ('in_control_error', 'control_joint_lqr/lqr_error')
+    #     ],
+    #     parameters=[{
+    #             'odometry_timeout_sec' : 0.5,
+    #             'path_timeout_sec' : 1.0,
+    #             'lateral_tire_model_factor' : 1.0,
+    #         }]
+    # )
 
     lqr_joint_config_file = get_share_file(
         package_name='nif_control_joint_lqr_nodes', file_name='config/lqr/lqr_params.sim.yaml'
@@ -234,8 +234,8 @@ def generate_launch_description():
             LaunchConfiguration('control_joint_lqr_params_file'),
             {
                 'lqr_config_file': lqr_joint_config_file,
-                'odometry_timeout_sec' : 0.5,
-                'path_timeout_sec' : 1.0,
+                # 'odometry_timeout_sec' : 0.5,
+                # 'path_timeout_sec' : 1.0,
                 'use_tire_velocity' : True,
             }
         ],
@@ -452,7 +452,7 @@ def generate_launch_description():
         # nif_aw_localization_launch,
         nif_wall_node_launch_bg,
         robot_description_launch,
-        nif_velocity_planning_node,
+        # nif_velocity_planning_node,
         nif_joint_lqr_control_node,
         nif_accel_control_node,
         nif_mission_manager_launch,

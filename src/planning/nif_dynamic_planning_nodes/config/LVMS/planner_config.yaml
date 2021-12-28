@@ -1,27 +1,40 @@
+waypoint_manager_param:
+  warmup_wpt_path: 'maps/LVMS/warmup_wpt.csv'
+  pit_wpt_path: 'maps/LVMS/pit_wpt.csv'
+  maptrack_size: 200
+
 path_candidates_param:
-    racingline_path: 'maps/LVMS/centerline.csv'
-    overtaking_candidate_path_alias_array: [
-      'right_center',
-      'center',
-      'left_center',
-    ] # ex) left-center / center / right 
-    # right --> left order
-    overtaking_candidate_path_array: [
-      'maps/LVMS/right_side_center.csv',
-      'maps/LVMS/centerline.csv',
-      'maps/LVMS/left_side_center.csv',
-    ] # do not include the racing line here
+  racingline_path: 'maps/LVMS/race_line.csv'
+  defenderline_path: 'maps/LVMS/left_side_center.csv'
+  # MUST : right --> left order
+  overtaking_candidate_path_alias_array: [
+    'right_center',
+    'center',
+    'left_center',
+  ]
+
+  # Alias list (MUST : follow this naming convention)
+  # [right,right_center,center,left_center,left]
+
+  # MUST : right --> left order
+  # UNDER CONSIDERATION : including racing line as a overtaking path?
+  overtaking_candidate_path_array: [
+    'maps/LVMS/right_side_center.csv',
+    'maps/LVMS/centerline.csv',
+    'maps/LVMS/left_side_center.csv',
+  ]
+
 planning_params:
-    splining_interval: 2.0 # [m]
-    follow_enable_dist: 50 # [m]
-    planning_horizon_t: 4.0 # [sec]
-    planning_dt: 0.25 # [sec]
-    max_accel: 2.0 # [mpss]
-    overtaking_longitudinal_margin: 15.0 # [m]
-    overtaking_lateral_margin: 2.0 # [m]
-    merging_longitudinal_margin: 15.0 # [m]
-    merging_allow_dist_to_racingline: 1.0 # [m] : maximum euclidean distance allowes merging back to the raceline
+  splining_interval: 1.0 # [m]
+  follow_enable_dist: 50 # [m]
+  planning_horizon_t: 4.0 # [sec]
+  planning_dt: 0.25 # [sec]
+  max_accel: 2.0 # [mpss]
+  overtaking_longitudinal_margin: 15.0 # [m]
+  overtaking_lateral_margin: 2.0 # [m]
+  merging_longitudinal_margin: 15.0 # [m]
+  merging_allow_dist_to_racingline: 1.0 # [m] : maximum euclidean distance allowes merging back to the raceline
 
 collision_checking_params:
-    overlap_checking_dist_bound: 10.0 # [m] 
-    overlap_checking_time_bound: 2.0 # [sec]
+  overlap_checking_dist_bound: 2.5 # [m] 
+  overlap_checking_time_bound: 1.0 # [sec]

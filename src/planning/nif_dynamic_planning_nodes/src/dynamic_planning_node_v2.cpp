@@ -94,8 +94,8 @@ DynamicPlannerNode::DynamicPlannerNode(const std::string & node_name_)
             "Racing wpt file has a problem. Stop node initialization.");
   }
 
-  std::cout << "[DYNAMICPLANNER] Raceline is loaded..." << std::endl;
-  std::cout << "[DYNAMICPLANNER] Loading defender line..." << std::endl;
+  RCLCPP_INFO(this->get_logger(), "[DYNAMICPLANNER] Raceline is loaded...");
+  RCLCPP_INFO(this->get_logger(), "[DYNAMICPLANNER] Loading defender line...");
 
   // ////////////////////////////////////////////////
   // INIT SPLINER & SPLINE MODELING FOR DEFENDER LINE
@@ -125,9 +125,8 @@ DynamicPlannerNode::DynamicPlannerNode(const std::string & node_name_)
             "Defender wpt file has a problem. Stop node initialization.");
   }
 
-  std::cout << "[DYNAMICPLANNER] Defender line is loaded..." << std::endl;
-  std::cout << "[DYNAMICPLANNER] Loading overtaking path candidates..." <<
-    std::endl;
+  RCLCPP_INFO(this->get_logger(), "[DYNAMICPLANNER] Defender line is loaded...");
+  RCLCPP_INFO(this->get_logger(), "[DYNAMICPLANNER] Loading overtaking path candidates...");
 
   // //////////////////////////////////////////////////////////////////
   // INIT SPLINER & SPLINE MODELING FOR EVERY OVERTAKING PATH CANDIDATES
@@ -164,7 +163,7 @@ DynamicPlannerNode::DynamicPlannerNode(const std::string & node_name_)
     }
   }
 
-  std::cout << "[DYNAMICPLANNER] All paths are loaded..." << std::endl;
+  RCLCPP_INFO(this->get_logger(), "[DYNAMICPLANNER] All paths are loaded...")
 
   // INITIALIZE SUBSCRIBERS & PUBLISHER
   m_det_sub =
@@ -215,7 +214,7 @@ DynamicPlannerNode::DynamicPlannerNode(const std::string & node_name_)
   m_planner_timer = this->create_wall_timer(
     20ms, std::bind(&DynamicPlannerNode::timer_callback, this));   // 50 hz
 
-  std::cout << "[DYNAMICPLANNER] Initialization done." << std::endl;
+  RCLCPP_INFO(this->get_logger(), "[DYNAMICPLANNER] Initialization done." << std::endl;
 
   this->setNodeStatus(nif::common::NODE_INITIALIZED);
 }
@@ -1078,8 +1077,8 @@ nif_msgs::msg::DynamicTrajectory DynamicPlannerNode::stitchFrenetToPath(
   auto vec_yaw = frenet_segment_->yaw();
 
   if (vec_x.empty() || vec_y.empty() || vec_yaw.empty()) {
-    // DEBUG: 
-    std::cout << "Bug here" << std::endl;
+    // @DEBUG: 
+    RCLCPP_ERROR_ONCE(this->get_logger(), "CRITICAL BUG HAS BEEN HIT.\n 1082:: vec_x.empty() || vec_y.empty() || vec_yaw.empty()");
   }
 
   auto cloest_pt_idx_wrt_segment_start_pt =
@@ -2120,8 +2119,7 @@ bool DynamicPlannerNode::collisionCheckBTWtrajs(
         if (dist < collision_dist_boundary &&
           time_diff < collision_time_filetered)
         {
-          std::cout << "Collision True <Dist and Time>: " << dist << " " <<
-            time_diff << std::endl;
+          RCLCPP_INFO_ONCE(this->get_logger(), "Collision True <Dist and Time>: <%lf, %lf> ", dist, time_diff);
           is_collision = true;
           return is_collision;
         }

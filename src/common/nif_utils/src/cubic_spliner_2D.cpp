@@ -44,9 +44,6 @@ std::tuple<double, double> CubicSpliner2D::calculate_position(double point_s) {
   double point_x = cubic_spliner_sx_->calculate_zeroth_derivative(point_s);
   double point_y = cubic_spliner_sy_->calculate_zeroth_derivative(point_s);
 
-  // std::cout << "calculate_zeroth_derivative x : " << point_x << std::endl;
-  // std::cout << "calculate_zeroth_derivative y : " << point_y << std::endl;
-
   return std::make_tuple(point_x, point_y);
 }
 
@@ -76,11 +73,7 @@ double CubicSpliner2D::calculate_yaw(double point_s) {
   double first_derivative_y =
       cubic_spliner_sy_->calculate_first_derivative(point_s);
 
-  // std::cout << "first_derivative_x x : " << first_derivative_x << std::endl;
-  // std::cout << "first_derivative_y y : " << first_derivative_y << std::endl;
-
   double yaw = atan2(first_derivative_y, first_derivative_x);
-  // std::cout << "yaw y : " << yaw << std::endl;
 
   return yaw;
 }

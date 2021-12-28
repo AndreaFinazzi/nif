@@ -53,59 +53,63 @@ PointsClustering::PointsClustering()
   using namespace std::chrono_literals; // NOLINT
   sub_timer_ = this->create_wall_timer(
       30ms, std::bind(&PointsClustering::timer_callback, this));
+
+  
+
 }
 
 PointsClustering::~PointsClustering() {}
 
 void PointsClustering::timer_callback() {
 
-  std::lock_guard<std::mutex> sensor_lock(sensor_mtx);
-
-  if(!bPoints || !m_inPoints || m_inPoints->points.empty())
-    return;
-
   //simple height map filter
   m_simpleHeightmapPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
-  for (auto point : m_inPoints->points)
-  {
-    pcl::PointXYZI point_buf;
-    point_buf = point;
-    point_buf.x = point.x + 0.9214;
-    point_buf.z = point.z + 0.212;
+  
+  { // filter front points
+  std::lock_guard<std::mutex> sensor_lock(sensor_mtx_f);
+  if(bPoints && m_inPoints && !m_inPoints->points.empty()) {
 
-    if (point.z > m_height_filter_thres && point.z < 2.0 && fabs(point.y) < 20.0) {
-      m_simpleHeightmapPoints->points.push_back(point_buf);
-    }
-  }
-
-  pcl::PointCloud<pcl::PointXYZI>::Ptr RightToMergedPoints(
-      new pcl::PointCloud<pcl::PointXYZI>);
-  if(bRightPoints)
-  {
-    pcl::PointCloud<pcl::PointXYZI>::Ptr RightDownsampledPoints(
-        new pcl::PointCloud<pcl::PointXYZI>);
-    RightDownsampledPoints = downsample(m_RightPoints, 0.05);
-    for (auto point : RightDownsampledPoints->points) {
-      if (fabs(point.y) < 2.0 && point.z > m_height_filter_thres &&
-          point.z < 0.5 && point.x > -5.0 && point.x < 0.5) {
-        RightToMergedPoints->points.push_back(point);
+    for (auto point : m_inPoints->points)
+    {
+      pcl::PointXYZI point_buf;
+      point_buf = point;
+      point_buf.x = point.x + 0.9214; // ???
+      point_buf.z = point.z + 0.212; // ???
+  
+      if (point.z > m_height_filter_thres && point.z < 2.0 && fabs(point.y) < 20.0) {
+        m_simpleHeightmapPoints->points.push_back(point_buf);
       }
     }
-    *m_simpleHeightmapPoints += *RightToMergedPoints;
   }
-  pcl::PointCloud<pcl::PointXYZI>::Ptr LeftToMergedPoints(
-      new pcl::PointCloud<pcl::PointXYZI>);
-  if (bLeftPoints) {
-    pcl::PointCloud<pcl::PointXYZI>::Ptr LeftDownsampledPoints(
-        new pcl::PointCloud<pcl::PointXYZI>);
-    LeftDownsampledPoints = downsample(m_LeftPoints, 0.05);
-    for (auto point : LeftDownsampledPoints->points) {
-      if (fabs(point.y) < 2.0 && point.z > m_height_filter_thres &&
-          point.z < 0.5 && point.x > -5.0 && point.x < 0.5) {
-        LeftToMergedPoints->points.push_back(point);
+  }
+
+  { // filter right points
+  std::lock_guard<std::mutex> sensor_lock(sensor_mtx_r);
+  if(bRightPoints && m_RightPoints && !m_RightPoints->points.empty())
+  {
+    
+    for (auto point : m_RightPoints->points) {
+      if (point.z > m_height_filter_thres && point.z < 2.0 && 
+          fabs(point.y) > 0.5 && fabs(point.y) < 20.0 && 
+          point.x > -2.0 && point.x < -0.5) {
+        m_simpleHeightmapPoints->points.push_back(point);
       }
     }
-    *m_simpleHeightmapPoints += *LeftToMergedPoints;
+  }
+  }
+
+  { // filter left points
+  std::lock_guard<std::mutex> sensor_lock(sensor_mtx_l);
+  if (bLeftPoints && m_LeftPoints && !m_LeftPoints->points.empty()) {
+
+    for (auto point : m_LeftPoints->points) {
+      if (point.z > m_height_filter_thres && point.z < 2.0 && 
+          fabs(point.y) < 20.0 && 
+          point.x > -5.0 && point.x < 0.5) {
+        m_simpleHeightmapPoints->points.push_back(point);
+      }
+    }
+  }
   }
 
 
@@ -119,7 +123,7 @@ void PointsClustering::timer_callback() {
   
   pcl::PointCloud<pcl::PointXYZI>::Ptr registeredPoints(
       new pcl::PointCloud<pcl::PointXYZI>);
-  pcl::PointCloud<pcl::PointXYZI>::Ptr inflationedPoints(
+  pcl::PointCloud<pcl::PointXYZI>::Ptr inflatedPoints(
       new pcl::PointCloud<pcl::PointXYZI>);
   pcl::PointCloud<pcl::PointXYZI>::Ptr centerPoints(
       new pcl::PointCloud<pcl::PointXYZI>);
@@ -142,7 +146,7 @@ void PointsClustering::timer_callback() {
     perception_msg.perception_list[i].detection_result_3d.center = marker.pose;
   }
 
-  createGaussianWorld(clustered_array, 7.0, 3.0, inflationedPoints);
+  createGaussianWorld(clustered_array, 7.0, 3.0, inflatedPoints);
 
   sensor_msgs::msg::PointCloud2 cloud_clustered_msg;
   pcl::toROSMsg(*registeredPoints, cloud_clustered_msg);
@@ -151,7 +155,7 @@ void PointsClustering::timer_callback() {
   pubClusterPoints->publish(cloud_clustered_msg);
 
   sensor_msgs::msg::PointCloud2 cloud_inflated_msg;
-  pcl::toROSMsg(*inflationedPoints, cloud_inflated_msg);
+  pcl::toROSMsg(*inflatedPoints, cloud_inflated_msg);
   cloud_inflated_msg.header.frame_id = nif::common::frame_id::localization::BASE_LINK;
   cloud_inflated_msg.header.stamp = this->now();
   pubInflationPoints->publish(cloud_inflated_msg);
@@ -170,14 +174,18 @@ void PointsClustering::timer_callback() {
 
 void PointsClustering::PointsCallback(
     const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
-  std::lock_guard<std::mutex> sensor_lock(sensor_mtx);
 
+  std::lock_guard<std::mutex> sensor_lock(sensor_mtx_f);
   m_inPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
-  pcl::PointCloud<pcl::PointXYZI>::Ptr originPoints(
-      new pcl::PointCloud<pcl::PointXYZI>);
+  // pcl::PointCloud<pcl::PointXYZI>::Ptr originPoints(
+  //     new pcl::PointCloud<pcl::PointXYZI>);
 
-  pcl::fromROSMsg(*msg, *originPoints);
-  m_inPoints = downsample(originPoints, 0.05);
+  pcl::fromROSMsg(*msg, *m_inPoints);
+  // m_inPoints = downsample(m_inPoints, 0.05);
+  downsample(m_inPoints, 0.05);
+
+  nif::perception::tools::transformLuminarPointCloudCustom(
+    *m_inPoints, *m_inPoints, transfrom_list[0]);
 
   bPoints = true;
 
@@ -186,17 +194,31 @@ void PointsClustering::PointsCallback(
 
 void PointsClustering::LeftPointsCallback(
     const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
+  std::lock_guard<std::mutex> sensor_lock(sensor_mtx_l);
 
   m_LeftPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
   pcl::fromROSMsg(*msg, *m_LeftPoints);
+
+  downsample(m_LeftPoints, 0.05);
+
+  nif::perception::tools::transformLuminarPointCloudCustom(
+    *m_LeftPoints, *m_LeftPoints, transfrom_list[1]);
+
   bLeftPoints = true;
 }
 
 void PointsClustering::RightPointsCallback(
     const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
+  std::lock_guard<std::mutex> sensor_lock(sensor_mtx_r);
 
   m_RightPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
   pcl::fromROSMsg(*msg, *m_RightPoints);
+
+  downsample(m_RightPoints, 0.05);
+
+  nif::perception::tools::transformLuminarPointCloudCustom(
+    *m_RightPoints, *m_RightPoints, transfrom_list[2]);
+
   bRightPoints = true;
 }
 
@@ -358,16 +380,15 @@ void PointsClustering::SetCloud(
   // pointcloud_ = current_cluster;
 }
 
-pcl::PointCloud<pcl::PointXYZI>::Ptr
+void
 PointsClustering::downsample(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud,
                              double resolution) {
-  pcl::PointCloud<pcl::PointXYZI>::Ptr filtered(
-      new pcl::PointCloud<pcl::PointXYZI>);
+  // pcl::PointCloud<pcl::PointXYZI>::Ptr filtered(
+  //     new pcl::PointCloud<pcl::PointXYZI>);
   pcl::VoxelGrid<pcl::PointXYZI> voxelgrid;
   voxelgrid.setLeafSize(resolution, resolution, resolution);
   voxelgrid.setInputCloud(cloud);
-  voxelgrid.filter(*filtered);
-  return filtered;
+  voxelgrid.filter(*cloud);
 }
 
 // Calculate gaussian interpolation.

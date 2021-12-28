@@ -61,7 +61,6 @@ bool velocity_profiler::parseConfig_(std::string& config_file_path_) {
       velocity_profiling_param["config_use_curvature_model"].as<bool>();
   m_config_dt = velocity_profiling_param["config_dt"].as<double>();
 
-  std::cout << "here1" << std::endl;
 
   YAML::Node adaptive_cruise_control_param =
       config["adaptive_cruise_control_param"];
@@ -81,7 +80,6 @@ bool velocity_profiler::parseConfig_(std::string& config_file_path_) {
   m_acc_config_veh_l =
       adaptive_cruise_control_param["acc_config_veh_l"].as<double>();
 
-  std::cout << "here2" << std::endl;
 
   if (m_constraint_max_t < m_constraint_min_t) {
     throw std::runtime_error("m_constraint_max_t can not be less than "
@@ -110,7 +108,6 @@ bool velocity_profiler::parseConfig_(std::string& config_file_path_) {
         "At least, one of three model should be set to true. "
         "Check config file.");
   }
-  std::cout << "here3" << std::endl;
 }
 
 void velocity_profiler::setConfigUseVehModel(bool flg) {
@@ -153,7 +150,7 @@ bool velocity_profiler::setConstraintMaxT(double value) {
   m_constraint_max_t = value;
   auto check = checkConfig();
   if (check == false) {
-    // std::cout << "Envalid constraint. Keep the previous config." <<
+    // std::cout << "Invalid constraint. Keep the previous config." <<
     // std::endl;
     m_constraint_max_t = constraint_max_t_prev;
   }
@@ -164,7 +161,7 @@ bool velocity_profiler::setConstraintMinT(double value) {
   m_constraint_min_t = value;
   auto check = checkConfig();
   if (check == false) {
-    // std::cout << "Envalid constraint. Keep the previous config." <<
+    // std::cout << "Invalid constraint. Keep the previous config." <<
     // std::endl;
     m_constraint_min_t = constraint_min_t_prev;
   }
@@ -175,7 +172,7 @@ bool velocity_profiler::setConstraintMaxAccel(double value) {
   m_constraint_max_accel = value;
   auto check = checkConfig();
   if (check == false) {
-    // std::cout << "Envalid constraint. Keep the previous config." <<
+    // std::cout << "Invalid constraint. Keep the previous config." <<
     // std::endl;
     m_constraint_max_accel = constraint_max_accel_prev;
   }
@@ -186,7 +183,7 @@ bool velocity_profiler::setConstraintMaxDeccel(double value) {
   m_constraint_max_deccel = value;
   auto check = checkConfig();
   if (check == false) {
-    // std::cout << "Envalid constraint. Keep the previous config." <<
+    // std::cout << "Invalid constraint. Keep the previous config." <<
     // std::endl;
     m_constraint_max_deccel = constraint_max_deccel_prev;
   }
@@ -198,7 +195,7 @@ bool velocity_profiler::setConstraintMaxVel(double value) {
   m_constraint_max_vel = value;
   auto check = checkConfig();
   if (check == false) {
-    std::cout << "Envalid constraint. Keep the previous config." << std::endl;
+    std::cout << "Invalid constraint. Keep the previous config." << std::endl;
     m_constraint_max_vel = constraint_max_vel_prev;
   }
   return check;
