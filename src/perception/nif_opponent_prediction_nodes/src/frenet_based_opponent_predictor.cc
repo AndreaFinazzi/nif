@@ -66,8 +66,7 @@ FrenetBasedOpponentPredictor::FrenetBasedOpponentPredictor(
 
   // Assign splined full target path in global coordinate (in nav_msg path)
   auto splined_result = m_frenet_generator_ptr->apply_cubic_spliner(
-      m_refline_path_x, m_refline_path_y,
-      m_config_path_spline_interval_m);
+      m_refline_path_x, m_refline_path_y, m_config_path_spline_interval_m);
 
   m_splined_center_path_x = get<0>(splined_result);
   m_splined_center_path_y = get<1>(splined_result);
@@ -151,7 +150,8 @@ void FrenetBasedOpponentPredictor::calcOpponentProgress() {
 
   nif_msgs::msg::Perception3D opponent_status_global;
   opponent_status_global = m_opponent_status; // metadata copy
-  opponent_status_global.detection_result_3d.center = global_ps.pose; // overwrite pose with global
+  opponent_status_global.detection_result_3d.center =
+      global_ps.pose; // overwrite pose with global
 
   // calc closest index
   double min_dist = common::constants::numeric::INF;
@@ -159,13 +159,10 @@ void FrenetBasedOpponentPredictor::calcOpponentProgress() {
   for (int i = 0; i < m_refline_path_x.size(); i++) {
 
     double dist = nif::common::utils::geometry::calEuclideanDistance(
-      opponent_status_global.detection_result_3d.center.position.x, 
-      opponent_status_global.detection_result_3d.center.position.y, 
-      opponent_status_global.detection_result_3d.center.position.z,
-      m_refline_path_x[i],
-      m_refline_path_y[i],
-      0.0
-    );
+        opponent_status_global.detection_result_3d.center.position.x,
+        opponent_status_global.detection_result_3d.center.position.y,
+        opponent_status_global.detection_result_3d.center.position.z,
+        m_refline_path_x[i], m_refline_path_y[i], 0.0);
     if (min_dist > dist) {
       min_dist = dist;
       opponent_index = i;
@@ -190,13 +187,8 @@ double FrenetBasedOpponentPredictor::calcProgress(
   for (int i = 0; i < m_refline_path_x.size(); i++) {
 
     double dist = nif::common::utils::geometry::calEuclideanDistance(
-      pt_.pose.position.x,
-      pt_.pose.position.y,
-      pt_.pose.position.z,
-      m_refline_path_x[i],
-      m_refline_path_y[i],
-      0.0
-    );
+        pt_.pose.position.x, pt_.pose.position.y, pt_.pose.position.z,
+        m_refline_path_x[i], m_refline_path_y[i], 0.0);
 
     if (min_dist > dist) {
       min_dist = dist;
@@ -219,17 +211,17 @@ void FrenetBasedOpponentPredictor::predict() {
   std::tuple<std::shared_ptr<FrenetPath>,
              std::vector<std::shared_ptr<FrenetPath>>>
       frenet_path_generation_result = m_frenet_generator_ptr->calc_frenet_paths(
-          m_opponent_cte,                       // current_position_d
-          m_opponent_global_progress,           // current_position_s
-          0.0,                                  // current_velocity_d
-          m_defender_vel_mps,                   // current_velocity_s
-          0.0,                                  // current_acceleration_d
-          m_refline_splined_model,              // cubic_spliner_2D
-          m_config_prediction_horizon_s,        // Prediction horizon
-          m_config_prediction_horizon_s + 0.01, // Max max horizon (we want only one here)
-          m_config_prediction_sampling_time_s,  //
-          m_opponent_cte, m_opponent_cte + 0.01, 
-          0.1);
+          m_opponent_cte,                // current_position_d
+          m_opponent_global_progress,    // current_position_s
+          0.0,                           // current_velocity_d
+          m_defender_vel_mps,            // current_velocity_s
+          0.0,                           // current_acceleration_d
+          m_refline_splined_model,       // cubic_spliner_2D
+          m_config_prediction_horizon_s, // Prediction horizon
+          m_config_prediction_horizon_s +
+              0.01, // Max max horizon (we want only one here)
+          m_config_prediction_sampling_time_s, //
+          m_opponent_cte, m_opponent_cte + 0.01, 0.1);
 
   std::shared_ptr<FrenetPath> &predicted_frenet_path =
       std::get<0>(frenet_path_generation_result);
@@ -266,7 +258,7 @@ void FrenetBasedOpponentPredictor::predict() {
 
     m_predicted_output_in_global.trajectory_type =
         nif_msgs::msg::DynamicTrajectory::TRAJECTORY_TYPE_PREDICTION;
-        
+
     m_predicted_output_in_global_vis = traj_global;
 
   } else {
