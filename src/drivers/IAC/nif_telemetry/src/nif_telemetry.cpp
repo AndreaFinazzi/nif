@@ -108,8 +108,8 @@ class Telemetry : public rclcpp::Node
         "/control_joint_lqr/lqr_error", nif::common::constants::QOS_SENSOR_DATA, std::bind(&Telemetry::control_lqr_error_callback, this, std::placeholders::_1));
 
       sub_reference_path = this->create_subscription<nav_msgs::msg::Path>(
-        "/planning/path_global", nif::common::constants::QOS_SENSOR_DATA, std::bind(&Telemetry::reference_path_callback, this, std::placeholders::_1));
-      
+        "/planning/dynamic/vis/traj_global", nif::common::constants::QOS_SENSOR_DATA, std::bind(&Telemetry::reference_path_callback, this, std::placeholders::_1));
+
       sub_perception_result = this->create_subscription<visualization_msgs::msg::MarkerArray>(
         "/clustered_markers", nif::common::constants::QOS_SENSOR_DATA, std::bind(&Telemetry::perception_result_callback, this, std::placeholders::_1));
 
@@ -120,6 +120,10 @@ class Telemetry : public rclcpp::Node
         "/detected_inner_distance", nif::common::constants::QOS_SENSOR_DATA, std::bind(&Telemetry::wall_distance_inner_callback, this, std::placeholders::_1));
       sub_wall_distance_outer = this->create_subscription<std_msgs::msg::Float32>(
         "/detected_outer_distance", nif::common::constants::QOS_SENSOR_DATA, std::bind(&Telemetry::wall_distance_outer_callback, this, std::placeholders::_1));
+
+      sub_oppo_prediction_path = this->create_subscription<nav_msgs::msg::Path>(
+        "/oppo/vis/prediction", nif::common::constants::QOS_SENSOR_DATA, std::bind(&Telemetry::oppo_prediction_path_callback, this, std::placeholders::_1));
+
 
     if (this->udp_enabled) {
 
@@ -256,15 +260,15 @@ class Telemetry : public rclcpp::Node
             /* 88 */ msg_perception_result.markers.size() > 0 ? static_cast<double>(msg_perception_result.markers[4].pose.orientation.z) : 0.0,
             /* 89 */ static_cast<double>(msg_telemetry.localization.odometry.pose.orientation.z),
             /* 90 */ static_cast<double>(msg_telemetry.localization.odometry.pose.orientation.w),
-            /* 91 */ 0.0,
-            /* 92 */ 0.0,
-            /* 93 */ 0.0,
-            /* 94 */ 0.0,
-            /* 95 */ 0.0,
-            /* 96 */ 0.0,
-            /* 97 */ 0.0,
-            /* 98 */ 0.0,
-            /* 99 */ 0.0,
+            /* 91 */ static_cast<double>(msg_oppo_prediction_path.header.stamp.nanosec),
+            /* 92 */ msg_oppo_prediction_path.poses.size() > 0 ? static_cast<double>(msg_oppo_prediction_path.poses[0].pose.position.x) : 0.0,
+            /* 93 */ msg_oppo_prediction_path.poses.size() > 0 ? static_cast<double>(msg_oppo_prediction_path.poses[0].pose.position.y) : 0.0,
+            /* 94 */ msg_oppo_prediction_path.poses.size() > 1 ? static_cast<double>(msg_oppo_prediction_path.poses[1].pose.position.x) : 0.0,
+            /* 95 */ msg_oppo_prediction_path.poses.size() > 1 ? static_cast<double>(msg_oppo_prediction_path.poses[1].pose.position.y) : 0.0,
+            /* 96 */ msg_oppo_prediction_path.poses.size() > 2 ? static_cast<double>(msg_oppo_prediction_path.poses[2].pose.position.x) : 0.0,
+            /* 97 */ msg_oppo_prediction_path.poses.size() > 2 ? static_cast<double>(msg_oppo_prediction_path.poses[2].pose.position.y) : 0.0,
+            /* 98 */ msg_oppo_prediction_path.poses.size() > 3 ? static_cast<double>(msg_oppo_prediction_path.poses[3].pose.position.x) : 0.0,
+            /* 99 */ msg_oppo_prediction_path.poses.size() > 3 ? static_cast<double>(msg_oppo_prediction_path.poses[3].pose.position.y) : 0.0
             };
         boost::system::error_code err;
         send_telemetry_socket.send_to(buffer(data_frame, sizeof(data_frame)),
@@ -364,6 +368,27 @@ class Telemetry : public rclcpp::Node
         msg_reference_path = std::move(path_sampled);
       }
 
+      // Prediction path
+      if (!in_oppo_prediction_path.poses.empty()) {
+        nav_msgs::msg::Path path_sampled{};
+
+        path_sampled.header = std::move(in_oppo_prediction_path.header);
+        unsigned int step_size =  floor(this->in_oppo_prediction_path.poses.size() / 10);
+
+        for (int i = 0; i < this->in_oppo_prediction_path.poses.size(); i += step_size) 
+        {
+          path_sampled.poses.push_back(this->in_oppo_prediction_path.poses[i]);
+        }
+        // Always include last point
+        path_sampled.poses.push_back(this->in_oppo_prediction_path.poses[this->in_oppo_prediction_path.poses.size() - 1]);
+
+        pub_reference_path->publish(path_sampled);
+
+// TODO temporary to ease UDP 
+        msg_oppo_prediction_path = std::move(path_sampled);
+      }
+
+
       // Perception result
       pub_perception_result->publish(msg_perception_result);
     }
@@ -447,6 +472,10 @@ class Telemetry : public rclcpp::Node
     {
       in_reference_path = std::move(*msg);
     }
+    void oppo_prediction_path_callback(const nav_msgs::msg::Path::SharedPtr msg)
+    {
+      in_oppo_prediction_path = std::move(*msg);
+    }
     void perception_result_callback(const visualization_msgs::msg::MarkerArray::SharedPtr msg)
     {
       msg_perception_result = std::move(*msg);
@@ -497,8 +526,9 @@ class Telemetry : public rclcpp::Node
     rclcpp::Subscription<std_msgs::msg::Float32MultiArray>::SharedPtr sub_control_lqr_error;
 
     rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr sub_reference_path;
-
+    
     rclcpp::Subscription<visualization_msgs::msg::MarkerArray>::SharedPtr sub_perception_result;
+    rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr sub_oppo_prediction_path;
 
     rclcpp::Subscription<deep_orange_msgs::msg::TireReport>::SharedPtr sub_tire_report;
 
@@ -513,8 +543,10 @@ class Telemetry : public rclcpp::Node
     nif_msgs::msg::Telemetry msg_telemetry;
 
     nav_msgs::msg::Path in_reference_path;
-    nav_msgs::msg::Path msg_reference_path;    
+    nav_msgs::msg::Path msg_reference_path;
     
+    nav_msgs::msg::Path in_oppo_prediction_path;
+    nav_msgs::msg::Path msg_oppo_prediction_path;
     visualization_msgs::msg::MarkerArray msg_perception_result;
 
     deep_orange_msgs::msg::JoystickCommand msg_joystick_command;

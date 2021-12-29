@@ -48,9 +48,10 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
           std::bind(&ControlLQRNode::directDesiredVelocityCallback, this,
                     std::placeholders::_1));
 
-  acc_sub_ = this->create_subscription<std_msgs::msg::Float32>(
-      "control/acc/accel_cmd", nif::common::constants::QOS_CONTROL_CMD,
-      std::bind(&ControlLQRNode::accCMDCallback, this, std::placeholders::_1));
+// Disable the ACC function
+//   acc_sub_ = this->create_subscription<std_msgs::msg::Float32>(
+//       "control/acc/accel_cmd", nif::common::constants::QOS_CONTROL_CMD,
+//       std::bind(&ControlLQRNode::accCMDCallback, this, std::placeholders::_1));
 
   this->declare_parameter("lqr_config_file", "");
   // Automatically boot with lat_autonomy_enabled
@@ -125,7 +126,8 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
   invert_steering_ = this->get_parameter("invert_steering").as_bool();
   m_use_mission_max_vel_ = this->get_parameter("use_mission_max_vel").as_bool();
   m_path_min_length_m = this->get_parameter("path_min_length_m").as_double();
-  m_use_acc = this->get_parameter("use_acc").as_bool();
+  // m_use_acc = this->get_parameter("use_acc").as_bool();
+  m_use_acc = false;
 
   if (odometry_timeout_sec_ <= 0. || path_timeout_sec_ <= 0.) {
     RCLCPP_ERROR(this->get_logger(),

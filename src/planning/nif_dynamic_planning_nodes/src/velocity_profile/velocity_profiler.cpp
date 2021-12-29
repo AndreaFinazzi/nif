@@ -13,7 +13,7 @@ velocity_profiler::velocity_profiler() {
   m_acc_config_v_desired = 60.0;
   m_acc_config_time_headway = 1.0;
   m_acc_config_accel_max = 5.0;
-  m_acc_config_decel_desired = 12.0;
+  m_acc_config_decel_desired = 8.0;
   m_acc_config_delta = 4.0;
   m_acc_config_veh_l = 4.7;
 }

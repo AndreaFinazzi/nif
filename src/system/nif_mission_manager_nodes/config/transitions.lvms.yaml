@@ -165,10 +165,10 @@ missions:
             y: -350.0  # y_0
           - x: 650.0  # x_1
             y: -300.0  # y_1
-          - x: 690.0  # x_2
-            y: -360.0  # y_2
-          - x: 600.0  # x_3
-            y: -420.0  # y_3
+          - x: 696.0  # x_2
+            y: -367.0  # y_2
+          - x: 606.0  # x_3
+            y: -427.0  # y_3
     activation_velocity:
       active: false
       range_mps:
