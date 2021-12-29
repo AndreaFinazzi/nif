@@ -17,8 +17,9 @@
 using namespace nif::planning;
 using namespace std;
 
-DynamicPlannerNode::DynamicPlannerNode(const std::string &node_name_)
-    : IBaseNode(node_name_, common::NodeType::PLANNING) {
+DynamicPlannerNode::DynamicPlannerNode(const std::string & node_name_)
+: IBaseNode(node_name_, common::NodeType::PLANNING)
+{
   this->setNodeStatus(nif::common::NODE_NOT_INITIALIZED);
 
   m_config_load_success = false;
@@ -28,7 +29,7 @@ DynamicPlannerNode::DynamicPlannerNode(const std::string &node_name_)
     // This value shouldn't be used, it's as a backup if a config param is
     // missing.
     package_share_directory = ament_index_cpp::get_package_share_directory(
-        "nif_dynamic_planning_nodes");
+      "nif_dynamic_planning_nodes");
   } catch (std::exception e) {
     RCLCPP_FATAL(this->get_logger(), "Can't get package_share_directory");
   }
@@ -42,18 +43,19 @@ DynamicPlannerNode::DynamicPlannerNode(const std::string &node_name_)
   this->get_parameter("maps_path_root", this->m_map_root_path);
   this->m_map_root_path.append("/");
   m_planning_config_file_path =
-      this->get_parameter("planning_config_file_path").as_string();
+    this->get_parameter("planning_config_file_path").as_string();
   m_velocity_profile_config_file_path =
-      this->get_parameter("velocity_profile_config_file_path").as_string();
+    this->get_parameter("velocity_profile_config_file_path").as_string();
   m_vis_flg = this->get_parameter("vis_flg").as_bool();
 
   if (m_planning_config_file_path.empty()) {
     throw std::runtime_error(
-        "Parameter m_planning_config_file_path not declared, or empty.");
+            "Parameter m_planning_config_file_path not declared, or empty.");
   }
   if (m_velocity_profile_config_file_path.empty()) {
-    throw std::runtime_error("Parameter m_velocity_profile_config_file_path "
-                             "not declared, or empty.");
+    throw std::runtime_error(
+            "Parameter m_velocity_profile_config_file_path "
+            "not declared, or empty.");
   }
 
   // Load param
@@ -74,25 +76,28 @@ DynamicPlannerNode::DynamicPlannerNode(const std::string &node_name_)
   auto racingline_x_vec = get<0>(racingline_xy);
   auto racingline_y_vec = get<1>(racingline_xy);
   m_racingline_spline_data = m_frenet_generator_ptr->apply_cubic_spliner(
-      racingline_x_vec, racingline_y_vec, m_config_spline_interval);
+    racingline_x_vec, racingline_y_vec, m_config_spline_interval);
   m_racingline_x_vec = get<0>(m_racingline_spline_data);
   m_racingline_y_vec = get<1>(m_racingline_spline_data);
-  m_racingline_path = xyyawVec2Path(get<0>(m_racingline_spline_data),
-                                    get<1>(m_racingline_spline_data),
-                                    get<2>(m_racingline_spline_data));
-  m_racingline_path_pc = genPointCloudFromVec(get<0>(m_racingline_spline_data),
-                                              get<1>(m_racingline_spline_data));
+  m_racingline_path = xyyawVec2Path(
+    get<0>(m_racingline_spline_data),
+    get<1>(m_racingline_spline_data),
+    get<2>(m_racingline_spline_data));
+  m_racingline_path_pc = genPointCloudFromVec(
+    get<0>(m_racingline_spline_data),
+    get<1>(m_racingline_spline_data));
   m_racineline_path_kdtree.setInputCloud(m_racingline_path_pc);
   m_racingline_dtraj.header = m_racingline_path.header;
   m_racingline_dtraj.trajectory_path = m_racingline_path;
   m_racingline_full_progress =
-      get<4>(m_racingline_spline_data)->points_s().back();
+    get<4>(m_racingline_spline_data)->points_s().back();
 
   // minimal checking
   if (racingline_x_vec.size() != racingline_y_vec.size() ||
-      racingline_x_vec.size() == 0) {
+    racingline_x_vec.size() == 0)
+  {
     throw std::runtime_error(
-        "Racing wpt file has a problem. Stop node initialization.");
+            "Racing wpt file has a problem. Stop node initialization.");
   }
 
   RCLCPP_INFO(this->get_logger(), "[DYNAMICPLANNER] Raceline is loaded...");
@@ -106,47 +111,52 @@ DynamicPlannerNode::DynamicPlannerNode(const std::string &node_name_)
   auto defenderline_x_vec = get<0>(defenderline_xy);
   auto defenderline_y_vec = get<1>(defenderline_xy);
   m_defenderline_spline_data = m_frenet_generator_ptr->apply_cubic_spliner(
-      defenderline_x_vec, defenderline_y_vec, m_config_spline_interval);
+    defenderline_x_vec, defenderline_y_vec, m_config_spline_interval);
   m_defenderline_x_vec = get<0>(m_defenderline_spline_data);
   m_defenderline_y_vec = get<1>(m_defenderline_spline_data);
-  m_defenderline_path = xyyawVec2Path(get<0>(m_defenderline_spline_data),
-                                      get<1>(m_defenderline_spline_data),
-                                      get<2>(m_defenderline_spline_data));
+  m_defenderline_path = xyyawVec2Path(
+    get<0>(m_defenderline_spline_data),
+    get<1>(m_defenderline_spline_data),
+    get<2>(m_defenderline_spline_data));
   m_defenderline_dtraj.header = m_defenderline_path.header;
   m_defenderline_dtraj.trajectory_path = m_defenderline_path;
   m_defenderline_full_progress =
-      get<4>(m_defenderline_spline_data)->points_s().back();
+    get<4>(m_defenderline_spline_data)->points_s().back();
 
   // minimal checking
   if (defenderline_x_vec.size() != defenderline_y_vec.size() ||
-      defenderline_x_vec.size() == 0) {
+    defenderline_x_vec.size() == 0)
+  {
     throw std::runtime_error(
-        "Defender wpt file has a problem. Stop node initialization.");
+            "Defender wpt file has a problem. Stop node initialization.");
   }
 
-  RCLCPP_INFO(this->get_logger(),
-              "[DYNAMICPLANNER] Defender line is loaded...");
-  RCLCPP_INFO(this->get_logger(),
-              "[DYNAMICPLANNER] Loading overtaking path candidates...");
+  RCLCPP_INFO(
+    this->get_logger(),
+    "[DYNAMICPLANNER] Defender line is loaded...");
+  RCLCPP_INFO(
+    this->get_logger(),
+    "[DYNAMICPLANNER] Loading overtaking path candidates...");
 
   // //////////////////////////////////////////////////////////////////
   // INIT SPLINER & SPLINE MODELING FOR EVERY OVERTAKING PATH CANDIDATES
   // //////////////////////////////////////////////////////////////////
   for (int candidate_idx = 0; candidate_idx < m_num_overtaking_candidates;
-       candidate_idx++) {
+    candidate_idx++)
+  {
     m_overtaking_candidates_file_path_vec[candidate_idx] =
-        this->m_map_root_path +
-        m_overtaking_candidates_file_path_vec[candidate_idx];
+      this->m_map_root_path +
+      m_overtaking_candidates_file_path_vec[candidate_idx];
     auto wpt_xy =
-        loadCSVfile(m_overtaking_candidates_file_path_vec[candidate_idx]);
+      loadCSVfile(m_overtaking_candidates_file_path_vec[candidate_idx]);
     auto path_x_vec = get<0>(wpt_xy);
     auto path_y_vec = get<1>(wpt_xy);
     auto splined_result = m_frenet_generator_ptr->apply_cubic_spliner(
-        path_x_vec, path_y_vec, m_config_spline_interval);
+      path_x_vec, path_y_vec, m_config_spline_interval);
     m_overtaking_candidates_spline_data_vec.push_back(splined_result);
     m_overtaking_candidates_spline_model_vec.push_back(get<4>(splined_result));
     auto candidate_path = xyyawVec2Path(
-        get<0>(splined_result), get<1>(splined_result), get<2>(splined_result));
+      get<0>(splined_result), get<1>(splined_result), get<2>(splined_result));
     auto full_progress = get<4>(splined_result)->points_s().back();
     m_overtaking_candidates_full_progress_vec.push_back(full_progress);
     m_overtaking_candidates_path_vec.push_back(candidate_path);
@@ -157,8 +167,9 @@ DynamicPlannerNode::DynamicPlannerNode(const std::string &node_name_)
 
     // minimal checking
     if (path_x_vec.size() != path_y_vec.size() || path_x_vec.size() == 0) {
-      throw std::runtime_error("One of the overtaking path file has a problem. "
-                               "Stop node initialization.");
+      throw std::runtime_error(
+              "One of the overtaking path file has a problem. "
+              "Stop node initialization.");
     }
   }
 
@@ -166,96 +177,103 @@ DynamicPlannerNode::DynamicPlannerNode(const std::string &node_name_)
 
   // INITIALIZE SUBSCRIBERS & PUBLISHER
   m_det_sub =
-      this->create_subscription<nif::common::msgs::PerceptionResultList>(
-          "tracking_output_topic_name", common::constants::QOS_PLANNING,
-          std::bind(&DynamicPlannerNode::detectionResultCallback, this,
-                    std::placeholders::_1));
+    this->create_subscription<nif::common::msgs::PerceptionResultList>(
+    "tracking_output_topic_name", common::constants::QOS_PLANNING,
+    std::bind(
+      &DynamicPlannerNode::detectionResultCallback, this,
+      std::placeholders::_1));
   m_oppo_pred_sub = this->create_subscription<nif_msgs::msg::DynamicTrajectory>(
-      "prediction_output_topic_name", common::constants::QOS_PLANNING,
-      std::bind(&DynamicPlannerNode::predictionResultCallback, this,
-                std::placeholders::_1));
+    "prediction_output_topic_name", common::constants::QOS_PLANNING,
+    std::bind(
+      &DynamicPlannerNode::predictionResultCallback, this,
+      std::placeholders::_1));
   m_maptrack_global_sub = this->create_subscription<nav_msgs::msg::Path>(
-      "wptmanager_output_topic_name_global", common::constants::QOS_PLANNING,
-      std::bind(&DynamicPlannerNode::mapTrackGlobalCallback, this,
-                std::placeholders::_1));
+    "wptmanager_output_topic_name_global", common::constants::QOS_PLANNING,
+    std::bind(
+      &DynamicPlannerNode::mapTrackGlobalCallback, this,
+      std::placeholders::_1));
   m_maptrack_body_sub = this->create_subscription<nav_msgs::msg::Path>(
-      "wptmanager_output_topic_name_body", common::constants::QOS_PLANNING,
-      std::bind(&DynamicPlannerNode::mapTrackBodyCallback, this,
-                std::placeholders::_1));
+    "wptmanager_output_topic_name_body", common::constants::QOS_PLANNING,
+    std::bind(
+      &DynamicPlannerNode::mapTrackBodyCallback, this,
+      std::placeholders::_1));
 
   m_ego_traj_body_pub =
-      this->create_publisher<nif_msgs::msg::DynamicTrajectory>(
-          "out_trajectory_body", common::constants::QOS_PLANNING);
+    this->create_publisher<nif_msgs::msg::DynamicTrajectory>(
+    "out_trajectory_body", common::constants::QOS_PLANNING);
   m_ego_traj_global_pub =
-      this->create_publisher<nif_msgs::msg::DynamicTrajectory>(
-          "out_trajectory_global", common::constants::QOS_PLANNING);
+    this->create_publisher<nif_msgs::msg::DynamicTrajectory>(
+    "out_trajectory_global", common::constants::QOS_PLANNING);
   m_ego_traj_body_vis_pub = this->create_publisher<nav_msgs::msg::Path>(
-      "out_trajectory_vis_body", common::constants::QOS_PLANNING);
+    "out_trajectory_vis_body", common::constants::QOS_PLANNING);
   m_ego_traj_global_vis_pub = this->create_publisher<nav_msgs::msg::Path>(
-      "out_trajectory_vis_global", common::constants::QOS_PLANNING);
+    "out_trajectory_vis_global", common::constants::QOS_PLANNING);
   m_debug_vis_pub = this->create_publisher<nav_msgs::msg::Path>(
-      "planning/debug", common::constants::QOS_PLANNING);
+    "planning/debug", common::constants::QOS_PLANNING);
 
   m_ego_traj_global_vis_debug_pub1 =
-      this->create_publisher<nav_msgs::msg::Path>(
-          "planning/debug1", common::constants::QOS_PLANNING);
+    this->create_publisher<nav_msgs::msg::Path>(
+    "planning/debug1", common::constants::QOS_PLANNING);
   m_ego_traj_global_vis_debug_pub2 =
-      this->create_publisher<nav_msgs::msg::Path>(
-          "planning/debug2", common::constants::QOS_PLANNING);
+    this->create_publisher<nav_msgs::msg::Path>(
+    "planning/debug2", common::constants::QOS_PLANNING);
   m_ego_traj_global_vis_debug_pub3 =
-      this->create_publisher<nav_msgs::msg::Path>(
-          "planning/debug3", common::constants::QOS_PLANNING);
+    this->create_publisher<nav_msgs::msg::Path>(
+    "planning/debug3", common::constants::QOS_PLANNING);
 
   m_planner_timer = this->create_wall_timer(
-      20ms, std::bind(&DynamicPlannerNode::timer_callback, this)); // 50 hz
+    20ms, std::bind(&DynamicPlannerNode::timer_callback, this));   // 50 hz
 
   RCLCPP_INFO(this->get_logger(), "[DYNAMICPLANNER] Initialization done.");
 
   this->setNodeStatus(nif::common::NODE_INITIALIZED);
 }
 
-void DynamicPlannerNode::loadConfig(const std::string &planning_config_file_) {
-  RCLCPP_INFO(get_logger(), "Loading planning params: %s",
-              planning_config_file_.c_str());
+void DynamicPlannerNode::loadConfig(const std::string & planning_config_file_)
+{
+  RCLCPP_INFO(
+    get_logger(), "Loading planning params: %s",
+    planning_config_file_.c_str());
 
   YAML::Node config = YAML::LoadFile(planning_config_file_);
 
   if (!config["path_candidates_param"]) {
     throw std::runtime_error(
-        "path_candidates_param field not defined in config file.");
+            "path_candidates_param field not defined in config file.");
   }
   if (!config["planning_params"]) {
     throw std::runtime_error(
-        "planning_params field not defined in config file.");
+            "planning_params field not defined in config file.");
   }
   if (!config["collision_checking_params"]) {
     throw std::runtime_error(
-        "collision_checking_params field not defined in config file.");
+            "collision_checking_params field not defined in config file.");
   }
   if (!config["waypoint_manager_param"]) {
     throw std::runtime_error(
-        "waypoint_manager_param field not defined in config file.");
+            "waypoint_manager_param field not defined in config file.");
   }
 
   // path_candidates_param
   YAML::Node path_candidates_params = config["path_candidates_param"];
 
   m_racingline_file_path =
-      path_candidates_params["racingline_path"].as<std::string>();
+    path_candidates_params["racingline_path"].as<std::string>();
   m_defenderline_file_path =
-      path_candidates_params["defenderline_path"].as<std::string>();
+    path_candidates_params["defenderline_path"].as<std::string>();
   m_overtaking_candidates_file_path_vec =
-      path_candidates_params["overtaking_candidate_path_array"]
-          .as<std::vector<std::string>>();
+    path_candidates_params["overtaking_candidate_path_array"]
+    .as<std::vector<std::string>>();
   m_overtaking_candidates_alias_vec =
-      path_candidates_params["overtaking_candidate_path_alias_array"]
-          .as<std::vector<std::string>>();
+    path_candidates_params["overtaking_candidate_path_alias_array"]
+    .as<std::vector<std::string>>();
 
   // Size check (file_path - path_alias)
   if (m_overtaking_candidates_file_path_vec.size() !=
-      m_overtaking_candidates_alias_vec.size()) {
+    m_overtaking_candidates_alias_vec.size())
+  {
     throw std::runtime_error(
-        "path_candidates_param is not properly set. Check config file.");
+            "path_candidates_param is not properly set. Check config file.");
   }
 
   m_num_overtaking_candidates = m_overtaking_candidates_file_path_vec.size();
@@ -265,27 +283,27 @@ void DynamicPlannerNode::loadConfig(const std::string &planning_config_file_) {
 
   m_config_spline_interval = planning_params["splining_interval"].as<double>();
   m_config_follow_enable_dist =
-      planning_params["follow_enable_dist"].as<double>();
+    planning_params["follow_enable_dist"].as<double>();
   m_config_planning_horizon =
-      planning_params["planning_horizon_t"].as<double>();
+    planning_params["planning_horizon_t"].as<double>();
   m_config_planning_dt = planning_params["planning_dt"].as<double>();
   m_config_max_accel = planning_params["max_accel"].as<double>();
   m_config_overtaking_longitudinal_margin =
-      planning_params["overtaking_longitudinal_margin"].as<double>();
+    planning_params["overtaking_longitudinal_margin"].as<double>();
   m_config_overtaking_lateral_margin =
-      planning_params["overtaking_lateral_margin"].as<double>();
+    planning_params["overtaking_lateral_margin"].as<double>();
   m_config_merging_longitudinal_margin =
-      planning_params["merging_longitudinal_margin"].as<double>();
+    planning_params["merging_longitudinal_margin"].as<double>();
   m_config_merge_allow_dist =
-      planning_params["merging_allow_dist_to_racingline"].as<double>();
+    planning_params["merging_allow_dist_to_racingline"].as<double>();
 
   // collision_checking_params
   YAML::Node collision_checking_params = config["collision_checking_params"];
 
   m_config_overlap_checking_dist_bound =
-      collision_checking_params["overlap_checking_dist_bound"].as<double>();
+    collision_checking_params["overlap_checking_dist_bound"].as<double>();
   m_config_overlap_checking_time_bound =
-      collision_checking_params["overlap_checking_time_bound"].as<double>();
+    collision_checking_params["overlap_checking_time_bound"].as<double>();
 
   // collision_checking_params
   YAML::Node waypoint_manager_params = config["waypoint_manager_param"];
@@ -295,29 +313,31 @@ void DynamicPlannerNode::loadConfig(const std::string &planning_config_file_) {
   // minimal checking
   if (m_maptrack_size < 0) {
     throw std::runtime_error(
-        "m_maptrack_size can not be less than zero. Check config file.");
+            "m_maptrack_size can not be less than zero. Check config file.");
   }
 
   if (m_config_planning_dt <= 0.0) {
     throw std::runtime_error(
-        "m_config_planning_dt can not be less than zero. Check config file.");
+            "m_config_planning_dt can not be less than zero. Check config file.");
   }
 
   if (m_config_planning_horizon < m_config_planning_dt) {
-    throw std::runtime_error("m_config_planning_horizon can not be shorter "
-                             "than m_config_planning_dt. Check config file.");
+    throw std::runtime_error(
+            "m_config_planning_horizon can not be shorter "
+            "than m_config_planning_dt. Check config file.");
   }
 
   if (m_config_max_accel <= 0.0) {
     throw std::runtime_error(
-        "m_config_max_accel can not be less than zero. Check config file.");
+            "m_config_max_accel can not be less than zero. Check config file.");
   }
 
   if (m_config_overtaking_longitudinal_margin <= 0.0 ||
-      m_config_overtaking_lateral_margin <= 0.0 ||
-      m_config_merging_longitudinal_margin <= 0.0) {
+    m_config_overtaking_lateral_margin <= 0.0 ||
+    m_config_merging_longitudinal_margin <= 0.0)
+  {
     throw std::runtime_error(
-        "Safety margin can not be less than zero. Check config file.");
+            "Safety margin can not be less than zero. Check config file.");
   }
 
   // if (m_config_overlap_checking_dist_bound <=
@@ -329,23 +349,27 @@ void DynamicPlannerNode::loadConfig(const std::string &planning_config_file_) {
   // }
 
   if (m_config_merge_allow_dist <= 0.0) {
-    throw std::runtime_error("m_config_merge_allow_dist can not be "
-                             "less than zero. Check config file.");
+    throw std::runtime_error(
+            "m_config_merge_allow_dist can not be "
+            "less than zero. Check config file.");
   }
 
   if (m_config_overlap_checking_dist_bound <= 0.0) {
-    throw std::runtime_error("m_config_overlap_checking_dist_bound can not be "
-                             "less than zero. Check config file.");
+    throw std::runtime_error(
+            "m_config_overlap_checking_dist_bound can not be "
+            "less than zero. Check config file.");
   }
 
   if (m_config_overlap_checking_time_bound <= 0.0) {
-    throw std::runtime_error("m_config_overlap_checking_time_bound can not be "
-                             "less than zero. Check config file.");
+    throw std::runtime_error(
+            "m_config_overlap_checking_time_bound can not be "
+            "less than zero. Check config file.");
   }
 }
 
 tuple<vector<double>, vector<double>>
-DynamicPlannerNode::loadCSVfile(const std::string &wpt_file_path_) {
+DynamicPlannerNode::loadCSVfile(const std::string & wpt_file_path_)
+{
   ifstream inputFile(wpt_file_path_);
   vector<double> vec_x, vec_y;
 
@@ -385,7 +409,8 @@ DynamicPlannerNode::loadCSVfile(const std::string &wpt_file_path_) {
   }
 
   if (vec_x.size() == 0 || vec_y.size() == 0 ||
-      (vec_x.size() != vec_y.size())) {
+    (vec_x.size() != vec_y.size()))
+  {
     __throw_invalid_argument("WPT SIZE ERROR.");
   }
 
@@ -393,7 +418,8 @@ DynamicPlannerNode::loadCSVfile(const std::string &wpt_file_path_) {
 }
 
 void DynamicPlannerNode::detectionResultCallback(
-    const nif::common::msgs::PerceptionResultList::SharedPtr msg) {
+  const nif::common::msgs::PerceptionResultList::SharedPtr msg)
+{
 
   // TODO: Detection result health check
 
@@ -410,17 +436,20 @@ void DynamicPlannerNode::detectionResultCallback(
 }
 
 void DynamicPlannerNode::mapTrackBodyCallback(
-    const nav_msgs::msg::Path::SharedPtr msg) {
+  const nav_msgs::msg::Path::SharedPtr msg)
+{
   m_maptrack_body = *msg;
 }
 
 void DynamicPlannerNode::mapTrackGlobalCallback(
-    const nav_msgs::msg::Path::SharedPtr msg) {
+  const nav_msgs::msg::Path::SharedPtr msg)
+{
   m_maptrack_global = *msg;
 }
 
 void DynamicPlannerNode::predictionResultCallback(
-    const nif_msgs::msg::DynamicTrajectory::SharedPtr msg) {
+  const nif_msgs::msg::DynamicTrajectory::SharedPtr msg)
+{
 
   // TODO: Prediction result health check
 
@@ -433,7 +462,8 @@ void DynamicPlannerNode::predictionResultCallback(
   }
 }
 
-void DynamicPlannerNode::publishEmptyTrajectory() {
+void DynamicPlannerNode::publishEmptyTrajectory()
+{
   nif_msgs::msg::DynamicTrajectory empty_traj;
   nav_msgs::msg::Path empty_path;
 
@@ -453,21 +483,22 @@ void DynamicPlannerNode::publishEmptyTrajectory() {
   m_ego_traj_global_vis_pub->publish(m_ego_planned_vis_path_global);
 }
 
-void DynamicPlannerNode::publishPlannedTrajectory(bool vis_flg_) {
+void DynamicPlannerNode::publishPlannedTrajectory(bool vis_flg_)
+{
   m_cur_ego_planned_result_body.trajectory_path.poses.clear();
   m_cur_ego_planned_result_global.trajectory_path.poses.clear();
 
   m_cur_ego_planned_result_body.header.stamp = this->now();
   m_cur_ego_planned_result_body.header.frame_id =
-      nif::common::frame_id::localization::BASE_LINK;
+    nif::common::frame_id::localization::BASE_LINK;
   m_cur_ego_planned_result_global.header.stamp = this->now();
   m_cur_ego_planned_result_global.header.frame_id =
-      nif::common::frame_id::localization::ODOM;
+    nif::common::frame_id::localization::ODOM;
 
   m_cur_ego_planned_result_body.trajectory_type =
-      nif_msgs::msg::DynamicTrajectory::TRAJECTORY_TYPE_PLANNING;
+    nif_msgs::msg::DynamicTrajectory::TRAJECTORY_TYPE_PLANNING;
   m_cur_ego_planned_result_global.trajectory_type =
-      nif_msgs::msg::DynamicTrajectory::TRAJECTORY_TYPE_PLANNING;
+    nif_msgs::msg::DynamicTrajectory::TRAJECTORY_TYPE_PLANNING;
 
   // Current idx
   m_ego_cur_idx_in_planned_traj = calcCurIdxFromDynamicTraj(m_cur_planned_traj);
@@ -481,17 +512,18 @@ void DynamicPlannerNode::publishPlannedTrajectory(bool vis_flg_) {
     int target_idx_in_full_path = m_ego_cur_idx_in_planned_traj + wpt_idx;
     // index wrapping
     if (target_idx_in_full_path >=
-        m_cur_planned_traj.trajectory_path.poses.size()) {
+      m_cur_planned_traj.trajectory_path.poses.size())
+    {
       target_idx_in_full_path -=
-          m_cur_planned_traj.trajectory_path.poses.size();
+        m_cur_planned_traj.trajectory_path.poses.size();
     }
 
     ps_global =
-        m_cur_planned_traj.trajectory_path.poses[target_idx_in_full_path];
+      m_cur_planned_traj.trajectory_path.poses[target_idx_in_full_path];
     ps_global.header.frame_id = nif::common::frame_id::localization::ODOM;
 
     ps_body =
-        common::utils::coordination::getPtGlobaltoBody(m_ego_odom, ps_global);
+      common::utils::coordination::getPtGlobaltoBody(m_ego_odom, ps_global);
     ps_body.header.frame_id = nif::common::frame_id::localization::BASE_LINK;
 
     m_cur_ego_planned_result_body.trajectory_path.poses.push_back(ps_body);
@@ -506,12 +538,12 @@ void DynamicPlannerNode::publishPlannedTrajectory(bool vis_flg_) {
   if (vis_flg_) {
     m_ego_planned_vis_path_body = m_cur_ego_planned_result_body.trajectory_path;
     m_ego_planned_vis_path_global =
-        m_cur_ego_planned_result_global.trajectory_path;
+      m_cur_ego_planned_result_global.trajectory_path;
 
     m_ego_planned_vis_path_body.header.frame_id =
-        nif::common::frame_id::localization::BASE_LINK;
+      nif::common::frame_id::localization::BASE_LINK;
     m_ego_planned_vis_path_global.header.frame_id =
-        nif::common::frame_id::localization::ODOM;
+      nif::common::frame_id::localization::ODOM;
 
     m_ego_planned_vis_path_body.header.stamp = this->now();
     m_ego_planned_vis_path_global.header.stamp = this->now();
@@ -521,22 +553,23 @@ void DynamicPlannerNode::publishPlannedTrajectory(bool vis_flg_) {
   }
 }
 
-void DynamicPlannerNode::initOutputTrajectory() {
+void DynamicPlannerNode::initOutputTrajectory()
+{
   // Init output message (frame_id, reserve size)
   m_cur_ego_planned_result_body.header.frame_id =
-      nif::common::frame_id::localization::BASE_LINK;
+    nif::common::frame_id::localization::BASE_LINK;
   m_prev_ego_planned_result_body.header.frame_id =
-      nif::common::frame_id::localization::BASE_LINK;
+    nif::common::frame_id::localization::BASE_LINK;
   m_cur_ego_planned_result_global.header.frame_id =
-      nif::common::frame_id::localization::ODOM;
+    nif::common::frame_id::localization::ODOM;
   m_prev_ego_planned_result_global.header.frame_id =
-      nif::common::frame_id::localization::ODOM;
+    nif::common::frame_id::localization::ODOM;
   m_planned_traj_len = int(m_config_planning_horizon / m_config_planning_dt);
   nav_msgs::msg::Path init_path_body, init_path_global;
   for (int i = 0; i < m_planned_traj_len; i++) {
     geometry_msgs::msg::PoseStamped zero_pt_body, zero_pt_global;
     zero_pt_body.header.frame_id =
-        nif::common::frame_id::localization::BASE_LINK;
+      nif::common::frame_id::localization::BASE_LINK;
     zero_pt_global.header.frame_id = nif::common::frame_id::localization::ODOM;
 
     init_path_body.poses.clear();
@@ -549,28 +582,32 @@ void DynamicPlannerNode::initOutputTrajectory() {
     m_cur_ego_planned_result_global.trajectory_timestamp_array.clear();
 
     m_cur_ego_planned_result_body.trajectory_timestamp_array.push_back(
-        i * m_config_planning_dt);
+      i * m_config_planning_dt);
     m_cur_ego_planned_result_global.trajectory_timestamp_array.push_back(
-        i * m_config_planning_dt);
+      i * m_config_planning_dt);
   }
   m_cur_ego_planned_result_body.trajectory_path = init_path_body;
   m_cur_ego_planned_result_global.trajectory_path = init_path_global;
 }
 
 double
-DynamicPlannerNode::getProgress(const geometry_msgs::msg::Pose &pt_global_,
-                                pcl::KdTreeFLANN<pcl::PointXY> &target_tree_) {
+DynamicPlannerNode::getProgress(
+  const geometry_msgs::msg::Pose & pt_global_,
+  pcl::KdTreeFLANN<pcl::PointXY> & target_tree_)
+{
   double progress;
 
   std::vector<int> pointId_vector;
   std::vector<float> pointRadius_vector;
-  pcl::PointXY *searchPoint = new pcl::PointXY();
+  pcl::PointXY * searchPoint = new pcl::PointXY();
   searchPoint->x = pt_global_.position.x;
   searchPoint->y = pt_global_.position.y;
   int index = 0;
 
-  if (target_tree_.nearestKSearch(*searchPoint, 1, pointId_vector,
-                                  pointRadius_vector) > 0) {
+  if (target_tree_.nearestKSearch(
+      *searchPoint, 1, pointId_vector,
+      pointRadius_vector) > 0)
+  {
     index = pointId_vector[0];
   } else {
     // TODO : what happens?
@@ -580,19 +617,23 @@ DynamicPlannerNode::getProgress(const geometry_msgs::msg::Pose &pt_global_,
 }
 
 double
-DynamicPlannerNode::getProgress(const double &pt_x_, const double &pt_y_,
-                                pcl::KdTreeFLANN<pcl::PointXY> &target_tree_) {
+DynamicPlannerNode::getProgress(
+  const double & pt_x_, const double & pt_y_,
+  pcl::KdTreeFLANN<pcl::PointXY> & target_tree_)
+{
   double progress;
 
   std::vector<int> pointId_vector;
   std::vector<float> pointRadius_vector;
-  pcl::PointXY *searchPoint = new pcl::PointXY();
+  pcl::PointXY * searchPoint = new pcl::PointXY();
   searchPoint->x = pt_x_;
   searchPoint->y = pt_y_;
   int index = 0;
 
-  if (target_tree_.nearestKSearch(*searchPoint, 1, pointId_vector,
-                                  pointRadius_vector) > 0) {
+  if (target_tree_.nearestKSearch(
+      *searchPoint, 1, pointId_vector,
+      pointRadius_vector) > 0)
+  {
     index = pointId_vector[0];
   } else {
     // TODO : what happens?
@@ -602,19 +643,23 @@ DynamicPlannerNode::getProgress(const double &pt_x_, const double &pt_y_,
 }
 
 double
-DynamicPlannerNode::getCurIdx(const double &pt_x_, const double &pt_y_,
-                              pcl::KdTreeFLANN<pcl::PointXY> &target_tree_) {
+DynamicPlannerNode::getCurIdx(
+  const double & pt_x_, const double & pt_y_,
+  pcl::KdTreeFLANN<pcl::PointXY> & target_tree_)
+{
   double progress;
 
   std::vector<int> pointId_vector;
   std::vector<float> pointRadius_vector;
-  pcl::PointXY *searchPoint = new pcl::PointXY();
+  pcl::PointXY * searchPoint = new pcl::PointXY();
   searchPoint->x = pt_x_;
   searchPoint->y = pt_y_;
   int index = 0;
 
-  if (target_tree_.nearestKSearch(*searchPoint, 1, pointId_vector,
-                                  pointRadius_vector) > 0) {
+  if (target_tree_.nearestKSearch(
+      *searchPoint, 1, pointId_vector,
+      pointRadius_vector) > 0)
+  {
     index = pointId_vector[0];
   } else {
     // TODO : what happens?
@@ -623,13 +668,16 @@ DynamicPlannerNode::getCurIdx(const double &pt_x_, const double &pt_y_,
   return index;
 }
 
-double DynamicPlannerNode::getCurIdx(const double &pt_x_, const double &pt_y_,
-                                     const nav_msgs::msg::Path &target_path_) {
+double DynamicPlannerNode::getCurIdx(
+  const double & pt_x_, const double & pt_y_,
+  const nav_msgs::msg::Path & target_path_)
+{
   int closest_idx = 0;
   double min_dist = nif::common::constants::numeric::INF;
   for (int i = 0; i < target_path_.poses.size(); i++) {
-    double dist = sqrt(pow(pt_x_ - target_path_.poses[i].pose.position.x, 2) +
-                       pow(pt_y_ - target_path_.poses[i].pose.position.y, 2));
+    double dist = sqrt(
+      pow(pt_x_ - target_path_.poses[i].pose.position.x, 2) +
+      pow(pt_y_ - target_path_.poses[i].pose.position.y, 2));
     if (dist < min_dist) {
       min_dist = dist;
       closest_idx = i;
@@ -638,21 +686,25 @@ double DynamicPlannerNode::getCurIdx(const double &pt_x_, const double &pt_y_,
   return closest_idx;
 }
 
-double DynamicPlannerNode::calcCTE(const geometry_msgs::msg::Pose &pt_global_,
-                                   pcl::KdTreeFLANN<pcl::PointXY> &target_tree_,
-                                   pcl::PointCloud<pcl::PointXY>::Ptr &pc_) {
+double DynamicPlannerNode::calcCTE(
+  const geometry_msgs::msg::Pose & pt_global_,
+  pcl::KdTreeFLANN<pcl::PointXY> & target_tree_,
+  pcl::PointCloud<pcl::PointXY>::Ptr & pc_)
+{
   double cte = 0;
   double progress;
   int sign;
 
   std::vector<int> pointId_vector;
   std::vector<float> pointRadius_vector;
-  pcl::PointXY *searchPoint = new pcl::PointXY();
+  pcl::PointXY * searchPoint = new pcl::PointXY();
   searchPoint->x = pt_global_.position.x;
   searchPoint->y = pt_global_.position.y;
 
-  if (target_tree_.nearestKSearch(*searchPoint, 1, pointId_vector,
-                                  pointRadius_vector) > 0) {
+  if (target_tree_.nearestKSearch(
+      *searchPoint, 1, pointId_vector,
+      pointRadius_vector) > 0)
+  {
     cte = pointRadius_vector[0];
     progress = pointId_vector[0] * m_config_spline_interval;
 
@@ -665,7 +717,7 @@ double DynamicPlannerNode::calcCTE(const geometry_msgs::msg::Pose &pt_global_,
     next_y = pc_->points[next_idx].y;
 
     auto cross_product = next_x * pc_->points[pointId_vector[0]].y -
-                         next_y * pc_->points[pointId_vector[0]].x;
+      next_y * pc_->points[pointId_vector[0]].x;
     if (cross_product < 0) {
       sign = -1;
     } else {
@@ -682,8 +734,10 @@ double DynamicPlannerNode::calcCTE(const geometry_msgs::msg::Pose &pt_global_,
 }
 
 pcl::PointCloud<pcl::PointXY>::Ptr
-DynamicPlannerNode::genPointCloudFromVec(vector<double> &x_,
-                                         vector<double> &y_) {
+DynamicPlannerNode::genPointCloudFromVec(
+  vector<double> & x_,
+  vector<double> & y_)
+{
   pcl::PointCloud<pcl::PointXY>::Ptr cloud(new pcl::PointCloud<pcl::PointXY>);
 
   // Generate pointcloud data
@@ -699,9 +753,10 @@ DynamicPlannerNode::genPointCloudFromVec(vector<double> &x_,
 }
 
 double DynamicPlannerNode::calcProgressDiff(
-    const geometry_msgs::msg::Pose &ego_pt_global_,
-    const geometry_msgs::msg::Pose &target_pt_global_,
-    pcl::KdTreeFLANN<pcl::PointXY> &target_tree_) {
+  const geometry_msgs::msg::Pose & ego_pt_global_,
+  const geometry_msgs::msg::Pose & target_pt_global_,
+  pcl::KdTreeFLANN<pcl::PointXY> & target_tree_)
+{
   auto ego_progress = getProgress(ego_pt_global_, target_tree_);
   auto target_progress = getProgress(target_pt_global_, target_tree_);
 
@@ -710,9 +765,11 @@ double DynamicPlannerNode::calcProgressDiff(
 }
 
 nav_msgs::msg::Path
-DynamicPlannerNode::xyyawVec2Path(std::vector<double> &x_,
-                                  std::vector<double> &y_,
-                                  std::vector<double> &yaw_rad_) {
+DynamicPlannerNode::xyyawVec2Path(
+  std::vector<double> & x_,
+  std::vector<double> & y_,
+  std::vector<double> & yaw_rad_)
+{
   nav_msgs::msg::Path output;
   output.header.frame_id = nif::common::frame_id::localization::ODOM;
 
@@ -722,7 +779,7 @@ DynamicPlannerNode::xyyawVec2Path(std::vector<double> &x_,
     pt.pose.position.y = y_[i];
     pt.pose.position.z = 0.0;
     pt.pose.orientation =
-        nif::common::utils::coordination::euler2quat(yaw_rad_[i], 0.0, 0.0);
+      nif::common::utils::coordination::euler2quat(yaw_rad_[i], 0.0, 0.0);
     output.poses.push_back(pt);
   }
 
@@ -730,21 +787,24 @@ DynamicPlannerNode::xyyawVec2Path(std::vector<double> &x_,
 }
 
 tuple<double, double> DynamicPlannerNode::calcProgressNCTE(
-    const geometry_msgs::msg::Pose &pt_global_,
-    pcl::KdTreeFLANN<pcl::PointXY> &target_tree_,
-    pcl::PointCloud<pcl::PointXY>::Ptr &pc_) {
+  const geometry_msgs::msg::Pose & pt_global_,
+  pcl::KdTreeFLANN<pcl::PointXY> & target_tree_,
+  pcl::PointCloud<pcl::PointXY>::Ptr & pc_)
+{
   double cte = 0;
   double progress;
   int sign;
 
   std::vector<int> pointId_vector;
   std::vector<float> pointRadius_vector;
-  pcl::PointXY *searchPoint = new pcl::PointXY();
+  pcl::PointXY * searchPoint = new pcl::PointXY();
   searchPoint->x = pt_global_.position.x;
   searchPoint->y = pt_global_.position.y;
 
-  if (target_tree_.nearestKSearch(*searchPoint, 1, pointId_vector,
-                                  pointRadius_vector) > 0) {
+  if (target_tree_.nearestKSearch(
+      *searchPoint, 1, pointId_vector,
+      pointRadius_vector) > 0)
+  {
     cte = pointRadius_vector[0];
     progress = pointId_vector[0] * m_config_spline_interval;
 
@@ -757,7 +817,7 @@ tuple<double, double> DynamicPlannerNode::calcProgressNCTE(
     next_y = pc_->points[next_idx].y;
 
     auto cross_product = next_x * pc_->points[pointId_vector[0]].y -
-                         next_y * pc_->points[pointId_vector[0]].x;
+      next_y * pc_->points[pointId_vector[0]].x;
     if (cross_product < 0) {
       sign = -1;
     } else {
@@ -774,8 +834,10 @@ tuple<double, double> DynamicPlannerNode::calcProgressNCTE(
 }
 
 tuple<double, double>
-DynamicPlannerNode::calcProgressNCTE(const geometry_msgs::msg::Pose &pt_global_,
-                                     nav_msgs::msg::Path &target_path_) {
+DynamicPlannerNode::calcProgressNCTE(
+  const geometry_msgs::msg::Pose & pt_global_,
+  nav_msgs::msg::Path & target_path_)
+{
   double cte = 0;
   double progress;
   int sign;
@@ -785,8 +847,8 @@ DynamicPlannerNode::calcProgressNCTE(const geometry_msgs::msg::Pose &pt_global_,
 
   for (int i = 0; i < target_path_.poses.size(); i++) {
     double dist = sqrt(
-        pow(pt_global_.position.x - target_path_.poses[i].pose.position.x, 2) +
-        pow(pt_global_.position.y - target_path_.poses[i].pose.position.y, 2));
+      pow(pt_global_.position.x - target_path_.poses[i].pose.position.x, 2) +
+      pow(pt_global_.position.y - target_path_.poses[i].pose.position.y, 2));
     if (dist < min_dist) {
       min_dist = dist;
       closest_idx = i;
@@ -812,8 +874,8 @@ DynamicPlannerNode::calcProgressNCTE(const geometry_msgs::msg::Pose &pt_global_,
   // , )
 
   auto cross_product =
-      (next_x - pt_global_.position.x) * (cur_y - pt_global_.position.y) -
-      (cur_x - pt_global_.position.x) * (next_y - pt_global_.position.y);
+    (next_x - pt_global_.position.x) * (cur_y - pt_global_.position.y) -
+    (cur_x - pt_global_.position.x) * (next_y - pt_global_.position.y);
   if (cross_product < 0) {
     sign = 1;
   } else {
@@ -826,20 +888,21 @@ DynamicPlannerNode::calcProgressNCTE(const geometry_msgs::msg::Pose &pt_global_,
   return std::make_tuple(progress, cte);
 }
 
-std::shared_ptr<FrenetPath> DynamicPlannerNode::getFrenetToRacingLine() {
+std::shared_ptr<FrenetPath> DynamicPlannerNode::getFrenetToRacingLine()
+{
   // Generate trajectory segment from current odom to racing line.
   auto progressNcte = calcProgressNCTE(m_ego_odom.pose.pose, m_racingline_path);
 
   std::tuple<std::shared_ptr<FrenetPath>,
-             std::vector<std::shared_ptr<FrenetPath>>>
-      frenet_path_generation_result = m_frenet_generator_ptr->calc_frenet_paths(
-          get<1>(progressNcte),             // current_position_d
-          get<0>(progressNcte),             // current_position_s
-          0.0,                              // current_velocity_d
-          m_ego_odom.twist.twist.linear.x,  // current_velocity_s
-          0.0,                              // current_acceleration_d
-          get<4>(m_racingline_spline_data), // cubic_spliner_2D
-          SEC_4, SEC_4 + 0.01, SAMPLING_TIME, 0.0, 0.0001, 0.1);
+    std::vector<std::shared_ptr<FrenetPath>>>
+  frenet_path_generation_result = m_frenet_generator_ptr->calc_frenet_paths(
+    get<1>(progressNcte),                   // current_position_d
+    get<0>(progressNcte),                   // current_position_s
+    0.0,                                    // current_velocity_d
+    m_ego_odom.twist.twist.linear.x,        // current_velocity_s
+    0.0,                                    // current_acceleration_d
+    get<4>(m_racingline_spline_data),       // cubic_spliner_2D
+    SEC_4, SEC_4 + 0.01, SAMPLING_TIME, 0.0, 0.0001, 0.1);
 
   //   std::shared_ptr<FrenetPath>& predicted_frenet_path =
   //       std::get<0>(frenet_path_generation_result);
@@ -847,17 +910,21 @@ std::shared_ptr<FrenetPath> DynamicPlannerNode::getFrenetToRacingLine() {
 }
 
 int DynamicPlannerNode::calcCurIdxFromDynamicTraj(
-    const nif_msgs::msg::DynamicTrajectory &msg) {
+  const nif_msgs::msg::DynamicTrajectory & msg)
+{
   int cur_idx = 0;
   double min_dist = 1000000000;
 
   for (int i = 0; i < msg.trajectory_path.poses.size(); i++) {
-    double dist = sqrt(pow(m_ego_odom.pose.pose.position.x -
-                               msg.trajectory_path.poses[i].pose.position.x,
-                           2) +
-                       pow(m_ego_odom.pose.pose.position.y -
-                               msg.trajectory_path.poses[i].pose.position.y,
-                           2));
+    double dist = sqrt(
+      pow(
+        m_ego_odom.pose.pose.position.x -
+        msg.trajectory_path.poses[i].pose.position.x,
+        2) +
+      pow(
+        m_ego_odom.pose.pose.position.y -
+        msg.trajectory_path.poses[i].pose.position.y,
+        2));
     if (dist < min_dist) {
       min_dist = dist;
       cur_idx = i;
@@ -867,10 +934,11 @@ int DynamicPlannerNode::calcCurIdxFromDynamicTraj(
 }
 
 bool DynamicPlannerNode::collisionCheckBTWtrajs(
-    const nif_msgs::msg::DynamicTrajectory &ego_traj_,
-    const nif_msgs::msg::DynamicTrajectory &oppo_traj_,
-    const double collision_dist_boundary,
-    const double collision_time_boundary) {
+  const nif_msgs::msg::DynamicTrajectory & ego_traj_,
+  const nif_msgs::msg::DynamicTrajectory & oppo_traj_,
+  const double collision_dist_boundary,
+  const double collision_time_boundary)
+{
   // if there is collision, return true
   if (oppo_traj_.trajectory_path.poses.empty()) {
     return false;
@@ -878,24 +946,30 @@ bool DynamicPlannerNode::collisionCheckBTWtrajs(
 
   bool is_collision = false;
   for (int ego_traj_idx = 0;
-       ego_traj_idx < ego_traj_.trajectory_path.poses.size(); ego_traj_idx++) {
+    ego_traj_idx < ego_traj_.trajectory_path.poses.size(); ego_traj_idx++)
+  {
     for (int oppo_traj_idx = 0;
-         oppo_traj_idx < oppo_traj_.trajectory_path.poses.size();
-         oppo_traj_idx++) {
+      oppo_traj_idx < oppo_traj_.trajectory_path.poses.size();
+      oppo_traj_idx++)
+    {
       double dist = sqrt(
-          pow((ego_traj_.trajectory_path.poses[ego_traj_idx].pose.position.x -
-               oppo_traj_.trajectory_path.poses[oppo_traj_idx].pose.position.x),
-              2) +
-          pow((ego_traj_.trajectory_path.poses[ego_traj_idx].pose.position.y -
-               oppo_traj_.trajectory_path.poses[oppo_traj_idx].pose.position.y),
-              2));
+        pow(
+          (ego_traj_.trajectory_path.poses[ego_traj_idx].pose.position.x -
+          oppo_traj_.trajectory_path.poses[oppo_traj_idx].pose.position.x),
+          2) +
+        pow(
+          (ego_traj_.trajectory_path.poses[ego_traj_idx].pose.position.y -
+          oppo_traj_.trajectory_path.poses[oppo_traj_idx].pose.position.y),
+          2));
 
       double time_diff =
-          abs(ego_traj_.trajectory_timestamp_array[ego_traj_idx] -
-              oppo_traj_.trajectory_timestamp_array[oppo_traj_idx]);
+        abs(
+        ego_traj_.trajectory_timestamp_array[ego_traj_idx] -
+        oppo_traj_.trajectory_timestamp_array[oppo_traj_idx]);
 
       if (dist < collision_dist_boundary &&
-          time_diff < collision_time_boundary) {
+        time_diff < collision_time_boundary)
+      {
         is_collision = true;
         return is_collision;
       }
@@ -905,10 +979,11 @@ bool DynamicPlannerNode::collisionCheckBTWtrajs(
 }
 
 bool DynamicPlannerNode::collisionCheckBTWtrajsNFrenet(
-    std::shared_ptr<FrenetPath> ego_frenet_traj_,
-    const nif_msgs::msg::DynamicTrajectory &oppo_traj_,
-    const double collision_dist_boundary,
-    const double collision_time_boundary) {
+  std::shared_ptr<FrenetPath> ego_frenet_traj_,
+  const nif_msgs::msg::DynamicTrajectory & oppo_traj_,
+  const double collision_dist_boundary,
+  const double collision_time_boundary)
+{
   // if there is collision, return true.
   bool is_collision = false;
 
@@ -917,24 +992,30 @@ bool DynamicPlannerNode::collisionCheckBTWtrajsNFrenet(
   vector<double> ego_frenet_time = ego_frenet_traj_->time();
 
   for (int ego_traj_idx = 0; ego_traj_idx < ego_frenet_x.size();
-       ego_traj_idx++) {
+    ego_traj_idx++)
+  {
     for (int oppo_traj_idx = 0;
-         oppo_traj_idx < oppo_traj_.trajectory_path.poses.size();
-         oppo_traj_idx++) {
+      oppo_traj_idx < oppo_traj_.trajectory_path.poses.size();
+      oppo_traj_idx++)
+    {
       double dist = sqrt(
-          pow((ego_frenet_x[ego_traj_idx] -
-               oppo_traj_.trajectory_path.poses[oppo_traj_idx].pose.position.x),
-              2) +
-          pow((ego_frenet_y[ego_traj_idx] -
-               oppo_traj_.trajectory_path.poses[oppo_traj_idx].pose.position.y),
-              2));
+        pow(
+          (ego_frenet_x[ego_traj_idx] -
+          oppo_traj_.trajectory_path.poses[oppo_traj_idx].pose.position.x),
+          2) +
+        pow(
+          (ego_frenet_y[ego_traj_idx] -
+          oppo_traj_.trajectory_path.poses[oppo_traj_idx].pose.position.y),
+          2));
 
       double time_diff =
-          abs(ego_frenet_time[ego_traj_idx] -
-              oppo_traj_.trajectory_timestamp_array[oppo_traj_idx]);
+        abs(
+        ego_frenet_time[ego_traj_idx] -
+        oppo_traj_.trajectory_timestamp_array[oppo_traj_idx]);
 
       if (dist < collision_dist_boundary &&
-          time_diff < collision_time_boundary) {
+        time_diff < collision_time_boundary)
+      {
         is_collision = true;
         return is_collision;
       }
@@ -944,9 +1025,10 @@ bool DynamicPlannerNode::collisionCheckBTWtrajsNFrenet(
 }
 
 nif_msgs::msg::DynamicTrajectory DynamicPlannerNode::stitchFrenetToPath(
-    std::shared_ptr<FrenetPath> &frenet_segment_,
-    pcl::KdTreeFLANN<pcl::PointXY> &target_tree_,
-    nav_msgs::msg::Path &target_path_) {
+  std::shared_ptr<FrenetPath> & frenet_segment_,
+  pcl::KdTreeFLANN<pcl::PointXY> & target_tree_,
+  nav_msgs::msg::Path & target_path_)
+{
   nif_msgs::msg::DynamicTrajectory out;
 
   // find closest index of target_path with respect to the start point of the
@@ -956,16 +1038,16 @@ nif_msgs::msg::DynamicTrajectory DynamicPlannerNode::stitchFrenetToPath(
   auto vec_yaw = frenet_segment_->yaw();
 
   auto cloest_pt_idx_wrt_segment_start_pt =
-      getCurIdx(vec_x[0], vec_y[0], target_tree_);
+    getCurIdx(vec_x[0], vec_y[0], target_tree_);
   auto cloest_pt_idx_wrt_segment_end_pt =
-      getCurIdx(vec_x.back(), vec_y.back(), target_tree_);
+    getCurIdx(vec_x.back(), vec_y.back(), target_tree_);
 
   for (int i = 0; i < vec_x.size(); i++) {
     geometry_msgs::msg::PoseStamped ps;
     ps.pose.position.x = vec_x[i];
     ps.pose.position.y = vec_y[i];
     ps.pose.orientation =
-        nif::common::utils::coordination::euler2quat(vec_yaw[i], 0.0, 0.0);
+      nif::common::utils::coordination::euler2quat(vec_yaw[i], 0.0, 0.0);
 
     out.trajectory_path.poses.push_back(ps);
   }
@@ -973,24 +1055,26 @@ nif_msgs::msg::DynamicTrajectory DynamicPlannerNode::stitchFrenetToPath(
   if (cloest_pt_idx_wrt_segment_start_pt > cloest_pt_idx_wrt_segment_end_pt) {
     // index wrapping
     out.trajectory_path.poses.insert(
-        out.trajectory_path.poses.end(),
-        target_path_.poses.begin() + cloest_pt_idx_wrt_segment_end_pt,
-        target_path_.poses.begin() + cloest_pt_idx_wrt_segment_start_pt);
+      out.trajectory_path.poses.end(),
+      target_path_.poses.begin() + cloest_pt_idx_wrt_segment_end_pt,
+      target_path_.poses.begin() + cloest_pt_idx_wrt_segment_start_pt);
   } else {
-    out.trajectory_path.poses.insert(out.trajectory_path.poses.end(),
-                                     target_path_.poses.begin() +
-                                         cloest_pt_idx_wrt_segment_end_pt,
-                                     target_path_.poses.end());
     out.trajectory_path.poses.insert(
-        out.trajectory_path.poses.end(), target_path_.poses.begin(),
-        target_path_.poses.begin() + cloest_pt_idx_wrt_segment_start_pt);
+      out.trajectory_path.poses.end(),
+      target_path_.poses.begin() +
+      cloest_pt_idx_wrt_segment_end_pt,
+      target_path_.poses.end());
+    out.trajectory_path.poses.insert(
+      out.trajectory_path.poses.end(), target_path_.poses.begin(),
+      target_path_.poses.begin() + cloest_pt_idx_wrt_segment_start_pt);
   }
   return out;
 }
 
 nif_msgs::msg::DynamicTrajectory DynamicPlannerNode::stitchFrenetToPath(
-    std::shared_ptr<FrenetPath> &frenet_segment_,
-    nav_msgs::msg::Path &target_path_) {
+  std::shared_ptr<FrenetPath> & frenet_segment_,
+  nav_msgs::msg::Path & target_path_)
+{
   nif_msgs::msg::DynamicTrajectory out;
 
   auto vec_x = frenet_segment_->points_x();
@@ -1000,12 +1084,12 @@ nif_msgs::msg::DynamicTrajectory DynamicPlannerNode::stitchFrenetToPath(
   // find closest index of target_path with respect to the start point of the
   // frenet segment
   auto cloest_pt_idx_wrt_segment_start_pt =
-      getCurIdx(vec_x[0], vec_y[0], target_path_);
+    getCurIdx(vec_x[0], vec_y[0], target_path_);
   // find closest index of target_path with respect to the end point of the
   // frenet segment + 2 (to cope with the case that the nearest point is behind
   // )
   auto cloest_pt_idx_wrt_segment_end_pt =
-      getCurIdx(vec_x.back(), vec_y.back(), target_path_) + 2;
+    getCurIdx(vec_x.back(), vec_y.back(), target_path_) + 2;
 
   // Index wrapping for end point of the frenet
   if (cloest_pt_idx_wrt_segment_end_pt >= target_path_.poses.size()) {
@@ -1018,37 +1102,40 @@ nif_msgs::msg::DynamicTrajectory DynamicPlannerNode::stitchFrenetToPath(
     ps.pose.position.x = vec_x[i];
     ps.pose.position.y = vec_y[i];
     ps.pose.orientation =
-        nif::common::utils::coordination::euler2quat(vec_yaw[i], 0.0, 0.0);
+      nif::common::utils::coordination::euler2quat(vec_yaw[i], 0.0, 0.0);
     out.trajectory_path.poses.push_back(ps);
   }
 
   if (cloest_pt_idx_wrt_segment_start_pt > cloest_pt_idx_wrt_segment_end_pt) {
     // index wrapping (frenet start from end part of the target path.)
     out.trajectory_path.poses.insert(
-        out.trajectory_path.poses.end(),
-        target_path_.poses.begin() + cloest_pt_idx_wrt_segment_end_pt,
-        target_path_.poses.begin() + cloest_pt_idx_wrt_segment_start_pt);
+      out.trajectory_path.poses.end(),
+      target_path_.poses.begin() + cloest_pt_idx_wrt_segment_end_pt,
+      target_path_.poses.begin() + cloest_pt_idx_wrt_segment_start_pt);
   } else {
-    out.trajectory_path.poses.insert(out.trajectory_path.poses.end(),
-                                     target_path_.poses.begin() +
-                                         cloest_pt_idx_wrt_segment_end_pt,
-                                     target_path_.poses.end());
     out.trajectory_path.poses.insert(
-        out.trajectory_path.poses.end(), target_path_.poses.begin(),
-        target_path_.poses.begin() + cloest_pt_idx_wrt_segment_start_pt);
+      out.trajectory_path.poses.end(),
+      target_path_.poses.begin() +
+      cloest_pt_idx_wrt_segment_end_pt,
+      target_path_.poses.end());
+    out.trajectory_path.poses.insert(
+      out.trajectory_path.poses.end(), target_path_.poses.begin(),
+      target_path_.poses.begin() + cloest_pt_idx_wrt_segment_start_pt);
   }
   return out;
 }
 
 double DynamicPlannerNode::getProgress(
-    const geometry_msgs::msg::Pose &pt_global_,
-    const nif_msgs::msg::DynamicTrajectory &target_traj) {
+  const geometry_msgs::msg::Pose & pt_global_,
+  const nif_msgs::msg::DynamicTrajectory & target_traj)
+{
   return getProgress(pt_global_.position.x, pt_global_.position.y, target_traj);
 }
 
 double DynamicPlannerNode::getProgress(
-    const double &pt_x_, const double &pt_y_,
-    const nif_msgs::msg::DynamicTrajectory &target_traj) {
+  const double & pt_x_, const double & pt_y_,
+  const nif_msgs::msg::DynamicTrajectory & target_traj)
+{
   double out;
 
   int closest_idx = 0;
@@ -1056,8 +1143,8 @@ double DynamicPlannerNode::getProgress(
 
   for (int i = 0; i < target_traj.trajectory_path.poses.size(); i++) {
     double dist = sqrt(
-        pow(pt_x_ - target_traj.trajectory_path.poses[i].pose.position.x, 2) +
-        pow(pt_y_ - target_traj.trajectory_path.poses[i].pose.position.y, 2));
+      pow(pt_x_ - target_traj.trajectory_path.poses[i].pose.position.x, 2) +
+      pow(pt_y_ - target_traj.trajectory_path.poses[i].pose.position.y, 2));
     if (dist < min_dist) {
       min_dist = dist;
       closest_idx = i;
@@ -1068,19 +1155,22 @@ double DynamicPlannerNode::getProgress(
 }
 
 nav_msgs::msg::Path DynamicPlannerNode::getIntervalPath(
-    const geometry_msgs::msg::Pose &start_global_,
-    const geometry_msgs::msg::Pose &end_global_,
-    const nif_msgs::msg::DynamicTrajectory &target_traj) {
+  const geometry_msgs::msg::Pose & start_global_,
+  const geometry_msgs::msg::Pose & end_global_,
+  const nif_msgs::msg::DynamicTrajectory & target_traj)
+{
   // Inside here, progress wrapping is done.
 
-  return getIntervalPath(start_global_.position.x, start_global_.position.y,
-                         end_global_.position.x, end_global_.position.y,
-                         target_traj);
+  return getIntervalPath(
+    start_global_.position.x, start_global_.position.y,
+    end_global_.position.x, end_global_.position.y,
+    target_traj);
 }
 
 nav_msgs::msg::Path DynamicPlannerNode::getIntervalPath(
-    const double &start_x_, const double &start_y_, const double &end_x_,
-    const double &end_y_, const nif_msgs::msg::DynamicTrajectory &target_traj) {
+  const double & start_x_, const double & start_y_, const double & end_x_,
+  const double & end_y_, const nif_msgs::msg::DynamicTrajectory & target_traj)
+{
   // Inside here, progress wrapping is done.
 
   nav_msgs::msg::Path interval_path_out;
@@ -1096,30 +1186,33 @@ nav_msgs::msg::Path DynamicPlannerNode::getIntervalPath(
 
   if (end_pt_idx - start_pt_progress > 0) {
     interval_path_out.poses = std::vector<geometry_msgs::msg::PoseStamped>(
-        target_traj.trajectory_path.poses.begin() + start_pt_idx,
-        target_traj.trajectory_path.poses.begin() + end_pt_idx);
+      target_traj.trajectory_path.poses.begin() + start_pt_idx,
+      target_traj.trajectory_path.poses.begin() + end_pt_idx);
   } else {
     interval_path_out.poses = std::vector<geometry_msgs::msg::PoseStamped>(
-        target_traj.trajectory_path.poses.begin() + start_pt_idx,
-        target_traj.trajectory_path.poses.end());
+      target_traj.trajectory_path.poses.begin() + start_pt_idx,
+      target_traj.trajectory_path.poses.end());
 
-    interval_path_out.poses.insert(interval_path_out.poses.end(),
-                                   target_traj.trajectory_path.poses.begin(),
-                                   target_traj.trajectory_path.poses.begin() +
-                                       end_pt_idx);
+    interval_path_out.poses.insert(
+      interval_path_out.poses.end(),
+      target_traj.trajectory_path.poses.begin(),
+      target_traj.trajectory_path.poses.begin() +
+      end_pt_idx);
   }
 
   return interval_path_out;
 }
 
 nav_msgs::msg::Path DynamicPlannerNode::getCertainLenOfPathSeg(
-    const double &start_x_, const double &start_y_,
-    const nav_msgs::msg::Path &target_path_, const int &idx_length) {
+  const double & start_x_, const double & start_y_,
+  const nav_msgs::msg::Path & target_path_, const int & idx_length)
+{
 
   if (target_path_.poses.empty()) {
-    RCLCPP_ERROR_ONCE(this->get_logger(),
-                      "In side of getCertainLenOfPathSeg : target path is "
-                      "empty. Return empty path.");
+    RCLCPP_ERROR_ONCE(
+      this->get_logger(),
+      "In side of getCertainLenOfPathSeg : target path is "
+      "empty. Return empty path.");
     nav_msgs::msg::Path empty_path;
     empty_path.header.frame_id = nif::common::frame_id::localization::ODOM;
     return empty_path;
@@ -1127,7 +1220,10 @@ nav_msgs::msg::Path DynamicPlannerNode::getCertainLenOfPathSeg(
 
   nav_msgs::msg::Path out;
   out.header.frame_id = nif::common::frame_id::localization::ODOM;
-  out.poses.resize(std::min(idx_length, target_path.poses.size()));
+  out.poses.resize(
+    std::min(
+      static_cast<unsigned int>(idx_length),
+      static_cast<unsigned int>(target_path_.poses.size()) ) );
 
   auto cur_idx_on_target_path = getCurIdx(start_x_, start_y_, target_path_);
 
@@ -1142,7 +1238,8 @@ nav_msgs::msg::Path DynamicPlannerNode::getCertainLenOfPathSeg(
   return out;
 }
 
-void DynamicPlannerNode::timer_callback_debug() {
+void DynamicPlannerNode::timer_callback_debug()
+{
   m_cur_planned_traj = m_racingline_dtraj;
 
   m_ego_odom.pose.pose.position.x = -50.4714715;
@@ -1150,22 +1247,22 @@ void DynamicPlannerNode::timer_callback_debug() {
   m_ego_odom.twist.twist.linear.x = 60;
 
   auto allowable_maximum_vy =
-      abs(tan(m_acceptable_slip_angle_rad)) *
-      std::max(m_ego_odom.twist.twist.linear.x, MIN_SPEED_MPS);
+    abs(tan(m_acceptable_slip_angle_rad)) *
+    std::max(m_ego_odom.twist.twist.linear.x, MIN_SPEED_MPS);
   allowable_maximum_vy = std::max(1.5, allowable_maximum_vy); // mps
 
   auto start = std::chrono::system_clock::now();
   std::cout << "here1" << std::endl;
 
   auto progreeNCTE_racingline =
-      calcProgressNCTE(m_ego_odom.pose.pose, m_racingline_path);
+    calcProgressNCTE(m_ego_odom.pose.pose, m_racingline_path);
 
   std::cout << "here2" << std::endl;
 
   auto start1 = std::chrono::system_clock::now();
 
   bool is_close_racingline =
-      (get<1>(progreeNCTE_racingline) < m_config_merge_allow_dist);
+    (get<1>(progreeNCTE_racingline) < m_config_merge_allow_dist);
 
   std::cout << "here3" << std::endl;
 
@@ -1174,44 +1271,47 @@ void DynamicPlannerNode::timer_callback_debug() {
   // Merging frenet segment generation
   // Generate single frenet path segment
   std::vector<std::shared_ptr<FrenetPath>> frenet_path_generation_result =
-      m_frenet_generator_ptr->calc_frenet_paths_multi_longi(
-          get<1>(progreeNCTE_racingline), // current_position_d
-          get<0>(progreeNCTE_racingline), // current_position_s
-          0.0,                            // current_velocity_d
-          std::max(m_ego_odom.twist.twist.linear.x,
-                   MIN_SPEED_MPS),          // current_velocity_s
-          0.0,                              // current_acceleration_d
-          get<4>(m_racingline_spline_data), // cubicSplineModel
-          std::max(abs(get<1>(progreeNCTE_racingline) / allowable_maximum_vy),
-                   2.0),
-          std::max(abs(get<1>(progreeNCTE_racingline) / allowable_maximum_vy),
-                   2.0) +
-              0.01,
-          SAMPLING_TIME, 0.0, 0.0001, 0.1);
+    m_frenet_generator_ptr->calc_frenet_paths_multi_longi(
+    get<1>(progreeNCTE_racingline),       // current_position_d
+    get<0>(progreeNCTE_racingline),       // current_position_s
+    0.0,                                  // current_velocity_d
+    std::max(
+      m_ego_odom.twist.twist.linear.x,
+      MIN_SPEED_MPS),                       // current_velocity_s
+    0.0,                                    // current_acceleration_d
+    get<4>(m_racingline_spline_data),       // cubicSplineModel
+    std::max(
+      abs(get<1>(progreeNCTE_racingline) / allowable_maximum_vy),
+      2.0),
+    std::max(
+      abs(get<1>(progreeNCTE_racingline) / allowable_maximum_vy),
+      2.0) +
+    0.01,
+    SAMPLING_TIME, 0.0, 0.0001, 0.1);
 
   std::cout << "here4" << std::endl;
 
   auto start3 = std::chrono::system_clock::now();
 
   auto stitched_path =
-      stitchFrenetToPath(frenet_path_generation_result[0], m_racingline_path);
+    stitchFrenetToPath(frenet_path_generation_result[0], m_racingline_path);
 
   std::cout << "here5" << std::endl;
 
   auto start4 = std::chrono::system_clock::now();
 
   auto raceline_path_seg = getCertainLenOfPathSeg(
-      m_ego_odom.pose.pose.position.x, m_ego_odom.pose.pose.position.y,
-      stitched_path.trajectory_path, 100);
+    m_ego_odom.pose.pose.position.x, m_ego_odom.pose.pose.position.y,
+    stitched_path.trajectory_path, 100);
 
   std::cout << "here6" << std::endl;
 
   auto start5 = std::chrono::system_clock::now();
 
   auto race_traj = m_velocity_profiler_obj.velProfileWCollisionChecking(
-      m_ego_odom, raceline_path_seg, m_cur_oppo_pred_result,
-      m_config_overlap_checking_dist_bound,
-      m_config_overlap_checking_time_bound, true, 1.0);
+    m_ego_odom, raceline_path_seg, m_cur_oppo_pred_result,
+    m_config_overlap_checking_dist_bound,
+    m_config_overlap_checking_time_bound, true, 1.0);
 
   std::cout << "here7" << std::endl;
 
@@ -1235,7 +1335,8 @@ void DynamicPlannerNode::timer_callback_debug() {
 }
 
 void DynamicPlannerNode::publishPlannedTrajectory(
-    nif_msgs::msg::DynamicTrajectory &traj_, bool is_acc_, bool vis_) {
+  nif_msgs::msg::DynamicTrajectory & traj_, bool is_acc_, bool vis_)
+{
   traj_.header.frame_id = nif::common::frame_id::localization::ODOM;
   traj_.trajectory_type = traj_.TRAJECTORY_TYPE_PLANNING;
 
@@ -1251,15 +1352,16 @@ void DynamicPlannerNode::publishPlannedTrajectory(
   if (vis_) {
     m_ego_planned_vis_path_global = traj_.trajectory_path;
     m_ego_planned_vis_path_global.header.frame_id =
-        nif::common::frame_id::localization::ODOM;
+      nif::common::frame_id::localization::ODOM;
     m_ego_planned_vis_path_global.header.stamp = this->now();
     m_ego_traj_global_vis_pub->publish(m_ego_planned_vis_path_global);
   }
 }
 
 void DynamicPlannerNode::publishPlannedTrajectory(
-    nif_msgs::msg::DynamicTrajectory &traj_, int32_t longi_type_,
-    int32_t lat_type_, bool vis_) {
+  nif_msgs::msg::DynamicTrajectory & traj_, int32_t longi_type_,
+  int32_t lat_type_, bool vis_)
+{
 
   traj_.header.frame_id = nif::common::frame_id::localization::ODOM;
   traj_.trajectory_type = traj_.TRAJECTORY_TYPE_PLANNING;
@@ -1310,15 +1412,17 @@ void DynamicPlannerNode::publishPlannedTrajectory(
   if (vis_) {
     m_ego_planned_vis_path_global = traj_.trajectory_path;
     m_ego_planned_vis_path_global.header.frame_id =
-        nif::common::frame_id::localization::ODOM;
+      nif::common::frame_id::localization::ODOM;
     m_ego_planned_vis_path_global.header.stamp = this->now();
     m_ego_traj_global_vis_pub->publish(m_ego_planned_vis_path_global);
   }
 }
 
-void DynamicPlannerNode::checkSwitchToStaticWPT(int cur_wpt_idx_) {
+void DynamicPlannerNode::checkSwitchToStaticWPT(int cur_wpt_idx_)
+{
   if (cur_wpt_idx_ >= m_reset_wpt_idx && m_reset_wpt_idx != NULL &&
-      m_reset_target_path_idx != NULL) {
+    m_reset_target_path_idx != NULL)
+  {
     if (m_reset_target_path_idx == RESET_PATH_TYPE::RACE_LINE) {
       // target path is the racing line
       m_cur_planned_traj.trajectory_path = m_racingline_path;
@@ -1332,7 +1436,7 @@ void DynamicPlannerNode::checkSwitchToStaticWPT(int cur_wpt_idx_) {
     } else {
       // target path is one of the overtaking path candidates
       m_cur_planned_traj.trajectory_path =
-          m_overtaking_candidates_path_vec[m_reset_target_path_idx];
+        m_overtaking_candidates_path_vec[m_reset_target_path_idx];
       m_reset_wpt_idx = NULL;
       m_reset_target_path_idx = NULL;
     }
@@ -1340,8 +1444,9 @@ void DynamicPlannerNode::checkSwitchToStaticWPT(int cur_wpt_idx_) {
 }
 
 void DynamicPlannerNode::publishPlannedTrajectory(
-    nif_msgs::msg::DynamicTrajectory &traj_, int longi_type_, int lat_type_,
-    int target_path_, bool vis_) {
+  nif_msgs::msg::DynamicTrajectory & traj_, int longi_type_, int lat_type_,
+  int target_path_, bool vis_)
+{
   traj_.header.frame_id = nif::common::frame_id::localization::ODOM;
   traj_.trajectory_type = traj_.TRAJECTORY_TYPE_PLANNING;
 
@@ -1389,26 +1494,27 @@ void DynamicPlannerNode::publishPlannedTrajectory(
   if (vis_) {
     m_ego_planned_vis_path_global = traj_.trajectory_path;
     m_ego_planned_vis_path_global.header.frame_id =
-        nif::common::frame_id::localization::ODOM;
+      nif::common::frame_id::localization::ODOM;
     m_ego_planned_vis_path_global.header.stamp = this->now();
     m_ego_traj_global_vis_pub->publish(m_ego_planned_vis_path_global);
   }
 }
 
-void DynamicPlannerNode::timer_callback() {
+void DynamicPlannerNode::timer_callback()
+{
   // ----------------------------------------------------------------
   // SYSTEM health check
   auto mission_status = this->getSystemStatus().mission_status;
   double mission_max_vel =
-      this->getSystemStatus().mission_status.max_velocity_mps;
+    this->getSystemStatus().mission_status.max_velocity_mps;
 
   // Mission maximum vel set to the profiler
   auto flg = m_velocity_profiler_obj.setConstraintMaxVel(mission_max_vel);
   // ---------------------------------------------------------------
 
   auto allowable_maximum_vy =
-      abs(tan(m_acceptable_slip_angle_rad)) *
-      std::max(m_ego_odom.twist.twist.linear.x, MIN_SPEED_MPS);
+    abs(tan(m_acceptable_slip_angle_rad)) *
+    std::max(m_ego_odom.twist.twist.linear.x, MIN_SPEED_MPS);
   allowable_maximum_vy = std::max(1.5, allowable_maximum_vy); // mps
 
   // ---------------------------------------------------------------
@@ -1424,81 +1530,92 @@ void DynamicPlannerNode::timer_callback() {
     // ---------------------------------------------------------------
 
     if (mission_status.mission_status_code !=
-            nif::common::MissionStatus::MISSION_RACE &&
-        mission_status.mission_status_code !=
-            nif::common::MissionStatus::MISSION_KEEP_POSITION &&
-        mission_status.mission_status_code !=
-            nif::common::MissionStatus::MISSION_CONSTANT_SPEED) {
+      nif::common::MissionStatus::MISSION_RACE &&
+      mission_status.mission_status_code !=
+      nif::common::MissionStatus::MISSION_KEEP_POSITION &&
+      mission_status.mission_status_code !=
+      nif::common::MissionStatus::MISSION_CONSTANT_SPEED)
+    {
 
       m_defender_mode_first_callback = true;
 
       // Convert maptrack to trajectory and publish (only global / without
       // ACC)
       auto cur_traj = m_velocity_profiler_obj.velProfile(
-          m_ego_odom, m_maptrack_global, 1.0);
+        m_ego_odom, m_maptrack_global, 1.0);
 
       m_last_update_target_path_alias = "race_ready";
       m_last_lat_planning_type = LATERAL_PLANNING_TYPE::KEEP;
       m_last_long_planning_type = LONGITUDINAL_PLANNING_TYPE::STRAIGHT;
-      publishPlannedTrajectory(cur_traj, m_last_long_planning_type,
-                               m_last_lat_planning_type, true);
+      publishPlannedTrajectory(
+        cur_traj, m_last_long_planning_type,
+        m_last_lat_planning_type, true);
       return;
     } else {
       if (mission_status.mission_status_code ==
-          nif::common::MissionStatus::MISSION_RACE) {
+        nif::common::MissionStatus::MISSION_RACE)
+      {
 
         m_defender_mode_first_callback = true;
 
         if (m_cur_planned_traj.trajectory_path.poses.empty()) {
           auto progreeNCTE_racingline =
-              calcProgressNCTE(m_ego_odom.pose.pose, m_racingline_path);
+            calcProgressNCTE(m_ego_odom.pose.pose, m_racingline_path);
 
           // Merging frenet segment generation
           // Generate single frenet path segment
           std::vector<std::shared_ptr<FrenetPath>>
-              frenet_path_generation_result =
-                  m_frenet_generator_ptr->calc_frenet_paths_multi_longi(
-                      get<1>(progreeNCTE_racingline), // current_position_d
-                      get<0>(progreeNCTE_racingline), // current_position_s
-                      0.0,                            // current_velocity_d
-                      std::max(m_ego_odom.twist.twist.linear.x,
-                               MIN_SPEED_MPS), // current_velocity_s
-                      0.0,                     // current_acceleration_d
-                      get<4>(m_racingline_spline_data), // cubicSplineModel
-                      std::max(abs(get<1>(progreeNCTE_racingline) /
-                                   allowable_maximum_vy),
-                               2.0),
-                      std::max(abs(get<1>(progreeNCTE_racingline) /
-                                   allowable_maximum_vy),
-                               2.0) +
-                          0.01,
-                      SAMPLING_TIME, 0.0, 0.0001, 0.1);
+          frenet_path_generation_result =
+            m_frenet_generator_ptr->calc_frenet_paths_multi_longi(
+            get<1>(progreeNCTE_racingline),           // current_position_d
+            get<0>(progreeNCTE_racingline),           // current_position_s
+            0.0,                                      // current_velocity_d
+            std::max(
+              m_ego_odom.twist.twist.linear.x,
+              MIN_SPEED_MPS),                  // current_velocity_s
+            0.0,                               // current_acceleration_d
+            get<4>(m_racingline_spline_data),           // cubicSplineModel
+            std::max(
+              abs(
+                get<1>(progreeNCTE_racingline) /
+                allowable_maximum_vy),
+              2.0),
+            std::max(
+              abs(
+                get<1>(progreeNCTE_racingline) /
+                allowable_maximum_vy),
+              2.0) +
+            0.01,
+            SAMPLING_TIME, 0.0, 0.0001, 0.1);
 
           if (frenet_path_generation_result.empty() ||
-              frenet_path_generation_result[0]->points_x().empty()) {
+            frenet_path_generation_result[0]->points_x().empty())
+          {
             // Abnormal situation
             // publish empty & Estop trajectory
             RCLCPP_ERROR_ONCE(
-                this->get_logger(),
-                "[RACE MODE] CRITICAL BUG HAS BEEN HIT.\n Frenet path "
-                "generation result or point vector is empty");
+              this->get_logger(),
+              "[RACE MODE] CRITICAL BUG HAS BEEN HIT.\n Frenet path "
+              "generation result or point vector is empty");
             m_last_lat_planning_type = LATERAL_PLANNING_TYPE::KEEP;
             m_last_long_planning_type = LONGITUDINAL_PLANNING_TYPE::ESTOP;
             nif_msgs::msg::DynamicTrajectory empty_traj;
             empty_traj.header.frame_id =
-                nif::common::frame_id::localization::ODOM;
-            publishPlannedTrajectory(empty_traj, m_last_long_planning_type,
-                                     m_last_lat_planning_type, true);
+              nif::common::frame_id::localization::ODOM;
+            publishPlannedTrajectory(
+              empty_traj, m_last_long_planning_type,
+              m_last_lat_planning_type, true);
             return;
           }
 
           m_cur_planned_traj = stitchFrenetToPath(
-              frenet_path_generation_result[0], m_racingline_path);
+            frenet_path_generation_result[0], m_racingline_path);
 
           m_reset_wpt_idx =
-              getCurIdx(frenet_path_generation_result[0]->points_x().back(),
-                        frenet_path_generation_result[0]->points_y().back(),
-                        m_cur_planned_traj.trajectory_path);
+            getCurIdx(
+            frenet_path_generation_result[0]->points_x().back(),
+            frenet_path_generation_result[0]->points_y().back(),
+            m_cur_planned_traj.trajectory_path);
 
           // Set the target path index to -1 which means the racing line
           m_last_update_target_path_alias = "raceline";
@@ -1509,8 +1626,8 @@ void DynamicPlannerNode::timer_callback() {
         // Change the target path to the static wpt
         ///////////////////////////////////////////
         auto cur_idx_on_previous_path = getCurIdx(
-            m_ego_odom.pose.pose.position.x, m_ego_odom.pose.pose.position.y,
-            m_cur_planned_traj.trajectory_path);
+          m_ego_odom.pose.pose.position.x, m_ego_odom.pose.pose.position.y,
+          m_cur_planned_traj.trajectory_path);
 
         checkSwitchToStaticWPT(cur_idx_on_previous_path);
         // ----------------------------------------------------------------
@@ -1523,68 +1640,77 @@ void DynamicPlannerNode::timer_callback() {
         auto naive_gap = nif::common::constants::numeric::INF;
         if (!m_cur_oppo_pred_result.trajectory_path.poses.empty()) {
           naive_gap = nif::common::utils::geometry::calEuclideanDistance(
-              m_ego_odom.pose.pose,
-              m_cur_oppo_pred_result.trajectory_path.poses.front().pose);
+            m_ego_odom.pose.pose,
+            m_cur_oppo_pred_result.trajectory_path.poses.front().pose);
         }
 
         if (naive_gap > m_merging_back_gap_thres && // longitudinal wise
-            m_last_update_target_path_alias != "raceline" &&
-            m_last_lat_planning_type == LATERAL_PLANNING_TYPE::KEEP &&
-            m_reset_target_path_idx == NULL) {
+          m_last_update_target_path_alias != "raceline" &&
+          m_last_lat_planning_type == LATERAL_PLANNING_TYPE::KEEP &&
+          m_reset_target_path_idx == NULL)
+        {
 
           auto progreeNCTE_racingline =
-              calcProgressNCTE(m_ego_odom.pose.pose, m_racingline_path);
+            calcProgressNCTE(m_ego_odom.pose.pose, m_racingline_path);
           bool is_close_racingline =
-              (get<1>(progreeNCTE_racingline) <
-               m_config_merge_allow_dist); // lateral wise
+            (get<1>(progreeNCTE_racingline) <
+            m_config_merge_allow_dist);    // lateral wise
 
           if (is_close_racingline) {
             // Merging frenet segment generation
             // Generate single frenet path segment
             std::vector<std::shared_ptr<FrenetPath>>
-                frenet_path_generation_result =
-                    m_frenet_generator_ptr->calc_frenet_paths_multi_longi(
-                        get<1>(progreeNCTE_racingline), // current_position_d
-                        get<0>(progreeNCTE_racingline), // current_position_s
-                        0.0,                            // current_velocity_d
-                        std::max(m_ego_odom.twist.twist.linear.x,
-                                 MIN_SPEED_MPS), // current_velocity_s
-                        0.0,                     // current_acceleration_d
-                        get<4>(m_racingline_spline_data), // cubicSplineModel
-                        std::max(abs(get<1>(progreeNCTE_racingline) /
-                                     allowable_maximum_vy),
-                                 2.0),
-                        std::max(abs(get<1>(progreeNCTE_racingline) /
-                                     allowable_maximum_vy),
-                                 2.0) +
-                            0.01,
-                        SAMPLING_TIME, 0.0, 0.0001, 0.1);
+            frenet_path_generation_result =
+              m_frenet_generator_ptr->calc_frenet_paths_multi_longi(
+              get<1>(progreeNCTE_racingline),           // current_position_d
+              get<0>(progreeNCTE_racingline),           // current_position_s
+              0.0,                                      // current_velocity_d
+              std::max(
+                m_ego_odom.twist.twist.linear.x,
+                MIN_SPEED_MPS),                  // current_velocity_s
+              0.0,                               // current_acceleration_d
+              get<4>(m_racingline_spline_data),           // cubicSplineModel
+              std::max(
+                abs(
+                  get<1>(progreeNCTE_racingline) /
+                  allowable_maximum_vy),
+                2.0),
+              std::max(
+                abs(
+                  get<1>(progreeNCTE_racingline) /
+                  allowable_maximum_vy),
+                2.0) +
+              0.01,
+              SAMPLING_TIME, 0.0, 0.0001, 0.1);
 
             if (frenet_path_generation_result.empty() ||
-                frenet_path_generation_result[0]->points_x().empty()) {
+              frenet_path_generation_result[0]->points_x().empty())
+            {
               // Abnormal situation
               // publish empty & Estop trajectory
               RCLCPP_ERROR_ONCE(
-                  this->get_logger(),
-                  "[RACE MODE] CRITICAL BUG HAS BEEN HIT.\n Frenet path "
-                  "generation result or point vector is empty");
+                this->get_logger(),
+                "[RACE MODE] CRITICAL BUG HAS BEEN HIT.\n Frenet path "
+                "generation result or point vector is empty");
               m_last_lat_planning_type = LATERAL_PLANNING_TYPE::KEEP;
               m_last_long_planning_type = LONGITUDINAL_PLANNING_TYPE::ESTOP;
               nif_msgs::msg::DynamicTrajectory empty_traj;
               empty_traj.header.frame_id =
-                  nif::common::frame_id::localization::ODOM;
-              publishPlannedTrajectory(empty_traj, m_last_long_planning_type,
-                                       m_last_lat_planning_type, true);
+                nif::common::frame_id::localization::ODOM;
+              publishPlannedTrajectory(
+                empty_traj, m_last_long_planning_type,
+                m_last_lat_planning_type, true);
               return;
             }
 
             auto stitched_path = stitchFrenetToPath(
-                frenet_path_generation_result[0], m_racingline_path);
+              frenet_path_generation_result[0], m_racingline_path);
 
             auto raceline_path_seg =
-                getCertainLenOfPathSeg(m_ego_odom.pose.pose.position.x,
-                                       m_ego_odom.pose.pose.position.y,
-                                       stitched_path.trajectory_path, 100);
+              getCertainLenOfPathSeg(
+              m_ego_odom.pose.pose.position.x,
+              m_ego_odom.pose.pose.position.y,
+              stitched_path.trajectory_path, 100);
 
             // Convert to the trajectory with the velocity profiling
             // (without considering ACC)
@@ -1597,27 +1723,29 @@ void DynamicPlannerNode::timer_callback() {
             //     m_config_overlap_checking_time_bound, m_use_sat);
 
             auto race_traj =
-                m_velocity_profiler_obj.velProfileWCollisionChecking(
-                    m_ego_odom, raceline_path_seg, m_cur_oppo_pred_result,
-                    m_config_overlap_checking_dist_bound,
-                    m_config_overlap_checking_time_bound, true, 1.0);
+              m_velocity_profiler_obj.velProfileWCollisionChecking(
+              m_ego_odom, raceline_path_seg, m_cur_oppo_pred_result,
+              m_config_overlap_checking_dist_bound,
+              m_config_overlap_checking_time_bound, true, 1.0);
 
-            if (!race_traj.has_collision;) {
+            if (!race_traj.has_collision) {
               // Change the defualt path to the racing line (full path)
               // Not considering the ACC in this case
               m_cur_planned_traj = stitched_path;
               m_reset_wpt_idx =
-                  getCurIdx(frenet_path_generation_result[0]->points_x().back(),
-                            frenet_path_generation_result[0]->points_y().back(),
-                            m_cur_planned_traj.trajectory_path);
+                getCurIdx(
+                frenet_path_generation_result[0]->points_x().back(),
+                frenet_path_generation_result[0]->points_y().back(),
+                m_cur_planned_traj.trajectory_path);
 
               m_last_update_target_path_alias = "raceline";
               m_last_lat_planning_type = LATERAL_PLANNING_TYPE::MERGE;
               m_last_long_planning_type = LONGITUDINAL_PLANNING_TYPE::STRAIGHT;
               m_reset_target_path_idx = RESET_PATH_TYPE::RACE_LINE;
 
-              publishPlannedTrajectory(race_traj, m_last_long_planning_type,
-                                       m_last_lat_planning_type, true);
+              publishPlannedTrajectory(
+                race_traj, m_last_long_planning_type,
+                m_last_lat_planning_type, true);
               return;
             }
           }
@@ -1629,8 +1757,8 @@ void DynamicPlannerNode::timer_callback() {
         // (Not close enough to the racing line or colliding)
         ///////////////////////////////////////////////////
         auto cur_path_seg = getCertainLenOfPathSeg(
-            m_ego_odom.pose.pose.position.x, m_ego_odom.pose.pose.position.y,
-            m_cur_planned_traj.trajectory_path, 100);
+          m_ego_odom.pose.pose.position.x, m_ego_odom.pose.pose.position.y,
+          m_cur_planned_traj.trajectory_path, 100);
 
         // auto cur_traj =
         //     m_velocity_profiler_obj.velProfile(m_ego_odom,
@@ -1642,9 +1770,9 @@ void DynamicPlannerNode::timer_callback() {
         //     m_config_overlap_checking_time_bound, m_use_sat);
 
         auto cur_traj = m_velocity_profiler_obj.velProfileWCollisionChecking(
-            m_ego_odom, cur_path_seg, m_cur_oppo_pred_result,
-            m_config_overlap_checking_dist_bound,
-            m_config_overlap_checking_time_bound, true, 1.0);
+          m_ego_odom, cur_path_seg, m_cur_oppo_pred_result,
+          m_config_overlap_checking_dist_bound,
+          m_config_overlap_checking_time_bound, true, 1.0);
 
         if (!cur_traj.has_collision) {
           ///////////////////////////////////////
@@ -1653,8 +1781,9 @@ void DynamicPlannerNode::timer_callback() {
           ///////////////////////////////////////
           m_last_lat_planning_type = LATERAL_PLANNING_TYPE::KEEP;
           m_last_long_planning_type = LONGITUDINAL_PLANNING_TYPE::STRAIGHT;
-          publishPlannedTrajectory(cur_traj, m_last_long_planning_type,
-                                   m_last_lat_planning_type, true);
+          publishPlannedTrajectory(
+            cur_traj, m_last_long_planning_type,
+            m_last_lat_planning_type, true);
           return;
           // ----------------------------------------------------------------
 
@@ -1671,54 +1800,61 @@ void DynamicPlannerNode::timer_callback() {
           // Generate the frenet candidates to all overtaking path candidates
           // Right side first
           for (int path_candidate_idx = 0;
-               path_candidate_idx < m_overtaking_candidates_path_vec.size();
-               path_candidate_idx++) {
+            path_candidate_idx < m_overtaking_candidates_path_vec.size();
+            path_candidate_idx++)
+          {
 
             if (m_overtaking_candidates_path_vec[path_candidate_idx]
-                    .poses.empty())
+              .poses.empty())
+            {
               continue;
+            }
 
             auto progressNcte = calcProgressNCTE(
-                m_ego_odom.pose.pose,
-                m_overtaking_candidates_path_vec[path_candidate_idx]);
+              m_ego_odom.pose.pose,
+              m_overtaking_candidates_path_vec[path_candidate_idx]);
 
             std::vector<std::shared_ptr<FrenetPath>>
-                frenet_path_generation_result =
-                    m_frenet_generator_ptr->calc_frenet_paths_multi_longi(
-                        get<1>(progressNcte), // current_position_d
-                        get<0>(progressNcte), // current_position_s
-                        0.0,                  // current_velocity_d
-                        std::max(m_ego_odom.twist.twist.linear.x,
-                                 MIN_SPEED_MPS), // current_velocity_s
-                        0.0,                     // current_acceleration_d
-                        m_overtaking_candidates_spline_model_vec
-                            [path_candidate_idx], // cubicSplineModel
-                        std::max(
-                            abs(get<1>(progressNcte) / allowable_maximum_vy),
-                            2.0),
-                        std::max(
-                            abs(get<1>(progressNcte) / allowable_maximum_vy),
-                            2.0) +
-                            2.0 + 0.01,
-                        SAMPLING_TIME, 0.0, 0.0001, 0.1);
+            frenet_path_generation_result =
+              m_frenet_generator_ptr->calc_frenet_paths_multi_longi(
+              get<1>(progressNcte),           // current_position_d
+              get<0>(progressNcte),           // current_position_s
+              0.0,                            // current_velocity_d
+              std::max(
+                m_ego_odom.twist.twist.linear.x,
+                MIN_SPEED_MPS),                  // current_velocity_s
+              0.0,                               // current_acceleration_d
+              m_overtaking_candidates_spline_model_vec
+              [path_candidate_idx],               // cubicSplineModel
+              std::max(
+                abs(get<1>(progressNcte) / allowable_maximum_vy),
+                2.0),
+              std::max(
+                abs(get<1>(progressNcte) / allowable_maximum_vy),
+                2.0) +
+              2.0 + 0.01,
+              SAMPLING_TIME, 0.0, 0.0001, 0.1);
 
-            if (frenet_path_generation_result.empty())
+            if (frenet_path_generation_result.empty()) {
               continue;
+            }
 
             for (int frenet_idx = frenet_path_generation_result.size() - 1;
-                 frenet_idx >= 0; frenet_idx--) {
+              frenet_idx >= 0; frenet_idx--)
+            {
               //  Check collision in order of length of path (which means less
               //  jerky)
               auto frenet_candidate = frenet_path_generation_result[frenet_idx];
 
               auto stitched_path = stitchFrenetToPath(
-                  frenet_candidate,
-                  m_overtaking_candidates_path_vec[path_candidate_idx]);
+                frenet_candidate,
+                m_overtaking_candidates_path_vec[path_candidate_idx]);
 
               auto cur_path_seg =
-                  getCertainLenOfPathSeg(m_ego_odom.pose.pose.position.x,
-                                         m_ego_odom.pose.pose.position.y,
-                                         stitched_path.trajectory_path, 100);
+                getCertainLenOfPathSeg(
+                m_ego_odom.pose.pose.position.x,
+                m_ego_odom.pose.pose.position.y,
+                stitched_path.trajectory_path, 100);
 
               // auto cur_traj = m_velocity_profiler_obj.velProfile(
               //     m_ego_odom, cur_path_seg, 1.0);
@@ -1729,24 +1865,26 @@ void DynamicPlannerNode::timer_callback() {
               //     m_config_overlap_checking_time_bound, m_use_sat);
 
               auto cur_traj =
-                  m_velocity_profiler_obj.velProfileWCollisionChecking(
-                      m_ego_odom, cur_path_seg, m_cur_oppo_pred_result,
-                      m_config_overlap_checking_dist_bound,
-                      m_config_overlap_checking_time_bound, true, 1.0);
+                m_velocity_profiler_obj.velProfileWCollisionChecking(
+                m_ego_odom, cur_path_seg, m_cur_oppo_pred_result,
+                m_config_overlap_checking_dist_bound,
+                m_config_overlap_checking_time_bound, true, 1.0);
 
               if (!cur_traj.has_collision) {
                 m_cur_planned_traj = stitched_path;
-                m_reset_wpt_idx = getCurIdx(frenet_candidate->points_x().back(),
-                                            frenet_candidate->points_y().back(),
-                                            m_cur_planned_traj.trajectory_path);
+                m_reset_wpt_idx = getCurIdx(
+                  frenet_candidate->points_x().back(),
+                  frenet_candidate->points_y().back(),
+                  m_cur_planned_traj.trajectory_path);
                 m_reset_target_path_idx = path_candidate_idx;
                 m_last_update_target_path_alias =
-                    m_overtaking_candidates_alias_vec[path_candidate_idx];
+                  m_overtaking_candidates_alias_vec[path_candidate_idx];
                 m_last_lat_planning_type = LATERAL_PLANNING_TYPE::CHANGE_PATH;
                 m_last_long_planning_type =
-                    LONGITUDINAL_PLANNING_TYPE::STRAIGHT;
-                publishPlannedTrajectory(cur_traj, m_last_long_planning_type,
-                                         m_last_lat_planning_type, true);
+                  LONGITUDINAL_PLANNING_TYPE::STRAIGHT;
+                publishPlannedTrajectory(
+                  cur_traj, m_last_long_planning_type,
+                  m_last_lat_planning_type, true);
                 // FIXME: Currently, if there is a collision free path, we
                 // change the path immediately.
                 return;
@@ -1765,21 +1903,23 @@ void DynamicPlannerNode::timer_callback() {
           /////////////////////////////////////////
           if (collision_free_frenet_vec.empty()) {
             auto cur_path_seg =
-                getCertainLenOfPathSeg(m_ego_odom.pose.pose.position.x,
-                                       m_ego_odom.pose.pose.position.y,
-                                       m_cur_planned_traj.trajectory_path, 100);
+              getCertainLenOfPathSeg(
+              m_ego_odom.pose.pose.position.x,
+              m_ego_odom.pose.pose.position.y,
+              m_cur_planned_traj.trajectory_path, 100);
 
             auto cur_traj = m_velocity_profiler_obj.velProfileForAcc(
-                m_ego_odom, m_cur_oppo_pred_result,
-                m_cur_det_global.obj_velocity_in_global.linear.x, cur_path_seg,
-                1.0);
+              m_ego_odom, m_cur_oppo_pred_result,
+              m_cur_det_global.obj_velocity_in_global.linear.x, cur_path_seg,
+              1.0);
 
             // Publish cur_traj
             // Keep previous plan and do ACC
             m_last_lat_planning_type = LATERAL_PLANNING_TYPE::KEEP;
             m_last_long_planning_type = LONGITUDINAL_PLANNING_TYPE::FOLLOW;
-            publishPlannedTrajectory(cur_traj, m_last_long_planning_type,
-                                     m_last_lat_planning_type, true);
+            publishPlannedTrajectory(
+              cur_traj, m_last_long_planning_type,
+              m_last_lat_planning_type, true);
             return;
           } else {
             // ////////////////////////////////////////////////////////
@@ -1796,59 +1936,65 @@ void DynamicPlannerNode::timer_callback() {
             estimated_arrive_time_vec.resize(collision_free_frenet_vec.size());
 
             for (int collision_free_frenet_idx = 0;
-                 collision_free_frenet_idx < collision_free_frenet_vec.size();
-                 collision_free_frenet_idx++) {
+              collision_free_frenet_idx < collision_free_frenet_vec.size();
+              collision_free_frenet_idx++)
+            {
               auto stitch_target_path_candidate_idx =
-                  collision_free_frenet_index_vec[collision_free_frenet_idx];
+                collision_free_frenet_index_vec[collision_free_frenet_idx];
 
               auto stitched_path = stitchFrenetToPath(
-                  collision_free_frenet_vec[collision_free_frenet_idx],
-                  m_overtaking_candidates_path_vec
-                      [stitch_target_path_candidate_idx]);
+                collision_free_frenet_vec[collision_free_frenet_idx],
+                m_overtaking_candidates_path_vec
+                [stitch_target_path_candidate_idx]);
 
               auto path_seg =
-                  getCertainLenOfPathSeg(m_ego_odom.pose.pose.position.x,
-                                         m_ego_odom.pose.pose.position.y,
-                                         stitched_path.trajectory_path, 100);
+                getCertainLenOfPathSeg(
+                m_ego_odom.pose.pose.position.x,
+                m_ego_odom.pose.pose.position.y,
+                stitched_path.trajectory_path, 100);
 
               auto planned_traj =
-                  m_velocity_profiler_obj.velProfile(m_ego_odom, path_seg, 1.0);
+                m_velocity_profiler_obj.velProfile(m_ego_odom, path_seg, 1.0);
 
               stitched_traj_vec[collision_free_frenet_idx] = stitched_path;
               planned_traj_vec[collision_free_frenet_idx] = planned_traj;
               estimated_arrive_time_vec[collision_free_frenet_idx] =
-                  planned_traj.trajectory_timestamp_array.back();
+                planned_traj.trajectory_timestamp_array.back();
             }
 
             auto naive_max_progree_path_idx =
-                std::min_element(estimated_arrive_time_vec.begin(),
-                                 estimated_arrive_time_vec.end()) -
-                estimated_arrive_time_vec.begin();
+              std::min_element(
+              estimated_arrive_time_vec.begin(),
+              estimated_arrive_time_vec.end()) -
+              estimated_arrive_time_vec.begin();
 
             m_cur_planned_traj = stitched_traj_vec[naive_max_progree_path_idx];
 
             m_reset_wpt_idx =
-                getCurIdx(collision_free_frenet_vec[naive_max_progree_path_idx]
-                              ->points_x()
-                              .back(),
-                          collision_free_frenet_vec[naive_max_progree_path_idx]
-                              ->points_y()
-                              .back(),
-                          m_cur_planned_traj.trajectory_path);
+              getCurIdx(
+              collision_free_frenet_vec[naive_max_progree_path_idx]
+              ->points_x()
+              .back(),
+              collision_free_frenet_vec[naive_max_progree_path_idx]
+              ->points_y()
+              .back(),
+              m_cur_planned_traj.trajectory_path);
 
             m_reset_target_path_idx =
-                collision_free_frenet_index_vec[naive_max_progree_path_idx];
+              collision_free_frenet_index_vec[naive_max_progree_path_idx];
             m_last_update_target_path_alias = m_overtaking_candidates_alias_vec
-                [collision_free_frenet_index_vec[naive_max_progree_path_idx]];
+              [collision_free_frenet_index_vec[naive_max_progree_path_idx]];
             m_last_lat_planning_type = LATERAL_PLANNING_TYPE::CHANGE_PATH;
             m_last_long_planning_type = LONGITUDINAL_PLANNING_TYPE::STRAIGHT;
-            publishPlannedTrajectory(cur_traj, m_last_long_planning_type,
-                                     m_last_lat_planning_type, true);
+            publishPlannedTrajectory(
+              cur_traj, m_last_long_planning_type,
+              m_last_lat_planning_type, true);
             return;
           }
         }
       } else if (mission_status.mission_status_code ==
-                 nif::common::MissionStatus::MISSION_KEEP_POSITION) {
+        nif::common::MissionStatus::MISSION_KEEP_POSITION)
+      {
 
         ////////////////////////////
         // Overtaking is not allowed
@@ -1858,54 +2004,63 @@ void DynamicPlannerNode::timer_callback() {
 
         if (m_cur_planned_traj.trajectory_path.poses.empty()) {
           auto progreeNCTE_racingline =
-              calcProgressNCTE(m_ego_odom.pose.pose, m_racingline_path);
+            calcProgressNCTE(m_ego_odom.pose.pose, m_racingline_path);
 
           // Merging frenet segment generation
           // Generate single frenet path segment
           std::vector<std::shared_ptr<FrenetPath>>
-              frenet_path_generation_result =
-                  m_frenet_generator_ptr->calc_frenet_paths_multi_longi(
-                      get<1>(progreeNCTE_racingline), // current_position_d
-                      get<0>(progreeNCTE_racingline), // current_position_s
-                      0.0,                            // current_velocity_d
-                      std::max(m_ego_odom.twist.twist.linear.x,
-                               MIN_SPEED_MPS), // current_velocity_s
-                      0.0,                     // current_acceleration_d
-                      get<4>(m_racingline_spline_data), // cubicSplineModel
-                      std::max(abs(get<1>(progreeNCTE_racingline) /
-                                   allowable_maximum_vy),
-                               2.0),
-                      std::max(abs(get<1>(progreeNCTE_racingline) /
-                                   allowable_maximum_vy),
-                               2.0) +
-                          0.01,
-                      SAMPLING_TIME, 0.0, 0.0001, 0.1);
+          frenet_path_generation_result =
+            m_frenet_generator_ptr->calc_frenet_paths_multi_longi(
+            get<1>(progreeNCTE_racingline),           // current_position_d
+            get<0>(progreeNCTE_racingline),           // current_position_s
+            0.0,                                      // current_velocity_d
+            std::max(
+              m_ego_odom.twist.twist.linear.x,
+              MIN_SPEED_MPS),                  // current_velocity_s
+            0.0,                               // current_acceleration_d
+            get<4>(m_racingline_spline_data),           // cubicSplineModel
+            std::max(
+              abs(
+                get<1>(progreeNCTE_racingline) /
+                allowable_maximum_vy),
+              2.0),
+            std::max(
+              abs(
+                get<1>(progreeNCTE_racingline) /
+                allowable_maximum_vy),
+              2.0) +
+            0.01,
+            SAMPLING_TIME, 0.0, 0.0001, 0.1);
 
           if (frenet_path_generation_result.empty() ||
-              frenet_path_generation_result[0]->points_x().empty()) {
+            frenet_path_generation_result[0]->points_x().empty())
+          {
             // Abnormal situation
             // publish empty & Estop trajectory
-            RCLCPP_ERROR_ONCE(this->get_logger(),
-                              "[MISSION_KEEP_POSITION] CRITICAL BUG HAS BEEN "
-                              "HIT.\n Frenet path "
-                              "generation result or point vector is empty");
+            RCLCPP_ERROR_ONCE(
+              this->get_logger(),
+              "[MISSION_KEEP_POSITION] CRITICAL BUG HAS BEEN "
+              "HIT.\n Frenet path "
+              "generation result or point vector is empty");
             m_last_lat_planning_type = LATERAL_PLANNING_TYPE::KEEP;
             m_last_long_planning_type = LONGITUDINAL_PLANNING_TYPE::ESTOP;
             nif_msgs::msg::DynamicTrajectory empty_traj;
             empty_traj.header.frame_id =
-                nif::common::frame_id::localization::ODOM;
-            publishPlannedTrajectory(empty_traj, m_last_long_planning_type,
-                                     m_last_lat_planning_type, true);
+              nif::common::frame_id::localization::ODOM;
+            publishPlannedTrajectory(
+              empty_traj, m_last_long_planning_type,
+              m_last_lat_planning_type, true);
             return;
           }
 
           auto stitched_path = stitchFrenetToPath(
-              frenet_path_generation_result[0], m_racingline_path);
+            frenet_path_generation_result[0], m_racingline_path);
           m_cur_planned_traj = stitched_path;
           m_reset_wpt_idx =
-              getCurIdx(frenet_path_generation_result[0]->points_x().back(),
-                        frenet_path_generation_result[0]->points_y().back(),
-                        m_cur_planned_traj.trajectory_path);
+            getCurIdx(
+            frenet_path_generation_result[0]->points_x().back(),
+            frenet_path_generation_result[0]->points_y().back(),
+            m_cur_planned_traj.trajectory_path);
 
           m_last_update_target_path_alias = "raceline";
           m_reset_target_path_idx = RESET_PATH_TYPE::RACE_LINE;
@@ -1915,26 +2070,27 @@ void DynamicPlannerNode::timer_callback() {
         // Change the target path to the static wpt
         ///////////////////////////////////////////
         auto cur_idx_on_previous_path = getCurIdx(
-            m_ego_odom.pose.pose.position.x, m_ego_odom.pose.pose.position.y,
-            m_cur_planned_traj.trajectory_path);
+          m_ego_odom.pose.pose.position.x, m_ego_odom.pose.pose.position.y,
+          m_cur_planned_traj.trajectory_path);
 
         checkSwitchToStaticWPT(cur_idx_on_previous_path);
         // -----------------------------------------
 
         // Keep previous plan and ACC trajectory generation
         auto cur_path_seg = getCertainLenOfPathSeg(
-            m_ego_odom.pose.pose.position.x, m_ego_odom.pose.pose.position.y,
-            m_cur_planned_traj.trajectory_path, 100);
+          m_ego_odom.pose.pose.position.x, m_ego_odom.pose.pose.position.y,
+          m_cur_planned_traj.trajectory_path, 100);
         auto cur_traj = m_velocity_profiler_obj.velProfileForAcc(
-            m_ego_odom, m_cur_oppo_pred_result,
-            m_cur_det_global.obj_velocity_in_global.linear.x, cur_path_seg,
-            1.0);
+          m_ego_odom, m_cur_oppo_pred_result,
+          m_cur_det_global.obj_velocity_in_global.linear.x, cur_path_seg,
+          1.0);
 
         // Publish cur_traj
         m_last_lat_planning_type = LATERAL_PLANNING_TYPE::KEEP;
         m_last_long_planning_type = LONGITUDINAL_PLANNING_TYPE::FOLLOW;
-        publishPlannedTrajectory(cur_traj, m_last_long_planning_type,
-                                 m_last_lat_planning_type, true);
+        publishPlannedTrajectory(
+          cur_traj, m_last_long_planning_type,
+          m_last_lat_planning_type, true);
         return;
       } else {
         // ----------------------------------------------
@@ -1946,59 +2102,70 @@ void DynamicPlannerNode::timer_callback() {
         ///////////////////////////////
         // defender mode first callback
         ///////////////////////////////
-        if (m_defender_mode_first_callback == true) {
+        if (m_defender_mode_first_callback == true ||
+          m_cur_planned_traj.trajectory_path.poses.empty())
+        {
           m_defender_mode_first_callback = false;
 
           // Switch to the defender line
           auto progreeNCTE_defenderline =
-              calcProgressNCTE(m_ego_odom.pose.pose, m_defenderline_path);
+            calcProgressNCTE(m_ego_odom.pose.pose, m_defenderline_path);
 
           // Merging frenet segment generation
           // Generate SINGLE frenet path segment
           std::vector<std::shared_ptr<FrenetPath>>
-              frenet_path_generation_result =
-                  m_frenet_generator_ptr->calc_frenet_paths_multi_longi(
-                      get<1>(progreeNCTE_defenderline), // current_position_d
-                      get<0>(progreeNCTE_defenderline), // current_position_s
-                      0.0,                              // current_velocity_d
-                      std::max(m_ego_odom.twist.twist.linear.x,
-                               MIN_SPEED_MPS), // current_velocity_s
-                      0.0,                     // current_acceleration_d
-                      get<4>(m_defenderline_spline_data), // cubicSplineModel
-                      std::max(abs(get<1>(progreeNCTE_defenderline) /
-                                   allowable_maximum_vy),
-                               2.0),
-                      std::max(abs(get<1>(progreeNCTE_defenderline) /
-                                   allowable_maximum_vy),
-                               2.0) +
-                          0.01,
-                      SAMPLING_TIME, 0.0, 0.0001, 0.1);
+          frenet_path_generation_result =
+            m_frenet_generator_ptr->calc_frenet_paths_multi_longi(
+            get<1>(progreeNCTE_defenderline),           // current_position_d
+            get<0>(progreeNCTE_defenderline),           // current_position_s
+            0.0,                                        // current_velocity_d
+            std::max(
+              m_ego_odom.twist.twist.linear.x,
+              MIN_SPEED_MPS),                  // current_velocity_s
+            0.0,                               // current_acceleration_d
+            get<4>(m_defenderline_spline_data),           // cubicSplineModel
+            std::max(
+              abs(
+                get<1>(progreeNCTE_defenderline) /
+                allowable_maximum_vy),
+              2.0),
+            std::max(
+              abs(
+                get<1>(progreeNCTE_defenderline) /
+                allowable_maximum_vy),
+              2.0) +
+            0.01,
+            SAMPLING_TIME, 0.0, 0.0001, 0.1);
 
           if (frenet_path_generation_result.empty() ||
-              frenet_path_generation_result[0]->points_x().empty()) {
+            frenet_path_generation_result[0]->points_x().empty())
+          {
             // Abnormal situation
             // publish empty & Estop trajectory
             // @DEBUG:
-            RCLCPP_ERROR_ONCE(this->get_logger(),
-                              "CRITICAL BUG HAS BEEN HIT.\n Frenet path "
-                              "generation result or point vector is empty");
+            RCLCPP_ERROR_ONCE(
+              this->get_logger(),
+              "CRITICAL BUG HAS BEEN HIT.\n Frenet path "
+              "generation result or point vector is empty");
             m_last_lat_planning_type = LATERAL_PLANNING_TYPE::KEEP;
             m_last_long_planning_type = LONGITUDINAL_PLANNING_TYPE::ESTOP;
             nif_msgs::msg::DynamicTrajectory empty_traj;
             empty_traj.header.frame_id =
-                nif::common::frame_id::localization::ODOM;
-            publishPlannedTrajectory(empty_traj, m_last_long_planning_type,
-                                     m_last_lat_planning_type, true);
+              nif::common::frame_id::localization::ODOM;
+            publishPlannedTrajectory(
+              empty_traj, m_last_long_planning_type,
+              m_last_lat_planning_type, true);
             return;
           }
 
           m_cur_planned_traj = stitchFrenetToPath(
-              frenet_path_generation_result[0], m_defenderline_path);
+            frenet_path_generation_result[0], m_defenderline_path);
           m_last_update_target_path_alias = "defender";
           m_reset_wpt_idx =
-              getCurIdx(frenet_path_generation_result[0]->points_x().back(),
-                        frenet_path_generation_result[0]->points_y().back(),
-                        m_cur_planned_traj.trajectory_path);
+            getCurIdx(
+            frenet_path_generation_result[0]->points_x().back(),
+            frenet_path_generation_result[0]->points_y().back(),
+            m_cur_planned_traj.trajectory_path);
           m_reset_target_path_idx = RESET_PATH_TYPE::DEFENDER_LINE;
         } else {
           // Keep previous plan
@@ -2007,27 +2174,28 @@ void DynamicPlannerNode::timer_callback() {
           // Change the target path to the static wpt
           ///////////////////////////////////////////
           auto cur_idx_on_previous_path = getCurIdx(
-              m_ego_odom.pose.pose.position.x, m_ego_odom.pose.pose.position.y,
-              m_cur_planned_traj.trajectory_path);
+            m_ego_odom.pose.pose.position.x, m_ego_odom.pose.pose.position.y,
+            m_cur_planned_traj.trajectory_path);
 
           checkSwitchToStaticWPT(cur_idx_on_previous_path);
           // -----------------------------------------
         }
 
         auto cur_path_seg = getCertainLenOfPathSeg(
-            m_ego_odom.pose.pose.position.x, m_ego_odom.pose.pose.position.y,
-            m_cur_planned_traj.trajectory_path, 100);
+          m_ego_odom.pose.pose.position.x, m_ego_odom.pose.pose.position.y,
+          m_cur_planned_traj.trajectory_path, 100);
 
         auto cur_traj = m_velocity_profiler_obj.velProfileForAcc(
-            m_ego_odom, m_cur_oppo_pred_result,
-            m_cur_det_global.obj_velocity_in_global.linear.x, cur_path_seg,
-            1.0);
+          m_ego_odom, m_cur_oppo_pred_result,
+          m_cur_det_global.obj_velocity_in_global.linear.x, cur_path_seg,
+          1.0);
 
         // Publish cur_traj
         m_last_lat_planning_type = LATERAL_PLANNING_TYPE::KEEP;
         m_last_long_planning_type = LONGITUDINAL_PLANNING_TYPE::FOLLOW;
-        publishPlannedTrajectory(cur_traj, m_last_long_planning_type,
-                                 m_last_lat_planning_type, true);
+        publishPlannedTrajectory(
+          cur_traj, m_last_long_planning_type,
+          m_last_lat_planning_type, true);
         return;
       }
     }
@@ -2039,10 +2207,11 @@ void DynamicPlannerNode::timer_callback() {
 }
 
 bool DynamicPlannerNode::collisionCheckBTWtrajs(
-    const nif_msgs::msg::DynamicTrajectory &ego_traj_,
-    const nif_msgs::msg::DynamicTrajectory &oppo_traj_,
-    const double collision_dist_boundary, const double collision_time_boundary,
-    bool use_sat_) {
+  const nif_msgs::msg::DynamicTrajectory & ego_traj_,
+  const nif_msgs::msg::DynamicTrajectory & oppo_traj_,
+  const double collision_dist_boundary, const double collision_time_boundary,
+  bool use_sat_)
+{
   // TODO: prediction and detection result health check
 
   if (oppo_traj_.trajectory_path.poses.empty()) {
@@ -2059,30 +2228,37 @@ bool DynamicPlannerNode::collisionCheckBTWtrajs(
 
     bool is_collision = false;
     for (int ego_traj_idx = 0;
-         ego_traj_idx < ego_traj_.trajectory_path.poses.size();
-         ego_traj_idx++) {
+      ego_traj_idx < ego_traj_.trajectory_path.poses.size();
+      ego_traj_idx++)
+    {
       for (int oppo_traj_idx = 0;
-           oppo_traj_idx < oppo_traj_.trajectory_path.poses.size();
-           oppo_traj_idx++) {
+        oppo_traj_idx < oppo_traj_.trajectory_path.poses.size();
+        oppo_traj_idx++)
+      {
         double dist = sqrt(
-            pow((ego_traj_.trajectory_path.poses[ego_traj_idx].pose.position.x -
-                 oppo_traj_.trajectory_path.poses[oppo_traj_idx]
-                     .pose.position.x),
-                2) +
-            pow((ego_traj_.trajectory_path.poses[ego_traj_idx].pose.position.y -
-                 oppo_traj_.trajectory_path.poses[oppo_traj_idx]
-                     .pose.position.y),
-                2));
+          pow(
+            (ego_traj_.trajectory_path.poses[ego_traj_idx].pose.position.x -
+            oppo_traj_.trajectory_path.poses[oppo_traj_idx]
+            .pose.position.x),
+            2) +
+          pow(
+            (ego_traj_.trajectory_path.poses[ego_traj_idx].pose.position.y -
+            oppo_traj_.trajectory_path.poses[oppo_traj_idx]
+            .pose.position.y),
+            2));
 
         double time_diff =
-            abs(ego_traj_.trajectory_timestamp_array[ego_traj_idx] -
-                oppo_traj_.trajectory_timestamp_array[oppo_traj_idx]);
+          abs(
+          ego_traj_.trajectory_timestamp_array[ego_traj_idx] -
+          oppo_traj_.trajectory_timestamp_array[oppo_traj_idx]);
 
         if (dist < collision_dist_boundary &&
-            time_diff < collision_time_filetered) {
-          RCLCPP_INFO_ONCE(this->get_logger(),
-                           "Collision True <Dist and Time>: <%lf, %lf> ", dist,
-                           time_diff);
+          time_diff < collision_time_filetered)
+        {
+          RCLCPP_INFO_ONCE(
+            this->get_logger(),
+            "Collision True <Dist and Time>: <%lf, %lf> ", dist,
+            time_diff);
           is_collision = true;
           return is_collision;
         }
@@ -2094,6 +2270,6 @@ bool DynamicPlannerNode::collisionCheckBTWtrajs(
     // SAT makes the program too slow.
     // TODO: need to check this
     return nif::planning::sat::separating_axis_intersect_traj_v2(
-        ego_traj_, oppo_traj_, collision_time_filetered);
+      ego_traj_, oppo_traj_, collision_time_filetered);
   }
 }
