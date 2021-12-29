@@ -254,6 +254,9 @@ void FrenetBasedOpponentPredictor::predict_bls(double estimated_progress_,
 
   if (!predicted_frenet_path->points_x().empty()) {
 
+    m_predicted_output_in_global.trajectory_timestamp_array.clear();
+    m_predicted_output_in_global.trajectory_global_progress.clear();
+
     for (int i = 0; i < predicted_frenet_path->points_x().size(); i++) {
       geometry_msgs::msg::PoseStamped ps;
       ps.header.frame_id = common::frame_id::localization::ODOM;
@@ -272,6 +275,10 @@ void FrenetBasedOpponentPredictor::predict_bls(double estimated_progress_,
     bls_dtraj.header.frame_id = common::frame_id::localization::ODOM;
     bls_path.header.frame_id = common::frame_id::localization::ODOM;
     bls_dtraj.trajectory_path = bls_path;
+    bls_dtraj.trajectory_global_progress =
+        m_predicted_output_in_global.trajectory_global_progress;
+    bls_dtraj.trajectory_timestamp_array =
+        m_predicted_output_in_global.trajectory_timestamp_array;
     bls_dtraj.trajectory_type = nif_msgs::msg::DynamicTrajectory::
         TRAJECTORY_TYPE_PREDICTION_BEYOND_LINE_OF_SIGHT;
 
