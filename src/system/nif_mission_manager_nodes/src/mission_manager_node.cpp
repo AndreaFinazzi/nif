@@ -459,7 +459,7 @@ MissionManagerNode::parametersCallback(
             }
         } else if (param.get_name() == "velocity.slow_drive") {
             if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
-                if (param.as_double() >= 0.0 && param.as_double() <= 30.0) // TODO implement switching policy, if needed
+                if (param.as_double() >= 0.0 && param.as_double() <= 40.0) // TODO implement switching policy, if needed
                 {
                     this->velocity_slow_drive = param.as_double();
                     result.successful = true;
