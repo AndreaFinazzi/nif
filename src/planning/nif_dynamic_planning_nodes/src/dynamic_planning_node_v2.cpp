@@ -1429,7 +1429,9 @@ void DynamicPlannerNode::timer_callback()
     if (this->now() - m_prev_oppo_pred_last_update > rclcpp::Duration(2, 0))
     {
       m_cur_oppo_pred_result.trajectory_path.poses.clear();
+      m_cur_oppo_pred_result.trajectory_velocity.clear();
       m_cur_oppo_pred_result.trajectory_timestamp_array.clear();
+      m_cur_oppo_pred_result.trajectory_global_progress.clear();
     }
   }
 
