@@ -270,8 +270,9 @@ void DbwNode::recvCAN(const can_msgs::msg::Frame::SharedPtr msg)
             out.comp_veh_flag = message->GetSignal("comp_veh_flag")->GetResult();
             out.comp_rank = message->GetSignal("comp_rank")->GetResult(); 
             out.comp_laps_count = message->GetSignal("comp_laps_count")->GetResult(); 
-            out.comp_lap_distance_m = message->GetSignal("comp_lap_distance_m")->GetResult(); 
-            out.comp_speed_kph = message->GetSignal("comp_speed_kph")->GetResult(); 
+            out.comp_lap_distance_m = message->GetSignal("comp_lap_distance")->GetResult(); 
+            out.comp_speed_kph = message->GetSignal("comp_speed")->GetResult(); 
+            
             pub_rest_of_field_->publish(out);
 
           }

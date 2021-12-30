@@ -63,11 +63,9 @@ public:
   void defenderVelCallback(const std_msgs::msg::Float32::SharedPtr msg);
 
   void timer_callback();
-  void timer_callback_test();
 
 private:
   rclcpp::TimerBase::SharedPtr m_predictor_timer;
-  rclcpp::TimerBase::SharedPtr m_test_timer;
 
   geometry_msgs::msg::PoseStamped m_last_percep_oppo_global_ps;
 

@@ -425,12 +425,12 @@ void DynamicPlannerNode::predictionResultCallback(
   // TODO: Prediction result health check
 
   if (m_oppo_pred_callback_first_run) {
-    m_cur_oppo_pred_result = *msg;
     m_oppo_pred_callback_first_run = false;
   } else {
     m_prev_oppo_pred_result = m_cur_oppo_pred_result;
-    m_cur_oppo_pred_result = *msg;
   }
+  m_prev_oppo_pred_last_update = this->now(); // TODO msg->header.stamp;
+  m_cur_oppo_pred_result = *msg;
 }
 
 void DynamicPlannerNode::publishEmptyTrajectory() {
@@ -1144,98 +1144,6 @@ nav_msgs::msg::Path DynamicPlannerNode::getCertainLenOfPathSeg(
   return out;
 }
 
-void DynamicPlannerNode::timer_callback_debug() {
-  m_cur_planned_traj = m_racingline_dtraj;
-
-  m_ego_odom.pose.pose.position.x = -50.4714715;
-  m_ego_odom.pose.pose.position.y = 70.1927606;
-  m_ego_odom.twist.twist.linear.x = 60;
-
-  auto allowable_maximum_vy =
-      abs(tan(m_acceptable_slip_angle_rad)) *
-      std::max(m_ego_odom.twist.twist.linear.x, MIN_SPEED_MPS);
-  allowable_maximum_vy = std::max(1.5, allowable_maximum_vy); // mps
-
-  auto start = std::chrono::system_clock::now();
-  std::cout << "here1" << std::endl;
-
-  auto progreeNCTE_racingline =
-      calcProgressNCTE(m_ego_odom.pose.pose, m_racingline_path);
-
-  std::cout << "here2" << std::endl;
-
-  auto start1 = std::chrono::system_clock::now();
-
-  bool is_close_racingline =
-      (get<1>(progreeNCTE_racingline) < m_config_merge_allow_dist);
-
-  std::cout << "here3" << std::endl;
-
-  auto start2 = std::chrono::system_clock::now();
-
-  // Merging frenet segment generation
-  // Generate single frenet path segment
-  std::vector<std::shared_ptr<FrenetPath>> frenet_path_generation_result =
-      m_frenet_generator_ptr->calc_frenet_paths_multi_longi(
-          get<1>(progreeNCTE_racingline), // current_position_d
-          get<0>(progreeNCTE_racingline), // current_position_s
-          0.0,                            // current_velocity_d
-          std::max(m_ego_odom.twist.twist.linear.x,
-                   MIN_SPEED_MPS),          // current_velocity_s
-          0.0,                              // current_acceleration_d
-          get<4>(m_racingline_spline_data), // cubicSplineModel
-          std::max(abs(get<1>(progreeNCTE_racingline) / allowable_maximum_vy),
-                   2.0),
-          std::max(abs(get<1>(progreeNCTE_racingline) / allowable_maximum_vy),
-                   2.0) +
-              0.01,
-          SAMPLING_TIME, 0.0, 0.0001, 0.1);
-
-  std::cout << "here4" << std::endl;
-
-  auto start3 = std::chrono::system_clock::now();
-
-  auto stitched_path =
-      stitchFrenetToPath(frenet_path_generation_result[0], m_racingline_path);
-
-  std::cout << "here5" << std::endl;
-
-  auto start4 = std::chrono::system_clock::now();
-
-  auto raceline_path_seg = getCertainLenOfPathSeg(
-      m_ego_odom.pose.pose.position.x, m_ego_odom.pose.pose.position.y,
-      stitched_path.trajectory_path, 100);
-
-  std::cout << "here6" << std::endl;
-
-  auto start5 = std::chrono::system_clock::now();
-
-  auto race_traj = m_velocity_profiler_obj.velProfileWCollisionChecking(
-      m_ego_odom, raceline_path_seg, m_cur_oppo_pred_result,
-      m_config_overlap_checking_dist_bound,
-      m_config_overlap_checking_time_bound, true, 1.0);
-
-  std::cout << "here7" << std::endl;
-
-  auto start6 = std::chrono::system_clock::now();
-
-  auto has_collision = race_traj.has_collision;
-
-  std::chrono::duration<double> elapsed_seconds1 = start1 - start;
-  std::chrono::duration<double> elapsed_seconds2 = start2 - start1;
-  std::chrono::duration<double> elapsed_seconds3 = start3 - start2;
-  std::chrono::duration<double> elapsed_seconds4 = start4 - start3;
-  std::chrono::duration<double> elapsed_seconds5 = start5 - start4;
-  std::chrono::duration<double> elapsed_seconds6 = start6 - start5;
-
-  std::cout << "elapsed_seconds1 : " << elapsed_seconds1.count() << std::endl;
-  std::cout << "elapsed_seconds2 : " << elapsed_seconds2.count() << std::endl;
-  std::cout << "elapsed_seconds3 : " << elapsed_seconds3.count() << std::endl;
-  std::cout << "elapsed_seconds4 : " << elapsed_seconds4.count() << std::endl;
-  std::cout << "elapsed_seconds5 : " << elapsed_seconds5.count() << std::endl;
-  std::cout << "elapsed_seconds6 : " << elapsed_seconds6.count() << std::endl;
-}
-
 void DynamicPlannerNode::publishPlannedTrajectory(
     nif_msgs::msg::DynamicTrajectory &traj_, bool is_acc_, bool vis_) {
   traj_.header.frame_id = nif::common::frame_id::localization::ODOM;
@@ -1414,6 +1322,15 @@ void DynamicPlannerNode::timer_callback() {
   allowable_maximum_vy = std::max(1.5, allowable_maximum_vy); // mps
 
   // ---------------------------------------------------------------
+
+  // Oppo prediction health check
+  // TODO improve this
+  if (!m_oppo_pred_callback_first_run) {
+    if (this->now() - m_prev_oppo_pred_last_update > rclcpp::Duration(2, 0)) {
+      m_cur_oppo_pred_result.trajectory_path.poses.clear();
+      m_cur_oppo_pred_result.trajectory_timestamp_array.clear();
+    }
+  }
 
   if (this->hasEgoOdometry() && !m_maptrack_global.poses.empty()) {
     // System ok

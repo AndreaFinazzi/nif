@@ -164,7 +164,7 @@ private:
   double steering_units_multiplier_;
   double pure_pursuit_min_dist_m_;
   double pure_pursuit_max_dist_m_;
-  double pure_pursuit_1st_vel_m_;
+  double pure_pursuit_1st_vel_ms_;
   double pure_pursuit_max_max_dist_m_;
   double pure_pursuit_k_vel_m_ms_;
   bool use_tire_velocity_;
@@ -178,6 +178,9 @@ private:
 
   // ACC enable ros param
   bool m_use_acc;
+  
+  rcl_interfaces::msg::SetParametersResult
+  parametersCallback(const std::vector<rclcpp::Parameter> &vector);
 
   nif::common::msgs::ControlCmd::SharedPtr solve() override;
 

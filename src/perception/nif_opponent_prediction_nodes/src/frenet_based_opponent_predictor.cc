@@ -106,40 +106,6 @@ FrenetBasedOpponentPredictor::FrenetBasedOpponentPredictor(
   m_predictor_timer = this->create_wall_timer(
       20ms,
       std::bind(&FrenetBasedOpponentPredictor::timer_callback, this)); // 50 hz
-  // m_test_timer = this->create_wall_timer(
-  //     1000ms, std::bind(&FrenetBasedOpponentPredictor::timer_callback_test,
-  //                       this)); // 50 hz
-}
-
-void FrenetBasedOpponentPredictor::timer_callback_test() {
-
-  // test
-  rclcpp::Publisher<common::msgs::PerceptionResultList>::SharedPtr
-      pub_test_oppo_list;
-  pub_test_oppo_list =
-      this->create_publisher<common::msgs::PerceptionResultList>(
-          "/tracking/objects", common::constants::QOS_PLANNING);
-
-  test_cnt = test_cnt + 1;
-
-  // publish opponent
-  common::msgs::PerceptionResultList test_oppo_list;
-  common::msgs::PerceptionResult test_oppo;
-
-  test_oppo.obj_velocity_in_global.linear.x = 1.0;
-
-  if (test_cnt >= m_refline_path_x.size()) {
-    test_cnt -= m_refline_path_x.size();
-  }
-
-  test_oppo.detection_result_3d.center.position.x = m_refline_path_x[test_cnt];
-  test_oppo.detection_result_3d.center.position.y = m_refline_path_y[test_cnt];
-  test_oppo.detection_result_3d.center.position.z = 0;
-
-  test_oppo_list.perception_list.push_back(test_oppo);
-  pub_test_oppo_list->publish(test_oppo_list);
-
-  std::cout << "test pub" << std::endl;
 }
 
 void FrenetBasedOpponentPredictor::timer_callback() {
@@ -282,8 +248,13 @@ void FrenetBasedOpponentPredictor::predict_bls(double estimated_progress_,
     bls_dtraj.trajectory_type = nif_msgs::msg::DynamicTrajectory::
         TRAJECTORY_TYPE_PREDICTION_BEYOND_LINE_OF_SIGHT;
 
-    m_pub_predicted_trajectory->publish(bls_dtraj);
-    m_pub_predicted_trajectory_vis->publish(bls_path);
+    auto elapsed_s = std::chrono::duration_cast<std::chrono::seconds>(
+      std::chrono::system_clock::now() - m_last_percep_callback_time).count();
+
+    if (elapsed_s < 2) {
+      m_pub_predicted_trajectory->publish(bls_dtraj);
+      m_pub_predicted_trajectory_vis->publish(bls_path);
+    }
   }
 }
 

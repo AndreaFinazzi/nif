@@ -100,7 +100,6 @@ public:
   void checkSwitchToStaticWPT(int cur_wpt_idx_);
 
   void timer_callback();
-  void timer_callback_debug();
   void publishTrajectory();
   void publishPlannedTrajectory(bool vis_);
   void publishPlannedTrajectory(nif_msgs::msg::DynamicTrajectory &traj_,
@@ -261,6 +260,7 @@ private:
   nif_msgs::msg::DynamicTrajectory m_cur_oppo_pred_result;
   nif_msgs::msg::DynamicTrajectory m_prev_oppo_pred_result;
   bool m_oppo_pred_callback_first_run;
+  rclcpp::Time m_prev_oppo_pred_last_update;
 
   nav_msgs::msg::Path m_maptrack_body, m_maptrack_global;
 

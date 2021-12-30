@@ -82,9 +82,9 @@ def generate_launch_description():
             "velocity.constant": 20.0,
             "velocity.avoidance": 15.0,
             "velocity.warmup": 15.0,
-            "velocity.pit_in": 12.0,
-            "velocity.pit_out": 12.0,
-            "velocity.slow_drive": 15.0,
+            "velocity.pit_in": 15.0,
+            "velocity.pit_out": 15.0,
+            "velocity.slow_drive": 20.0,
             # RC interface params
             "listen_to_override": False,
             "listen_to_nominal": True,
