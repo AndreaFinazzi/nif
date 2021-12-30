@@ -65,7 +65,7 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
   // Maximimum pure pursuit tracking distance
   this->declare_parameter("pure_pursuit_max_dist_m", 8.);
   // pure_pursuit lookahead distance 1st velocity theshold (65 kph)
-  this->declare_parameter("pure_pursuit_1st_vel_m", 20.0);
+  this->declare_parameter("pure_pursuit_1st_vel_ms", 20.0);
   // Maximimum pure pursuit tracking distance
   this->declare_parameter("pure_pursuit_max_max_dist_m", 20.);
   // Factor to increase the pure pursuit tracking distance as a function of
@@ -110,8 +110,8 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
       this->get_parameter("pure_pursuit_min_dist_m").as_double();
   pure_pursuit_max_dist_m_ =
       this->get_parameter("pure_pursuit_max_dist_m").as_double();
-  pure_pursuit_1st_vel_m_ =
-      this->get_parameter("pure_pursuit_1st_vel_m").as_double();
+  pure_pursuit_1st_vel_ms_ =
+      this->get_parameter("pure_pursuit_1st_vel_ms").as_double();
   pure_pursuit_max_max_dist_m_ =
       this->get_parameter("pure_pursuit_max_max_dist_m").as_double();
   pure_pursuit_k_vel_m_ms_ =
@@ -136,6 +136,10 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
                  odometry_timeout_sec_, path_timeout_sec_);
     throw std::range_error("Parameter out of range.");
   }
+
+  this->parameters_callback_handle = this->add_on_set_parameters_callback(
+      std::bind(&ControlLQRNode::parametersCallback, this, std::placeholders::_1));
+
 }
 
 void ControlLQRNode::publishSteerAccelDiagnostics(
@@ -250,12 +254,12 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
     double track_distance =
         pure_pursuit_min_dist_m_ + pure_pursuit_k_vel_m_ms_ * state(2, 0);
     if (track_distance > pure_pursuit_max_dist_m_) {
-      if (state(2, 0) < pure_pursuit_1st_vel_m_) {
+      if (state(2, 0) < pure_pursuit_1st_vel_ms_) {
         track_distance = pure_pursuit_max_dist_m_;
       } else {
         track_distance =
             pure_pursuit_max_dist_m_ +
-            pure_pursuit_k_vel_m_ms_ * (state(2, 0) - pure_pursuit_1st_vel_m_);
+            pure_pursuit_k_vel_m_ms_ * (state(2, 0) - pure_pursuit_1st_vel_ms_);
       }
     }
     if (track_distance < pure_pursuit_min_dist_m_)
@@ -419,4 +423,51 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
   node_status = common::NODE_OK;
   this->setNodeStatus(node_status);
   return this->control_cmd;
+}
+
+rcl_interfaces::msg::SetParametersResult
+nif::control::ControlLQRNode::parametersCallback(
+    const std::vector<rclcpp::Parameter> &vector) {
+  rcl_interfaces::msg::SetParametersResult result;
+  result.successful = false;
+  result.reason = "";
+  for (const auto &param : vector) {
+    if (param.get_name() == "pure_pursuit_max_max_dist_m") {
+      if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
+        if (param.as_double() >= 8.0 && param.as_double() <= 20.0) {
+          this->pure_pursuit_max_max_dist_m_ = param.as_double();
+          result.successful = true;
+        }
+      }
+    } else if (param.get_name() == "pure_pursuit_max_dist_m") {
+      if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
+        if (param.as_double() >= 3.0 && param.as_double() <= 20.0) {
+          this->pure_pursuit_max_dist_m_ = param.as_double();
+          result.successful = true;
+        }
+      }
+    } else if (param.get_name() == "pure_pursuit_min_dist_m") {
+      if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
+        if (param.as_double() >= 3.0 && param.as_double() <= 20.0) {
+          this->pure_pursuit_min_dist_m_ = param.as_double();
+          result.successful = true;
+        }
+      }
+    } else if (param.get_name() == "pure_pursuit_1st_vel_ms") {
+      if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
+        if (param.as_double() >= 8.0 && param.as_double() <= 40.0) {
+          this->pure_pursuit_1st_vel_ms_ = param.as_double();
+          result.successful = true;
+        }
+      }
+    } else if (param.get_name() == "pure_pursuit_k_vel_m_ms") {
+      if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
+        if (param.as_double() >= 0.0 && param.as_double() <= 1.0) {
+          this->pure_pursuit_k_vel_m_ms_ = param.as_double();
+          result.successful = true;
+        }
+      }
+    } 
+  }
+  return result;
 }
