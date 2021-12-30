@@ -267,13 +267,22 @@ void AccelControl::initializeGears(const std::string &track_id) {
         {6, std::make_shared<control::GearState>(6, 0.889, 41.5, 255)}};
   } else if (track_id == TRACK_ID_LVMS) {
     // IMS params
+    // this->gear_states = {
+    //     {1, std::make_shared<control::GearState>(1, 2.92, -255, 13.5)},
+    //     {2, std::make_shared<control::GearState>(2, 1.875, 11, 22)},
+    //     {3, std::make_shared<control::GearState>(3, 1.38, 19.5, 30)},
+    //     {4, std::make_shared<control::GearState>(4, 1.5, 27.5, 37.5)},
+    //     {5, std::make_shared<control::GearState>(5, 0.96, 35, 50)},
+    //     {6, std::make_shared<control::GearState>(6, 0.889, 41.5, 255)}};
+
+    // Updated gear map
     this->gear_states = {
-        {1, std::make_shared<control::GearState>(1, 2.92, -255, 13.5)},
-        {2, std::make_shared<control::GearState>(2, 1.875, 11, 22)},
-        {3, std::make_shared<control::GearState>(3, 1.38, 19.5, 30)},
-        {4, std::make_shared<control::GearState>(4, 1.5, 27.5, 37.5)},
-        {5, std::make_shared<control::GearState>(5, 0.96, 35, 50)},
-        {6, std::make_shared<control::GearState>(6, 0.889, 41.5, 255)}};
+        {1, std::make_shared<control::GearState>(1, 2.92, -255, 24.0)},
+        {2, std::make_shared<control::GearState>(2, 1.875, 21., 35)},
+        {3, std::make_shared<control::GearState>(3, 1.38, 32, 40)},
+        {4, std::make_shared<control::GearState>(4, 1.5, 37, 46)},
+        {5, std::make_shared<control::GearState>(5, 0.96, 44, 57)},
+        {6, std::make_shared<control::GearState>(6, 0.889, 52, 255)}};
   } else {
     RCLCPP_ERROR(this->get_logger(),
                  "Got unrecognized track_id: %s, parameter out of range.",
@@ -381,14 +390,14 @@ void AccelControl::publishThrottleBrake() {
   pubThrottleCmdRaw_->publish(this->throttle_cmd);
   pubBrakeCmdRaw_->publish(this->brake_cmd);
 
-// !!!! UNCOMMENT TO ENABLE THROTTLE SATURATION TO JOYSTICK CMD  !!!!
+  // !!!! UNCOMMENT TO ENABLE THROTTLE SATURATION TO JOYSTICK CMD  !!!!
   if (this->throttle_cmd.data > this->max_throttle_) {
     RCLCPP_DEBUG(this->get_logger(), "%s\n", "Throttle Limit Max Reached");
     this->throttle_cmd.data = this->max_throttle_;
   }
-// !!!! UNCOMMENT TO ENABLE THROTTLE SATURATION TO JOYSTICK CMD  !!!!
+  // !!!! UNCOMMENT TO ENABLE THROTTLE SATURATION TO JOYSTICK CMD  !!!!
 
-// !!!! UNCOMMENT TO ENABLE LATERAL ERROR SCALEDOWN FACTOR !!!!
+  // !!!! UNCOMMENT TO ENABLE LATERAL ERROR SCALEDOWN FACTOR !!!!
   // Release throttle w.r.t. lateral error
   // - only when speed is large enough
   double error_ratio = 0.0;
@@ -403,7 +412,7 @@ void AccelControl::publishThrottleBrake() {
     double error_gain = 1.0 - 0.5 * error_ratio; // [1.0~0.5] gain
     this->throttle_cmd.data = error_gain * this->throttle_cmd.data;
   }
-// !!!! UNCOMMENT TO ENABLE LATERAL ERROR SCALEDOWN FACTOR !!!!
+  // !!!! UNCOMMENT TO ENABLE LATERAL ERROR SCALEDOWN FACTOR !!!!
 
   this->throttle_cmd.data =
       (this->brake_cmd.data > 0.0) ? 0.0 : this->throttle_cmd.data;
@@ -464,7 +473,8 @@ void AccelControl::shiftCallback() {
     return;
   }
 
-  bool upshift_enabled = this->throttle_cmd.data > 0.0 || this->max_throttle_ > 0.0;
+  bool upshift_enabled =
+      this->throttle_cmd.data > 0.0 || this->max_throttle_ > 0.0;
 
   // Determine if a shift is required
   if (curr_speed > upshift_speed && upshift_enabled && curr_gear_num < 6) {
