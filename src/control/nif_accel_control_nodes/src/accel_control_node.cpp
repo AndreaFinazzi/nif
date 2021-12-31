@@ -278,11 +278,11 @@ void AccelControl::initializeGears(const std::string &track_id) {
     // Updated gear map
     this->gear_states = {
         {1, std::make_shared<control::GearState>(1, 2.92, -255, 24.0)},
-        {2, std::make_shared<control::GearState>(2, 1.875, 21., 35)},
-        {3, std::make_shared<control::GearState>(3, 1.38, 32, 40)},
-        {4, std::make_shared<control::GearState>(4, 1.5, 37, 46)},
-        {5, std::make_shared<control::GearState>(5, 0.96, 44, 57)},
-        {6, std::make_shared<control::GearState>(6, 0.889, 52, 255)}};
+        {2, std::make_shared<control::GearState>(2, 1.875, 21.0, 35.0)},
+        {3, std::make_shared<control::GearState>(3, 1.38, 32.0, 40.0)},
+        {4, std::make_shared<control::GearState>(4, 1.5, 37.0, 46.0)},
+        {5, std::make_shared<control::GearState>(5, 0.96, 44.0, 57.0)},
+        {6, std::make_shared<control::GearState>(6, 0.889, 52.0, 255)}};
   } else {
     RCLCPP_ERROR(this->get_logger(),
                  "Got unrecognized track_id: %s, parameter out of range.",
