@@ -80,7 +80,7 @@ class DynamicPlannerNode : public nif::common::IBaseNode {
   };
   enum LATERAL_PLANNING_TYPE { KEEP, MERGE, CHANGE_PATH };
   enum LONGITUDINAL_PLANNING_TYPE { STRAIGHT, FOLLOW, ESTOP };
-  enum RESET_PATH_TYPE { RACE_LINE = -1, DEFENDER_LINE = -2 };
+  enum RESET_PATH_TYPE { RACE_LINE = -1, DEFENDER_LINE = -2, NONE = -3 };
 
 public:
   DynamicPlannerNode(const std::string &node_name_);
@@ -100,6 +100,7 @@ public:
   void checkSwitchToStaticWPT(int cur_wpt_idx_);
 
   void timer_callback();
+  void timer_callback_rule();
   void publishTrajectory();
   void publishPlannedTrajectory(bool vis_);
   void publishPlannedTrajectory(nif_msgs::msg::DynamicTrajectory &traj_,
@@ -317,6 +318,9 @@ private:
   FrenetPathGenerator::CubicSpliner2DResult m_defenderline_spline_data;
   double m_defenderline_full_progress;
   bool m_defender_mode_first_callback = false;
+  bool m_race_mode_first_callback = false;
+  bool m_keep_position_mode_first_callback = false;
+  bool m_non_overtaking_mode_first_callback = false;
 
   int m_maptrack_size;
 
@@ -366,8 +370,8 @@ private:
 
   bool m_use_sat = false;
 
-  int m_reset_wpt_idx = NULL;
-  int m_reset_target_path_idx = NULL;
+  int m_reset_wpt_idx = RESET_PATH_TYPE::NONE;
+  int m_reset_target_path_idx = RESET_PATH_TYPE::NONE;
   string m_last_update_target_path_alias;
   LATERAL_PLANNING_TYPE m_last_lat_planning_type;
   LONGITUDINAL_PLANNING_TYPE m_last_long_planning_type;
