@@ -1483,6 +1483,8 @@ void DynamicPlannerNode::timer_callback_rule() {
       m_keep_position_mode_first_callback = true;
       m_non_overtaking_mode_first_callback = true;
 
+      m_cur_planned_traj.trajectory_path.poses.clear();
+
       // Convert maptrack to trajectory and publish (only global / without
       // ACC)
       auto cur_traj = m_velocity_profiler_obj.velProfile(
@@ -1502,8 +1504,7 @@ void DynamicPlannerNode::timer_callback_rule() {
         m_keep_position_mode_first_callback = true;
         m_non_overtaking_mode_first_callback = true;
 
-        if (m_race_mode_first_callback == true ||
-            m_cur_planned_traj.trajectory_path.poses.empty()) {
+        if (m_cur_planned_traj.trajectory_path.poses.empty()) {
           m_race_mode_first_callback = false;
 
           auto progreeNCTE_racingline =
@@ -1986,12 +1987,12 @@ void DynamicPlannerNode::timer_callback_rule() {
         m_defender_mode_first_callback = true;
         m_race_mode_first_callback = true;
         m_keep_position_mode_first_callback = true;
-        m_non_overtaking_mode_first_callback = false;
-
-        // if (m_non_overtaking_mode_first_callback == true ||
-        //     m_cur_planned_traj.trajectory_path.poses.empty()) {
 
         if (m_cur_planned_traj.trajectory_path.poses.empty()) {
+          m_non_overtaking_mode_first_callback = false;
+
+          // if (m_cur_planned_traj.trajectory_path.poses.empty()) {
+
           auto progreeNCTE_racingline =
               calcProgressNCTE(m_ego_odom.pose.pose, m_racingline_path);
 
