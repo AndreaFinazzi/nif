@@ -19,6 +19,7 @@ using nif::utils::geometry::Point2D;
 namespace nif {
 namespace system {
     using track_zone_id_t = uint16_t;
+    using track_zone_type_t = uint16_t;
 
     constexpr const char* ID_MISSIONS_LIST = "missions";
     constexpr const char* ID_MISSION_CODE = "mission_code";
@@ -42,8 +43,13 @@ namespace system {
 
     constexpr const char* ID_ZONES_LIST = "zones";
     constexpr const char* ID_ZONE_ID = "id";
+    constexpr const char* ID_ZONE_TYPE = "type";
     constexpr const char* ID_ZONE_BBOX = "bbox";
     constexpr const char* ID_ZONE_POLYGON = "polygon";
+
+    constexpr const char* ID_ZONE_DYNAMICS = "dynamics";
+    constexpr const char* ID_ZONE_DYNAMICS_LONG_ACCELERATION_MAX = "long_acceleration_max";
+    constexpr const char* ID_ZONE_DYNAMICS_LONG_ACCELERATION_MIN = "long_acceleration_min";
 
     struct MissionCondition {
         bool active = false;
@@ -202,16 +208,24 @@ namespace system {
             }
     };
 
+    struct TrackZoneDynamics {
+        double long_acceleration_max = 0;
+        double long_acceleration_min = 0;
+    };
+
     struct TrackZone {
         // TODO collect MissionConditions in a dinamic collection, for flexibility
         track_zone_id_t id;
         
+        track_zone_type_t type;
+
         bool has_bbox = false;
         BBox bbox;
 
         bool has_polygon = false;
         Polygon polygon;
 
+        TrackZoneDynamics dynamics;
 
         bool isValid(
             const MissionStatus::_mission_status_code_type &current_mission,

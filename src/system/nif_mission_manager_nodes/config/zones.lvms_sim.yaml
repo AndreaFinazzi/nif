@@ -1,11 +1,10 @@
 # Zones list for a specific track. Currently, only bboxes are supported for zone definitions.
 zones:
   - id: 0
-    bbox:
-      - 0.0 # x_min
-      - 0.0 # y_min
-      - 1.0 # x_max
-      - 1.0 # y_max
+    type: 0
+    dynamics:  
+      long_acceleration_max: 12.0
+      long_acceleration_min: -12.0
     polygon:
       - x: -250.0  # x_0
         y: -200.0  # y_0
@@ -13,14 +12,82 @@ zones:
         y: 80.0  # y_1
       - x: -30.0  # x_2
         y: 30.0  # y_2
-      - x: -200.0  # x_3
-        y: -250.0  # y_3
+      - x: -50.0  # x_3
+        y: 000.0  # y_3
+      - x: -150.0  # x_4
+        y: -120.0  # y_4
+      - x: -200.0  # x_5
+        y: -250.0  # y_5
+
+  - id: 1
+    type: 20
+    dynamics:  
+      long_acceleration_max: 8.0
+      long_acceleration_min: -4.0
+    polygon:
+      - x: -200.0  # x_0
+        y: -250.0  # y_0
+      - x: -170.0  # x_1
+        y: -475.0  # y_1
+      - x: -230.0  # x_2
+        y: -515.0  # y_2
+      - x: -275.0  # x_3
+        y: -365.0  # y_3
+      - x: -250.0  # x_4
+        y: -200.0  # y_4
+
+  - id: 2
+    type: 20
+    dynamics:  
+      long_acceleration_max: 8.0
+      long_acceleration_min: -4.0
+    polygon:
+      - x: -170.0  # x_0
+        y: -475.0  # y_0
+      - x: 10.0  # x_1
+        y: -530.0  # y_1
+      - x: 20.0  # x_2
+        y: -585.0  # y_2
+      - x: -80.0  # x_3
+        y: -600.0  # y_3
+      - x: -230.0  # x_4
+        y: -515.0  # y_4
+
+  - id: 3
+    type: 30
+    dynamics:  
+      long_acceleration_max: 10.0
+      long_acceleration_min: -6.0
+    polygon:
+      - x: 10.0  # x_0
+        y: -530.0  # y_0
+      - x: 20.0  # x_1
+        y: -585.0  # y_1
+      - x: 125.0  # x_1
+        y: -575.0  # y_1
+      - x: 100.0  # x_3
+        y: -500.0  # y_3
+
+  - id: 4
+    type: 0
+    dynamics:  
+      long_acceleration_max: 12.0
+      long_acceleration_min: -12.0
+    polygon:
+      - x: 100.0  # x_0
+        y: -500.0  # y_0
+      - x: 125.0  # x_1
+        y: -575.0  # y_1
+      - x: 350.0  # x_2
+        y: -400.0  # y_2
+      - x: 300.0  # x_3
+        y: -350.0  # y_3
+
   - id: 5
-    bbox:
-      - 0.0 # x_min
-      - 0.0 # y_min
-      - 1.0 # x_max
-      - 1.0 # y_max
+    type: 0
+    dynamics:  
+      long_acceleration_max: 12.0
+      long_acceleration_min: -12.0
     polygon:
       - x: 300.0  # x_0
         y: -350.0  # y_0
@@ -30,3 +97,84 @@ zones:
         y: -200.0  # y_2
       - x: 350.0  # x_3
         y: -400.0  # y_3
+
+  - id: 6 
+    type: 20
+    dynamics:  
+      long_acceleration_max: 8.0
+      long_acceleration_min: -4.0
+    polygon:
+      - x: 500.0  # x_0
+        y: -175.0  # y_0
+      - x: 550.0  # x_1
+        y: -200.0  # y_1
+      - x: 605.0  # x_2
+        y: -20.0  # y_2
+      - x: 530.0  # x_3
+        y: 130.0  # y_3
+      - x: 485.0  # x_4
+        y: 90.0  # y_4
+
+  - id: 7
+    type: 20
+    dynamics:  
+      long_acceleration_max: 8.0
+      long_acceleration_min: -4.0
+    polygon:
+      - x: 530.0  # x_0
+        y: 130.0  # y_0
+      - x: 485.0  # x_1
+        y: 90.0  # y_1
+      - x: 400.0  # x_2
+        y: 150.0  # y_2
+      - x: 430.0  # x_3
+        y: 200.0  # y_3
+
+  - id: 8
+    type: 30
+    dynamics:  
+      long_acceleration_max: 10.0
+      long_acceleration_min: -6.0
+    polygon:
+      - x: 400.0  # x_0
+        y: 150.0  # y_0
+      - x: 430.0  # x_1
+        y: 200.0  # y_1
+      - x: 270.0  # x_2
+        y: 205.0  # y_2
+      - x: 275.0  # x_3
+        y: 150.0  # y_3
+
+  - id: 9
+    type: 0
+    dynamics:  
+      long_acceleration_max: 12.0
+      long_acceleration_min: -12.0
+    polygon:
+      - x: -80.0  # x_0
+        y: 80.0  # y_0
+      - x: -30.0  # x_1
+        y: 30.0  # y_1
+      - x: 275.0  # x_2
+        y: 150.0  # y_2
+      - x: 270.0  # x_3
+        y: 205.0  # y_3
+
+  - id: 65000
+    type: 65000
+    dynamics:  
+      long_acceleration_max: 6.0
+      long_acceleration_min: -12.0
+    polygon:
+      - x: -150.0  # x_0
+        y: -120.0  # y_0
+      - x: -50.0  # x_1
+        y: 000.0  # y_1
+      - x: 000.0  # x_2
+        y: 050.0  # y_2
+      - x: 200.0  # x_3
+        y: 150.0  # y_3
+      - x: 275.0  # x_4
+        y: 150.0  # y_4
+      - x: -150.0  # x_5
+        y: -200.0  # y_5

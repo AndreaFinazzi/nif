@@ -405,6 +405,31 @@ struct convert<MissionsDescription> {
 };
 
 template<>
+struct convert<TrackZoneDynamics> {
+    /**
+     * long_acceleration_max: 
+     * long_acceleration_min: 
+     * - ...
+     * @param node
+     * @param out
+     * @return
+     */
+    static bool decode(const Node &node, TrackZoneDynamics &out) 
+    {
+        if (node[ID_ZONE_DYNAMICS_LONG_ACCELERATION_MAX] && node[ID_ZONE_DYNAMICS_LONG_ACCELERATION_MIN]) {
+            out.long_acceleration_max = node[ID_ZONE_DYNAMICS_LONG_ACCELERATION_MAX].as<double>();
+            out.long_acceleration_min = node[ID_ZONE_DYNAMICS_LONG_ACCELERATION_MIN].as<double>();
+        } else {
+            RCLCPP_ERROR(LOGGER, "long_acceleration_max and long_acceleration_min must be specified in TrackZoneDynamics.");
+            return false;
+        }
+
+        RCLCPP_INFO(LOGGER, "Loaded TrackZoneDynamics");
+        return true;
+    }
+};
+
+template<>
 struct convert<TrackZone> {
     /**
      * zone_id:
@@ -416,10 +441,11 @@ struct convert<TrackZone> {
      */
     static bool decode(const Node &node, TrackZone &out) 
     {
-        if (node[nif::system::ID_ZONE_ID]) {
+        if (node[nif::system::ID_ZONE_ID] && node[ID_ZONE_TYPE]) {
             out.id = node[nif::system::ID_ZONE_ID].as<track_zone_id_t>();
+            out.type = node[nif::system::ID_ZONE_TYPE].as<track_zone_type_t>();
         } else {
-            RCLCPP_ERROR(LOGGER, "Listed zone must have the 'id' specifier.");
+            RCLCPP_ERROR(LOGGER, "Listed zone must have the 'id' and 'type' specifiers.");
             return false;
         }
 
@@ -434,6 +460,10 @@ struct convert<TrackZone> {
             out.has_bbox = true;
         }
         
+        if (node[ID_ZONE_DYNAMICS]) {
+            out.dynamics = node[ID_ZONE_DYNAMICS].as<TrackZoneDynamics>();
+        }
+
         RCLCPP_INFO(LOGGER, "Loaded TrackZone.id: %d", out.id);
         return true;
     }

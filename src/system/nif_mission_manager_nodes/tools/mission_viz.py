@@ -146,9 +146,9 @@ class GraphVisualizer:
 
 if __name__ == "__main__":
 
-    TRACK_NAME = 'LVMS'
-    TRANSITION_FILE = 'transitions.lvms.yaml'
-    ZONES_FILE = 'zones.lvms.yaml'
+    TRACK_NAME = 'LVMS_SIM'
+    TRANSITION_FILE = 'transitions.lvms_sim.yaml'
+    ZONES_FILE = 'zones.lvms_sim.yaml'
 
     mission_manager_path = get_package_share_directory('nif_mission_manager_nodes')
     waypoint_manager_path = get_package_share_directory('nif_waypoint_manager_nodes')
@@ -203,8 +203,12 @@ if __name__ == "__main__":
                     for pol in polygons:
                         print(pol)
                         xy = []
+                        j=0
                         for vertex in pol:
                             xy.append([vertex['x'], vertex['y']])
+                            ax.annotate(str(j),xy=xy[j])
+                            j+=1
+
 
                         pol_patch = patches.Polygon(xy, linewidth=1, edgecolor=(r, g, b), fc=(r, g, b, 0.3), label='MISSION BOX: ' + str(mission_code_block.get("mission_code")))
                         ax.add_patch(pol_patch)
@@ -231,8 +235,11 @@ if __name__ == "__main__":
             polygon = zone_block.get("polygon")
             print(polygon)
             xy = []
+            j = 0
             for vertex in polygon:
                 xy.append([vertex['x'], vertex['y']])
+                ax.annotate(str(j),xy=xy[j])
+                j+=1
 
             polygon_patch = patches.Polygon(xy, linewidth=1, edgecolor=(r, g, b), fc=(r, g, b, 0.3), label='ZONE POLYGON: ' + str(zone_block.get("id")))
             ax.add_patch(polygon_patch)
