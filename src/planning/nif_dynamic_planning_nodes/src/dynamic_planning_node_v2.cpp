@@ -1506,13 +1506,6 @@ void DynamicPlannerNode::timer_callback_rule() {
             m_cur_planned_traj.trajectory_path.poses.empty()) {
           m_race_mode_first_callback = false;
 
-          std::cout << "race mode first callback" << std::endl;
-
-
-          m_cur_planned_traj.trajectory_global_progress.clear();
-          m_cur_planned_traj.trajectory_velocity.clear();
-          m_cur_planned_traj.trajectory_timestamp_array.clear();
-
           auto progreeNCTE_racingline =
               calcProgressNCTE(m_ego_odom.pose.pose, m_racingline_path);
           std::cout << "CTE race mode : " << get<1>(progreeNCTE_racingline) << std::endl;
@@ -1712,6 +1705,7 @@ void DynamicPlannerNode::timer_callback_rule() {
           for (int path_candidate_idx = 0;
                path_candidate_idx < m_overtaking_candidates_path_vec.size();
                path_candidate_idx++) {
+
             if (m_overtaking_candidates_path_vec[path_candidate_idx]
                     .poses.empty()) {
               continue;
@@ -1767,10 +1761,12 @@ void DynamicPlannerNode::timer_callback_rule() {
                       m_config_overlap_checking_time_bound, false, 1.0);// @DEBUG
 
               if (!cur_traj.has_collision) {
+
                 m_cur_planned_traj = stitched_path;
                 m_reset_wpt_idx = getCurIdx(frenet_candidate->points_x().back(),
                                             frenet_candidate->points_y().back(),
                                             m_cur_planned_traj.trajectory_path);
+
                 m_reset_target_path_idx = path_candidate_idx;
                 m_last_update_target_path_alias =
                     m_overtaking_candidates_alias_vec[path_candidate_idx];
@@ -1953,18 +1949,19 @@ void DynamicPlannerNode::timer_callback_rule() {
                         frenet_path_generation_result[0]->points_y().back(),
                         m_cur_planned_traj.trajectory_path);
           m_reset_target_path_idx = RESET_PATH_TYPE::DEFENDER_LINE;
+        } else {
+          // Keep previous plan
+
+          ///////////////////////////////////////////
+          // Change the target path to the static wpt
+          ///////////////////////////////////////////
+          auto cur_idx_on_previous_path = getCurIdx(
+              m_ego_odom.pose.pose.position.x, m_ego_odom.pose.pose.position.y,
+              m_cur_planned_traj.trajectory_path);
+
+          checkSwitchToStaticWPT(cur_idx_on_previous_path);
+          // -----------------------------------------
         }
-
-        // Keep previous plan
-        ///////////////////////////////////////////
-        // Change the target path to the static wpt
-        ///////////////////////////////////////////
-        auto cur_idx_on_previous_path = getCurIdx(
-            m_ego_odom.pose.pose.position.x, m_ego_odom.pose.pose.position.y,
-            m_cur_planned_traj.trajectory_path);
-
-        checkSwitchToStaticWPT(cur_idx_on_previous_path);
-        // -----------------------------------------
 
         auto cur_path_seg = getCertainLenOfPathSeg(
             m_ego_odom.pose.pose.position.x, m_ego_odom.pose.pose.position.y,
