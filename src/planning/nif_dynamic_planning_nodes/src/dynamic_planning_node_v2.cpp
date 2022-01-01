@@ -1406,7 +1406,7 @@ void DynamicPlannerNode::timer_callback_debug() {
   auto race_traj = m_velocity_profiler_obj.velProfileWCollisionChecking(
       m_ego_odom, raceline_path_seg, m_cur_oppo_pred_result,
       m_config_overlap_checking_dist_bound,
-      m_config_overlap_checking_time_bound, true, 1.0);
+      m_config_overlap_checking_time_bound, false, 1.0);// @DEBUG
 
   raceline_path_seg.header.frame_id = "odom";
   race_traj.trajectory_path.header.frame_id = "odom";
@@ -1496,14 +1496,18 @@ void DynamicPlannerNode::timer_callback_rule() {
     } else {
       if (mission_status.mission_status_code ==
           nif::common::MissionStatus::MISSION_RACE) {
+
+            
         m_defender_mode_first_callback = true;
         m_keep_position_mode_first_callback = true;
         m_non_overtaking_mode_first_callback = true;
 
-        // if (m_race_mode_first_callback == true ||
-        //     m_cur_planned_traj.trajectory_path.poses.empty()) {
-        if (m_cur_planned_traj.trajectory_path.poses.empty()) {
+        if (m_race_mode_first_callback == true ||
+            m_cur_planned_traj.trajectory_path.poses.empty()) {
           m_race_mode_first_callback = false;
+
+          std::cout << "race mode first callback" << std::endl;
+
 
           m_cur_planned_traj.trajectory_global_progress.clear();
           m_cur_planned_traj.trajectory_velocity.clear();
@@ -1511,6 +1515,7 @@ void DynamicPlannerNode::timer_callback_rule() {
 
           auto progreeNCTE_racingline =
               calcProgressNCTE(m_ego_odom.pose.pose, m_racingline_path);
+          std::cout << "CTE race mode : " << get<1>(progreeNCTE_racingline) << std::endl;
 
           // Merging frenet segment generation
           // Generate single frenet path segment
@@ -1646,7 +1651,7 @@ void DynamicPlannerNode::timer_callback_rule() {
           auto race_traj = m_velocity_profiler_obj.velProfileWCollisionChecking(
               m_ego_odom, raceline_path_seg, m_cur_oppo_pred_result,
               m_config_overlap_checking_dist_bound,
-              m_config_overlap_checking_time_bound, true, 1.0);
+              m_config_overlap_checking_time_bound, false, 1.0);// @DEBUG
 
           if (!race_traj.has_collision) {
             // Change the defualt path to the racing line (full path)
@@ -1679,7 +1684,7 @@ void DynamicPlannerNode::timer_callback_rule() {
         auto cur_traj = m_velocity_profiler_obj.velProfileWCollisionChecking(
             m_ego_odom, cur_path_seg, m_cur_oppo_pred_result,
             m_config_overlap_checking_dist_bound,
-            m_config_overlap_checking_time_bound, true, 1.0);
+            m_config_overlap_checking_time_bound, false, 1.0); // @DEBUG
 
         if (!cur_traj.has_collision) {
           ///////////////////////////////////////
@@ -1759,7 +1764,7 @@ void DynamicPlannerNode::timer_callback_rule() {
                   m_velocity_profiler_obj.velProfileWCollisionChecking(
                       m_ego_odom, cur_path_seg, m_cur_oppo_pred_result,
                       m_config_overlap_checking_dist_bound,
-                      m_config_overlap_checking_time_bound, true, 1.0);
+                      m_config_overlap_checking_time_bound, false, 1.0);// @DEBUG
 
               if (!cur_traj.has_collision) {
                 m_cur_planned_traj = stitched_path;
@@ -1890,8 +1895,12 @@ void DynamicPlannerNode::timer_callback_rule() {
         ///////////////////////////////
         // defender mode first callback
         ///////////////////////////////
-        if (m_cur_planned_traj.trajectory_path.poses.empty()) {
+        if (m_defender_mode_first_callback == true ||
+            m_cur_planned_traj.trajectory_path.poses.empty()) {
           m_defender_mode_first_callback = false;
+
+          std::cout << "defender mode first callback" << std::endl;
+
 
           // Switch to the defender line
           auto progreeNCTE_defenderline =
@@ -1982,8 +1991,12 @@ void DynamicPlannerNode::timer_callback_rule() {
         m_race_mode_first_callback = true;
         m_keep_position_mode_first_callback = true;
 
-        if (m_cur_planned_traj.trajectory_path.poses.empty()) {
+        if (m_non_overtaking_mode_first_callback == true ||
+            m_cur_planned_traj.trajectory_path.poses.empty()) {
           m_non_overtaking_mode_first_callback = false;
+
+          std::cout << "none mode first callback" << std::endl;
+
 
           auto progreeNCTE_racingline =
               calcProgressNCTE(m_ego_odom.pose.pose, m_racingline_path);
@@ -2301,7 +2314,7 @@ void DynamicPlannerNode::timer_callback() {
                 m_velocity_profiler_obj.velProfileWCollisionChecking(
                     m_ego_odom, raceline_path_seg, m_cur_oppo_pred_result,
                     m_config_overlap_checking_dist_bound,
-                    m_config_overlap_checking_time_bound, true, 1.0);
+                    m_config_overlap_checking_time_bound, false, 1.0);// @DEBUG
 
             if (!race_traj.has_collision) {
               // Change the defualt path to the racing line (full path)
@@ -2345,7 +2358,7 @@ void DynamicPlannerNode::timer_callback() {
         auto cur_traj = m_velocity_profiler_obj.velProfileWCollisionChecking(
             m_ego_odom, cur_path_seg, m_cur_oppo_pred_result,
             m_config_overlap_checking_dist_bound,
-            m_config_overlap_checking_time_bound, true, 1.0);
+            m_config_overlap_checking_time_bound, false, 1.0);// @DEBUG
 
         if (!cur_traj.has_collision) {
           ///////////////////////////////////////
@@ -2434,7 +2447,7 @@ void DynamicPlannerNode::timer_callback() {
                   m_velocity_profiler_obj.velProfileWCollisionChecking(
                       m_ego_odom, cur_path_seg, m_cur_oppo_pred_result,
                       m_config_overlap_checking_dist_bound,
-                      m_config_overlap_checking_time_bound, true, 1.0);
+                      m_config_overlap_checking_time_bound, false, 1.0);// @DEBUG
 
               if (!cur_traj.has_collision) {
                 m_cur_planned_traj = stitched_path;
