@@ -1,4 +1,4 @@
-# Zones list for a specific track. Currently, only bboxes are supported for zone definitions.
+# Zones list for a specific track.
 zones:
   - id: 0
     type: 0
