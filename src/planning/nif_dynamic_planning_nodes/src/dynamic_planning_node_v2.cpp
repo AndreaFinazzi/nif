@@ -199,6 +199,9 @@ DynamicPlannerNode::DynamicPlannerNode(const std::string &node_name_)
   m_ego_traj_global_vis_debug_pub1 =
       this->create_publisher<nav_msgs::msg::Path>(
           "planning/debug1", common::constants::QOS_PLANNING);
+  m_ego_traj_global_debug_pub1 =
+      this->create_publisher<nif_msgs::msg::DynamicTrajectory>(
+          "planning/traj/debug1", common::constants::QOS_PLANNING);
   m_ego_traj_global_vis_debug_pub2 =
       this->create_publisher<nav_msgs::msg::Path>(
           "planning/debug2", common::constants::QOS_PLANNING);
@@ -210,6 +213,10 @@ DynamicPlannerNode::DynamicPlannerNode(const std::string &node_name_)
   //     20ms, std::bind(&DynamicPlannerNode::timer_callback, this)); // 50 hz
   m_planner_timer = this->create_wall_timer(
       20ms, std::bind(&DynamicPlannerNode::timer_callback_rule, this)); // 50 hz
+  // m_planner_timer = this->create_wall_timer(
+  //     20ms,
+  //     std::bind(&DynamicPlannerNode::timer_callback_debug, this)); // 50
+  //     hz
 
   RCLCPP_INFO(this->get_logger(), "[DYNAMICPLANNER] Initialization done.");
 
@@ -1309,6 +1316,105 @@ void DynamicPlannerNode::publishPlannedTrajectory(
     m_ego_traj_global_vis_pub->publish(m_ego_planned_vis_path_global);
   }
 }
+void DynamicPlannerNode::timer_callback_debug() {
+  debug_ego_speed = debug_ego_speed + 0.1;
+
+  if (debug_ego_speed > 67) {
+    debug_ego_speed = 67;
+  }
+
+  m_ego_odom.twist.twist.linear.x = debug_ego_speed;
+
+  auto allowable_maximum_vy = abs(tan(m_acceptable_slip_angle_rad)) *
+                              std::max(debug_ego_speed, MIN_SPEED_MPS);
+  allowable_maximum_vy = std::max(1.5, allowable_maximum_vy); // mps
+
+  m_ego_odom.pose.pose.position.x = 69.016509;
+  m_ego_odom.pose.pose.position.y = -409.4941123;
+
+  // 329.8444616,-88.6056703
+  // 206.0902806, -602.6045846
+  // 90.2037954,-452.4725963
+  // 69.016509,-409.4941123
+
+  if (m_cur_planned_traj.trajectory_path.poses.empty() || true) {
+    m_race_mode_first_callback = false;
+
+    m_cur_planned_traj.trajectory_global_progress.clear();
+    m_cur_planned_traj.trajectory_velocity.clear();
+    m_cur_planned_traj.trajectory_timestamp_array.clear();
+    m_cur_planned_traj.trajectory_path.poses.clear();
+
+    auto progreeNCTE_racingline =
+        calcProgressNCTE(m_ego_odom.pose.pose, m_racingline_path);
+
+    std::cout << "planning time : "
+              << abs(get<1>(progreeNCTE_racingline) / allowable_maximum_vy)
+              << std::endl;
+
+    // Merging frenet segment generation
+    // Generate single frenet path segment
+    std::vector<std::shared_ptr<FrenetPath>> frenet_path_generation_result =
+        m_frenet_generator_ptr->calc_frenet_paths_multi_longi(
+            get<1>(progreeNCTE_racingline), // current_position_d
+            get<0>(progreeNCTE_racingline), // current_position_s
+            0.0,                            // current_velocity_d
+            std::max(debug_ego_speed,
+                     MIN_SPEED_MPS),          // current_velocity_s
+            0.0,                              // current_acceleration_d
+            get<4>(m_racingline_spline_data), // cubicSplineModel
+            std::max(abs(get<1>(progreeNCTE_racingline) / allowable_maximum_vy),
+                     5.0),
+            std::max(abs(get<1>(progreeNCTE_racingline) / allowable_maximum_vy),
+                     5.0) +
+                0.01,
+            SAMPLING_TIME, 0.0, 0.0001, 0.1);
+
+    if (frenet_path_generation_result.empty() ||
+        frenet_path_generation_result[0]->points_x().empty()) {
+      // Abnormal situation
+      // publish empty & Estop trajectory
+      RCLCPP_ERROR_ONCE(this->get_logger(),
+                        "[RACE MODE] CRITICAL BUG HAS BEEN HIT.\n Frenet path "
+                        "generation result or point vector is empty");
+      m_last_lat_planning_type = LATERAL_PLANNING_TYPE::KEEP;
+      m_last_long_planning_type = LONGITUDINAL_PLANNING_TYPE::ESTOP;
+      nif_msgs::msg::DynamicTrajectory empty_traj;
+      empty_traj.header.frame_id = nif::common::frame_id::localization::ODOM;
+      publishPlannedTrajectory(empty_traj, m_last_long_planning_type,
+                               m_last_lat_planning_type, true);
+      return;
+    }
+
+    m_cur_planned_traj =
+        stitchFrenetToPath(frenet_path_generation_result[0], m_racingline_path);
+
+    m_reset_wpt_idx =
+        getCurIdx(frenet_path_generation_result[0]->points_x().back(),
+                  frenet_path_generation_result[0]->points_y().back(),
+                  m_cur_planned_traj.trajectory_path);
+
+    // Set the target path index to -1 which means the racing line
+    m_last_update_target_path_alias = "raceline";
+    m_reset_target_path_idx = RESET_PATH_TYPE::RACE_LINE;
+  }
+
+  auto raceline_path_seg = getCertainLenOfPathSeg(
+      m_ego_odom.pose.pose.position.x, m_ego_odom.pose.pose.position.y,
+      m_cur_planned_traj.trajectory_path, 100);
+
+  auto race_traj = m_velocity_profiler_obj.velProfileWCollisionChecking(
+      m_ego_odom, raceline_path_seg, m_cur_oppo_pred_result,
+      m_config_overlap_checking_dist_bound,
+      m_config_overlap_checking_time_bound, true, 1.0);
+
+  raceline_path_seg.header.frame_id = "odom";
+  race_traj.trajectory_path.header.frame_id = "odom";
+  m_debug_vis_pub->publish(race_traj.trajectory_path);
+  m_racingline_path.header.frame_id = "odom";
+  m_ego_traj_global_vis_debug_pub1->publish(m_racingline_path);
+  m_ego_traj_global_debug_pub1->publish(race_traj);
+}
 
 void DynamicPlannerNode::timer_callback_rule() {
 
@@ -1318,13 +1424,23 @@ void DynamicPlannerNode::timer_callback_rule() {
   ///////////////////////////////////////
 
   // ----------------------------------------------------------------
-  // SYSTEM health check
-  auto mission_status = this->getSystemStatus().mission_status;
-  double mission_max_vel =
-      this->getSystemStatus().mission_status.max_velocity_mps;
+  // --------------------- SYSTEM health check ---------------------
+  // ----------------------------------------------------------------
+  auto &mission_status = this->getSystemStatus().mission_status;
+  double mission_max_vel = mission_status.max_velocity_mps;
 
-  // Mission maximum vel set to the profiler
+  // Set the maximum accel and decel following the mission manager
+  m_mission_accel_max = abs(mission_status.zone_status.long_acceleration_max);
+  m_mission_decel_max =
+      -1 * abs(mission_status.zone_status
+                   .long_acceleration_min); // should be negative
+
+  // Set to velocity profiler
   auto flg = m_velocity_profiler_obj.setConstraintMaxVel(mission_max_vel);
+  auto success_flg =
+      m_velocity_profiler_obj.setConstraintMaxAccel(m_mission_accel_max);
+  success_flg =
+      m_velocity_profiler_obj.setConstraintMaxDeccel(m_mission_decel_max);
   // ---------------------------------------------------------------
 
   auto allowable_maximum_vy =
@@ -1333,9 +1449,8 @@ void DynamicPlannerNode::timer_callback_rule() {
   allowable_maximum_vy = std::max(1.5, allowable_maximum_vy); // mps
 
   // ---------------------------------------------------------------
-
-  // Oppo prediction health check
-  // TODO improve this
+  // --------------- Oppo prediction health check ---------------
+  // ---------------------------------------------------------------
   if (!m_oppo_pred_callback_first_run) {
     if (this->now() - m_prev_oppo_pred_last_update > rclcpp::Duration(2, 0)) {
       m_cur_oppo_pred_result.trajectory_path.poses.clear();
@@ -1361,6 +1476,7 @@ void DynamicPlannerNode::timer_callback_rule() {
         this->missionIs(nif::common::MissionStatus::MISSION_PIT_TO_TRACK) ||
         this->missionIs(nif::common::MissionStatus::MISSION_PIT_INIT) ||
         this->missionIs(nif::common::MissionStatus::MISSION_DEFAULT)) {
+
       m_defender_mode_first_callback = true;
       m_race_mode_first_callback = true;
       m_keep_position_mode_first_callback = true;
@@ -1392,7 +1508,6 @@ void DynamicPlannerNode::timer_callback_rule() {
           m_cur_planned_traj.trajectory_global_progress.clear();
           m_cur_planned_traj.trajectory_velocity.clear();
           m_cur_planned_traj.trajectory_timestamp_array.clear();
-          m_cur_planned_traj.trajectory_path.poses.clear();
 
           auto progreeNCTE_racingline =
               calcProgressNCTE(m_ego_odom.pose.pose, m_racingline_path);
@@ -1461,7 +1576,7 @@ void DynamicPlannerNode::timer_callback_rule() {
 
         //////////////////////////////////////////////////////////////////
         // Merging back to the racing line if the ego vehicle is far from the
-        // opponent (only in the stretches)
+        // opponent (only in the straight section --from mission mananger)
         //////////////////////////////////////////////////////////////////
 
         auto naive_gap = nif::common::constants::numeric::INF;
@@ -1471,9 +1586,12 @@ void DynamicPlannerNode::timer_callback_rule() {
               m_cur_oppo_pred_result.trajectory_path.poses.front().pose);
         }
 
-        // TODO: Straight zone check from the mission manager
-        if (naive_gap > m_merging_back_gap_thres && // longitudinal wise
+        // Check merging behavior only on the straight section
+        if (mission_status.zone_status.zone_id ==
+                mission_status.zone_status.ZONE_TYPE_STRAIGHT &&
+            naive_gap > m_merging_back_gap_thres && // longitudinal wise
             m_last_update_target_path_alias != "raceline" &&
+            m_last_update_target_path_alias != "left_center" &&
             m_last_lat_planning_type == LATERAL_PLANNING_TYPE::KEEP &&
             m_reset_target_path_idx == RESET_PATH_TYPE::NONE) {
           auto progreeNCTE_racingline =
@@ -1553,7 +1671,6 @@ void DynamicPlannerNode::timer_callback_rule() {
 
         ///////////////////////////////////////////////////
         // Velocity profiling with the previous planned path
-        // (Not close enough to the racing line or colliding)
         ///////////////////////////////////////////////////
         auto cur_path_seg = getCertainLenOfPathSeg(
             m_ego_odom.pose.pose.position.x, m_ego_odom.pose.pose.position.y,
@@ -1773,8 +1890,6 @@ void DynamicPlannerNode::timer_callback_rule() {
         ///////////////////////////////
         // defender mode first callback
         ///////////////////////////////
-        // if (m_defender_mode_first_callback == true ||
-        //     m_cur_planned_traj.trajectory_path.poses.empty()) {
         if (m_cur_planned_traj.trajectory_path.poses.empty()) {
           m_defender_mode_first_callback = false;
 
@@ -1796,10 +1911,10 @@ void DynamicPlannerNode::timer_callback_rule() {
                       get<4>(m_defenderline_spline_data), // cubicSplineModel
                       std::max(abs(get<1>(progreeNCTE_defenderline) /
                                    allowable_maximum_vy),
-                               2.0),
+                               4.0),
                       std::max(abs(get<1>(progreeNCTE_defenderline) /
                                    allowable_maximum_vy),
-                               2.0) +
+                               4.0) +
                           0.01,
                       SAMPLING_TIME, 0.0, 0.0001, 0.1);
 
@@ -1829,19 +1944,18 @@ void DynamicPlannerNode::timer_callback_rule() {
                         frenet_path_generation_result[0]->points_y().back(),
                         m_cur_planned_traj.trajectory_path);
           m_reset_target_path_idx = RESET_PATH_TYPE::DEFENDER_LINE;
-        } else {
-          // Keep previous plan
-
-          ///////////////////////////////////////////
-          // Change the target path to the static wpt
-          ///////////////////////////////////////////
-          auto cur_idx_on_previous_path = getCurIdx(
-              m_ego_odom.pose.pose.position.x, m_ego_odom.pose.pose.position.y,
-              m_cur_planned_traj.trajectory_path);
-
-          checkSwitchToStaticWPT(cur_idx_on_previous_path);
-          // -----------------------------------------
         }
+
+        // Keep previous plan
+        ///////////////////////////////////////////
+        // Change the target path to the static wpt
+        ///////////////////////////////////////////
+        auto cur_idx_on_previous_path = getCurIdx(
+            m_ego_odom.pose.pose.position.x, m_ego_odom.pose.pose.position.y,
+            m_cur_planned_traj.trajectory_path);
+
+        checkSwitchToStaticWPT(cur_idx_on_previous_path);
+        // -----------------------------------------
 
         auto cur_path_seg = getCertainLenOfPathSeg(
             m_ego_odom.pose.pose.position.x, m_ego_odom.pose.pose.position.y,
@@ -1859,6 +1973,7 @@ void DynamicPlannerNode::timer_callback_rule() {
                                  m_last_lat_planning_type, true);
         return;
       } else {
+
         ////////////////////////////
         // Overtaking is not allowed
         ////////////////////////////
@@ -1918,26 +2033,24 @@ void DynamicPlannerNode::timer_callback_rule() {
 
           m_cur_planned_traj = stitched_path;
 
-          // m_reset_wpt_idx =
-          //     getCurIdx(frenet_path_generation_result[0]->points_x().back(),
-          //               frenet_path_generation_result[0]->points_y().back(),
-          //               m_cur_planned_traj.trajectory_path);
+          m_reset_wpt_idx =
+              getCurIdx(frenet_path_generation_result[0]->points_x().back(),
+                        frenet_path_generation_result[0]->points_y().back(),
+                        m_cur_planned_traj.trajectory_path);
 
           m_last_update_target_path_alias = "raceline";
           m_reset_target_path_idx = RESET_PATH_TYPE::RACE_LINE;
-        } else {
-          // Keep previous plan
-
-          ///////////////////////////////////////////
-          // Change the target path to the static wpt
-          ///////////////////////////////////////////
-          auto cur_idx_on_previous_path = getCurIdx(
-              m_ego_odom.pose.pose.position.x, m_ego_odom.pose.pose.position.y,
-              m_cur_planned_traj.trajectory_path);
-
-          checkSwitchToStaticWPT(cur_idx_on_previous_path);
-          // -----------------------------------------
         }
+
+        // Keep previous plan
+        ///////////////////////////////////////////
+        // Change the target path to the static wpt
+        ///////////////////////////////////////////
+        auto cur_idx_on_previous_path = getCurIdx(
+            m_ego_odom.pose.pose.position.x, m_ego_odom.pose.pose.position.y,
+            m_cur_planned_traj.trajectory_path);
+
+        checkSwitchToStaticWPT(cur_idx_on_previous_path);
         // -----------------------------------------
 
         // Keep previous plan and ACC trajectory generation
@@ -2597,10 +2710,10 @@ void DynamicPlannerNode::timer_callback() {
 
           m_cur_planned_traj = stitched_path;
 
-          // m_reset_wpt_idx =
-          //     getCurIdx(frenet_path_generation_result[0]->points_x().back(),
-          //               frenet_path_generation_result[0]->points_y().back(),
-          //               m_cur_planned_traj.trajectory_path);
+          m_reset_wpt_idx =
+              getCurIdx(frenet_path_generation_result[0]->points_x().back(),
+                        frenet_path_generation_result[0]->points_y().back(),
+                        m_cur_planned_traj.trajectory_path);
 
           m_last_update_target_path_alias = "raceline";
           m_reset_target_path_idx = RESET_PATH_TYPE::RACE_LINE;

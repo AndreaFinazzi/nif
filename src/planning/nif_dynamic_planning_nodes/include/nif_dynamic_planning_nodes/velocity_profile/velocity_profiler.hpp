@@ -87,8 +87,8 @@ private:
   double m_acc_config_s1;
   double m_acc_config_v_desired;
   double m_acc_config_time_headway;
-  double m_acc_config_accel_max;
-  double m_acc_config_decel_desired;
+  // double m_acc_config_accel_max;
+  // double m_acc_config_decel_desired;
   double m_acc_config_delta;
   double m_acc_config_veh_l;
 

@@ -101,6 +101,8 @@ public:
 
   void timer_callback();
   void timer_callback_rule();
+  void timer_callback_debug();
+  double debug_ego_speed = 0;
   void publishTrajectory();
   void publishPlannedTrajectory(bool vis_);
   void publishPlannedTrajectory(nif_msgs::msg::DynamicTrajectory &traj_,
@@ -244,6 +246,8 @@ private:
 
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr
       m_ego_traj_global_vis_debug_pub1;
+  rclcpp::Publisher<nif_msgs::msg::DynamicTrajectory>::SharedPtr
+      m_ego_traj_global_debug_pub1;
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr
       m_ego_traj_global_vis_debug_pub2;
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr
@@ -280,6 +284,9 @@ private:
 
   PLANNING_ACTION_TYPE m_cur_overtaking_action;
   PLANNING_ACTION_TYPE m_prev_overtaking_action;
+
+  double m_mission_accel_max; // mpss
+  double m_mission_decel_max; // mpss
 
   /////////////////////////////
   // OVERTKAING PATH CANDIDATES

@@ -4,16 +4,16 @@ velocity_profiler::velocity_profiler() {
   m_constraint_max_t = 4.0;
   m_constraint_min_t = 2.0;
   m_constraint_max_accel = 4.0;
-  m_constraint_max_lat_accel = 10.0;
+  m_constraint_max_lat_accel = 20.0;
   m_constraint_max_deccel = -10.0;
   m_constraint_max_vel = 83.3333;
 
   m_acc_config_s0 = 20.0;
   m_acc_config_s1 = 0.0;
   m_acc_config_v_desired = 60.0;
-  m_acc_config_time_headway = 1.0;
-  m_acc_config_accel_max = 5.0;
-  m_acc_config_decel_desired = 8.0;
+  m_acc_config_time_headway = 0.5;
+  // m_acc_config_accel_max = 5.0;
+  // m_acc_config_decel_desired = 8.0;
   m_acc_config_delta = 4.0;
   m_acc_config_veh_l = 4.7;
 }
@@ -69,10 +69,10 @@ bool velocity_profiler::parseConfig_(std::string &config_file_path_) {
       adaptive_cruise_control_param["acc_config_v_desired"].as<double>();
   m_acc_config_time_headway =
       adaptive_cruise_control_param["acc_config_time_headway"].as<double>();
-  m_acc_config_accel_max =
-      adaptive_cruise_control_param["acc_config_accel_max"].as<double>();
-  m_acc_config_decel_desired =
-      adaptive_cruise_control_param["acc_config_decel_desired"].as<double>();
+  // m_acc_config_accel_max =
+  //     adaptive_cruise_control_param["acc_config_accel_max"].as<double>();
+  // m_acc_config_decel_desired =
+  //     adaptive_cruise_control_param["acc_config_decel_desired"].as<double>();
   m_acc_config_delta =
       adaptive_cruise_control_param["acc_config_delta"].as<double>();
   m_acc_config_veh_l =
@@ -118,10 +118,6 @@ void velocity_profiler::setConfigUseCurvatureMode(bool flg) {
 
   if (m_config_use_veh_model || m_config_use_acc_model ||
       m_config_use_curvature_model == false) {
-    // std::cout << "At least one of the velocity profiling method should be set
-    // "
-    //              "to true. Force set to True"
-    //           << std::endl;
     m_config_use_curvature_model = true;
   }
 }
@@ -147,8 +143,6 @@ bool velocity_profiler::setConstraintMaxT(double value) {
   m_constraint_max_t = value;
   auto check = checkConfig();
   if (check == false) {
-    // std::cout << "Invalid constraint. Keep the previous config." <<
-    // std::endl;
     m_constraint_max_t = constraint_max_t_prev;
   }
   return check;
@@ -158,8 +152,6 @@ bool velocity_profiler::setConstraintMinT(double value) {
   m_constraint_min_t = value;
   auto check = checkConfig();
   if (check == false) {
-    // std::cout << "Invalid constraint. Keep the previous config." <<
-    // std::endl;
     m_constraint_min_t = constraint_min_t_prev;
   }
   return check;
@@ -169,8 +161,6 @@ bool velocity_profiler::setConstraintMaxAccel(double value) {
   m_constraint_max_accel = value;
   auto check = checkConfig();
   if (check == false) {
-    // std::cout << "Invalid constraint. Keep the previous config." <<
-    // std::endl;
     m_constraint_max_accel = constraint_max_accel_prev;
   }
   return check;
@@ -180,8 +170,6 @@ bool velocity_profiler::setConstraintMaxDeccel(double value) {
   m_constraint_max_deccel = value;
   auto check = checkConfig();
   if (check == false) {
-    // std::cout << "Invalid constraint. Keep the previous config." <<
-    // std::endl;
     m_constraint_max_deccel = constraint_max_deccel_prev;
   }
   return check;
@@ -192,7 +180,6 @@ bool velocity_profiler::setConstraintMaxVel(double value) {
   m_constraint_max_vel = value;
   auto check = checkConfig();
   if (check == false) {
-    std::cout << "Invalid constraint. Keep the previous config." << std::endl;
     m_constraint_max_vel = constraint_max_vel_prev;
   }
   return check;
@@ -698,7 +685,7 @@ nif_msgs::msg::DynamicTrajectory velocity_profiler::velProfileForAcc(
             m_acc_config_time_headway * out_traj.trajectory_velocity.back() +
             out_traj.trajectory_velocity.back() *
                 (out_traj.trajectory_velocity.back() - cipv_vel_abs_) /
-                (2 * sqrt(m_constraint_max_accel * m_acc_config_decel_desired));
+                (2 * sqrt(m_constraint_max_accel * m_constraint_max_deccel));
 
         auto predictided_oppo_pose =
             cipv_predicted_traj_.trajectory_path
