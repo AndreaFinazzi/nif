@@ -165,6 +165,7 @@ void FrenetBasedOpponentPredictor::opponentStatusCallback(
         perception_el.detection_result_3d.center.orientation.z != NAN &&
         perception_el.detection_result_3d.center.orientation.w != NAN) {
 
+      //@WIP: Currently not working as expected
       if (perception_el.obj_velocity_in_global.linear.x < 111.111) {
         // Only trust the result when the tracking speed is less than 400 kph
         m_opponent_status = perception_el;
@@ -176,12 +177,11 @@ void FrenetBasedOpponentPredictor::opponentStatusCallback(
         // NOTE : Based on current detection result, it calculate the opponent's
         // current position progress and cross-track error
         this->calcOpponentProgress();
+        this->predict();
+        m_pub_predicted_trajectory->publish(m_predicted_output_in_global);
+        m_pub_predicted_trajectory_vis->publish(m_predicted_output_in_global_vis);
       }
 
-      // deprecated
-      // this->predict();
-      // m_pub_predicted_trajectory->publish(m_predicted_output_in_global);
-      // m_pub_predicted_trajectory_vis->publish(m_predicted_output_in_global_vis);
 
     } else {
       // Do not update the m_opponent_status
