@@ -8,20 +8,58 @@
 
 #define __APP_NAME__ "euclidean_clustering"
 
+using namespace nif::common::frame_id::localization;
+
 // Constructor
 PointsClustering::PointsClustering()
     : Node("lidar_clustering_node")
 {
+  this->declare_parameter<double>("left_lower_distance", double(0.5));
+  this->declare_parameter<double>("right_lower_distance", double(0.5));
+  this->declare_parameter<double>("rear_lower_distance", double(2.2));
+  this->declare_parameter<double>("front_lower_distance", double(1.5));
+
+  this->declare_parameter<double>("left_upper_distance", double(20.0));
+  this->declare_parameter<double>("right_upper_distance", double(20.0));
+  this->declare_parameter<double>("rear_upper_distance", double(50.0));
+  this->declare_parameter<double>("front_upper_distance", double(50.0));
+
+  this->declare_parameter<double>("height_lower_distance", double(-0.5));
+  this->declare_parameter<double>("height_upper_distance", double(1.0));
+  this->declare_parameter<double>("resolution", double(0.25));
+  this->declare_parameter<double>("count_threshold", double(3.));
+
   this->declare_parameter<int>("cluster_size_min", 10);
   this->declare_parameter<int>("cluster_size_max", 2000);
   this->declare_parameter<double>("max_cluster_distance", 0.5);
   this->declare_parameter<double>("height_filter_thres", -0.2);
+
+  this->declare_parameter<bool>("use_inverse_map", false);
 
   this->m_cluster_size_min = this->get_parameter("cluster_size_min").as_int();
   this->m_cluster_size_max = this->get_parameter("cluster_size_max").as_int();
   this->m_max_cluster_distance = this->get_parameter("max_cluster_distance").as_double();
   this->m_height_filter_thres =
       this->get_parameter("height_filter_thres").as_double();
+
+  this->m_use_inverse_map = this->get_parameter("use_inverse_map").as_bool();
+
+  this->get_parameter("left_lower_distance", left_lower_distance_);
+  this->get_parameter("right_lower_distance", right_lower_distance_);
+  this->get_parameter("rear_lower_distance", rear_lower_distance_);
+  this->get_parameter("front_lower_distance", front_lower_distance_);
+
+  this->get_parameter("left_upper_distance", left_upper_distance_);
+  this->get_parameter("right_upper_distance", right_upper_distance_);
+  this->get_parameter("rear_upper_distance", rear_upper_distance_);
+  this->get_parameter("front_upper_distance", front_upper_distance_);
+
+  this->get_parameter("height_lower_distance", height_lower_distance_);
+  this->get_parameter("height_upper_distance", height_upper_distance_);
+
+  this->get_parameter("resolution", resolution_);
+  this->get_parameter("count_threshold", count_threshold_);
+
 
   pubClusterPoints = this->create_publisher<sensor_msgs::msg::PointCloud2>(
       "out_clustered_points", nif::common::constants::QOS_SENSOR_DATA);
@@ -36,6 +74,11 @@ PointsClustering::PointsClustering()
       "out_clustered_center_points", nif::common::constants::QOS_SENSOR_DATA);
   pubPerceptionList = this->create_publisher<nif::common::msgs::PerceptionResultList>(
       "out_perception_list", nif::common::constants::QOS_SENSOR_DATA);
+  pubInverseMappedPoints =
+      this->create_publisher<sensor_msgs::msg::PointCloud2>(
+          "out_inverse_mapped_points",
+          nif::common::constants::QOS_SENSOR_DATA);
+
 
   subInputPoints = this->create_subscription<sensor_msgs::msg::PointCloud2>(
       "in_lidar_points", nif::common::constants::QOS_SENSOR_DATA,
@@ -50,77 +93,164 @@ PointsClustering::PointsClustering()
       std::bind(&PointsClustering::RightPointsCallback, this,
                 std::placeholders::_1));
 
+  // if (this->m_use_inverse_map) {
+  //   subInverseMapPoints = this->create_subscription<sensor_msgs::msg::PointCloud2>(
+  //     "in_inverse_map_points", nif::common::constants::QOS_SENSOR_DATA,
+  //     std::bind(&PointsClustering::inverseMapPointsCallback, this,
+  //               std::placeholders::_1));
+  // }
+
   using namespace std::chrono_literals; // NOLINT
   sub_timer_ = this->create_wall_timer(
-      30ms, std::bind(&PointsClustering::timer_callback, this));
+      50ms, std::bind(&PointsClustering::timer_callback, this));
 
-  
+  this->parameters_callback_handle = this->add_on_set_parameters_callback(
+      std::bind(&PointsClustering::parametersCallback, this, std::placeholders::_1));
 
 }
 
 PointsClustering::~PointsClustering() {}
 
 void PointsClustering::timer_callback() {
+  auto now = this->now();
 
-  //simple height map filter
-  m_simpleHeightmapPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
-  
-  { // filter front points
-  std::lock_guard<std::mutex> sensor_lock(sensor_mtx_f);
-  if(bPoints && m_inPoints && !m_inPoints->points.empty()) {
+  bool has_front_points = this->bFrontPoints; // && 
+    // ((now - this->m_front_points_last_update) < rclcpp::Duration(1, 0));
+  bool has_right_points = this->bRightPoints; // && 
+    // ((now - this->m_right_points_last_update) < rclcpp::Duration(1, 0));
+  bool has_left_points = this->bLeftPoints; // && 
+    // ((now - this->m_left_points_last_update) < rclcpp::Duration(1, 0));
+  bool has_inverse_map_Points = this->bInverseMapPoints; // && 
+    // ((now - this->m_inverse_map_points_last_update) < rclcpp::Duration(1, 0));
 
-    for (auto point : m_inPoints->points)
-    {
-      pcl::PointXYZI point_buf;
-      point_buf = point;
-      point_buf.x = point.x + 0.9214; // ???
-      point_buf.z = point.z + 0.212; // ???
-  
-      if (point.z > m_height_filter_thres && point.z < 2.0 && fabs(point.y) < 20.0) {
-        m_simpleHeightmapPoints->points.push_back(point_buf);
-      }
-    }
-  }
-  }
+  pcl::PointCloud<pcl::PointXYZI>::Ptr target_pcl;
 
-  { // filter right points
-  std::lock_guard<std::mutex> sensor_lock(sensor_mtx_r);
-  if(bRightPoints && m_RightPoints && !m_RightPoints->points.empty())
-  {
+  if (!this->m_use_inverse_map) {
+    //simple height map filter
+    m_simpleHeightmapPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
     
-    for (auto point : m_RightPoints->points) {
-      if (point.z > m_height_filter_thres && point.z < 2.0 && 
-          fabs(point.y) > 0.5 && fabs(point.y) < 20.0 && 
-          point.x > -2.0 && point.x < -0.5) {
-        m_simpleHeightmapPoints->points.push_back(point);
+    { // filter front points
+    std::lock_guard<std::mutex> sensor_lock(sensor_mtx_f);
+    if(has_front_points && m_inPoints && !m_inPoints->points.empty()) {
+
+      for (auto point : m_inPoints->points)
+      {
+        pcl::PointXYZI point_buf;
+        point_buf = point;
+        point_buf.x = point.x + 0.9214; // ???
+        point_buf.z = point.z + 0.212; // ???
+    
+        if (point.z > m_height_filter_thres && point.z < 2.0 && fabs(point.y) < 20.0) {
+          m_simpleHeightmapPoints->points.push_back(point_buf);
+        }
       }
     }
-  }
-  }
+    }
 
-  { // filter left points
-  std::lock_guard<std::mutex> sensor_lock(sensor_mtx_l);
-  if (bLeftPoints && m_LeftPoints && !m_LeftPoints->points.empty()) {
-
-    for (auto point : m_LeftPoints->points) {
-      if (point.z > m_height_filter_thres && point.z < 2.0 && 
-          fabs(point.y) < 20.0 && 
-          point.x > -5.0 && point.x < 0.5) {
-        m_simpleHeightmapPoints->points.push_back(point);
+    { // filter right points
+    std::lock_guard<std::mutex> sensor_lock(sensor_mtx_r);
+    if(has_right_points && m_RightPoints && !m_RightPoints->points.empty())
+    {
+      
+      for (auto point : m_RightPoints->points) {
+        if (point.z > m_height_filter_thres && point.z < 2.0 && 
+            fabs(point.y) > 0.5 && fabs(point.y) < 20.0 && 
+            point.x > -2.0 && point.x < -0.5) {
+          m_simpleHeightmapPoints->points.push_back(point);
+        }
       }
     }
+    }
+
+    { // filter left points
+    std::lock_guard<std::mutex> sensor_lock(sensor_mtx_l);
+    if (has_left_points && m_LeftPoints && !m_LeftPoints->points.empty()) {
+
+      for (auto point : m_LeftPoints->points) {
+        if (point.z > m_height_filter_thres && point.z < 2.0 && 
+            fabs(point.y) < 20.0 && 
+            point.x > -5.0 && point.x < 0.5) {
+          m_simpleHeightmapPoints->points.push_back(point);
+        }
+      }
+    }
+    }
+
+    sensor_msgs::msg::PointCloud2 cloud_simple_heightmap_msg;
+    pcl::toROSMsg(*m_simpleHeightmapPoints, cloud_simple_heightmap_msg);
+    cloud_simple_heightmap_msg.header.frame_id =
+        nif::common::frame_id::localization::BASE_LINK;
+    cloud_simple_heightmap_msg.header.stamp = this->now();
+    pubSimpleheightMap->publish(cloud_simple_heightmap_msg);
+
+    target_pcl = m_simpleHeightmapPoints;
+  } else {
+    pcl::PointCloud<pcl::PointXYZI>::Ptr concatPoints(
+        new pcl::PointCloud<pcl::PointXYZI>);
+    { // concat front points
+      std::lock_guard<std::mutex> sensor_lock(sensor_mtx_f);
+      if(has_front_points && m_inPoints && !m_inPoints->points.empty()) {
+        
+        *concatPoints += *m_inPoints;
+      }
+    }
+
+    { // concat left points
+      std::lock_guard<std::mutex> sensor_lock(sensor_mtx_r);
+      if(has_right_points && m_RightPoints && !m_RightPoints->points.empty())
+      {
+        
+        *concatPoints += *m_RightPoints;
+      }
+    }
+
+    { // filter left points
+      std::lock_guard<std::mutex> sensor_lock(sensor_mtx_l);
+      if (has_left_points && m_LeftPoints && !m_LeftPoints->points.empty()) {
+
+        *concatPoints += *m_LeftPoints;
+      }
+    }
+
+    float min_x = -(front_upper_distance_ + rear_upper_distance_) / 2;
+    float min_y = -(left_upper_distance_ + right_upper_distance_) / 2;
+
+
+    pcl::PointCloud<pcl::PointXYZI>::Ptr egoShapeFilteredPoints(
+        new pcl::PointCloud<pcl::PointXYZI>);
+
+    EgoShape(concatPoints, egoShapeFilteredPoints, 
+      left_lower_distance_, right_lower_distance_, front_lower_distance_, rear_lower_distance_,
+      left_upper_distance_, right_upper_distance_, front_upper_distance_, rear_upper_distance_, 
+      height_lower_distance_, height_upper_distance_);
+
+    /* REGISTER POINTS TO GRID 
+    1. Register points on the 2-d grid map for ground-filtering
+    2. Visualize the occupancy grid map
+      - input : ego-shape & voxelized points, grid resolution, origin point of grid
+      - output : 2-D grid map
+    */
+    RegisterPointToGrid(egoShapeFilteredPoints, resolution_, min_x, min_y);
+
+    /* INVERSE MAP
+    1. Find the ground filtered points
+    2. Find the left/right filtered points
+      - input : ego-shape & voxelized points, grid resolution, origin point of grid
+      - output : Inverse mapped filtered points (Both, Left, Right)
+    */
+    m_inverseMapPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
+    InverseMap( egoShapeFilteredPoints, m_inverseMapPoints, 
+                min_x, min_y, resolution_);
+
+    sensor_msgs::msg::PointCloud2 cloud_inverse_msg;
+    pcl::toROSMsg(*m_inverseMapPoints, cloud_inverse_msg);
+    cloud_inverse_msg.header.frame_id = BASE_LINK;
+    cloud_inverse_msg.header.stamp = this->now();
+    pubInverseMappedPoints->publish(cloud_inverse_msg);
+
+    target_pcl = m_inverseMapPoints;
   }
-  }
 
-
-  sensor_msgs::msg::PointCloud2 cloud_simple_heightmap_msg;
-  pcl::toROSMsg(*m_simpleHeightmapPoints, cloud_simple_heightmap_msg);
-  cloud_simple_heightmap_msg.header.frame_id =
-      nif::common::frame_id::localization::BASE_LINK;
-  cloud_simple_heightmap_msg.header.stamp = this->now();
-  pubSimpleheightMap->publish(cloud_simple_heightmap_msg);
-
-  
   pcl::PointCloud<pcl::PointXYZI>::Ptr registeredPoints(
       new pcl::PointCloud<pcl::PointXYZI>);
   pcl::PointCloud<pcl::PointXYZI>::Ptr inflatedPoints(
@@ -128,10 +258,10 @@ void PointsClustering::timer_callback() {
   pcl::PointCloud<pcl::PointXYZI>::Ptr centerPoints(
       new pcl::PointCloud<pcl::PointXYZI>);
   nif::common::msgs::PerceptionResultList perception_msg{};
-  
+
   visualization_msgs::msg::MarkerArray clustered_array;
-  clusterAndColorGpu(m_simpleHeightmapPoints, registeredPoints,
-                     clustered_array, m_max_cluster_distance);
+  clusterAndColorGpu(target_pcl, registeredPoints,
+                    clustered_array, m_max_cluster_distance);
 
   int i = 0;
   perception_msg.perception_list.resize(clustered_array.markers.size());
@@ -141,9 +271,11 @@ void PointsClustering::timer_callback() {
     point_buf.x = marker.pose.position.x;
     point_buf.y = marker.pose.position.y;
     centerPoints->points.push_back(point_buf);
-    
+
     perception_msg.perception_list[i].header = marker.header;
     perception_msg.perception_list[i].detection_result_3d.center = marker.pose;
+
+    i += 1;
   }
 
   createGaussianWorld(clustered_array, 7.0, 3.0, inflatedPoints);
@@ -169,6 +301,7 @@ void PointsClustering::timer_callback() {
 
   pubClusteredArray->publish(clustered_array);
 
+  perception_msg.header = cloud_cluster_center_msg.header;
   pubPerceptionList->publish(perception_msg);
 }
 
@@ -177,17 +310,18 @@ void PointsClustering::PointsCallback(
 
   std::lock_guard<std::mutex> sensor_lock(sensor_mtx_f);
   m_inPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
+  this->m_front_points_last_update = this->now();
   // pcl::PointCloud<pcl::PointXYZI>::Ptr originPoints(
   //     new pcl::PointCloud<pcl::PointXYZI>);
 
   pcl::fromROSMsg(*msg, *m_inPoints);
-  // m_inPoints = downsample(m_inPoints, 0.05);
-  downsample(m_inPoints, 0.05);
+  // m_inPoints = downsample(m_inPoints, resolution_);
+  downsample(m_inPoints, resolution_);
 
   nif::perception::tools::transformLuminarPointCloudCustom(
     *m_inPoints, *m_inPoints, transfrom_list[0]);
 
-  bPoints = true;
+  bFrontPoints = true;
 
   // std::cout << "callback" << std::endl;
 }
@@ -197,9 +331,10 @@ void PointsClustering::LeftPointsCallback(
   std::lock_guard<std::mutex> sensor_lock(sensor_mtx_l);
 
   m_LeftPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
+  this->m_left_points_last_update = this->now();
   pcl::fromROSMsg(*msg, *m_LeftPoints);
 
-  downsample(m_LeftPoints, 0.05);
+  downsample(m_LeftPoints, resolution_);
 
   nif::perception::tools::transformLuminarPointCloudCustom(
     *m_LeftPoints, *m_LeftPoints, transfrom_list[1]);
@@ -212,14 +347,26 @@ void PointsClustering::RightPointsCallback(
   std::lock_guard<std::mutex> sensor_lock(sensor_mtx_r);
 
   m_RightPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
+  this->m_right_points_last_update = this->now();
   pcl::fromROSMsg(*msg, *m_RightPoints);
 
-  downsample(m_RightPoints, 0.05);
+  downsample(m_RightPoints, resolution_);
 
   nif::perception::tools::transformLuminarPointCloudCustom(
     *m_RightPoints, *m_RightPoints, transfrom_list[2]);
 
   bRightPoints = true;
+}
+
+void PointsClustering::inverseMapPointsCallback(
+    const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
+  std::lock_guard<std::mutex> sensor_lock(sensor_mtx_im);
+
+  m_inverseMapPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
+  this->m_inverse_map_points_last_update = this->now();
+  pcl::fromROSMsg(*msg, *m_inverseMapPoints);
+
+  bInverseMapPoints = true;
 }
 
 void PointsClustering::clusterAndColorGpu(
@@ -354,7 +501,7 @@ void PointsClustering::SetCloud(
   if (length < 7.0 && width < 7.0 && height > 0.1) {
     *register_cloud_ptr = *bufPoints;
     out_clustered_array.markers.push_back(marker_buf);
-    }
+  }
 
   // bounding_box_.header = in_ros_header;
 
@@ -386,7 +533,7 @@ PointsClustering::downsample(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud,
   // pcl::PointCloud<pcl::PointXYZI>::Ptr filtered(
   //     new pcl::PointCloud<pcl::PointXYZI>);
   pcl::VoxelGrid<pcl::PointXYZI> voxelgrid;
-  voxelgrid.setLeafSize(resolution, resolution, resolution);
+  voxelgrid.setLeafSize(resolution, resolution, 0.02);
   voxelgrid.setInputCloud(cloud);
   voxelgrid.filter(*cloud);
 }
@@ -448,4 +595,201 @@ void PointsClustering::createGaussianWorld(
   }
 
   // return output;
+}
+
+
+void PointsClustering::RegisterPointToGrid(
+    const pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud_ptr, 
+    double in_resolution, float min_x, float min_y) {
+  // nav_msgs::msg::OccupancyGrid oc_grid_msg;
+  // oc_grid_msg.header.frame_id = BASE_LINK;
+  // oc_grid_msg.header.stamp = this->now();
+  // oc_grid_msg.info.origin.position.x = min_x;
+  // oc_grid_msg.info.origin.position.y = min_y;
+  // oc_grid_msg.info.origin.position.z = 0.;
+  // oc_grid_msg.info.origin.orientation.x = 0.;
+  // oc_grid_msg.info.origin.orientation.y = 0.;
+  // oc_grid_msg.info.origin.orientation.z = 0.;
+  // oc_grid_msg.info.origin.orientation.w = 1.;
+  // oc_grid_msg.info.width = MAP_WIDTH;
+  // oc_grid_msg.info.height = MAP_HEIGHT;
+  // oc_grid_msg.info.resolution = in_resolution;
+
+  for (int i = 0; i < MAP_HEIGHT + 1; i++) {
+    // this->map[i].fill(0.0);
+    this->count_map[i].fill(0.0);
+    // this->mean_map[i].fill(0.0);
+    // this->cov_map[i].fill(0.0);
+    // this->points_map[i].fill({});
+  }
+
+  int x, y;
+  for (auto point_buf : in_cloud_ptr->points) {
+    x = std::floor((point_buf.x - min_x) / in_resolution);
+    y = std::floor((point_buf.y - min_y) / in_resolution);
+
+    if (x > MAP_WIDTH || x < 0 || y > MAP_HEIGHT || y < 0) {
+      // std::cout << x << ", " << y << std::endl;
+      continue;
+    }
+    // count_map[y][x] = count_map[y][x] + 1.f; // count hit
+
+    // std::vector<double> points_map_buf = points_map[y][x];
+    // points_map_buf.push_back(point_buf.z);
+    count_map[y][x] = count_map[y][x] + 1.f; // count hit
+    // points_map[y][x] = points_map_buf;
+    // map[y][x] = map[y][x] + point_buf.z + 0.5; // accumulate height
+    // double sum_of_elems =
+    //     std::accumulate(points_map_buf.begin(), points_map_buf.end(),
+    //                     decltype(points_map_buf)::value_type(0));
+
+    // if(count_map[y][x] != 0.)
+    // {
+    //   mean_map[y][x] = sum_of_elems / count_map[y][x]; // calculate mean map
+    //   for(auto z : points_map_buf)
+    //   {
+    //     cov_map[y][x] = cov_map[y][x] * count_map[y][x]; 
+    //     cov_map[y][x] = (cov_map[y][x] + pow((z - mean_map[y][x]),2)) / count_map[y][x];
+    //   }
+    // }
+  }
+
+  // for (int i = 0; i < MAP_HEIGHT; i++) {
+  //   for (int j = 0; j < MAP_WIDTH; j++) {
+  //     if (count_map[i][j] > count_threshold_) {
+  //       // oc_grid_msg.data.push_back((int8_t)(map[i][j]));
+  //       oc_grid_msg.data.push_back((int8_t)(80.));
+  //     } else {
+  //       oc_grid_msg.data.push_back((int8_t)(0.0));
+  //     }
+  //   }
+  // }
+  // pub_oc_grid->publish(oc_grid_msg);
+}
+
+void PointsClustering::InverseMap(
+    const pcl::PointCloud<pcl::PointXYZI>::Ptr cloudIn,
+    pcl::PointCloud<pcl::PointXYZI>::Ptr cloudOut,
+    float min_x, float min_y, float in_resolution) {
+  int x, y;
+  for (auto&& point_buf : cloudIn->points) {
+    
+    x = std::floor((point_buf.x - min_x) / in_resolution);
+    y = std::floor((point_buf.y - min_y) / in_resolution);
+    
+    if (count_map[y][x] > count_threshold_) {
+      cloudOut->points.push_back(point_buf);
+    }
+  }
+}
+
+void PointsClustering::EgoShape(
+    const pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud_ptr,
+    pcl::PointCloud<pcl::PointXYZI>::Ptr out_cloud_ptr,
+    double in_left_lower_threshold, 
+    double in_right_lower_threshold,
+    double in_front_lower_threshold,
+    double in_rear_lower_threshold, // lower limit
+    double in_left_upper_threshold, 
+    double in_right_upper_threshold,
+    double in_front_upper_threshold,
+    double in_rear_upper_threshold, // upper limit
+    double in_height_lower_threshold, 
+    double in_height_upper_threshold) {
+  
+  pcl::PointIndices::Ptr out_indices_list(new pcl::PointIndices);
+  for (unsigned int i = 0; i < in_cloud_ptr->points.size(); i++) {
+    auto& x = in_cloud_ptr->points[i].x;
+    auto& y = in_cloud_ptr->points[i].y;
+    auto& z = in_cloud_ptr->points[i].z;
+
+    // outer side boundaries
+    if (y > in_left_upper_threshold ||
+        y < -in_right_upper_threshold) {
+      out_indices_list->indices.push_back(i);
+      continue;
+    }
+
+    // outer front/rear boundaries
+    if (x > in_front_upper_threshold ||
+        x < -in_rear_upper_threshold) {
+      out_indices_list->indices.push_back(i);
+      continue;
+    }
+
+    if (z < (in_height_lower_threshold)) {
+      out_indices_list->indices.push_back(i);
+      continue;
+    }
+    if (z > (in_height_upper_threshold)) {
+      out_indices_list->indices.push_back(i);
+      continue;
+    }
+
+    if ( y < in_left_lower_threshold  && y > -1.0 * in_right_lower_threshold &&
+         x < in_front_lower_threshold && x > -1.0 * in_rear_lower_threshold )
+      {
+        out_indices_list->indices.push_back(i);
+        continue;
+      }
+      
+  }
+
+  pcl::ExtractIndices<pcl::PointXYZI> extract;
+  extract.setInputCloud(in_cloud_ptr);
+  extract.setIndices(out_indices_list);
+  extract.setNegative(
+      true); // true removes the indices, false leaves only the indices
+  extract.filter(*out_cloud_ptr);
+}
+
+rcl_interfaces::msg::SetParametersResult
+PointsClustering::parametersCallback(const std::vector<rclcpp::Parameter> &vector) {
+  rcl_interfaces::msg::SetParametersResult result;
+  result.successful = false;
+  result.reason = "";
+  for (const auto &param : vector) {
+    if (param.get_name() == "cluster_size_min") {
+      if (param.get_type() == rclcpp::ParameterType::PARAMETER_INTEGER) {
+        // TODO // @DEBUG implement constraints
+        if (true) {
+          this->m_cluster_size_min = param.as_int();
+          result.successful = true;
+        }
+      }
+    } else if (param.get_name() == "cluster_size_max") {
+      if (param.get_type() == rclcpp::ParameterType::PARAMETER_INTEGER) {
+        // TODO // @DEBUG implement constraints
+        if (true) {
+          this->m_cluster_size_max = param.as_int();
+          result.successful = true;
+        }
+      }
+    } else if (param.get_name() == "max_cluster_distance") {
+      if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
+        // TODO // @DEBUG implement constraints
+        if (true) {
+          this->m_max_cluster_distance = param.as_double();
+          result.successful = true;
+        }
+      }
+    } else if (param.get_name() == "height_filter_thres") {
+      if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
+        // TODO // @DEBUG implement constraints
+        if (true) {
+          this->m_height_filter_thres = param.as_double();
+          result.successful = true;
+        }
+      }
+    } else if (param.get_name() == "use_inverse_map") {
+      if (param.get_type() == rclcpp::ParameterType::PARAMETER_BOOL) {
+        // TODO // @DEBUG implement constraints
+        if (true) {
+          this->m_use_inverse_map = param.as_bool();
+          result.successful = true;
+        }
+      }
+    } 
+  }
+  return result;
 }

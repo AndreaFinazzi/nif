@@ -14,7 +14,6 @@
     <exec_depend>nif_aw_localization_nodes</exec_depend>
     <exec_depend>nif_aw_localization_bestgnss_nodes</exec_depend>
     <exec_depend>nif_waypoint_manager_nodes</exec_depend>
-    <exec_depend>nif_multilayer_planning_nodes</exec_depend>
     <exec_depend>nif_common_nodes</exec_depend>
     <exec_depend>nif_system_status_manager_nodes</exec_depend>
     <exec_depend>nif_mission_manager_nodes</exec_depend>
@@ -28,7 +27,6 @@
     <exec_depend>nif_control_safety_layer_nodes</exec_depend>
     <exec_depend>nif_lgsvl_simulation</exec_depend>
     <exec_depend>nif_costmap_generator</exec_depend>
-    <exec_depend>nif_dk_graph_planner</exec_depend>
 
     <exec_depend>nif_ghost_vehicle_spawner_nodes</exec_depend>
     <exec_depend>nif_opponent_prediction_nodes</exec_depend>

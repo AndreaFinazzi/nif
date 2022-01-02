@@ -340,12 +340,14 @@ void EgoShapeFilterNode::InverseMap(
     pcl::PointCloud<pcl::PointXYZI>::Ptr cloudOut,
     pcl::PointCloud<pcl::PointXYZI>::Ptr WeakerThrescloudOut,
     pcl::PointCloud<pcl::PointXYZI>::Ptr cloudLeftOut,
-    pcl::PointCloud<pcl::PointXYZI>::Ptr cloudRightOut, float min_x,
-    float min_y, float in_resolution) {
+    pcl::PointCloud<pcl::PointXYZI>::Ptr cloudRightOut,
+    float min_x, float min_y, float in_resolution) {
   int x, y;
-  for (auto point_buf : cloudIn->points) {
+  for (auto&& point_buf : cloudIn->points) {
+    
     x = std::floor((point_buf.x - min_x) / in_resolution);
     y = std::floor((point_buf.y - min_y) / in_resolution);
+    
     if (count_map[y][x] > count_threshold_) {
       cloudOut->points.push_back(point_buf);
       if (point_buf.y > 0) {

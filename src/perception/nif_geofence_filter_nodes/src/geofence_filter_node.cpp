@@ -9,6 +9,7 @@
 #include "nif_geofence_filter_nodes/geofence_filter_node.h"
 
 using nif::perception::GeofenceFilterNode;
+using nif::common::constants::DEG2RAD;
 
 GeofenceFilterNode::GeofenceFilterNode(const std::string &node_name_)
     // IBaseNode with no SSM subscription
@@ -25,6 +26,12 @@ GeofenceFilterNode::GeofenceFilterNode(const std::string &node_name_)
     this->declare_parameter<bool>("range_rate_filter_active", true);
     this->declare_parameter<double>("range_rate_filter_threshold_mps", 1.0);
 
+    this->declare_parameter<bool>("track_angle_filter_active", true);
+    this->declare_parameter<double>("track_angle_filter_threshold_deg", 15.0);
+    
+    this->declare_parameter<bool>("track_range_filter_active", true);
+    this->declare_parameter<double>("track_range_filter_threshold_min_m", 30.0);
+
     auto file_path_inner_line = this->get_parameter("file_path_inner_line").as_string();
     auto file_path_outer_line = this->get_parameter("file_path_outer_line").as_string();
 
@@ -36,6 +43,12 @@ GeofenceFilterNode::GeofenceFilterNode(const std::string &node_name_)
 
     this->range_rate_filter_active = this->get_parameter("range_rate_filter_active").as_bool();
     this->range_rate_filter_threshold_mps = this->get_parameter("range_rate_filter_threshold_mps").as_double();
+
+    this->track_angle_filter_active = this->get_parameter("track_angle_filter_active").as_bool();
+    this->track_angle_filter_threshold_deg = this->get_parameter("track_angle_filter_threshold_deg").as_double();
+    
+    this->track_range_filter_active = this->get_parameter("track_range_filter_active").as_bool();
+    this->track_range_filter_threshold_min_m = this->get_parameter("track_range_filter_threshold_min_m").as_double();
 
     sub_perception_array = this->create_subscription<nif_msgs::msg::Perception3DArray>(
         "in_perception_array", nif::common::constants::QOS_SENSOR_DATA,
@@ -56,7 +69,9 @@ GeofenceFilterNode::GeofenceFilterNode(const std::string &node_name_)
     pub_filtered_radar_track_vis = this->create_publisher<visualization_msgs::msg::Marker>(
         "out_filtered_radar_track_vis", nif::common::constants::QOS_SENSOR_DATA);
 
-    
+    pub_filtered_radar_perception_list = this->create_publisher<nif::common::msgs::PerceptionResultList>(
+        "out_filtered_radar_perception_list", nif::common::constants::QOS_SENSOR_DATA);
+
     int spline_interval = 1;
 
     // Load waypoints
@@ -76,6 +91,8 @@ GeofenceFilterNode::GeofenceFilterNode(const std::string &node_name_)
 
     this->parameters_callback_handle = this->add_on_set_parameters_callback(
         std::bind(&GeofenceFilterNode::parametersCallback, this, std::placeholders::_1));
+
+    this->alternative_orig_frame.position.x = 1000.0;
 }
 
 void GeofenceFilterNode::perceptionArrayCallback(
@@ -95,32 +112,49 @@ void GeofenceFilterNode::perceptionArrayCallback(
 
 void GeofenceFilterNode::radarTrackCallback(
     const delphi_esr_msgs::msg::EsrTrack::SharedPtr msg) {
-      geometry_msgs::msg::Pose pose_in_body{};
 
-      pose_in_body.position.x = msg->track_range * cos( 2 * M_PI * msg->track_angle / 360);
-      pose_in_body.position.y = msg->track_range * sin( 2 * M_PI * msg->track_angle / 360);
+      if (this->trackIsValid(msg)) {
 
-      if (this->poseInBodyIsValid(pose_in_body, msg->track_range_rate))
-      {
-        visualization_msgs::msg::Marker track_vis{};
-        track_vis.header = msg->header;
-        track_vis.id = msg->track_id;
-        track_vis.lifetime = rclcpp::Duration(0, 0.1e+9);
+        geometry_msgs::msg::Pose pose_in_body{};
+        auto theta_rad = DEG2RAD * msg->track_angle;
+        auto& r = msg->track_range;
 
-        track_vis.pose = pose_in_body;
+        pose_in_body.position.x = r * cos(theta_rad);
+        pose_in_body.position.y = r * sin(theta_rad);
 
-        track_vis.scale.x = 1.0;
-        track_vis.scale.y = 1.0;
-        track_vis.scale.z = 3.0;
+        if (this->poseInBodyIsValid(pose_in_body, msg->track_range_rate))
+        {
+          visualization_msgs::msg::Marker track_vis{};
+          track_vis.header = msg->header;
+          track_vis.id = msg->track_id;
+          track_vis.lifetime = rclcpp::Duration(0, 0.1e+9);
 
-        float colorcode = ((track_vis.id - 0x500) / (0x53F - 0x500)); // [0, 1]
-        track_vis.color.b = 1 - colorcode;
-        track_vis.color.g = colorcode;
-        track_vis.color.r = 0.0;
-        track_vis.color.a = 1;
+          track_vis.pose = pose_in_body;
 
-        this->pub_filtered_radar_track->publish(*msg);
-        this->pub_filtered_radar_track_vis->publish(track_vis);
+          track_vis.scale.x = 1.0;
+          track_vis.scale.y = 1.0;
+          track_vis.scale.z = 3.0;
+
+          float colorcode = ((track_vis.id - 0x500) / (0x53F - 0x500)); // [0, 1]
+          track_vis.color.b = 1 - colorcode;
+          track_vis.color.g = colorcode;
+          track_vis.color.r = 0.0;
+          track_vis.color.a = 1;
+
+          nif::common::msgs::PerceptionResultList track_prl{};
+          nif::common::msgs::PerceptionResult track_pr{};
+          track_prl.header = msg->header;
+          track_pr.header = msg->header;
+          track_pr.id = msg->track_id;
+          track_pr.obj_velocity_in_local.linear.x = msg->track_range_rate;
+          track_pr.detection_result_3d.center = pose_in_body;
+          track_prl.perception_list.push_back(track_pr);
+
+
+          this->pub_filtered_radar_track->publish(*msg);
+          this->pub_filtered_radar_track_vis->publish(track_vis);
+          this->pub_filtered_radar_perception_list->publish(track_prl);
+        }
       }
     }
 
@@ -165,55 +199,33 @@ bool GeofenceFilterNode::poseInBodyIsValid(
   // filter by boundaries in/out
   if (this->boundaries_filter_active) 
   {
-      double sign;
-      // Use squared because we're not interested in the actual distance, save a sqrt() call.
-      auto cp_inner_in_global = nif::common::utils::algebra::calCrossProduct(
-        object_pose_in_global.position, 
-        current_wpt_pose_inner_in_global.position);
 
-      auto cp_outer_in_global = nif::common::utils::algebra::calCrossProduct(
-        object_pose_in_global.position, 
-        current_wpt_pose_outer_in_global.position);
+    auto prev_wpt_pose_inner_in_global = this->wpt_manager_inner->getPoseStampedAtIndex(current_idx_inner_in_global - 1).pose;
+    auto prev_wpt_pose_outer_in_global = this->wpt_manager_outer->getPoseStampedAtIndex(current_idx_outer_in_global - 1).pose;
+    
+    auto current_wpt_pose_inner_in_prev = nif::common::utils::coordination::getPtGlobaltoBody(
+      prev_wpt_pose_inner_in_global, current_wpt_pose_inner_in_global);
+    auto current_wpt_pose_outer_in_prev = nif::common::utils::coordination::getPtGlobaltoBody(
+      prev_wpt_pose_outer_in_global, current_wpt_pose_outer_in_global);
+  
+    auto object_pose_in_inner_prev = nif::common::utils::coordination::getPtGlobaltoBody(
+      prev_wpt_pose_inner_in_global, object_pose_in_global);
+    auto object_pose_in_outer_prev = nif::common::utils::coordination::getPtGlobaltoBody(
+      prev_wpt_pose_outer_in_global, object_pose_in_global);
 
-      // TODO Handle case CP ~= 0. It happens twice on an oval track.
-      if (abs(cp_outer_in_global.z) <= 0.05 || abs(cp_inner_in_global.z) <= 0.05)
-      {
-        // Transform to body, very unlikely to have zero in both references
-        auto current_wpt_pose_inner_in_body = nif::common::utils::coordination::getPtGlobaltoBody(
-          this->getEgoOdometry(),
-          current_wpt_pose_inner_in_global
-        ).pose;
-        auto current_wpt_pose_outer_in_body = nif::common::utils::coordination::getPtGlobaltoBody(
-          this->getEgoOdometry(),
-          current_wpt_pose_outer_in_global
-        ).pose;
+    // Use squared because we're not interested in the actual distance, save a sqrt() call.
+    auto cp_inner_in_prev = nif::common::utils::algebra::calCrossProduct(
+      object_pose_in_inner_prev.position, 
+      current_wpt_pose_inner_in_prev.position);
 
-        // Use squared because we're not interested in the actual distance, save a sqrt() call.
-        auto cp_inner_in_body = nif::common::utils::algebra::calCrossProduct(
-          point_in_body.position, 
-          current_wpt_pose_inner_in_body.position);
+    auto cp_outer_in_prev = nif::common::utils::algebra::calCrossProduct(
+      object_pose_in_outer_prev.position, 
+      current_wpt_pose_outer_in_prev.position);
 
-        auto cp_outer_in_body = nif::common::utils::algebra::calCrossProduct(
-          point_in_body.position, 
-          current_wpt_pose_outer_in_body.position);
+    if (cp_inner_in_prev.z < 0 || // object on the left of inner wpt
+        cp_outer_in_prev.z > 0  // object on the right of outer wpt
+    ) return false;
 
-        if (cp_outer_in_body.z == 0.0 || cp_inner_in_body.z == 0.0)
-          return false; // At this point just continue
-
-        sign = cp_inner_in_body.z * cp_outer_in_body.z;
-
-      } else {
-        
-        // TODO remove 2D assumption! using vector_c.z sign is valid only if vector_a.z = vector_b.z = 0
-        // If the two CP have the same sign the point is outside the boundaries
-        sign = cp_inner_in_global.z * cp_outer_in_global.z;
-      }
-
-
-      if (sign > 0.0) {
-        // Point is out, element should be filtered out
-        return false;
-      }
   }
 
   // filter by range rate
@@ -227,6 +239,24 @@ bool GeofenceFilterNode::poseInBodyIsValid(
 
   return true;
 }
+
+bool GeofenceFilterNode::trackIsValid(
+  const delphi_esr_msgs::msg::EsrTrack::SharedPtr msg) {
+  if (this->track_angle_filter_active) 
+  {
+    if (abs(msg->track_angle) > this->track_angle_filter_threshold_deg)
+      return false;
+  }
+
+  if (this->track_range_filter_active)
+  {
+    if (msg->track_range < this->track_range_filter_threshold_min_m)
+      return false;
+  }
+
+  return true;
+}
+
 
 rcl_interfaces::msg::SetParametersResult
 nif::perception::GeofenceFilterNode::parametersCallback(

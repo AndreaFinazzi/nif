@@ -39,6 +39,9 @@ private:
         const geometry_msgs::msg::Pose &point_in_body,
         double r_dot = 0);
 
+    bool trackIsValid(
+        const delphi_esr_msgs::msg::EsrTrack::SharedPtr msg);
+
     rcl_interfaces::msg::SetParametersResult
     parametersCallback(
     const std::vector<rclcpp::Parameter> &vector);
@@ -51,6 +54,7 @@ private:
     rclcpp::Subscription<delphi_esr_msgs::msg::EsrTrack>::SharedPtr sub_radar_track;
     rclcpp::Publisher<delphi_esr_msgs::msg::EsrTrack>::SharedPtr pub_filtered_radar_track;
     rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr pub_filtered_radar_track_vis;
+    rclcpp::Publisher<nif::common::msgs::PerceptionResultList>::SharedPtr pub_filtered_radar_perception_list;
 
     std::unique_ptr<WaypointManagerMinimal> wpt_manager_inner;
     std::unique_ptr<WaypointManagerMinimal> wpt_manager_outer;
@@ -65,6 +69,15 @@ private:
 
     bool range_rate_filter_active; 
     double range_rate_filter_threshold_mps; 
+
+    bool track_angle_filter_active;
+    double track_angle_filter_threshold_deg;
+
+    bool track_range_filter_active;
+    double track_range_filter_threshold_min_m;
+
+    // Used to solve cross-product in singular cases
+    geometry_msgs::msg::Pose alternative_orig_frame;
 
 };  
 } // namespace perception

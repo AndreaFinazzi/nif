@@ -18,7 +18,7 @@ using namespace std::chrono_literals;
 namespace nif {
 namespace perception {
 
-auto TIMER_PERIOD = 10ms;
+auto TIMER_PERIOD = 40ms;
 unsigned int TRACKS_CONTAINER_DIM = 100;
 
 std::mutex __MUTEX__;
@@ -69,7 +69,7 @@ private:
 void timer_callback() {
         // Publish the two detection arrays properly resized.
         __MUTEX__.lock();
-
+        
         this->radar_track_list_msg_ptr->detections.resize(next_index);
         this->perception_list_msg_ptr->perception_list.resize(next_index);
 

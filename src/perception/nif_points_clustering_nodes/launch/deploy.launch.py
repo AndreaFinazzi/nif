@@ -35,11 +35,13 @@ def generate_launch_description():
                     ("in_lidar_points", "/luminar_front_points"),
                     ("in_left_points", "/luminar_left_points"),
                     ("in_right_points", "/luminar_right_points"),
+                    ("in_inverse_map_points", "/inverse_weaker_thres_mapped_points"),
                     ("out_clustered_points", "/clustered_points"),
                     ("out_inflation_points", "/inflated_points"),
                     ("out_clustered_center_points", "/cluster_center_points"),
                     ("out_clustered_array", "/clustered_markers"),
-                    ("out_clustered_array", "/clustered/perception_list")    
+                    ("out_perception_list", "/clustered/perception_list"),
+                    ("out_inverse_mapped_points", "/inverse_weaker_thres_mapped_points")
                 ]
     )
 

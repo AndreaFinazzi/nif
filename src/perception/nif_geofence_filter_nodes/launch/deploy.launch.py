@@ -83,16 +83,19 @@ def generate_launch_description():
 
                     # Filters out the tracks considered static
                     'range_rate_filter_active': True,
-                    'range_rate_filter_threshold_mps': 3.0,
+                    'range_rate_filter_threshold_mps': 2.0,
                     }],
 
                 remappings=[
                     ("in_perception_array", "/clustered/perception_list"),
-                    ("out_filtered_perception_array", "/clustered/perception_list/filtered"),
+                    # ("out_filtered_perception_array", "/clustered/perception_list/filtered"),
+                    ("out_filtered_perception_array", "/perception/concat"),
 
                     ("in_radar_track", "/radar_front/esr_track"),
                     ("out_filtered_radar_track", "/radar_front/esr_track/filtered"),
                     ("out_filtered_radar_track_vis", "/radar_front/esr_track/filtered/vis"),
+                    # ("out_filtered_radar_perception_list", "/radar_front/perception_list/filtered"),
+                    ("out_filtered_radar_perception_list", "/perception/concat"),
                 ]
             )
 

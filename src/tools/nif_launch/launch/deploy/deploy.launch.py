@@ -414,7 +414,7 @@ def generate_launch_description():
         nif_csl_node,
         nif_aw_localization_launch,
         nif_localization_launch,
-        nif_points_preprocessor_launch,
+        # nif_points_preprocessor_launch,
         nif_points_clustering,
         robot_description_launch,
         nif_joint_lqr_control_node,
