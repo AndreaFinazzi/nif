@@ -165,28 +165,24 @@ void FrenetBasedOpponentPredictor::opponentStatusCallback(
         perception_el.detection_result_3d.center.orientation.z != NAN &&
         perception_el.detection_result_3d.center.orientation.w != NAN) {
 
-      m_opponent_status = perception_el;
-      m_defender_vel_mps = abs(perception_el.obj_velocity_in_global.linear.x) +
-                           m_config_oppo_vel_bias_mps; // mps / absolute vel
-      m_defender_vel_mps = std::max(abs(m_defender_vel_mps), 0.5);
-      this->predict();
-      m_pub_predicted_trajectory->publish(m_predicted_output_in_global);
-      m_pub_predicted_trajectory_vis->publish(m_predicted_output_in_global_vis);
+      if (perception_el.obj_velocity_in_global.linear.x < 111.111) {
+        // Only trust the result when the tracking speed is less than 400 kph
+        m_opponent_status = perception_el;
+        m_defender_vel_mps =
+            abs(perception_el.obj_velocity_in_global.linear.x) +
+            m_config_oppo_vel_bias_mps; // mps / absolute vel
+        m_defender_vel_mps = std::max(abs(m_defender_vel_mps), 0.5);
+        // Calculate the opponent's progress
+        // NOTE : Based on current detection result, it calculate the opponent's
+        // current position progress and cross-track error
+        this->calcOpponentProgress();
+      }
 
-    } else if (perception_el.obj_velocity_in_global.linear.x == NAN &&
-               perception_el.obj_velocity_in_local.linear.x == NAN &&
-               perception_el.detection_result_3d.center.position.x != NAN &&
-               perception_el.detection_result_3d.center.position.y != NAN &&
-               perception_el.detection_result_3d.center.orientation.x != NAN &&
-               perception_el.detection_result_3d.center.orientation.y != NAN &&
-               perception_el.detection_result_3d.center.orientation.z != NAN &&
-               perception_el.detection_result_3d.center.orientation.w != NAN) {
-      // Position is ok but velocity has a problem (from tracking)
-      m_opponent_status.detection_result_3d = perception_el.detection_result_3d;
-      // Keep the last detection velocity
-      this->predict();
-      m_pub_predicted_trajectory->publish(m_predicted_output_in_global);
-      m_pub_predicted_trajectory_vis->publish(m_predicted_output_in_global_vis);
+      // deprecated
+      // this->predict();
+      // m_pub_predicted_trajectory->publish(m_predicted_output_in_global);
+      // m_pub_predicted_trajectory_vis->publish(m_predicted_output_in_global_vis);
+
     } else {
       // Do not update the m_opponent_status
     }
@@ -248,8 +244,10 @@ void FrenetBasedOpponentPredictor::predict_bls(double estimated_progress_,
     bls_dtraj.trajectory_type = nif_msgs::msg::DynamicTrajectory::
         TRAJECTORY_TYPE_PREDICTION_BEYOND_LINE_OF_SIGHT;
 
-    auto elapsed_s = std::chrono::duration_cast<std::chrono::seconds>(
-      std::chrono::system_clock::now() - m_last_percep_callback_time).count();
+    auto elapsed_s =
+        std::chrono::duration_cast<std::chrono::seconds>(
+            std::chrono::system_clock::now() - m_last_percep_callback_time)
+            .count();
 
     if (abs(elapsed_s) < 2) {
       m_pub_predicted_trajectory->publish(bls_dtraj);
