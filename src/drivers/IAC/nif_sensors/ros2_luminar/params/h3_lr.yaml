@@ -12,7 +12,7 @@ luminar_driver_lr:
     pcap_port: 5122
 
     # full-field scan rate (1 to 30 Hz)
-    scan_rate_hz: 25.0
+    scan_rate_hz: 20.0
    
     # scanning vertical field of view in degrees (range(<=30), center(-15 to 15), range+center cannot exceed +/-15)
     scan_fov: [15.0, -3.0]
