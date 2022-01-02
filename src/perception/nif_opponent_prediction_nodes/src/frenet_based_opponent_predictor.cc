@@ -176,12 +176,11 @@ void FrenetBasedOpponentPredictor::opponentStatusCallback(
         // NOTE : Based on current detection result, it calculate the opponent's
         // current position progress and cross-track error
         this->calcOpponentProgress();
+        this->predict();
+        m_pub_predicted_trajectory->publish(m_predicted_output_in_global);
+        m_pub_predicted_trajectory_vis->publish(m_predicted_output_in_global_vis);
       }
 
-      // deprecated
-      // this->predict();
-      // m_pub_predicted_trajectory->publish(m_predicted_output_in_global);
-      // m_pub_predicted_trajectory_vis->publish(m_predicted_output_in_global_vis);
 
     } else {
       // Do not update the m_opponent_status
