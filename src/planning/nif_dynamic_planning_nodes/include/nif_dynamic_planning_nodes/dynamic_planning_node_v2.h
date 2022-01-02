@@ -80,7 +80,12 @@ class DynamicPlannerNode : public nif::common::IBaseNode {
   };
   enum LATERAL_PLANNING_TYPE { KEEP, MERGE, CHANGE_PATH };
   enum LONGITUDINAL_PLANNING_TYPE { STRAIGHT, FOLLOW, ESTOP };
-  enum RESET_PATH_TYPE { RACE_LINE = -1, DEFENDER_LINE = -2, NONE = -3 };
+  enum RESET_PATH_TYPE {
+    RACE_LINE = -1,
+    DEFENDER_LINE = -2,
+    STAY_BEHIND = -3,
+    NONE = -4
+  };
 
 public:
   DynamicPlannerNode(const std::string &node_name_);
@@ -324,6 +329,17 @@ private:
   nif_msgs::msg::DynamicTrajectory m_defenderline_dtraj;
   FrenetPathGenerator::CubicSpliner2DResult m_defenderline_spline_data;
   double m_defenderline_full_progress;
+
+  ////////////////
+  // STAY BEHIND LINE
+  ////////////////
+  std::string m_staybehind_file_path;
+  std::vector<double> m_staybehind_x_vec, m_staybehind_y_vec;
+  nav_msgs::msg::Path m_staybehind_path;
+  nif_msgs::msg::DynamicTrajectory m_staybehind_dtraj;
+  FrenetPathGenerator::CubicSpliner2DResult m_staybehind_spline_data;
+  double m_staybehind_full_progress;
+
   bool m_defender_mode_first_callback = false;
   bool m_race_mode_first_callback = false;
   bool m_keep_position_mode_first_callback = false;

@@ -37,6 +37,9 @@ public:
   bool setConstraintMaxDeccel(double value_); // [mpss]
   bool setConstraintMaxVel(double value_);    // [mps]
 
+  void setACCMindist(double value_);
+  void setACCTimeHeadway(double value_);
+
   bool checkConfig();
   bool parseConfig_(std::string &config_file_path_);
 
@@ -87,10 +90,11 @@ private:
   double m_acc_config_s1;
   double m_acc_config_v_desired;
   double m_acc_config_time_headway;
-  // double m_acc_config_accel_max;
-  // double m_acc_config_decel_desired;
   double m_acc_config_delta;
   double m_acc_config_veh_l;
+
+  double m_s0_default = 10.0;
+  double m_headway_default = 0.4;
 
   nav_msgs::msg::Odometry m_cur_odom;
   nav_msgs::msg::Path m_profile_target_path;

@@ -3,18 +3,16 @@
 velocity_profiler::velocity_profiler() {
   m_constraint_max_t = 4.0;
   m_constraint_min_t = 2.0;
-  m_constraint_max_accel = 4.0;
   m_constraint_max_lat_accel = 20.0;
+  m_constraint_max_accel = 4.0;
   m_constraint_max_deccel = -10.0;
   m_constraint_max_vel = 83.3333;
 
-  m_acc_config_s0 = 20.0;
+  m_acc_config_s0 = m_s0_default;
   m_acc_config_s1 = 0.0;
-  m_acc_config_v_desired = 60.0;
-  m_acc_config_time_headway = 0.5;
-  // m_acc_config_accel_max = 5.0;
-  // m_acc_config_decel_desired = 8.0;
-  m_acc_config_delta = 4.0;
+  m_acc_config_v_desired = m_constraint_max_vel;
+  m_acc_config_time_headway = m_headway_default;
+  m_acc_config_delta = 10.0;
   m_acc_config_veh_l = 4.7;
 }
 
@@ -119,6 +117,27 @@ void velocity_profiler::setConfigUseCurvatureMode(bool flg) {
   if (m_config_use_veh_model || m_config_use_acc_model ||
       m_config_use_curvature_model == false) {
     m_config_use_curvature_model = true;
+  }
+}
+
+void velocity_profiler::setACCMindist(double value_) {
+  auto backup_s0 = m_acc_config_s0;
+  if (value_ < 10.0) {
+    // Too risky
+    // Keep the previoius set tup
+    m_acc_config_s0 = backup_s0;
+  } else {
+    m_acc_config_s0 = value_;
+  }
+}
+void velocity_profiler::setACCTimeHeadway(double value_) {
+  auto backup_time_headway = m_acc_config_time_headway;
+  if (value_ < 0.5) {
+    // Too risky
+    // Keep the previoius set tup
+    m_acc_config_time_headway = backup_time_headway;
+  } else {
+    m_acc_config_time_headway = value_;
   }
 }
 
