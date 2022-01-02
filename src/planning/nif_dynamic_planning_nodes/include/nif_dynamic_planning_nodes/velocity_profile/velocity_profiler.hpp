@@ -93,8 +93,8 @@ private:
   double m_acc_config_delta;
   double m_acc_config_veh_l;
 
-  double m_s0_default = 10.0;
-  double m_headway_default = 0.4;
+  double m_s0_default = 25.0;
+  double m_headway_default = 1.4;
 
   nav_msgs::msg::Odometry m_cur_odom;
   nav_msgs::msg::Path m_profile_target_path;

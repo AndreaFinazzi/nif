@@ -283,6 +283,8 @@ void DynamicPlannerNode::loadConfig(const std::string &planning_config_file_) {
 
   m_racingline_file_path =
       path_candidates_params["racingline_path"].as<std::string>();
+  m_staybehind_file_path =
+      path_candidates_params["staybehindline_path"].as<std::string>();
   m_defenderline_file_path =
       path_candidates_params["defenderline_path"].as<std::string>();
   m_overtaking_candidates_file_path_vec =
@@ -1471,9 +1473,7 @@ void DynamicPlannerNode::timer_callback_rule() {
 
   // Set the maximum accel and decel following the mission manager
   m_mission_accel_max = abs(mission_status.zone_status.long_acceleration_max);
-  m_mission_decel_max =
-      -1 * abs(mission_status.zone_status
-                   .long_acceleration_min); // should be negative
+  m_mission_decel_max = abs(mission_status.zone_status.long_acceleration_min); // should be negative
 
   // Set to velocity profiler
   auto flg = m_velocity_profiler_obj.setConstraintMaxVel(mission_max_vel);
@@ -1639,7 +1639,14 @@ void DynamicPlannerNode::timer_callback_rule() {
         }
 
         // Check merging behavior only on the straight section
-        if (mission_status.zone_status.zone_id ==
+        std::cout << "----------------" << std::endl;
+        std::cout <<( mission_status.zone_status.zone_type ==
+                mission_status.zone_status.ZONE_TYPE_STRAIGHT )<< std::endl;
+        std::cout << (naive_gap > m_merging_back_gap_thres) << std::endl;
+        std::cout << m_last_update_target_path_alias << std::endl;
+        std::cout << m_reset_target_path_idx << std::endl;
+
+        if (mission_status.zone_status.zone_type ==
                 mission_status.zone_status.ZONE_TYPE_STRAIGHT &&
             naive_gap > m_merging_back_gap_thres && // longitudinal wise
             m_last_update_target_path_alias != "raceline" &&
@@ -1745,6 +1752,22 @@ void DynamicPlannerNode::timer_callback_rule() {
           return;
           // ----------------------------------------------------------------
         } else {
+
+          if (mission_status.zone_status.zone_type ==
+                mission_status.zone_status.ZONE_TYPE_CORNER_MID) {
+            auto cur_traj = m_velocity_profiler_obj.velProfileForAcc(
+                m_ego_odom, m_cur_oppo_pred_result,
+                m_cur_det_global.obj_velocity_in_global.linear.x, cur_path_seg,
+                1.0);
+            // Publish cur_traj
+            // Keep previous plan and do ACC
+            m_last_lat_planning_type = LATERAL_PLANNING_TYPE::KEEP;
+            m_last_long_planning_type = LONGITUDINAL_PLANNING_TYPE::FOLLOW;
+            publishPlannedTrajectory(cur_traj, m_last_long_planning_type,
+                                     m_last_lat_planning_type, true);
+            return;
+          }
+          
           ////////////////////////////////////////////////////////
           // ----------- Previous path has a collision -----------
           // -------- Search for the collision-free path ---------
@@ -2127,7 +2150,7 @@ void DynamicPlannerNode::timer_callback_rule() {
         }
 
         // Check merging behavior only on the straight section
-        if (mission_status.zone_status.zone_id ==
+        if (mission_status.zone_status.zone_type ==
                 mission_status.zone_status.ZONE_TYPE_STRAIGHT &&
             naive_gap < 150 &&
             m_last_update_target_path_alias != "right_center" &&

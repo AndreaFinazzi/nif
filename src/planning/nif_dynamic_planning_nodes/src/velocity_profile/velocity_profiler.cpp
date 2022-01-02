@@ -10,9 +10,9 @@ velocity_profiler::velocity_profiler() {
 
   m_acc_config_s0 = m_s0_default;
   m_acc_config_s1 = 0.0;
-  m_acc_config_v_desired = m_constraint_max_vel;
+  m_acc_config_v_desired = 60;
   m_acc_config_time_headway = m_headway_default;
-  m_acc_config_delta = 10.0;
+  m_acc_config_delta = 4.0;
   m_acc_config_veh_l = 4.7;
 }
 
@@ -704,7 +704,7 @@ nif_msgs::msg::DynamicTrajectory velocity_profiler::velProfileForAcc(
             m_acc_config_time_headway * out_traj.trajectory_velocity.back() +
             out_traj.trajectory_velocity.back() *
                 (out_traj.trajectory_velocity.back() - cipv_vel_abs_) /
-                (2 * sqrt(m_constraint_max_accel * m_constraint_max_deccel));
+                (2 * sqrt(m_constraint_max_accel * abs(m_constraint_max_deccel)));
 
         auto predictided_oppo_pose =
             cipv_predicted_traj_.trajectory_path
