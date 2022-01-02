@@ -1639,12 +1639,12 @@ void DynamicPlannerNode::timer_callback_rule() {
         }
 
         // Check merging behavior only on the straight section
-        std::cout << "----------------" << std::endl;
-        std::cout <<( mission_status.zone_status.zone_type ==
-                mission_status.zone_status.ZONE_TYPE_STRAIGHT )<< std::endl;
-        std::cout << (naive_gap > m_merging_back_gap_thres) << std::endl;
-        std::cout << m_last_update_target_path_alias << std::endl;
-        std::cout << m_reset_target_path_idx << std::endl;
+        // std::cout << "----------------" << std::endl;
+        // std::cout <<( mission_status.zone_status.zone_type ==
+        //         mission_status.zone_status.ZONE_TYPE_STRAIGHT )<< std::endl;
+        // std::cout << (naive_gap > m_merging_back_gap_thres) << std::endl;
+        // std::cout << m_last_update_target_path_alias << std::endl;
+        // std::cout << m_reset_target_path_idx << std::endl;
 
         if (mission_status.zone_status.zone_type ==
                 mission_status.zone_status.ZONE_TYPE_STRAIGHT &&
@@ -1767,7 +1767,7 @@ void DynamicPlannerNode::timer_callback_rule() {
                                      m_last_lat_planning_type, true);
             return;
           }
-          
+
           ////////////////////////////////////////////////////////
           // ----------- Previous path has a collision -----------
           // -------- Search for the collision-free path ---------
