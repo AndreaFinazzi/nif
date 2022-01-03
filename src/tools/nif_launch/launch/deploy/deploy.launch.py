@@ -145,11 +145,7 @@ def generate_launch_description():
         ],
     )
 
-    # nif_telemetry_node = Node(
-    #     package='nif_telemetry',
-    #     executable='telemetry',
-    #     output='screen',
-    # )
+    # nif_telemetry_node = TELEMETRY LAUNCHED IN SEPARATE SERVICE (launch file)
 
     # Localization
     nif_localization_launch = IncludeLaunchDescription(
@@ -161,12 +157,6 @@ def generate_launch_description():
     nif_aw_localization_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             get_package_share_directory('nif_aw_localization_nodes') + '/launch/deploy.launch.py'
-        ),
-    )
-
-    nif_points_preprocessor_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            get_package_share_directory('nif_points_preprocessor_nodes') + '/launch/deploy.launch.py'
         ),
     )
 
@@ -407,14 +397,13 @@ def generate_launch_description():
         socketcan_receiver_launch,
         socketcan_sender_launch,
         raptor_node,
-        # nif_telemetry_node,
 
         nif_global_param_node,
         nif_system_status_manager_node,
         nif_csl_node,
         nif_aw_localization_launch,
         nif_localization_launch,
-        # nif_points_preprocessor_launch,
+
         nif_points_clustering,
         robot_description_launch,
         nif_joint_lqr_control_node,
