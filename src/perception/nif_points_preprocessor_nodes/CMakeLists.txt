@@ -28,6 +28,9 @@ include_directories(
 )
 
 # Library
+ament_auto_add_library(${PROJECT_NAME} SHARED
+        include/${PROJECT_NAME}/tools.h)
+
 ament_auto_add_library(points_concat_filter SHARED
         src/points_concat_node.cpp)
 target_link_libraries(points_concat_filter ${YAML_CPP_LIBRARIES} ${PCL_LIBRARIES})

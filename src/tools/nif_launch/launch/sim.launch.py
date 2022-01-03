@@ -42,7 +42,7 @@ def generate_launch_description():
     )
 
     dbc_file_path = get_share_file(
-        package_name='raptor_dbw_can', file_name='launch/CAN1_INDY_V6.dbc'
+        package_name='raptor_dbw_can', file_name='launch/CAN1_INDY_V8.dbc'
     )
 
     ssc_interface_param = DeclareLaunchArgument(
@@ -131,6 +131,9 @@ def generate_launch_description():
         package='nif_telemetry',
         executable='telemetry',
         output='screen',
+        parameters=[{
+            'enable_udp': False
+        }]
     )
 
     # Localization
@@ -168,7 +171,12 @@ def generate_launch_description():
         package='nif_control_safety_layer_nodes',
         executable='nif_control_safety_layer_nodes_exe',
         output='screen',
-        parameters=[LaunchConfiguration('control_safety_layer_param_file')],
+        parameters=[
+            LaunchConfiguration('control_safety_layer_param_file'),
+            {
+                "buffer_empty_counter_threshold": 10
+            }
+            ],
         remappings=[
             ('in_control_cmd', '/control_pool/control_cmd'),
             ('in_override_control_cmd', '/control_pool/override_cmd'),
@@ -184,25 +192,26 @@ def generate_launch_description():
         ]
     )
 
-    nif_velocity_planning_node = Node(
-        package='nif_velocity_planning_node',
-        executable='nif_velocity_planning_node_exe',
-        output='screen',
-        remappings=[
-            ('out_desired_velocity', 'velocity_planner/des_vel'),
-            ('in_reference_path', 'planning/path_global'),
-            ('in_ego_odometry', '/sensor/odom_ground_truth'),
-            ('in_wheel_speed_report', 'raptor_dbw_interface/wheel_speed_report'),
-            ('in_imu_data', 'novatel_bottom/imu/data'),
-            ('in_steering_report', 'raptor_dbw_interface/steering_report'),
-            ('in_control_error', 'control_joint_lqr/lqr_error')
-        ],
-        parameters=[{
-                'odometry_timeout_sec' : 0.5,
-                'path_timeout_sec' : 1.0,
-                'lateral_tire_model_factor' : 1.0,
-            }]
-    )
+    # nif_velocity_planning_node = Node(
+    #     package='nif_velocity_planning_node',
+    #     executable='nif_velocity_planning_node_exe',
+    #     output='screen',
+    #     remappings=[
+    #         ('out_desired_velocity', 'velocity_planner/des_vel'),
+    #         ('in_reference_path', 'planning/dynamic/vis/traj_global'),
+    #         # ('in_reference_path', 'planning/path_global'),
+    #         ('in_ego_odometry', '/sensor/odom_ground_truth'),
+    #         ('in_wheel_speed_report', 'raptor_dbw_interface/wheel_speed_report'),
+    #         ('in_imu_data', 'novatel_bottom/rawimux'),
+    #         ('in_steering_report', 'raptor_dbw_interface/steering_report'),
+    #         ('in_control_error', 'control_joint_lqr/lqr_error')
+    #     ],
+    #     parameters=[{
+    #             'odometry_timeout_sec' : 0.5,
+    #             'path_timeout_sec' : 1.0,
+    #             'lateral_tire_model_factor' : 1.0,
+    #         }]
+    # )
 
     lqr_joint_config_file = get_share_file(
         package_name='nif_control_joint_lqr_nodes', file_name='config/lqr/lqr_params.sim.yaml'
@@ -225,8 +234,8 @@ def generate_launch_description():
             LaunchConfiguration('control_joint_lqr_params_file'),
             {
                 'lqr_config_file': lqr_joint_config_file,
-                'odometry_timeout_sec' : 0.5,
-                'path_timeout_sec' : 1.0,
+                # 'odometry_timeout_sec' : 0.5,
+                # 'path_timeout_sec' : 1.0,
                 'use_tire_velocity' : True,
             }
         ],
@@ -237,7 +246,8 @@ def generate_launch_description():
         remappings=[
             ('in_control_cmd_prev', '/control_safety_layer/out/control_cmd'),
             ('out_control_cmd', '/control_pool/control_cmd'),
-            ('in_reference_path', 'planning/path_global'),
+            ('in_reference_path', '/planning/dynamic/vis/traj_global'),
+            ('in_reference_trajectory', '/planning/dynamic/traj_global'),
         ]
     )
 
@@ -246,12 +256,13 @@ def generate_launch_description():
         executable='nif_accel_control_nodes_exe',
         output='screen',
         remappings=[
-            ('/in_imu_data', '/novatel_bottom/imu/data')
+            ('/in_imu_data', '/novatel_bottom/rawimux')
         ],
         parameters=[{
             ## Should be True on real car
             'engine_based_throttle_enabled' : False, 
             'gear.track': "IMS",
+            'lateral_error_deadband_m': 1.0,
         }]
     )
 
@@ -275,6 +286,7 @@ def generate_launch_description():
     nif_global_param = os.path.join(
         get_package_share_directory('nif_launch'),
         'config',
+        'deploy',
         global_params_file
     )
 
@@ -412,9 +424,9 @@ def generate_launch_description():
         )
     )
 
-    nif_dk_planner_launch = IncludeLaunchDescription(
+    nif_dynamic_planner_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            get_share_file("nif_dk_graph_planner", 'launch/deploy.launch.py')
+            get_share_file("nif_dynamic_planning_nodes", 'launch/sim.launch.py')
         )
     )
 
@@ -440,11 +452,11 @@ def generate_launch_description():
         # nif_aw_localization_launch,
         nif_wall_node_launch_bg,
         robot_description_launch,
-        nif_velocity_planning_node,
+        # nif_velocity_planning_node,
         nif_joint_lqr_control_node,
         nif_accel_control_node,
         nif_mission_manager_launch,
         nif_waypoint_manager_node,
         lgsvl_simulation_launch,
-        nif_dk_planner_launch
+        nif_dynamic_planner_launch
     ])

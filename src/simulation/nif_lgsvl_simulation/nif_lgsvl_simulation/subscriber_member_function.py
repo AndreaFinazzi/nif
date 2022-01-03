@@ -85,8 +85,8 @@ class LGSVLSubscriberNode(BaseNode):
         self.sub_laser_meter_flash_c = self.create_subscription(PointCloud2, self.namespace + '/sensor/laser_meter_flash_c', self.callback_laser_meter_flash_c, rclpy.qos.qos_profile_sensor_data)
 
         # IMU subscriptions
-        self.sub_imu_top = self.create_subscription(Imu, self.namespace + '/novatel_top/imu/data', self.callback_imu_top, rclpy.qos.qos_profile_sensor_data)
-        self.sub_imu_bottom = self.create_subscription(Imu, self.namespace + '/novatel_bottom/imu/data', self.callback_imu_bottom, rclpy.qos.qos_profile_sensor_data)
+        self.sub_imu_top = self.create_subscription(Imu, self.namespace + '/novatel_top/rawimux', self.callback_imu_top, rclpy.qos.qos_profile_sensor_data)
+        self.sub_imu_bottom = self.create_subscription(Imu, self.namespace + '/novatel_bottom/rawimux', self.callback_imu_bottom, rclpy.qos.qos_profile_sensor_data)
 
         # Vehicle odometry subsciptions (includes front/rear wheel angles and velocity)
         self.sub_vehicleodometry = self.create_subscription(VehicleOdometry, self.namespace + '/sensor/odometry', self.callback_vehicleodometry, rclpy.qos.qos_profile_sensor_data)
@@ -107,10 +107,10 @@ class LGSVLSubscriberNode(BaseNode):
 
 
         # Vehicle ground truth state
-        self.sub_ground_truth_state = self.create_subscription(Odometry, '/sensor/odom_ground_truth', self.callback_ground_truth_state, rclpy.qos.qos_profile_sensor_data)
+        self.sub_ground_truth_state = self.create_subscription(Odometry, '/sensor/gps_ground_truth', self.callback_ground_truth_state, rclpy.qos.qos_profile_sensor_data)
+        self.pub_ground_truth_state = self.create_publisher(Odometry, '/sensor/odom_ground_truth', rclpy.qos.qos_profile_sensor_data)
         self.pub_odom_converted = self.create_publisher(Odometry, '/sensor/odom_converted', rclpy.qos.qos_profile_sensor_data)
         self._tf_publisher = TransformBroadcaster(self)
-
     # def callback(self, msg):
     # self.get_logger().info('Subscribed GPS ODOM: {}'.format(msg.pose.pose.position.x))
 
@@ -183,16 +183,18 @@ class LGSVLSubscriberNode(BaseNode):
         # self.get_logger().info('Subscribed imu_bottom')
 
     def callback_vehicleodometry(self, msg : VehicleOdometry):
-        wheel_speed_msg = WheelSpeedReport()
-        wheel_speed_msg.header = msg.header
-        vel_kph = msg.velocity * 3.6 # / 3.0 # Correction factor (completely empirical)
-        wheel_speed_msg.front_left = vel_kph
-        wheel_speed_msg.front_right = vel_kph
-        wheel_speed_msg.rear_left = vel_kph
-        wheel_speed_msg.rear_right = vel_kph
+        # wheel_speed_msg = WheelSpeedReport()
+        # wheel_speed_msg.header = msg.header
+        # vel_kph = msg.velocity * 3.6 # / 3.0 # Correction factor (completely empirical)
+        # wheel_speed_msg.front_left = vel_kph
+        # wheel_speed_msg.front_right = vel_kph
+        # wheel_speed_msg.rear_left = vel_kph
+        # wheel_speed_msg.rear_right = vel_kph
 
-        self.pub_wheel_speed.publish(wheel_speed_msg)
+        # self.pub_wheel_speed.publish(wheel_speed_msg)
         # self.get_logger().info('Subscribed vehicleodometry')
+        pass
+
 
     def callback_gps_top(self, msg):
         noise = [self.random_noise_position(), self.random_noise_heading()]
@@ -307,10 +309,23 @@ class LGSVLSubscriberNode(BaseNode):
         odom_converted.pose.pose.orientation.y = 0.0  # msg.pose.pose.orientation.y
         odom_converted.pose.pose.orientation.z = msg.pose.pose.orientation.z
         odom_converted.pose.pose.orientation.w = msg.pose.pose.orientation.w
-        
+        odom_converted.twist = msg.twist
+        self.pub_ground_truth_state.publish(odom_converted)
+
         quat = Quaternion(x=0.0, y=0.0, z=msg.pose.pose.orientation.z, w=msg.pose.pose.orientation.w)
         qe = Quaternion_Euler(q=quat)
         self.heading_deg = math.degrees(qe.ToEuler().z)
+
+        wheel_speed_msg = WheelSpeedReport()
+        wheel_speed_msg.header = msg.header
+        vel_kph = msg.twist.twist.linear.x * 3.6
+        wheel_speed_msg.front_left = vel_kph
+        wheel_speed_msg.front_right = vel_kph
+        wheel_speed_msg.rear_left = vel_kph
+        wheel_speed_msg.rear_right = vel_kph
+
+        self.pub_wheel_speed.publish(wheel_speed_msg)
+        # self.get_logger().info('Subscribed vehicleodometry')
 
         # options: "enu", "ned"
         convert_seu_to = "enu" if self.use_enu else "ned"
@@ -388,7 +403,7 @@ class LGSVLSubscriberNode(BaseNode):
         tfs.transform.rotation.y = msg.pose.pose.orientation.y
         tfs.transform.rotation.z = msg.pose.pose.orientation.z
         tfs.transform.rotation.w = msg.pose.pose.orientation.w
-        # self._tf_publisher.sendTransform(tfs)
+        self._tf_publisher.sendTransform(tfs)
 
 def main(args=None):
     rclpy.init(args=args)

@@ -1,0 +1,21 @@
+/**:
+  ros__parameters:
+    use_inverse_map: true
+    cluster_size_min : 3
+    cluster_size_max : 10000
+    max_cluster_distance : 1.0
+    height_filter_thres : 0.2
+
+    left_lower_distance : 1.0
+    right_lower_distance : 1.0
+    rear_lower_distance : 3.2
+    front_lower_distance : 2.5
+    left_upper_distance : 30.0
+    right_upper_distance : 30.0
+    rear_upper_distance : 60.0
+    front_upper_distance : 100.0
+    height_lower_distance : -0.5
+    height_upper_distance : 1.0
+    resolution : 0.50 #0.25
+    count_threshold : 5.0 # origin  //cov_map : 0.1 //count_map : 3.
+

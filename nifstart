@@ -102,7 +102,7 @@ then
 fi  
 
 ade --rc $ADERC \
-    start -f -- \
+    start -f --update -- \
     -v /tmp/.X11-unix:/tmp/.X11-unix \
     -v /etc/localtime:/etc/localtime:ro \
     -v /media/$USER/:/home/$USER/media \

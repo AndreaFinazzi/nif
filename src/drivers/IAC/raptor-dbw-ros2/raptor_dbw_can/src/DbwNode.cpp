@@ -154,7 +154,7 @@ DbwNode::DbwNode(const rclcpp::NodeOptions & options)
   pub_pt_report_ = this->create_publisher<deep_orange_msgs::msg::PtReport>("pt_report", 10);
   pub_diag_report_ = this->create_publisher<deep_orange_msgs::msg::DiagnosticReport>("diag_report", 10);
   pub_timing_report_ = this->create_publisher<deep_orange_msgs::msg::LapTimeReport>("lap_time_report", 10);
-
+  pub_rest_of_field_ = this->create_publisher<deep_orange_msgs::msg::RestOfFieldReport>("rest_of_field_report", 10);
 
   // autoware auto msg
 
@@ -257,6 +257,28 @@ void DbwNode::recvCAN(const can_msgs::msg::Frame::SharedPtr msg)
           }
         }
         break;
+
+      case ID_REST_OF_FIELD:
+        {
+          NewEagle::DbcMessage * message = dbwDbc_.GetMessageById(ID_REST_OF_FIELD);
+          if (msg->dlc >= message->GetDlc()) {
+            message->SetFrame(msg);
+
+            deep_orange_msgs::msg::RestOfFieldReport out;
+            out.stamp = msg->header.stamp;
+            out.comp_veh_num = message->GetSignal("comp_veh_num")->GetResult();
+            out.comp_veh_flag = message->GetSignal("comp_veh_flag")->GetResult();
+            out.comp_rank = message->GetSignal("comp_rank")->GetResult(); 
+            out.comp_laps_count = message->GetSignal("comp_laps_count")->GetResult(); 
+            out.comp_lap_distance_m = message->GetSignal("comp_lap_distance")->GetResult(); 
+            out.comp_speed_kph = message->GetSignal("comp_speed")->GetResult(); 
+
+            pub_rest_of_field_->publish(out);
+
+          }
+        }
+        break;
+
 
       case ID_BRAKE_REPORT:
         {

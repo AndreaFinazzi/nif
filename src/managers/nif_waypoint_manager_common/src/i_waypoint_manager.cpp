@@ -45,19 +45,37 @@ IWaypointManager::IWaypointManager(const vector<string> &wpt_file_path_list_,
   m_desired_wpt_in_nav_path = c_desired_wpt.getWPTinNavPath();
 }
 
+geometry_msgs::msg::PoseStamped& IWaypointManager::getPoseStampedAtIndex(
+  const unsigned int index
+) {
+  if (index < m_default_wpt_in_nav_path.poses.size()) {
+    return m_default_wpt_in_nav_path.poses[index];
+  } else {
+    return m_default_wpt_in_nav_path.poses[index % m_default_wpt_in_nav_path.poses.size()];
+  }
+}
+
 void IWaypointManager::setCurrentOdometry(
     const nav_msgs::msg::Odometry &ego_vehicle_odom) {
-  m_current_pose = ego_vehicle_odom;
+
+      setCurrentOdometry(ego_vehicle_odom.pose.pose);
+
+}
+
+void IWaypointManager::setCurrentOdometry(
+    const geometry_msgs::msg::Pose &ego_vehicle_pose) {
+
+  m_current_pose = ego_vehicle_pose;
 
   // calc heading(yaw) in rad and deg
-  tf2::Quaternion quat(m_current_pose.pose.pose.orientation.x,
-                       m_current_pose.pose.pose.orientation.y,
-                       m_current_pose.pose.pose.orientation.z,
-                       m_current_pose.pose.pose.orientation.w);
+  tf2::Quaternion quat(m_current_pose.orientation.x,
+                       m_current_pose.orientation.y,
+                       m_current_pose.orientation.z,
+                       m_current_pose.orientation.w);
   tf2::Matrix3x3(quat).getRPY(m_current_roll_rad, m_current_pitch_rad,
                               m_current_yaw_rad);
 
-  int current_idx = getCurrentIdx(m_desired_wpt_in_nav_path, ego_vehicle_odom);
+  int current_idx = getCurrentIdx(m_desired_wpt_in_nav_path, ego_vehicle_pose);
   m_desired_maptrack_in_global.header.frame_id = m_global_frame_id;
   m_desired_maptrack_in_body.header.frame_id = m_body_frame_id;
 
@@ -70,22 +88,41 @@ void IWaypointManager::setCurrentOdometry(
 void IWaypointManager::setCurrentIdx(
     const nav_msgs::msg::Path &reference_path,
     const nav_msgs::msg::Odometry &ego_vehicle_odom) {
+
+      setCurrentIdx(reference_path, ego_vehicle_odom.pose.pose);
+
+}
+
+unsigned int IWaypointManager::getCurrentIdx(
+    const nav_msgs::msg::Path &reference_path,
+    const nav_msgs::msg::Odometry &ego_vehicle_odom) {
+
+  return getCurrentIdx(reference_path, ego_vehicle_odom.pose.pose);
+}
+
+// Pose version
+void IWaypointManager::setCurrentIdx(
+    const nav_msgs::msg::Path &reference_path,
+    const geometry_msgs::msg::Pose &ego_vehicle_pose) {
   unsigned int current_idx = 0;
   double min_dist = INFINITY;
   for (int pt_idx = 0; pt_idx < reference_path.poses.size(); pt_idx++) {
-    double dist = sqrt(pow(ego_vehicle_odom.pose.pose.position.x -
-                               reference_path.poses[pt_idx].pose.position.x,
-                           2) +
-                       pow(ego_vehicle_odom.pose.pose.position.y -
-                               reference_path.poses[pt_idx].pose.position.y,
-                           2));
+    
+    double dist = nif::common::utils::geometry::calEuclideanDistance(
+      ego_vehicle_pose, reference_path.poses[pt_idx].pose);
+      // sqrt(pow(ego_vehicle_pose.position.x -
+      //                          reference_path.poses[pt_idx].pose.position.x,
+      //                      2) +
+      //                  pow(ego_vehicle_pose.position.y -
+      //                          reference_path.poses[pt_idx].pose.position.y,
+      //                      2));
     if (min_dist > dist) {
       min_dist = dist;
       current_idx = pt_idx;
     }
   }
   if (current_idx > reference_path.poses.size()) {
-    throw std::length_error("I_WPT_MANAGER:Current index is not set properly.");
+    throw std::length_error("I_WPT_MANAGER: Current index is not set properly.");
     return;
   }
   m_current_idx = current_idx;
@@ -93,9 +130,15 @@ void IWaypointManager::setCurrentIdx(
 
 unsigned int IWaypointManager::getCurrentIdx(
     const nav_msgs::msg::Path &reference_path,
-    const nav_msgs::msg::Odometry &ego_vehicle_odom) {
-  setCurrentIdx(reference_path, ego_vehicle_odom);
+    const geometry_msgs::msg::Pose &ego_vehicle_pose) {
+  setCurrentIdx(reference_path, ego_vehicle_pose);
   return m_current_idx;
+}
+
+unsigned int IWaypointManager::getCurrentIdx(
+  const geometry_msgs::msg::Pose &ego_vehicle_pose) {
+    return getCurrentIdx(
+      m_desired_wpt_in_nav_path, ego_vehicle_pose);
 }
 
 int IWaypointManager::getWPTIdx(nav_msgs::msg::Path &reference_path,
@@ -103,12 +146,15 @@ int IWaypointManager::getWPTIdx(nav_msgs::msg::Path &reference_path,
   int target_idx = 0;
   double min_dist = INFINITY;
   for (int pt_idx = 0; pt_idx < reference_path.poses.size(); pt_idx++) {
-    double dist = sqrt(pow(target_pose.pose.position.x -
-                               reference_path.poses[pt_idx].pose.position.x,
-                           2) +
-                       pow(target_pose.pose.position.y -
-                               reference_path.poses[pt_idx].pose.position.y,
-                           2));
+    double dist = nif::common::utils::geometry::calEuclideanDistance(
+      target_pose, reference_path.poses[pt_idx]);
+                      
+                      // sqrt(pow(target_pose.pose.position.x -
+                      //          reference_path.poses[pt_idx].pose.position.x,
+                      //      2) +
+                      //  pow(target_pose.pose.position.y -
+                      //          reference_path.poses[pt_idx].pose.position.y,
+                      //      2));
     if (min_dist > dist) {
       min_dist = dist;
       target_idx = pt_idx;
@@ -159,49 +205,13 @@ nav_msgs::msg::Path IWaypointManager::calcMapTrackInBody(
   return map_track_in_body;
 }
 
-geometry_msgs::msg::PoseStamped IWaypointManager::getPtBodytoGlobal(
-    geometry_msgs::msg::PoseStamped &point_in_body_) {
-  geometry_msgs::msg::PoseStamped point_in_global;
-  point_in_global.header.frame_id = m_global_frame_id;
-  point_in_global.pose.position.x =
-      m_current_pose.pose.pose.position.x +
-      point_in_body_.pose.position.x * cos(m_current_yaw_rad) -
-      point_in_body_.pose.position.y * sin(m_current_yaw_rad);
-  point_in_global.pose.position.y =
-      m_current_pose.pose.pose.position.y +
-      point_in_body_.pose.position.x * sin(m_current_yaw_rad) +
-      point_in_body_.pose.position.y * cos(m_current_yaw_rad);
-  point_in_global.pose.position.z =
-      m_current_pose.pose.pose.position.y + point_in_body_.pose.position.z;
-  return point_in_global;
-}
-
-geometry_msgs::msg::PoseStamped IWaypointManager::getPtGlobaltoBody(
-    const geometry_msgs::msg::PoseStamped &point_in_global_) const {
-  geometry_msgs::msg::PoseStamped point_in_body;
-  point_in_body.header.frame_id = m_body_frame_id;
-  point_in_body.pose.position.x =
-      cos(-1 * m_current_yaw_rad) * (point_in_global_.pose.position.x -
-                                     m_current_pose.pose.pose.position.x) -
-      sin(-1 * m_current_yaw_rad) * (point_in_global_.pose.position.y -
-                                     m_current_pose.pose.pose.position.y);
-  point_in_body.pose.position.y =
-      sin(-1 * m_current_yaw_rad) * (point_in_global_.pose.position.x -
-                                     m_current_pose.pose.pose.position.x) +
-      cos(-1 * m_current_yaw_rad) * (point_in_global_.pose.position.y -
-                                     m_current_pose.pose.pose.position.y);
-  point_in_body.pose.position.z =
-      point_in_global_.pose.position.z - m_current_pose.pose.pose.position.z;
-
-  return point_in_body;
-}
-
 nav_msgs::msg::Path
 IWaypointManager::getPathBodytoGlobal(nav_msgs::msg::Path &path_in_body_) {
   nav_msgs::msg::Path path_in_global;
   path_in_global.header.frame_id = m_global_frame_id;
   for (auto &pose : path_in_body_.poses) {
-    path_in_global.poses.push_back(getPtBodytoGlobal(pose));
+    path_in_global.poses.push_back(
+      nif::common::utils::coordination::getPtStampedBodytoGlobal(m_current_pose, pose.pose));
   }
   return path_in_global;
 }
@@ -211,10 +221,10 @@ IWaypointManager::getPathGlobaltoBody(nav_msgs::msg::Path &path_in_global_) {
   nav_msgs::msg::Path path_in_body;
   path_in_body.header.frame_id = "base_link";
   for (auto &pose : path_in_global_.poses) {
-    // path_in_body.poses.push_back(getPtGlobaltoBody(pose));
+
     path_in_body.poses.push_back(
-        nif::common::utils::coordination::getPtGlobaltoBody(m_current_pose,
-                                                            pose));
+        nif::common::utils::coordination::getPtStampedGlobaltoBody(m_current_pose,
+                                                            pose.pose));
   }
   return path_in_body;
 }

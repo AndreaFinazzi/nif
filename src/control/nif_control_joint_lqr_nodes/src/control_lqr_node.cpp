@@ -5,11 +5,10 @@ using nif::control::ControlLQRNode;
 
 ControlLQRNode::ControlLQRNode(const std::string &node_name)
     : IControllerNode(node_name) {
-
   control_cmd = std::make_shared<nif::common::msgs::ControlCmd>();
 
-  m_camber_manager_ptr = std::make_shared<CamberCompensator>(nif::control::CAMBERCOMPESATORMODE::FIRST_ORDER, true);
-
+  m_camber_manager_ptr = std::make_shared<CamberCompensator>(
+      nif::control::CAMBERCOMPESATORMODE::FIRST_ORDER, true);
 
   // Debug Publishers
   lqr_command_valid_pub_ = this->create_publisher<std_msgs::msg::Bool>(
@@ -31,7 +30,10 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
           "control_joint_lqr/track_point", nif::common::constants::QOS_DEFAULT);
   lqr_error_pub_ = this->create_publisher<std_msgs::msg::Float32MultiArray>(
       "control_joint_lqr/lqr_error", nif::common::constants::QOS_DEFAULT);
-
+  lqr_desired_velocity_mps_pub_ =
+      this->create_publisher<std_msgs::msg::Float32>(
+          "control_joint_lqr/desired_velocity_mps",
+          nif::common::constants::QOS_DEFAULT);
   // Subscribers
   velocity_sub_ =
       this->create_subscription<raptor_dbw_msgs::msg::WheelSpeedReport>(
@@ -46,6 +48,11 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
           std::bind(&ControlLQRNode::directDesiredVelocityCallback, this,
                     std::placeholders::_1));
 
+// Disable the ACC function
+//   acc_sub_ = this->create_subscription<std_msgs::msg::Float32>(
+//       "control/acc/accel_cmd", nif::common::constants::QOS_CONTROL_CMD,
+//       std::bind(&ControlLQRNode::accCMDCallback, this, std::placeholders::_1));
+
   this->declare_parameter("lqr_config_file", "");
   // Automatically boot with lat_autonomy_enabled
   //  this->declare_parameter("lat_autonomy_enabled", false);
@@ -58,7 +65,7 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
   // Maximimum pure pursuit tracking distance
   this->declare_parameter("pure_pursuit_max_dist_m", 8.);
   // pure_pursuit lookahead distance 1st velocity theshold (65 kph)
-  this->declare_parameter("pure_pursuit_1st_vel_m", 20.0);
+  this->declare_parameter("pure_pursuit_1st_vel_ms", 20.0);
   // Maximimum pure pursuit tracking distance
   this->declare_parameter("pure_pursuit_max_max_dist_m", 20.);
   // Factor to increase the pure pursuit tracking distance as a function of
@@ -80,6 +87,8 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
   this->declare_parameter("invert_steering", false);
   // Use mission status maximum desired velocity
   this->declare_parameter("use_mission_max_vel", true);
+  // Use ACC cmd
+  this->declare_parameter("use_acc", false);
 
   // Create Joint LQR Controller from yaml file
   std::string lqr_config_file =
@@ -101,8 +110,8 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
       this->get_parameter("pure_pursuit_min_dist_m").as_double();
   pure_pursuit_max_dist_m_ =
       this->get_parameter("pure_pursuit_max_dist_m").as_double();
-  pure_pursuit_1st_vel_m_ =
-      this->get_parameter("pure_pursuit_1st_vel_m").as_double();
+  pure_pursuit_1st_vel_ms_ =
+      this->get_parameter("pure_pursuit_1st_vel_ms").as_double();
   pure_pursuit_max_max_dist_m_ =
       this->get_parameter("pure_pursuit_max_max_dist_m").as_double();
   pure_pursuit_k_vel_m_ms_ =
@@ -117,6 +126,8 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
   invert_steering_ = this->get_parameter("invert_steering").as_bool();
   m_use_mission_max_vel_ = this->get_parameter("use_mission_max_vel").as_bool();
   m_path_min_length_m = this->get_parameter("path_min_length_m").as_double();
+  // m_use_acc = this->get_parameter("use_acc").as_bool();
+  m_use_acc = false;
 
   if (odometry_timeout_sec_ <= 0. || path_timeout_sec_ <= 0.) {
     RCLCPP_ERROR(this->get_logger(),
@@ -125,6 +136,10 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
                  odometry_timeout_sec_, path_timeout_sec_);
     throw std::range_error("Parameter out of range.");
   }
+
+  this->parameters_callback_handle = this->add_on_set_parameters_callback(
+      std::bind(&ControlLQRNode::parametersCallback, this, std::placeholders::_1));
+
 }
 
 void ControlLQRNode::publishSteerAccelDiagnostics(
@@ -134,7 +149,8 @@ void ControlLQRNode::publishSteerAccelDiagnostics(
     double track_distance, unsigned int lqr_tracking_idx,
     geometry_msgs::msg::PoseStamped lqr_track_point,
     joint_lqr::lqr::JointLQR::ErrorMatrix lqr_err_cog,
-    joint_lqr::lqr::JointLQR::ErrorMatrix lqr_err) {
+    joint_lqr::lqr::JointLQR::ErrorMatrix lqr_err,
+    double desired_velocity_mps) {
   std_msgs::msg::Bool command_valid_msg;
   command_valid_msg.data = lqr_command_valid;
   lqr_command_valid_pub_->publish(command_valid_msg);
@@ -175,37 +191,41 @@ void ControlLQRNode::publishSteerAccelDiagnostics(
   error_cog_array_msg.data.push_back(error_array_msg.data[3]);
   error_cog_array_msg.data.push_back(error_array_msg.data[4]);
   lqr_error_pub_->publish(error_cog_array_msg);
+
+std_msgs::msg::Float32 des_vel_msg{};
+des_vel_msg.data = desired_velocity_mps;
+  lqr_desired_velocity_mps_pub_->publish(des_vel_msg);
 }
 
 nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
   auto now = this->now();
   nif::common::NodeStatusCode node_status = common::NODE_ERROR;
 
-  //  bool lateral_tracking_enabled =
-  //      this->get_parameter("lat_autonomy_enabled").as_bool();
-
   //  Check whether we have updated data
   bool valid_path =
-      this->hasReferencePath() && !this->getReferencePath()->poses.empty() &&
+      this->hasReferenceTrajectory() &&
+      !this->getReferenceTrajectory()->trajectory_path.poses.empty() &&
       this->getReferencePathLastPointDistance() > m_path_min_length_m &&
-      nif::common::utils::time::secs(now - this->getReferencePathUpdateTime()) <
-          path_timeout_sec_;
-  
+      nif::common::utils::time::secs(
+          now - this->getReferenceTrajectoryUpdateTime()) < path_timeout_sec_;
+
   bool valid_odom =
       this->hasEgoOdometry() &&
       nif::common::utils::time::secs(now - this->getEgoOdometryUpdateTime()) <
           odometry_timeout_sec_;
 
-    // Check valid waypoint starting distance & valid target waypoint
-    // position(front)
-    // - starting wpt should be around ego.
-  bool valid_wpt_distance = valid_path && valid_odom &&
-        pure_pursuit_max_max_dist_m_ >
-        joint_lqr::utils::pursuit_dist(this->getReferencePath()->poses[0],
-                                       this->getEgoOdometry());
+  // Check valid waypoint starting distance & valid target waypoint
+  // position(front)
+  // - starting wpt should be around ego.
+  bool valid_wpt_distance =
+      valid_path && valid_odom &&
+      pure_pursuit_max_max_dist_m_ >
+          joint_lqr::utils::pursuit_dist(
+              this->getReferenceTrajectory()->trajectory_path.poses[0],
+              this->getEgoOdometry());
 
-    // - initialize valid target position
-    bool valid_target_position = false;
+  // - initialize valid target position
+  bool valid_target_position = false;
 
   bool valid_tracking_result = false;
 
@@ -217,8 +237,8 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
   // Perform Tracking if path is good
   if (valid_path && valid_odom) {
     // Check whether path is global/local
-    bool is_local_path =
-        this->getReferencePath()->header.frame_id == this->getBodyFrameId();
+    bool is_local_path = this->getReferenceTrajectory()->header.frame_id ==
+                         this->getBodyFrameId();
 
     auto state = joint_lqr::utils::LQRState(this->getEgoOdometry());
     if (use_tire_velocity_)
@@ -234,12 +254,12 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
     double track_distance =
         pure_pursuit_min_dist_m_ + pure_pursuit_k_vel_m_ms_ * state(2, 0);
     if (track_distance > pure_pursuit_max_dist_m_) {
-      if (state(2, 0) < pure_pursuit_1st_vel_m_) {
+      if (state(2, 0) < pure_pursuit_1st_vel_ms_) {
         track_distance = pure_pursuit_max_dist_m_;
       } else {
         track_distance =
             pure_pursuit_max_dist_m_ +
-            pure_pursuit_k_vel_m_ms_ * (state(2, 0) - pure_pursuit_1st_vel_m_);
+            pure_pursuit_k_vel_m_ms_ * (state(2, 0) - pure_pursuit_1st_vel_ms_);
       }
     }
     if (track_distance < pure_pursuit_min_dist_m_)
@@ -250,28 +270,67 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
     // Track on the trajectory
     double target_distance = 0.0;
     bool target_reached_end = false;
-    joint_lqr::utils::track(this->getReferencePath()->poses,
-                            this->getEgoOdometry(), track_distance, // inputs
-                            lqr_tracking_idx_, target_distance,
-                            target_reached_end); // outputs
+    joint_lqr::utils::track(
+        this->getReferenceTrajectory()->trajectory_path.poses,
+        this->getEgoOdometry(),
+        track_distance, // inputs
+        lqr_tracking_idx_, target_distance,
+        target_reached_end); // outputs
 
     // - target point should be ahead.
     double target_point_azimuth = joint_lqr::utils::pursuit_azimuth(
-        this->getReferencePath()->poses[lqr_tracking_idx_],
+        this->getReferenceTrajectory()
+            ->trajectory_path.poses[lqr_tracking_idx_],
         this->getEgoOdometry());
     valid_target_position = M_PI * 3 / 4. > std::abs(target_point_azimuth);
 
-
+    double l_desired_velocity = 0.0;
     if (valid_wpt_distance && valid_target_position) {
       valid_tracking_result = true;
       // Run LQR :)
       // Desired velocity check
-      double l_desired_velocity = 0.0;
-      if (this->hasDesiredVelocity() &&
-          (this->now() - this->getDesiredVelocityUpdateTime() <=
+
+      // deprecated
+      //   if (this->hasDesiredVelocity() &&
+      //       (this->now() - this->getDesiredVelocityUpdateTime() <=
+      //        rclcpp::Duration(1, 0))) {
+      //     l_desired_velocity = this->getDesiredVelocity()->data;
+      //   }
+
+      if (this->hasReferenceTrajectory() &&
+          (this->now() - this->getReferenceTrajectoryUpdateTime() <=
            rclcpp::Duration(1, 0))) {
-        l_desired_velocity = this->getDesiredVelocity()->data;
+        // TODO: Review this with Hyunki
+        // FIXME:
+        // l_desired_velocity = this->getReferenceTrajectory()
+        //                          ->trajectory_velocity[lqr_tracking_idx_];
+
+        ////////////////////////////////////
+        // Look-ahead time implementation //
+        ////////////////////////////////////
+        double test_lookahead_time = 0.8;
+        // step 1. Search the nearest time within the trajectory's timestamp
+        // array
+        auto closest_time_idx = nif::common::utils::closestIndex(
+            this->getReferenceTrajectory()->trajectory_timestamp_array,
+            test_lookahead_time);
+
+        // step 2. Safety feature
+        auto time_differ =
+            abs(this->getReferenceTrajectory()
+                    ->trajectory_timestamp_array[closest_time_idx] -
+                test_lookahead_time);
+
+        if (time_differ < 2) {
+          l_desired_velocity = this->getReferenceTrajectory()
+                                   ->trajectory_velocity[closest_time_idx];
+            if (l_desired_velocity < 1.5)
+                l_desired_velocity = 0.0;
+        } else {
+          l_desired_velocity = 0.0;
+        }
       }
+
       if (!m_use_mission_max_vel_) {
         // if not using mission status maximum velocity,
         // directly use des_vel from velocity planner
@@ -279,10 +338,12 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
       }
 
       auto goal = joint_lqr::utils::LQRGoal(
-          this->getReferencePath()->poses[lqr_tracking_idx_],
+          this->getReferenceTrajectory()
+              ->trajectory_path.poses[lqr_tracking_idx_],
           l_desired_velocity);
       auto goal_COG = joint_lqr::utils::LQRGoal(
-          this->getReferencePath()->poses[0], l_desired_velocity);
+          this->getReferenceTrajectory()->trajectory_path.poses[0],
+          l_desired_velocity);
       error = joint_lqr_->computeError(state, goal);
       error_COG = joint_lqr_->computeError(state, goal_COG);
       auto cmd = joint_lqr_->process(state, goal);
@@ -304,11 +365,13 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
         m_camber_manager_ptr->setVehSpeed(this->current_speed_ms_);
         double tmp_bank_ = 0.0;
         m_camber_manager_ptr->setBankAngle(tmp_bank_);
-        camber_compensatation_deg = m_camber_manager_ptr->getCamberCompensation();
-  
-      } catch (std::exception & e) {
-          RCLCPP_ERROR(this->get_logger(), "CAMBER COMPENSATION EXCEPTION. %s", e.what());
-          camber_compensatation_deg = 0.0;
+        camber_compensatation_deg =
+            m_camber_manager_ptr->getCamberCompensation();
+
+      } catch (std::exception &e) {
+        RCLCPP_ERROR(this->get_logger(), "CAMBER COMPENSATION EXCEPTION. %s",
+                     e.what());
+        camber_compensatation_deg = 0.0;
       }
       steering_angle_deg = steering_angle_deg + camber_compensatation_deg;
       // ----------------------------------------------------------------------------
@@ -324,17 +387,20 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
                                      des_accel_max_da_dt_, period_double_s);
     }
     // Publish diagnostic message
-    publishSteerAccelDiagnostics(
-        valid_tracking_result, valid_path, valid_odom, valid_wpt_distance,
-        valid_target_position, steering_angle_deg, desired_accel,
-        track_distance, lqr_tracking_idx_,
-        this->getReferencePath()->poses[lqr_tracking_idx_], error_COG, error);
+    publishSteerAccelDiagnostics(valid_tracking_result, valid_path, valid_odom,
+                                 valid_wpt_distance, valid_target_position,
+                                 steering_angle_deg, desired_accel,
+                                 track_distance, lqr_tracking_idx_,
+                                 this->getReferenceTrajectory()
+                                     ->trajectory_path.poses[lqr_tracking_idx_],
+                                 error_COG, error, l_desired_velocity);
   }
 
   if (!this->hasSystemStatus() ||
       (this->getSystemStatus().autonomy_status.lateral_autonomy_enabled ||
        this->getSystemStatus().autonomy_status.longitudinal_autonomy_enabled) &&
-          !(valid_path && valid_odom && valid_wpt_distance && valid_target_position)) {
+          !(valid_path && valid_odom && valid_wpt_distance &&
+            valid_target_position)) {
     node_status = common::NODE_ERROR;
     this->setNodeStatus(node_status);
     return nullptr;
@@ -346,9 +412,62 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
   this->control_cmd->steering_control_cmd.data =
       invert_steering_ ? -last_steering_command_ : last_steering_command_;
   // for acceleration command
-  this->control_cmd->desired_accel_cmd.data = desired_accel;
+
+  if (m_use_acc) {
+    this->control_cmd->desired_accel_cmd.data =
+        std::min(desired_accel, acc_accel_cmd_mpss);
+  } else {
+    this->control_cmd->desired_accel_cmd.data = desired_accel;
+  }
 
   node_status = common::NODE_OK;
   this->setNodeStatus(node_status);
   return this->control_cmd;
+}
+
+rcl_interfaces::msg::SetParametersResult
+nif::control::ControlLQRNode::parametersCallback(
+    const std::vector<rclcpp::Parameter> &vector) {
+  rcl_interfaces::msg::SetParametersResult result;
+  result.successful = false;
+  result.reason = "";
+  for (const auto &param : vector) {
+    if (param.get_name() == "pure_pursuit_max_max_dist_m") {
+      if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
+        if (param.as_double() >= 8.0 && param.as_double() <= 20.0) {
+          this->pure_pursuit_max_max_dist_m_ = param.as_double();
+          result.successful = true;
+        }
+      }
+    } else if (param.get_name() == "pure_pursuit_max_dist_m") {
+      if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
+        if (param.as_double() >= 3.0 && param.as_double() <= 20.0) {
+          this->pure_pursuit_max_dist_m_ = param.as_double();
+          result.successful = true;
+        }
+      }
+    } else if (param.get_name() == "pure_pursuit_min_dist_m") {
+      if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
+        if (param.as_double() >= 3.0 && param.as_double() <= 20.0) {
+          this->pure_pursuit_min_dist_m_ = param.as_double();
+          result.successful = true;
+        }
+      }
+    } else if (param.get_name() == "pure_pursuit_1st_vel_ms") {
+      if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
+        if (param.as_double() >= 8.0 && param.as_double() <= 40.0) {
+          this->pure_pursuit_1st_vel_ms_ = param.as_double();
+          result.successful = true;
+        }
+      }
+    } else if (param.get_name() == "pure_pursuit_k_vel_m_ms") {
+      if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
+        if (param.as_double() >= 0.0 && param.as_double() <= 1.0) {
+          this->pure_pursuit_k_vel_m_ms_ = param.as_double();
+          result.successful = true;
+        }
+      }
+    } 
+  }
+  return result;
 }

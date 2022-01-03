@@ -18,19 +18,21 @@ int32_t main(int32_t argc, char **argv)
   using nif::control::ControlLQRNode;
   using namespace nif::common::constants;
 
-  const char* node_name = "control_lqr_node";
+  const char *node_name = "control_lqr_node";
 
   rclcpp::Node::SharedPtr nd;
 
-  try {
+  try
+  {
     RCLCPP_INFO(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
                 "Instantiating ControlLQRNode with name: %s", node_name);
     rclcpp::NodeOptions options;
 
     nd = std::make_shared<ControlLQRNode>(
         node_name);
-
-  } catch (std::exception & e) {
+  }
+  catch (std::exception &e)
+  {
     RCLCPP_FATAL(rclcpp::get_logger(LOG_MAIN_LOGGER_NAME),
                  "FATAL ERROR during node initialization: ABORTING.\n%s", e.what());
     return -1;

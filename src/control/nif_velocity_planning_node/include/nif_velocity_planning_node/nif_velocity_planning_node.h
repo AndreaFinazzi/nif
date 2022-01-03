@@ -239,6 +239,10 @@ private:
         double a_lat_max = m_tire_manager.ComputeLateralAccelLimit(
             m_a_lon_kf, m_a_lat_kf, m_yaw_rate_kf, current_steer_rad,
             current_velocity_mps, m_bank_angle_rad);
+ 
+        // double a_lat_max = m_tire_manager.ComputeLateralAccelLimit(
+            // m_a_lon_kf, m_a_lat_kf, 0.0, current_steer_rad,
+            // current_velocity_mps, m_bank_angle_rad);
 
         // Compute maximum velocity
         // - init desired velocity as max
@@ -330,11 +334,13 @@ private:
                  period_double_s);
     // - mission specific step limiter
     auto mission_code = this->hasSystemStatus() ? this->getSystemStatus().mission_status.mission_status_code : MissionStatus::MISSION_COMMANDED_STOP;
-
+  
     if (mission_code == MissionStatus::MISSION_RACE ||
-        mission_code ==
-            MissionStatus::MISSION_COLLISION_AVOIDNACE ||
+        mission_code == MissionStatus::MISSION_KEEP_POSITION ||
+        mission_code == MissionStatus::MISSION_CONSTANT_SPEED ||
+        mission_code == MissionStatus::MISSION_COLLISION_AVOIDNACE ||
         mission_code == MissionStatus::MISSION_TEST) {
+
       desired_velocity_mps =
           smoothSignal(desired_velocity_prev_mps, desired_velocity_mps,
                        m_max_ddes_vel_dt_green_flag, period_double_s);

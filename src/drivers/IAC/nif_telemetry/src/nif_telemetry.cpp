@@ -44,6 +44,29 @@ class Telemetry : public rclcpp::Node
       send_telemetry_socket(io_service_main),
       recv_basestation_socket(io_service_main)
     {
+      this->declare_parameter("enable_udp", true);
+      this->declare_parameter("ego_ip", "10.42.4.200");
+      this->declare_parameter("bst_ip","10.42.4.79");
+
+      this->declare_parameter("ego_port", 23531);
+      this->declare_parameter("bst_port",23431);
+
+      // setup UDP interfaces
+      this->udp_enabled = this->get_parameter("enable_udp").as_bool();
+
+      send_telemetry_ip = this->get_parameter("bst_ip").as_string();
+      send_telemetry_port = this->get_parameter("bst_port").as_int();
+      send_telemetry_socket.open(ip::udp::v4());
+      send_telemetry_endpoint = ip::udp::endpoint(
+          ip::address::from_string(send_telemetry_ip), send_telemetry_port);
+      RCLCPP_INFO(this->get_logger(),
+                  "Established connection to send telemetry to : %s:%u",
+                  send_telemetry_ip.c_str(), send_telemetry_port);
+
+      recv_basestation_ip = this->get_parameter("ego_ip").as_string();
+      recv_basestation_port = this->get_parameter("ego_port").as_int();;
+
+
       // setup QOS to be best effort
       auto qos = rclcpp::QoS(rclcpp::QoSInitialization(RMW_QOS_POLICY_HISTORY_KEEP_LAST, 1));
       qos.best_effort();
@@ -77,7 +100,7 @@ class Telemetry : public rclcpp::Node
       sub_command_brake = this->create_subscription<std_msgs::msg::Float32>(
         "/joystick/brake_cmd", nif::common::constants::QOS_SENSOR_DATA, std::bind(&Telemetry::command_brake_callback, this, std::placeholders::_1));
       sub_command_desired_velocity = this->create_subscription<std_msgs::msg::Float32>(
-        "/velocity_planner/des_vel", nif::common::constants::QOS_SENSOR_DATA, std::bind(&Telemetry::command_desired_velocity_callback, this, std::placeholders::_1));
+        "/control_joint_lqr/desired_velocity_mps", nif::common::constants::QOS_SENSOR_DATA, std::bind(&Telemetry::command_desired_velocity_callback, this, std::placeholders::_1));
       sub_command_gear = this->create_subscription<std_msgs::msg::UInt8>(
         "/joystick/gear_cmd", nif::common::constants::QOS_SENSOR_DATA, std::bind(&Telemetry::command_gear_callback, this, std::placeholders::_1));
 
@@ -85,8 +108,8 @@ class Telemetry : public rclcpp::Node
         "/control_joint_lqr/lqr_error", nif::common::constants::QOS_SENSOR_DATA, std::bind(&Telemetry::control_lqr_error_callback, this, std::placeholders::_1));
 
       sub_reference_path = this->create_subscription<nav_msgs::msg::Path>(
-        "/planning/path_global", nif::common::constants::QOS_SENSOR_DATA, std::bind(&Telemetry::reference_path_callback, this, std::placeholders::_1));
-      
+        "/planning/dynamic/vis/traj_global", nif::common::constants::QOS_SENSOR_DATA, std::bind(&Telemetry::reference_path_callback, this, std::placeholders::_1));
+
       sub_perception_result = this->create_subscription<visualization_msgs::msg::MarkerArray>(
         "/clustered_markers", nif::common::constants::QOS_SENSOR_DATA, std::bind(&Telemetry::perception_result_callback, this, std::placeholders::_1));
 
@@ -97,6 +120,12 @@ class Telemetry : public rclcpp::Node
         "/detected_inner_distance", nif::common::constants::QOS_SENSOR_DATA, std::bind(&Telemetry::wall_distance_inner_callback, this, std::placeholders::_1));
       sub_wall_distance_outer = this->create_subscription<std_msgs::msg::Float32>(
         "/detected_outer_distance", nif::common::constants::QOS_SENSOR_DATA, std::bind(&Telemetry::wall_distance_outer_callback, this, std::placeholders::_1));
+
+      sub_oppo_prediction_path = this->create_subscription<nav_msgs::msg::Path>(
+        "/oppo/vis/prediction", nif::common::constants::QOS_SENSOR_DATA, std::bind(&Telemetry::oppo_prediction_path_callback, this, std::placeholders::_1));
+
+
+    if (this->udp_enabled) {
 
     //  Republish joystick command from UDP
       pub_joystick_command =
@@ -110,25 +139,6 @@ class Telemetry : public rclcpp::Node
       // timer which handles receiving from base station
       rec_bs_timer_ = this->create_wall_timer(
           5ms, std::bind(&Telemetry::rec_bs_callback, this));
-
-      this->declare_parameter("ego_ip", "10.42.4.200");
-      this->declare_parameter("bst_ip","10.42.4.79");
-
-      this->declare_parameter("ego_port", 23531);
-      this->declare_parameter("bst_port",23431);
-
-      // setup UDP interfaces
-      send_telemetry_ip = this->get_parameter("bst_ip").as_string();
-      send_telemetry_port = this->get_parameter("bst_port").as_int();
-      send_telemetry_socket.open(ip::udp::v4());
-      send_telemetry_endpoint = ip::udp::endpoint(
-          ip::address::from_string(send_telemetry_ip), send_telemetry_port);
-      RCLCPP_INFO(this->get_logger(),
-                  "Established connection to send telemetry to : %s:%u",
-                  send_telemetry_ip.c_str(), send_telemetry_port);
-
-      recv_basestation_ip = this->get_parameter("ego_ip").as_string();
-      recv_basestation_port = this->get_parameter("ego_port").as_int();;
       recv_basestation_socket.open(ip::udp::v4());
       recv_basestation_endpoint =
           ip::udp::endpoint(ip::address::from_string(recv_basestation_ip),
@@ -141,6 +151,7 @@ class Telemetry : public rclcpp::Node
           this->get_logger(),
           "Established connection to receive basestation commands on : %s:%u",
           recv_basestation_ip.c_str(), recv_basestation_port);
+    }
 
       timer_ = this->create_wall_timer(
         50ms, std::bind(&Telemetry::timer_callback, this));
@@ -249,15 +260,15 @@ class Telemetry : public rclcpp::Node
             /* 88 */ msg_perception_result.markers.size() > 0 ? static_cast<double>(msg_perception_result.markers[4].pose.orientation.z) : 0.0,
             /* 89 */ static_cast<double>(msg_telemetry.localization.odometry.pose.orientation.z),
             /* 90 */ static_cast<double>(msg_telemetry.localization.odometry.pose.orientation.w),
-            /* 91 */ 0.0,
-            /* 92 */ 0.0,
-            /* 93 */ 0.0,
-            /* 94 */ 0.0,
-            /* 95 */ 0.0,
-            /* 96 */ 0.0,
-            /* 97 */ 0.0,
-            /* 98 */ 0.0,
-            /* 99 */ 0.0,
+            /* 91 */ static_cast<double>(msg_oppo_prediction_path.header.stamp.nanosec),
+            /* 92 */ msg_oppo_prediction_path.poses.size() > 0 ? static_cast<double>(msg_oppo_prediction_path.poses[0].pose.position.x) : 0.0,
+            /* 93 */ msg_oppo_prediction_path.poses.size() > 0 ? static_cast<double>(msg_oppo_prediction_path.poses[0].pose.position.y) : 0.0,
+            /* 94 */ msg_oppo_prediction_path.poses.size() > 1 ? static_cast<double>(msg_oppo_prediction_path.poses[1].pose.position.x) : 0.0,
+            /* 95 */ msg_oppo_prediction_path.poses.size() > 1 ? static_cast<double>(msg_oppo_prediction_path.poses[1].pose.position.y) : 0.0,
+            /* 96 */ msg_oppo_prediction_path.poses.size() > 2 ? static_cast<double>(msg_oppo_prediction_path.poses[2].pose.position.x) : 0.0,
+            /* 97 */ msg_oppo_prediction_path.poses.size() > 2 ? static_cast<double>(msg_oppo_prediction_path.poses[2].pose.position.y) : 0.0,
+            /* 98 */ msg_oppo_prediction_path.poses.size() > 3 ? static_cast<double>(msg_oppo_prediction_path.poses[3].pose.position.x) : 0.0,
+            /* 99 */ msg_oppo_prediction_path.poses.size() > 3 ? static_cast<double>(msg_oppo_prediction_path.poses[3].pose.position.y) : 0.0
             };
         boost::system::error_code err;
         send_telemetry_socket.send_to(buffer(data_frame, sizeof(data_frame)),
@@ -357,6 +368,27 @@ class Telemetry : public rclcpp::Node
         msg_reference_path = std::move(path_sampled);
       }
 
+      // Prediction path
+      if (!in_oppo_prediction_path.poses.empty()) {
+        nav_msgs::msg::Path path_sampled{};
+
+        path_sampled.header = std::move(in_oppo_prediction_path.header);
+        unsigned int step_size =  floor(this->in_oppo_prediction_path.poses.size() / 10);
+
+        for (int i = 0; i < this->in_oppo_prediction_path.poses.size(); i += step_size) 
+        {
+          path_sampled.poses.push_back(this->in_oppo_prediction_path.poses[i]);
+        }
+        // Always include last point
+        path_sampled.poses.push_back(this->in_oppo_prediction_path.poses[this->in_oppo_prediction_path.poses.size() - 1]);
+
+        pub_reference_path->publish(path_sampled);
+
+// TODO temporary to ease UDP 
+        msg_oppo_prediction_path = std::move(path_sampled);
+      }
+
+
       // Perception result
       pub_perception_result->publish(msg_perception_result);
     }
@@ -440,6 +472,10 @@ class Telemetry : public rclcpp::Node
     {
       in_reference_path = std::move(*msg);
     }
+    void oppo_prediction_path_callback(const nav_msgs::msg::Path::SharedPtr msg)
+    {
+      in_oppo_prediction_path = std::move(*msg);
+    }
     void perception_result_callback(const visualization_msgs::msg::MarkerArray::SharedPtr msg)
     {
       msg_perception_result = std::move(*msg);
@@ -490,8 +526,9 @@ class Telemetry : public rclcpp::Node
     rclcpp::Subscription<std_msgs::msg::Float32MultiArray>::SharedPtr sub_control_lqr_error;
 
     rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr sub_reference_path;
-
+    
     rclcpp::Subscription<visualization_msgs::msg::MarkerArray>::SharedPtr sub_perception_result;
+    rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr sub_oppo_prediction_path;
 
     rclcpp::Subscription<deep_orange_msgs::msg::TireReport>::SharedPtr sub_tire_report;
 
@@ -506,8 +543,10 @@ class Telemetry : public rclcpp::Node
     nif_msgs::msg::Telemetry msg_telemetry;
 
     nav_msgs::msg::Path in_reference_path;
-    nav_msgs::msg::Path msg_reference_path;    
+    nav_msgs::msg::Path msg_reference_path;
     
+    nav_msgs::msg::Path in_oppo_prediction_path;
+    nav_msgs::msg::Path msg_oppo_prediction_path;
     visualization_msgs::msg::MarkerArray msg_perception_result;
 
     deep_orange_msgs::msg::JoystickCommand msg_joystick_command;
@@ -515,6 +554,8 @@ class Telemetry : public rclcpp::Node
     deep_orange_msgs::msg::TireReport in_tire_report;
 
     // udp stuff
+    bool udp_enabled = true;
+
     io_service io_service_main;
     ip::udp::socket send_telemetry_socket;
     ip::udp::socket recv_basestation_socket;

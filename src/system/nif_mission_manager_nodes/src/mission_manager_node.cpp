@@ -19,6 +19,8 @@ MissionManagerNode::MissionManagerNode(
 
     this->declare_parameter("velocity.zero", 0.0);
     this->declare_parameter("velocity.max", 37.0);
+    this->declare_parameter("velocity.keep_position", 37.0);
+    this->declare_parameter("velocity.constant", 37.0);
     this->declare_parameter("velocity.avoidance", 20.0);
     this->declare_parameter("velocity.warmup", 20.0);
     this->declare_parameter("velocity.pit_in", 8.0);
@@ -55,6 +57,8 @@ MissionManagerNode::MissionManagerNode(
 
     this->velocity_zero = this->get_parameter("velocity.zero").as_double();
     this->velocity_max = this->get_parameter("velocity.max").as_double();
+    this->velocity_keep_position = this->get_parameter("velocity.keep_position").as_double();
+    this->velocity_constant = this->get_parameter("velocity.constant").as_double();
     this->velocity_avoidance = this->get_parameter("velocity.avoidance").as_double();
     this->velocity_warmup = this->get_parameter("velocity.warmup").as_double();
     this->velocity_pit_in = this->get_parameter("velocity.pit_in").as_double();
@@ -175,6 +179,7 @@ MissionStatus::_mission_status_code_type MissionManagerNode::getMissionStatusCod
       break;
 
     case RCFlagSummary::VEH_FLAG_BLACK:
+//  VEH BLACK FLAG START
         switch (this->rc_flag_summary.track_flag)
         {
         case RCFlagSummary::TRACK_FLAG_RED: // TODO ASK TO RC WHAT SHOULD HAPPEN HERE
@@ -216,6 +221,7 @@ MissionStatus::_mission_status_code_type MissionManagerNode::getMissionStatusCod
         }
         
         return MissionStatus::MISSION_PIT_STANDBY;
+//  VEH BLACK FLAG END
         break;
     
     case RCFlagSummary::VEH_FLAG_CHECKERED:
@@ -223,13 +229,23 @@ MissionStatus::_mission_status_code_type MissionManagerNode::getMissionStatusCod
       break;
 
     case RCFlagSummary::VEH_FLAG_BLANK:
-        return getMissionVehFlagNull();      
+        return getMissionVehFlagNull(true);      
 
     case RCFlagSummary::VEH_FLAG_NULL:
-        return getMissionVehFlagNull();
+        return getMissionVehFlagNull(true);
 
       break; // VEH_FLAG_BLANK
     
+    case RCFlagSummary::VEH_FLAG_DEFENDER:
+        return getMissionVehFlagNull(true); // defender_mode on
+
+      break; // VEH_FLAG_BLANK
+    
+    case RCFlagSummary::VEH_FLAG_ATTACKER:
+        return getMissionVehFlagNull(false);
+
+      break; // VEH_FLAG_BLANK
+
     default:
       return MissionStatus::MISSION_COMMANDED_STOP;
       break;
@@ -239,7 +255,7 @@ MissionStatus::_mission_status_code_type MissionManagerNode::getMissionStatusCod
   }
 }
 
-MissionStatus::_mission_status_code_type MissionManagerNode::getMissionVehFlagNull()
+MissionStatus::_mission_status_code_type MissionManagerNode::getMissionVehFlagNull(bool defender_mode)
 {
     switch (this->rc_flag_summary.track_flag)
       {
@@ -303,8 +319,36 @@ MissionStatus::_mission_status_code_type MissionManagerNode::getMissionVehFlagNu
                 // TODO If on track, RACE should be set and maintained.
                 if (this->is_warmup_enabled)
                     return MissionStatus::MISSION_TIRE_WARMUP;
+                
                 if (this->is_avoidance_enabled)
                     return MissionStatus::MISSION_COLLISION_AVOIDNACE;
+
+                if (defender_mode)
+                    return MissionStatus::MISSION_CONSTANT_SPEED;
+
+                return MissionStatus::MISSION_KEEP_POSITION;
+            }
+            break;
+
+        case RCFlagSummary::TRACK_FLAG_BLUE:
+            if (this->missionIs(MissionStatus::MISSION_PIT_IN)) {
+                return MissionStatus::MISSION_PIT_STANDBY;
+            } else {
+                if (defender_mode)
+                    return MissionStatus::MISSION_CONSTANT_SPEED;
+                
+                return MissionStatus::MISSION_KEEP_POSITION;
+            }
+            break;
+
+        case RCFlagSummary::TRACK_FLAG_WAVING_GREEN:
+            if (this->missionIs(MissionStatus::MISSION_PIT_IN)) {
+                return MissionStatus::MISSION_PIT_STANDBY;
+            } else {
+                // TODO If on track, RACE should be set and maintained.
+                if (defender_mode)
+                    return MissionStatus::MISSION_CONSTANT_SPEED;
+                
                 return MissionStatus::MISSION_RACE;
             }
             break;
@@ -381,6 +425,22 @@ MissionManagerNode::parametersCallback(
                     result.successful = true;
                 }
             }
+        } else if (param.get_name() == "velocity.keep_position") {
+            if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
+                if (param.as_double() >= 0.0 && param.as_double() <= 67.0) // TODO implement switching policy, if needed
+                {
+                    this->velocity_keep_position = param.as_double();
+                    result.successful = true;
+                }
+            }
+        } else if (param.get_name() == "velocity.constant") {
+            if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
+                if (param.as_double() >= 0.0 && param.as_double() <= 67.0) // TODO implement switching policy, if needed
+                {
+                    this->velocity_constant = param.as_double();
+                    result.successful = true;
+                }
+            }
         } else if (param.get_name() == "velocity.pit_in") {
             if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
                 if (param.as_double() >= 0.0 && param.as_double() <= 20.0) // TODO implement switching policy, if needed
@@ -399,7 +459,7 @@ MissionManagerNode::parametersCallback(
             }
         } else if (param.get_name() == "velocity.slow_drive") {
             if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
-                if (param.as_double() >= 0.0 && param.as_double() <= 30.0) // TODO implement switching policy, if needed
+                if (param.as_double() >= 0.0 && param.as_double() <= 67.0) // TODO implement switching policy, if needed
                 {
                     this->velocity_slow_drive = param.as_double();
                     result.successful = true;
@@ -480,6 +540,14 @@ double nif::system::MissionManagerNode::getMissionMaxVelocityMps(
             max_vel_mps = this->velocity_warmup;
             break;
             
+        case MissionStatus::MISSION_KEEP_POSITION:
+            max_vel_mps = this->velocity_keep_position;
+            break;
+        
+        case MissionStatus::MISSION_CONSTANT_SPEED:
+            max_vel_mps = this->velocity_constant;
+            break;
+
         default:
             max_vel_mps = this->velocity_zero;
             break;
@@ -571,7 +639,7 @@ void MissionManagerNode::afterEgoOdometryCallback() {
           this->getEgoOdometry(), 
           this->current_velocity_mps))
     {
-        if (this->current_track_zone_id != zone_pair.second.id)
+        if (this->mission_status_msg.zone_status.zone_id != zone_pair.second.id)
         {
             if (this->track_zones_hit_count_map.find(zone_pair.second.id) == this->track_zones_hit_count_map.end()) {
                 this->track_zones_hit_count_map.insert(std::make_pair(zone_pair.second.id, 1));
@@ -581,7 +649,11 @@ void MissionManagerNode::afterEgoOdometryCallback() {
                 this->track_zones_hit_count_map[zone_pair.second.id]++;
             }
         }
-        this->current_track_zone_id = zone_pair.second.id;
+
+        this->mission_status_msg.zone_status.zone_id = zone_pair.second.id;
+        this->mission_status_msg.zone_status.zone_type = zone_pair.second.type;
+        this->mission_status_msg.zone_status.long_acceleration_max = zone_pair.second.dynamics.long_acceleration_max;
+        this->mission_status_msg.zone_status.long_acceleration_min = zone_pair.second.dynamics.long_acceleration_min;
     }
   }
 }

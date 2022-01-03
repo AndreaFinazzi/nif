@@ -74,18 +74,20 @@ def generate_launch_description():
         executable='nif_mission_manager_nodes_exe',
         parameters=[{
             "zones_file_path": mm_zones_default_file,
-            
+
             "missions_file_path": mm_missions_default_file,
             "velocity.zero": 0.0,
-            "velocity.max": 30.0,
+            "velocity.max": 20.0,
+            "velocity.keep_position": 20.0,
+            "velocity.constant": 20.0,
             "velocity.avoidance": 15.0,
             "velocity.warmup": 15.0,
-            "velocity.pit_in": 12.0,
-            "velocity.pit_out": 12.0,
-            "velocity.slow_drive": 15.0,
+            "velocity.pit_in": 15.0,
+            "velocity.pit_out": 15.0,
+            "velocity.slow_drive": 20.0,
             # RC interface params
-            "listen_to_override": False,
-            "listen_to_nominal": True,
+            "listen_to_override": True,
+            "listen_to_nominal": False,
 
             # Mission avoidance auto switch
             "mission.avoidance.auto_switch": False,

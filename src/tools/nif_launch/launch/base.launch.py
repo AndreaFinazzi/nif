@@ -45,6 +45,8 @@ def generate_launch_description():
         global_params_file = 'params_IMS.global.yaml'
     elif track == LVMS:
         global_params_file = 'params_LVMS.global.yaml'
+    elif track == LVMS_SIM:
+        global_params_file = 'params_LVMS_SIM.global.yaml'
     else:
         raise RuntimeError("ERROR: invalid track provided: {}".format(track))
 

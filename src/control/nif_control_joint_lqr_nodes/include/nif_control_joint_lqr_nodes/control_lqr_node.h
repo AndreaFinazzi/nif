@@ -39,7 +39,8 @@ public:
       double track_distance, unsigned int lqr_tracking_idx,
       geometry_msgs::msg::PoseStamped lqr_track_point,
       joint_lqr::lqr::JointLQR::ErrorMatrix lqr_err_cog,
-      joint_lqr::lqr::JointLQR::ErrorMatrix lqr_err);
+      joint_lqr::lqr::JointLQR::ErrorMatrix lqr_err,
+      double desired_velocity_mps);
 
   /** ROS Callbacks / Subscription Interface **/
   void afterReferencePathCallback() override {
@@ -49,6 +50,11 @@ public:
   // void desiredVxCallback(const std_msgs::msg::Float32::SharedPtr msg) {
   //   desired_vx_ = msg->data;
   // }
+
+  // ACC
+  void accCMDCallback(const std_msgs::msg::Float32::SharedPtr msg) {
+    acc_accel_cmd_mpss = msg->data;
+  }
 
   void velocityCallback(
       const raptor_dbw_msgs::msg::WheelSpeedReport::SharedPtr msg) {
@@ -97,6 +103,7 @@ private:
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr
       lqr_tracking_point_pub_;
   rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr lqr_error_pub_;
+  rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr lqr_desired_velocity_mps_pub_;
   //! Command Publishers
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr steering_command_pub_;
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr throttle_command_pub_;
@@ -115,6 +122,8 @@ private:
   rclcpp::Subscription<std_msgs::msg::UInt8>::SharedPtr gear_sub_;
   rclcpp::Subscription<deep_orange_msgs::msg::PtReport>::SharedPtr
       pt_report_sub_;
+  // ACC
+  rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr acc_sub_;
 
   //! Lateral LQR Controller
   joint_lqr::lqr::JointLQR::Ptr joint_lqr_;
@@ -137,6 +146,9 @@ private:
   //! Desired Velocity from Velocity Planner
   double desired_vx_;
 
+  // ACC
+  double acc_accel_cmd_mpss;
+
   //! LQR Tracking State
   unsigned int lqr_tracking_idx_ = 0;
 
@@ -152,7 +164,7 @@ private:
   double steering_units_multiplier_;
   double pure_pursuit_min_dist_m_;
   double pure_pursuit_max_dist_m_;
-  double pure_pursuit_1st_vel_m_;
+  double pure_pursuit_1st_vel_ms_;
   double pure_pursuit_max_max_dist_m_;
   double pure_pursuit_k_vel_m_ms_;
   bool use_tire_velocity_;
@@ -164,6 +176,11 @@ private:
   bool invert_steering_;
   bool m_use_mission_max_vel_;
 
+  // ACC enable ros param
+  bool m_use_acc;
+  
+  rcl_interfaces::msg::SetParametersResult
+  parametersCallback(const std::vector<rclcpp::Parameter> &vector);
 
   nif::common::msgs::ControlCmd::SharedPtr solve() override;
 

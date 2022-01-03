@@ -181,8 +181,8 @@ public:
       0.5 * g * (m_uns_f + m_uns_r + m_s) - static_wheel_load_R;
 
   // Variables
-  double m_lon_load_transfer;
-  double m_lat_load_transfer_F;
-  double m_lat_load_transfer_R;
+  double m_lon_load_transfer = 0.0; 
+  double m_lat_load_transfer_F = 0.0; 
+  double m_lat_load_transfer_R = 0.0; 
 };
 #endif

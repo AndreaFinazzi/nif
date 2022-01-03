@@ -93,7 +93,7 @@
 const unsigned long MAP_WIDTH =
     400; //(front_upper_distance + rear_upper_distance) / resolution
 const unsigned long MAP_HEIGHT =
-    300; // (right_upper_distance + left_upper_distance) / resolution
+    150; // (right_upper_distance + left_upper_distance) / resolution
 
 namespace nif {
 namespace perception {
@@ -184,7 +184,7 @@ private:
   void RegisterPointToGrid(pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud_ptr,
                            double in_resolution, float min_x, float min_y);
 
-  pcl::PointCloud<pcl::PointXYZI>::Ptr
+  void
   downsample(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, double resolution);
 
   void InverseMap(pcl::PointCloud<pcl::PointXYZI>::Ptr cloudIn,

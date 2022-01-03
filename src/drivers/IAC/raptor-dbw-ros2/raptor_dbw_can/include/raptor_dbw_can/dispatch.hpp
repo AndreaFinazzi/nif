@@ -53,14 +53,11 @@ enum
 {
   ID_BASE_TO_CAR_SUMMARY        = 0x04B0,
   ID_LAP_TIME_REPORT            = 0x04B8,
-  ID_CT_REPORT                  = 0x057c,
-  ID_BRAKE_CMD                  = 0x2F04,
+  ID_REST_OF_FIELD              = 0x04B9,
+  ID_CT_REPORT                  = 0x057C,
   ID_BRAKE_REPORT               = 0x1F04,
-  ID_ACCELERATOR_PEDAL_CMD      = 0x2F01,
   ID_ACCEL_PEDAL_REPORT         = 0x1F02,
-  ID_STEERING_CMD               = 0x2F03,
   ID_STEERING_REPORT            = 0x1F03,
-  ID_GEAR_CMD                   = 0x2F05,
   ID_GEAR_REPORT                = 0x1F05,
   ID_REPORT_WHEEL_SPEED         = 0x1F0B,
   ID_REPORT_IMU                 = 0x1F0A,
@@ -75,8 +72,11 @@ enum
   ID_STEERING_2_REPORT          = 0x1F13,
   ID_OTHER_ACTUATORS_REPORT     = 0x1F14,
   ID_FAULT_ACTION_REPORT        = 0x1F15,
+  ID_ACCELERATOR_PEDAL_CMD      = 0x2F01,
+  ID_STEERING_CMD               = 0x2F03,
+  ID_BRAKE_CMD                  = 0x2F04,
+  ID_GEAR_CMD                   = 0x2F05,
   ID_HMI_GLOBAL_ENABLE_REPORT   = 0x3f01,
-  ID_TEST                       = 0x0718,
   ID_WHEEL_SPEED_REPORT_DO      = 0x0514,
   ID_BRAKE_PRESSURE_REPORT_DO   = 0x0515,
   ID_ACCELERATOR_REPORT_DO      = 0x0516,
@@ -112,6 +112,7 @@ enum
   ID_PT_REPORT_2                = 0x053D,
   ID_DIAG_REPORT                = 0x053E,
   ID_PT_REPORT_3                = 0x053F,
+  ID_TEST                       = 0x0718,
 };
 
 }  // namespace raptor_dbw_can

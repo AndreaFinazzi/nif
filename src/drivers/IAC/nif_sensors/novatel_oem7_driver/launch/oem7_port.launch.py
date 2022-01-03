@@ -62,8 +62,8 @@ def generate_launch_description():
     )
     
     return LaunchDescription([
-                             arg('oem7_port_name', None,  'Serial Port Name, e.g. /dev/ttyUSB1'), 
-                             arg('oem7_port_baud', '9600',  'Serial Port Baud, e.g. 115200'), 
+                             arg('oem7_port_name', '/dev/ttyUSB0',  'Serial Port Name, e.g. /dev/ttyUSB1'), 
+                             arg('oem7_port_baud', '115200',  'Serial Port Baud, e.g. 115200'), 
                              node
                              ])
 

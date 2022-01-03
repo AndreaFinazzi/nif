@@ -1,0 +1,9 @@
+gating_thres: 9.22
+gate_probability: 0.99
+detection_probability: 0.9
+life_time_thres: 30
+static_velocity_thres: 0.5
+static_num_history_thres: 3
+prevent_explosion_thres: 500
+use_sukf: true # false
+tracking_frame: "odom"

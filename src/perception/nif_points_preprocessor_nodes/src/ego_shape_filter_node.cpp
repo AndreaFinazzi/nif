@@ -75,7 +75,7 @@ EgoShapeFilterNode::EgoShapeFilterNode(const std::string &node_name_)
 
   pub_weaker_thres_inverse_points =
       this->create_publisher<sensor_msgs::msg::PointCloud2>(
-          "/weaker_thres_inverse_mapped_points",
+          "/inverse_weaker_thres_mapped_points",
           nif::common::constants::QOS_SENSOR_DATA);
 
   lidar_timeout = rclcpp::Duration(1, 0);
@@ -113,49 +113,48 @@ void EgoShapeFilterNode::EgoShape(
     double in_front_upper_threshold,
     double in_rear_upper_threshold, // upper limit
     double in_height_lower_threshold, double in_height_upper_threshold) {
-  pcl::PointIndices::Ptr far_indices(new pcl::PointIndices);
+  
+  pcl::PointIndices::Ptr out_indices_list(new pcl::PointIndices);
   for (unsigned int i = 0; i < in_cloud_ptr->points.size(); i++) {
-    pcl::PointXYZI current_point;
-    current_point.x = in_cloud_ptr->points[i].x;
-    current_point.y = in_cloud_ptr->points[i].y;
-    current_point.z = in_cloud_ptr->points[i].z;
+    auto& x = in_cloud_ptr->points[i].x;
+    auto& y = in_cloud_ptr->points[i].y;
+    auto& z = in_cloud_ptr->points[i].z;
 
-    if (current_point.y > (in_left_upper_threshold)) {
-      far_indices->indices.push_back(i);
-      continue;
-    }
-    if (current_point.y < (-1.0 * in_right_upper_threshold)) {
-      far_indices->indices.push_back(i);
+    // outer side boundaries
+    if (y > in_left_upper_threshold ||
+        y < -in_right_upper_threshold) {
+      out_indices_list->indices.push_back(i);
       continue;
     }
 
-    if (current_point.x > in_front_upper_threshold ||
-        current_point.x < -in_rear_upper_threshold) {
-      far_indices->indices.push_back(i);
+    // outer front/rear boundaries
+    if (x > in_front_upper_threshold ||
+        x < -in_rear_upper_threshold) {
+      out_indices_list->indices.push_back(i);
       continue;
     }
 
-    if (current_point.z < (in_height_lower_threshold)) {
-      far_indices->indices.push_back(i);
+    if (z < (in_height_lower_threshold)) {
+      out_indices_list->indices.push_back(i);
       continue;
     }
-    if (current_point.z > (in_height_upper_threshold)) {
-      far_indices->indices.push_back(i);
+    if (z > (in_height_upper_threshold)) {
+      out_indices_list->indices.push_back(i);
       continue;
     }
 
-    if (current_point.y < (in_left_lower_threshold) &&
-        current_point.y > -1.0 * in_right_lower_threshold) {
-      if (current_point.x < (in_front_lower_threshold) &&
-          current_point.x > -1.0 * in_rear_lower_threshold) {
-        far_indices->indices.push_back(i);
+    if ( y < in_left_lower_threshold  && y > -1.0 * in_right_lower_threshold &&
+         x < in_front_lower_threshold && x > -1.0 * in_rear_lower_threshold )
+      {
+        out_indices_list->indices.push_back(i);
+        continue;
       }
-    }
+      
   }
 
   pcl::ExtractIndices<pcl::PointXYZI> extract;
   extract.setInputCloud(in_cloud_ptr);
-  extract.setIndices(far_indices);
+  extract.setIndices(out_indices_list);
   extract.setNegative(
       true); // true removes the indices, false leaves only the indices
   extract.filter(*out_cloud_ptr);
@@ -205,24 +204,27 @@ void EgoShapeFilterNode::timer_callback() {
   */
   InverseMap(m_CloudShapeFiltered, CloudInverseBoth, CloudInverseWeakerThres,
              CloudInverseLeft, CloudInverseRight, min_x, min_y, resolution_);
+
   //both
   sensor_msgs::msg::PointCloud2 cloud_inverse_msg;
   pcl::toROSMsg(*CloudInverseBoth, cloud_inverse_msg);
   cloud_inverse_msg.header.frame_id = BASE_LINK;
   cloud_inverse_msg.header.stamp = this->now();
   pub_inverse_points->publish(cloud_inverse_msg);
-  // left
-  sensor_msgs::msg::PointCloud2 left_cloud_inverse_msg;
-  pcl::toROSMsg(*CloudInverseLeft, left_cloud_inverse_msg);
-  left_cloud_inverse_msg.header.frame_id = BASE_LINK;
-  left_cloud_inverse_msg.header.stamp = this->now();
-  pub_inverse_left_points->publish(left_cloud_inverse_msg);
-  // right
-  sensor_msgs::msg::PointCloud2 right_cloud_inverse_msg;
-  pcl::toROSMsg(*CloudInverseRight, right_cloud_inverse_msg);
-  right_cloud_inverse_msg.header.frame_id = BASE_LINK;
-  right_cloud_inverse_msg.header.stamp = this->now();
-  pub_inverse_right_points->publish(right_cloud_inverse_msg);
+
+  // // left
+  // sensor_msgs::msg::PointCloud2 left_cloud_inverse_msg;
+  // pcl::toROSMsg(*CloudInverseLeft, left_cloud_inverse_msg);
+  // left_cloud_inverse_msg.header.frame_id = BASE_LINK;
+  // left_cloud_inverse_msg.header.stamp = this->now();
+  // pub_inverse_left_points->publish(left_cloud_inverse_msg);
+
+  // // right
+  // sensor_msgs::msg::PointCloud2 right_cloud_inverse_msg;
+  // pcl::toROSMsg(*CloudInverseRight, right_cloud_inverse_msg);
+  // right_cloud_inverse_msg.header.frame_id = BASE_LINK;
+  // right_cloud_inverse_msg.header.stamp = this->now();
+  // pub_inverse_right_points->publish(right_cloud_inverse_msg);
 
   sensor_msgs::msg::PointCloud2 cloud_weaker_thres_inverse_msg;
   pcl::toROSMsg(*CloudInverseWeakerThres, cloud_weaker_thres_inverse_msg);
@@ -234,20 +236,19 @@ void EgoShapeFilterNode::timer_callback() {
 
 void EgoShapeFilterNode::mergedPointsCallback(
     const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
+
   std::lock_guard<std::mutex> sensor_lock(sensor_mtx);
 
   lidar_time_last_update = this->now();
 
-  pcl::PointCloud<pcl::PointXYZI>::Ptr CloudIn(
-          new pcl::PointCloud<pcl::PointXYZI>);
   pcl::PointCloud<pcl::PointXYZI>::Ptr CloudVoxelized(
       new pcl::PointCloud<pcl::PointXYZI>);
   m_CloudShapeFiltered.reset(new pcl::PointCloud<pcl::PointXYZI>());
 
   RCLCPP_DEBUG(this->get_logger(), "-------------");
 
-  pcl::fromROSMsg(*msg, *CloudIn);
-  CloudVoxelized = downsample(CloudIn, resolution_);
+  pcl::fromROSMsg(*msg, *CloudVoxelized);
+  downsample(CloudVoxelized, resolution_);
 
   EgoShape(CloudVoxelized, m_CloudShapeFiltered, left_lower_distance_,
            right_lower_distance_, front_lower_distance_, rear_lower_distance_,
@@ -261,6 +262,7 @@ void EgoShapeFilterNode::mergedPointsCallback(
   pub_filtered_points->publish(cloud_msg);
 
   bMergedLidar = true;
+
 }
 
 
@@ -338,12 +340,14 @@ void EgoShapeFilterNode::InverseMap(
     pcl::PointCloud<pcl::PointXYZI>::Ptr cloudOut,
     pcl::PointCloud<pcl::PointXYZI>::Ptr WeakerThrescloudOut,
     pcl::PointCloud<pcl::PointXYZI>::Ptr cloudLeftOut,
-    pcl::PointCloud<pcl::PointXYZI>::Ptr cloudRightOut, float min_x,
-    float min_y, float in_resolution) {
+    pcl::PointCloud<pcl::PointXYZI>::Ptr cloudRightOut,
+    float min_x, float min_y, float in_resolution) {
   int x, y;
-  for (auto point_buf : cloudIn->points) {
+  for (auto&& point_buf : cloudIn->points) {
+    
     x = std::floor((point_buf.x - min_x) / in_resolution);
     y = std::floor((point_buf.y - min_y) / in_resolution);
+    
     if (count_map[y][x] > count_threshold_) {
       cloudOut->points.push_back(point_buf);
       if (point_buf.y > 0) {
@@ -358,14 +362,12 @@ void EgoShapeFilterNode::InverseMap(
   }
 }
 
-pcl::PointCloud<pcl::PointXYZI>::Ptr
+void
 EgoShapeFilterNode::downsample(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud,
                                double resolution) {
-  pcl::PointCloud<pcl::PointXYZI>::Ptr filtered(
-      new pcl::PointCloud<pcl::PointXYZI>);
+
   pcl::VoxelGrid<pcl::PointXYZI> voxelgrid;
   voxelgrid.setLeafSize(resolution, resolution, 0.02);
   voxelgrid.setInputCloud(cloud);
-  voxelgrid.filter(*filtered);
-  return filtered;
+  voxelgrid.filter(*cloud);
 }
