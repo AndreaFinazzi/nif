@@ -12,7 +12,7 @@ velocity_profiler::velocity_profiler() {
   m_acc_config_s1 = 0.0;
   m_acc_config_v_desired = 60;
   m_acc_config_time_headway = m_headway_default;
-  m_acc_config_delta = 4.0;
+  m_acc_config_delta = 1.0;
   m_acc_config_veh_l = 4.7;
 }
 
@@ -626,6 +626,8 @@ nif_msgs::msg::DynamicTrajectory velocity_profiler::velProfileForAcc(
   if (naive_gap > 300.0) {
     // Dont care about the ACC
     // return velProfilewithDynamics(odom_, target_path_, spline_interval_);
+    // std::cout << "ACC but too far, just vel profile" << std::endl;
+
     return velProfile(odom_, target_path_, spline_interval_);
   } else {
     // Care about the ACC in the trajectory planning
@@ -649,6 +651,8 @@ nif_msgs::msg::DynamicTrajectory velocity_profiler::velProfileForAcc(
 
     double point_s = 0.0;
     double point_s_end = cubic_spliner_2D->points_s().back();
+
+    // std::cout << "-----------------" << std::endl;
 
     while (point_s < point_s_end) {
       std::tuple<double, double> position =
@@ -697,14 +701,24 @@ nif_msgs::msg::DynamicTrajectory velocity_profiler::velProfileForAcc(
         // double dyn_vel = std::min(m_constraint_max_vel,
         //                           sqrt(abs(a_lat_max) / abs(curvature)));
 
+        // auto naive_idm_desired_gap =
+        //     m_acc_config_s0 +
+        //     m_acc_config_s1 * sqrt(out_traj.trajectory_velocity.back() /
+        //                            m_acc_config_v_desired) +
+        //     m_acc_config_time_headway * out_traj.trajectory_velocity.back() +
+        //     out_traj.trajectory_velocity.back() *
+        //         (out_traj.trajectory_velocity.back() - cipv_vel_abs_) /
+        //         (2 *
+        //          sqrt(m_constraint_max_accel *
+        //          abs(m_constraint_max_deccel)));
+
         auto naive_idm_desired_gap =
             m_acc_config_s0 +
-            m_acc_config_s1 * sqrt(out_traj.trajectory_velocity.back() /
-                                   m_acc_config_v_desired) +
             m_acc_config_time_headway * out_traj.trajectory_velocity.back() +
             out_traj.trajectory_velocity.back() *
                 (out_traj.trajectory_velocity.back() - cipv_vel_abs_) /
-                (2 * sqrt(m_constraint_max_accel * abs(m_constraint_max_deccel)));
+                (2 *
+                 sqrt(m_constraint_max_accel * abs(m_constraint_max_deccel)));
 
         auto predictided_oppo_pose =
             cipv_predicted_traj_.trajectory_path
@@ -724,8 +738,13 @@ nif_msgs::msg::DynamicTrajectory velocity_profiler::velProfileForAcc(
                  m_acc_config_delta) -
              pow((naive_idm_desired_gap / naive_cur_gap), 2));
 
-        acc_desired_accel = std::clamp(
-            acc_desired_accel, m_constraint_max_deccel, m_constraint_max_accel);
+        // std::cout << "naive cur gap : " << naive_cur_gap << std::endl;
+        // std::cout << "acc_desired_accel : " << acc_desired_accel <<
+        // std::endl;
+
+        acc_desired_accel =
+            std::clamp(acc_desired_accel, -1 * abs(m_constraint_max_deccel),
+                       m_constraint_max_accel);
 
         // auto acc_limited_vel =
         //     std::min(dyn_vel, out_traj.trajectory_velocity.back() +
@@ -733,12 +752,18 @@ nif_msgs::msg::DynamicTrajectory velocity_profiler::velProfileForAcc(
         //                            out_traj.trajectory_velocity.back()) *
         //                               acc_desired_accel);
 
-        auto acc_limited_vel =
-            std::min(curve_vel, out_traj.trajectory_velocity.back() +
-                                    (spline_interval_ /
-                                         out_traj.trajectory_velocity.back() +
-                                     0.00001) *
-                                        acc_desired_accel);
+        auto acc_limited_vel = std::min(
+            curve_vel,
+            std::max((out_traj.trajectory_velocity.back() +
+                      (spline_interval_ / out_traj.trajectory_velocity.back() +
+                       0.00001) *
+                          acc_desired_accel),
+                     0.0));
+
+        // std::cout << "acc_desired_accel_clamp : " << acc_desired_accel
+        //           << std::endl;
+        // std::cout << "acc_limited_vel(step) : " << acc_limited_vel <<
+        // std::endl;
 
         // double vel = std::max(acc_limited_vel, MIN_SPEED_MPS);
         // out_traj.trajectory_velocity.push_back(vel);
@@ -761,6 +786,12 @@ nif_msgs::msg::DynamicTrajectory velocity_profiler::velProfileForAcc(
 
       point_s += spline_interval_;
     }
+
+    // std::cout << " After 0.8 sec, desired vel : "
+    //           <<
+    //           out_traj.trajectory_velocity[nif::common::utils::closestIndex(
+    //                  out_traj.trajectory_timestamp_array, 0.8)]
+    //           << std::endl;
 
     auto is_too_curvy = std::any_of(
         cubic_spliner_curvature.begin(), cubic_spliner_curvature.end(),

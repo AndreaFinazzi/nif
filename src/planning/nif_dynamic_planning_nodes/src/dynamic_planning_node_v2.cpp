@@ -1473,7 +1473,8 @@ void DynamicPlannerNode::timer_callback_rule() {
 
   // Set the maximum accel and decel following the mission manager
   m_mission_accel_max = abs(mission_status.zone_status.long_acceleration_max);
-  m_mission_decel_max = abs(mission_status.zone_status.long_acceleration_min); // should be negative
+  m_mission_decel_max = abs(
+      mission_status.zone_status.long_acceleration_min); // should be negative
 
   // Set to velocity profiler
   auto flg = m_velocity_profiler_obj.setConstraintMaxVel(mission_max_vel);
@@ -1754,7 +1755,7 @@ void DynamicPlannerNode::timer_callback_rule() {
         } else {
 
           if (mission_status.zone_status.zone_type ==
-                mission_status.zone_status.ZONE_TYPE_CORNER_MID) {
+              mission_status.zone_status.ZONE_TYPE_CORNER_MID) {
             auto cur_traj = m_velocity_profiler_obj.velProfileForAcc(
                 m_ego_odom, m_cur_oppo_pred_result,
                 m_cur_det_global.obj_velocity_in_global.linear.x, cur_path_seg,
