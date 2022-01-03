@@ -29,10 +29,9 @@ def generate_launch_description():
         executable='nif_system_status_manager_nodes_exe',
         remappings=[
             ('in_joystick_cmd', '/joystick/command'),
-            ('in_novatel_bestpos', '/novatel_bottom/bestpos'),
-            ('in_novatel_insstdev', '/novatel_bottom/insstdev'),
             ('in_localization_status', '/aw_localization/ekf/status'),
             ('in_mission_status', '/system/mission'),
+            ('in_ll_diagnostic_report', '/raptor_dbw_interface/diag_report'),
             ('out_system_status', '/system/status'),
         ]
     )

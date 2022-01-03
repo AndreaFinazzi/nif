@@ -13,6 +13,7 @@
 #include <std_msgs/msg/float64.hpp>
 #include <std_srvs/srv/trigger.hpp>
 #include "nif_msgs/srv/register_node_status.hpp"
+#include "deep_orange_msgs/msg/diagnostic_report.hpp"
 
 using nif::common::NodeStatusCode;
 using nif::common::NodeType;
@@ -80,6 +81,10 @@ private:
   double safeloc_velocity_slow_down_max = 0.0;
   double safeloc_velocity_slow_down_min = 0.0;
 
+  rclcpp::Time ll_diagnostic_report_last_update = rclcpp::Time();
+  bool is_ll_healthy = false;
+  bool has_ll_diagnostic_report = false;
+
   bool hasLocalizationStatus();
 
   /**
@@ -94,10 +99,13 @@ private:
 
   rclcpp::Subscription<nif::common::msgs::OverrideControlCmd>::SharedPtr joystick_sub;
   rclcpp::Subscription<nif_msgs::msg::LocalizationStatus>::SharedPtr localization_status_sub;
+  
   std::vector<
       rclcpp::Subscription<nif::common::msgs::NodeStatus>::SharedPtr> node_statuses_subs;
+  
   rclcpp::Subscription<nif::common::msgs::MissionStatus>::SharedPtr mission_status_sub;
 
+  rclcpp::Subscription<deep_orange_msgs::msg::DiagnosticReport>::SharedPtr ll_diagnostic_report_sub;
 
   rclcpp::TimerBase::SharedPtr system_status_timer;
   rclcpp::TimerBase::SharedPtr comms_heartbeat_timer;
@@ -134,6 +142,7 @@ private:
   void joystickCallback(const nif::common::msgs::OverrideControlCmd::SharedPtr msg);
   void localizationStatusCallback(const nif_msgs::msg::LocalizationStatus::SharedPtr msg);
   void missionCallback(const nif::common::msgs::MissionStatus::UniquePtr msg);
+  void llDiagnosticReportCallback(const deep_orange_msgs::msg::DiagnosticReport::UniquePtr msg);
 
   void recoveryServiceHandler(
           const std::shared_ptr<rmw_request_id_t> request_header,

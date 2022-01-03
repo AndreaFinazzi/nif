@@ -45,11 +45,11 @@ namespace nif {
 namespace common {
 
 enum SystemStatusCode : std::uint8_t {
-  SYSTEM_NOT_INITIALIZED =
-      nif_msgs::msg::SystemHealthStatus::SYSTEM_NOT_INITIALIZED,
-  SYSTEM_INITIALIZED = nif_msgs::msg::SystemHealthStatus::SYSTEM_INITIALIZED,
   SYSTEM_OK = nif_msgs::msg::SystemHealthStatus::SYSTEM_OK,
+  SYSTEM_INITIALIZED = nif_msgs::msg::SystemHealthStatus::SYSTEM_INITIALIZED,
+  SYSTEM_NOT_INITIALIZED = nif_msgs::msg::SystemHealthStatus::SYSTEM_NOT_INITIALIZED,
   SYSTEM_ERROR = nif_msgs::msg::SystemHealthStatus::SYSTEM_ERROR,
+  SYSTEM_LOW_LEVEL_ERROR = nif_msgs::msg::SystemHealthStatus::SYSTEM_LOW_LEVEL_ERROR,
   SYSTEM_FATAL_ERROR = nif_msgs::msg::SystemHealthStatus::SYSTEM_FATAL_ERROR,
   SYSTEM_DEAD = nif_msgs::msg::SystemHealthStatus::SYSTEM_DEAD
 };

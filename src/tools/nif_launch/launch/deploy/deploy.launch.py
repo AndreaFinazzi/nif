@@ -293,6 +293,7 @@ def generate_launch_description():
             ('in_joystick_cmd', '/joystick/command'),
             ('in_localization_status', '/aw_localization/ekf/status'),
             ('in_mission_status', '/system/mission'),
+            ('in_ll_diagnostic_report', '/raptor_dbw_interface/diag_report'),
             ('out_system_status', '/system/status'),
         ]
     )
