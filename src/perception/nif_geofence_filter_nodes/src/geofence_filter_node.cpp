@@ -30,7 +30,7 @@ GeofenceFilterNode::GeofenceFilterNode(const std::string &node_name_)
     this->declare_parameter<double>("track_angle_filter_threshold_deg", 15.0);
     
     this->declare_parameter<bool>("track_range_filter_active", true);
-    this->declare_parameter<double>("track_range_filter_threshold_min_m", 30.0);
+    this->declare_parameter<double>("track_range_filter_threshold_min_m", 20.0);
 
     auto file_path_inner_line = this->get_parameter("file_path_inner_line").as_string();
     auto file_path_outer_line = this->get_parameter("file_path_outer_line").as_string();
@@ -145,6 +145,10 @@ void GeofenceFilterNode::radarTrackCallback(
           nif::common::msgs::PerceptionResult track_pr{};
           track_prl.header = msg->header;
           track_pr.header = msg->header;
+          // @DEBUG 
+          // TODO convert frame and use constant for naming
+          track_prl.header.frame_id = "base_link";
+          track_pr.header.frame_id = "base_link";
           track_pr.id = msg->track_id;
           track_pr.obj_velocity_in_local.linear.x = msg->track_range_rate;
           track_pr.detection_result_3d.center = pose_in_body;

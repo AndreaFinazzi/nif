@@ -42,7 +42,7 @@ def generate_launch_description():
             ('output_vis', 'tracking/vis/markers'),
             ('concat_in_radar_list', '/radar_front/perception_list/filtered'),
             ('concat_in_lidar_list', '/clustered/perception_list/filtered'),
-            # ('concat_out_perception_list', '/perception/concat'),
+            ('concat_out_perception_list', '/perception/concat'),
         ]
     )
 

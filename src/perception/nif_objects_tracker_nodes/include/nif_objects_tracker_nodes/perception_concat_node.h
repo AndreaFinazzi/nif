@@ -87,17 +87,19 @@ void timer_callback() {
             center_points->points.push_back(point_buf);
         }
 
-        if (!this->perception_list_msg_ptr->perception_list.empty()) {
+        // if (!this->perception_list_msg_ptr->perception_list.empty()) {
             // Publish visualization pcl
             sensor_msgs::msg::PointCloud2 cloud_cluster_center_msg;
             pcl::toROSMsg(*center_points, cloud_cluster_center_msg);
 
-            this->perception_list_msg_ptr->header = this->perception_list_msg_ptr->perception_list.back().header;
-            cloud_cluster_center_msg.header = this->perception_list_msg_ptr->perception_list.back().header;
+            this->perception_list_msg_ptr->header.frame_id = "base_link";
+            this->perception_list_msg_ptr->header.stamp = this->now();
+
+            cloud_cluster_center_msg.header = this->perception_list_msg_ptr->header;
 
             this->perception_list_pub->publish(std::move(this->perception_list_msg_ptr));
             this->perception_list_vis_pub->publish(std::move(cloud_cluster_center_msg));
-        }
+        // }
 
         this->dataInit();
 

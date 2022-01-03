@@ -1,7 +1,7 @@
 /**:
   ros__parameters:
     use_inverse_map: true
-    cluster_size_min : 3
+    cluster_size_min : 8
     cluster_size_max : 10000
     max_cluster_distance : 1.0
     height_filter_thres : 0.2

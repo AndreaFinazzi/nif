@@ -23,56 +23,62 @@ ImmUkfPda::ImmUkfPda(const std::string &config_file_path_)
   YAML::Node config = YAML::LoadFile(config_file_path_);
 
   if (!config["gating_thres"]) {
-    throw std::runtime_error("gating_thres is not properly settup.");
+    throw std::runtime_error("gating_thres is not properly set.");
   } else {
     gating_thres_ = config["gating_thres"].as<double>();
   }
 
   if (!config["gate_probability"]) {
-    throw std::runtime_error("gate_probability is not properly settup.");
+    throw std::runtime_error("gate_probability is not properly set.");
   } else {
     gate_probability_ = config["gate_probability"].as<double>();
   }
 
   if (!config["detection_probability"]) {
-    throw std::runtime_error("detection_probability is not properly settup.");
+    throw std::runtime_error("detection_probability is not properly set.");
   } else {
     detection_probability_ = config["detection_probability"].as<double>();
   }
 
   if (!config["life_time_thres"]) {
-    throw std::runtime_error("life_time_thres is not properly settup.");
+    throw std::runtime_error("life_time_thres is not properly set.");
   } else {
     life_time_thres_ = config["life_time_thres"].as<int>();
   }
 
+  if (!config["merge_distance_threshold"]) {
+    throw std::runtime_error("merge_distance_threshold is not properly set.");
+  } else {
+    merge_distance_threshold_ = config["merge_distance_threshold"].as<double>();
+  }
+
   if (!config["static_velocity_thres"]) {
-    throw std::runtime_error("static_velocity_thres is not properly settup.");
+    throw std::runtime_error("static_velocity_thres is not properly set.");
   } else {
     static_velocity_thres_ = config["static_velocity_thres"].as<double>();
   }
 
   if (!config["static_num_history_thres"]) {
     throw std::runtime_error(
-        "static_num_history_thres is not properly settup.");
+        "static_num_history_thres is not properly set.");
   } else {
     static_num_history_thres_ = config["static_num_history_thres"].as<int>();
   }
 
   if (!config["prevent_explosion_thres"]) {
-    throw std::runtime_error("prevent_explosion_thres is not properly settup.");
+    throw std::runtime_error("prevent_explosion_thres is not properly set.");
   } else {
     prevent_explosion_thres_ = config["prevent_explosion_thres"].as<int>();
   }
 
   if (!config["use_sukf"]) {
-    throw std::runtime_error("use_sukf is not properly settup.");
+    throw std::runtime_error("use_sukf is not properly set.");
   } else {
     use_sukf_ = config["use_sukf"].as<bool>();
   }
 
   if (!config["tracking_frame"]) {
-    throw std::runtime_error("tracking_frame is not properly settup.");
+    throw std::runtime_error("tracking_frame is not properly set.");
   } else {
     tracking_frame_ = config["tracking_frame"].as<std::string>();
   }
@@ -581,7 +587,9 @@ void ImmUkfPda::makeOutput(
     nif_msgs::msg::DetectedObject dd;
     dd = targets_[i].object_;
     dd.id = targets_[i].ukf_id_;
-    dd.velocity.linear.x = tv;
+
+    // @DEBUG velocity in global constrained to >= 0.0
+    dd.velocity.linear.x = std::max(0.0, tv); 
     dd.acceleration.linear.y = tyaw_rate;
     dd.velocity_reliable = targets_[i].is_stable_;
     dd.pose_reliable = targets_[i].is_stable_;
@@ -607,9 +615,11 @@ void ImmUkfPda::makeOutput(
     }
     updateBehaviorState(targets_[i], dd);
 
-    if (targets_[i].is_stable_ ||
-        (targets_[i].tracking_num_ >= TrackingState::Init &&
-         targets_[i].tracking_num_ < TrackingState::Stable)) {
+  // @DEBUG revertme
+  // STABLE || OCCLUSION
+    if (targets_[i].is_stable_ ) { // ||
+        // (targets_[i].tracking_num_ >= TrackingState::Init &&
+        //  targets_[i].tracking_num_ < TrackingState::Stable)) {
       tmp_objects.objects.push_back(dd);
       used_targets_indices.push_back(i);
     }
