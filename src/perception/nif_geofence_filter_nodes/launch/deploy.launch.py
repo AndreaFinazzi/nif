@@ -90,8 +90,8 @@ def generate_launch_description():
                     'track_angle_filter_threshold_deg': 30.0,
 
                     # Filters out the tracks considered static
-                    'track_range_filter_active': False,
-                    'track_range_filter_threshold_min_m': 20.0,
+                    'track_range_filter_active': True,
+                    'track_range_filter_threshold_min_m': 10.0,
 
                     }],
 

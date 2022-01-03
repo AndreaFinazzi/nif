@@ -80,7 +80,6 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
-        # nif_telemetry_node,
 
         nif_geofence_filter_radar_launch,
         # nif_aptiv_interface_launch,
