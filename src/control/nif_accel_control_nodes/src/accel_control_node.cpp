@@ -276,8 +276,18 @@ void AccelControl::initializeGears(const std::string &track_id) {
     //     {6, std::make_shared<control::GearState>(6, 0.889, 41.5, 255)}};
 
     // Updated gear map
+    // this->gear_states = {
+    //     {1, std::make_shared<control::GearState>(1, 2.92, -255, 24.0)},
+    //     {2, std::make_shared<control::GearState>(2, 1.875, 16.0, 35.0)},
+    //     {3, std::make_shared<control::GearState>(3, 1.38, 31.0, 45.0)},
+    //     {4, std::make_shared<control::GearState>(4, 1.5, 41.0, 53.0)},
+    //     {5, std::make_shared<control::GearState>(5, 0.96, 50.0, 60.0)},
+    //     {6, std::make_shared<control::GearState>(6, 0.889, 57.0, 255)}};
+
+    // Updated gear map V2
+    // First gear : relex little bit
     this->gear_states = {
-        {1, std::make_shared<control::GearState>(1, 2.92, -255, 24.0)},
+        {1, std::make_shared<control::GearState>(1, 2.92, -255, 20.0)},
         {2, std::make_shared<control::GearState>(2, 1.875, 16.0, 35.0)},
         {3, std::make_shared<control::GearState>(3, 1.38, 31.0, 45.0)},
         {4, std::make_shared<control::GearState>(4, 1.5, 41.0, 53.0)},
