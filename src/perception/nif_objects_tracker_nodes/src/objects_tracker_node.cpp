@@ -101,6 +101,12 @@ void IMMObjectTrackerNode::detectionCallback(
     obj.obj_velocity_in_local.linear.x = obj.obj_velocity_in_global.linear.x - ego_odom.twist.twist.linear.x;
   }
 
+  // @DEBUG
+  if (tracked_objects.perception_list.size() > 1)
+  {
+    rclcpp::Clock clock;
+    RCLCPP_WARN_THROTTLE(this->get_logger(), clock, 1.0, "ObjectTracker outputs more than one track.");
+  }
   tracked_output_publisher->publish(tracked_objects);
 
   // Visualization

@@ -251,7 +251,7 @@ void FrenetBasedOpponentPredictor::predict_bls(double estimated_progress_,
     auto elapsed_s = std::chrono::duration_cast<std::chrono::seconds>(
       std::chrono::system_clock::now() - m_last_percep_callback_time).count();
 
-    if (abs(elapsed_s) < 2) {
+    if (abs(elapsed_s) < 4) {
       m_pub_predicted_trajectory->publish(bls_dtraj);
       m_pub_predicted_trajectory_vis->publish(bls_path);
     }
