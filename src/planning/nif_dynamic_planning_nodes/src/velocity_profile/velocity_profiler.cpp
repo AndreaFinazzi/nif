@@ -748,10 +748,12 @@ nif_msgs::msg::DynamicTrajectory velocity_profiler::velProfileForAcc(
                 (odom_.twist.twist.linear.x - cipv_vel_abs_) /
                 (2 *
                  sqrt(m_constraint_max_accel * abs(m_constraint_max_deccel)));
-
+        
+        // TODO SEONG: Is this idm only activated when the oppo is front of ego only?? 
         auto predictided_oppo_pose =
             cipv_predicted_traj_.trajectory_path.poses[0];
-
+        // TODO SEONG: When overtaking, this gap would be problem if lateral gap is close
+        // TODO SEONG: how about using progress gap?
         auto naive_cur_gap = std::max(
             sqrt(pow(predictided_oppo_pose.pose.position.x - point_x, 2) +
                  pow(predictided_oppo_pose.pose.position.y - point_y, 2)),
@@ -774,6 +776,8 @@ nif_msgs::msg::DynamicTrajectory velocity_profiler::velProfileForAcc(
         //                            out_traj.trajectory_velocity.back()) *
         //                               acc_desired_accel);
 
+        // TODO SEONG: spline_interval_ / (out_traj.trajectory_velocity.back() + 0.00001) ??
+        // TODO SEONG: not spline_interval_ / out_traj.trajectory_velocity.back() + 0.00001 ??
         auto acc_limited_vel = std::min(
             curve_vel,
             std::max((out_traj.trajectory_velocity.back() +
