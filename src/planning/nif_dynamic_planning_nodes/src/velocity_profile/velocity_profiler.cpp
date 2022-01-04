@@ -611,6 +611,7 @@ nif_msgs::msg::DynamicTrajectory velocity_profiler::velProfileForAcc(
   }
   // ---------------------------------------------
 
+  // WARN: do NOT remove, it keeps the next <if, else> safe (mem access on cipv_predicted_traj_)
   auto naive_gap = nif::common::constants::numeric::INF;
   if (!cipv_predicted_traj_.trajectory_path.poses.empty()) {
     naive_gap = sqrt(pow(odom_.pose.pose.position.x -
