@@ -26,7 +26,7 @@ namespace nif {
 namespace control {
 class IDMACCNode : public nif::common::IBaseNode {
 public:
-  IDMACCNode(const std::string &node_name_);
+  IDMACCNode(const std::string& node_name_);
   //   IDMACCNode(const std::string &node_name_,
   //              const std::shared_ptr<IDM> idm_prt_);
   ~IDMACCNode() {}
@@ -72,6 +72,8 @@ private:
       m_perception_subscriber;
   rclcpp::Subscription<nif_msgs::msg::DynamicTrajectory>::SharedPtr
       m_prediction_subscriber;
+  rclcpp::Subscription<nif_msgs::msg::DynamicTrajectory>::SharedPtr
+      m_ego_traj_subscriber;
   rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr
       m_maptrack_body_subscriber;
 

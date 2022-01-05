@@ -7,8 +7,8 @@
 
 using namespace nif::control;
 
-IDMACCNode::IDMACCNode(const std::string &node_name_)
-    : IBaseNode(node_name_, common::NodeType::CONTROL) {
+IDMACCNode::IDMACCNode(const std::string& node_name_)
+  : IBaseNode(node_name_, common::NodeType::CONTROL) {
   std::string package_share_directory;
 
   try {
@@ -35,9 +35,17 @@ IDMACCNode::IDMACCNode(const std::string &node_name_)
 
   m_prediction_subscriber =
       this->create_subscription<nif_msgs::msg::DynamicTrajectory>(
-          "/oppo/prediction", nif::common::constants::QOS_SENSOR_DATA,
-          std::bind(&IDMACCNode::predictionCallback, this,
-                    std::placeholders::_1));
+          "/oppo/prediction",
+          nif::common::constants::QOS_SENSOR_DATA,
+          std::bind(
+              &IDMACCNode::predictionCallback, this, std::placeholders::_1));
+
+  m_ego_traj_subscriber =
+      this->create_subscription<nif_msgs::msg::DynamicTrajectory>(
+          "/planning/dynamic/traj_global",
+          nif::common::constants::QOS_PLANNING,
+          std::bind(
+              &IDMACCNode::egoTrajectoryCallback, this, std::placeholders::_1));
 
   // m_maptrack_body_subscriber =
   // this->create_subscription<nav_msgs::msg::Path>(
@@ -55,7 +63,6 @@ IDMACCNode::IDMACCNode(const std::string &node_name_)
 
 void IDMACCNode::egoTrajectoryCallback(
     const nif_msgs::msg::DynamicTrajectory::SharedPtr traj_msg) {
-
   m_ego_trajectory = *traj_msg;
 
   m_ego_odom = this->getEgoOdometry();
@@ -71,11 +78,14 @@ void IDMACCNode::egoTrajectoryCallback(
     }
   }
 
-  if (m_prediction_result.trajectory_path.poses.empty() ||
-      m_prediction_result.longi_planning_type !=
-          m_prediction_result.LONGITUDINAL_PLANNING_TYPE_FOLLOW) {
+  if (m_ego_trajectory.longi_planning_type !=
+      m_ego_trajectory.LONGITUDINAL_PLANNING_TYPE_FOLLOW) {
     std_msgs::msg::Float32 out;
     out.data = nif::common::constants::numeric::INF;
+    m_acc_cmd_publisher->publish(out);
+  } else if (m_ego_trajectory.trajectory_path.poses.empty()) {
+    std_msgs::msg::Float32 out;
+    out.data = 0.0;
     m_acc_cmd_publisher->publish(out);
   } else {
     std_msgs::msg::Float32 out;
@@ -88,8 +98,8 @@ void IDMACCNode::egoTrajectoryCallback(
                 m_prediction_result.trajectory_path.poses[0].pose.position.y,
             2));
 
-    m_idm_prt->calcAccel(m_veh_speed_mps, naive_gap,
-                         m_prediction_result.trajectory_velocity[0]);
+    m_idm_prt->calcAccel(
+        m_veh_speed_mps, naive_gap, m_prediction_result.trajectory_velocity[0]);
 
     out.data = m_idm_prt->getACCCmd();
     m_acc_cmd_publisher->publish(out);
@@ -98,7 +108,6 @@ void IDMACCNode::egoTrajectoryCallback(
 
 void IDMACCNode::predictionCallback(
     const nif_msgs::msg::DynamicTrajectory::SharedPtr msg) {
-
   if (m_oppo_pred_callback_first_run) {
     m_oppo_pred_callback_first_run = false;
   }
@@ -129,18 +138,21 @@ void IDMACCNode::maptrackBodyCallback(
 //   // 1. Convert opponent's position to the global
 //   // 2. Project to the ego's racing line to calculate the progress
 //   // 3. Calculate the progress gap
-//   // * double check that the detection message is represent in body frame (if
+//   // * double check that the detection message is represent in body frame
+//   (if
 //   // no, converte to the body frame)
 
 //   if (this->hasEgoOdometry() && this->hasEgoPowertrainState()) {
 //     if (det_msg->objects.size() != 0) {
-//       // NOTE : This is just for the test. Proecssing of CIPC data should be
+//       // NOTE : This is just for the test. Proecssing of CIPC data should
+//       be
 //       // done.
 
 //       // TODO : The way to calculate the progress gap btw the ego and
 //       opponent. double progress_gap = 0.0;
 
-//       // Approach 1. (longitudinal-wise distance directly from the perception
+//       // Approach 1. (longitudinal-wise distance directly from the
+//       perception
 //       // result)
 //       progress_gap = det_msg->objects[cipv_idx].pose.position.x;
 //       if (progress_gap < 0.0) {
@@ -150,7 +162,8 @@ void IDMACCNode::maptrackBodyCallback(
 //         progress_gap = nif::common::constants::numeric::INF;
 //       }
 
-//       // Approach 2. (Based on our future trajectory, calculate the progress.
+//       // Approach 2. (Based on our future trajectory, calculate the
+//       progress.
 //       // But when the case that we want to overtake, the progress gap might
 //       be
 //       // wrong.)
@@ -217,7 +230,8 @@ void IDMACCNode::perceptionCallback(
       // NOTE : This is just for the test. Proecssing of CIPC data should be
       // done.
 
-      // TODO : The way to calculate the progress gap btw the ego and opponent.
+      // TODO : The way to calculate the progress gap btw the ego and
+      // opponent.
       double progress_gap = 0.0;
 
       // Approach 1. (longitudinal-wise distance directly from the perception
@@ -225,8 +239,8 @@ void IDMACCNode::perceptionCallback(
       progress_gap =
           msg->perception_list[cipv_idx].detection_result_3d.center.position.x;
       if (progress_gap < 0.0) {
-        // when the car is behind us, don't care about the ACC. Set the progress
-        // gap as INF
+        // when the car is behind us, don't care about the ACC. Set the
+        // progress gap as INF
         progress_gap = nif::common::constants::numeric::INF;
       }
 
@@ -234,7 +248,8 @@ void IDMACCNode::perceptionCallback(
       // But when the case that we want to overtake, the progress gap might be
       // wrong.)
       m_idm_prt->calcAccel(
-          m_veh_speed_mps, progress_gap,
+          m_veh_speed_mps,
+          progress_gap,
           msg->perception_list[cipv_idx].obj_velocity_in_local.linear.x);
 
       m_acc_cmd = m_idm_prt->getACCCmd();
