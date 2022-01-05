@@ -103,7 +103,8 @@ private:
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr
       lqr_tracking_point_pub_;
   rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr lqr_error_pub_;
-  rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr lqr_desired_velocity_mps_pub_;
+  rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr
+      lqr_desired_velocity_mps_pub_;
   //! Command Publishers
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr steering_command_pub_;
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr throttle_command_pub_;
@@ -172,13 +173,14 @@ private:
   double path_timeout_sec_;
   double steering_max_ddeg_dt_;
   double des_accel_max_da_dt_;
+  double des_deccel_max_da_dt_;
   double m_path_min_length_m;
   bool invert_steering_;
   bool m_use_mission_max_vel_;
 
   // ACC enable ros param
   bool m_use_acc;
-  
+
   rcl_interfaces::msg::SetParametersResult
   parametersCallback(const std::vector<rclcpp::Parameter> &vector);
 
