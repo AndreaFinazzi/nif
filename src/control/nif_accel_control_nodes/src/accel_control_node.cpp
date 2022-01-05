@@ -56,6 +56,11 @@ AccelControl::AccelControl() : Node("AccelControlNode") {
   this->subDesAccel_ = this->create_subscription<std_msgs::msg::Float32>(
       "/control_safety_layer/out/desired_accel", rclcpp::SensorDataQoS(),
       std::bind(&AccelControl::receiveDesAccel, this, std::placeholders::_1));
+
+  this->subACCAccel_ = this->create_subscription<std_msgs::msg::Float32>(
+      "/control/acc/des_acc", nif::common::constants::QOS_CONTROL_CMD,
+      std::bind(&AccelControl::accCMDCallback, this, std::placeholders::_1));
+
   this->subPtReport_ =
       this->create_subscription<deep_orange_msgs::msg::PtReport>(
           "/raptor_dbw_interface/pt_report", 1,
@@ -101,7 +106,8 @@ AccelControl::AccelControl() : Node("AccelControlNode") {
   this->declare_parameter("gear.shift_time_ms", 1000);
   this->declare_parameter("gear.track", "LVMS");
 
-  this->declare_parameter("engine.model_safety_factor", 0.917); // larger than 1.0
+  this->declare_parameter("engine.model_safety_factor",
+                          0.917); // larger than 1.0
   this->declare_parameter("engine.safety_rpm_thres", 3000);
 
   this->declare_parameter("throttle.traction_enabled", true);
@@ -535,13 +541,27 @@ void AccelControl::receiveVelocity(
   this->vel_recv_time_ = this->now();
 }
 
+void AccelControl::accCMDCallback(const std_msgs::msg::Float32::SharedPtr msg) {
+  m_has_acc_cmd = true;
+  m_last_acc_update = this->now();
+  m_acc_des_accel = msg->data;
+}
+
 void AccelControl::receiveDesAccel(
     const std_msgs::msg::Float32::SharedPtr msg) {
+
+  if (this->now() - m_last_acc_update > rclcpp::Duration(2, 0)) {
+    // ACC command is not health
+    // DEBUG
+    m_acc_des_accel = nif::common::constants::numeric::INF;
+  }
+
   // get desired acceleration (m/s^2) from high level controll
   this->has_des_accel_ = true;
   this->des_accel_ = msg->data;
   this->des_accel_recv_time_ = this->now();
-  double current_des_accel = this->des_accel_;
+  // double current_des_accel = this->des_accel_;
+  double current_des_accel = std::min(this->des_accel_, m_acc_des_accel);
 
   calculateThrottleCmd(current_des_accel);
   calculateBrakeCmd(current_des_accel);

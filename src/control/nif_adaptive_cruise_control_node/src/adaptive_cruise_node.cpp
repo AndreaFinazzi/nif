@@ -25,7 +25,7 @@ IDMACCNode::IDMACCNode(const std::string &node_name_)
 
   // publisher
   m_acc_cmd_publisher = this->create_publisher<std_msgs::msg::Float32>(
-      "out_acc_acceleration", nif::common::constants::QOS_CONTROL_CMD);
+      "/control/acc/des_acc", nif::common::constants::QOS_CONTROL_CMD);
 
   // m_perception_subscriber =
   //     this->create_subscription<nif_msgs::msg::Perception3DArray>(
@@ -35,7 +35,7 @@ IDMACCNode::IDMACCNode(const std::string &node_name_)
 
   m_prediction_subscriber =
       this->create_subscription<nif_msgs::msg::DynamicTrajectory>(
-          "in_prediction_array", nif::common::constants::QOS_SENSOR_DATA,
+          "/oppo/prediction", nif::common::constants::QOS_SENSOR_DATA,
           std::bind(&IDMACCNode::predictionCallback, this,
                     std::placeholders::_1));
 
@@ -71,7 +71,9 @@ void IDMACCNode::egoTrajectoryCallback(
     }
   }
 
-  if (m_prediction_result.trajectory_path.poses.empty()) {
+  if (m_prediction_result.trajectory_path.poses.empty() ||
+      m_prediction_result.longi_planning_type !=
+          m_prediction_result.LONGITUDINAL_PLANNING_TYPE_FOLLOW) {
     std_msgs::msg::Float32 out;
     out.data = nif::common::constants::numeric::INF;
     m_acc_cmd_publisher->publish(out);
