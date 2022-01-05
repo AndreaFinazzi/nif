@@ -122,7 +122,11 @@ void GeofenceFilterNode::radarTrackCallback(
         pose_in_body.position.x = r * cos(theta_rad);
         pose_in_body.position.y = r * sin(theta_rad);
 
-        if (this->poseInBodyIsValid(pose_in_body, msg->track_range_rate))
+        // @DEBUG filter on the right only in the first 50 meters
+        if (
+          this->poseInBodyIsValid(pose_in_body, msg->track_range_rate) || 
+          (abs(msg->track_angle) < 10.0 && this->poseInBodyIsValid(pose_in_body, msg->track_range_rate, false, true))
+        )
         {
           visualization_msgs::msg::Marker track_vis{};
           track_vis.header = msg->header;
@@ -165,7 +169,8 @@ void GeofenceFilterNode::radarTrackCallback(
 
 bool GeofenceFilterNode::poseInBodyIsValid(
   const geometry_msgs::msg::Pose &point_in_body, 
-  double r_dot)
+  double r_dot,
+  bool filter_on_inner_fence, bool filter_on_outer_fence)
 {
   auto object_pose_in_global = nif::common::utils::coordination::getPtBodytoGlobal(
     this->getEgoOdometry(),
@@ -188,12 +193,14 @@ bool GeofenceFilterNode::poseInBodyIsValid(
   {
     // Use squared because we're not interested in the actual distance, save a sqrt() call.
     if (
+      (filter_on_inner_fence &&
       nif::common::utils::geometry::calEuclideanDistanceSquared(
         object_pose_in_global.position, 
-        current_wpt_pose_inner_in_global.position) < this->distance_filter_threshold_m_squared ||
+        current_wpt_pose_inner_in_global.position) < this->distance_filter_threshold_m_squared) ||
+      (filter_on_outer_fence &&
       nif::common::utils::geometry::calEuclideanDistanceSquared(
         object_pose_in_global.position, 
-        current_wpt_pose_outer_in_global.position) < this->distance_filter_threshold_m_squared)
+        current_wpt_pose_outer_in_global.position) < this->distance_filter_threshold_m_squared))
     {
       // Element should be filtered out
       return false;
@@ -226,8 +233,9 @@ bool GeofenceFilterNode::poseInBodyIsValid(
       object_pose_in_outer_prev.position, 
       current_wpt_pose_outer_in_prev.position);
 
-    if (cp_inner_in_prev.z < 0 || // object on the left of inner wpt
-        cp_outer_in_prev.z > 0  // object on the right of outer wpt
+    if (
+      (filter_on_inner_fence && cp_inner_in_prev.z < 0) || // object on the left of inner wpt
+      (filter_on_outer_fence && cp_outer_in_prev.z > 0)  // object on the right of outer wpt
     ) return false;
 
   }

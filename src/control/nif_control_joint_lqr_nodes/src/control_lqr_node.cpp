@@ -48,10 +48,11 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
           std::bind(&ControlLQRNode::directDesiredVelocityCallback, this,
                     std::placeholders::_1));
 
-// Disable the ACC function
-//   acc_sub_ = this->create_subscription<std_msgs::msg::Float32>(
-//       "control/acc/accel_cmd", nif::common::constants::QOS_CONTROL_CMD,
-//       std::bind(&ControlLQRNode::accCMDCallback, this, std::placeholders::_1));
+  // Disable the ACC function
+  //   acc_sub_ = this->create_subscription<std_msgs::msg::Float32>(
+  //       "control/acc/accel_cmd", nif::common::constants::QOS_CONTROL_CMD,
+  //       std::bind(&ControlLQRNode::accCMDCallback, this,
+  //       std::placeholders::_1));
 
   this->declare_parameter("lqr_config_file", "");
   // Automatically boot with lat_autonomy_enabled
@@ -78,8 +79,10 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
   this->declare_parameter("path_timeout_sec", 0.5);
   // Limit the max change in the steering signal over time
   this->declare_parameter("steering_max_ddeg_dt", 5.0);
-  // Limit the max change in the des_accel signal over time
-  this->declare_parameter("des_accel_max_da_dt", 5.0);
+  // Limit the max change in the des_accel signal over time (acceleration)
+  this->declare_parameter("des_accel_max_da_dt", 9.0); // from 5 to 9
+  // Limit the max change in the des_accel signal over time (decceleration)
+  this->declare_parameter("des_deccel_max_da_dt", 5.0); // keep 5
   // Minimum length of the reference path
   this->declare_parameter("path_min_length_m", 30.0);
 
@@ -123,6 +126,8 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
   steering_max_ddeg_dt_ =
       this->get_parameter("steering_max_ddeg_dt").as_double();
   des_accel_max_da_dt_ = this->get_parameter("des_accel_max_da_dt").as_double();
+  des_deccel_max_da_dt_ =
+      this->get_parameter("des_deccel_max_da_dt").as_double();
   invert_steering_ = this->get_parameter("invert_steering").as_bool();
   m_use_mission_max_vel_ = this->get_parameter("use_mission_max_vel").as_bool();
   m_path_min_length_m = this->get_parameter("path_min_length_m").as_double();
@@ -137,9 +142,9 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
     throw std::range_error("Parameter out of range.");
   }
 
-  this->parameters_callback_handle = this->add_on_set_parameters_callback(
-      std::bind(&ControlLQRNode::parametersCallback, this, std::placeholders::_1));
-
+  this->parameters_callback_handle =
+      this->add_on_set_parameters_callback(std::bind(
+          &ControlLQRNode::parametersCallback, this, std::placeholders::_1));
 }
 
 void ControlLQRNode::publishSteerAccelDiagnostics(
@@ -192,8 +197,8 @@ void ControlLQRNode::publishSteerAccelDiagnostics(
   error_cog_array_msg.data.push_back(error_array_msg.data[4]);
   lqr_error_pub_->publish(error_cog_array_msg);
 
-std_msgs::msg::Float32 des_vel_msg{};
-des_vel_msg.data = desired_velocity_mps;
+  std_msgs::msg::Float32 des_vel_msg{};
+  des_vel_msg.data = desired_velocity_mps;
   lqr_desired_velocity_mps_pub_->publish(des_vel_msg);
 }
 
@@ -324,8 +329,8 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
         if (time_differ < 2) {
           l_desired_velocity = this->getReferenceTrajectory()
                                    ->trajectory_velocity[closest_time_idx];
-            if (l_desired_velocity < 1.5)
-                l_desired_velocity = 0.0;
+          if (l_desired_velocity < 1.5)
+            l_desired_velocity = 0.0;
         } else {
           l_desired_velocity = 0.0;
         }
@@ -383,8 +388,14 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
                    period_double_s);
       joint_lqr::utils::smoothSignal(steering_angle_deg, last_steering_command_,
                                      steering_max_ddeg_dt_, period_double_s);
-      joint_lqr::utils::smoothSignal(desired_accel, last_accel_command_,
-                                     des_accel_max_da_dt_, period_double_s);
+
+      if (desired_accel > 0) {
+        joint_lqr::utils::smoothSignal(desired_accel, last_accel_command_,
+                                       des_accel_max_da_dt_, period_double_s);
+      } else {
+        joint_lqr::utils::smoothSignal(desired_accel, last_accel_command_,
+                                       des_deccel_max_da_dt_, period_double_s);
+      }
     }
     // Publish diagnostic message
     publishSteerAccelDiagnostics(valid_tracking_result, valid_path, valid_odom,
@@ -467,7 +478,7 @@ nif::control::ControlLQRNode::parametersCallback(
           result.successful = true;
         }
       }
-    } 
+    }
   }
   return result;
 }

@@ -32,7 +32,8 @@ enum TrackingState : int {
   Init = 1,      // Start tracking
   Stable = 4,    // Stable tracking
   Occlusion = 5, // Lost 1 frame possibly by occlusion
-  Lost = 10,     // About to lose target
+  Lost = 10,     // About to lose target 
+  // Lost = 20,     // About to lose target // @DEBUG
 };
 
 enum MotionModel : int {

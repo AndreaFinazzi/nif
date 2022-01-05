@@ -11,6 +11,7 @@
 #include "nif_common_nodes/i_base_node.h"
 #include "nif_msgs/msg/detected_object.hpp"
 #include "nif_msgs/msg/detected_object_array.hpp"
+#include "nif_msgs/msg/dynamic_trajectory.hpp"
 #include "nif_msgs/msg/perception3_d.hpp"
 #include "nif_msgs/msg/perception3_d_array.hpp"
 #include "std_msgs/msg/float32.hpp"
@@ -25,7 +26,7 @@ namespace nif {
 namespace control {
 class IDMACCNode : public nif::common::IBaseNode {
 public:
-  IDMACCNode(const std::string& node_name_);
+  IDMACCNode(const std::string &node_name_);
   //   IDMACCNode(const std::string &node_name_,
   //              const std::shared_ptr<IDM> idm_prt_);
   ~IDMACCNode() {}
@@ -34,8 +35,11 @@ public:
       const nif_msgs::msg::DetectedObjectArray::SharedPtr det_msg);
   void
   perceptionCallback(const nif_msgs::msg::Perception3DArray::SharedPtr det_msg);
+  void egoTrajectoryCallback(
+      const nif_msgs::msg::DynamicTrajectory::SharedPtr traj_msg);
   void maptrackBodyCallback(const nav_msgs::msg::Path::SharedPtr msg);
-  void predictionCallback(const nif_msgs::msg::DynamicTrajectory::SharedPtr msg);
+  void
+  predictionCallback(const nif_msgs::msg::DynamicTrajectory::SharedPtr msg);
 
 private:
   /* data */
@@ -48,9 +52,14 @@ private:
   nif_msgs::msg::DetectedObjectArray m_det_result;
   nif_msgs::msg::Perception3DArray m_perception_result;
   nif_msgs::msg::DynamicTrajectory m_prediction_result;
+  nif_msgs::msg::DynamicTrajectory m_last_prediction_result;
+
+  rclcpp::Time m_prev_oppo_pred_last_update;
+  bool m_oppo_pred_callback_first_run;
 
   nav_msgs::msg::Odometry m_ego_odom;
   nav_msgs::msg::Path m_maptrack_body;
+  nif_msgs::msg::DynamicTrajectory m_ego_trajectory;
 
   std::string m_input_perception_topic_name;
   std::string m_input_maptrack_body_topic_name;

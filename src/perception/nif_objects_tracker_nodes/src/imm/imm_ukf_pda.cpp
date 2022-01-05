@@ -290,9 +290,23 @@ void ImmUkfPda::initTracker(const nif_msgs::msg::DetectedObjectArray &input,
   
   timestamp_ = timestamp;
 
-  for (size_t i = 0; i < input.objects.size(); i++) {
-    double px = input.objects[i].pose.position.x;
-    double py = input.objects[i].pose.position.y;
+  // for (size_t i = 0; i < input.objects.size(); i++) {
+  //   double px = input.objects[i].pose.position.x;
+  //   double py = input.objects[i].pose.position.y;
+  //   Eigen::VectorXd init_meas = Eigen::VectorXd(2);
+  //   init_meas << px, py;
+
+  //   UKF ukf;
+  //   ukf.initialize(init_meas, timestamp, target_id_);
+  //   targets_.push_back(ukf);
+  //   target_id_++;
+  // }
+
+  // @DEBUG: Single Track
+  if (!input.objects.empty())
+  {
+    double px = input.objects[0].pose.position.x;
+    double py = input.objects[0].pose.position.y;
     Eigen::VectorXd init_meas = Eigen::VectorXd(2);
     init_meas << px, py;
 
@@ -300,9 +314,9 @@ void ImmUkfPda::initTracker(const nif_msgs::msg::DetectedObjectArray &input,
     ukf.initialize(init_meas, timestamp, target_id_);
     targets_.push_back(ukf);
     target_id_++;
+    
+    init_ = true;
   }
-
-  init_ = true;
 }
 
 void ImmUkfPda::secondInit(
@@ -359,6 +373,7 @@ void ImmUkfPda::updateTrackingNum(
       target.tracking_num_ = TrackingState::Die;
     }
   } else {
+    // @DEBUG no need to remove the target track
     if (target.tracking_num_ < TrackingState::Stable) {
       target.tracking_num_ = TrackingState::Die;
     } else if (target.tracking_num_ >= TrackingState::Stable &&
@@ -589,7 +604,7 @@ void ImmUkfPda::makeOutput(
     dd.id = targets_[i].ukf_id_;
 
     // @DEBUG velocity in global constrained to >= 0.0
-    dd.velocity.linear.x = std::max(0.0, tv); 
+    dd.velocity.linear.x = std::max(0.0, std::min(tv, 100.0)); 
     dd.acceleration.linear.y = tyaw_rate;
     dd.velocity_reliable = targets_[i].is_stable_;
     dd.pose_reliable = targets_[i].is_stable_;
@@ -633,6 +648,10 @@ void ImmUkfPda::removeUnnecessaryTarget() {
   for (size_t i = 0; i < targets_.size(); i++) {
     if (targets_[i].tracking_num_ != TrackingState::Die) {
       temp_targets.push_back(targets_[i]);
+    }
+    // @DEBUG Single tracker needs re-init
+    else {
+      init_ = false;
     }
   }
   std::vector<UKF>().swap(targets_);
@@ -730,7 +749,8 @@ void ImmUkfPda::tracker(
   // end UKF process
 
   // making new ukf target for no data association objects
-  makeNewTargets(timestamp, input, matching_vec);
+  // @DEBUG comment for single target
+  // makeNewTargets(timestamp, input, matching_vec);
 
   // static dynamic classification
   staticClassification();

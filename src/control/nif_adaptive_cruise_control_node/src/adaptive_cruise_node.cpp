@@ -2,7 +2,8 @@
 // Created by usrg on 30/11/21.
 //
 
-#include "../include/adaptive_cruise_node.hpp"
+// #include "adaptive_cruise_node.hpp"
+#include "nif_adaptive_cruise_control_node/adaptive_cruise_node.hpp"
 
 using namespace nif::control;
 
@@ -26,11 +27,11 @@ IDMACCNode::IDMACCNode(const std::string &node_name_)
   m_acc_cmd_publisher = this->create_publisher<std_msgs::msg::Float32>(
       "out_acc_acceleration", nif::common::constants::QOS_CONTROL_CMD);
 
-  m_perception_subscriber =
-      this->create_subscription<nif_msgs::msg::Perception3DArray>(
-          "in_perception_array", nif::common::constants::QOS_SENSOR_DATA,
-          std::bind(&IDMACCNode::perceptionCallback, this,
-                    std::placeholders::_1));
+  // m_perception_subscriber =
+  //     this->create_subscription<nif_msgs::msg::Perception3DArray>(
+  //         "in_perception_array", nif::common::constants::QOS_SENSOR_DATA,
+  //         std::bind(&IDMACCNode::perceptionCallback, this,
+  //                   std::placeholders::_1));
 
   m_prediction_subscriber =
       this->create_subscription<nif_msgs::msg::DynamicTrajectory>(
@@ -38,20 +39,68 @@ IDMACCNode::IDMACCNode(const std::string &node_name_)
           std::bind(&IDMACCNode::predictionCallback, this,
                     std::placeholders::_1));
 
-  m_maptrack_body_subscriber = this->create_subscription<nav_msgs::msg::Path>(
-      "in_maptrack_in_body", nif::common::constants::QOS_PLANNING,
-      std::bind(&IDMACCNode::maptrackBodyCallback, this,
-                std::placeholders::_1));
+  // m_maptrack_body_subscriber =
+  // this->create_subscription<nav_msgs::msg::Path>(
+  //     "in_maptrack_in_body", nif::common::constants::QOS_PLANNING,
+  //     std::bind(&IDMACCNode::maptrackBodyCallback, this,
+  //               std::placeholders::_1));
 
   // IDM LIB initialize
   // 1. with defualt config
   // this->m_idm_prt = std::make_shared<IDM>();
   // 2. with specific config
+  m_oppo_pred_callback_first_run = true;
   this->m_idm_prt = std::make_shared<IDM>(m_config_file);
+}
+
+void IDMACCNode::egoTrajectoryCallback(
+    const nif_msgs::msg::DynamicTrajectory::SharedPtr traj_msg) {
+
+  m_ego_trajectory = *traj_msg;
+
+  m_ego_odom = this->getEgoOdometry();
+  m_veh_speed_mps = m_ego_odom.twist.twist.linear.x;
+
+  // prediction health check
+  if (!m_oppo_pred_callback_first_run) {
+    if (this->now() - m_prev_oppo_pred_last_update > rclcpp::Duration(2, 0)) {
+      m_prediction_result.trajectory_path.poses.clear();
+      m_prediction_result.trajectory_velocity.clear();
+      m_prediction_result.trajectory_timestamp_array.clear();
+      m_prediction_result.trajectory_global_progress.clear();
+    }
+  }
+
+  if (m_prediction_result.trajectory_path.poses.empty()) {
+    std_msgs::msg::Float32 out;
+    out.data = nif::common::constants::numeric::INF;
+    m_acc_cmd_publisher->publish(out);
+  } else {
+    std_msgs::msg::Float32 out;
+
+    auto naive_gap = sqrt(
+        pow(m_ego_odom.pose.pose.position.x -
+                m_prediction_result.trajectory_path.poses[0].pose.position.x,
+            2) +
+        pow(m_ego_odom.pose.pose.position.y -
+                m_prediction_result.trajectory_path.poses[0].pose.position.y,
+            2));
+
+    m_idm_prt->calcAccel(m_veh_speed_mps, naive_gap,
+                         m_prediction_result.trajectory_velocity[0]);
+
+    out.data = m_idm_prt->getACCCmd();
+    m_acc_cmd_publisher->publish(out);
+  }
 }
 
 void IDMACCNode::predictionCallback(
     const nif_msgs::msg::DynamicTrajectory::SharedPtr msg) {
+
+  if (m_oppo_pred_callback_first_run) {
+    m_oppo_pred_callback_first_run = false;
+  }
+  m_prev_oppo_pred_last_update = this->now(); // TODO msg->header.stamp;
   m_prediction_result = *msg;
 }
 
@@ -148,7 +197,6 @@ void IDMACCNode::perceptionCallback(
 
   // Calc acc cmd
   m_veh_speed_mps = this->getEgoOdometry().twist.twist.linear.x;
-
   m_ego_odom = this->getEgoOdometry();
 
   // TODO : Assigning CIPV

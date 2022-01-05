@@ -611,6 +611,7 @@ nif_msgs::msg::DynamicTrajectory velocity_profiler::velProfileForAcc(
   }
   // ---------------------------------------------
 
+  // WARN: do NOT remove, it keeps the next <if, else> safe (mem access on cipv_predicted_traj_)
   auto naive_gap = nif::common::constants::numeric::INF;
   if (!cipv_predicted_traj_.trajectory_path.poses.empty()) {
     naive_gap = sqrt(pow(odom_.pose.pose.position.x -
@@ -712,20 +713,48 @@ nif_msgs::msg::DynamicTrajectory velocity_profiler::velProfileForAcc(
         //          sqrt(m_constraint_max_accel *
         //          abs(m_constraint_max_deccel)));
 
+        // under debugging
+        // auto naive_idm_desired_gap =
+        //     m_acc_config_s0 +
+        //     m_acc_config_time_headway * out_traj.trajectory_velocity.back() +
+        //     out_traj.trajectory_velocity.back() *
+        //         (out_traj.trajectory_velocity.back() - cipv_vel_abs_) /
+        //         (2 *
+        //          sqrt(m_constraint_max_accel *
+        //          abs(m_constraint_max_deccel)));
+
+        // auto predictided_oppo_pose =
+        //     cipv_predicted_traj_.trajectory_path
+        //         .poses[nif::common::utils::closestIndex(
+        //             cipv_predicted_traj_.trajectory_timestamp_array,
+        //             out_traj.trajectory_timestamp_array.back())];
+
+        // auto naive_cur_gap = std::max(
+        //     sqrt(pow(predictided_oppo_pose.pose.position.x - point_x, 2) +
+        //          pow(predictided_oppo_pose.pose.position.y - point_y, 2)),
+        //     1e-6);
+
+        // auto acc_desired_accel =
+        //     m_constraint_max_accel *
+        //     (1 -
+        //      pow((out_traj.trajectory_velocity.back() /
+        //      m_acc_config_v_desired),
+        //          m_acc_config_delta) -
+        //      pow((naive_idm_desired_gap / naive_cur_gap), 2));
+
         auto naive_idm_desired_gap =
             m_acc_config_s0 +
-            m_acc_config_time_headway * out_traj.trajectory_velocity.back() +
-            out_traj.trajectory_velocity.back() *
-                (out_traj.trajectory_velocity.back() - cipv_vel_abs_) /
+            m_acc_config_time_headway * odom_.twist.twist.linear.x +
+            odom_.twist.twist.linear.x *
+                (odom_.twist.twist.linear.x - cipv_vel_abs_) /
                 (2 *
                  sqrt(m_constraint_max_accel * abs(m_constraint_max_deccel)));
-
+        
+        // TODO SEONG: Is this idm only activated when the oppo is front of ego only?? 
         auto predictided_oppo_pose =
-            cipv_predicted_traj_.trajectory_path
-                .poses[nif::common::utils::closestIndex(
-                    cipv_predicted_traj_.trajectory_timestamp_array,
-                    out_traj.trajectory_timestamp_array.back())];
-
+            cipv_predicted_traj_.trajectory_path.poses[0];
+        // TODO SEONG: When overtaking, this gap would be problem if lateral gap is close
+        // TODO SEONG: how about using progress gap?
         auto naive_cur_gap = std::max(
             sqrt(pow(predictided_oppo_pose.pose.position.x - point_x, 2) +
                  pow(predictided_oppo_pose.pose.position.y - point_y, 2)),
@@ -734,13 +763,9 @@ nif_msgs::msg::DynamicTrajectory velocity_profiler::velProfileForAcc(
         auto acc_desired_accel =
             m_constraint_max_accel *
             (1 -
-             pow((out_traj.trajectory_velocity.back() / m_acc_config_v_desired),
+             pow((odom_.twist.twist.linear.x / m_acc_config_v_desired),
                  m_acc_config_delta) -
              pow((naive_idm_desired_gap / naive_cur_gap), 2));
-
-        // std::cout << "naive cur gap : " << naive_cur_gap << std::endl;
-        // std::cout << "acc_desired_accel : " << acc_desired_accel <<
-        // std::endl;
 
         acc_desired_accel =
             std::clamp(acc_desired_accel, -1 * abs(m_constraint_max_deccel),
@@ -752,6 +777,8 @@ nif_msgs::msg::DynamicTrajectory velocity_profiler::velProfileForAcc(
         //                            out_traj.trajectory_velocity.back()) *
         //                               acc_desired_accel);
 
+        // TODO SEONG: spline_interval_ / (out_traj.trajectory_velocity.back() + 0.00001) ??
+        // TODO SEONG: not spline_interval_ / out_traj.trajectory_velocity.back() + 0.00001 ??
         auto acc_limited_vel = std::min(
             curve_vel,
             std::max((out_traj.trajectory_velocity.back() +

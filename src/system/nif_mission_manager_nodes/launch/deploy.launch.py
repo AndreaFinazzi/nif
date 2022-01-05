@@ -86,8 +86,8 @@ def generate_launch_description():
             "velocity.pit_out": 15.0,
             "velocity.slow_drive": 20.0,
             # RC interface params
-            "listen_to_override": True,
-            "listen_to_nominal": False,
+            "listen_to_override": False,
+            "listen_to_nominal": True,
 
             # Mission avoidance auto switch
             "mission.avoidance.auto_switch": False,
