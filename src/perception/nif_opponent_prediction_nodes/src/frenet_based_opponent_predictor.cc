@@ -248,8 +248,10 @@ void FrenetBasedOpponentPredictor::predict_bls(double estimated_progress_,
     bls_dtraj.trajectory_type = nif_msgs::msg::DynamicTrajectory::
         TRAJECTORY_TYPE_PREDICTION_BEYOND_LINE_OF_SIGHT;
 
-    auto elapsed_s = std::chrono::duration_cast<std::chrono::seconds>(
-      std::chrono::system_clock::now() - m_last_percep_callback_time).count();
+    auto elapsed_s =
+        std::chrono::duration_cast<std::chrono::seconds>(
+            std::chrono::system_clock::now() - m_last_percep_callback_time)
+            .count();
 
     if (abs(elapsed_s) < 4) {
       m_pub_predicted_trajectory->publish(bls_dtraj);
@@ -374,6 +376,8 @@ void FrenetBasedOpponentPredictor::predict() {
           predicted_frenet_path->time()[i]);
       m_predicted_output_in_global.trajectory_global_progress.push_back(
           predicted_frenet_path->points_s()[i]);
+      m_predicted_output_in_global.trajectory_velocity.push_back(
+          m_defender_vel_mps);
       traj_global.poses.push_back(ps);
     }
 
