@@ -214,6 +214,10 @@ AWLocalizationNode::AWLocalizationNode(const std::string &node_name)
       "in_heading2", nif::common::constants::QOS_SENSOR_DATA,
       std::bind(&AWLocalizationNode::HEADING2Callback, this, std::placeholders::_1));  
 
+  subTOPHEADING2 = this->create_subscription<novatel_oem7_msgs::msg::HEADING2>(
+      "in_top_heading2", nif::common::constants::QOS_SENSOR_DATA,
+      std::bind(&AWLocalizationNode::TOPHEADING2Callback, this, std::placeholders::_1));  
+
   subIMUONLY = this->create_subscription<sensor_msgs::msg::Imu>(
       "in_imu", nif::common::constants::QOS_SENSOR_DATA,
       std::bind(&AWLocalizationNode::IMUCallback, this,
@@ -316,6 +320,15 @@ void AWLocalizationNode::timerCallback()
       } else if (m_heading2_valid) {
         m_best_heading_rad = m_heading2_heading_rad; // Use only heading2
   
+        BestPosBottom.yaw = m_best_heading_rad;
+        BestPosTop.yaw = m_best_heading_rad;
+
+        m_heading_error = false;
+
+      } else if (m_top_heading2_valid) {
+        m_best_heading_rad = m_top_heading2_heading_rad;
+
+
         BestPosBottom.yaw = m_best_heading_rad;
         BestPosTop.yaw = m_best_heading_rad;
 
@@ -895,6 +908,34 @@ void AWLocalizationNode::HEADING2Callback(
   }
 
 }
+
+void AWLocalizationNode::TOPHEADING2Callback(
+    const novatel_oem7_msgs::msg::HEADING2::SharedPtr msg) {
+  top_heading2_time_last_update = std::move(msg->header.stamp);
+  double yaw_rad = (-msg->heading) * nif::common::constants::DEG2RAD;
+
+  if (m_top_inspva_heading_init) { // Always false if use_inspva_heading=false
+    return;
+  }
+
+  // // HEADING2 used only for initial guess (if stddev is low enough)
+  if (  m_dVelolcity_X <= m_bestvel_heading_update_thres && !m_use_inspva_heading &&
+        msg->heading_stdev > 0. && msg->heading_stdev < 2.0 ) {
+
+    // WARN: valid only for specific installation
+    // TODO: make this param
+    // @DEBUG verify with bag  
+    m_heading2_heading_rad = yaw_rad + this->m_heading_heading2_offset_rad - 
+      (90.0 * nif::common::constants::DEG2RAD); 
+
+    m_heading_initialized = true;
+    m_top_heading2_valid = true;
+  } else {
+    m_top_heading2_valid = false;
+  }
+
+}
+
 
 void AWLocalizationNode::INSSTDEVCallback(
     const novatel_oem7_msgs::msg::INSSTDEV::SharedPtr msg) {

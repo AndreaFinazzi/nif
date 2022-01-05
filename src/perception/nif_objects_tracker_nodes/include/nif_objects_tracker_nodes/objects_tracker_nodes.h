@@ -22,6 +22,7 @@
 #include <string>
 #include "visualization_msgs/msg/marker.hpp"
 #include "visualization_msgs/msg/marker_array.hpp"
+#include "deep_orange_msgs/msg/rest_of_field_report.hpp"
 
 namespace nif {
 namespace perception {
@@ -38,6 +39,7 @@ private:
 
   void detectionCallback(const nif_msgs::msg::Perception3DArray::UniquePtr msg);
   void egoOdomCallback(const nav_msgs::msg::Odometry::SharedPtr msg);
+  void rofCallback(const deep_orange_msgs::msg::RestOfFieldReport::SharedPtr msg);
 
   rclcpp::Publisher<nif_msgs::msg::Perception3DArray>::SharedPtr
       tracked_output_publisher;
@@ -50,6 +52,9 @@ private:
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr
       ego_odom_subscription;
 
+  rclcpp::Subscription<deep_orange_msgs::msg::RestOfFieldReport>::SharedPtr
+      rof_subscription;
+
   // tracker related
   std::string tracker_config_file_path;
   std::shared_ptr<ImmUkfPda> tracker_ptr;
@@ -58,6 +63,10 @@ private:
   nif_msgs::msg::DetectedObjectArray tracked_objects_det;
 
   nav_msgs::msg::Odometry ego_odom;
+
+  deep_orange_msgs::msg::RestOfFieldReport rof;
+  rclcpp::Time rof_last_update;
+  bool rof_received = false;
 };
 
 } // namespace perception

@@ -1,4 +1,4 @@
-gating_thres: 9.22
+gating_thres: 19.22
 gate_probability: 0.99
 detection_probability: 0.9
 life_time_thres: 30
