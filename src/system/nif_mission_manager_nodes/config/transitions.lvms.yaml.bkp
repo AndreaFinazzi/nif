@@ -7,68 +7,7 @@ missions:
     active: true
     fallback:
       active: true
-      mission_code: 5 # MISSION_KEEP_POSITION
-    activation_area:
-      active: true
-      polygons:
-      - 
-        - x: 125.00 # x_3
-          y: -115.00 # y_3
-
-        - x: 275.00 # x_4
-          y: -70.00 # y_4
-
-        - x: 440.00 # x_5
-          y: -95.00 # y_5
-
-        - x: 720.00 # x_1
-          y: -265.00 # y_1
-
-        - x: 845.00 # x_2
-          y: -615.00 # y_2
-
-        - x: 840.00 # x_1
-          y: -775.00 # y_1
-
-        - x: 790.00 # x_0
-          y: -745.00 # y_0
-
-        - x: 810.0  # x_3
-          y: -625.0  # y_3
-
-        - x: 725.0  # x_2
-          y: -400.0  # y_2
-
-        - x: 670.00 # x_1
-          y: -315.00 # y_1
-
-        - x: 640.00 # x_3
-          y: -295.00 # y_3
-
-        - x: 550.0  # x_4
-          y: -200.0 # y_4
-
-        - x: 400.0 # x_0
-          y: -125.0 # y_0
-          
-        - x: 300.0  # x_1
-          y: -125.0  # y_1
-
-        - x: 165.00 # x_2
-          y: -175.00 # y_2
-
-        # - x: 440.00 # x_0
-        #   y: -95.00 # y_0
-        # - x: 670.00 # x_2
-        #   y: -315.00 # y_2
-        # - x: 400.0 # x_5
-        #   y: -125.0 # y_5
-        # - x: 720.00 # x_0
-        #   y: -265.00 # y_0
-        # - x: 810.0  # x_3
-        #   y: -625.0  # y_3
-        # - x: 845.00 # x_4
-        #   y: -615.00 # y_4
+      mission_code: 128 # MISSION_SLOW_DRIVE
     allowed_transitions:
       active: true
       from:

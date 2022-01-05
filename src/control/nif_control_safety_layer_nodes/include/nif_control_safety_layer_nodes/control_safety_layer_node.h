@@ -170,11 +170,11 @@ public:
     this->declare_parameter("throttle.cmd_min", 0.0);
     this->declare_parameter("throttle.reset_integral_below_this_cmd", 15.0);
 
-    this->declare_parameter("brake.proportional_gain", 200000.1);
+    this->declare_parameter("brake.proportional_gain", 150000.075); // 200000.1 (previous value) * 0.75
     this->declare_parameter("brake.integral_gain", 0.0);
     this->declare_parameter("brake.derivative_gain", 0.0);
     this->declare_parameter("brake.max_integrator_error", 10.0);
-    this->declare_parameter("brake.cmd_max", 2000000.7);
+    this->declare_parameter("brake.cmd_max", 2000000.7); // @DEBUG Check brake response in emergency stop
     this->declare_parameter("brake.cmd_min", 0.0);
     this->declare_parameter("brake.reset_integral_below_this_cmd", 100000.0);
     this->declare_parameter("brake.vel_error_deadband_mps", 0.5);
@@ -466,9 +466,7 @@ private:
 
     int buffer_empty_counter = 0;
 
-//  !!!!!!!!!!!!!! REVERTO TO 20 TWENTY !!!!!!!!!!!!!!
-    int buffer_empty_counter_threshold = 100;
-//  !!!!!!!!!!!!!! REVERTO TO 20 TWENTY !!!!!!!!!!!!!!
+    int buffer_empty_counter_threshold = 20;
 
     double init_tick_ = -1.0;
     double init_vel_ = -1.0;

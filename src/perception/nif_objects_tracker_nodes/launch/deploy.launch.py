@@ -32,6 +32,7 @@ def generate_launch_description():
         package='nif_objects_tracker_nodes',
         executable='nif_objects_tracker_nodes_exe',
         output='screen',
+        respawn=True,
         parameters=[
             LaunchConfiguration('nif_objects_tracker_nodes_param_file')
         ],
