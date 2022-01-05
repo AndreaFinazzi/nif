@@ -30,7 +30,7 @@ def get_share_file(package_name, file_name):
 
 
 def generate_launch_description():
-    lqr_config_file = get_share_file(
+    lqr_joint_config_file = get_share_file(
         package_name='nif_control_joint_lqr_nodes', file_name='config/lqr/lqr_params.deploy.yaml'
     )
 
@@ -44,14 +44,14 @@ def generate_launch_description():
         description='Path to config file for nif_control_lqr'
     )
 
-    lqr_control_node = Node(
+    nif_joint_lqr_control_node = Node(
         package='nif_control_joint_lqr_nodes',
         executable='nif_control_joint_lqr_nodes_exe',
         parameters=[
+            LaunchConfiguration('control_joint_lqr_params_file'),
             {
-                'lqr_config_file': lqr_config_file,
-                'use_tire_velocity': True,
-                'use_mission_max_vel': True,
+                'lqr_config_file': lqr_joint_config_file,
+                'use_tire_velocity' : True,
             }
         ],
         output={
@@ -59,24 +59,14 @@ def generate_launch_description():
             'stderr': 'screen',
         },
         remappings=[
-            ('in_reference_path', 'planning/path_global'),
-            ('/in_reference_trajectory', '/planning/dynamic/traj_global'),
-            ('velocity_planner/des_vel', 'velocity_planner/des_vel_test'),
-            # ('in_control_cmd_prev', '/control_safety_layer/out/control_cmd'),
-            # ('out_control_cmd', '/control_pool/control_cmd_test'),
-            ('control_joint_lqr/desired_velocity_mps', 'control_joint_lqr/desired_velocity_mps_test'),
-            ('control_joint_lqr/tracking_valid', 'control_joint_lqr/tracking_valid_test'),
-            ('control_joint_lqr/valid_conditions', 'control_joint_lqr/valid_conditions_test'),
-            ('control_joint_lqr/lqr_command', 'control_joint_lqr/lqr_command_test'),
-            ('control_joint_lqr/accel_command', 'control_joint_lqr/accel_command_test'),
-            ('control_joint_lqr/track_distance', 'control_joint_lqr/track_distance_test'),
-            ('control_joint_lqr/track_idx', 'control_joint_lqr/track_idx_test'),
-            ('control_joint_lqr/track_point', 'control_joint_lqr/track_point_test'),
-            ('control_joint_lqr/lqr_error', 'control_joint_lqr/lqr_error_test'),
+            ('in_control_cmd_prev', '/control_safety_layer/out/control_cmd'),
+            ('out_control_cmd', '/control_pool/control_cmd'),
+            ('in_reference_path', '/planning/dynamic/vis/traj_global'),
+            ('in_reference_trajectory', '/planning/dynamic/traj_global'),
         ]
     )
 
     return LaunchDescription([
         nif_joint_lqr_param,
-        lqr_control_node,
+        nif_joint_lqr_control_node
     ])

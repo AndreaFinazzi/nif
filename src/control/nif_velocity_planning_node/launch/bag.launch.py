@@ -18,7 +18,7 @@ def generate_launch_description():
         executable='nif_velocity_planning_node_exe',
         output='screen',
         remappings=[
-            ('in_reference_path', 'planning/path_global'),
+            # ('in_reference_path', 'planning/path_global'),
             # ('in_reference_path', 'planning/path_global_test'),
             ('out_desired_velocity', 'velocity_planner/des_vel_test'),
             ('/velocity_planner/diagnostic', '/velocity_planner/diagnostic_test'),

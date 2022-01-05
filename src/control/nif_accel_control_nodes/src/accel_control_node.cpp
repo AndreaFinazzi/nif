@@ -166,11 +166,11 @@ AccelControl::AccelControl() : Node("AccelControlNode") {
     int engine_safety_rpm_thres =
         this->get_parameter("engine.safety_rpm_thres").as_int();
 
-    if (engine_safety_factor < 1.0) {
+    if (engine_safety_factor < 0.8) {
       RCLCPP_ERROR(this->get_logger(), "Got engine.model_safety_factor: %f;",
                    engine_safety_factor);
       throw std::range_error("Parameter engine.model_safety_factor must be "
-                             "greater or equal than 1.0.");
+                             "greater or equal than 0.8.");
     }
 
     this->m_throttle_controller_engine_ =
@@ -542,6 +542,9 @@ void AccelControl::receiveVelocity(
 }
 
 void AccelControl::accCMDCallback(const std_msgs::msg::Float32::SharedPtr msg) {
+  if (m_accCMD_firstcall) {
+    m_accCMD_firstcall = false;
+  }
   m_has_acc_cmd = true;
   m_last_acc_update = this->now();
   m_acc_des_accel = msg->data;
@@ -550,10 +553,12 @@ void AccelControl::accCMDCallback(const std_msgs::msg::Float32::SharedPtr msg) {
 void AccelControl::receiveDesAccel(
     const std_msgs::msg::Float32::SharedPtr msg) {
 
-  if (this->now() - m_last_acc_update > rclcpp::Duration(2, 0)) {
-    // ACC command is not health
-    // DEBUG
-    m_acc_des_accel = nif::common::constants::numeric::INF;
+  if (!m_accCMD_firstcall) {
+    if (this->now() - m_last_acc_update > rclcpp::Duration(2, 0)) {
+      // ACC command is not health
+      // DEBUG
+      m_acc_des_accel = nif::common::constants::numeric::INF;
+    }
   }
 
   // get desired acceleration (m/s^2) from high level controll
