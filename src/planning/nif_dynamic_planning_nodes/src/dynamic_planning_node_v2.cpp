@@ -1485,17 +1485,29 @@ void DynamicPlannerNode::timer_callback_rule() {
 
   double acc_min_dist_straight = 0.0;
   double acc_time_headway_straight = 0.0;
+
+  auto default_planning_time_max = 0.0;
+  auto default_planning_time_min = 0.0;
+
   if (mission_status.zone_status.zone_type ==
       mission_status.zone_status.ZONE_TYPE_STRAIGHT) {
     // acc_min_dist_straight = ;
     // acc_time_headway_straight = ;
     // m_velocity_profiler_obj.setACCMindist(acc_min_dist_straight);
     // m_velocity_profiler_obj.setACCTimeHeadway(acc_time_headway_straight);
+
+    // set planning horizon based on zone type and id
+    default_planning_time_max = SEC_3;
+    default_planning_time_min = SEC_2;
   } else {
     // acc_min_dist_straight = ;
     // acc_time_headway_straight = ;
     // m_velocity_profiler_obj.setACCMindist(acc_min_dist_straight);
     // m_velocity_profiler_obj.setACCTimeHeadway(acc_time_headway_straight);
+
+    // set planning horizon based on zone type and id
+    default_planning_time_max = SEC_4;
+    default_planning_time_min = SEC_3;
   }
   // ---------------------------------------------------------------
 
@@ -1579,10 +1591,10 @@ void DynamicPlannerNode::timer_callback_rule() {
                       get<4>(m_racingline_spline_data), // cubicSplineModel
                       std::max(abs(get<1>(progreeNCTE_racingline) /
                                    allowable_maximum_vy),
-                               4.0),
+                               default_planning_time_max),
                       std::max(abs(get<1>(progreeNCTE_racingline) /
                                    allowable_maximum_vy),
-                               4.0) +
+                               default_planning_time_max) +
                           0.01,
                       SAMPLING_TIME, 0.0, 0.0001, 0.1);
 
@@ -1671,10 +1683,10 @@ void DynamicPlannerNode::timer_callback_rule() {
                       get<4>(m_racingline_spline_data), // cubicSplineModel
                       std::max(abs(get<1>(progreeNCTE_racingline) /
                                    allowable_maximum_vy),
-                               4.0),
+                               default_planning_time_max),
                       std::max(abs(get<1>(progreeNCTE_racingline) /
                                    allowable_maximum_vy),
-                               4.0) +
+                               default_planning_time_max) +
                           0.01,
                       SAMPLING_TIME, 0.0, 0.0001, 0.1);
 
@@ -1806,10 +1818,10 @@ void DynamicPlannerNode::timer_callback_rule() {
                             [path_candidate_idx], // cubicSplineModel
                         std::max(
                             abs(get<1>(progressNcte) / allowable_maximum_vy),
-                            2.0),
+                            default_planning_time_min),
                         std::max(
                             abs(get<1>(progressNcte) / allowable_maximum_vy),
-                            2.0) +
+                            default_planning_time_min) +
                             2.0 + 0.01,
                         SAMPLING_TIME, 0.0, 0.0001, 0.1);
 
@@ -1992,10 +2004,10 @@ void DynamicPlannerNode::timer_callback_rule() {
                       get<4>(m_defenderline_spline_data), // cubicSplineModel
                       std::max(abs(get<1>(progreeNCTE_defenderline) /
                                    allowable_maximum_vy),
-                               4.0),
+                               default_planning_time_max),
                       std::max(abs(get<1>(progreeNCTE_defenderline) /
                                    allowable_maximum_vy),
-                               4.0) +
+                               default_planning_time_max) +
                           0.01,
                       SAMPLING_TIME, 0.0, 0.0001, 0.1);
 
@@ -2087,10 +2099,10 @@ void DynamicPlannerNode::timer_callback_rule() {
                       get<4>(m_racingline_spline_data), // cubicSplineModel
                       std::max(abs(get<1>(progreeNCTE_racingline) /
                                    allowable_maximum_vy),
-                               3.0),
+                               default_planning_time_max),
                       std::max(abs(get<1>(progreeNCTE_racingline) /
                                    allowable_maximum_vy),
-                               3.0) +
+                               default_planning_time_max) +
                           0.01,
                       SAMPLING_TIME, 0.0, 0.0001, 0.1);
 
@@ -2175,10 +2187,10 @@ void DynamicPlannerNode::timer_callback_rule() {
                       get<4>(m_staybehind_spline_data), // cubicSplineModel
                       std::max(abs(get<1>(progreeNCTE_staybehind) /
                                    allowable_maximum_vy),
-                               3.0),
+                               default_planning_time_max),
                       std::max(abs(get<1>(progreeNCTE_staybehind) /
                                    allowable_maximum_vy),
-                               3.0) +
+                               default_planning_time_max) +
                           0.01,
                       SAMPLING_TIME, 0.0, 0.0001, 0.1);
 
