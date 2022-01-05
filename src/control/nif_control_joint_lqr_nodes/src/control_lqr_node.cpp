@@ -66,19 +66,19 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
   // Maximimum pure pursuit tracking distance
   this->declare_parameter("pure_pursuit_max_dist_m", 8.);
   // pure_pursuit lookahead distance 1st velocity theshold (65 kph)
-  this->declare_parameter("pure_pursuit_1st_vel_ms", 20.0);
+  this->declare_parameter("pure_pursuit_1st_vel_ms", 25.0);
   // Maximimum pure pursuit tracking distance
-  this->declare_parameter("pure_pursuit_max_max_dist_m", 20.);
+  this->declare_parameter("pure_pursuit_max_max_dist_m", 13.0);
   // Factor to increase the pure pursuit tracking distance as a function of
   // speed (m/s)
-  this->declare_parameter("pure_pursuit_k_vel_m_ms", 0.75);
+  this->declare_parameter("pure_pursuit_k_vel_m_ms", 0.5);
   // Use tire speed instead of gps velocity estimate
   this->declare_parameter("use_tire_velocity", true);
   // Safety timeouts for odometry and the path (set negative to ignore)
   this->declare_parameter("odometry_timeout_sec", 0.1);
   this->declare_parameter("path_timeout_sec", 0.5);
   // Limit the max change in the steering signal over time
-  this->declare_parameter("steering_max_ddeg_dt", 5.0);
+  this->declare_parameter("steering_max_ddeg_dt", 3.0);
   // Limit the max change in the des_accel signal over time (acceleration)
   this->declare_parameter("des_accel_max_da_dt", 9.0); // from 5 to 9
   // Limit the max change in the des_accel signal over time (decceleration)
