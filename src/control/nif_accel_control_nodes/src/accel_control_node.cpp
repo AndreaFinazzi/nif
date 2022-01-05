@@ -542,6 +542,9 @@ void AccelControl::receiveVelocity(
 }
 
 void AccelControl::accCMDCallback(const std_msgs::msg::Float32::SharedPtr msg) {
+  if (m_accCMD_firstcall) {
+    m_accCMD_firstcall = false;
+  }
   m_has_acc_cmd = true;
   m_last_acc_update = this->now();
   m_acc_des_accel = msg->data;
@@ -550,10 +553,12 @@ void AccelControl::accCMDCallback(const std_msgs::msg::Float32::SharedPtr msg) {
 void AccelControl::receiveDesAccel(
     const std_msgs::msg::Float32::SharedPtr msg) {
 
-  if (this->now() - m_last_acc_update > rclcpp::Duration(2, 0)) {
-    // ACC command is not health
-    // DEBUG
-    m_acc_des_accel = nif::common::constants::numeric::INF;
+  if (!m_accCMD_firstcall) {
+    if (this->now() - m_last_acc_update > rclcpp::Duration(2, 0)) {
+      // ACC command is not health
+      // DEBUG
+      m_acc_des_accel = nif::common::constants::numeric::INF;
+    }
   }
 
   // get desired acceleration (m/s^2) from high level controll
