@@ -55,17 +55,17 @@ def get_share_file(package_name, file_name):
 
 def generate_launch_description():
 
-    nif_geofence_filter_radar_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            get_share_file("nif_geofence_filter_nodes", 'launch/deploy.launch.py')
-        )
-    )
+    # nif_geofence_filter_radar_launch = IncludeLaunchDescription(
+    #     PythonLaunchDescriptionSource(
+    #         get_share_file("nif_geofence_filter_nodes", 'launch/deploy.launch.py')
+    #     )
+    # )
 
-    nif_aptiv_interface_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            get_share_file("nif_radar_clustering_nodes", 'launch/aptiv.launch.py')
-        )
-    )
+    # nif_aptiv_interface_launch = IncludeLaunchDescription(
+    #     PythonLaunchDescriptionSource(
+    #         get_share_file("nif_radar_clustering_nodes", 'launch/aptiv.launch.py')
+    #     )
+    # )
 
     nif_tracker_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -88,8 +88,8 @@ def generate_launch_description():
     return LaunchDescription([
         # nif_telemetry_node,
         nif_ghost_spawner_launch,
-        nif_geofence_filter_radar_launch,
-        nif_aptiv_interface_launch,
+        # nif_geofence_filter_radar_launch,
+        # nif_aptiv_interface_launch,
         nif_tracker_launch,
         nif_prediction_launch
 ])
