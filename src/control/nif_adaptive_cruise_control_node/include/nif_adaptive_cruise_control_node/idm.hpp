@@ -5,7 +5,8 @@ Created on : Nov 29th, 2021
 Author : Calvin Chanyoung Jung
 */
 
-#pragma once
+#ifndef IDM_H
+#define IDM_H
 
 #include <algorithm>
 #include <cstdint>
@@ -45,9 +46,9 @@ class IDM {
 
 public:
   IDM();
-  IDM(const std::string& config_file_path_);
-  void loadConfig(const std::string& config_file_path_);
-  void setParams(const IDM_PARAM& param_);
+  IDM(const std::string &config_file_path_);
+  void loadConfig(const std::string &config_file_path_);
+  void setParams(const IDM_PARAM &param_);
   IDM_PARAM getParams();
 
   // setter
@@ -90,3 +91,5 @@ private:
   // result
   double m_desired_accel;
 };
+
+#endif // IDM_H

@@ -6,7 +6,7 @@
 
 #include <memory>
 
-#include "nif_adaptive_cruise_control_node/include/adaptive_cruise_node.hpp"
+#include "nif_adaptive_cruise_control_node/adaptive_cruise_node.hpp"
 #include "nif_common/constants.h"
 #include "nif_utils/utils.h"
 #include "rcutils/error_handling.h"

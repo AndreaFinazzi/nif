@@ -2,7 +2,8 @@
 // Created by usrg on 30/11/21.
 //
 
-#include "nif_adaptive_cruise_control_node/include/adaptive_cruise_node.hpp"
+// #include "adaptive_cruise_node.hpp"
+#include "nif_adaptive_cruise_control_node/adaptive_cruise_node.hpp"
 
 using namespace nif::control;
 
@@ -52,9 +53,10 @@ IDMACCNode::IDMACCNode(const std::string &node_name_)
   this->m_idm_prt = std::make_shared<IDM>(m_config_file);
 }
 
-void egoTrajectoryCallback(
+void IDMACCNode::egoTrajectoryCallback(
     const nif_msgs::msg::DynamicTrajectory::SharedPtr traj_msg) {
-  m_ego_traj = *traj_msg;
+
+  m_ego_trajectory = *traj_msg;
 
   m_ego_odom = this->getEgoOdometry();
   m_veh_speed_mps = m_ego_odom.twist.twist.linear.x;

@@ -59,7 +59,7 @@ private:
 
   nav_msgs::msg::Odometry m_ego_odom;
   nav_msgs::msg::Path m_maptrack_body;
-  nif_msgs::msg::DynamicTrajectory m_ego_traj;
+  nif_msgs::msg::DynamicTrajectory m_ego_trajectory;
 
   std::string m_input_perception_topic_name;
   std::string m_input_maptrack_body_topic_name;
