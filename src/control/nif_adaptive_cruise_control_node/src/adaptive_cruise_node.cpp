@@ -7,8 +7,8 @@
 
 using namespace nif::control;
 
-IDMACCNode::IDMACCNode(const std::string& node_name_)
-  : IBaseNode(node_name_, common::NodeType::CONTROL) {
+IDMACCNode::IDMACCNode(const std::string &node_name_)
+    : IBaseNode(node_name_, common::NodeType::CONTROL) {
   std::string package_share_directory;
 
   try {
@@ -35,17 +35,15 @@ IDMACCNode::IDMACCNode(const std::string& node_name_)
 
   m_prediction_subscriber =
       this->create_subscription<nif_msgs::msg::DynamicTrajectory>(
-          "/oppo/prediction",
-          nif::common::constants::QOS_SENSOR_DATA,
-          std::bind(
-              &IDMACCNode::predictionCallback, this, std::placeholders::_1));
+          "/oppo/prediction", nif::common::constants::QOS_SENSOR_DATA,
+          std::bind(&IDMACCNode::predictionCallback, this,
+                    std::placeholders::_1));
 
   m_ego_traj_subscriber =
       this->create_subscription<nif_msgs::msg::DynamicTrajectory>(
-          "/planning/dynamic/traj_global",
-          nif::common::constants::QOS_PLANNING,
-          std::bind(
-              &IDMACCNode::egoTrajectoryCallback, this, std::placeholders::_1));
+          "/planning/dynamic/traj_global", nif::common::constants::QOS_PLANNING,
+          std::bind(&IDMACCNode::egoTrajectoryCallback, this,
+                    std::placeholders::_1));
 
   // m_maptrack_body_subscriber =
   // this->create_subscription<nav_msgs::msg::Path>(
@@ -79,32 +77,32 @@ void IDMACCNode::egoTrajectoryCallback(
     }
   }
 
-  if (m_prediction_result.trajectory_path.poses.empty() ||
-      m_prediction_result.longi_planning_type !=
-          m_prediction_result.LONGITUDINAL_PLANNING_TYPE_FOLLOW) {
-    std_msgs::msg::Float32 out;
-    out.data = nif::common::constants::numeric::INF;
-    m_acc_cmd_publisher->publish(out);
-  } else if(m_ego_trajectory.trajectory_path.poses.empty()){
+  if (m_ego_trajectory.trajectory_path.poses.empty()) {
     std_msgs::msg::Float32 out;
     out.data = 0.0;
     m_acc_cmd_publisher->publish(out);
   } else {
-    std_msgs::msg::Float32 out;
+    if (m_prediction_result.trajectory_path.poses.empty()) {
+      std_msgs::msg::Float32 out;
+      out.data = nif::common::constants::numeric::INF;
+      m_acc_cmd_publisher->publish(out);
+    } else {
+      std_msgs::msg::Float32 out;
 
-    auto naive_gap = sqrt(
-        pow(m_ego_odom.pose.pose.position.x -
-                m_prediction_result.trajectory_path.poses[0].pose.position.x,
-            2) +
-        pow(m_ego_odom.pose.pose.position.y -
-                m_prediction_result.trajectory_path.poses[0].pose.position.y,
-            2));
+      auto naive_gap = sqrt(
+          pow(m_ego_odom.pose.pose.position.x -
+                  m_prediction_result.trajectory_path.poses[0].pose.position.x,
+              2) +
+          pow(m_ego_odom.pose.pose.position.y -
+                  m_prediction_result.trajectory_path.poses[0].pose.position.y,
+              2));
 
-    m_idm_prt->calcAccel(m_veh_speed_mps, naive_gap,
-                         m_prediction_result.trajectory_velocity[0]);
+      m_idm_prt->calcAccel(m_veh_speed_mps, naive_gap,
+                           m_prediction_result.trajectory_velocity[0]);
 
-    out.data = m_idm_prt->getACCCmd();
-    m_acc_cmd_publisher->publish(out);
+      out.data = m_idm_prt->getACCCmd();
+      m_acc_cmd_publisher->publish(out);
+    }
   }
 }
 
@@ -125,7 +123,8 @@ void IDMACCNode::predictionCallback(
 //   int cipv_idx = 0;
 
 //   // std::cout << "body cipv x : " <<
-//   // m_perception_result.perception_list[cipv_idx].detection_result_3d.center.position.x
+//   //
+//   m_perception_result.perception_list[cipv_idx].detection_result_3d.center.position.x
 //   // << std::endl;
 
 //   if (sqrt(pow(m_perception_result.perception_list[cipv_idx]
@@ -164,8 +163,8 @@ void IDMACCNode::predictionCallback(
 //       be
 //       // done.
 
-//       // TODO : The way to calculate the progress gap btw the ego and opponent.
-//       double progress_gap = 0.0;
+//       // TODO : The way to calculate the progress gap btw the ego and
+//       opponent. double progress_gap = 0.0;
 
 //       // Approach 1. (longitudinal-wise distance directly from the
 //       perception
@@ -173,7 +172,8 @@ void IDMACCNode::predictionCallback(
 //       progress_gap =
 //           msg->perception_list[cipv_idx].detection_result_3d.center.position.x;
 //       if (progress_gap < 0.0) {
-//         // when the car is behind us, don't care about the ACC. Set the progress
+//         // when the car is behind us, don't care about the ACC. Set the
+//         progress
 //         // gap as INF
 //         progress_gap = nif::common::constants::numeric::INF;
 //       }
