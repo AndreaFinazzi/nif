@@ -113,6 +113,7 @@ private:
   rclcpp::Subscription<novatel_oem7_msgs::msg::BESTVEL>::SharedPtr subBESTVEL;
   rclcpp::Subscription<novatel_oem7_msgs::msg::BESTVEL>::SharedPtr subTOPBESTVEL;
   rclcpp::Subscription<novatel_oem7_msgs::msg::HEADING2>::SharedPtr subHEADING2;
+  rclcpp::Subscription<novatel_oem7_msgs::msg::HEADING2>::SharedPtr subTOPHEADING2;
   rclcpp::Subscription<novatel_oem7_msgs::msg::INSSTDEV>::SharedPtr subINSSTDEV;
   rclcpp::Subscription<novatel_oem7_msgs::msg::INSSTDEV>::SharedPtr
       subTOPINSSTDEV;
@@ -208,6 +209,7 @@ private:
   double m_dGPS_TOP_Heading;
   double m_dGPS_TOP_Heading_prev;
   double m_heading2_heading_rad;
+  double m_top_heading2_heading_rad;
   double m_best_heading_rad;
   double m_dGPS_roll;
   double m_dGPS_TOP_roll; // Note : roll of top and bottom are very different. Add field for novatel top
@@ -229,6 +231,7 @@ private:
   bool m_heading_initialized = false;
   
   bool m_heading2_valid = false;
+  bool m_top_heading2_valid = false;
   bool m_bestvel_bottom_valid = false;
   bool m_bestvel_top_valid = false;
   bool m_heading_error = true;
@@ -280,6 +283,7 @@ private:
   rclcpp::Time bestvel_time_last_update;
   rclcpp::Time top_bestvel_time_last_update;
   rclcpp::Time heading2_time_last_update;
+  rclcpp::Time top_heading2_time_last_update;
   rclcpp::Duration gps_timeout = rclcpp::Duration(1, 0);
 
   enum IDX {
@@ -327,6 +331,7 @@ private:
   void TOPBESTVELCallback(const novatel_oem7_msgs::msg::BESTVEL::SharedPtr msg);
 
   void HEADING2Callback(const novatel_oem7_msgs::msg::HEADING2::SharedPtr msg);
+  void TOPHEADING2Callback(const novatel_oem7_msgs::msg::HEADING2::SharedPtr msg);
 
   void INSSTDEVCallback(const novatel_oem7_msgs::msg::INSSTDEV::SharedPtr msg);
   void

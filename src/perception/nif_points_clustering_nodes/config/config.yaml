@@ -8,7 +8,7 @@
 
     left_lower_distance : 1.0
     right_lower_distance : 1.0
-    rear_lower_distance : 4.7 # 3.2
+    rear_lower_distance : 8.0 # 3.2
     front_lower_distance : 3.0 # 2.5
     left_upper_distance : 30.0
     right_upper_distance : 30.0

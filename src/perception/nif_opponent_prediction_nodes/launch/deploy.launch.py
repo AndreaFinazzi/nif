@@ -108,6 +108,7 @@ def generate_launch_description():
         package='nif_opponent_prediction_nodes',
         executable='nif_opponent_prediction_nodes_exe',
         output='screen',
+        respawn=True,
         parameters=[
             LaunchConfiguration('nif_prediction_param_file'),
             {
@@ -118,7 +119,7 @@ def generate_launch_description():
             ('in_perception_list', '/tracking/objects'),
             ('in_ego_odom', '/aw_localization/ekf/odom'),
             ('defender_vel', '/null'),
-            ('out_predictionn', '/oppo/prediction'),
+            ('out_predictionn', '/oppo/prediction_dis'),
             ('out_prediction_vis', '/oppo/vis/prediction'),
         ]
     )

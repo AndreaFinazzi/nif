@@ -201,6 +201,8 @@ void ImmUkfPda::measurementValidation(
     Eigen::VectorXd diff = meas - max_det_z;
     double nis = diff.transpose() * max_det_s.inverse() * diff;
 
+    // std::cout << "nis: " << nis << std::endl; // @DEBUG
+
     if (nis < gating_thres_) {
       if (nis < smallest_nis) {
         smallest_nis = nis;
@@ -211,6 +213,8 @@ void ImmUkfPda::measurementValidation(
     }
   }
   if (exists_smallest_nis_object) {
+    // std::cout << "exists_smallest_nis_object: " << exists_smallest_nis_object << std::endl; // @DEBUG
+
     matching_vec[smallest_nis_ind] = true;
     // if (use_vectormap_ && has_subscribed_vectormap_)
     // {
@@ -301,10 +305,18 @@ void ImmUkfPda::initTracker(const nif_msgs::msg::DetectedObjectArray &input,
   //   targets_.push_back(ukf);
   //   target_id_++;
   // }
+  double px = 0.0;
+  double py = 0.0;
 
   // @DEBUG: Single Track
   if (!input.objects.empty())
   {
+    // for (size_t i = 0; i < input.objects.size(); i++) {
+    //   px += input.objects[i].pose.position.x;
+    //   py += input.objects[i].pose.position.y;
+    // }
+    // px = px / input.objects.size();
+    // py = py / input.objects.size();
     double px = input.objects[0].pose.position.x;
     double py = input.objects[0].pose.position.y;
     Eigen::VectorXd init_meas = Eigen::VectorXd(2);
@@ -313,16 +325,18 @@ void ImmUkfPda::initTracker(const nif_msgs::msg::DetectedObjectArray &input,
     UKF ukf;
     ukf.initialize(init_meas, timestamp, target_id_);
     targets_.push_back(ukf);
-    target_id_++;
-    
+    // std::cout << "Track re-initialized." << std::endl; // @DEBUG
+
     init_ = true;
   }
 }
 
 void ImmUkfPda::secondInit(
-    UKF &target, const std::vector<nif_msgs::msg::DetectedObject> &object_vec,
+    UKF &target, 
+    const std::vector<nif_msgs::msg::DetectedObject> &object_vec,
     const rclcpp::Duration dt) {
   if (object_vec.size() == 0) {
+    // std::cout << "Second init end in Target Die." << std::endl; // @DEBUG
     target.tracking_num_ = TrackingState::Die;
     return;
   }
@@ -362,6 +376,8 @@ void ImmUkfPda::secondInit(
 void ImmUkfPda::updateTrackingNum(
     const std::vector<nif_msgs::msg::DetectedObject> &object_vec, UKF &target) {
   if (object_vec.size() > 0) {
+    // std::cout << "tracking_num_: " << target.tracking_num_ << std::endl; // @DEBUG
+
     if (target.tracking_num_ < TrackingState::Stable) {
       target.tracking_num_++;
     } else if (target.tracking_num_ == TrackingState::Stable) {
@@ -373,7 +389,9 @@ void ImmUkfPda::updateTrackingNum(
       target.tracking_num_ = TrackingState::Die;
     }
   } else {
-    // @DEBUG no need to remove the target track
+    // std::cout << "No object associated with target" << std::endl; // @DEBUG
+
+    // @DEBUG no need to remove the target track? Remove it to be able to re-init
     if (target.tracking_num_ < TrackingState::Stable) {
       target.tracking_num_ = TrackingState::Die;
     } else if (target.tracking_num_ >= TrackingState::Stable &&
@@ -408,6 +426,7 @@ bool ImmUkfPda::probabilisticDataAssociation(
 
   // prevent ukf not to explode
   if (std::isnan(det_s) || det_s > prevent_explosion_thres_) {
+    // std::cout << "Prevent explosion. TrackingState -> Die." << std::endl; // @DEBUG
     target.tracking_num_ = TrackingState::Die;
     success = false;
     return success;
@@ -632,9 +651,9 @@ void ImmUkfPda::makeOutput(
 
   // @DEBUG revertme
   // STABLE || OCCLUSION
-    if (targets_[i].is_stable_ ) { // ||
-        // (targets_[i].tracking_num_ >= TrackingState::Init &&
-        //  targets_[i].tracking_num_ < TrackingState::Stable)) {
+    if (targets_[i].is_stable_ ||
+        (targets_[i].tracking_num_ >= TrackingState::Init &&
+         targets_[i].tracking_num_ < TrackingState::Stable)) {
       tmp_objects.objects.push_back(dd);
       used_targets_indices.push_back(i);
     }
