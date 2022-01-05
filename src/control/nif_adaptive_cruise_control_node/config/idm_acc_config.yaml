@@ -2,7 +2,7 @@ acc_config_param:
     param_s0: 20.0
     param_s1: 0.0
     param_v_desired: 90.0
-    param_time_headway: 2.0
+    param_time_headway: 1.4
     param_accel_max: 8.0
     param_decel_desired: 5.0
     param_delta: 4.0

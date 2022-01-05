@@ -3,7 +3,7 @@ windows:
   - window_name: ROSBAG PLAY Tab
     layout: tiled
     shell_command_before:
-      - source /home/usrg/nif/install/setup.bash && cd /home/usrg/media/LaCie1/Dev12-bag/2022.01.03/VEH4_LVMS_RUN-01_2022-01-03
+      - source /home/usrg/nif/install/setup.bash && cd /home/usrg/media/LaCie/Dev12-bag/2022.01.03/VEH4_LVMS_RUN-01_2022-01-03
       - export ROS_DOMAIN_ID=33
       - export TRACK=LVMS
       - echo $TRACK
@@ -13,7 +13,7 @@ windows:
 
     - shell_command:
       # - ros2 bag play autonomy_2021-10-21_15-38-00/ --read-ahead-queue-size 10000 -r 1 -l # 2021.10.18
-      - ros2 bag play autonomy_2022-01-03_11-47-13/ --read-ahead-queue-size 10000 -r1 --remap /ghost/odometry:=/remap1 /ghost/marker:=/remap2 -r 3
+      - ros2 bag play autonomy_2022-01-03_11-47-13/ --read-ahead-queue-size 10000 -r2 -l
     - shell_command:
       - ros2 run plotjuggler plotjuggler -l /home/usrg/nif/operations/config/plotjuggler_config_control_hk.xml
 
@@ -68,13 +68,9 @@ windows:
       - shell_command:
           - ros2 launch nif_control_joint_lqr_nodes bag.launch.py
       - shell_command:
-          - ros2 launch nif_adaptive_cruise_control_node sim.launch.py
-      - shell_command:
           - ros2 launch nif_accel_control_nodes bag.launch.py
       - shell_command:
-          - ros2 launch nif_dynamic_planning_nodes deploy.launch.py
-      - shell_command:
-          - ros2 launch nif_launch ghost.launch.py
+          # - ros2 topic echo /velocity_planner/diagnostic
           
 
   # - window_name: record Tab
