@@ -166,11 +166,11 @@ AccelControl::AccelControl() : Node("AccelControlNode") {
     int engine_safety_rpm_thres =
         this->get_parameter("engine.safety_rpm_thres").as_int();
 
-    if (engine_safety_factor < 1.0) {
+    if (engine_safety_factor < 0.8) {
       RCLCPP_ERROR(this->get_logger(), "Got engine.model_safety_factor: %f;",
                    engine_safety_factor);
       throw std::range_error("Parameter engine.model_safety_factor must be "
-                             "greater or equal than 1.0.");
+                             "greater or equal than 0.8.");
     }
 
     this->m_throttle_controller_engine_ =
