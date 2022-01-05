@@ -20,6 +20,7 @@
 
 #include "nav_msgs/msg/odometry.hpp"
 #include "nav_msgs/msg/path.hpp"
+#include "nif_msgs/msg/dynamic_trajectory.hpp"
 #include "nif_common/constants.h"
 #include "nif_common/types.h"
 #include "nif_common/vehicle_model.h"
@@ -58,9 +59,9 @@ public:
     diag_pub_ = this->create_publisher<nif_msgs::msg::VelocityPlannerStatus>(
         "/velocity_planner/diagnostic", 1);
 
-    // Subscribers
-    path_sub_ = this->create_subscription<nav_msgs::msg::Path>(
-        "in_reference_path", nif::common::constants::QOS_PLANNING,
+    // Subscribers (in_reference_path)
+    path_sub_ = this->create_subscription<nif_msgs::msg::DynamicTrajectory>(
+        "/planning/dynamic/traj_global", nif::common::constants::QOS_PLANNING,
         std::bind(&VelocityPlannerNode::pathCallback, this,
                   std::placeholders::_1));
     velocity_sub_ =
@@ -78,10 +79,6 @@ public:
             "in_steering_report", nif::common::constants::QOS_SENSOR_DATA,
             std::bind(&VelocityPlannerNode::steerCallback, this,
                       std::placeholders::_1));
-    error_sub_ = this->create_subscription<std_msgs::msg::Float32MultiArray>(
-        "in_control_error", nif::common::constants::QOS_DEFAULT,
-        std::bind(&VelocityPlannerNode::errorCallback, this,
-                  std::placeholders::_1));
 
     target_idx_sub_ = this->create_subscription<std_msgs::msg::Int32>(
         "control_joint_lqr/track_idx", nif::common::constants::QOS_DEFAULT,
@@ -98,7 +95,8 @@ public:
     // Curv-based planner
     this->declare_parameter(
         "des_vel_mps",
-        27.0); // [m/s]. 11.11m/s (40km/h), 13.89m/s (50km/h), 16.67 (60km/h)
+        83.33); // [m/s]. 11.11m/s (40km/h), 13.89m/s (50km/h), 16.67 (60km/h), 83.33 (300km/h)
+    this->declare_parameter("max_lateral_accel", 10.0); // maximum lateral acceleration (curv-vel)
     this->declare_parameter("lpf_curve_f", 8.0); // lower --> smoother & delayed
     this->declare_parameter("lpf_curve_dt", 0.01); // for Low pass filter
     this->declare_parameter("lpf_curve_x0", 0.0);  // for Low pass filter
@@ -107,8 +105,6 @@ public:
     this->declare_parameter("odometry_timeout_sec", 0.1);
     this->declare_parameter("path_timeout_sec", 0.5);
     this->declare_parameter("path_min_length_m", 3.0);
-    // Lateral error gain
-    this->declare_parameter("lateral_error_deadband_m", 1.0); // [m]
     // Safe path distance gain
     // - min safe distance. safe_dist_gain:=0.
     this->declare_parameter("path_dist_min", 8.0);
@@ -117,9 +113,10 @@ public:
     // - time to collision(arrive) until safe path dist
     this->declare_parameter("ttc_thres", 2.0);
     // - safety factor for lateral tire force model
-    this->declare_parameter("lateral_tire_model_factor", 0.6);
+    this->declare_parameter("lateral_tire_model_factor", 1.0);
     // - smoothing desired velocity change // mps increase per sec
-    this->declare_parameter("max_ddes_vel_dt_default", 5.0);
+    this->declare_parameter("max_ddes_vel_dt_decrease", 5.0);
+    this->declare_parameter("max_ddes_vel_dt_default", 8.0);
     this->declare_parameter("max_ddes_vel_dt_green_flag", 10.0);
 
     // Read in misc. parameters
@@ -133,23 +130,25 @@ public:
     m_lpf_curve_f = this->get_parameter("lpf_curve_f").as_double();
     m_lpf_curve_dt = this->get_parameter("lpf_curve_dt").as_double();
     m_lpf_curve_x0 = this->get_parameter("lpf_curve_x0").as_double();
+    m_max_lateral_accel = this->get_parameter("max_lateral_accel").as_double();
+    
     m_odometry_timeout_sec =
         this->get_parameter("odometry_timeout_sec").as_double();
     m_path_timeout_sec = this->get_parameter("path_timeout_sec").as_double();
     m_path_min_length_m = this->get_parameter("path_min_length_m").as_double();
-    m_lateral_error_deadband_m =
-        this->get_parameter("lateral_error_deadband_m").as_double();
     m_path_dist_min = this->get_parameter("path_dist_min").as_double();
     m_path_dist_max = this->get_parameter("path_dist_max").as_double();
     m_ttc_thres = this->get_parameter("ttc_thres").as_double();
     m_lat_tire_factor =
         this->get_parameter("lateral_tire_model_factor").as_double();
+    m_max_ddes_vel_dt_decrease =
+        this->get_parameter("max_ddes_vel_dt_decrease").as_double();
     m_max_ddes_vel_dt_default =
         this->get_parameter("max_ddes_vel_dt_default").as_double();
     m_max_ddes_vel_dt_green_flag =
         this->get_parameter("max_ddes_vel_dt_green_flag").as_double();
 
-    if (m_lat_tire_factor > 1.0) {
+    if (m_lat_tire_factor > 1.5) {
       RCLCPP_ERROR(this->get_logger(), "Got lateral_tire_model_factor: %f;",
                    m_lat_tire_factor);
       throw std::range_error("Parameter lateral_tire_model_factor must be "
@@ -254,26 +253,19 @@ private:
               lpf_curv_array[m_target_idx]; // curvature at target point
           double curv_ratio =
               std::min(abs(kappa_target), m_CURVATURE_MAX) / m_CURVATURE_MAX;
-          double curv_gain = 1.0 - 0.05 * curv_ratio;
-          desired_velocity_curvature_mps = curv_gain * m_max_vel_mps;
+          desired_velocity_curvature_mps = std::min(m_max_vel_mps, sqrt(abs(m_max_lateral_accel) / abs(kappa)));
           desired_velocity_mps =
               std::min(desired_velocity_curvature_mps, desired_velocity_mps);
           // 2. Compute velocity using centripetal acceleration equation
           // - F = m*v^2 / R; v^2 = a * R; v = sqrt(a * R) = sqrt(a / kappa)
           desired_velocity_dynamics_mps =
-              std::min(300 / 3.6, sqrt(abs(a_lat_max) / abs(kappa)));
+              std::min(m_max_vel_mps, sqrt(abs(a_lat_max) / abs(kappa)));
           desired_velocity_mps =
               std::min(desired_velocity_dynamics_mps, desired_velocity_mps);
         }
         // 3. Decrease desired velocity w.r.t. lateral error
-        double error_ratio = 0.0;
-        if (abs(m_error_y_lpf) > m_lateral_error_deadband_m) {
-          error_ratio =
-              std::min(abs(m_error_y_lpf) - m_lateral_error_deadband_m,
-                       m_ERROR_Y_MAX) /
-              m_ERROR_Y_MAX; // [0.0~1.0] ratio
-        }
-        double error_gain = 1.0 - 0.5 * error_ratio; // [1.0~0.5] gain
+        // (CURRENTLY NOT USE IT)
+        double error_gain = 1.0; // constant gain (not to use error-gain)
 
         // 4. Decrease desired velocity w.r.t. Safe path distance
         double path_dist_safe =
@@ -343,11 +335,11 @@ private:
 
       desired_velocity_mps =
           smoothSignal(desired_velocity_prev_mps, desired_velocity_mps,
-                       m_max_ddes_vel_dt_green_flag, period_double_s);
+                       m_max_ddes_vel_dt_green_flag, m_max_ddes_vel_dt_decrease, period_double_s);
     } else {
       desired_velocity_mps =
           smoothSignal(desired_velocity_prev_mps, desired_velocity_mps,
-                       m_max_ddes_vel_dt_default, period_double_s);
+                       m_max_ddes_vel_dt_default, m_max_ddes_vel_dt_decrease, period_double_s);
     }
 
     // Publish planned desired velocity
@@ -371,11 +363,15 @@ private:
   }
 
   double smoothSignal(double current_signal, double target_signal,
-                      double delta_dt, double dt) {
+                      double delta_dt, double delta_dt_decrease, double dt) {
     // Only care when target signal > current signal
     if (target_signal > current_signal &&
         target_signal > current_signal + delta_dt * dt) {
       return current_signal + delta_dt * dt;
+    }
+    else if (target_signal < current_signal &&
+             target_signal < current_signal - delta_dt_decrease * dt) {
+      return current_signal - delta_dt_decrease * dt;
     }
     return target_signal;
   }
@@ -524,11 +520,17 @@ private:
   }
 
   /** ROS Callbacks / Subscription Interface **/
-  void pathCallback(const nav_msgs::msg::Path::SharedPtr msg) {
+  // void pathCallback(const nav_msgs::msg::Path::SharedPtr msg) {
+  //   has_path = true;
+  //   m_path_update_time = this->now();
+  //   // lqr_tracking_idx_ = 0; // Reset Tracking
+  //   m_current_path = *msg;
+  // }
+
+  void pathCallback(const nif_msgs::msg::DynamicTrajectory::SharedPtr msg) {
     has_path = true;
     m_path_update_time = this->now();
-    // lqr_tracking_idx_ = 0; // Reset Tracking
-    m_current_path = *msg;
+    m_current_path = msg->trajectory_path;
   }
 
   void velocityCallback(
@@ -579,13 +581,6 @@ private:
     m_current_steer_rad = msg->steering_wheel_angle *
                           nif::common::constants::DEG2RAD /
                           m_steer_ratio; // tire angle [deg --> rad]
-  }
-
-  void errorCallback(const std_msgs::msg::Float32MultiArray::SharedPtr msg) {
-    // Lateral error (m_error_y) and Filtered lateral error (m_error_y_lpf)
-    m_error_y = msg->data[0];
-    // Apply low pass filter
-    lpf_error.getFilteredValue(m_error_y, m_error_y_lpf);
   }
 
   void targetIdxCallback(const std_msgs::msg::Int32::SharedPtr msg) {
@@ -642,14 +637,13 @@ private:
   KalmanFilter kf_yaw_rate;
 
   //! Input Data
-  rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr path_sub_;
+  rclcpp::Subscription<nif_msgs::msg::DynamicTrajectory>::SharedPtr path_sub_;
   rclcpp::Subscription<raptor_dbw_msgs::msg::WheelSpeedReport>::SharedPtr
       velocity_sub_;
   rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub_;
   rclcpp::Subscription<raptor_dbw_msgs::msg::SteeringReport>::SharedPtr
       steering_sub_;
   rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr steering_cmd_sub_;
-  rclcpp::Subscription<std_msgs::msg::Float32MultiArray>::SharedPtr error_sub_;
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr target_idx_sub_;
 
   //! Publisher
@@ -672,7 +666,6 @@ private:
   //! Low pass filter
   low_pass_filter lpf_curve =
       low_pass_filter(m_lpf_curve_dt, m_lpf_curve_f, m_lpf_curve_x0);
-  low_pass_filter lpf_error = low_pass_filter(0.04, 2.0, 0.0);
 
   //! Vehicle Params
   double m_L = nif::common::vehicle_param::VEH_WHEEL_BASE;  // wheelbase
@@ -686,8 +679,6 @@ private:
   double m_current_steer_rad{};        // [rad]
   double m_current_speed_mps = 0;      // [m/s]
   double m_current_speed_odom_mps = 0; // [m/s]
-  double m_error_y = 0;                // [m]
-  double m_error_y_lpf = 0;            // [m]
 
   int m_target_idx = 0;
 
@@ -715,6 +706,7 @@ private:
   double m_lpf_curve_f;
   double m_lpf_curve_dt;
   double m_lpf_curve_x0;
+  double m_max_lateral_accel;
 
   double m_odometry_timeout_sec;
   rclcpp::Duration m_odometry_timeout = rclcpp::Duration(1, 0);
@@ -722,17 +714,16 @@ private:
   double m_path_min_length_m;
   rclcpp::Duration m_path_timeout = rclcpp::Duration(1, 0);
 
-  double m_lateral_error_deadband_m;
   double m_path_dist_min;
   double m_path_dist_max;
   double m_ttc_thres;
   double m_lat_tire_factor;
+  double m_max_ddes_vel_dt_decrease;
   double m_max_ddes_vel_dt_default;
   double m_max_ddes_vel_dt_green_flag;
 
   double m_CURVATURE_MINIMUM = 0.000001;
   double m_CURVATURE_MAX = 0.0039; // IMS turning radius (840 ft, 256 meter)
-  double m_ERROR_Y_MAX = 4.0; // halving des_vel point. Width of IMS track: 12 m
 
 }; /* class VelocityPlannerNode */
 } // namespace control
