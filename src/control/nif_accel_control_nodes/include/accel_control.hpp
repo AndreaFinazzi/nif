@@ -119,6 +119,7 @@ private:
 
   // ACC
   void accCMDCallback(const std_msgs::msg::Float32::SharedPtr msg);
+  bool m_accCMD_firstcall = true;
 
   rclcpp::TimerBase::SharedPtr gear_timer_;
 

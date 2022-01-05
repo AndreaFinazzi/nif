@@ -36,7 +36,7 @@ def generate_launch_description():
         parameters=[
             {
                 'engine_based_throttle_enabled': True,
-                'gear.track': "LVMS",
+                'gear.track': "IMS",
                 'lateral_error_deadband_m': 1.0,
             }
         ],
