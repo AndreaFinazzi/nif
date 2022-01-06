@@ -115,7 +115,7 @@ public:
     // - safety factor for lateral tire force model
     this->declare_parameter("lateral_tire_model_factor", 1.0);
     // - smoothing desired velocity change // mps increase per sec
-    this->declare_parameter("max_ddes_vel_dt_decrease", 5.0);
+    this->declare_parameter("max_ddes_vel_dt_decrease", 9.8);
     this->declare_parameter("max_ddes_vel_dt_default", 8.0);
     this->declare_parameter("max_ddes_vel_dt_green_flag", 10.0);
 
