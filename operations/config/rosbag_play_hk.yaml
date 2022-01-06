@@ -3,7 +3,7 @@ windows:
   - window_name: ROSBAG PLAY Tab
     layout: tiled
     shell_command_before:
-      - source /home/usrg/nif/install/setup.bash && cd /home/usrg/media/LaCie/Dev12-bag/2022.01.03/VEH4_LVMS_RUN-01_2022-01-03
+      - source /home/usrg/nif/install/setup.bash && cd /home/usrg/media/LaCie1/Dev12-bag/2022.01.03/VEH4_LVMS_RUN-01_2022-01-03
       - export ROS_DOMAIN_ID=33
       - export TRACK=LVMS
       - echo $TRACK
@@ -62,7 +62,7 @@ windows:
       - shell_command:
           - ros2 launch nif_launch base.launch.py
       - shell_command:
-          # - ros2 launch nif_dynamic_planning_nodes deploy.launch.py
+          - ros2 launch nif_dynamic_planning_nodes deploy.launch.py
       - shell_command:
           - ros2 launch nif_velocity_planning_node bag.launch.py
       - shell_command:

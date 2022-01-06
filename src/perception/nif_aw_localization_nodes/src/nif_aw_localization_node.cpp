@@ -934,6 +934,10 @@ void AWLocalizationNode::TOPHEADING2Callback(
     m_top_heading2_valid = false;
   }
 
+  // @DEBUG this disables top heading2 
+  m_top_heading2_valid = false;
+
+
 }
 
 

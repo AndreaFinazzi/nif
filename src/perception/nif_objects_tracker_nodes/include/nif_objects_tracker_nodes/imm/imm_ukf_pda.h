@@ -119,6 +119,10 @@ private:
   void transformPoseToLocal(
       nif_msgs::msg::DetectedObjectArray &detected_objects_output);
 
+void transformPoseToLocal(
+    const nif_msgs::msg::DetectedObjectArray &input,
+    nif_msgs::msg::DetectedObjectArray &transformed_input);
+
   void
   measurementValidation(const nif_msgs::msg::DetectedObjectArray &input,
                         UKF &target, const bool second_init,

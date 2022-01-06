@@ -5,14 +5,14 @@ IDM::IDM() {
   // default configuration
   m_idm_config_file_path = "";
 
-  m_idm_param.s0 = 5.0;
+  m_idm_param.s0 = 50.0;
   m_idm_param.s1 = 0.0;
-  m_idm_param.v_desired = DEFAULT_DES_SPEED; // mps
-  m_idm_param.time_headway = 2.0;
-  m_idm_param.accel_max = 2.0;
+  m_idm_param.v_desired = 90.0; // mps
+  m_idm_param.time_headway = 1.4;
+  m_idm_param.accel_max = 8.0;
   m_idm_param.decel_desired = 5.0;
-  m_idm_param.delta = 4.0;
-  m_idm_param.veh_l = 0.0;
+  m_idm_param.delta = 1.0;
+  m_idm_param.veh_l = 5.0;
 
   m_init_done_flg = true;
 }
@@ -125,6 +125,8 @@ void IDM::calcAccel(double ego_vel_, double gap_, double cipv_vel_rel_) {
   // Calculate ACC command using IDM
   auto cipv_vel_rel =
       ego_vel_ - cipv_vel_rel_; // in IDM, other_v_rel == ego_v - other_v
+
+  m_estop_flg = false;
 
   if (m_estop_flg) {
     cipv_vel_rel_ = ego_vel_;

@@ -89,14 +89,14 @@ void ImmUkfPda::setDetectionResult(
   previous_loop_det_ = input;
 
   nif_msgs::msg::DetectedObjectArray transformed_input;
-  nif_msgs::msg::DetectedObjectArray detected_objects_output;
+  nif_msgs::msg::DetectedObjectArray detected_objects_output_global;
+  nif_msgs::msg::DetectedObjectArray detected_objects_output_local;
 
   transformPoseToGlobal(input, transformed_input);
-  tracker(transformed_input, detected_objects_output);
-  transformPoseToLocal(detected_objects_output);
+  tracker(transformed_input, detected_objects_output_global);
+  transformPoseToLocal(detected_objects_output_global, detected_objects_output_local);
 
-
-  tracked_object_ = detected_objects_output;
+  tracked_object_ = detected_objects_output_local;
 }
 
 // nif_msgs::msg::DetectedObjectArray ImmUkfPda::getTrackedResult()
@@ -155,6 +155,28 @@ void ImmUkfPda::transformPoseToGlobal(
         ego_odom_,
         object.pose
     ).pose;
+
+    nif_msgs::msg::DetectedObject dd;
+    dd.header = input.header;
+    dd = object;
+    dd.pose = out_pose;
+
+    transformed_input.objects.push_back(dd);
+  }
+}
+
+void ImmUkfPda::transformPoseToLocal(
+    const nif_msgs::msg::DetectedObjectArray &input,
+    nif_msgs::msg::DetectedObjectArray &transformed_input) {
+  
+  input_header_ = input.header;
+  transformed_input.header = input_header_;
+
+  for (auto const &object : input.objects) {
+    geometry_msgs::msg::Pose out_pose = 
+      nif::common::utils::coordination::getPtGlobaltoBody(
+        ego_odom_,
+        object.pose).pose;
 
     nif_msgs::msg::DetectedObject dd;
     dd.header = input.header;
@@ -305,27 +327,28 @@ void ImmUkfPda::initTracker(const nif_msgs::msg::DetectedObjectArray &input,
   //   targets_.push_back(ukf);
   //   target_id_++;
   // }
-  double px = 0.0;
-  double py = 0.0;
 
   // @DEBUG: Single Track
   if (!input.objects.empty())
   {
-    // for (size_t i = 0; i < input.objects.size(); i++) {
-    //   px += input.objects[i].pose.position.x;
-    //   py += input.objects[i].pose.position.y;
-    // }
-    // px = px / input.objects.size();
-    // py = py / input.objects.size();
-    double px = input.objects[0].pose.position.x;
-    double py = input.objects[0].pose.position.y;
+    double px = 0.0;
+    double py = 0.0;
+    for (size_t i = 0; i < input.objects.size(); i++) {
+      px += input.objects[i].pose.position.x;
+      py += input.objects[i].pose.position.y;
+    }
+    px = px / input.objects.size();
+    py = py / input.objects.size();
+    // double px = input.objects[0].pose.position.x;
+    // double py = input.objects[0].pose.position.y;
     Eigen::VectorXd init_meas = Eigen::VectorXd(2);
     init_meas << px, py;
 
     UKF ukf;
     ukf.initialize(init_meas, timestamp, target_id_);
     targets_.push_back(ukf);
-    // std::cout << "Track re-initialized." << std::endl; // @DEBUG
+
+    // std::cout << "Track re-initialized. px: " << px << "; py: " << py << std::endl; // @DEBUG
 
     init_ = true;
   }
@@ -354,6 +377,8 @@ void ImmUkfPda::secondInit(
   double dist =
       sqrt(target_diff_x * target_diff_x + target_diff_y * target_diff_y);
   double target_v = dist / dt_s;
+
+    // std::cout << "secondInit: target_x: " << target_x << "; target_y: " << target_y << std::endl; // @DEBUG
 
   while (target_yaw > M_PI)
     target_yaw -= 2. * M_PI;
@@ -609,6 +634,8 @@ void ImmUkfPda::makeOutput(
     double tyaw = targets_[i].x_merge_(3);
     double tyaw_rate = targets_[i].x_merge_(4);
 
+    // std::cout << "makeOutput: tx: " << tx << "; ty: " << ty << std::endl; // @DEBUG
+
     while (tyaw > M_PI)
       tyaw -= 2. * M_PI;
     while (tyaw < -M_PI)
@@ -652,7 +679,7 @@ void ImmUkfPda::makeOutput(
   // @DEBUG revertme
   // STABLE || OCCLUSION
     if (targets_[i].is_stable_ ||
-        (targets_[i].tracking_num_ >= TrackingState::Init &&
+        (targets_[i].tracking_num_ > TrackingState::Init &&
          targets_[i].tracking_num_ < TrackingState::Stable)) {
       tmp_objects.objects.push_back(dd);
       used_targets_indices.push_back(i);
@@ -772,7 +799,7 @@ void ImmUkfPda::tracker(
   // makeNewTargets(timestamp, input, matching_vec);
 
   // static dynamic classification
-  staticClassification();
+  // staticClassification();
 
   // making output for visualization
   makeOutput(input, matching_vec, detected_objects_output);
