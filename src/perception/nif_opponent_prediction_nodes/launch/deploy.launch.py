@@ -119,7 +119,7 @@ def generate_launch_description():
             ('in_perception_list', '/tracking/objects'),
             ('in_ego_odom', '/aw_localization/ekf/odom'),
             ('defender_vel', '/null'),
-            ('out_predictionn', '/oppo/prediction_dis'),
+            ('out_predictionn', '/oppo/prediction'),
             ('out_prediction_vis', '/oppo/vis/prediction'),
         ]
     )

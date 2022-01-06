@@ -87,12 +87,12 @@ def generate_launch_description():
                     'range_rate_filter_threshold_mps': 2.0,
 
                     # Filters out the tracks considered static
-                    'track_angle_filter_active': False,
-                    'track_angle_filter_threshold_deg': 30.0,
+                    'track_angle_filter_active': True,
+                    'track_angle_filter_threshold_deg': 15.0,
 
                     # Filters out the tracks considered static
                     'track_range_filter_active': True,
-                    'track_range_filter_threshold_min_m': 10.0,
+                    'track_range_filter_threshold_min_m': 15.0,
 
                     }],
 
