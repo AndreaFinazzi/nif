@@ -7,15 +7,16 @@
 
 using namespace nif::control;
 
-IDMACCNode::IDMACCNode(const std::string &node_name_)
-    : IBaseNode(node_name_, common::NodeType::CONTROL) {
+IDMACCNode::IDMACCNode(const std::string & node_name_)
+: IBaseNode(node_name_, common::NodeType::CONTROL)
+{
   std::string package_share_directory;
 
   try {
     // This value shouldn't be used, it's as a backup if a config param is
     // missing.
     package_share_directory = ament_index_cpp::get_package_share_directory(
-        "nif_adaptive_cruise_control_node");
+      "nif_adaptive_cruise_control_node");
   } catch (std::exception e) {
     RCLCPP_FATAL(this->get_logger(), "Can't get package_share_directory");
   }
@@ -25,25 +26,28 @@ IDMACCNode::IDMACCNode(const std::string &node_name_)
 
   // publisher
   m_acc_cmd_publisher = this->create_publisher<std_msgs::msg::Float32>(
-      "/control/acc/des_acc", nif::common::constants::QOS_CONTROL_CMD);
+    "/control/acc/des_acc", nif::common::constants::QOS_CONTROL_CMD);
 
   m_prediction_subscriber =
-      this->create_subscription<nif_msgs::msg::DynamicTrajectory>(
-          "/oppo/prediction", nif::common::constants::QOS_SENSOR_DATA,
-          std::bind(&IDMACCNode::predictionCallback, this,
-                    std::placeholders::_1));
+    this->create_subscription<nif_msgs::msg::DynamicTrajectory>(
+    "/oppo/prediction", nif::common::constants::QOS_SENSOR_DATA,
+    std::bind(
+      &IDMACCNode::predictionCallback, this,
+      std::placeholders::_1));
 
   m_ego_traj_subscriber =
-      this->create_subscription<nif_msgs::msg::DynamicTrajectory>(
-          "/planning/dynamic/traj_global", nif::common::constants::QOS_PLANNING,
-          std::bind(&IDMACCNode::egoTrajectoryCallback, this,
-                    std::placeholders::_1));
+    this->create_subscription<nif_msgs::msg::DynamicTrajectory>(
+    "/planning/dynamic/traj_global", nif::common::constants::QOS_PLANNING,
+    std::bind(
+      &IDMACCNode::egoTrajectoryCallback, this,
+      std::placeholders::_1));
 
   m_mission_status_subscriber =
-      this->create_subscription<nif_msgs::msg::MissionStatus>(
-          "/system/mission", nif::common::constants::QOS_INTERNAL_STATUS,
-          std::bind(&IDMACCNode::missionStatusCallback, this,
-                    std::placeholders::_1));
+    this->create_subscription<nif_msgs::msg::MissionStatus>(
+    "/system/mission", nif::common::constants::QOS_INTERNAL_STATUS,
+    std::bind(
+      &IDMACCNode::missionStatusCallback, this,
+      std::placeholders::_1));
 
   // IDM LIB initialize
   // 1. with defualt config
@@ -54,12 +58,14 @@ IDMACCNode::IDMACCNode(const std::string &node_name_)
 }
 
 void IDMACCNode::missionStatusCallback(
-    const nif_msgs::msg::MissionStatus::SharedPtr msg) {
+  const nif_msgs::msg::MissionStatus::SharedPtr msg)
+{
   m_cur_mission_status = *msg;
 }
 
 void IDMACCNode::egoTrajectoryCallback(
-    const nif_msgs::msg::DynamicTrajectory::SharedPtr traj_msg) {
+  const nif_msgs::msg::DynamicTrajectory::SharedPtr traj_msg)
+{
 
   // TO GET THE LONGI CONTROL TYPE (ONLY IN FOLLOW)
   m_ego_trajectory = *traj_msg;
@@ -91,77 +97,95 @@ void IDMACCNode::egoTrajectoryCallback(
       std_msgs::msg::Float32 out;
 
       auto naive_gap = sqrt(
-          pow(m_ego_odom.pose.pose.position.x -
-                  m_prediction_result.trajectory_path.poses[0].pose.position.x,
-              2) +
-          pow(m_ego_odom.pose.pose.position.y -
-                  m_prediction_result.trajectory_path.poses[0].pose.position.y,
-              2));
+        pow(
+          m_ego_odom.pose.pose.position.x -
+          m_prediction_result.trajectory_path.poses[0].pose.position.x,
+          2) +
+        pow(
+          m_ego_odom.pose.pose.position.y -
+          m_prediction_result.trajectory_path.poses[0].pose.position.y,
+          2));
 
-      if (naive_gap > 150) {
+      if (naive_gap > 150 ||
+        m_ego_trajectory.longi_planning_type ==
+        m_ego_trajectory.LONGITUDINAL_PLANNING_TYPE_STRAIGHT)
+      {
         std_msgs::msg::Float32 out;
         out.data = nif::common::constants::numeric::INF;
         m_acc_cmd_publisher->publish(out);
       } else {
 
-        if (m_cur_mission_status.mission_status_code ==
-            m_cur_mission_status.MISSION_CONSTANT_SPEED) {
-          // defender mode
-          // PROJECT TO THE EGO PATH
-          double oppo_closest_idx_on_ego_path = 0.0;
-          double oppo_cte_on_ego_path = 100000000.0; // [m]
+        if (m_ego_trajectory.longi_planning_type ==
+          m_ego_trajectory.LONGITUDINAL_PLANNING_TYPE_FOLLOW)
+        {
+          if (m_cur_mission_status.mission_status_code ==
+            m_cur_mission_status.MISSION_CONSTANT_SPEED)
+          {
+            double oppo_closest_idx_on_ego_path = 0.0;
+            double oppo_cte_on_ego_path = 100000000.0; // [m]
 
-          for (int i = 0; i < m_ego_trajectory.trajectory_path.poses.size();
-               i++) {
-            double dist = sqrt(
-                pow(m_ego_trajectory.trajectory_path.poses[i].pose.position.x -
-                        m_prediction_result.trajectory_path.poses[0]
-                            .pose.position.x,
-                    2) +
-                pow(m_ego_trajectory.trajectory_path.poses[i].pose.position.y -
-                        m_prediction_result.trajectory_path.poses[0]
-                            .pose.position.y,
-                    2));
+            for (int i = 0; i < m_ego_trajectory.trajectory_path.poses.size();
+              i++)
+            {
+              double dist = sqrt(
+                pow(
+                  m_ego_trajectory.trajectory_path.poses[i].pose.position.x -
+                  m_prediction_result.trajectory_path.poses[0]
+                  .pose.position.x,
+                  2) +
+                pow(
+                  m_ego_trajectory.trajectory_path.poses[i].pose.position.y -
+                  m_prediction_result.trajectory_path.poses[0]
+                  .pose.position.y,
+                  2));
 
-            if (dist < oppo_cte_on_ego_path) {
-              oppo_closest_idx_on_ego_path = i;
-              oppo_cte_on_ego_path = dist;
+              if (dist < oppo_cte_on_ego_path) {
+                oppo_closest_idx_on_ego_path = i;
+                oppo_cte_on_ego_path = dist;
+              }
+            }
+
+            if (oppo_cte_on_ego_path < 1.5) {
+              // only do the ACC when the opponent is on our ego path
+              // ex) when they are closing the gap
+              m_idm_prt->calcAccel(
+                m_veh_speed_mps, naive_gap,
+                m_prediction_result.trajectory_velocity[0]);
+              out.data = m_idm_prt->getACCCmd();
+              m_acc_cmd_publisher->publish(out);
+            } else {
+              std_msgs::msg::Float32 out;
+              out.data = nif::common::constants::numeric::INF;
+              m_acc_cmd_publisher->publish(out);
+            }
+
+          } else {
+            // race or keep positoin mode
+
+            // ONLY IF THE OPPONENT IS IN FRONT OF US
+            // convert to the body coordiante the collision point
+            auto opponent_in_body =
+              nif::common::utils::coordination::getPtGlobaltoBody(
+              m_ego_odom.pose.pose,
+              m_prediction_result.trajectory_path.poses[0].pose);
+
+            if (opponent_in_body.position.x >= 0) {
+              // opponent is in front of us
+              m_idm_prt->calcAccel(
+                m_veh_speed_mps, naive_gap,
+                m_prediction_result.trajectory_velocity[0]);
+              out.data = m_idm_prt->getACCCmd();
+              m_acc_cmd_publisher->publish(out);
+            } else {
+              std_msgs::msg::Float32 out;
+              out.data = nif::common::constants::numeric::INF;
+              m_acc_cmd_publisher->publish(out);
             }
           }
-
-          if (oppo_cte_on_ego_path < 1.5) {
-            // only do the ACC when the opponent is on our ego path
-            // ex) when they are closing the gap
-            m_idm_prt->calcAccel(m_veh_speed_mps, naive_gap,
-                                 m_prediction_result.trajectory_velocity[0]);
-            out.data = m_idm_prt->getACCCmd();
-            m_acc_cmd_publisher->publish(out);
-          } else {
-            std_msgs::msg::Float32 out;
-            out.data = nif::common::constants::numeric::INF;
-            m_acc_cmd_publisher->publish(out);
-          }
         } else {
-          // race or keep positoin mode
-
-          // ONLY IF THE OPPONENT IS IN FRONT OF US
-          // convert to the body coordiante the collision point
-          auto opponent_in_body =
-              nif::common::utils::coordination::getPtGlobaltoBody(
-                  m_ego_odom.pose.pose,
-                  m_prediction_result.trajectory_path.poses[0].pose);
-
-          if (opponent_in_body.position.x >= 0) {
-            // opponent is in front of us
-            m_idm_prt->calcAccel(m_veh_speed_mps, naive_gap,
-                                 m_prediction_result.trajectory_velocity[0]);
-            out.data = m_idm_prt->getACCCmd();
-            m_acc_cmd_publisher->publish(out);
-          } else {
-            std_msgs::msg::Float32 out;
-            out.data = nif::common::constants::numeric::INF;
-            m_acc_cmd_publisher->publish(out);
-          }
+          std_msgs::msg::Float32 out;
+          out.data = nif::common::constants::numeric::INF;
+          m_acc_cmd_publisher->publish(out);
         }
       }
     }
@@ -169,7 +193,8 @@ void IDMACCNode::egoTrajectoryCallback(
 }
 
 void IDMACCNode::predictionCallback(
-    const nif_msgs::msg::DynamicTrajectory::SharedPtr msg) {
+  const nif_msgs::msg::DynamicTrajectory::SharedPtr msg)
+{
   if (m_oppo_pred_callback_first_run) {
     m_oppo_pred_callback_first_run = false;
   }

@@ -16,31 +16,31 @@ model_params:
 velocity_brackets:
 - velocity: 10
   q_trace: [5.0, 1.0, 0.1, 0.0, 5.0]
-  r_trace: [250., 20.]
+  r_trace: [250., 40.]
 - velocity: 20
   q_trace: [4.0, 1.0, 0.1, 0.0, 5.0]
-  r_trace: [350., 20.]
+  r_trace: [350., 40.]
 - velocity: 25
   q_trace: [2.5, 0.5, 0.1, 0.0, 5.0]
-  r_trace: [800., 20.]
+  r_trace: [800., 40.]
 - velocity: 30
   q_trace: [1.2, 0.2, 0.1, 0.0, 5.0]
-  r_trace: [950., 20.]
+  r_trace: [950., 40.]
 - velocity: 35
   q_trace: [1.0, 0.1, 0.1, 0.0, 5.0]
-  r_trace: [1100., 30.]
+  r_trace: [1100., 60.]
 - velocity: 40
   q_trace: [1.0, 0.08, 0.1, 0.0, 5.0]
-  r_trace: [1300., 50.]
+  r_trace: [1300., 80.]
 - velocity: 45
   q_trace: [1.0, 0.06, 0.1, 0.0, 5.0]
-  r_trace: [1500., 60.]
+  r_trace: [1500., 80.]
 - velocity: 50
   q_trace: [1.0, 0.04, 0.1, 0.0, 5.0]
-  r_trace: [1700., 80.]
+  r_trace: [1700., 100.]
 - velocity: 55
   q_trace: [1.0, 0.02, 0.1, 0.0, 5.0]
-  r_trace: [1900., 90.]
+  r_trace: [1900., 100.]
 - velocity: 60
   q_trace: [1.0, 0.01, 0.1, 0.0, 5.0]
   r_trace: [2100., 100.]

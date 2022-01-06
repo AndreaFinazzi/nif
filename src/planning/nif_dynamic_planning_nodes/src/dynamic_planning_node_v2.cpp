@@ -1589,9 +1589,8 @@ void DynamicPlannerNode::timer_callback_rule() {
     } else {
 
 
-      // if (mission_status.mission_status_code ==
-      //     nif::common::MissionStatus::MISSION_RACE) {
-        if (false) {
+      if (mission_status.mission_status_code ==
+          nif::common::MissionStatus::MISSION_RACE) {
 
         m_defender_mode_first_callback = true;
         m_keep_position_mode_first_callback = true;
@@ -1989,9 +1988,8 @@ void DynamicPlannerNode::timer_callback_rule() {
         }
 
       } 
-      // else if (mission_status.mission_status_code ==
-      //            nif::common::MissionStatus::MISSION_CONSTANT_SPEED) {
-      else if (true) {
+      else if (mission_status.mission_status_code ==
+                 nif::common::MissionStatus::MISSION_CONSTANT_SPEED) {
         // ----------------------------------------------
         // ---------------- Defender mode ---------------
         // --------------- Drive innerline --------------

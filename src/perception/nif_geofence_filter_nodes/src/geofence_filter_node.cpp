@@ -122,7 +122,7 @@ void GeofenceFilterNode::radarTrackCallback(
         pose_in_body.position.x = r * cos(theta_rad);
         pose_in_body.position.y = r * sin(theta_rad);
 
-        // @DEBUG filter on the right only if angle is smaller than 10.0
+        // @DEBUG filter on inner fence only if angle is smaller than 10.0
         if (
           this->poseInBodyIsValid(pose_in_body, msg->track_range_rate) || 
           (abs(msg->track_angle) < 10.0 && this->poseInBodyIsValid(pose_in_body, msg->track_range_rate, false, true))
