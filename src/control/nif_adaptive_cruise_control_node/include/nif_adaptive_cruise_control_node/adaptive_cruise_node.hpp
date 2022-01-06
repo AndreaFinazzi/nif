@@ -43,6 +43,8 @@ public:
   void
   predictionCallback(const nif_msgs::msg::DynamicTrajectory::SharedPtr msg);
   void missionStatusCallback(const nif_msgs::msg::MissionStatus::SharedPtr msg);
+  
+  double naiveACC(double naive_gap);
 
 private:
   /* data */
@@ -68,6 +70,9 @@ private:
   std::string m_input_perception_topic_name;
   std::string m_input_maptrack_body_topic_name;
   std::string m_output_acc_cmd_topic_name;
+
+  double m_ACC_des_gap;
+  double m_ACC_gain;
 
   std::shared_ptr<IDM> m_idm_prt;
 

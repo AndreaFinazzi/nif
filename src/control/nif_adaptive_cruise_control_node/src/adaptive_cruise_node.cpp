@@ -24,6 +24,12 @@ IDMACCNode::IDMACCNode(const std::string & node_name_)
   this->declare_parameter("idm_acc_config_file", "idm_acc_config.yaml");
   m_config_file = this->get_parameter("idm_acc_config_file").as_string();
 
+  // Params for naive ACC
+  this->declare_parameter("ACC_des_gap", 50.0);
+  this->declare_parameter("ACC_gain", 0.06);
+  m_ACC_des_gap = this->get_parameter("ACC_des_gap").as_double();
+  m_ACC_gain = this->get_parameter("ACC_gain").as_double();
+
   // publisher
   m_acc_cmd_publisher = this->create_publisher<std_msgs::msg::Float32>(
     "/control/acc/des_acc", nif::common::constants::QOS_CONTROL_CMD);
@@ -148,10 +154,15 @@ void IDMACCNode::egoTrajectoryCallback(
             if (oppo_cte_on_ego_path < 1.5) {
               // only do the ACC when the opponent is on our ego path
               // ex) when they are closing the gap
-              m_idm_prt->calcAccel(
-                m_veh_speed_mps, naive_gap,
-                m_prediction_result.trajectory_velocity[0]);
-              out.data = m_idm_prt->getACCCmd();
+              // // IDM ACC
+              // m_idm_prt->calcAccel(
+              //   m_veh_speed_mps, naive_gap,
+              //   m_prediction_result.trajectory_velocity[0]);
+              // out.data = m_idm_prt->getACCCmd();
+              // m_acc_cmd_publisher->publish(out);
+              // Naive ACC
+              std_msgs::msg::Float32 out;
+              out.data = naiveACC(naive_gap);
               m_acc_cmd_publisher->publish(out);
             } else {
               std_msgs::msg::Float32 out;
@@ -171,10 +182,15 @@ void IDMACCNode::egoTrajectoryCallback(
 
             if (opponent_in_body.position.x >= 0) {
               // opponent is in front of us
-              m_idm_prt->calcAccel(
-                m_veh_speed_mps, naive_gap,
-                m_prediction_result.trajectory_velocity[0]);
-              out.data = m_idm_prt->getACCCmd();
+              // // IDM ACC
+              // m_idm_prt->calcAccel(
+              //   m_veh_speed_mps, naive_gap,
+              //   m_prediction_result.trajectory_velocity[0]);
+              // out.data = m_idm_prt->getACCCmd();
+              // m_acc_cmd_publisher->publish(out);
+              // Naive ACC
+              std_msgs::msg::Float32 out;
+              out.data = naiveACC(naive_gap);
               m_acc_cmd_publisher->publish(out);
             } else {
               std_msgs::msg::Float32 out;
@@ -200,6 +216,18 @@ void IDMACCNode::predictionCallback(
   }
   m_prev_oppo_pred_last_update = this->now(); // TODO msg->header.stamp;
   m_prediction_result = *msg;
+}
+
+double IDMACCNode::naiveACC(double naive_gap) {
+  // Linear Controller for ACC
+  // - naive_gap: 100 --> +3.0 m/s2
+  // - naive_gap:  70 --> +1.2 m/s2
+  // - naive_gap:  50 -->  0.0 m/s2
+  // - naive_gap:  30 --> -1.2 m/s2 
+  // m_ACC_gain: 0.06
+  // m_ACC_des_gap: 50
+  double error_gap = naive_gap - m_ACC_des_gap;
+  return m_ACC_gain * (error_gap);
 }
 
 // void IDMACCNode::perceptionCallback(
