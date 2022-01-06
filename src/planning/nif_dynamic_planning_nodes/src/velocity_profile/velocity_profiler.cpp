@@ -354,8 +354,18 @@ velocity_profiler::velProfileWCollisionChecking(
               out_traj.trajectory_timestamp_array.back() -
               oppo_predicted_path_.trajectory_timestamp_array[oppo_traj_idx]);
 
+          // if (dist < collision_time_filetered &&
+          //     time_diff < collision_time_filetered) {
+
+          // convert to the body coordiante the collision point
+          auto body_collision_pt =
+              nif::common::utils::coordination::getPtGlobaltoBody(
+                  ps.pose,
+                  oppo_predicted_path_.trajectory_path.poses[oppo_traj_idx]
+                      .pose);
           if (dist < collision_time_filetered &&
-              time_diff < collision_time_filetered) {
+              time_diff < collision_time_filetered &&
+              body_collision_pt.position.x >= 0) {
             has_collision = true;
             break;
           }
@@ -611,7 +621,8 @@ nif_msgs::msg::DynamicTrajectory velocity_profiler::velProfileForAcc(
   }
   // ---------------------------------------------
 
-  // WARN: do NOT remove, it keeps the next <if, else> safe (mem access on cipv_predicted_traj_)
+  // WARN: do NOT remove, it keeps the next <if, else> safe (mem access on
+  // cipv_predicted_traj_)
   auto naive_gap = nif::common::constants::numeric::INF;
   if (!cipv_predicted_traj_.trajectory_path.poses.empty()) {
     naive_gap = sqrt(pow(odom_.pose.pose.position.x -
@@ -749,11 +760,13 @@ nif_msgs::msg::DynamicTrajectory velocity_profiler::velProfileForAcc(
                 (odom_.twist.twist.linear.x - cipv_vel_abs_) /
                 (2 *
                  sqrt(m_constraint_max_accel * abs(m_constraint_max_deccel)));
-        
-        // TODO SEONG: Is this idm only activated when the oppo is front of ego only?? 
+
+        // TODO SEONG: Is this idm only activated when the oppo is front of ego
+        // only??
         auto predictided_oppo_pose =
             cipv_predicted_traj_.trajectory_path.poses[0];
-        // TODO SEONG: When overtaking, this gap would be problem if lateral gap is close
+        // TODO SEONG: When overtaking, this gap would be problem if lateral gap
+        // is close
         // TODO SEONG: how about using progress gap?
         auto naive_cur_gap = std::max(
             sqrt(pow(predictided_oppo_pose.pose.position.x - point_x, 2) +
@@ -777,8 +790,10 @@ nif_msgs::msg::DynamicTrajectory velocity_profiler::velProfileForAcc(
         //                            out_traj.trajectory_velocity.back()) *
         //                               acc_desired_accel);
 
-        // TODO SEONG: spline_interval_ / (out_traj.trajectory_velocity.back() + 0.00001) ??
-        // TODO SEONG: not spline_interval_ / out_traj.trajectory_velocity.back() + 0.00001 ??
+        // TODO SEONG: spline_interval_ / (out_traj.trajectory_velocity.back() +
+        // 0.00001) ??
+        // TODO SEONG: not spline_interval_ /
+        // out_traj.trajectory_velocity.back() + 0.00001 ??
         auto acc_limited_vel = std::min(
             curve_vel,
             std::max((out_traj.trajectory_velocity.back() +

@@ -7,6 +7,7 @@
 #include "../separating_axis_theorem/separating_axis_theorem.hpp"
 #include "nif_msgs/msg/dynamic_trajectory.hpp"
 #include "nif_opponent_prediction_nodes/frenet_path_generator.h"
+#include "nif_utils/utils.h"
 #include "nif_vehicle_dynamics_manager/tire_manager.hpp"
 #include "rclcpp/logger.hpp"
 #include "rclcpp/rclcpp.hpp"
