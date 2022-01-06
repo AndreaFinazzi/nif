@@ -17,9 +17,9 @@ Panels:
         - //aw_localization/ekf/odom1/Shape1
         - /Pose1/Topic1
         - //planning/path_global1/Topic1
+        - //planning/path_global_test1
         - //planning/path_global_test1/Topic1
         - //ghost/odometry1
-        - //ghost/odometry1/Status1
         - //ghost/odometry1/Topic1
         - //ghost/odometry1/Shape1
         - //oppo/vis/prediction1
@@ -502,7 +502,7 @@ Visualization Manager:
       Buffer Length: 1
       Class: rviz_default_plugins/Path
       Color: 25; 255; 0
-      Enabled: true
+      Enabled: false
       Head Diameter: 0.30000001192092896
       Head Length: 0.20000000298023224
       Length: 0.30000001192092896
@@ -525,7 +525,7 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Best Effort
         Value: /planning/path_global
-      Value: true
+      Value: false
     - Alpha: 1
       Buffer Length: 1
       Class: rviz_default_plugins/Path
@@ -552,7 +552,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Best Effort
-        Value: /planning/path_global_test
+        Value: /planning/dynamic/vis/traj_global
       Value: true
     - Angle Tolerance: 0.10000000149011612
       Class: rviz_default_plugins/Odometry
@@ -667,7 +667,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/ThirdPersonFollower
-      Distance: 1052.39990234375
+      Distance: 88.36761474609375
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -685,7 +685,7 @@ Visualization Manager:
       Pitch: 0.8853983879089355
       Target Frame: base_link
       Value: ThirdPersonFollower (rviz_default_plugins)
-      Yaw: 5.195407390594482
+      Yaw: 3.4304020404815674
     Saved: ~
 Window Geometry:
   Displays:
@@ -701,5 +701,5 @@ Window Geometry:
   Views:
     collapsed: true
   Width: 1504
-  X: 369
-  Y: 84
+  X: 356
+  Y: 73
