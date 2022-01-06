@@ -1531,13 +1531,13 @@ void DynamicPlannerNode::timer_callback_rule() {
   // ---------------------------------------------------------------
   // ----------------------- Mylap health check --------------------
   // ---------------------------------------------------------------
-  if (!m_mylap_rof_callback_first_run) {
-    if (this->now() - m_mylap_rof_last_update > rclcpp::Duration(2, 0)) {
-      m_is_mylap_health = false;
-    } else {
-      m_is_mylap_health = true;
-    }
-  }
+  // if (!m_mylap_rof_callback_first_run) {
+  //   if (this->now() - m_mylap_rof_last_update > rclcpp::Duration(2, 0)) {
+  //     m_is_mylap_health = false;
+  //   } else {
+  //     m_is_mylap_health = true;
+  //   }
+  // }
   // ---------------------------------------------------------------
 
   // ---------------------------------------------------------------
@@ -1674,9 +1674,8 @@ void DynamicPlannerNode::timer_callback_rule() {
               m_cur_oppo_pred_result.trajectory_path.poses.front().pose);
         }
         // double check with mylap only if it is healthy
-        if (m_is_mylap_health == true) {
-          auto mylap_naive_gap = ;
-        }
+        // if (m_is_mylap_health == true) {
+        // }
 
         if (mission_status.zone_status.zone_type ==
                 mission_status.zone_status.ZONE_TYPE_STRAIGHT &&
