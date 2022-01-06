@@ -25,7 +25,7 @@
   <depend>nif_opponent_prediction_nodes</depend>
   <depend>nif_waypoint_manager_common</depend>
   <depend>nif_vehicle_dynamics_manager</depend>
-
+  <depend>deep_orange_msgs</depend>
   <depend>rclcpp</depend>
   <depend>std_msgs</depend>
   <depend>yaml-cpp</depend>

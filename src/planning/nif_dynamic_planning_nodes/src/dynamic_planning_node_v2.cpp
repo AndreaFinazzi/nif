@@ -387,6 +387,15 @@ void DynamicPlannerNode::loadConfig(const std::string &planning_config_file_) {
   }
 }
 
+void DynamicPlannerNode::myLapROFCallback(
+    const deep_orange_msgs::msg::RestOfFieldReport ::SharedPtr msg) {
+  if (m_mylap_rof_callback_first_run == true) {
+    m_mylap_rof_callback_first_run = false;
+  }
+  m_mylap_rof_last_update = this->now();
+  m_mylap_rof_msg = *msg;
+}
+
 tuple<vector<double>, vector<double>>
 DynamicPlannerNode::loadCSVfile(const std::string &wpt_file_path_) {
   ifstream inputFile(wpt_file_path_);
@@ -1520,6 +1529,18 @@ void DynamicPlannerNode::timer_callback_rule() {
   allowable_maximum_vy = std::max(1.5, allowable_maximum_vy); // mps
 
   // ---------------------------------------------------------------
+  // ----------------------- Mylap health check --------------------
+  // ---------------------------------------------------------------
+  if (!m_mylap_rof_callback_first_run) {
+    if (this->now() - m_mylap_rof_last_update > rclcpp::Duration(2, 0)) {
+      m_is_mylap_health = false;
+    } else {
+      m_is_mylap_health = true;
+    }
+  }
+  // ---------------------------------------------------------------
+
+  // ---------------------------------------------------------------
   // --------------- Oppo prediction health check ---------------
   // ---------------------------------------------------------------
   if (!m_oppo_pred_callback_first_run) {
@@ -1651,6 +1672,10 @@ void DynamicPlannerNode::timer_callback_rule() {
           naive_gap = nif::common::utils::geometry::calEuclideanDistance(
               m_ego_odom.pose.pose,
               m_cur_oppo_pred_result.trajectory_path.poses.front().pose);
+        }
+        // double check with mylap only if it is healthy
+        if (m_is_mylap_health == true) {
+          auto mylap_naive_gap = ;
         }
 
         if (mission_status.zone_status.zone_type ==

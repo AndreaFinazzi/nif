@@ -26,6 +26,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "rcutils/error_handling.h"
 // #include "separating_axis_theorem/separating_axis_theorem.hpp"
+#include "deep_orange_msgs/msg/rest_of_field_report.hpp"
 #include "std_msgs/msg/float32.hpp"
 #include "velocity_profile/velocity_profiler.hpp"
 #include <cmath>
@@ -96,6 +97,9 @@ public:
   void mapTrackGlobalCallback(const nav_msgs::msg::Path::SharedPtr msg);
   void predictionResultCallback(
       const nif_msgs::msg::DynamicTrajectory::SharedPtr msg);
+
+  void myLapROFCallback(
+      const deep_orange_msgs::msg::RestOfFieldReport ::SharedPtr msg);
 
   void loadConfig(const std::string &planning_config_file_);
 
@@ -293,6 +297,11 @@ private:
   double m_mission_accel_max; // mpss
   double m_mission_decel_max; // mpss
 
+  deep_orange_msgs::msg::RestOfFieldReport m_mylap_rof_msg;
+  bool m_mylap_rof_callback_first_run = true;
+  rclcpp::Time m_mylap_rof_last_update;
+  bool m_is_mylap_health = false;
+
   /////////////////////////////
   // OVERTKAING PATH CANDIDATES
   /////////////////////////////
@@ -381,7 +390,7 @@ private:
 
   // under consideration
   const double m_acceptable_slip_angle_rad = 0.0872665; // 5 deg
-  const double m_merging_back_gap_thres = 15.0;         // meter
+  const double m_merging_back_gap_thres = 50.0;         // meter
 
   shared_ptr<FrenetPathGenerator> m_frenet_generator_ptr;
   //   shared_ptr<velocity_profiler> m_velocity_profiler_ptr;
