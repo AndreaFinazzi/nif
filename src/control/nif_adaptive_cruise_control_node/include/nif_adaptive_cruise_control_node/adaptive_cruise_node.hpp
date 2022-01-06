@@ -45,7 +45,8 @@ public:
   void missionStatusCallback(const nif_msgs::msg::MissionStatus::SharedPtr msg);
   
   double naiveACC(double naive_gap);
-
+  double smoothSignal(double current_signal, double target_signal,
+                      double delta_dt, double delta_dt_decrease, double dt);
 private:
   /* data */
   //   IDMACCNode();
@@ -73,6 +74,11 @@ private:
 
   double m_ACC_des_gap;
   double m_ACC_gain;
+  double m_ACC_max_accel;
+  double m_acc_accel_prev;
+  double m_max_daccel_dt;
+  double m_max_daccel_dt_decrease;
+  double m_period_double_s;
 
   std::shared_ptr<IDM> m_idm_prt;
 

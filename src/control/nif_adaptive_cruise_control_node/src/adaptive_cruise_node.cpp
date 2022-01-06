@@ -27,8 +27,19 @@ IDMACCNode::IDMACCNode(const std::string & node_name_)
   // Params for naive ACC
   this->declare_parameter("ACC_des_gap", 50.0);
   this->declare_parameter("ACC_gain", 0.06);
+  this->declare_parameter("ACC_max_accel", 5.0);
+  this->declare_parameter("max_daccel_dt", 1.0);
+  this->declare_parameter("max_daccel_dt_decrease", 1.0);
+  this->declare_parameter("period_double_s", 0.01);
+
   m_ACC_des_gap = this->get_parameter("ACC_des_gap").as_double();
   m_ACC_gain = this->get_parameter("ACC_gain").as_double();
+  m_ACC_max_accel = this->get_parameter("ACC_max_accel").as_double();
+  m_max_daccel_dt = this->get_parameter("max_daccel_dt").as_double();
+  m_max_daccel_dt_decrease = this->get_parameter("max_daccel_dt_decrease").as_double();
+  m_period_double_s = this->get_parameter("period_double_s").as_double(); 
+  m_acc_accel_prev = m_ACC_max_accel; // initilize with max accel
+
 
   // publisher
   m_acc_cmd_publisher = this->create_publisher<std_msgs::msg::Float32>(
@@ -71,8 +82,7 @@ void IDMACCNode::missionStatusCallback(
 
 void IDMACCNode::egoTrajectoryCallback(
   const nif_msgs::msg::DynamicTrajectory::SharedPtr traj_msg)
-{
-
+{                 
   // TO GET THE LONGI CONTROL TYPE (ONLY IN FOLLOW)
   m_ego_trajectory = *traj_msg;
 
@@ -93,11 +103,16 @@ void IDMACCNode::egoTrajectoryCallback(
     // ABNORMAL SITUATION
     std_msgs::msg::Float32 out;
     out.data = 0.0;
+    // no update previous value
+    // publish data
     m_acc_cmd_publisher->publish(out);
   } else {
     if (m_prediction_result.trajectory_path.poses.empty()) {
       std_msgs::msg::Float32 out;
       out.data = nif::common::constants::numeric::INF;
+      // update previous value (as max accel)
+      m_acc_accel_prev = m_ACC_max_accel;
+      // publish data
       m_acc_cmd_publisher->publish(out);
     } else {
       std_msgs::msg::Float32 out;
@@ -118,6 +133,9 @@ void IDMACCNode::egoTrajectoryCallback(
       {
         std_msgs::msg::Float32 out;
         out.data = nif::common::constants::numeric::INF;
+        // update previous value (as max accel)
+        m_acc_accel_prev = m_ACC_max_accel;
+        // publish data
         m_acc_cmd_publisher->publish(out);
       } else {
 
@@ -162,11 +180,22 @@ void IDMACCNode::egoTrajectoryCallback(
               // m_acc_cmd_publisher->publish(out);
               // Naive ACC
               std_msgs::msg::Float32 out;
-              out.data = naiveACC(naive_gap);
+              double naive_acc_accel = naiveACC(naive_gap);
+              // Smoothing
+              naive_acc_accel =
+                  smoothSignal(m_acc_accel_prev, naive_acc_accel,
+                              m_max_daccel_dt, m_max_daccel_dt_decrease, m_period_double_s);
+              out.data = naive_acc_accel;
+              // update previous value (as max accel)
+              m_acc_accel_prev = naive_acc_accel;
+              // publish data
               m_acc_cmd_publisher->publish(out);
             } else {
               std_msgs::msg::Float32 out;
               out.data = nif::common::constants::numeric::INF;
+              // update previous value (as max accel)
+              m_acc_accel_prev = m_ACC_max_accel;
+              // publish data
               m_acc_cmd_publisher->publish(out);
             }
 
@@ -190,17 +219,31 @@ void IDMACCNode::egoTrajectoryCallback(
               // m_acc_cmd_publisher->publish(out);
               // Naive ACC
               std_msgs::msg::Float32 out;
-              out.data = naiveACC(naive_gap);
+              double naive_acc_accel = naiveACC(naive_gap);
+              // Smoothing
+              naive_acc_accel =
+                  smoothSignal(m_acc_accel_prev, naive_acc_accel,
+                              m_max_daccel_dt, m_max_daccel_dt_decrease, m_period_double_s);
+              out.data = naive_acc_accel;
+              // update previous value (as max accel)
+              m_acc_accel_prev = naive_acc_accel;
+              // publish data
               m_acc_cmd_publisher->publish(out);
             } else {
               std_msgs::msg::Float32 out;
               out.data = nif::common::constants::numeric::INF;
+              // update previous value (as max accel)
+              m_acc_accel_prev = m_ACC_max_accel;
+              // publish data
               m_acc_cmd_publisher->publish(out);
             }
           }
         } else {
           std_msgs::msg::Float32 out;
           out.data = nif::common::constants::numeric::INF;
+          // update previous value (as max accel)
+          m_acc_accel_prev = m_ACC_max_accel;
+          // publish data
           m_acc_cmd_publisher->publish(out);
         }
       }
@@ -228,6 +271,20 @@ double IDMACCNode::naiveACC(double naive_gap) {
   // m_ACC_des_gap: 50
   double error_gap = naive_gap - m_ACC_des_gap;
   return m_ACC_gain * (error_gap);
+}
+
+double IDMACCNode::smoothSignal(double current_signal, double target_signal,
+                                double delta_dt, double delta_dt_decrease, double dt) {
+  // Only care when target signal > current signal
+  if (target_signal > current_signal &&
+      target_signal > current_signal + delta_dt * dt) {
+    return current_signal + delta_dt * dt;
+  }
+  else if (target_signal < current_signal &&
+            target_signal < current_signal - delta_dt_decrease * dt) {
+    return current_signal - delta_dt_decrease * dt;
+  }
+  return target_signal;
 }
 
 // void IDMACCNode::perceptionCallback(
