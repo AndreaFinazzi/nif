@@ -1587,8 +1587,11 @@ void DynamicPlannerNode::timer_callback_rule() {
                                m_last_lat_planning_type, true);
       return;
     } else {
-      if (mission_status.mission_status_code ==
-          nif::common::MissionStatus::MISSION_RACE) {
+
+
+      // if (mission_status.mission_status_code ==
+      //     nif::common::MissionStatus::MISSION_RACE) {
+        if (false) {
 
         m_defender_mode_first_callback = true;
         m_keep_position_mode_first_callback = true;
@@ -1985,8 +1988,10 @@ void DynamicPlannerNode::timer_callback_rule() {
           }
         }
 
-      } else if (mission_status.mission_status_code ==
-                 nif::common::MissionStatus::MISSION_CONSTANT_SPEED) {
+      } 
+      // else if (mission_status.mission_status_code ==
+      //            nif::common::MissionStatus::MISSION_CONSTANT_SPEED) {
+      else if (true) {
         // ----------------------------------------------
         // ---------------- Defender mode ---------------
         // --------------- Drive innerline --------------

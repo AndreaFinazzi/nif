@@ -46,6 +46,7 @@ def generate_launch_description():
         },
         remappings=[
             ('/in_imu_data', '/novatel_bottom/rawimux'),
+            ('/control_safety_layer/out/desired_accel', '/control_safety_layer/out/desired_accel_test'),
             ('/accel_control/diagnostic', '/accel_control/diagnostic_test'),
             ('/joystick/accelerator_cmd', '/joystick/accelerator_cmd_test'),
             ('/joystick/accelerator_cmd/raw', '/joystick/accelerator_cmd_test/raw'),

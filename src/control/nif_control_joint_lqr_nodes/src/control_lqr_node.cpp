@@ -302,45 +302,47 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
       //     l_desired_velocity = this->getDesiredVelocity()->data;
       //   }
 
-      if (this->hasReferenceTrajectory() &&
-          (this->now() - this->getReferenceTrajectoryUpdateTime() <=
-           rclcpp::Duration(1, 0))) {
+      // if (this->hasReferenceTrajectory() &&
+      //     (this->now() - this->getReferenceTrajectoryUpdateTime() <=
+      //      rclcpp::Duration(1, 0))) {
         // TODO: Review this with Hyunki
         // FIXME:
         // l_desired_velocity = this->getReferenceTrajectory()
         //                          ->trajectory_velocity[lqr_tracking_idx_];
 
-        ////////////////////////////////////
-        // Look-ahead time implementation //
-        ////////////////////////////////////
-        double test_lookahead_time = 0.8;
-        // step 1. Search the nearest time within the trajectory's timestamp
-        // array
-        auto closest_time_idx = nif::common::utils::closestIndex(
-            this->getReferenceTrajectory()->trajectory_timestamp_array,
-            test_lookahead_time);
+      //   ////////////////////////////////////
+      //   // Look-ahead time implementation //
+      //   ////////////////////////////////////
+      //   double test_lookahead_time = 0.8;
+      //   // step 1. Search the nearest time within the trajectory's timestamp
+      //   // array
+      //   auto closest_time_idx = nif::common::utils::closestIndex(
+      //       this->getReferenceTrajectory()->trajectory_timestamp_array,
+      //       test_lookahead_time);
 
-        // step 2. Safety feature
-        auto time_differ =
-            abs(this->getReferenceTrajectory()
-                    ->trajectory_timestamp_array[closest_time_idx] -
-                test_lookahead_time);
+      //   // step 2. Safety feature
+      //   auto time_differ =
+      //       abs(this->getReferenceTrajectory()
+      //               ->trajectory_timestamp_array[closest_time_idx] -
+      //           test_lookahead_time);
 
-        if (time_differ < 2) {
-          l_desired_velocity = this->getReferenceTrajectory()
-                                   ->trajectory_velocity[closest_time_idx];
-          if (l_desired_velocity < 1.5)
-            l_desired_velocity = 0.0;
-        } else {
-          l_desired_velocity = 0.0;
-        }
-      }
+      //   if (time_differ < 2) {
+      //     l_desired_velocity = this->getReferenceTrajectory()
+      //                              ->trajectory_velocity[closest_time_idx];
+      //     if (l_desired_velocity < 1.5)
+      //       l_desired_velocity = 0.0;
+      //   } else {
+      //     l_desired_velocity = 0.0;
+      //   }
+      // }
 
-      if (!m_use_mission_max_vel_) {
-        // if not using mission status maximum velocity,
-        // directly use des_vel from velocity planner
-        l_desired_velocity = direct_desired_velocity_;
-      }
+      // if (!m_use_mission_max_vel_) {
+      //   // if not using mission status maximum velocity,
+      //   // directly use des_vel from velocity planner
+      //   l_desired_velocity = direct_desired_velocity_;
+      // }
+
+      l_desired_velocity = direct_desired_velocity_;
 
       auto goal = joint_lqr::utils::LQRGoal(
           this->getReferenceTrajectory()

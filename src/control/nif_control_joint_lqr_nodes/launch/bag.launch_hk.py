@@ -63,7 +63,7 @@ def generate_launch_description():
             ('/in_reference_trajectory', '/planning/dynamic/traj_global'),
             ('velocity_planner/des_vel', 'velocity_planner/des_vel_test'),
             # ('in_control_cmd_prev', '/control_safety_layer/out/control_cmd'),
-            # ('out_control_cmd', '/control_pool/control_cmd_test'),
+            ('out_control_cmd', '/control_pool/control_cmd_test'),
             ('control_joint_lqr/desired_velocity_mps', 'control_joint_lqr/desired_velocity_mps_test'),
             ('control_joint_lqr/tracking_valid', 'control_joint_lqr/tracking_valid_test'),
             ('control_joint_lqr/valid_conditions', 'control_joint_lqr/valid_conditions_test'),

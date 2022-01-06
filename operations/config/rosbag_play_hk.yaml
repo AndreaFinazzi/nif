@@ -13,9 +13,9 @@ windows:
 
     - shell_command:
       # - ros2 bag play autonomy_2021-10-21_15-38-00/ --read-ahead-queue-size 10000 -r 1 -l # 2021.10.18
-      - ros2 bag play autonomy_2022-01-03_11-47-13/ --read-ahead-queue-size 10000 -r2 -l
+      - ros2 bag play autonomy_2022-01-03_11-47-13/ --read-ahead-queue-size 10000 -r5 -l --remap /planning/dynamic/traj_global:=/tmp1
     - shell_command:
-      - ros2 run plotjuggler plotjuggler -l /home/usrg/nif/operations/config/plotjuggler_config_control_hk.xml
+      - ros2 run plotjuggler plotjuggler -l /home/usrg/nif/src/control/nif_control_joint_lqr_nodes/config/plotjuggler_config_hk.xml
 
   - window_name: Algorithm Tab
     layout: tiled
@@ -62,15 +62,20 @@ windows:
       - shell_command:
           - ros2 launch nif_launch base.launch.py
       - shell_command:
+          - ros2 launch nif_launch ghost.launch.py
+      - shell_command:
+          - ros2 launch nif_adaptive_cruise_control_node deploy.launch.py
+      - shell_command:
           - ros2 launch nif_dynamic_planning_nodes deploy.launch.py
       - shell_command:
-          - ros2 launch nif_velocity_planning_node bag.launch.py
+          - ros2 launch nif_velocity_planning_node bag.launch_hk.py
       - shell_command:
-          - ros2 launch nif_control_joint_lqr_nodes bag.launch.py
+          - ros2 launch nif_control_joint_lqr_nodes bag.launch_hk.py
       - shell_command:
-          - ros2 launch nif_accel_control_nodes bag.launch.py
+          - ros2 launch nif_control_safety_layer_nodes bag.launch_hk.py
       - shell_command:
-          # - ros2 topic echo /velocity_planner/diagnostic
+          - ros2 launch nif_accel_control_nodes bag.launch_hk.py
+
           
 
   # - window_name: record Tab
