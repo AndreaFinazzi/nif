@@ -97,6 +97,10 @@ void IDMACCNode::egoTrajectoryCallback(
                   m_prediction_result.trajectory_path.poses[0].pose.position.y,
               2));
 
+      std::cout << "naive gap : " << naive_gap << std::endl;
+      std::cout << "m_veh_speed_mps : " << m_veh_speed_mps << std::endl;
+      std::cout << "m_prediction_result.trajectory_velocity[0] : " << m_prediction_result.trajectory_velocity[0] << std::endl;
+
       m_idm_prt->calcAccel(m_veh_speed_mps, naive_gap,
                            m_prediction_result.trajectory_velocity[0]);
 

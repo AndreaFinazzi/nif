@@ -139,9 +139,9 @@ void IDM::calcAccel(double ego_vel_, double gap_, double cipv_vel_rel_) {
 
   auto curr_gap = std::max(gap_ - m_idm_param.veh_l, EPS);
 
-  if (m_estop_flg) {
-    curr_gap = 0.5 * m_idm_param.s0;
-  }
+  // if (m_estop_flg) {
+  //   curr_gap = 0.5 * m_idm_param.s0;
+  // }
 
   m_desired_accel =
       m_idm_param.accel_max *
