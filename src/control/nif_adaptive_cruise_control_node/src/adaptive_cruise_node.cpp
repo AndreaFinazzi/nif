@@ -39,12 +39,23 @@ IDMACCNode::IDMACCNode(const std::string &node_name_)
           std::bind(&IDMACCNode::egoTrajectoryCallback, this,
                     std::placeholders::_1));
 
+  m_mission_status_subscriber =
+      this->create_subscription<nif_msgs::msg::MissionStatus>(
+          "/system/mission", nif::common::constants::QOS_INTERNAL_STATUS,
+          std::bind(&IDMACCNode::missionStatusCallback, this,
+                    std::placeholders::_1));
+
   // IDM LIB initialize
   // 1. with defualt config
   // this->m_idm_prt = std::make_shared<IDM>();
   // 2. with specific config
   m_oppo_pred_callback_first_run = true;
   this->m_idm_prt = std::make_shared<IDM>(m_config_file);
+}
+
+void IDMACCNode::missionStatusCallback(
+    const nif_msgs::msg::MissionStatus::SharedPtr msg) {
+  m_cur_mission_status = *msg;
 }
 
 void IDMACCNode::egoTrajectoryCallback(
@@ -93,23 +104,64 @@ void IDMACCNode::egoTrajectoryCallback(
         m_acc_cmd_publisher->publish(out);
       } else {
 
-        // ONLY IF THE OPPONENT IS IN FRONT OF US
-        // convert to the body coordiante the collision point
-        auto opponent_in_body =
-            nif::common::utils::coordination::getPtGlobaltoBody(
-                m_ego_odom.pose.pose,
-                m_prediction_result.trajectory_path.poses[0].pose);
+        if (m_cur_mission_status.mission_status_code ==
+            m_cur_mission_status.MISSION_CONSTANT_SPEED) {
+          // defender mode
+          // PROJECT TO THE EGO PATH
+          double oppo_closest_idx_on_ego_path = 0.0;
+          double oppo_cte_on_ego_path = 100000000.0; // [m]
 
-        if (opponent_in_body.position.x >= 0) {
-          // opponent is in front of us
-          m_idm_prt->calcAccel(m_veh_speed_mps, naive_gap,
-                               m_prediction_result.trajectory_velocity[0]);
-          out.data = m_idm_prt->getACCCmd();
-          m_acc_cmd_publisher->publish(out);
+          for (int i = 0; i < m_ego_trajectory.trajectory_path.poses.size();
+               i++) {
+            double dist = sqrt(
+                pow(m_ego_trajectory.trajectory_path.poses[i].pose.position.x -
+                        m_prediction_result.trajectory_path.poses[0]
+                            .pose.position.x,
+                    2) +
+                pow(m_ego_trajectory.trajectory_path.poses[i].pose.position.y -
+                        m_prediction_result.trajectory_path.poses[0]
+                            .pose.position.y,
+                    2));
+
+            if (dist < oppo_cte_on_ego_path) {
+              oppo_closest_idx_on_ego_path = i;
+              oppo_cte_on_ego_path = dist;
+            }
+          }
+
+          if (oppo_cte_on_ego_path < 1.5) {
+            // only do the ACC when the opponent is on our ego path
+            // ex) when they are closing the gap
+            m_idm_prt->calcAccel(m_veh_speed_mps, naive_gap,
+                                 m_prediction_result.trajectory_velocity[0]);
+            out.data = m_idm_prt->getACCCmd();
+            m_acc_cmd_publisher->publish(out);
+          } else {
+            std_msgs::msg::Float32 out;
+            out.data = nif::common::constants::numeric::INF;
+            m_acc_cmd_publisher->publish(out);
+          }
         } else {
-          std_msgs::msg::Float32 out;
-          out.data = nif::common::constants::numeric::INF;
-          m_acc_cmd_publisher->publish(out);
+          // race or keep positoin mode
+
+          // ONLY IF THE OPPONENT IS IN FRONT OF US
+          // convert to the body coordiante the collision point
+          auto opponent_in_body =
+              nif::common::utils::coordination::getPtGlobaltoBody(
+                  m_ego_odom.pose.pose,
+                  m_prediction_result.trajectory_path.poses[0].pose);
+
+          if (opponent_in_body.position.x >= 0) {
+            // opponent is in front of us
+            m_idm_prt->calcAccel(m_veh_speed_mps, naive_gap,
+                                 m_prediction_result.trajectory_velocity[0]);
+            out.data = m_idm_prt->getACCCmd();
+            m_acc_cmd_publisher->publish(out);
+          } else {
+            std_msgs::msg::Float32 out;
+            out.data = nif::common::constants::numeric::INF;
+            m_acc_cmd_publisher->publish(out);
+          }
         }
       }
     }

@@ -12,6 +12,7 @@
 #include "nif_msgs/msg/detected_object.hpp"
 #include "nif_msgs/msg/detected_object_array.hpp"
 #include "nif_msgs/msg/dynamic_trajectory.hpp"
+#include "nif_msgs/msg/mission_status.hpp"
 #include "nif_msgs/msg/perception3_d.hpp"
 #include "nif_msgs/msg/perception3_d_array.hpp"
 #include "nif_utils/utils.h"
@@ -41,6 +42,7 @@ public:
   void maptrackBodyCallback(const nav_msgs::msg::Path::SharedPtr msg);
   void
   predictionCallback(const nif_msgs::msg::DynamicTrajectory::SharedPtr msg);
+  void missionStatusCallback(const nif_msgs::msg::MissionStatus::SharedPtr msg);
 
 private:
   /* data */
@@ -61,6 +63,7 @@ private:
   nav_msgs::msg::Odometry m_ego_odom;
   nav_msgs::msg::Path m_maptrack_body;
   nif_msgs::msg::DynamicTrajectory m_ego_trajectory;
+  nif_msgs::msg::MissionStatus m_cur_mission_status;
 
   std::string m_input_perception_topic_name;
   std::string m_input_maptrack_body_topic_name;
@@ -77,6 +80,8 @@ private:
       m_ego_traj_subscriber;
   rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr
       m_maptrack_body_subscriber;
+  rclcpp::Subscription<nif_msgs::msg::MissionStatus>::SharedPtr
+      m_mission_status_subscriber;
 
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr m_acc_cmd_publisher;
 };
