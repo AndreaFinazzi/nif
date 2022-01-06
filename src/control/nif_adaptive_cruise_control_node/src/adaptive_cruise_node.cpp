@@ -27,12 +27,6 @@ IDMACCNode::IDMACCNode(const std::string &node_name_)
   m_acc_cmd_publisher = this->create_publisher<std_msgs::msg::Float32>(
       "/control/acc/des_acc", nif::common::constants::QOS_CONTROL_CMD);
 
-  // m_perception_subscriber =
-  //     this->create_subscription<nif_msgs::msg::Perception3DArray>(
-  //         "in_perception_array", nif::common::constants::QOS_SENSOR_DATA,
-  //         std::bind(&IDMACCNode::perceptionCallback, this,
-  //                   std::placeholders::_1));
-
   m_prediction_subscriber =
       this->create_subscription<nif_msgs::msg::DynamicTrajectory>(
           "/oppo/prediction", nif::common::constants::QOS_SENSOR_DATA,
@@ -45,12 +39,6 @@ IDMACCNode::IDMACCNode(const std::string &node_name_)
           std::bind(&IDMACCNode::egoTrajectoryCallback, this,
                     std::placeholders::_1));
 
-  // m_maptrack_body_subscriber =
-  // this->create_subscription<nav_msgs::msg::Path>(
-  //     "in_maptrack_in_body", nif::common::constants::QOS_PLANNING,
-  //     std::bind(&IDMACCNode::maptrackBodyCallback, this,
-  //               std::placeholders::_1));
-
   // IDM LIB initialize
   // 1. with defualt config
   // this->m_idm_prt = std::make_shared<IDM>();
@@ -62,6 +50,7 @@ IDMACCNode::IDMACCNode(const std::string &node_name_)
 void IDMACCNode::egoTrajectoryCallback(
     const nif_msgs::msg::DynamicTrajectory::SharedPtr traj_msg) {
 
+  // TO GET THE LONGI CONTROL TYPE (ONLY IN FOLLOW)
   m_ego_trajectory = *traj_msg;
 
   m_ego_odom = this->getEgoOdometry();
@@ -78,6 +67,7 @@ void IDMACCNode::egoTrajectoryCallback(
   }
 
   if (m_ego_trajectory.trajectory_path.poses.empty()) {
+    // ABNORMAL SITUATION
     std_msgs::msg::Float32 out;
     out.data = 0.0;
     m_acc_cmd_publisher->publish(out);
@@ -97,11 +87,31 @@ void IDMACCNode::egoTrajectoryCallback(
                   m_prediction_result.trajectory_path.poses[0].pose.position.y,
               2));
 
-      m_idm_prt->calcAccel(m_veh_speed_mps, naive_gap,
-                           m_prediction_result.trajectory_velocity[0]);
+      if (naive_gap > 150) {
+        std_msgs::msg::Float32 out;
+        out.data = nif::common::constants::numeric::INF;
+        m_acc_cmd_publisher->publish(out);
+      } else {
 
-      out.data = m_idm_prt->getACCCmd();
-      m_acc_cmd_publisher->publish(out);
+        // ONLY IF THE OPPONENT IS IN FRONT OF US
+        // convert to the body coordiante the collision point
+        auto opponent_in_body =
+            nif::common::utils::coordination::getPtGlobaltoBody(
+                m_ego_odom.pose.pose,
+                m_prediction_result.trajectory_path.poses[0].pose);
+
+        if (opponent_in_body.position.x >= 0) {
+          // opponent is in front of us
+          m_idm_prt->calcAccel(m_veh_speed_mps, naive_gap,
+                               m_prediction_result.trajectory_velocity[0]);
+          out.data = m_idm_prt->getACCCmd();
+          m_acc_cmd_publisher->publish(out);
+        } else {
+          std_msgs::msg::Float32 out;
+          out.data = nif::common::constants::numeric::INF;
+          m_acc_cmd_publisher->publish(out);
+        }
+      }
     }
   }
 }

@@ -14,6 +14,7 @@
 #include "nif_msgs/msg/dynamic_trajectory.hpp"
 #include "nif_msgs/msg/perception3_d.hpp"
 #include "nif_msgs/msg/perception3_d_array.hpp"
+#include "nif_utils/utils.h"
 #include "std_msgs/msg/float32.hpp"
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <deep_orange_msgs/msg/pt_report.hpp>
@@ -26,7 +27,7 @@ namespace nif {
 namespace control {
 class IDMACCNode : public nif::common::IBaseNode {
 public:
-  IDMACCNode(const std::string& node_name_);
+  IDMACCNode(const std::string &node_name_);
   //   IDMACCNode(const std::string &node_name_,
   //              const std::shared_ptr<IDM> idm_prt_);
   ~IDMACCNode() {}
