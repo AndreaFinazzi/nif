@@ -77,14 +77,14 @@ def generate_launch_description():
 
             "missions_file_path": mm_missions_default_file,
             "velocity.zero": 0.0,
-            "velocity.max": 25.0,
-            "velocity.keep_position": 15.0,
-            "velocity.constant": 15.0,
+            "velocity.max": 50.0,
+            "velocity.keep_position": 50.0,
+            "velocity.constant": 36.0,
             "velocity.avoidance": 15.0,
             "velocity.warmup": 15.0,
             "velocity.pit_in": 15.0,
             "velocity.pit_out": 15.0,
-            "velocity.slow_drive": 15.0,
+            "velocity.slow_drive": 25.0,
             # RC interface params
             "listen_to_override": False,
             "listen_to_nominal": True,
