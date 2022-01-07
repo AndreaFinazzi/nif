@@ -325,18 +325,18 @@ void AWLocalizationNode::timerCallback()
 
         m_heading_error = false;
 
-      } else if (m_top_heading2_valid) {
-        m_best_heading_rad = m_top_heading2_heading_rad;
-
-
-        BestPosBottom.yaw = m_best_heading_rad;
-        BestPosTop.yaw = m_best_heading_rad;
-
-        m_heading_error = false;
-
-      } else {
-        m_heading_error = true;
       }
+      // !!!!!!!!!!!!!!! WARN: keep last heading, no error! !!!!!!!!!!!!!!!!!!!!!!!!!!! 
+      // else if (m_top_heading2_valid) {
+      //   m_best_heading_rad = m_top_heading2_heading_rad;
+      //   BestPosBottom.yaw = m_best_heading_rad;
+      //   BestPosTop.yaw = m_best_heading_rad;
+      //   m_heading_error = false;
+      // } 
+      // else {
+        // m_heading_error = true;
+      // }
+      // !!!!!!!!!!!!!!! WARN: keep last heading, no error! !!!!!!!!!!!!!!!!!!!!!!!!!!! 
 
       correction_yaw = m_best_heading_rad;
     } else {
