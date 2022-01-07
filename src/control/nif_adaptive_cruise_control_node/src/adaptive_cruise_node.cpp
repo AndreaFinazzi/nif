@@ -149,7 +149,8 @@ void IDMACCNode::egoTrajectoryCallback(
               // only do the ACC when the opponent is on our ego path
               // ex) when they are closing the gap
               m_idm_prt->calcAccel(
-                m_veh_speed_mps, naive_gap,
+                m_veh_speed_mps, 
+                naive_gap,
                 m_prediction_result.trajectory_velocity[0]);
               out.data = m_idm_prt->getACCCmd();
               m_acc_cmd_publisher->publish(out);

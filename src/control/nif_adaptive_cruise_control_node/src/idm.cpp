@@ -121,15 +121,15 @@ double IDM::getParamDecelDesired() { return m_idm_param.decel_desired; }
 double IDM::getParamAccelDelta() { return m_idm_param.delta; }
 double IDM::getParamVehLen() { return m_idm_param.veh_l; }
 
-void IDM::calcAccel(double ego_vel_, double gap_, double cipv_vel_rel_) {
+void IDM::calcAccel(double ego_vel_, double gap_, double cipv_vel_) {
   // Calculate ACC command using IDM
   auto cipv_vel_rel =
-      ego_vel_ - cipv_vel_rel_; // in IDM, other_v_rel == ego_v - other_v
+      ego_vel_ - cipv_vel_; // in IDM, other_v_rel == ego_v - other_v
 
   m_estop_flg = false;
 
   if (m_estop_flg) {
-    cipv_vel_rel_ = ego_vel_;
+    cipv_vel_ = ego_vel_;
   }
   ego_vel_ = std::max(ego_vel_, 0.0);
 
