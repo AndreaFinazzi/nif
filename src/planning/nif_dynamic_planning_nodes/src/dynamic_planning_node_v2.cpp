@@ -387,6 +387,15 @@ void DynamicPlannerNode::loadConfig(const std::string &planning_config_file_) {
   }
 }
 
+void DynamicPlannerNode::myLapROFCallback(
+    const deep_orange_msgs::msg::RestOfFieldReport ::SharedPtr msg) {
+  if (m_mylap_rof_callback_first_run == true) {
+    m_mylap_rof_callback_first_run = false;
+  }
+  m_mylap_rof_last_update = this->now();
+  m_mylap_rof_msg = *msg;
+}
+
 tuple<vector<double>, vector<double>>
 DynamicPlannerNode::loadCSVfile(const std::string &wpt_file_path_) {
   ifstream inputFile(wpt_file_path_);
@@ -1358,105 +1367,108 @@ void DynamicPlannerNode::publishPlannedTrajectory(
     m_ego_traj_global_vis_pub->publish(m_ego_planned_vis_path_global);
   }
 }
-void DynamicPlannerNode::timer_callback_debug() {
-  debug_ego_speed = debug_ego_speed + 0.1;
+// void DynamicPlannerNode::timer_callback_debug() {
+//   debug_ego_speed = debug_ego_speed + 0.1;
 
-  if (debug_ego_speed > 67) {
-    debug_ego_speed = 67;
-  }
+//   if (debug_ego_speed > 67) {
+//     debug_ego_speed = 67;
+//   }
 
-  m_ego_odom.twist.twist.linear.x = debug_ego_speed;
+//   m_ego_odom.twist.twist.linear.x = debug_ego_speed;
 
-  auto allowable_maximum_vy = abs(tan(m_acceptable_slip_angle_rad)) *
-                              std::max(debug_ego_speed, MIN_SPEED_MPS);
-  allowable_maximum_vy = std::max(1.5, allowable_maximum_vy); // mps
+//   auto allowable_maximum_vy = abs(tan(m_acceptable_slip_angle_rad)) *
+//                               std::max(debug_ego_speed, MIN_SPEED_MPS);
+//   allowable_maximum_vy = std::max(1.5, allowable_maximum_vy); // mps
 
-  m_ego_odom.pose.pose.position.x = 69.016509;
-  m_ego_odom.pose.pose.position.y = -409.4941123;
+//   m_ego_odom.pose.pose.position.x = 69.016509;
+//   m_ego_odom.pose.pose.position.y = -409.4941123;
 
-  // 329.8444616,-88.6056703
-  // 206.0902806, -602.6045846
-  // 90.2037954,-452.4725963
-  // 69.016509,-409.4941123
+//   // 329.8444616,-88.6056703
+//   // 206.0902806, -602.6045846
+//   // 90.2037954,-452.4725963
+//   // 69.016509,-409.4941123
 
-  if (m_cur_planned_traj.trajectory_path.poses.empty() || true) {
-    m_race_mode_first_callback = false;
+//   if (m_cur_planned_traj.trajectory_path.poses.empty() || true) {
+//     m_race_mode_first_callback = false;
 
-    m_cur_planned_traj.trajectory_global_progress.clear();
-    m_cur_planned_traj.trajectory_velocity.clear();
-    m_cur_planned_traj.trajectory_timestamp_array.clear();
-    m_cur_planned_traj.trajectory_path.poses.clear();
+//     m_cur_planned_traj.trajectory_global_progress.clear();
+//     m_cur_planned_traj.trajectory_velocity.clear();
+//     m_cur_planned_traj.trajectory_timestamp_array.clear();
+//     m_cur_planned_traj.trajectory_path.poses.clear();
 
-    auto progreeNCTE_racingline =
-        calcProgressNCTE(m_ego_odom.pose.pose, m_racingline_path);
+//     auto progreeNCTE_racingline =
+//         calcProgressNCTE(m_ego_odom.pose.pose, m_racingline_path);
 
-    std::cout << "planning time : "
-              << abs(get<1>(progreeNCTE_racingline) / allowable_maximum_vy)
-              << std::endl;
+//     std::cout << "planning time : "
+//               << abs(get<1>(progreeNCTE_racingline) / allowable_maximum_vy)
+//               << std::endl;
 
-    // Merging frenet segment generation
-    // Generate single frenet path segment
-    std::vector<std::shared_ptr<FrenetPath>> frenet_path_generation_result =
-        m_frenet_generator_ptr->calc_frenet_paths_multi_longi(
-            get<1>(progreeNCTE_racingline), // current_position_d
-            get<0>(progreeNCTE_racingline), // current_position_s
-            0.0,                            // current_velocity_d
-            std::max(debug_ego_speed,
-                     MIN_SPEED_MPS),          // current_velocity_s
-            0.0,                              // current_acceleration_d
-            get<4>(m_racingline_spline_data), // cubicSplineModel
-            std::max(abs(get<1>(progreeNCTE_racingline) / allowable_maximum_vy),
-                     5.0),
-            std::max(abs(get<1>(progreeNCTE_racingline) / allowable_maximum_vy),
-                     5.0) +
-                0.01,
-            SAMPLING_TIME, 0.0, 0.0001, 0.1);
+//     // Merging frenet segment generation
+//     // Generate single frenet path segment
+//     std::vector<std::shared_ptr<FrenetPath>> frenet_path_generation_result =
+//         m_frenet_generator_ptr->calc_frenet_paths_multi_longi(
+//             get<1>(progreeNCTE_racingline), // current_position_d
+//             get<0>(progreeNCTE_racingline), // current_position_s
+//             0.0,                            // current_velocity_d
+//             std::max(debug_ego_speed,
+//                      MIN_SPEED_MPS),          // current_velocity_s
+//             0.0,                              // current_acceleration_d
+//             get<4>(m_racingline_spline_data), // cubicSplineModel
+//             std::max(abs(get<1>(progreeNCTE_racingline) /
+//             allowable_maximum_vy),
+//                      5.0),
+//             std::max(abs(get<1>(progreeNCTE_racingline) /
+//             allowable_maximum_vy),
+//                      5.0) +
+//                 0.01,
+//             SAMPLING_TIME, 0.0, 0.0001, 0.1);
 
-    if (frenet_path_generation_result.empty() ||
-        frenet_path_generation_result[0]->points_x().empty()) {
-      // Abnormal situation
-      // publish empty & Estop trajectory
-      RCLCPP_ERROR_ONCE(this->get_logger(),
-                        "[RACE MODE] CRITICAL BUG HAS BEEN HIT.\n Frenet path "
-                        "generation result or point vector is empty");
-      m_last_lat_planning_type = LATERAL_PLANNING_TYPE::KEEP;
-      m_last_long_planning_type = LONGITUDINAL_PLANNING_TYPE::ESTOP;
-      nif_msgs::msg::DynamicTrajectory empty_traj;
-      empty_traj.header.frame_id = nif::common::frame_id::localization::ODOM;
-      publishPlannedTrajectory(empty_traj, m_last_long_planning_type,
-                               m_last_lat_planning_type, true);
-      return;
-    }
+//     if (frenet_path_generation_result.empty() ||
+//         frenet_path_generation_result[0]->points_x().empty()) {
+//       // Abnormal situation
+//       // publish empty & Estop trajectory
+//       RCLCPP_ERROR_ONCE(this->get_logger(),
+//                         "[RACE MODE] CRITICAL BUG HAS BEEN HIT.\n Frenet path
+//                         " "generation result or point vector is empty");
+//       m_last_lat_planning_type = LATERAL_PLANNING_TYPE::KEEP;
+//       m_last_long_planning_type = LONGITUDINAL_PLANNING_TYPE::ESTOP;
+//       nif_msgs::msg::DynamicTrajectory empty_traj;
+//       empty_traj.header.frame_id = nif::common::frame_id::localization::ODOM;
+//       publishPlannedTrajectory(empty_traj, m_last_long_planning_type,
+//                                m_last_lat_planning_type, true);
+//       return;
+//     }
 
-    m_cur_planned_traj =
-        stitchFrenetToPath(frenet_path_generation_result[0], m_racingline_path);
+//     m_cur_planned_traj =
+//         stitchFrenetToPath(frenet_path_generation_result[0],
+//         m_racingline_path);
 
-    m_reset_wpt_idx =
-        getCurIdx(frenet_path_generation_result[0]->points_x().back(),
-                  frenet_path_generation_result[0]->points_y().back(),
-                  m_cur_planned_traj.trajectory_path);
+//     m_reset_wpt_idx =
+//         getCurIdx(frenet_path_generation_result[0]->points_x().back(),
+//                   frenet_path_generation_result[0]->points_y().back(),
+//                   m_cur_planned_traj.trajectory_path);
 
-    // Set the target path index to -1 which means the racing line
-    m_last_update_target_path_alias = "raceline";
-    m_reset_target_path_idx = RESET_PATH_TYPE::RACE_LINE;
-  }
+//     // Set the target path index to -1 which means the racing line
+//     m_last_update_target_path_alias = "raceline";
+//     m_reset_target_path_idx = RESET_PATH_TYPE::RACE_LINE;
+//   }
 
-  auto raceline_path_seg = getCertainLenOfPathSeg(
-      m_ego_odom.pose.pose.position.x, m_ego_odom.pose.pose.position.y,
-      m_cur_planned_traj.trajectory_path, 100);
+//   auto raceline_path_seg = getCertainLenOfPathSeg(
+//       m_ego_odom.pose.pose.position.x, m_ego_odom.pose.pose.position.y,
+//       m_cur_planned_traj.trajectory_path, 100);
 
-  auto race_traj = m_velocity_profiler_obj.velProfileWCollisionChecking(
-      m_ego_odom, raceline_path_seg, m_cur_oppo_pred_result,
-      m_config_overlap_checking_dist_bound,
-      m_config_overlap_checking_time_bound, false, 1.0); // @DEBUG
+//   auto race_traj = m_velocity_profiler_obj.velProfileWCollisionChecking(
+//       m_ego_odom, raceline_path_seg, m_cur_oppo_pred_result,
+//       m_config_overlap_checking_dist_bound,
+//       m_config_overlap_checking_time_bound, false, 1.0); // @DEBUG
 
-  raceline_path_seg.header.frame_id = "odom";
-  race_traj.trajectory_path.header.frame_id = "odom";
-  m_debug_vis_pub->publish(race_traj.trajectory_path);
-  m_racingline_path.header.frame_id = "odom";
-  m_ego_traj_global_vis_debug_pub1->publish(m_racingline_path);
-  m_ego_traj_global_debug_pub1->publish(race_traj);
-}
+//   raceline_path_seg.header.frame_id = "odom";
+//   race_traj.trajectory_path.header.frame_id = "odom";
+//   m_debug_vis_pub->publish(race_traj.trajectory_path);
+//   m_racingline_path.header.frame_id = "odom";
+//   m_ego_traj_global_vis_debug_pub1->publish(m_racingline_path);
+//   m_ego_traj_global_debug_pub1->publish(race_traj);
+// }
 
 void DynamicPlannerNode::timer_callback_rule() {
 
@@ -1473,7 +1485,8 @@ void DynamicPlannerNode::timer_callback_rule() {
 
   // Set the maximum accel and decel following the mission manager
   m_mission_accel_max = abs(mission_status.zone_status.long_acceleration_max);
-  m_mission_decel_max = abs(mission_status.zone_status.long_acceleration_min); // should be negative
+  m_mission_decel_max = abs(
+      mission_status.zone_status.long_acceleration_min); // should be negative
 
   // Set to velocity profiler
   auto flg = m_velocity_profiler_obj.setConstraintMaxVel(mission_max_vel);
@@ -1484,17 +1497,29 @@ void DynamicPlannerNode::timer_callback_rule() {
 
   double acc_min_dist_straight = 0.0;
   double acc_time_headway_straight = 0.0;
+
+  auto default_planning_time_max = 0.0;
+  auto default_planning_time_min = 0.0;
+
   if (mission_status.zone_status.zone_type ==
       mission_status.zone_status.ZONE_TYPE_STRAIGHT) {
     // acc_min_dist_straight = ;
     // acc_time_headway_straight = ;
     // m_velocity_profiler_obj.setACCMindist(acc_min_dist_straight);
     // m_velocity_profiler_obj.setACCTimeHeadway(acc_time_headway_straight);
+
+    // set planning horizon based on zone type and id
+    default_planning_time_max = SEC_3;
+    default_planning_time_min = SEC_2;
   } else {
     // acc_min_dist_straight = ;
     // acc_time_headway_straight = ;
     // m_velocity_profiler_obj.setACCMindist(acc_min_dist_straight);
     // m_velocity_profiler_obj.setACCTimeHeadway(acc_time_headway_straight);
+
+    // set planning horizon based on zone type and id
+    default_planning_time_max = SEC_4;
+    default_planning_time_min = SEC_3;
   }
   // ---------------------------------------------------------------
 
@@ -1502,6 +1527,18 @@ void DynamicPlannerNode::timer_callback_rule() {
       abs(tan(m_acceptable_slip_angle_rad)) *
       std::max(m_ego_odom.twist.twist.linear.x, MIN_SPEED_MPS);
   allowable_maximum_vy = std::max(1.5, allowable_maximum_vy); // mps
+
+  // ---------------------------------------------------------------
+  // ----------------------- Mylap health check --------------------
+  // ---------------------------------------------------------------
+  // if (!m_mylap_rof_callback_first_run) {
+  //   if (this->now() - m_mylap_rof_last_update > rclcpp::Duration(2, 0)) {
+  //     m_is_mylap_health = false;
+  //   } else {
+  //     m_is_mylap_health = true;
+  //   }
+  // }
+  // ---------------------------------------------------------------
 
   // ---------------------------------------------------------------
   // --------------- Oppo prediction health check ---------------
@@ -1543,7 +1580,6 @@ void DynamicPlannerNode::timer_callback_rule() {
       // ACC)
       auto cur_traj = m_velocity_profiler_obj.velProfile(
           m_ego_odom, m_maptrack_global, 1.0);
-
       m_last_update_target_path_alias = "race_ready";
       m_last_lat_planning_type = LATERAL_PLANNING_TYPE::KEEP;
       m_last_long_planning_type = LONGITUDINAL_PLANNING_TYPE::STRAIGHT;
@@ -1551,6 +1587,8 @@ void DynamicPlannerNode::timer_callback_rule() {
                                m_last_lat_planning_type, true);
       return;
     } else {
+
+
       if (mission_status.mission_status_code ==
           nif::common::MissionStatus::MISSION_RACE) {
 
@@ -1578,10 +1616,10 @@ void DynamicPlannerNode::timer_callback_rule() {
                       get<4>(m_racingline_spline_data), // cubicSplineModel
                       std::max(abs(get<1>(progreeNCTE_racingline) /
                                    allowable_maximum_vy),
-                               4.0),
+                               default_planning_time_max),
                       std::max(abs(get<1>(progreeNCTE_racingline) /
                                    allowable_maximum_vy),
-                               4.0) +
+                               default_planning_time_max) +
                           0.01,
                       SAMPLING_TIME, 0.0, 0.0001, 0.1);
 
@@ -1637,14 +1675,9 @@ void DynamicPlannerNode::timer_callback_rule() {
               m_ego_odom.pose.pose,
               m_cur_oppo_pred_result.trajectory_path.poses.front().pose);
         }
-
-        // Check merging behavior only on the straight section
-        // std::cout << "----------------" << std::endl;
-        // std::cout <<( mission_status.zone_status.zone_type ==
-        //         mission_status.zone_status.ZONE_TYPE_STRAIGHT )<< std::endl;
-        // std::cout << (naive_gap > m_merging_back_gap_thres) << std::endl;
-        // std::cout << m_last_update_target_path_alias << std::endl;
-        // std::cout << m_reset_target_path_idx << std::endl;
+        // double check with mylap only if it is healthy
+        // if (m_is_mylap_health == true) {
+        // }
 
         if (mission_status.zone_status.zone_type ==
                 mission_status.zone_status.ZONE_TYPE_STRAIGHT &&
@@ -1670,10 +1703,10 @@ void DynamicPlannerNode::timer_callback_rule() {
                       get<4>(m_racingline_spline_data), // cubicSplineModel
                       std::max(abs(get<1>(progreeNCTE_racingline) /
                                    allowable_maximum_vy),
-                               4.0),
+                               default_planning_time_max),
                       std::max(abs(get<1>(progreeNCTE_racingline) /
                                    allowable_maximum_vy),
-                               4.0) +
+                               default_planning_time_max) +
                           0.01,
                       SAMPLING_TIME, 0.0, 0.0001, 0.1);
 
@@ -1754,7 +1787,7 @@ void DynamicPlannerNode::timer_callback_rule() {
         } else {
 
           if (mission_status.zone_status.zone_type ==
-                mission_status.zone_status.ZONE_TYPE_CORNER_MID) {
+              mission_status.zone_status.ZONE_TYPE_CORNER_MID) {
             auto cur_traj = m_velocity_profiler_obj.velProfileForAcc(
                 m_ego_odom, m_cur_oppo_pred_result,
                 m_cur_det_global.obj_velocity_in_global.linear.x, cur_path_seg,
@@ -1805,10 +1838,10 @@ void DynamicPlannerNode::timer_callback_rule() {
                             [path_candidate_idx], // cubicSplineModel
                         std::max(
                             abs(get<1>(progressNcte) / allowable_maximum_vy),
-                            2.0),
+                            default_planning_time_min),
                         std::max(
                             abs(get<1>(progressNcte) / allowable_maximum_vy),
-                            2.0) +
+                            default_planning_time_min) +
                             2.0 + 0.01,
                         SAMPLING_TIME, 0.0, 0.0001, 0.1);
 
@@ -1954,7 +1987,8 @@ void DynamicPlannerNode::timer_callback_rule() {
           }
         }
 
-      } else if (mission_status.mission_status_code ==
+      } 
+      else if (mission_status.mission_status_code ==
                  nif::common::MissionStatus::MISSION_CONSTANT_SPEED) {
         // ----------------------------------------------
         // ---------------- Defender mode ---------------
@@ -1991,10 +2025,10 @@ void DynamicPlannerNode::timer_callback_rule() {
                       get<4>(m_defenderline_spline_data), // cubicSplineModel
                       std::max(abs(get<1>(progreeNCTE_defenderline) /
                                    allowable_maximum_vy),
-                               4.0),
+                               default_planning_time_max),
                       std::max(abs(get<1>(progreeNCTE_defenderline) /
                                    allowable_maximum_vy),
-                               4.0) +
+                               default_planning_time_max) +
                           0.01,
                       SAMPLING_TIME, 0.0, 0.0001, 0.1);
 
@@ -2086,10 +2120,10 @@ void DynamicPlannerNode::timer_callback_rule() {
                       get<4>(m_racingline_spline_data), // cubicSplineModel
                       std::max(abs(get<1>(progreeNCTE_racingline) /
                                    allowable_maximum_vy),
-                               3.0),
+                               default_planning_time_max),
                       std::max(abs(get<1>(progreeNCTE_racingline) /
                                    allowable_maximum_vy),
-                               3.0) +
+                               default_planning_time_max) +
                           0.01,
                       SAMPLING_TIME, 0.0, 0.0001, 0.1);
 
@@ -2174,10 +2208,10 @@ void DynamicPlannerNode::timer_callback_rule() {
                       get<4>(m_staybehind_spline_data), // cubicSplineModel
                       std::max(abs(get<1>(progreeNCTE_staybehind) /
                                    allowable_maximum_vy),
-                               3.0),
+                               default_planning_time_max),
                       std::max(abs(get<1>(progreeNCTE_staybehind) /
                                    allowable_maximum_vy),
-                               3.0) +
+                               default_planning_time_max) +
                           0.01,
                       SAMPLING_TIME, 0.0, 0.0001, 0.1);
 

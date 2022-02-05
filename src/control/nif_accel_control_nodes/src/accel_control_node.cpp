@@ -56,6 +56,11 @@ AccelControl::AccelControl() : Node("AccelControlNode") {
   this->subDesAccel_ = this->create_subscription<std_msgs::msg::Float32>(
       "/control_safety_layer/out/desired_accel", rclcpp::SensorDataQoS(),
       std::bind(&AccelControl::receiveDesAccel, this, std::placeholders::_1));
+
+  this->subACCAccel_ = this->create_subscription<std_msgs::msg::Float32>(
+      "/control/acc/des_acc", nif::common::constants::QOS_CONTROL_CMD,
+      std::bind(&AccelControl::accCMDCallback, this, std::placeholders::_1));
+
   this->subPtReport_ =
       this->create_subscription<deep_orange_msgs::msg::PtReport>(
           "/raptor_dbw_interface/pt_report", 1,
@@ -101,7 +106,8 @@ AccelControl::AccelControl() : Node("AccelControlNode") {
   this->declare_parameter("gear.shift_time_ms", 1000);
   this->declare_parameter("gear.track", "LVMS");
 
-  this->declare_parameter("engine.model_safety_factor", 1.0); // larger than 1.0
+  this->declare_parameter("engine.model_safety_factor",
+                          0.917); // larger than 1.0
   this->declare_parameter("engine.safety_rpm_thres", 3000);
 
   this->declare_parameter("throttle.traction_enabled", true);
@@ -160,11 +166,11 @@ AccelControl::AccelControl() : Node("AccelControlNode") {
     int engine_safety_rpm_thres =
         this->get_parameter("engine.safety_rpm_thres").as_int();
 
-    if (engine_safety_factor < 1.0) {
+    if (engine_safety_factor < 0.8) {
       RCLCPP_ERROR(this->get_logger(), "Got engine.model_safety_factor: %f;",
                    engine_safety_factor);
       throw std::range_error("Parameter engine.model_safety_factor must be "
-                             "greater or equal than 1.0.");
+                             "greater or equal than 0.8.");
     }
 
     this->m_throttle_controller_engine_ =
@@ -276,8 +282,18 @@ void AccelControl::initializeGears(const std::string &track_id) {
     //     {6, std::make_shared<control::GearState>(6, 0.889, 41.5, 255)}};
 
     // Updated gear map
+    // this->gear_states = {
+    //     {1, std::make_shared<control::GearState>(1, 2.92, -255, 24.0)},
+    //     {2, std::make_shared<control::GearState>(2, 1.875, 16.0, 35.0)},
+    //     {3, std::make_shared<control::GearState>(3, 1.38, 31.0, 45.0)},
+    //     {4, std::make_shared<control::GearState>(4, 1.5, 41.0, 53.0)},
+    //     {5, std::make_shared<control::GearState>(5, 0.96, 50.0, 60.0)},
+    //     {6, std::make_shared<control::GearState>(6, 0.889, 57.0, 255)}};
+
+    // Updated gear map V2
+    // First gear : relex little bit
     this->gear_states = {
-        {1, std::make_shared<control::GearState>(1, 2.92, -255, 24.0)},
+        {1, std::make_shared<control::GearState>(1, 2.92, -255, 20.0)},
         {2, std::make_shared<control::GearState>(2, 1.875, 16.0, 35.0)},
         {3, std::make_shared<control::GearState>(3, 1.38, 31.0, 45.0)},
         {4, std::make_shared<control::GearState>(4, 1.5, 41.0, 53.0)},
@@ -525,13 +541,33 @@ void AccelControl::receiveVelocity(
   this->vel_recv_time_ = this->now();
 }
 
+void AccelControl::accCMDCallback(const std_msgs::msg::Float32::SharedPtr msg) {
+  if (m_accCMD_firstcall) {
+    m_accCMD_firstcall = false;
+  }
+  m_has_acc_cmd = true;
+  m_last_acc_update = this->now();
+  m_acc_des_accel = msg->data;
+}
+
 void AccelControl::receiveDesAccel(
     const std_msgs::msg::Float32::SharedPtr msg) {
+
+  if (!m_accCMD_firstcall) {
+    if (this->now() - m_last_acc_update > rclcpp::Duration(2, 0)) {
+      // ACC command is not health
+      // DEBUG
+      m_acc_des_accel = nif::common::constants::numeric::INF;
+    }
+  }
+
   // get desired acceleration (m/s^2) from high level controll
   this->has_des_accel_ = true;
   this->des_accel_ = msg->data;
   this->des_accel_recv_time_ = this->now();
-  double current_des_accel = this->des_accel_;
+  // double current_des_accel = this->des_accel_;
+  double current_des_accel = std::min(this->des_accel_, m_acc_des_accel);
+
 
   calculateThrottleCmd(current_des_accel);
   calculateBrakeCmd(current_des_accel);

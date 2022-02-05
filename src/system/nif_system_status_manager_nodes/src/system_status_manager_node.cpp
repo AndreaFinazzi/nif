@@ -74,6 +74,10 @@ SystemStatusManagerNode::SystemStatusManagerNode(
             "in_localization_status", nif::common::constants::QOS_INTERNAL_STATUS,
             std::bind(&SystemStatusManagerNode::localizationStatusCallback, this, std::placeholders::_1));
 
+    this->ll_diagnostic_report_sub = this->create_subscription<deep_orange_msgs::msg::DiagnosticReport>(
+            "in_ll_diagnostic_report", nif::common::constants::QOS_INTERNAL_STATUS,
+            std::bind(&SystemStatusManagerNode::llDiagnosticReportCallback, this, std::placeholders::_1));
+
     //  Publishers
     this->system_status_pub = this->create_publisher<nif::common::msgs::SystemStatus>(
             "out_system_status", nif::common::constants::QOS_INTERNAL_STATUS
@@ -108,7 +112,9 @@ SystemStatusManagerNode::SystemStatusManagerNode(
                     &SystemStatusManagerNode::recoveryServiceHandler,
                     this,
                     std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+
 }
+
 void SystemStatusManagerNode::systemStatusTimerCallback() {
     // Check for passed out topics
     nodeStatusesAgeCheck();
@@ -116,6 +122,12 @@ void SystemStatusManagerNode::systemStatusTimerCallback() {
     // check safety conditions
     bool hb_ok = this->comms_heartbeat_ok;
     bool localization_ok = localizationOk(); // gps_health_ok();
+
+    if (!has_ll_diagnostic_report ||
+        this->now() - this->ll_diagnostic_report_last_update > rclcpp::Duration(1, 0)) {
+
+        this->is_ll_healthy = false; 
+    }
 
     if (!hb_ok || !this->recovery_enabled) {
         hb_ok = false;
@@ -143,7 +155,9 @@ void SystemStatusManagerNode::systemStatusTimerCallback() {
 
     // Mission age check
     if (!this->has_mission ||
-        this->now() - this->mission_update_time > this->timeout_mission) {
+        this->now() - this->mission_update_time > this->timeout_mission ||
+        !this->is_ll_healthy) {
+        
         this->system_status_msg.mission_status.mission_status_code = MissionStatus::MISSION_EMERGENCY_STOP;
         // Mission velocity check
         this->system_status_msg.mission_status.max_velocity_mps = this->velocity_zero;
@@ -211,7 +225,7 @@ void SystemStatusManagerNode::nodeStatusUpdate(
 bool SystemStatusManagerNode::isSystemHealthy() {
     for (const auto &record : this->node_status_records) {
         if (!record->node_status ||
-            record->node_status->node_status_code != common::NODE_OK) {
+            record->node_status->node_status_code >= common::NODE_ERROR) {
             this->is_system_healthy = false;
             return this->is_system_healthy;
         }
@@ -223,19 +237,21 @@ bool SystemStatusManagerNode::isSystemHealthy() {
 
 SystemStatusCode SystemStatusManagerNode::getSystemStatusCode() {
     // TODO implement meaningful FSM
-    if (isSystemHealthy()) {
-        for (const auto &record : this->node_status_records) {
-            if (record->node_status &&
-                record->node_status->node_status_code != common::NODE_OK) {
-                return SystemStatusCode::SYSTEM_ERROR;
-            }
-        }
-
-    } else {
-        return SystemStatusCode::SYSTEM_ERROR;
+    if (!this->is_ll_healthy) {
+        return SystemStatusCode::SYSTEM_LOW_LEVEL_ERROR;
     }
+
+    std::uint8_t worst_status = static_cast<std::uint8_t>(SystemStatusCode::SYSTEM_OK);
+    for (const auto &record : this->node_status_records) {
+        if (record->node_status) {
+            worst_status = std::max(
+                worst_status, 
+                static_cast<std::uint8_t>(record->node_status->node_status_code));
+        }
+    }
+
     // All nodes OK
-    return SystemStatusCode::SYSTEM_OK;
+    return static_cast<SystemStatusCode>(worst_status);
 }
 
 void SystemStatusManagerNode::nodeStatusesAgeCheck() {
@@ -422,3 +438,18 @@ bool SystemStatusManagerNode::hasLocalizationStatus() {
     return  (this->has_localization_status &&
             (this->now() - this->localization_status_last_update <= this->timeout_localization_status));
 }
+
+void SystemStatusManagerNode::llDiagnosticReportCallback(
+    const deep_orange_msgs::msg::DiagnosticReport::UniquePtr msg) {
+        // Low level is healthy when no failure flag is active
+        this->is_ll_healthy = !(
+            msg->est1_oos_front_brk ||
+            msg->est2_oos_rear_brk ||
+            msg->est3_low_eng_speed ||
+            msg->est4_sd_comms_loss ||
+            msg->est5_motec_comms_loss ||
+            msg->est6_sd_ebrake);
+
+        this->ll_diagnostic_report_last_update = this->now(); msg->stamp;
+        this->has_ll_diagnostic_report = true;
+    }

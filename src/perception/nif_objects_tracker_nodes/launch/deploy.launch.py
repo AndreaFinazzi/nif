@@ -32,6 +32,7 @@ def generate_launch_description():
         package='nif_objects_tracker_nodes',
         executable='nif_objects_tracker_nodes_exe',
         output='screen',
+        respawn=True,
         parameters=[
             LaunchConfiguration('nif_objects_tracker_nodes_param_file')
         ],
@@ -42,7 +43,7 @@ def generate_launch_description():
             ('output_vis', 'tracking/vis/markers'),
             ('concat_in_radar_list', '/radar_front/perception_list/filtered'),
             ('concat_in_lidar_list', '/clustered/perception_list/filtered'),
-            # ('concat_out_perception_list', '/perception/concat'),
+            ('concat_out_perception_list', '/perception/concat'),
         ]
     )
 

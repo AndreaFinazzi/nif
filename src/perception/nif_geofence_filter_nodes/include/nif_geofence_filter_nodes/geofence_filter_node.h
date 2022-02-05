@@ -37,7 +37,8 @@ private:
 
     bool poseInBodyIsValid(
         const geometry_msgs::msg::Pose &point_in_body,
-        double r_dot = 0);
+        double r_dot = 0,
+        bool filter_on_inner_fence = true, bool filter_on_outer_fence = true);
 
     bool trackIsValid(
         const delphi_esr_msgs::msg::EsrTrack::SharedPtr msg);

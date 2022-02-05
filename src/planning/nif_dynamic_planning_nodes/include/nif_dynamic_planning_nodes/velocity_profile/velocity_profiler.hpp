@@ -7,6 +7,7 @@
 #include "../separating_axis_theorem/separating_axis_theorem.hpp"
 #include "nif_msgs/msg/dynamic_trajectory.hpp"
 #include "nif_opponent_prediction_nodes/frenet_path_generator.h"
+#include "nif_utils/utils.h"
 #include "nif_vehicle_dynamics_manager/tire_manager.hpp"
 #include "rclcpp/logger.hpp"
 #include "rclcpp/rclcpp.hpp"
@@ -94,7 +95,8 @@ private:
   double m_acc_config_veh_l;
 
   double m_s0_default = 25.0;
-  double m_headway_default = 1.4;
+  // double m_headway_default = 1.4;
+  double m_headway_default = 0.8;
 
   nav_msgs::msg::Odometry m_cur_odom;
   nav_msgs::msg::Path m_profile_target_path;

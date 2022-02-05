@@ -23,56 +23,62 @@ ImmUkfPda::ImmUkfPda(const std::string &config_file_path_)
   YAML::Node config = YAML::LoadFile(config_file_path_);
 
   if (!config["gating_thres"]) {
-    throw std::runtime_error("gating_thres is not properly settup.");
+    throw std::runtime_error("gating_thres is not properly set.");
   } else {
     gating_thres_ = config["gating_thres"].as<double>();
   }
 
   if (!config["gate_probability"]) {
-    throw std::runtime_error("gate_probability is not properly settup.");
+    throw std::runtime_error("gate_probability is not properly set.");
   } else {
     gate_probability_ = config["gate_probability"].as<double>();
   }
 
   if (!config["detection_probability"]) {
-    throw std::runtime_error("detection_probability is not properly settup.");
+    throw std::runtime_error("detection_probability is not properly set.");
   } else {
     detection_probability_ = config["detection_probability"].as<double>();
   }
 
   if (!config["life_time_thres"]) {
-    throw std::runtime_error("life_time_thres is not properly settup.");
+    throw std::runtime_error("life_time_thres is not properly set.");
   } else {
     life_time_thres_ = config["life_time_thres"].as<int>();
   }
 
+  if (!config["merge_distance_threshold"]) {
+    throw std::runtime_error("merge_distance_threshold is not properly set.");
+  } else {
+    merge_distance_threshold_ = config["merge_distance_threshold"].as<double>();
+  }
+
   if (!config["static_velocity_thres"]) {
-    throw std::runtime_error("static_velocity_thres is not properly settup.");
+    throw std::runtime_error("static_velocity_thres is not properly set.");
   } else {
     static_velocity_thres_ = config["static_velocity_thres"].as<double>();
   }
 
   if (!config["static_num_history_thres"]) {
     throw std::runtime_error(
-        "static_num_history_thres is not properly settup.");
+        "static_num_history_thres is not properly set.");
   } else {
     static_num_history_thres_ = config["static_num_history_thres"].as<int>();
   }
 
   if (!config["prevent_explosion_thres"]) {
-    throw std::runtime_error("prevent_explosion_thres is not properly settup.");
+    throw std::runtime_error("prevent_explosion_thres is not properly set.");
   } else {
     prevent_explosion_thres_ = config["prevent_explosion_thres"].as<int>();
   }
 
   if (!config["use_sukf"]) {
-    throw std::runtime_error("use_sukf is not properly settup.");
+    throw std::runtime_error("use_sukf is not properly set.");
   } else {
     use_sukf_ = config["use_sukf"].as<bool>();
   }
 
   if (!config["tracking_frame"]) {
-    throw std::runtime_error("tracking_frame is not properly settup.");
+    throw std::runtime_error("tracking_frame is not properly set.");
   } else {
     tracking_frame_ = config["tracking_frame"].as<std::string>();
   }
@@ -83,14 +89,14 @@ void ImmUkfPda::setDetectionResult(
   previous_loop_det_ = input;
 
   nif_msgs::msg::DetectedObjectArray transformed_input;
-  nif_msgs::msg::DetectedObjectArray detected_objects_output;
+  nif_msgs::msg::DetectedObjectArray detected_objects_output_global;
+  nif_msgs::msg::DetectedObjectArray detected_objects_output_local;
 
   transformPoseToGlobal(input, transformed_input);
-  tracker(transformed_input, detected_objects_output);
-  transformPoseToLocal(detected_objects_output);
+  tracker(transformed_input, detected_objects_output_global);
+  transformPoseToLocal(detected_objects_output_global, detected_objects_output_local);
 
-
-  tracked_object_ = detected_objects_output;
+  tracked_object_ = detected_objects_output_local;
 }
 
 // nif_msgs::msg::DetectedObjectArray ImmUkfPda::getTrackedResult()
@@ -160,6 +166,28 @@ void ImmUkfPda::transformPoseToGlobal(
 }
 
 void ImmUkfPda::transformPoseToLocal(
+    const nif_msgs::msg::DetectedObjectArray &input,
+    nif_msgs::msg::DetectedObjectArray &transformed_input) {
+  
+  input_header_ = input.header;
+  transformed_input.header = input_header_;
+
+  for (auto const &object : input.objects) {
+    geometry_msgs::msg::Pose out_pose = 
+      nif::common::utils::coordination::getPtGlobaltoBody(
+        ego_odom_,
+        object.pose).pose;
+
+    nif_msgs::msg::DetectedObject dd;
+    dd.header = input.header;
+    dd = object;
+    dd.pose = out_pose;
+
+    transformed_input.objects.push_back(dd);
+  }
+}
+
+void ImmUkfPda::transformPoseToLocal(
     nif_msgs::msg::DetectedObjectArray &detected_objects_output) {
   detected_objects_output.header = input_header_;
 
@@ -195,6 +223,8 @@ void ImmUkfPda::measurementValidation(
     Eigen::VectorXd diff = meas - max_det_z;
     double nis = diff.transpose() * max_det_s.inverse() * diff;
 
+    // std::cout << "nis: " << nis << std::endl; // @DEBUG
+
     if (nis < gating_thres_) {
       if (nis < smallest_nis) {
         smallest_nis = nis;
@@ -205,6 +235,8 @@ void ImmUkfPda::measurementValidation(
     }
   }
   if (exists_smallest_nis_object) {
+    // std::cout << "exists_smallest_nis_object: " << exists_smallest_nis_object << std::endl; // @DEBUG
+
     matching_vec[smallest_nis_ind] = true;
     // if (use_vectormap_ && has_subscribed_vectormap_)
     // {
@@ -284,25 +316,50 @@ void ImmUkfPda::initTracker(const nif_msgs::msg::DetectedObjectArray &input,
   
   timestamp_ = timestamp;
 
-  for (size_t i = 0; i < input.objects.size(); i++) {
-    double px = input.objects[i].pose.position.x;
-    double py = input.objects[i].pose.position.y;
+  // for (size_t i = 0; i < input.objects.size(); i++) {
+  //   double px = input.objects[i].pose.position.x;
+  //   double py = input.objects[i].pose.position.y;
+  //   Eigen::VectorXd init_meas = Eigen::VectorXd(2);
+  //   init_meas << px, py;
+
+  //   UKF ukf;
+  //   ukf.initialize(init_meas, timestamp, target_id_);
+  //   targets_.push_back(ukf);
+  //   target_id_++;
+  // }
+
+  // @DEBUG: Single Track
+  if (!input.objects.empty())
+  {
+    double px = 0.0;
+    double py = 0.0;
+    for (size_t i = 0; i < input.objects.size(); i++) {
+      px += input.objects[i].pose.position.x;
+      py += input.objects[i].pose.position.y;
+    }
+    px = px / input.objects.size();
+    py = py / input.objects.size();
+    // double px = input.objects[0].pose.position.x;
+    // double py = input.objects[0].pose.position.y;
     Eigen::VectorXd init_meas = Eigen::VectorXd(2);
     init_meas << px, py;
 
     UKF ukf;
     ukf.initialize(init_meas, timestamp, target_id_);
     targets_.push_back(ukf);
-    target_id_++;
-  }
 
-  init_ = true;
+    // std::cout << "Track re-initialized. px: " << px << "; py: " << py << std::endl; // @DEBUG
+
+    init_ = true;
+  }
 }
 
 void ImmUkfPda::secondInit(
-    UKF &target, const std::vector<nif_msgs::msg::DetectedObject> &object_vec,
+    UKF &target, 
+    const std::vector<nif_msgs::msg::DetectedObject> &object_vec,
     const rclcpp::Duration dt) {
   if (object_vec.size() == 0) {
+    // std::cout << "Second init end in Target Die." << std::endl; // @DEBUG
     target.tracking_num_ = TrackingState::Die;
     return;
   }
@@ -320,6 +377,8 @@ void ImmUkfPda::secondInit(
   double dist =
       sqrt(target_diff_x * target_diff_x + target_diff_y * target_diff_y);
   double target_v = dist / dt_s;
+
+    // std::cout << "secondInit: target_x: " << target_x << "; target_y: " << target_y << std::endl; // @DEBUG
 
   while (target_yaw > M_PI)
     target_yaw -= 2. * M_PI;
@@ -342,6 +401,8 @@ void ImmUkfPda::secondInit(
 void ImmUkfPda::updateTrackingNum(
     const std::vector<nif_msgs::msg::DetectedObject> &object_vec, UKF &target) {
   if (object_vec.size() > 0) {
+    // std::cout << "tracking_num_: " << target.tracking_num_ << std::endl; // @DEBUG
+
     if (target.tracking_num_ < TrackingState::Stable) {
       target.tracking_num_++;
     } else if (target.tracking_num_ == TrackingState::Stable) {
@@ -353,6 +414,9 @@ void ImmUkfPda::updateTrackingNum(
       target.tracking_num_ = TrackingState::Die;
     }
   } else {
+    // std::cout << "No object associated with target" << std::endl; // @DEBUG
+
+    // @DEBUG no need to remove the target track? Remove it to be able to re-init
     if (target.tracking_num_ < TrackingState::Stable) {
       target.tracking_num_ = TrackingState::Die;
     } else if (target.tracking_num_ >= TrackingState::Stable &&
@@ -387,6 +451,7 @@ bool ImmUkfPda::probabilisticDataAssociation(
 
   // prevent ukf not to explode
   if (std::isnan(det_s) || det_s > prevent_explosion_thres_) {
+    // std::cout << "Prevent explosion. TrackingState -> Die." << std::endl; // @DEBUG
     target.tracking_num_ = TrackingState::Die;
     success = false;
     return success;
@@ -569,6 +634,8 @@ void ImmUkfPda::makeOutput(
     double tyaw = targets_[i].x_merge_(3);
     double tyaw_rate = targets_[i].x_merge_(4);
 
+    // std::cout << "makeOutput: tx: " << tx << "; ty: " << ty << std::endl; // @DEBUG
+
     while (tyaw > M_PI)
       tyaw -= 2. * M_PI;
     while (tyaw < -M_PI)
@@ -581,7 +648,9 @@ void ImmUkfPda::makeOutput(
     nif_msgs::msg::DetectedObject dd;
     dd = targets_[i].object_;
     dd.id = targets_[i].ukf_id_;
-    dd.velocity.linear.x = tv;
+
+    // @DEBUG velocity in global constrained to >= 0.0
+    dd.velocity.linear.x = std::max(0.0, std::min(tv, 100.0)); 
     dd.acceleration.linear.y = tyaw_rate;
     dd.velocity_reliable = targets_[i].is_stable_;
     dd.pose_reliable = targets_[i].is_stable_;
@@ -607,8 +676,10 @@ void ImmUkfPda::makeOutput(
     }
     updateBehaviorState(targets_[i], dd);
 
+  // @DEBUG revertme
+  // STABLE || OCCLUSION
     if (targets_[i].is_stable_ ||
-        (targets_[i].tracking_num_ >= TrackingState::Init &&
+        (targets_[i].tracking_num_ > TrackingState::Init &&
          targets_[i].tracking_num_ < TrackingState::Stable)) {
       tmp_objects.objects.push_back(dd);
       used_targets_indices.push_back(i);
@@ -623,6 +694,10 @@ void ImmUkfPda::removeUnnecessaryTarget() {
   for (size_t i = 0; i < targets_.size(); i++) {
     if (targets_[i].tracking_num_ != TrackingState::Die) {
       temp_targets.push_back(targets_[i]);
+    }
+    // @DEBUG Single tracker needs re-init
+    else {
+      init_ = false;
     }
   }
   std::vector<UKF>().swap(targets_);
@@ -720,10 +795,11 @@ void ImmUkfPda::tracker(
   // end UKF process
 
   // making new ukf target for no data association objects
-  makeNewTargets(timestamp, input, matching_vec);
+  // @DEBUG comment for single target
+  // makeNewTargets(timestamp, input, matching_vec);
 
   // static dynamic classification
-  staticClassification();
+  // staticClassification();
 
   // making output for visualization
   makeOutput(input, matching_vec, detected_objects_output);

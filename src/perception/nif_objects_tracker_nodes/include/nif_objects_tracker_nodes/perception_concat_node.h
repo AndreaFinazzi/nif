@@ -79,23 +79,43 @@ void timer_callback() {
 
         this->perception_list_msg_ptr->perception_list.resize(next_index);
 
+        double mean_x = 0.0, mean_y = 0.0;
+
         for (auto& obj :  this->perception_list_msg_ptr->perception_list)
         {
             pcl::PointXYZI point_buf;
             point_buf.x = obj.detection_result_3d.center.position.x;
             point_buf.y = obj.detection_result_3d.center.position.y;
             center_points->points.push_back(point_buf);
+            
+            mean_x += obj.detection_result_3d.center.position.x;
+            mean_y += obj.detection_result_3d.center.position.y;
         }
 
+
         if (!this->perception_list_msg_ptr->perception_list.empty()) {
+            mean_x = mean_x / this->perception_list_msg_ptr->perception_list.size();
+            mean_y = mean_y / this->perception_list_msg_ptr->perception_list.size();
+            nif::common::msgs::PerceptionResultList prl{};
+            nif::common::msgs::PerceptionResult pr{};
+            pr.detection_result_3d.center.position.x = mean_x;
+            pr.detection_result_3d.center.position.y = mean_y;
+            prl.perception_list.push_back(pr);
+            prl.header.stamp = this->now();
+            prl.header.frame_id = "base_link";
+
             // Publish visualization pcl
             sensor_msgs::msg::PointCloud2 cloud_cluster_center_msg;
             pcl::toROSMsg(*center_points, cloud_cluster_center_msg);
 
-            this->perception_list_msg_ptr->header = this->perception_list_msg_ptr->perception_list.back().header;
-            cloud_cluster_center_msg.header = this->perception_list_msg_ptr->perception_list.back().header;
+            this->perception_list_msg_ptr->header.frame_id = "base_link";
+            this->perception_list_msg_ptr->header.stamp = this->now();
+
+            cloud_cluster_center_msg.header = this->perception_list_msg_ptr->header;
 
             this->perception_list_pub->publish(std::move(this->perception_list_msg_ptr));
+            // this->perception_list_pub->publish(std::move(prl));
+            
             this->perception_list_vis_pub->publish(std::move(cloud_cluster_center_msg));
         }
 

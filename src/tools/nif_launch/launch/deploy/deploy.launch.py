@@ -251,6 +251,26 @@ def generate_launch_description():
         }]
     )
 
+    nif_velocity_planning_node = Node(
+        package='nif_velocity_planning_node',
+        executable='nif_velocity_planning_node_exe',
+        output='screen',
+        remappings=[
+            ('out_desired_velocity', 'velocity_planner/des_vel'),
+            # ('in_reference_path', 'planning/dynamic/traj_global'),
+            ('in_ego_odometry', '/aw_localization/ekf/odom'),
+            ('in_wheel_speed_report', 'raptor_dbw_interface/wheel_speed_report'),
+            ('in_imu_data', 'novatel_bottom/imu/data'),
+            ('in_steering_report', 'raptor_dbw_interface/steering_report'),
+            ('in_control_error', 'control_joint_lqr/lqr_error')
+        ],
+        parameters=[{
+            'max_ddes_vel_dt_default'   : 3.0,
+            'lateral_tire_model_factor' : 0.8,
+        }]
+    )
+
+
 # NIF LQR + CSL END ###############################################
 
     global_params_file = None
@@ -293,6 +313,7 @@ def generate_launch_description():
             ('in_joystick_cmd', '/joystick/command'),
             ('in_localization_status', '/aw_localization/ekf/status'),
             ('in_mission_status', '/system/mission'),
+            ('in_ll_diagnostic_report', '/raptor_dbw_interface/diag_report'),
             ('out_system_status', '/system/status'),
         ]
     )
@@ -363,6 +384,37 @@ def generate_launch_description():
         ]
     )
 
+    acc_rosparam_file = os.path.join(
+        get_package_share_directory('nif_adaptive_cruise_control_node'),
+        'config',
+        'rosparam.yaml'
+    )
+
+    nif_adaptive_cruise_control_param = DeclareLaunchArgument(
+        'nif_adaptive_cruise_control_param',
+        default_value=acc_rosparam_file,
+        description='Path to config file for nif_adaptive_cruise_control_param'
+    )
+
+    idm_acc_param_file = os.path.join(
+        get_package_share_directory('nif_adaptive_cruise_control_node'),
+        'config',
+        'idm_acc_config.yaml'
+    )
+
+    idm_based_control_node = Node(
+        package='nif_adaptive_cruise_control_node',
+        executable='nif_adaptive_cruise_control_node_exe',
+        output='screen',
+        parameters=[
+            LaunchConfiguration('nif_adaptive_cruise_control_param'),
+            {
+                'idm_acc_config_file': idm_acc_param_file
+            }
+            ]
+    )
+
+
 ### NIF WAYPOINT MANAGER END #############################
 
     nif_mission_manager_launch = IncludeLaunchDescription(
@@ -403,6 +455,10 @@ def generate_launch_description():
         nif_csl_node,
         nif_aw_localization_launch,
         nif_localization_launch,
+
+        nif_adaptive_cruise_control_param,
+        idm_based_control_node,
+        nif_velocity_planning_node,
 
         nif_points_clustering,
         robot_description_launch,

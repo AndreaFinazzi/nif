@@ -44,26 +44,9 @@ IMMObjectTrackerNode::IMMObjectTrackerNode(const std::string &node_name_)
       std::bind(&IMMObjectTrackerNode::egoOdomCallback, this,
                 std::placeholders::_1));
 
-  tracker_ptr = std::make_shared<ImmUkfPda>(tracker_config_file_path);
-  // success to initialize the tracker
-}
-
-// Not used
-IMMObjectTrackerNode::IMMObjectTrackerNode(
-    const std::string &node_name_, const std::string &tracker_config_file_path_)
-    : Node(node_name_), tracker_config_file_path(tracker_config_file_path_) {
-  tracked_output_publisher =
-      this->create_publisher<nif_msgs::msg::Perception3DArray>(
-          "output", nif::common::constants::QOS_SENSOR_DATA);
-
-  detection_result_subscription =
-      this->create_subscription<nif_msgs::msg::Perception3DArray>(
-          "input", nif::common::constants::QOS_SENSOR_DATA,
-          std::bind(&IMMObjectTrackerNode::detectionCallback, this,
-                    std::placeholders::_1));
-  ego_odom_subscription = this->create_subscription<nav_msgs::msg::Odometry>(
-      "ego_odom", nif::common::constants::QOS_SENSOR_DATA,
-      std::bind(&IMMObjectTrackerNode::egoOdomCallback, this,
+  rof_subscription = this->create_subscription<deep_orange_msgs::msg::RestOfFieldReport>(
+    "/raptor_dbw_interface/rest_of_field_report", nif::common::constants::QOS_SENSOR_DATA,
+      std::bind(&IMMObjectTrackerNode::rofCallback, this,
                 std::placeholders::_1));
 
   tracker_ptr = std::make_shared<ImmUkfPda>(tracker_config_file_path);
@@ -96,12 +79,24 @@ void IMMObjectTrackerNode::detectionCallback(
   tracked_objects = tracker_ptr->getTrackedResult(tmp_array);
   tracked_objects.header = msg->header;
 
+  bool rof_healthy = rof_received && this->now() - rof_last_update < rclcpp::Duration(2, 0);
   for (auto&& obj : tracked_objects.perception_list) {
+    obj.obj_velocity_in_global.linear.x = rof_healthy ? rof.comp_speed_kph / 3.6 : obj.obj_velocity_in_global.linear.x;
+
     // TODO WARNING this transform is not always correct
     obj.obj_velocity_in_local.linear.x = obj.obj_velocity_in_global.linear.x - ego_odom.twist.twist.linear.x;
   }
 
-  tracked_output_publisher->publish(tracked_objects);
+  // @DEBUG
+  if (tracked_objects.perception_list.size() > 1)
+  {
+    rclcpp::Clock clock;
+    RCLCPP_WARN_THROTTLE(this->get_logger(), clock, 1.0, "ObjectTracker outputs more than one track.");
+  }
+
+  // @DEBUG probably not the best option, but makes prediction stable
+  if (!tracked_objects.perception_list.empty()) 
+    tracked_output_publisher->publish(tracked_objects);
 
   // Visualization
   visualization_msgs::msg::MarkerArray vis_marker_array;
@@ -135,4 +130,11 @@ void IMMObjectTrackerNode::detectionCallback(
 void IMMObjectTrackerNode::egoOdomCallback(
     const nav_msgs::msg::Odometry::SharedPtr msg) {
   ego_odom = *msg;
+}
+
+void IMMObjectTrackerNode::rofCallback(
+    const deep_orange_msgs::msg::RestOfFieldReport::SharedPtr msg) {
+  rof = *msg;
+  rof_received = true;
+  rof_last_update  = this->now();
 }

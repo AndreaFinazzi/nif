@@ -108,6 +108,7 @@ def generate_launch_description():
         package='nif_opponent_prediction_nodes',
         executable='nif_opponent_prediction_nodes_exe',
         output='screen',
+        respawn=True,
         parameters=[
             LaunchConfiguration('nif_prediction_param_file'),
             {

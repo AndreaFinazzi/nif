@@ -134,7 +134,7 @@ class Telemetry : public rclcpp::Node
 
       // timer which handles sending to base station
       send_bs_timer_ = this->create_wall_timer(
-          25ms, std::bind(&Telemetry::send_bs_callback, this));
+          50ms, std::bind(&Telemetry::send_bs_callback, this));
 
       // timer which handles receiving from base station
       rec_bs_timer_ = this->create_wall_timer(

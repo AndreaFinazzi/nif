@@ -30,7 +30,7 @@ GeofenceFilterNode::GeofenceFilterNode(const std::string &node_name_)
     this->declare_parameter<double>("track_angle_filter_threshold_deg", 15.0);
     
     this->declare_parameter<bool>("track_range_filter_active", true);
-    this->declare_parameter<double>("track_range_filter_threshold_min_m", 30.0);
+    this->declare_parameter<double>("track_range_filter_threshold_min_m", 20.0);
 
     auto file_path_inner_line = this->get_parameter("file_path_inner_line").as_string();
     auto file_path_outer_line = this->get_parameter("file_path_outer_line").as_string();
@@ -122,7 +122,11 @@ void GeofenceFilterNode::radarTrackCallback(
         pose_in_body.position.x = r * cos(theta_rad);
         pose_in_body.position.y = r * sin(theta_rad);
 
-        if (this->poseInBodyIsValid(pose_in_body, msg->track_range_rate))
+        // @DEBUG filter on inner fence only if angle is smaller than 10.0
+        if (
+          this->poseInBodyIsValid(pose_in_body, msg->track_range_rate) || 
+          (abs(msg->track_angle) < 10.0 && this->poseInBodyIsValid(pose_in_body, msg->track_range_rate, false, true))
+        )
         {
           visualization_msgs::msg::Marker track_vis{};
           track_vis.header = msg->header;
@@ -145,6 +149,10 @@ void GeofenceFilterNode::radarTrackCallback(
           nif::common::msgs::PerceptionResult track_pr{};
           track_prl.header = msg->header;
           track_pr.header = msg->header;
+          // @DEBUG 
+          // TODO convert frame and use constant for naming
+          track_prl.header.frame_id = "base_link";
+          track_pr.header.frame_id = "base_link";
           track_pr.id = msg->track_id;
           track_pr.obj_velocity_in_local.linear.x = msg->track_range_rate;
           track_pr.detection_result_3d.center = pose_in_body;
@@ -161,7 +169,8 @@ void GeofenceFilterNode::radarTrackCallback(
 
 bool GeofenceFilterNode::poseInBodyIsValid(
   const geometry_msgs::msg::Pose &point_in_body, 
-  double r_dot)
+  double r_dot,
+  bool filter_on_inner_fence, bool filter_on_outer_fence)
 {
   auto object_pose_in_global = nif::common::utils::coordination::getPtBodytoGlobal(
     this->getEgoOdometry(),
@@ -184,12 +193,14 @@ bool GeofenceFilterNode::poseInBodyIsValid(
   {
     // Use squared because we're not interested in the actual distance, save a sqrt() call.
     if (
+      (filter_on_inner_fence &&
       nif::common::utils::geometry::calEuclideanDistanceSquared(
         object_pose_in_global.position, 
-        current_wpt_pose_inner_in_global.position) < this->distance_filter_threshold_m_squared ||
+        current_wpt_pose_inner_in_global.position) < this->distance_filter_threshold_m_squared) ||
+      (filter_on_outer_fence &&
       nif::common::utils::geometry::calEuclideanDistanceSquared(
         object_pose_in_global.position, 
-        current_wpt_pose_outer_in_global.position) < this->distance_filter_threshold_m_squared)
+        current_wpt_pose_outer_in_global.position) < this->distance_filter_threshold_m_squared))
     {
       // Element should be filtered out
       return false;
@@ -222,8 +233,9 @@ bool GeofenceFilterNode::poseInBodyIsValid(
       object_pose_in_outer_prev.position, 
       current_wpt_pose_outer_in_prev.position);
 
-    if (cp_inner_in_prev.z < 0 || // object on the left of inner wpt
-        cp_outer_in_prev.z > 0  // object on the right of outer wpt
+    if (
+      (filter_on_inner_fence && cp_inner_in_prev.z < 0) || // object on the left of inner wpt
+      (filter_on_outer_fence && cp_outer_in_prev.z > 0)  // object on the right of outer wpt
     ) return false;
 
   }

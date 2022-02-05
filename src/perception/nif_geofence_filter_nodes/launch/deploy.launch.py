@@ -68,6 +68,7 @@ def generate_launch_description():
                 package="nif_geofence_filter_nodes",
                 executable="nif_geofence_filter_nodes_exe",
                 output="screen",
+                respawn=True,
                 emulate_tty=True,
                 parameters=[{
                     # geofence file path
@@ -76,7 +77,7 @@ def generate_launch_description():
 
                     # Filters out the tracks under a certain distance from the track geofences
                     'distance_filter_active': True,
-                    'distance_filter_threshold_m': 1.5,
+                    'distance_filter_threshold_m': 1.,
 
                     # Filters out the tracks outside the track boundaries
                     'boundaries_filter_active': True,
@@ -84,18 +85,27 @@ def generate_launch_description():
                     # Filters out the tracks considered static
                     'range_rate_filter_active': True,
                     'range_rate_filter_threshold_mps': 2.0,
+
+                    # Filters out the tracks considered static
+                    'track_angle_filter_active': True,
+                    'track_angle_filter_threshold_deg': 15.0,
+
+                    # Filters out the tracks considered static
+                    'track_range_filter_active': True,
+                    'track_range_filter_threshold_min_m': 15.0,
+
                     }],
 
                 remappings=[
                     ("in_perception_array", "/clustered/perception_list"),
-                    # ("out_filtered_perception_array", "/clustered/perception_list/filtered"),
-                    ("out_filtered_perception_array", "/perception/concat"),
+                    ("out_filtered_perception_array", "/clustered/perception_list/filtered"),
+                    # ("out_filtered_perception_array", "/perception/concat"),
 
                     ("in_radar_track", "/radar_front/esr_track"),
                     ("out_filtered_radar_track", "/radar_front/esr_track/filtered"),
                     ("out_filtered_radar_track_vis", "/radar_front/esr_track/filtered/vis"),
-                    # ("out_filtered_radar_perception_list", "/radar_front/perception_list/filtered"),
-                    ("out_filtered_radar_perception_list", "/perception/concat"),
+                    ("out_filtered_radar_perception_list", "/radar_front/perception_list/filtered"),
+                    # ("out_filtered_radar_perception_list", "/perception/concat"),
                 ]
             )
 

@@ -324,19 +324,25 @@ public:
         const nif_msgs::srv::GhostVehicleCreate::Request::SharedPtr request,
         nif_msgs::srv::GhostVehicleCreate::Response::SharedPtr response)
         {
-            auto vehicle_id = this->create_vehicle(
-                std::move(request->maptrack_id), 
-                request->velocity_mps, 
-                request->waypoint_index);
+            if (this->wpt_manager_by_id.find(request->maptrack_id) != this->wpt_manager_by_id.end()){
 
-            if (vehicle_state_by_id.find(vehicle_id) != vehicle_state_by_id.end())
-            {
-                response->success = true;
-                response->vehicle_id = vehicle_id;
-                response->message = "OK: Ghost vehicle spawned successfully.";
+                auto vehicle_id = this->create_vehicle(
+                    std::move(request->maptrack_id), 
+                    request->velocity_mps, 
+                    request->waypoint_index);
+
+                if (vehicle_state_by_id.find(vehicle_id) != vehicle_state_by_id.end())
+                {
+                    response->success = true;
+                    response->vehicle_id = vehicle_id;
+                    response->message = "OK: Ghost vehicle spawned successfully.";
+                } else {
+                    response->success = false;
+                    response->message = "ERROR: Ghost vehicle could not be spawned.";
+                }
             } else {
                 response->success = false;
-                response->message = "ERROR: Ghost vehicle could not be spawned.";
+                response->message = "ERROR: maptrack_id is not valid.";
             }
 
 

@@ -88,6 +88,11 @@ public:
   double m_error_y = 0.;
   double m_ERROR_Y_MAX = 0.5; // halving des_vel point.
 
+  // ACC
+  bool m_has_acc_cmd;
+  rclcpp::Time m_last_acc_update;
+  double m_acc_des_accel;
+
 private:
   void initializeGears(const std::string &track_id);
   void controlCallback();
@@ -112,6 +117,10 @@ private:
   void receiveImu(const sensor_msgs::msg::Imu::SharedPtr msg);
   void receiveLQRError(const std_msgs::msg::Float32MultiArray::SharedPtr msg);
 
+  // ACC
+  void accCMDCallback(const std_msgs::msg::Float32::SharedPtr msg);
+  bool m_accCMD_firstcall = true;
+
   rclcpp::TimerBase::SharedPtr gear_timer_;
 
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pubThrottleCmd_;
@@ -128,6 +137,7 @@ private:
   rclcpp::Subscription<raptor_dbw_msgs::msg::WheelSpeedReport>::SharedPtr
       subVelocity_;
   rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr subDesAccel_;
+  rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr subACCAccel_;
   rclcpp::Subscription<deep_orange_msgs::msg::PtReport>::SharedPtr subPtReport_;
   rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr subImu_;
   rclcpp::Subscription<std_msgs::msg::Float32MultiArray>::SharedPtr
