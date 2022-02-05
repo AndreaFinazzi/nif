@@ -206,12 +206,12 @@ if __name__ == "__main__":
                         j=0
                         for vertex in pol:
                             xy.append([vertex['x'], vertex['y']])
-                            ax.annotate(str(j),xy=xy[j])
+                            # ax.annotate(str(j),xy=xy[j])
                             j+=1
 
 
-                        pol_patch = patches.Polygon(xy, linewidth=1, edgecolor=(r, g, b), fc=(r, g, b, 0.3), label='MISSION BOX: ' + str(mission_code_block.get("mission_code")))
-                        ax.add_patch(pol_patch)
+                        # pol_patch = patches.Polygon(xy, linewidth=1, edgecolor=(r, g, b), fc=(r, g, b, 0.3), label='MISSION BOX: ' + str(mission_code_block.get("mission_code")))
+                        # ax.add_patch(pol_patch)
 
     for i, zone_block in enumerate(zones_yaml.get("zones")):
         r = random.random()

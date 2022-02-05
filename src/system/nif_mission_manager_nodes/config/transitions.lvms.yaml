@@ -1,7 +1,7 @@
 # Misison codes are specified in nif_msgs/msg/MissionStatus.msg
 # Velocities are expressed in meter per seconds [m/s]
 # Listed conditions must have an 'active' flag. If false, the condition is ignored.
-# fallback_mission_code is used in case pf rejection
+# fallback_mission_code is used in case of rejection
 missions:
   - mission_code: 0 # MISSION_RACE
     active: true
@@ -57,18 +57,6 @@ missions:
         - x: 165.00 # x_2
           y: -175.00 # y_2
 
-        # - x: 440.00 # x_0
-        #   y: -95.00 # y_0
-        # - x: 670.00 # x_2
-        #   y: -315.00 # y_2
-        # - x: 400.0 # x_5
-        #   y: -125.0 # y_5
-        # - x: 720.00 # x_0
-        #   y: -265.00 # y_0
-        # - x: 810.0  # x_3
-        #   y: -625.0  # y_3
-        # - x: 845.00 # x_4
-        #   y: -615.00 # y_4
     allowed_transitions:
       active: true
       from:
