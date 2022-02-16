@@ -26,6 +26,7 @@ setup(
             'controller.py = nif_lgsvl_simulation.controller:main',
             'publisher_member_function.py = nif_lgsvl_simulation.publisher_member_function:main',
             'subscriber_member_function.py = nif_lgsvl_simulation.subscriber_member_function:main',
+            'multi_vehicle_interface.py = nif_lgsvl_simulation.multi_vehicle_interface:main'
         ],
     },
 )

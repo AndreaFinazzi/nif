@@ -15,6 +15,8 @@ from lgsvl_msgs.msg import VehicleOdometry, Detection2DArray
 from novatel_oem7_msgs.msg import INSPVA, BESTPOS, INSSTDEV, InertialSolutionStatus
 from geometry_msgs.msg import PoseStamped, TransformStamped, Vector3, Quaternion
 from raptor_dbw_msgs.msg import WheelSpeedReport
+from deep_orange_msgs.msg import PtReport
+from nif_msgs.msg import LocalizationStatus
 
 import math
 import tf2_py
@@ -91,6 +93,10 @@ class LGSVLSubscriberNode(BaseNode):
         # Vehicle odometry subsciptions (includes front/rear wheel angles and velocity)
         self.sub_vehicleodometry = self.create_subscription(VehicleOdometry, self.namespace + '/sensor/odometry', self.callback_vehicleodometry, rclpy.qos.qos_profile_sensor_data)
         self.pub_wheel_speed = self.create_publisher(WheelSpeedReport, self.namespace + '/raptor_dbw_interface/wheel_speed_report', 20) # rclpy.qos.qos_profile_sensor_data)
+
+        self.pub_dummy_pt_report = self.create_publisher(PtReport, '/raptor_dbw_interface/pt_report', 10)
+        self.pub_dummy_localization_status = self.create_publisher(LocalizationStatus, '/aw_localization/ekf/status', 10)
+        
         # GPS subscriptions
         # self.sub_gps_top = self.create_subscription(NavSatFix, self.namespace + '/novatel_top/fix', self.callback_gps_top, rclpy.qos.qos_profile_sensor_data)
         # self.sub_gps_bottom = self.create_subscription(NavSatFix, self.namespace + '/novatel_bottom/fix', self.callback_gps_bottom, rclpy.qos.qos_profile_sensor_data)
@@ -105,12 +111,12 @@ class LGSVLSubscriberNode(BaseNode):
         self.pub_gps_bestpos_top = self.create_publisher(BESTPOS, self.namespace + '/novatel_top/bestpos', 10) #rclpy.qos.qos_profile_sensor_data)
         self.pub_gps_bestpos_bottom = self.create_publisher(BESTPOS, self.namespace + '/novatel_bottom/bestpos', 10) #rclpy.qos.qos_profile_sensor_data)
 
-
         # Vehicle ground truth state
         self.sub_ground_truth_state = self.create_subscription(Odometry, '/sensor/gps_ground_truth', self.callback_ground_truth_state, rclpy.qos.qos_profile_sensor_data)
         self.pub_ground_truth_state = self.create_publisher(Odometry, '/sensor/odom_ground_truth', rclpy.qos.qos_profile_sensor_data)
         self.pub_odom_converted = self.create_publisher(Odometry, '/sensor/odom_converted', rclpy.qos.qos_profile_sensor_data)
         self._tf_publisher = TransformBroadcaster(self)
+
     # def callback(self, msg):
     # self.get_logger().info('Subscribed GPS ODOM: {}'.format(msg.pose.pose.position.x))
 
@@ -391,6 +397,9 @@ class LGSVLSubscriberNode(BaseNode):
 
         self.pub_odom_converted.publish(odom_converted)
         self.tf_broadcast(odom_converted)
+
+        self.pub_dummy_pt_report.publish(PtReport())
+        self.pub_dummy_localization_status.publish(LocalizationStatus())
 
     def tf_broadcast(self, msg):
         tfs = TransformStamped()
