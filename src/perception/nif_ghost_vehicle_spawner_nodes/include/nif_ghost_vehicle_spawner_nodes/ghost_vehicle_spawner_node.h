@@ -106,9 +106,9 @@ public:
             nif::common::constants::QOS_SENSOR_DATA);
 
         this->udp_perception_result_sub = this->create_subscription<nif_msgs::msg::Perception3DArray>(
-             "lgsvl/oppo", 10, std::bind(&GhostVehicleSpawnerNode::udp_perception_callback, this, std::placeholders::_1));
+             "lgsvl/oppo", nif::common::constants::QOS_SENSOR_DATA, std::bind(&GhostVehicleSpawnerNode::udp_perception_callback, this, std::placeholders::_1));
         this->udp_perception_result_pub = this->create_publisher<nif_msgs::msg::Perception3DArray>(
-            "out_perception_result",
+            "out_udp_perception_result",
             nif::common::constants::QOS_SENSOR_DATA);
 
         this->marker_pub = this->create_publisher<visualization_msgs::msg::Marker>(
@@ -480,6 +480,8 @@ private:
 
          // TODO: publish
          perception_msg.detection_result_3d.center = body_pos;
+
+         perception_array_out_msg.perception_list.push_back(perception_msg);
          udp_perception_result_pub->publish(perception_array_out_msg);
 
      }
