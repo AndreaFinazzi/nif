@@ -108,7 +108,7 @@ public:
         this->udp_perception_result_sub = this->create_subscription<nif_msgs::msg::Perception3DArray>(
              "lgsvl/oppo", 10, std::bind(&GhostVehicleSpawnerNode::udp_perception_callback, this, std::placeholders::_1));
         this->udp_perception_result_pub = this->create_publisher<nif_msgs::msg::Perception3DArray>(
-            "out_udp_perception_result",
+            "out_perception_result",
             nif::common::constants::QOS_SENSOR_DATA);
 
         this->marker_pub = this->create_publisher<visualization_msgs::msg::Marker>(
