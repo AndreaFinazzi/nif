@@ -74,8 +74,8 @@ class ACClientNode(rclpy.node.Node):
         self.timer = self.create_timer(0.02, self.timer_callback)
 
         # Publishers
-        self.pub_oppo_markers = self.create_publisher(MarkerArray, '/lgsvl/oppo/vis', rclpy.qos.qos_profile_sensor_data)
-        self.pub_oppo_perception = self.create_publisher(MarkerArray, '/lgsvl/oppo', rclpy.qos.qos_profile_sensor_data)
+        self.pub_oppo_markers = self.create_publisher(Marker, '/lgsvl/oppo/vis', rclpy.qos.qos_profile_sensor_data)
+        self.pub_oppo_perception = self.create_publisher(Perception3DArray, '/lgsvl/oppo', rclpy.qos.qos_profile_sensor_data)
 
         self.sub_ego_odom = self.create_subscription(Odometry, '/sensor/odom_ground_truth', self.ego_odom_callback, rclpy.qos.qos_profile_sensor_data)
 
@@ -83,7 +83,7 @@ class ACClientNode(rclpy.node.Node):
         self._tf_publisher = TransformBroadcaster(self)
 
     def publish_marker(self, perception_array_msg : Perception3DArray):
-        for (cid, perception_item) in enumerate(perception_array_msg):
+        for (cid, perception_item) in enumerate(perception_array_msg.perception_list):
             marker = Marker()
             marker.header.stamp = self.get_clock().now().to_msg()
             marker.header.frame_id = R_FRAME_ODOM
@@ -130,10 +130,10 @@ class ACClientNode(rclpy.node.Node):
             data, addr = udp_client.recvfrom(BUFFER_SIZE)
             data_loaded = pickle.loads(data) #data loaded.
             
-            percetion_msg = self.oppo_odom_to_perception_msg(data_loaded)
+            perception_msg = self.oppo_odom_to_perception_msg(data_loaded)
 
-            self.publish_marker(percetion_msg)
-
+            self.pub_oppo_perception.publish(perception_msg)
+            self.publish_marker(perception_msg)
             # print(str(data_loaded))
         except timeout:
             print("Timeout")
@@ -151,6 +151,7 @@ class ACClientNode(rclpy.node.Node):
 
         perception_msg.perception_list.append(perception_item)
 
+        return perception_msg
 # def convert_global_to_body(ego_odom, pose_in_global) -> Pose:
 
 def main(args=None):

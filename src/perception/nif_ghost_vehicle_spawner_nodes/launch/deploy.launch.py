@@ -95,8 +95,8 @@ def generate_launch_description():
             LaunchConfiguration('nif_ghost_vehicle_spawner_param_file')
         ],
         remappings=[
-            ('out_perception_result', '/ghost/perception_tmp'),
-            ('out_upd_perception_result', '/ghost/perception'),
+            ('out_perception_result', '/null'),
+            ('out_udp_perception_result' ,'/ghost/perception'),
             ('out_marker', '/ghost/marker'),
             ('out_odometry', '/ghost/odometry'),
         ]
