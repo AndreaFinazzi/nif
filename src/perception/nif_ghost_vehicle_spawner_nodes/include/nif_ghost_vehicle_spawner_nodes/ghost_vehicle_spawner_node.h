@@ -105,6 +105,12 @@ public:
             "out_perception_result",
             nif::common::constants::QOS_SENSOR_DATA);
 
+        this->udp_perception_result_sub = this->create_subscription<nif_msgs::msg::Perception3DArray>(
+             "lgsvl/oppo", 10, std::bind(&GhostVehicleSpawnerNode::udp_perception_callback, this, std::placeholders::_1));
+        this->udp_perception_result_pub = this->create_publisher<nif_msgs::msg::Perception3DArray>(
+            "out_udp_perception_result",
+            nif::common::constants::QOS_SENSOR_DATA);
+
         this->marker_pub = this->create_publisher<visualization_msgs::msg::Marker>(
             "out_marker",
             nif::common::constants::QOS_SENSOR_DATA);
@@ -418,8 +424,6 @@ public:
             response->message = "ERROR: Ghost vehicle could not be removed.";
         }
     }
-    
-
 
 private:
     std::vector<std::string> file_ids_list{};
@@ -427,6 +431,8 @@ private:
 
     std::map<std::string, std::unique_ptr<WaypointManagerMinimal>> wpt_manager_by_id;
     std::map<unsigned int, std::unique_ptr<GhostVehicleState>> vehicle_state_by_id;
+
+    nif_msgs::msg::Perception3DArray m_udp_perception_result;
 
     std::string frame_id_body = "base_link";
     std::string frame_id_global = "odom";
@@ -438,8 +444,13 @@ private:
     rclcpp::Time t_prev;
 
     rclcpp::Publisher<nif_msgs::msg::Perception3DArray>::SharedPtr perception_result_pub;
+    rclcpp::Publisher<nif_msgs::msg::Perception3DArray>::SharedPtr udp_perception_result_pub;
+
     rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr marker_pub;
     rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub;
+
+    // UDP from server
+    rclcpp::Subscription<nif_msgs::msg::Perception3DArray>::SharedPtr udp_perception_result_sub; // in global frame
 
     rclcpp::Service<nif_msgs::srv::GhostVehicleCreate>::SharedPtr service_create_vehicle;
     rclcpp::Service<nif_msgs::srv::GhostVehicleGet>::SharedPtr service_get_vehicle;
@@ -448,6 +459,30 @@ private:
     rclcpp::Service<nif_msgs::srv::GhostVehicleUpdateMaptrack>::SharedPtr service_update_vehicle_maptrack;
     rclcpp::Service<nif_msgs::srv::GhostVehicleDestroy>::SharedPtr service_destroy_vehicle;
 
+    //  void udp_perception_callback(const nif_msgs::msg::Perception3DArray::SharedPtr msg);
+    void udp_perception_callback(const nif_msgs::msg::Perception3DArray::SharedPtr msg){
+        m_udp_perception_result = *msg;
+
+         // TODO: global to body
+        auto now = this->now();
+        nif_msgs::msg::Perception3DArray perception_array_out_msg{};
+        nif_msgs::msg::Perception3D perception_msg;
+        perception_array_out_msg.header.stamp = now;
+        perception_array_out_msg.header.frame_id = this->getBodyFrameId();
+
+        geometry_msgs::msg::PoseStamped ps;
+        ps.pose = m_udp_perception_result.perception_list[0].detection_result_3d.center;
+        
+        auto body_pos = nif::common::utils::coordination::getPtGlobaltoBody(
+                    this->getEgoOdometry(),
+                    ps)
+                .pose;
+
+         // TODO: publish
+         perception_msg.detection_result_3d.center = body_pos;
+         udp_perception_result_pub->publish(perception_array_out_msg);
+
+     }
 
 }; /* class GhostVehicleSpawnerNode */
 
