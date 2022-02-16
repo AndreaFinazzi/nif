@@ -15,7 +15,7 @@ from lgsvl_msgs.msg import VehicleOdometry, Detection2DArray
 from novatel_oem7_msgs.msg import INSPVA, BESTPOS, INSSTDEV, InertialSolutionStatus
 from geometry_msgs.msg import PoseStamped, TransformStamped, Vector3, Quaternion
 from raptor_dbw_msgs.msg import WheelSpeedReport
-from deep_orange_msgs.msg import PtReport
+from deep_orange_msgs.msg import PtReport, DiagnosticReport
 from nif_msgs.msg import LocalizationStatus
 
 import math
@@ -95,6 +95,7 @@ class LGSVLSubscriberNode(BaseNode):
         self.pub_wheel_speed = self.create_publisher(WheelSpeedReport, self.namespace + '/raptor_dbw_interface/wheel_speed_report', 20) # rclpy.qos.qos_profile_sensor_data)
 
         self.pub_dummy_pt_report = self.create_publisher(PtReport, '/raptor_dbw_interface/pt_report', 10)
+        self.pub_dummy_raptor_diag = self.create_publisher(DiagnosticReport, '/raptor_dbw_interface/diag_report', 10)
         self.pub_dummy_localization_status = self.create_publisher(LocalizationStatus, '/aw_localization/ekf/status', 10)
         
         # GPS subscriptions
@@ -399,6 +400,7 @@ class LGSVLSubscriberNode(BaseNode):
         self.tf_broadcast(odom_converted)
 
         self.pub_dummy_pt_report.publish(PtReport())
+        self.pub_dummy_raptor_diag.publish(DiagnosticReport())
         self.pub_dummy_localization_status.publish(LocalizationStatus())
 
     def tf_broadcast(self, msg):
