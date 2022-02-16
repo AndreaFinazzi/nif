@@ -55,7 +55,7 @@ from nif_msgs.msg import Perception3D, Perception3DArray
 HANDSHAKE_MSG       = "usrg.racing"
 ADDR_SERVER         = ("192.168.0.16", 4444)
 ADDR_CLIENT         = ("0.0.0.0", 4444)
-BUFFER_SIZE         = 1024
+BUFFER_SIZE         = 4092
 CLIENT_TIMEOUT_S    = 1.0
 
 R_FRAME_ODOM = "odom"
@@ -147,7 +147,7 @@ class ACClientNode(rclpy.node.Node):
         perception_item.header = oppo_odom.header
         perception_item.id = 1
         perception_item.detection_result_3d.center = oppo_odom.pose.pose
-        perception_item.obj_velocity_in_global = oppo_odom.twist.twist.linear.x
+        perception_item.obj_velocity_in_global = oppo_odom.twist.twist
 
         perception_msg.perception_list.append(perception_item)
 
