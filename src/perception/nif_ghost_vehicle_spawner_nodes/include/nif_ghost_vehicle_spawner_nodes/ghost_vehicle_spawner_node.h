@@ -480,7 +480,7 @@ private:
 
          // TODO: publish
          perception_msg.detection_result_3d.center = body_pos;
-
+         perception_msg.header.stamp = now;
          perception_array_out_msg.perception_list.push_back(perception_msg);
          udp_perception_result_pub->publish(perception_array_out_msg);
 
