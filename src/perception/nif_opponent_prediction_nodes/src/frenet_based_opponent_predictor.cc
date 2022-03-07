@@ -260,6 +260,12 @@ void FrenetBasedOpponentPredictor::predict_bls(double estimated_progress_,
     if (abs(elapsed_s) < 4) {
       m_pub_predicted_trajectory->publish(bls_dtraj);
       m_pub_predicted_trajectory_vis->publish(bls_path);
+    } else {
+      bls_dtraj.trajectory_path.poses.clear();
+      bls_path.poses.clear();
+
+      m_pub_predicted_trajectory->publish(bls_dtraj);
+      m_pub_predicted_trajectory_vis->publish(bls_path);
     }
   }
 }
