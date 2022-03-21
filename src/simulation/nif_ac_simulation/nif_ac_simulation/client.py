@@ -67,11 +67,13 @@ from nifpy_common_nodes.base_node import BaseNode
 
 import rclpy
 from rclpy.duration import Duration
+from std_msgs.msg import UInt8
 from nav_msgs.msg import Odometry
 from visualization_msgs.msg import Marker, MarkerArray
 from nif_msgs.msg import ACTelemetryCarStatus
 from tf2_ros.transform_broadcaster import TransformBroadcaster
 from geometry_msgs.msg import PoseStamped, TransformStamped, Vector3, Quaternion
+from rclpy.qos import QoSProfile, QoSHistoryPolicy, QoSDurabilityPolicy, QoSReliabilityPolicy, QoSLivelinessPolicy
 
 HANDSHAKE_MSG       = "usrg.racing"
 ADDR_SERVER         = ("143.248.100.101", 4444)
@@ -82,7 +84,7 @@ CLIENT_TIMEOUT_S    = 1.0
 R_FRAME_ODOM = "odom"
 R_FRAME_BODY = "base_link"
 
-TIMER_PERIOD_RECV_S = 0.04
+TIMER_PERIOD_RECV_S = 0.01
 
 class ACClientNode(rclpy.node.Node):
     def __init__(self, node_name: str, udp_client : SocketType) -> None:
@@ -99,6 +101,15 @@ class ACClientNode(rclpy.node.Node):
         self.timer_recv = self.create_timer(TIMER_PERIOD_RECV_S, self.timer_recv_callback)
 
         # Publishers
+
+        qos_car_count = QoSProfile(
+            depth=1,
+            history=QoSHistoryPolicy.KEEP_LAST,
+            reliability=QoSReliabilityPolicy.RELIABLE,
+            durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
+        )
+        ## TODO: should become a service
+        self.pub_car_count = self.create_publisher(UInt8, '/ac/car_count', qos_car_count)
         self.pub_odom_ground_truth = self.create_publisher(Odometry, '/sensor/odom_ground_truth', rclpy.qos.qos_profile_sensor_data)
         self.pub_oppo_markers = self.create_publisher(MarkerArray, '/ac/vis/cars', rclpy.qos.qos_profile_sensor_data)
         self.pubs_car_status = []
@@ -109,23 +120,29 @@ class ACClientNode(rclpy.node.Node):
         self.now = self.get_clock().now()
 
     def timer_recv_callback(self):
-            try:
-                data, addr = self.udp_client.recvfrom(BUFFER_SIZE)
-                data_loaded = pickle.loads(data) #data loaded.
+        try:
+            data, addr = self.udp_client.recvfrom(BUFFER_SIZE)
+            data_loaded = pickle.loads(data) #data loaded.
 
-                self.now = self.get_clock().now()
-                self.parseState(data_loaded)
-                # print(str(data_loaded))
-            except timeout:
-                print("Timeout")
+            self.now = self.get_clock().now()
+            self.parseState(data_loaded)
+            # print(str(data_loaded))
+        except timeout:
+            print("Timeout")
 
 
     def parseState(self, state: dict):
         if self.is_first_call:
+            self.is_first_call = False
+
             for cid in range(state['carsCount']):
                 self.pubs_car_status.append(self.create_publisher(
                     ACTelemetryCarStatus, '/ac/car_status_' + str(cid), rclpy.qos.qos_profile_sensor_data))
 
+        car_count = UInt8()
+        car_count.data = state['carsCount']
+        self.pub_car_count.publish(car_count)
+        
         self.update_odom_ground_truth(state)
         self.update_oppo_markers(state)
 
@@ -174,6 +191,8 @@ class ACClientNode(rclpy.node.Node):
             car_status = ACTelemetryCarStatus()
             car_status.header.frame_id = "odom"
             car_status.header.stamp = self.now.to_msg()
+            
+            car_status.cid = cid
             
             car_status.world_position.x = csWorldPosition[0]
             car_status.world_position.y = csWorldPosition[1]
