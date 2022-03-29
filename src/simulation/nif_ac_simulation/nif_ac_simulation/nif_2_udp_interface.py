@@ -35,10 +35,11 @@ from nif_msgs.msg import ACTelemetryCarStatus
 from tf2_ros.transform_broadcaster import TransformBroadcaster
 from geometry_msgs.msg import PoseStamped, TransformStamped, Vector3, Quaternion
 from rclpy.qos import QoSProfile, QoSHistoryPolicy, QoSDurabilityPolicy, QoSReliabilityPolicy, QoSLivelinessPolicy
+from deep_orange_msgs.msg import PtReport
 
 HANDSHAKE_MSG       = "usrg.racing"
-ADDR_SERVER         = ("143.248.100.101", 4444)
-ADDR_CLIENT         = ("0.0.0.0", 4445)
+ADDR_SERVER         = ("143.248.100.101", 4443)
+ADDR_CLIENT         = ("0.0.0.0", 4442)
 BUFFER_SIZE         = 16000
 CLIENT_TIMEOUT_S    = 1.0
 
@@ -74,34 +75,48 @@ class ACServerNode(rclpy.node.Node):
         self.topic_name_gas_cmd = "/joystick/accelerator_cmd"
         self.topic_name_brake_cmd = "/joystick/brake_cmd"
         self.topic_name_target_gear = "/joystick/gear_cmd"
-        self.topic_name_current_gear = "TODO"
+        self.topic_name_pt_report = "/raptor_dbw_interface/pt_report"
 
-        self.sub_steer_cmd = self.create_subscription(Float32,topic_name_steer_cmd,self.steer_cmd_callback,10)
-        self.sub_gas_cmd = self.create_subscription(Float32,topic_name_gas_cmd,self.gas_cmd_callback,10)
-        self.sub_brake_cmd = self.create_subscription(Float32,topic_name_brake_cmd,self.brake_cmd_callback,10)
-        self.sub_target_gear = self.create_subscription(UInt8,topic_name_target_gear,self.target_gear_callback,10)
-        self.sub_current_gear = self.create_subscription(UInt8,topic_name_current_gear,self.current_gear_callback,10)
+        self.sub_steer_cmd = self.create_subscription(Float32, self.topic_name_steer_cmd, self.steer_cmd_callback,10)
+        self.sub_gas_cmd = self.create_subscription(Float32, self.topic_name_gas_cmd, self.gas_cmd_callback,10)
+        self.sub_brake_cmd = self.create_subscription(Float32, self.topic_name_brake_cmd, self.brake_cmd_callback,10)
+        self.sub_target_gear = self.create_subscription(UInt8, self.topic_name_target_gear, self.target_gear_callback,10)
+        self.sub_pt_report = self.create_subscription(PtReport, self.topic_name_pt_report, self.pt_report_callback,10)
 
-        self.latest_steer_cmd = None
-        self.latest_gas_cmd = None
-        self.latest_brake_cmd = None
-        self.latest_gear_up_cmd = None
-        self.latest_gear_down_cmd = None
-        self.latest_target_gear = None
-        self.latest_current_gear = None
+        self.latest_steer_cmd = 0.0
+        self.latest_gas_cmd = 0.0
+        self.latest_brake_cmd = 0.0
+        self.latest_gear_up_cmd = False
+        self.latest_gear_down_cmd = False
+        self.latest_target_gear = 1
+        self.latest_current_gear = 1
+
+        self.timer_cnt = 0
         
         self.now = self.get_clock().now()
 
     def timer_callback(self):
-        # Prepare the dict
-        udp_dict = {"steer":self.latest_steer_cmd,
-                    "gas": self.latest_gas_cmd,
-                    "brake": self.latest_brake_cmd,
-                    "gear-down":self.latest_gear_down_cmd,
-                    "gear-up":self.latest_gear_up_cmd}
+        self.timer_cnt += 1
+
+        if self.timer_cnt % 100 == 0:
+            # Prepare the dict
+            udp_dict = {"steering":self.latest_steer_cmd,
+                        "gas_pedal": self.latest_gas_cmd,
+                        "brake_pedal": self.latest_brake_cmd,
+                        "gear_down":self.latest_gear_down_cmd,
+                        "gear_up":self.latest_gear_up_cmd}
+            self.timer_cnt = 0
+        else:
+            # Prepare the dict
+            udp_dict = {"steering":self.latest_steer_cmd,
+                        "gas_pedal": self.latest_gas_cmd,
+                        "brake_pedal": self.latest_brake_cmd,
+                        "gear_down":False,
+                        "gear_up":False}
+            
 
         udp_msg = pickle.dumps(udp_dict)
-        udp_server.sendto(udp_msg, ADDR_SERVER)
+        self.udp_server.sendto(udp_msg, ADDR_SERVER)
 
     def steer_cmd_callback(self,msg):
         if(self.verbose):
@@ -145,11 +160,11 @@ class ACServerNode(rclpy.node.Node):
             self.latest_gear_down_cmd = True
         pass
 
-    def current_gear_callback(self,msg):
+    def pt_report_callback(self,msg: PtReport):
         if(self.verbose):
             self.get_logger().info('Recieved current gear')
         # update latest current gear
-        self.latest_current_gear = msg.data
+        self.latest_current_gear = msg.current_gear
         pass
 
 def main(args=None):
@@ -163,7 +178,7 @@ def main(args=None):
     # UDPClientSocket.sendto(bytesToSend, ADDR_SERVER)
 
     rclpy.init(args=args)
-    node = ACServerNode("ac_server_node", udp_server,true)
+    node = ACServerNode("ac_server_node", udp_server, true)
 
     try:
         rclpy.spin(node)

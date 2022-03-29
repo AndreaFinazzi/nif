@@ -30,11 +30,13 @@
         # # Scalar
         # csNormSplinePosition = [ac.getCarState(cid, acsys.CS.NormalizedSplinePosition) for cid in range(carsCount)],
         # csLinearSpeedMPS = [ac.getCarState(cid, acsys.CS.SpeedMS) for cid in range(carsCount)],
+
         # csControlSteerAngle =  [ac.getCarState(cid, acsys.CS.Steer) for cid in range(carsCount)],
         # csControlGasNorm =  [ac.getCarState(cid, acsys.CS.Gas) for cid in range(carsCount)],
         # csControlBrakeNorm =  [ac.getCarState(cid, acsys.CS.Brake) for cid in range(carsCount)],
         # csControlClutchNorm =  [ac.getCarState(cid, acsys.CS.Clutch) for cid in range(carsCount)],
         # csControlGear =  [ac.getCarState(cid, acsys.CS.Gear) for cid in range(carsCount)],
+        # csRPM = [ac.getCarState(cid, acsys.CS.RPM) for cid in range(carsCount)],
 
         # csLapTime = [ac.getCarState(cid, acsys.CS.LapTime) for cid in range(carsCount)],
         # csLapCount = [ac.getCarState(cid, acsys.CS.LapCount) for cid in range(carsCount)],
@@ -54,6 +56,7 @@
         # carNames = [ac.getCarName(cid) for cid in range(carsCount)],
         # csRaceFinished = [ac.getCarState(cid, acsys.CS.RaceFinished) for cid in range(carsCount)],
 
+#########################################################################
 
 from http import server
 import marshal
@@ -70,7 +73,9 @@ from rclpy.duration import Duration
 from std_msgs.msg import UInt8
 from nav_msgs.msg import Odometry
 from visualization_msgs.msg import Marker, MarkerArray
-from nif_msgs.msg import ACTelemetryCarStatus
+from nif_msgs.msg import ACTelemetryCarStatus, LocalizationStatus
+from deep_orange_msgs.msg import PtReport, DiagnosticReport
+from raptor_dbw_msgs.msg import WheelSpeedReport
 from tf2_ros.transform_broadcaster import TransformBroadcaster
 from geometry_msgs.msg import PoseStamped, TransformStamped, Vector3, Quaternion
 from rclpy.qos import QoSProfile, QoSHistoryPolicy, QoSDurabilityPolicy, QoSReliabilityPolicy, QoSLivelinessPolicy
@@ -97,6 +102,10 @@ class ACClientNode(rclpy.node.Node):
         self.ego_odom.header.frame_id = R_FRAME_ODOM
         self.ego_odom.child_frame_id = R_FRAME_BODY
 
+        self.pt_report = PtReport()
+        self.pt_report.engine_on_status = True
+        self.pt_report.engine_run_switch_status = True
+
         # Timers
         self.timer_recv = self.create_timer(TIMER_PERIOD_RECV_S, self.timer_recv_callback)
 
@@ -109,8 +118,14 @@ class ACClientNode(rclpy.node.Node):
             durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
         )
         ## TODO: should become a service
-        self.pub_car_count = self.create_publisher(UInt8, '/ac/car_count', qos_car_count)
         self.pub_odom_ground_truth = self.create_publisher(Odometry, '/sensor/odom_ground_truth', rclpy.qos.qos_profile_sensor_data)
+        self.pub_pt_report = self.create_publisher(PtReport, '/raptor_dbw_interface/pt_report', 20)
+        self.pub_wheel_speed = self.create_publisher(WheelSpeedReport, '/raptor_dbw_interface/wheel_speed_report', 20) # rclpy.qos.qos_profile_sensor_data)
+
+        self.pub_dummy_localization_status = self.create_publisher(LocalizationStatus, '/aw_localization/ekf/status', 10)
+        self.pub_dummy_raptor_diag = self.create_publisher(DiagnosticReport, '/raptor_dbw_interface/diag_report', 10)
+
+        self.pub_car_count = self.create_publisher(UInt8, '/ac/car_count', qos_car_count)
         self.pub_oppo_markers = self.create_publisher(MarkerArray, '/ac/vis/cars', rclpy.qos.qos_profile_sensor_data)
         self.pubs_car_status = []
 
@@ -143,20 +158,44 @@ class ACClientNode(rclpy.node.Node):
         car_count.data = state['carsCount']
         self.pub_car_count.publish(car_count)
         
-        self.update_odom_ground_truth(state)
+        self.update_ego_ground_truth(state)
         self.update_oppo_markers(state)
 
 
-    def update_odom_ground_truth(self, state: dict):
+    def update_ego_ground_truth(self, state: dict):
         self.ego_odom.pose.pose.position.x = state['csWorldPosition'][0][0]
-        self.ego_odom.pose.pose.position.y = state['csWorldPosition'][0][1]
-        self.ego_odom.pose.pose.position.z = state['csWorldPosition'][0][2]
+        self.ego_odom.pose.pose.position.y = -state['csWorldPosition'][0][2]
+        self.ego_odom.pose.pose.position.z = state['csWorldPosition'][0][1]
+
+        self.ego_odom.twist.twist.linear.x = state['csLinearSpeedMPS'][0]
+        vel_kph = self.ego_odom.twist.twist.linear.x * 3.6
 
         self.ego_odom.header.stamp = self.now.to_msg()
 
         self.pub_odom_ground_truth.publish(self.ego_odom)
         self.tf_broadcast(self.ego_odom)
 
+        ### PT REPORT ###
+        self.pt_report.stamp = self.now.to_msg()
+        self.pt_report.engine_rpm = state['csRPM'][0]
+        self.pt_report.current_gear = state['csControlGear'][0] - 1
+        self.pt_report.vehicle_speed_kmph = vel_kph
+        
+        self.pub_pt_report.publish(self.pt_report)
+
+        ### WHEEL SPEED REPORT ### 
+        wheel_speed_msg = WheelSpeedReport()
+        wheel_speed_msg.header = self.ego_odom.header
+        wheel_speed_msg.front_left = vel_kph
+        wheel_speed_msg.front_right = vel_kph
+        wheel_speed_msg.rear_left = vel_kph
+        wheel_speed_msg.rear_right = vel_kph
+
+        self.pub_wheel_speed.publish(wheel_speed_msg)
+
+        ### DUMMY MSGS ###
+        self.pub_dummy_raptor_diag.publish(DiagnosticReport())
+        self.pub_dummy_localization_status.publish(LocalizationStatus())
 
     def update_oppo_markers(self, state):
         marker_array = MarkerArray()

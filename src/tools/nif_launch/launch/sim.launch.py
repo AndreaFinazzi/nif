@@ -29,7 +29,27 @@ LOR = 1
 IMS_SIM = 2
 LVMS = 3
 LVMS_SIM = 4
-track = LVMS_SIM
+LVMS_SIM_AC = 5
+track = None
+
+# get which track we are at
+track_id = os.environ.get('TRACK').strip()
+
+if track_id == "IMS" or track_id == "ims":
+    track = IMS
+elif track_id == "LOR" or track_id == "lor":
+    track = LOR
+elif track_id == "IMS_SIM" or track_id == "ims_sim":
+    track = IMS_SIM
+elif track_id == "LVMS" or track_id == "lvms":
+    track = LVMS
+elif track_id == "LVMS_SIM" or track_id == "lvms_sim":
+    track = LVMS_SIM
+elif track_id == "LVMS_SIM_AC" or track_id == "lvms_sim_ac":
+    track = LVMS_SIM_AC
+else:
+    raise RuntimeError("ERROR: Invalid track {}".format(track_id))
+
 
 def get_share_file(package_name, file_name):
     return os.path.join(get_package_share_directory(package_name), file_name)
@@ -280,6 +300,8 @@ def generate_launch_description():
         global_params_file = 'params.sim.global.yaml'
     elif track == LVMS_SIM:
         global_params_file = 'params_LVMS_SIM.global.yaml'
+    elif track == LVMS_SIM_AC:
+        global_params_file = 'params_LVMS_SIM.global.yaml'
     else:
         raise RuntimeError("ERROR: invalid track provided: {}".format(track))
 
@@ -314,6 +336,7 @@ def generate_launch_description():
             ('in_novatel_insstdev', '/novatel_bottom/insstdev'),
             ('in_localization_status', '/aw_localization/ekf/status'),
             ('in_mission_status', '/system/mission'),
+            ('in_ll_diagnostic_report', '/raptor_dbw_interface/diag_report'),
             ('out_system_status', '/system/status'),
         ],
         parameters=[{
@@ -330,39 +353,12 @@ def generate_launch_description():
 
 ### NIF WAYPOINT MANAGER #############################
 
-    wpt_config_file_lor = (
-        os.path.join(
-            get_package_share_directory("nif_waypoint_manager_nodes"),
-            "config",
-            "mission",
-            "lor.yaml",
-        ),
-    )
-
-    wpt_config_file_ims = (
-        os.path.join(
-            get_package_share_directory("nif_waypoint_manager_nodes"),
-            "config",
-            "mission",
-            "ims.yaml", 
-        ),
-    )
-
     wpt_config_file_svl = (
         os.path.join(
             get_package_share_directory("nif_waypoint_manager_nodes"),
             "config",
             "mission",
             "lgsvl.yaml",   
-        ),
-    )
-
-    wpt_config_file_lvms = (
-        os.path.join(
-            get_package_share_directory("nif_waypoint_manager_nodes"),
-            "config",
-            "mission",
-            "lvms.yaml",   
         ),
     )
 
@@ -375,18 +371,22 @@ def generate_launch_description():
         ),
     )
 
+    wpt_config_file_lvms_sim_ac = (
+        os.path.join(
+            get_package_share_directory("nif_waypoint_manager_nodes"),
+            "config",
+            "mission",
+            "lvms_sim_ac.yaml",   
+        ),
+    )
     config_file = None
 
-    if track == LOR:
-        config_file = wpt_config_file_lor
-    elif track == IMS:
-        config_file = wpt_config_file_ims
-    elif track == IMS_SIM:
+    if track == IMS_SIM:
         config_file = wpt_config_file_svl
-    elif track == LVMS:
-        config_file = wpt_config_file_lvms
     elif track == LVMS_SIM:
         config_file = wpt_config_file_lvms_sim
+    elif track == LVMS_SIM_AC:
+        config_file = wpt_config_file_lvms_sim_ac
     else:
         raise RuntimeError("ERROR: invalid track provided: {}".format(track))
 
@@ -418,11 +418,16 @@ def generate_launch_description():
         )
     )
 
-    lgsvl_simulation_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
+    if track == LVMS_SIM_AC:
+        sim_launch_file = PythonLaunchDescriptionSource(
+            get_share_file("nif_ac_simulation", 'launch/default.launch.py')
+        )
+    else:
+        sim_launch_file = PythonLaunchDescriptionSource(
             get_share_file("nif_lgsvl_simulation", 'launch/default.launch.py')
         )
-    )
+    sim_interface_launch = IncludeLaunchDescription(sim_launch_file)
+
 
     nif_dynamic_planner_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -457,6 +462,6 @@ def generate_launch_description():
         nif_accel_control_node,
         nif_mission_manager_launch,
         nif_waypoint_manager_node,
-        lgsvl_simulation_launch,
+        sim_interface_launch,
         nif_dynamic_planner_launch
     ])
