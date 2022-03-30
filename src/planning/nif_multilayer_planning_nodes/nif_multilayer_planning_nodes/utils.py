@@ -25,7 +25,7 @@ def euler_from_quaternion(x, y, z, w):
 def quaternion_from_euler(roll, pitch, yaw):
     """
     Converts euler roll, pitch, yaw to quaternion (w in last place)
-    quat = [x, y, z, w]
+    quat = [w, x, y, z]
     Bellow should be replaced when porting for ROS 2 Python tf_conversions is done.
     """
     cy = math.cos(yaw * 0.5)

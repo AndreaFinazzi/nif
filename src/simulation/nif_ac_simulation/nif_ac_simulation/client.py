@@ -197,10 +197,10 @@ class ACClientNode(rclpy.node.Node):
         # quat = utils.quaternion_from_euler(0.0, 0.0, yaw)
         quat = q.to_dict()
 
+        # self.ego_odom.pose.pose.orientation.w = quat[0]
         # self.ego_odom.pose.pose.orientation.x = 0.0
         # self.ego_odom.pose.pose.orientation.y = 0.0
-        # self.ego_odom.pose.pose.orientation.z = quat[2]
-        # self.ego_odom.pose.pose.orientation.w = quat[3]
+        # self.ego_odom.pose.pose.orientation.z = quat[3]
 
         self.ego_odom.pose.pose.orientation.x = q.x
         self.ego_odom.pose.pose.orientation.y = q.y
