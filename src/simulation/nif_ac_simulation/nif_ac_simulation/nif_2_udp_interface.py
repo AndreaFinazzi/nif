@@ -23,7 +23,7 @@ from socket import *
 import pickle
 from matplotlib.transforms import Transform
 
-from sympy import Quaternion, true
+from sympy import Quaternion
 from nifpy_common_nodes.base_node import BaseNode
 
 import rclpy
@@ -54,7 +54,7 @@ class ACServerNode(rclpy.node.Node):
 
         self.udp_server = udp_server
         self.verbose = verbose_flg
-        self.is_first_call = true
+        self.is_first_call = True
 
         # Timers
         self.timer_recv = self.create_timer(TIMER_PERIOD_RECV_S, self.timer_callback)
@@ -178,7 +178,7 @@ def main(args=None):
     # UDPClientSocket.sendto(bytesToSend, ADDR_SERVER)
 
     rclpy.init(args=args)
-    node = ACServerNode("ac_server_node", udp_server, true)
+    node = ACServerNode("ac_server_node", udp_server, False)
 
     try:
         rclpy.spin(node)

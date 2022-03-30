@@ -61,9 +61,11 @@
 from http import server
 import marshal
 from socket import *
+import math
 
 import pickle
 from matplotlib.transforms import Transform
+import numpy
 
 from sympy import Quaternion, true
 from nifpy_common_nodes.base_node import BaseNode
@@ -79,6 +81,9 @@ from raptor_dbw_msgs.msg import WheelSpeedReport
 from tf2_ros.transform_broadcaster import TransformBroadcaster
 from geometry_msgs.msg import PoseStamped, TransformStamped, Vector3, Quaternion
 from rclpy.qos import QoSProfile, QoSHistoryPolicy, QoSDurabilityPolicy, QoSReliabilityPolicy, QoSLivelinessPolicy
+from squaternion import Quaternion
+
+from nif_multilayer_planning_nodes import utils
 
 HANDSHAKE_MSG       = "usrg.racing"
 ADDR_SERVER         = ("143.248.100.101", 4444)
@@ -97,6 +102,7 @@ class ACClientNode(rclpy.node.Node):
 
         self.udp_client = udp_client
         self.is_first_call = true
+        self.last_position = [0, 0, 0]
 
         self.ego_odom = Odometry()
         self.ego_odom.header.frame_id = R_FRAME_ODOM
@@ -164,8 +170,42 @@ class ACClientNode(rclpy.node.Node):
 
     def update_ego_ground_truth(self, state: dict):
         self.ego_odom.pose.pose.position.x = state['csWorldPosition'][0][0]
-        self.ego_odom.pose.pose.position.y = -state['csWorldPosition'][0][2]
-        self.ego_odom.pose.pose.position.z = state['csWorldPosition'][0][1]
+        self.ego_odom.pose.pose.position.y = state['csWorldPosition'][0][2]
+        self.ego_odom.pose.pose.position.z = 0.0 # state['csWorldPosition'][0][1]
+
+        # Orientation from velocity vector (doesn't count for slipangle yet)
+        # It's also a bad approximation due to 3Dimensionality...
+        a = [1, 0, 0] # Global x unit vector
+        b = state['csLinearVelocityVector'][0] # Ego velocity
+        # Derive b from position derivative
+        # b = [
+        #     (state['csWorldPosition'][0][0] - self.last_position[0]) / 0.01,
+        #     (state['csWorldPosition'][0][2] - self.last_position[2]) / 0.01,
+        #     (state['csWorldPosition'][0][1] - self.last_position[1]) / 0.01,
+        # ]
+        
+        self.last_position = state['csWorldPosition'][0]
+
+        # if 0 not in b:
+            # yaw = math.acos((a[0] * b[0] + a[1] * b[1] + a[2] * b[2]) / (math.sqrt(a[0]**2 + a[1]**2 + a[2]**2) * math.sqrt(b[0]**2 + b[1]**2 + b[2]**2)))
+        # yaw = math.atan2(a[1] - b[1], a[0] - b[0])
+        yaw = math.atan2(b[2], (b[0]))
+        # else:
+            # yaw = 0.0
+
+        q = Quaternion.from_euler(0.0, 0.0, yaw, degrees=False)
+        # quat = utils.quaternion_from_euler(0.0, 0.0, yaw)
+        quat = q.to_dict()
+
+        # self.ego_odom.pose.pose.orientation.x = 0.0
+        # self.ego_odom.pose.pose.orientation.y = 0.0
+        # self.ego_odom.pose.pose.orientation.z = quat[2]
+        # self.ego_odom.pose.pose.orientation.w = quat[3]
+
+        self.ego_odom.pose.pose.orientation.x = q.x
+        self.ego_odom.pose.pose.orientation.y = q.y
+        self.ego_odom.pose.pose.orientation.z = q.z
+        self.ego_odom.pose.pose.orientation.w = q.w
 
         self.ego_odom.twist.twist.linear.x = state['csLinearSpeedMPS'][0]
         vel_kph = self.ego_odom.twist.twist.linear.x * 3.6
