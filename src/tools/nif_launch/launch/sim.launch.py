@@ -212,27 +212,6 @@ def generate_launch_description():
         ]
     )
 
-    # nif_velocity_planning_node = Node(
-    #     package='nif_velocity_planning_node',
-    #     executable='nif_velocity_planning_node_exe',
-    #     output='screen',
-    #     remappings=[
-    #         ('out_desired_velocity', 'velocity_planner/des_vel'),
-    #         ('in_reference_path', 'planning/dynamic/vis/traj_global'),
-    #         # ('in_reference_path', 'planning/path_global'),
-    #         ('in_ego_odometry', '/sensor/odom_ground_truth'),
-    #         ('in_wheel_speed_report', 'raptor_dbw_interface/wheel_speed_report'),
-    #         ('in_imu_data', 'novatel_bottom/rawimux'),
-    #         ('in_steering_report', 'raptor_dbw_interface/steering_report'),
-    #         ('in_control_error', 'control_joint_lqr/lqr_error')
-    #     ],
-    #     parameters=[{
-    #             'odometry_timeout_sec' : 0.5,
-    #             'path_timeout_sec' : 1.0,
-    #             'lateral_tire_model_factor' : 1.0,
-    #         }]
-    # )
-
     lqr_joint_config_file = get_share_file(
         package_name='nif_control_joint_lqr_nodes', file_name='config/lqr/lqr_params.sim.yaml'
     )
@@ -286,6 +265,27 @@ def generate_launch_description():
         }]
     )
 
+    nif_velocity_planning_node = Node(
+        package='nif_velocity_planning_node',
+        executable='nif_velocity_planning_node_exe',
+        output='screen',
+        remappings=[
+            ('out_desired_velocity', 'velocity_planner/des_vel'),
+            # ('in_reference_path', 'planning/dynamic/vis/traj_global'),
+            # ('in_reference_path', 'planning/path_global'),
+            ('in_ego_odometry', '/sensor/odom_ground_truth'),
+            ('in_wheel_speed_report', 'raptor_dbw_interface/wheel_speed_report'),
+            ('in_imu_data', 'novatel_bottom/rawimux'),
+            ('in_steering_report', 'raptor_dbw_interface/steering_report'),
+            ('in_control_error', 'control_joint_lqr/lqr_error')
+        ],
+        parameters=[{
+                'odometry_timeout_sec' : 0.5,
+                'path_timeout_sec' : 1.0,
+                'lateral_tire_model_factor' : 1.0,
+            }]
+    )
+
 # NIF LQR + CSL END ###############################################
 
     global_params_file = None
@@ -332,8 +332,6 @@ def generate_launch_description():
         executable='nif_system_status_manager_nodes_exe',
         remappings=[
             ('in_joystick_cmd', '/joystick/command'),
-            ('in_novatel_bestpos', '/novatel_bottom/bestpos'),
-            ('in_novatel_insstdev', '/novatel_bottom/insstdev'),
             ('in_localization_status', '/aw_localization/ekf/status'),
             ('in_mission_status', '/system/mission'),
             ('in_ll_diagnostic_report', '/raptor_dbw_interface/diag_report'),
@@ -444,6 +442,7 @@ def generate_launch_description():
         nif_csl_param,
         nif_wpt_param,
         nif_joint_lqr_param,
+        nif_adaptive_cruise_control_param,
 
         # ssc_interface,
         # socketcan_receiver_launch,
@@ -456,6 +455,7 @@ def generate_launch_description():
         nif_csl_node,
         # nif_aw_localization_launch,
         nif_wall_node_launch_bg,
+        nif_velocity_planning_node,
         robot_description_launch,
         # nif_velocity_planning_node,
         nif_joint_lqr_control_node,

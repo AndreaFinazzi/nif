@@ -10,3 +10,4 @@ pandas
 sklearn
 pymap3d
 graphviz
+squaternion
