@@ -419,7 +419,7 @@ MissionManagerNode::parametersCallback(
     {
         if (param.get_name() == "velocity.max") {
             if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
-                if (param.as_double() >= 0.0 && param.as_double() <= 67.0) // TODO implement switching policy, if needed
+                if (param.as_double() >= 0.0 && param.as_double() <= 99.0) // TODO implement switching policy, if needed
                 {
                     this->velocity_max = param.as_double();
                     result.successful = true;
@@ -427,7 +427,7 @@ MissionManagerNode::parametersCallback(
             }
         } else if (param.get_name() == "velocity.keep_position") {
             if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
-                if (param.as_double() >= 0.0 && param.as_double() <= 67.0) // TODO implement switching policy, if needed
+                if (param.as_double() >= 0.0 && param.as_double() <= 99.0) // TODO implement switching policy, if needed
                 {
                     this->velocity_keep_position = param.as_double();
                     result.successful = true;
@@ -435,7 +435,7 @@ MissionManagerNode::parametersCallback(
             }
         } else if (param.get_name() == "velocity.constant") {
             if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
-                if (param.as_double() >= 0.0 && param.as_double() <= 67.0) // TODO implement switching policy, if needed
+                if (param.as_double() >= 0.0 && param.as_double() <= 99.0) // TODO implement switching policy, if needed
                 {
                     this->velocity_constant = param.as_double();
                     result.successful = true;
@@ -459,7 +459,7 @@ MissionManagerNode::parametersCallback(
             }
         } else if (param.get_name() == "velocity.slow_drive") {
             if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
-                if (param.as_double() >= 0.0 && param.as_double() <= 67.0) // TODO implement switching policy, if needed
+                if (param.as_double() >= 0.0 && param.as_double() <= 99.0) // TODO implement switching policy, if needed
                 {
                     this->velocity_slow_drive = param.as_double();
                     result.successful = true;
@@ -467,7 +467,7 @@ MissionManagerNode::parametersCallback(
             }
         } else if (param.get_name() == "velocity.avoidance") {
             if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
-                if (param.as_double() >= 0.0 && param.as_double() <= 67.0) // TODO implement switching policy, if needed
+                if (param.as_double() >= 0.0 && param.as_double() <= 99.0) // TODO implement switching policy, if needed
                 {
                     this->velocity_avoidance = param.as_double();
                     result.successful = true;

@@ -17,7 +17,16 @@ def generate_launch_description():
                 # namespace='nif',
                 # parameters=[config]
     )
+
+    ac_sim_pub_node = Node(
+                package='nif_ac_simulation',
+                executable='nif_2_udp_interface.py',
+                output='screen',
+                # namespace='nif',
+                # parameters=[config]
+    )
     return LaunchDescription(
         [
-            ac_sim_client_node
+            ac_sim_client_node,
+            ac_sim_pub_node
         ])

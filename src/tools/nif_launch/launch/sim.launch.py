@@ -260,8 +260,8 @@ def generate_launch_description():
         parameters=[{
             ## Should be True on real car
             'engine_based_throttle_enabled' : False, 
-            'gear.track': "IMS",
-            'lateral_error_deadband_m': 1.0,
+            'gear.track': "LVMS_SIM_AC",
+            'lateral_error_deadband_m': 5.0,
         }]
     )
 
@@ -283,6 +283,7 @@ def generate_launch_description():
                 'odometry_timeout_sec' : 0.5,
                 'path_timeout_sec' : 1.0,
                 'lateral_tire_model_factor' : 1.0,
+                'max_lateral_accel': 20.0
             }]
     )
 
@@ -442,7 +443,7 @@ def generate_launch_description():
         nif_csl_param,
         nif_wpt_param,
         nif_joint_lqr_param,
-        nif_adaptive_cruise_control_param,
+        # nif_adaptive_cruise_control_param,
 
         # ssc_interface,
         # socketcan_receiver_launch,

@@ -181,6 +181,8 @@ private:
   // ACC enable ros param
   bool m_use_acc;
 
+  bool use_camber_compensator_;
+
   rcl_interfaces::msg::SetParametersResult
   parametersCallback(const std::vector<rclcpp::Parameter> &vector);
 

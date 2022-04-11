@@ -299,6 +299,16 @@ void AccelControl::initializeGears(const std::string &track_id) {
         {4, std::make_shared<control::GearState>(4, 1.5, 41.0, 53.0)},
         {5, std::make_shared<control::GearState>(5, 0.96, 50.0, 60.0)},
         {6, std::make_shared<control::GearState>(6, 0.889, 57.0, 255)}};
+  
+  } else if (track_id == TRACK_ID_LVMS_SIM_AC) {
+    // IMS params
+    this->gear_states = {
+        {1, std::make_shared<control::GearState>(1, 2.92, -255, 30.0)},
+        {2, std::make_shared<control::GearState>(2, 1.875, 26.0, 44.0)},
+        {3, std::make_shared<control::GearState>(3, 1.38, 40.0, 60.0)},
+        {4, std::make_shared<control::GearState>(4, 1.5, 55.0, 74.0)},
+        {5, std::make_shared<control::GearState>(5, 0.96, 70.0, 83.0)},
+        {6, std::make_shared<control::GearState>(6, 0.889, 78.0, 255)}};
   } else {
     RCLCPP_ERROR(this->get_logger(),
                  "Got unrecognized track_id: %s, parameter out of range.",

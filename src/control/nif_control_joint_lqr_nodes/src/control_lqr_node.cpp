@@ -92,6 +92,8 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
   this->declare_parameter("use_mission_max_vel", true);
   // Use ACC cmd
   this->declare_parameter("use_acc", false);
+  // Use Camber Compensator
+  this->declare_parameter("use_camber_compensator", true);
 
   // Create Joint LQR Controller from yaml file
   std::string lqr_config_file =
@@ -133,6 +135,8 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
   m_path_min_length_m = this->get_parameter("path_min_length_m").as_double();
   // m_use_acc = this->get_parameter("use_acc").as_bool();
   m_use_acc = false;
+  use_camber_compensator_ = this->get_parameter("use_camber_compensator").as_bool();
+
 
   if (odometry_timeout_sec_ <= 0. || path_timeout_sec_ <= 0.) {
     RCLCPP_ERROR(this->get_logger(),
@@ -166,6 +170,7 @@ void ControlLQRNode::publishSteerAccelDiagnostics(
   valid_conditions_msg.data.push_back(valid_odom);
   valid_conditions_msg.data.push_back(valid_wpt_distance);
   valid_conditions_msg.data.push_back(valid_target_position);
+
   lqr_valid_conditions_pub_->publish(valid_conditions_msg);
 
   std_msgs::msg::Float32 steering_command_msg;
@@ -368,17 +373,20 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
       // APPLY CAMBER COMPENSATION
       */
       double camber_compensatation_deg = 0.0;
-      try {
-        m_camber_manager_ptr->setVehSpeed(this->current_speed_ms_);
-        double tmp_bank_ = 0.0;
-        m_camber_manager_ptr->setBankAngle(tmp_bank_);
-        camber_compensatation_deg =
-            m_camber_manager_ptr->getCamberCompensation();
+      if (this->use_camber_compensator_) {
 
-      } catch (std::exception &e) {
-        RCLCPP_ERROR(this->get_logger(), "CAMBER COMPENSATION EXCEPTION. %s",
-                     e.what());
-        camber_compensatation_deg = 0.0;
+        try {
+          m_camber_manager_ptr->setVehSpeed(this->current_speed_ms_);
+          double tmp_bank_ = 0.0;
+          m_camber_manager_ptr->setBankAngle(tmp_bank_);
+          camber_compensatation_deg =
+              m_camber_manager_ptr->getCamberCompensation();
+  
+        } catch (std::exception &e) {
+          RCLCPP_ERROR(this->get_logger(), "CAMBER COMPENSATION EXCEPTION. %s",
+                      e.what());
+          camber_compensatation_deg = 0.0;
+        }
       }
       steering_angle_deg = steering_angle_deg + camber_compensatation_deg;
       // ----------------------------------------------------------------------------

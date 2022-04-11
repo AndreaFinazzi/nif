@@ -453,7 +453,8 @@ def generate_launch_description():
         )
     else:
         sim_launch_file = PythonLaunchDescriptionSource(
-            get_share_file("nif_lgsvl_simulation", 'launch/default.launch.py')
+            # get_share_file("nif_lgsvl_simulation", 'launch/default.launch.py')
+            get_share_file("nif_lgsvl_simulation", 'launch/multi.launch.py')
         )
     sim_interface_launch = IncludeLaunchDescription(sim_launch_file)
 
@@ -495,6 +496,5 @@ def generate_launch_description():
         nif_waypoint_manager_node,
         sim_interface_launch,
         nif_dynamic_planner_launch,
-        nif_velocity_planning_node,
         idm_based_control_node
     ])
