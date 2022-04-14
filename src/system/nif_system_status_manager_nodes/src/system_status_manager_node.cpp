@@ -450,6 +450,6 @@ void SystemStatusManagerNode::llDiagnosticReportCallback(
             msg->est5_motec_comms_loss ||
             msg->est6_sd_ebrake);
 
-        this->ll_diagnostic_report_last_update = this->now(); msg->stamp;
+        this->ll_diagnostic_report_last_update = this->now(); // msg->stamp;
         this->has_ll_diagnostic_report = true;
     }

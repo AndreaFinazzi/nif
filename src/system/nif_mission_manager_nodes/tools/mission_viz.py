@@ -146,9 +146,9 @@ class GraphVisualizer:
 
 if __name__ == "__main__":
 
-    TRACK_NAME = 'LVMS'
-    TRANSITION_FILE = 'transitions.lvms.yaml'
-    ZONES_FILE = 'zones.lvms.yaml'
+    TRACK_NAME = 'LVMS_SIM_AC'
+    TRANSITION_FILE = 'transitions.lvms_sim_ac.yaml'
+    ZONES_FILE = 'zones.lvms_sim_ac.yaml'
 
     mission_manager_path = get_package_share_directory('nif_mission_manager_nodes')
     waypoint_manager_path = get_package_share_directory('nif_waypoint_manager_nodes')

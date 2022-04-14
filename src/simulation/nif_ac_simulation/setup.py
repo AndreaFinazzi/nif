@@ -24,6 +24,7 @@ setup(
     entry_points={
         'console_scripts': [
             'client.py = nif_ac_simulation.client:main',
+            'nif_2_udp_interface.py = nif_ac_simulation.nif_2_udp_interface:main'
         ],
     },
 )

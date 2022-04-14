@@ -13,6 +13,7 @@ LOR = 1
 IMS_SIM = 2
 LVMS = 3
 LVMS_SIM = 4
+LVMS_SIM_AC = 5
 track = None
 
 # get which track we are at
@@ -28,6 +29,8 @@ elif track_id == "LVMS" or track_id == "lvms":
     track = LVMS
 elif track_id == "LVMS_SIM" or track_id == "lvms_sim":
     track = LVMS_SIM
+elif track_id == "LVMS_SIM_AC" or track_id == "lvms_sim_ac":
+    track = LVMS_SIM_AC
 else:
     raise RuntimeError("ERROR: Invalid track {}".format(track_id))
 
@@ -45,6 +48,8 @@ def generate_launch_description():
         subdir = "LVMS"
     elif track == LVMS_SIM:
         subdir = "LVMS_SIM"
+    elif track == LVMS_SIM_AC:
+        subdir = "LVMS_SIM_AC"
     else:
         raise RuntimeError("ERROR: invalid track provided: {}".format(track))
 
