@@ -11,3 +11,6 @@ sklearn
 pymap3d
 graphviz
 squaternion
+absl-py
+gym
+imageio

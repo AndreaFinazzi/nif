@@ -487,6 +487,7 @@ def generate_launch_description():
         nif_csl_node,
         # nif_aw_localization_launch,
         nif_wall_node_launch_bg,
+        # nif_wall_node_launch_bg,
         nif_velocity_planning_node,
         robot_description_launch,
         # nif_velocity_planning_node,

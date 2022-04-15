@@ -3,8 +3,8 @@
 <package format="3">
   <name>nif_imitative_planning_nodes</name>
   <version>0.0.0</version>
-  <description>ROS2 Package for live detection using PyTorch</description>
-  <maintainer email="rchadha@nvidia.com">rishabh</maintainer>
+  <description>ROS2 Package for imitation planning using PyTorch</description>
+  <maintainer email="cy.jung@kaist.ac.kr">cy</maintainer>
   <license>MIT License</license>
 
   <exec_depend>rclpy</exec_depend>

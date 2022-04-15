@@ -91,14 +91,17 @@ class PubNode(rclpy.node.Node):
         self.pub_path_candidates_3 = self.create_publisher(Path, '/path_candidates_3', rclpy.qos.qos_profile_sensor_data)
 
         self.path_1 = Path()
+        self.path_1.header.frame_id = self.target_frame
         self.path_2 = Path()
+        self.path_2.header.frame_id = self.target_frame
         self.path_3 = Path()
+        self.path_3.header.frame_id = self.target_frame
+
 
         # Read files
-        self.path_1_file_path = "/home/usrg/nif/src/managers/nif_waypoint_manager_nodes/maps/LVMS/new_centerline.csv"
-        self.path_2_file_path = "/home/usrg/nif/src/managers/nif_waypoint_manager_nodes/maps/LVMS/left_side_center.csv"
-        self.path_3_file_path = "/home/usrg/nif/src/managers/nif_waypoint_manager_nodes/maps/LVMS/right_side_center.csv"
-        self.path_4_file_path = "/home/usrg/nif/src/managers/nif_waypoint_manager_nodes/maps/LVMS/right_side_center.csv"
+        self.path_1_file_path = "/home/usrg-racing/nif/build/nif_imitative_planning_nodes/nif_imitative_planning_nodes/ac_track_db/LVMS/lvms_inner_line.csv"
+        self.path_2_file_path = "/home/usrg-racing/nif/build/nif_imitative_planning_nodes/nif_imitative_planning_nodes/ac_track_db/LVMS/lvms_outer_line.csv"
+        self.path_3_file_path = "/home/usrg-racing/nif/build/nif_imitative_planning_nodes/nif_imitative_planning_nodes/ac_track_db/LVMS/race_line.csv"
 
         self.file_list = [self.path_1_file_path, self.path_2_file_path, self.path_3_file_path]
 
@@ -176,7 +179,7 @@ class PubNode(rclpy.node.Node):
         self.ego_odom.header.stamp = self.now.to_msg()
 
         self.pub_odom_ground_truth.publish(self.ego_odom)
-        self.tf_broadcast(self.ego_odom)
+        # self.tf_broadcast(self.ego_odom)
 
     def update_oppo_markers(self, state):
         marker_array = MarkerArray()
