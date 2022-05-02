@@ -136,11 +136,47 @@ class ACClientNode(rclpy.node.Node):
         self.pub_car_count = self.create_publisher(UInt8, '/ac/car_count', qos_car_count)
         self.pub_oppo_markers = self.create_publisher(MarkerArray, '/ac/vis/cars', rclpy.qos.qos_profile_sensor_data)
         self.pubs_car_status = []
+        
+        # For AV21 markers
+        self.pubs_car_marker = []
+        self.ego_marker,self.oppo_marker = self.marker_init()
 
         # TF Broadcaster
         self._tf_publisher = TransformBroadcaster(self)
 
         self.now = self.get_clock().now()
+        
+    def marker_init(self):
+
+        ego_marker = Marker()
+        ego_marker.header.frame_id = "base_link"
+        ego_marker.id = 0
+        ego_marker.type = 10
+        ego_marker.mesh_resource = "package://il15_description/visual/il15.dae"
+        ego_marker.action = ego_marker.ADD
+        ego_marker.pose.position.x = -2.0
+        ego_marker.pose.position.y = 0.0
+        ego_marker.pose.position.z = 0.0
+        ego_marker.pose.orientation.x = 0.0
+        ego_marker.pose.orientation.y = 0.0
+        ego_marker.pose.orientation.z = 0.0
+        ego_marker.pose.orientation.w = 1.0
+        ego_marker.lifetime = Duration(seconds=0, nanoseconds=20000000).to_msg()
+        ego_marker.scale.x = 1.0
+        ego_marker.scale.y = 1.0
+        ego_marker.scale.z = 1.0
+        ego_marker.color.a = 1.0
+        
+        oppo_marker = ego_marker
+        
+        ego_marker.color.r = 0.4
+        ego_marker.color.g = 0.65
+        ego_marker.color.b = 0.729
+        oppo_marker.color.r = 1.0
+        oppo_marker.color.g = 0.0
+        oppo_marker.color.b = 0.729
+
+        return ego_marker, oppo_marker
 
     def timer_recv_callback(self):
         try:
@@ -162,6 +198,8 @@ class ACClientNode(rclpy.node.Node):
                 self.last_q_list.append(Quaternion())
                 self.pubs_car_status.append(self.create_publisher(
                     ACTelemetryCarStatus, '/ac/car_status_' + str(cid), rclpy.qos.qos_profile_sensor_data))
+                self.pubs_car_marker.append(self.create_publisher(
+                    Marker, '/ac/car_marker_' + str(cid), rclpy.qos.qos_profile_sensor_data))
 
         car_count = UInt8()
         car_count.data = state['carsCount']
@@ -176,12 +214,11 @@ class ACClientNode(rclpy.node.Node):
         self.ego_odom.pose.pose.position.x = pose_robotics[0]
         self.ego_odom.pose.pose.position.y = pose_robotics[1]
         self.ego_odom.pose.pose.position.z = pose_robotics[2]
-
         self.ego_odom.pose.pose.orientation.x = pose_robotics[3] # q.x
         self.ego_odom.pose.pose.orientation.y = pose_robotics[4] # q.y
         self.ego_odom.pose.pose.orientation.z = pose_robotics[5] # q.z
         self.ego_odom.pose.pose.orientation.w = pose_robotics[6] # q.w
-
+        
         self.ego_odom.twist.twist.linear.x = state['csLinearSpeedMPS'][0]
         vel_kph = self.ego_odom.twist.twist.linear.x * 3.6
 
@@ -212,7 +249,7 @@ class ACClientNode(rclpy.node.Node):
         ### DUMMY MSGS ###
         self.pub_dummy_raptor_diag.publish(DiagnosticReport())
         self.pub_dummy_localization_status.publish(LocalizationStatus())
-
+        
     def update_oppo_markers(self, state):
         marker_array = MarkerArray()
         
@@ -320,8 +357,16 @@ class ACClientNode(rclpy.node.Node):
             car_status.is_race_finished = bool(state['csRaceFinished'][cid])
             
             self.pubs_car_status[cid].publish(car_status)
-
-        # self.pub_oppo_markers.publish(marker_array)
+            
+            # Ego vehicle
+            if cid == 0:
+                # Assign the position of the ego vehicle to the marker
+                self.ego_marker.pose = car_status.odometry.pose
+                self.pubs_car_marker[cid].publish(self.ego_marker)
+            else:
+                # Assign the position of the ego vehicle to the marker
+                self.oppo_marker.pose = car_status.odometry.pose
+                self.pubs_car_marker[cid].publish(self.oppo_marker)
 
     def tf_broadcast(self, msg):
         tfs = TransformStamped()
