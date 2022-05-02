@@ -434,6 +434,12 @@ def generate_launch_description():
         )
     )
 
+    # nif_points_clustering = IncludeLaunchDescription(
+    #     PythonLaunchDescriptionSource(
+    #         get_share_file("nif_points_clustering_nodes", 'launch/deploy.launch.py')
+    #     )
+    # ) #option 
+
 
 ### NIF MULTILAYER PLANNER END #############################
 
@@ -464,5 +470,6 @@ def generate_launch_description():
         nif_mission_manager_launch,
         nif_waypoint_manager_node,
         sim_interface_launch,
-        nif_dynamic_planner_launch
+        nif_dynamic_planner_launch,
+        # nif_points_clustering #option
     ])

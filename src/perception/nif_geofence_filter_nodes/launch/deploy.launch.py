@@ -76,11 +76,12 @@ def generate_launch_description():
                     'file_path_outer_line' : file_path_outer_line,
 
                     # Filters out the tracks under a certain distance from the track geofences
-                    'distance_filter_active': True,
-                    'distance_filter_threshold_m': 1.,
+                    'distance_filter_active': False,
+                    'distance_filter_threshold_m': 1.5,
+                    
 
                     # Filters out the tracks outside the track boundaries
-                    'boundaries_filter_active': True,
+                    'boundaries_filter_active': False,
 
                     # Filters out the tracks considered static
                     'range_rate_filter_active': True,

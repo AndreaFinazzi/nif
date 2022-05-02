@@ -58,6 +58,11 @@ GeofenceFilterNode::GeofenceFilterNode(const std::string &node_name_)
     pub_filtered_perception_array = this->create_publisher<nif_msgs::msg::Perception3DArray>(
         "out_filtered_perception_array", nif::common::constants::QOS_SENSOR_DATA);
 
+    //sw's option
+    pub_filtered_perception_array_vis = this->create_publisher<visualization_msgs::msg::MarkerArray>(
+        "out_filtered_perception_array_vis", nif::common::constants::QOS_SENSOR_DATA); 
+    ///////////////////////////////////////////////////////////
+
     sub_radar_track = this->create_subscription<delphi_esr_msgs::msg::EsrTrack>(
         "in_radar_track", nif::common::constants::QOS_SENSOR_DATA,
         std::bind(&GeofenceFilterNode::radarTrackCallback, this,
@@ -95,20 +100,69 @@ GeofenceFilterNode::GeofenceFilterNode(const std::string &node_name_)
     this->alternative_orig_frame.position.x = 1000.0;
 }
 
+// void GeofenceFilterNode::perceptionArrayCallback(
+//     const nif_msgs::msg::Perception3DArray::SharedPtr msg) {
+
+//   nif_msgs::msg::Perception3DArray msg_out{};
+//   msg_out.header = msg->header;
+
+//   for (auto&& object : msg->perception_list) {
+//     if (this->poseInBodyIsValid(object.detection_result_3d.center, object.obj_velocity_in_local.linear.x))
+//       msg_out.perception_list.push_back(object);
+//   }
+  
+//   this->pub_filtered_perception_array->publish(msg_out);
+
+// }
+
+//sw's for visualize
 void GeofenceFilterNode::perceptionArrayCallback(
     const nif_msgs::msg::Perception3DArray::SharedPtr msg) {
 
   nif_msgs::msg::Perception3DArray msg_out{};
   msg_out.header = msg->header;
 
+  visualization_msgs::msg::MarkerArray array_vis;
+
+  int i = 0;
+
   for (auto&& object : msg->perception_list) {
-    if (this->poseInBodyIsValid(object.detection_result_3d.center, object.obj_velocity_in_local.linear.x))
+    // visualization_msgs::msg::MarkerArray array_vis;
+
+    if (this->poseInBodyIsValid(object.detection_result_3d.center, object.obj_velocity_in_local.linear.x)){
       msg_out.perception_list.push_back(object);
 
+      visualization_msgs::msg::Marker buff;
+      buff.header = object.header;
+      buff.type = visualization_msgs::msg::Marker::CUBE;
+      buff.action = visualization_msgs::msg::Marker::ADD;
+      buff.lifetime = rclcpp::Duration(2, 0.3);
+      buff.id = i++;
+
+      buff.pose = object.detection_result_3d.center;
+      // buff.scale = object.detection_result_3d.size;
+
+      buff.scale.x = 7.0;
+      buff.scale.y = 7.0;
+      buff.scale.z = 7.0;
+
+      
+      buff.color.b = 0.0;
+      buff.color.g = 1.0;
+      buff.color.r = 0.0;
+      buff.color.a = 1.0;
+
+      array_vis.markers.push_back(buff);
+      
+    }
+      
   }
-  
+
+  this->pub_filtered_perception_array_vis->publish(array_vis);
   this->pub_filtered_perception_array->publish(msg_out);
+
 }
+//////////////////////////////////////////////////////////////////////////
 
 void GeofenceFilterNode::radarTrackCallback(
     const delphi_esr_msgs::msg::EsrTrack::SharedPtr msg) {

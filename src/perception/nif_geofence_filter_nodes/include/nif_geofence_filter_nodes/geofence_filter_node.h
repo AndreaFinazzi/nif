@@ -16,6 +16,8 @@
 #include "nif_waypoint_manager_minimal/waypoint_manager_minimal.h"
 #include "delphi_esr_msgs/msg/esr_track.hpp"
 #include "visualization_msgs/msg/marker.hpp"
+#include <visualization_msgs/msg/marker_array.hpp>
+
 
 namespace nif {
 namespace perception {
@@ -51,6 +53,10 @@ private:
 
     rclcpp::Subscription<nif_msgs::msg::Perception3DArray>::SharedPtr sub_perception_array;
     rclcpp::Publisher<nif_msgs::msg::Perception3DArray>::SharedPtr pub_filtered_perception_array;
+
+    //sw's for visualize
+    rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr pub_filtered_perception_array_vis;
+    //////////////////////////////////////////////////
 
     rclcpp::Subscription<delphi_esr_msgs::msg::EsrTrack>::SharedPtr sub_radar_track;
     rclcpp::Publisher<delphi_esr_msgs::msg::EsrTrack>::SharedPtr pub_filtered_radar_track;
