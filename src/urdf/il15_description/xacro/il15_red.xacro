@@ -1,0 +1,128 @@
+<?xml version="1.0"?>
+<robot name="dallara5" xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:arg name="prefix" default=""/>
+
+  <link name="$(arg prefix)center_of_gravity" />
+
+  <link name="$(arg prefix)rear_axis_middle" />
+  <link name="$(arg prefix)rear_axis_middle_ground">
+    <visual>
+      <geometry>
+        <mesh filename="package://il15_description/visual/il15_red.dae" />
+      </geometry>
+    </visual>
+  </link>
+
+  <link name="$(arg prefix)gps" />
+
+  <link name="$(arg prefix)laser_meter_flash_a" />
+  <link name="$(arg prefix)laser_meter_flash_b" />
+  <link name="$(arg prefix)laser_meter_flash_c" />
+
+  <link name="$(arg prefix)camera_front_left" />
+  <link name="$(arg prefix)camera_front_right" />
+  <link name="$(arg prefix)camera_rear_left" />
+  <link name="$(arg prefix)camera_rear_right" />
+  <link name="$(arg prefix)camera_front_1" />
+  <link name="$(arg prefix)camera_front_2" />
+
+  <link name="$(arg prefix)radar_front" />
+  <link name="$(arg prefix)radar_port" />
+  <link name="$(arg prefix)radar_starboard" />
+  <link name="$(arg prefix)radar_rear" />
+
+  <joint name="$(arg prefix)rear_axis_middle_joint" type="fixed">
+    <parent link="$(arg prefix)center_of_gravity"/>
+    <child link="$(arg prefix)rear_axis_middle" />
+    <origin xyz="-1.3206 0.030188 -0.23598" />
+  </joint>
+
+  <joint name="$(arg prefix)rear_axis_middle_ground_joint" type="fixed">
+    <parent link="$(arg prefix)rear_axis_middle"/>
+    <child link="$(arg prefix)rear_axis_middle_ground" />
+    <origin xyz="0 0 -0.198" />
+  </joint>
+
+  <joint name="$(arg prefix)gps_joint" type="fixed">
+    <parent link="$(arg prefix)rear_axis_middle_ground" />
+    <child link="$(arg prefix)gps" />
+  </joint>
+
+  <joint name="$(arg prefix)laser_meter_flash_a_joint" type="fixed">
+    <parent link="$(arg prefix)rear_axis_middle_ground" />
+    <child link="$(arg prefix)laser_meter_flash_a" />
+    <origin xyz="2.154 0 0.736246" />
+  </joint>
+
+  <joint name="$(arg prefix)laser_meter_flash_b_joint" type="fixed">
+    <parent link="$(arg prefix)rear_axis_middle_ground" />
+    <child link="$(arg prefix)laser_meter_flash_b" />
+    <origin xyz="1.572946 0.157 0.8146" rpy="0 0 2.0943951024" />
+  </joint>
+
+  <joint name="$(arg prefix)laser_meter_flash_c_joint" type="fixed">
+    <parent link="$(arg prefix)rear_axis_middle_ground" />
+    <child link="$(arg prefix)laser_meter_flash_c" />
+    <origin xyz="1.5729 -0.157 0.8146" rpy="0 0 -2.0943951024" />
+  </joint>
+
+  <joint name="$(arg prefix)camera_front_left_joint" type="fixed">
+    <parent link="$(arg prefix)rear_axis_middle_ground" />
+    <child link="$(arg prefix)camera_front_left" />
+    <origin xyz="2.230258 0.219125 0.724588" rpy="0 0 0.9599310886" />
+  </joint>
+
+  <joint name="$(arg prefix)camera_front_right_joint" type="fixed">
+    <parent link="$(arg prefix)rear_axis_middle_ground" />
+    <child link="$(arg prefix)camera_front_right" />
+    <origin xyz="2.230258 -0.219125 0.724588" rpy="0 0 -0.785398163397448" />
+  </joint>
+
+  <joint name="$(arg prefix)camera_rear_left_joint" type="fixed">
+    <parent link="$(arg prefix)rear_axis_middle_ground" />
+    <child link="$(arg prefix)camera_rear_left" />
+    <origin xyz="1.404119 0.185146 0.795797" rpy="0 0 2.2689280276" />
+  </joint>
+
+  <joint name="$(arg prefix)camera_rear_right_joint" type="fixed">
+    <parent link="$(arg prefix)rear_axis_middle_ground" />
+    <child link="$(arg prefix)camera_rear_right" />
+    <origin xyz="1.404119 -0.185146 0.795797" rpy="0 0 -2.2689280276" />
+  </joint>
+
+  <joint name="$(arg prefix)camera_front_1_joint" type="fixed">
+    <parent link="$(arg prefix)rear_axis_middle_ground" />
+    <child link="$(arg prefix)camera_front_1" />
+    <origin xyz="2.307629 -0.12 0.724588" />
+  </joint>
+
+<joint name="$(arg prefix)camera_front_2_joint" type="fixed">
+    <parent link="$(arg prefix)rear_axis_middle_ground" />
+    <child link="$(arg prefix)camera_front_2" />
+    <origin xyz="2.307629 0.12 0.724855" />
+  </joint>
+
+  <joint name="$(arg prefix)radar_front_joint" type="fixed">
+    <parent link="$(arg prefix)rear_axis_middle_ground" />
+    <child link="$(arg prefix)radar_front" />
+    <origin xyz="1.763718 0 0.851113" />
+  </joint>
+
+  <joint name="$(arg prefix)radar_port_joint" type="fixed">
+    <parent link="$(arg prefix)rear_axis_middle_ground" />
+    <child link="$(arg prefix)radar_port" />
+    <origin xyz="2.064369 0.222795 0.704790" rpy="0 0 1.5707963267949" />
+  </joint>
+
+  <joint name="$(arg prefix)radar_starboard_joint" type="fixed">
+    <parent link="$(arg prefix)rear_axis_middle_ground" />
+    <child link="$(arg prefix)radar_starboard" />
+    <origin xyz="2.021761 -0.222795 0.704790" rpy="0 0 -1.5707963267949" />
+  </joint>
+
+  <joint name="$(arg prefix)radar_rear_joint" type="fixed">
+    <parent link="$(arg prefix)rear_axis_middle_ground" />
+    <child link="$(arg prefix)radar_rear" />
+    <origin xyz="-0.760683 0 0.387251" rpy="0 0 3.14159265358979" />
+  </joint>
+</robot>

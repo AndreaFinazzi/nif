@@ -562,6 +562,8 @@ class ImitativePlanningNode(Node):
             pt.pose.position.y = traj_np[i,1]
             vis_path.poses.append(pt)
         self.path_pub.publish(vis_path)
+        # print(prb_np)
+        # print(np.argmax(prb_np))
 
     def opponent_1_callback(self,msg):
         # parse msg
@@ -1084,7 +1086,7 @@ class ImitativePlanningNode(Node):
                 pt_local.pose.position.z = 0.0
                 self.past_traj_path_body.poses.append(pt_local)
 
-                player_past = np.insert(player_past,0,np.array([[body_x,body_y,0.0]]), axis=0)
+                player_past = np.append(player_past,np.array([[body_x,body_y,0.0]]), axis=0)
             
             self.player_past_pub.publish(self.past_traj_path_body)
             
