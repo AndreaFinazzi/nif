@@ -7,6 +7,10 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE."""
 
 
+from oatomobile.baselines.torch.dim.model_ac import ImitativeModel
+from ament_index_python import get_package_share_directory
+import math
+import time
 from nif_msgs.msg import ACTelemetryCarStatus
 from geometry_msgs.msg import PoseStamped
 from scipy.spatial.transform import Slerp
@@ -33,11 +37,6 @@ sys.path.append(home_dir)
 home_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "ac_track_db"))
 sys.path.append(home_dir)
 
-import time
-import math
-from ament_index_python import get_package_share_directory
-from oatomobile.baselines.torch.dim.model_ac import ImitativeModel
-
 
 def get_share_file(package_name, file_name):
     return os.path.join(get_package_share_directory(package_name), file_name)
@@ -54,7 +53,7 @@ class ImitativePlanningNode(Node):
         self.dt = 0.02  # [sec]
         self.use_traj_lib = False
         self.num_samples = 5
-
+        self.vis_density_function = True
         """
         Testing purpose
         """
@@ -579,35 +578,35 @@ class ImitativePlanningNode(Node):
         """
         if self.track_bound_l_idx < (self.slice_length_full / 2):
             self.sliced_track_bound_l.poses[
-                0 : int(self.slice_length_full / 2 - self.track_bound_l_idx)
+                0: int(self.slice_length_full / 2 - self.track_bound_l_idx)
             ] = self.track_bound_l_path_global.poses[
-                int(-(self.slice_length_full / 2 - self.track_bound_l_idx)) :
+                int(-(self.slice_length_full / 2 - self.track_bound_l_idx)):
             ]
             self.sliced_track_bound_l.poses[
-                int(self.slice_length_full / 2 - self.track_bound_l_idx) :
+                int(self.slice_length_full / 2 - self.track_bound_l_idx):
             ] = self.track_bound_l_path_global.poses[
-                0 : int(self.track_bound_l_idx + (self.slice_length_full / 2))
+                0: int(self.track_bound_l_idx + (self.slice_length_full / 2))
             ]
         elif self.track_bound_l_idx > self.track_bound_l_path_global_len - (
             self.slice_length_full / 2
         ):
             self.sliced_track_bound_l.poses[
-                0 : int(
+                0: int(
                     self.track_bound_l_path_global_len
                     - self.track_bound_l_idx
                     + self.slice_length_full / 2
                 )
             ] = self.track_bound_l_path_global.poses[
-                int(self.track_bound_l_idx - (self.slice_length_full / 2)) :
+                int(self.track_bound_l_idx - (self.slice_length_full / 2)):
             ]
             self.sliced_track_bound_l.poses[
                 int(
                     self.track_bound_l_path_global_len
                     - self.track_bound_l_idx
                     + self.slice_length_full / 2
-                ) :
+                ):
             ] = self.track_bound_l_path_global.poses[
-                0 : int(
+                0: int(
                     self.track_bound_l_idx
                     + (self.slice_length_full / 2)
                     - self.track_bound_l_path_global_len
@@ -616,42 +615,42 @@ class ImitativePlanningNode(Node):
             ]
         else:
             self.sliced_track_bound_l.poses = self.track_bound_l_path_global.poses[
-                int(self.track_bound_l_idx - (self.slice_length_full / 2)) : int(
+                int(self.track_bound_l_idx - (self.slice_length_full / 2)): int(
                     self.track_bound_l_idx + (self.slice_length_full / 2)
                 )
             ]
 
         if self.track_bound_r_idx < (self.slice_length_full / 2):
             self.sliced_track_bound_r.poses[
-                0 : int(self.slice_length_full / 2 - self.track_bound_r_idx)
+                0: int(self.slice_length_full / 2 - self.track_bound_r_idx)
             ] = self.track_bound_r_path_global.poses[
-                int(-(self.slice_length_full / 2 - self.track_bound_r_idx)) :
+                int(-(self.slice_length_full / 2 - self.track_bound_r_idx)):
             ]
             self.sliced_track_bound_r.poses[
-                int(self.slice_length_full / 2 - self.track_bound_r_idx) :
+                int(self.slice_length_full / 2 - self.track_bound_r_idx):
             ] = self.track_bound_r_path_global.poses[
-                0 : int(self.track_bound_r_idx + (self.slice_length_full / 2))
+                0: int(self.track_bound_r_idx + (self.slice_length_full / 2))
             ]
         elif self.track_bound_r_idx > self.track_bound_r_path_global_len - (
             self.slice_length_full / 2
         ):
             self.sliced_track_bound_r.poses[
-                0 : int(
+                0: int(
                     self.track_bound_r_path_global_len
                     - self.track_bound_r_idx
                     + self.slice_length_full / 2
                 )
             ] = self.track_bound_r_path_global.poses[
-                int(self.track_bound_r_idx - (self.slice_length_full / 2)) :
+                int(self.track_bound_r_idx - (self.slice_length_full / 2)):
             ]
             self.sliced_track_bound_r.poses[
                 int(
                     self.track_bound_r_path_global_len
                     - self.track_bound_r_idx
                     + self.slice_length_full / 2
-                ) :
+                ):
             ] = self.track_bound_r_path_global.poses[
-                0 : int(
+                0: int(
                     self.track_bound_r_idx
                     + (self.slice_length_full / 2)
                     - self.track_bound_r_path_global_len
@@ -660,42 +659,42 @@ class ImitativePlanningNode(Node):
             ]
         else:
             self.sliced_track_bound_r.poses = self.track_bound_r_path_global.poses[
-                int(self.track_bound_r_idx - (self.slice_length_full / 2)) : int(
+                int(self.track_bound_r_idx - (self.slice_length_full / 2)): int(
                     self.track_bound_r_idx + (self.slice_length_full / 2)
                 )
             ]
 
         if self.racenline_idx < (self.slice_length_full / 2):
             self.sliced_raceline.poses[
-                0 : int(self.slice_length_full / 2 - self.racenline_idx)
+                0: int(self.slice_length_full / 2 - self.racenline_idx)
             ] = self.race_line_path_global.poses[
-                int(-(self.slice_length_full / 2 - self.racenline_idx)) :
+                int(-(self.slice_length_full / 2 - self.racenline_idx)):
             ]
             self.sliced_raceline.poses[
-                int(self.slice_length_full / 2 - self.racenline_idx) :
+                int(self.slice_length_full / 2 - self.racenline_idx):
             ] = self.race_line_path_global.poses[
-                0 : int(self.racenline_idx + (self.slice_length_full / 2))
+                0: int(self.racenline_idx + (self.slice_length_full / 2))
             ]
         elif self.racenline_idx > self.race_line_path_global_len - (
             self.slice_length_full / 2
         ):
             self.sliced_raceline.poses[
-                0 : int(
+                0: int(
                     self.race_line_path_global_len
                     - self.racenline_idx
                     + self.slice_length_full / 2
                 )
             ] = self.race_line_path_global.poses[
-                int(self.racenline_idx - (self.slice_length_full / 2)) :
+                int(self.racenline_idx - (self.slice_length_full / 2)):
             ]
             self.sliced_raceline.poses[
                 int(
                     self.race_line_path_global_len
                     - self.racenline_idx
                     + self.slice_length_full / 2
-                ) :
+                ):
             ] = self.race_line_path_global.poses[
-                0 : int(
+                0: int(
                     self.racenline_idx
                     + (self.slice_length_full / 2)
                     - self.race_line_path_global_len
@@ -704,7 +703,7 @@ class ImitativePlanningNode(Node):
             ]
         else:
             self.sliced_raceline.poses = self.race_line_path_global.poses[
-                int(self.racenline_idx - (self.slice_length_full / 2)) : int(
+                int(self.racenline_idx - (self.slice_length_full / 2)): int(
                     self.racenline_idx + (self.slice_length_full / 2)
                 )
             ]
@@ -925,7 +924,7 @@ class ImitativePlanningNode(Node):
 
         if len(self.opponent_1_odom_buffer) > self.oppo_past_buffer_length:
             self.opponent_1_odom_buffer = self.opponent_1_odom_buffer[
-                -self.oppo_past_buffer_length :
+                -self.oppo_past_buffer_length:
             ]
             # self.opponent_1_odom_buffer_global_list.pop(0)
             # self.opponent_1_odom_buffer_global_np = np.array(
@@ -953,7 +952,7 @@ class ImitativePlanningNode(Node):
 
         if len(self.opponent_2_odom_buffer) > self.oppo_past_buffer_length:
             self.opponent_2_odom_buffer = self.opponent_2_odom_buffer[
-                -self.oppo_past_buffer_length :
+                -self.oppo_past_buffer_length:
             ]
             # self.opponent_2_odom_buffer_global_list.pop(0)
             # self.opponent_2_odom_buffer_global_np = np.array(
@@ -981,7 +980,7 @@ class ImitativePlanningNode(Node):
 
         if len(self.opponent_3_odom_buffer) > self.oppo_past_buffer_length:
             self.opponent_3_odom_buffer = self.opponent_3_odom_buffer[
-                -self.oppo_past_buffer_length :
+                -self.oppo_past_buffer_length:
             ]
             # self.opponent_3_odom_buffer_global_list.pop(0)
             # self.opponent_3_odom_buffer_global_np = np.array(
@@ -1026,7 +1025,7 @@ class ImitativePlanningNode(Node):
         # )
 
         if len(self.odom_buffer) > self.ego_past_buffer_length:
-            self.odom_buffer = self.odom_buffer[-self.ego_past_buffer_length :]
+            self.odom_buffer = self.odom_buffer[-self.ego_past_buffer_length:]
         #     self.odom_buffer_np = np.delete(self.odom_buffer_np, 0, axis=0)
 
         batch = {}
@@ -1127,6 +1126,12 @@ class ImitativePlanningNode(Node):
                 samples = self.model._decoder(z).reshape(
                     self.num_samples, self.output_shape[0], self.output_shape[1]
                 )
+
+                if self.vis_density_function:
+                    _, log_prob, logabsdet, mu_t, sig_t = self._decoder._inverse(
+                        y=samples, z=z, return_rollouts=True
+                    )
+
                 sample_cpu = samples.detach().cpu().numpy().astype(np.float64)
 
                 # Publish result
