@@ -154,7 +154,7 @@ class ACClientNode(rclpy.node.Node):
         ego_marker.type = 10
         ego_marker.mesh_resource = "package://il15_description/visual/il15.dae"
         ego_marker.action = ego_marker.ADD
-        ego_marker.pose.position.x = -2.0
+        ego_marker.pose.position.x = 0.0
         ego_marker.pose.position.y = 0.0
         ego_marker.pose.position.z = 0.0
         ego_marker.pose.orientation.x = 0.0
