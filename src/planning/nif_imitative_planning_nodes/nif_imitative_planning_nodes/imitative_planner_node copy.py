@@ -436,22 +436,6 @@ class ImitativePlanningNode(Node):
         self.sliced_race_line_body.poses = [ps_body] * self.slice_length_full
 
         self.last = self.get_clock().now()
-        
-        '''
-        Trajectory based model setup
-        '''
-        self.MAX_BOUNDARY_DIST = 100
-        self.NUM_BOUNDARY_PT = 100
-        self.MAX_RACELINE_DIST = 100
-        self.NUM_RACELINE_PT = 50
-        self.BOUNDARY_TRAJ_DOWNSAMPLE = 2
-        self.RACELINE_TRAJ_DOWNSAMPLE = 2
-        self.NUM_OPPO_PAST_TRAJ_PT = 50  
-        self.OPPO_TRAJ_DOWNSAMPLE = 2  
-        self.NUM_EGO_PAST_TRAJ_PT = 50  
-        self.NUM_EGO_FUTURE_TRAJ_PT = 100  
-        self.EGO_TRAJ_DOWNSAMPLE = 2  
-
 
     def goal_pt_to_body(
         self,
@@ -493,38 +477,6 @@ class ImitativePlanningNode(Node):
         yaw_z = math.atan2(t3, t4)
 
         return roll_x, pitch_y, yaw_z  # in radians
-    
-    def convert_geometry_info_to_body(self, ego_odom):
-        for global_pose in self.sliced_track_bound_l.poses:
-            body_x, body_y, _ = self.goal_pt_to_body(
-                ego_odom.pose.pose.position.x,
-                ego_odom.pose.pose.position.y,
-                self.ego_yaw,
-                global_pose.position.x,
-                global_pose.position.y,
-                0.0,
-            )
-            
-        for global_pose in self.sliced_track_bound_r.poses:
-            body_x, body_y, _ = self.goal_pt_to_body(
-                ego_odom.pose.pose.position.x,
-                ego_odom.pose.pose.position.y,
-                self.ego_yaw,
-                global_pose.position.x,
-                global_pose.position.y,
-                0.0,
-            )
-        
-        for global_pose in self.sliced_raceline.poses:
-            body_x, body_y, _ = self.goal_pt_to_body(
-                ego_odom.pose.pose.position.x,
-                ego_odom.pose.pose.position.y,
-                self.ego_yaw,
-                global_pose.position.x,
-                global_pose.position.y,
-                0.0,
-            )
-        
 
     def overlay_opponents(self, ego_odom):
         """
@@ -781,6 +733,12 @@ class ImitativePlanningNode(Node):
                 global_pose.pose.position.y,
                 0.0,
             )
+            # pt_local = PoseStamped()
+            # pt_local.header.frame_id = "base_link"
+            # pt_local.header.stamp = self.get_clock().now().to_msg()
+            # pt_local.pose.position.x = body_x
+            # pt_local.pose.position.y = body_y
+            # self.sliced_track_bound_l_body.poses[global_pose_idx_l] = pt_local
 
             grid_x_idx = int(
                 self.CENTER_X_GRID
@@ -815,6 +773,12 @@ class ImitativePlanningNode(Node):
                 global_pose.pose.position.y,
                 0.0,
             )
+            # pt_local = PoseStamped()
+            # pt_local.header.frame_id = "base_link"
+            # pt_local.header.stamp = self.get_clock().now().to_msg()
+            # pt_local.pose.position.x = body_x
+            # pt_local.pose.position.y = body_y
+            # self.sliced_track_bound_r_body.poses[global_pose_idx_r] = pt_local
 
             grid_x_idx = int(
                 self.CENTER_X_GRID
@@ -846,6 +810,12 @@ class ImitativePlanningNode(Node):
                 global_pose.pose.position.y,
                 0.0,
             )
+            # pt_local = PoseStamped()
+            # pt_local.header.frame_id = "base_link"
+            # pt_local.header.stamp = self.get_clock().now().to_msg()
+            # pt_local.pose.position.x = body_x
+            # pt_local.pose.position.y = body_y
+            # self.sliced_race_line_body.poses[global_pose_idx_race] = pt_local
 
             grid_x_idx = int(
                 self.CENTER_X_GRID
@@ -868,6 +838,12 @@ class ImitativePlanningNode(Node):
         """
         Publish
         """
+        # self.sliced_track_bound_l_body.header.stamp = self.get_clock().now().to_msg()
+        # self.sliced_track_bound_r_body.header.stamp = self.get_clock().now().to_msg()
+        # self.sliced_race_line_body.header.stamp = self.get_clock().now().to_msg()
+        # self.raceline_pub.publish(self.sliced_race_line_body)
+        # self.track_bound_l_pub.publish(self.sliced_track_bound_l_body)
+        # self.track_bound_r_pub.publish(self.sliced_track_bound_r_body)
 
         self.sliced_track_bound_l.header.stamp = self.get_clock().now().to_msg()
         self.sliced_track_bound_r.header.stamp = self.get_clock().now().to_msg()
@@ -876,175 +852,59 @@ class ImitativePlanningNode(Node):
         self.track_bound_l_pub.publish(self.sliced_track_bound_l)
         self.track_bound_r_pub.publish(self.sliced_track_bound_r)
 
+    # def timer_callback(self):
+    #     """
+    #     Inference testing
+    #     """
+    #     tic = time.time()
+    #     test_odom_msg = Odometry()
+    #     test_odom_msg.header.frame_id = "odom"
+    #     test_odom_msg.header.stamp = self.get_clock().now().to_msg()
 
-    def get_geometry_info(self, ego_odom):
-        # get boundaries and race line
-        ego_pt = [
-            ego_odom.pose.pose.position.x,
-            ego_odom.pose.pose.position.y,
-            ego_odom.pose.pose.position.z,
-        ]
+    #     test_odom_msg.pose.pose.position.x = -3.0
+    #     test_odom_msg.pose.pose.position.y = -8.0
+    #     test_odom_msg.pose.pose.position.z = -0.0
 
-        """
-        Find closest index
-        """
-        _, self.track_bound_l_idx = self.track_bound_l_tree.query(ego_pt)
-        _, self.track_bound_r_idx = self.track_bound_r_tree.query(ego_pt)
-        _, self.racenline_idx = self.raceline_tree.query(ego_pt)
-        
-        """
-        Slicing track geometry information
-        """
-        if self.track_bound_l_idx + self.NUM_BOUNDARY_PT > len(self.track_bound_l_path_global.poses):
-            self.sliced_track_bound_l.poses[self.track_bound_l_idx:] = self.track_bound_l_path_global.poses[self.track_bound_l_idx:]
-            self.sliced_track_bound_l.poses[0:self.track_bound_l_idx] = self.track_bound_l_path_global.poses[:(self.track_bound_l_idx + self.NUM_BOUNDARY_PT) - len(self.track_bound_l_path_global.poses)]
-        else:
-            self.sliced_track_bound_l.poses = self.track_bound_l_path_global.poses[self.track_bound_l_idx:self.track_bound_l_idx + self.NUM_BOUNDARY_PT]
-            
-        # if self.track_bound_l_idx < (self.slice_length_full / 2):
-        #     self.sliced_track_bound_l.poses[
-        #         0 : int(self.slice_length_full / 2 - self.track_bound_l_idx)
-        #     ] = self.track_bound_l_path_global.poses[
-        #         int(-(self.slice_length_full / 2 - self.track_bound_l_idx)) :
-        #     ]
-        #     self.sliced_track_bound_l.poses[
-        #         int(self.slice_length_full / 2 - self.track_bound_l_idx) :
-        #     ] = self.track_bound_l_path_global.poses[
-        #         0 : int(self.track_bound_l_idx + (self.slice_length_full / 2))
-        #     ]
-        # elif self.track_bound_l_idx > self.track_bound_l_path_global_len - (
-        #     self.slice_length_full / 2
-        # ):
-        #     self.sliced_track_bound_l.poses[
-        #         0 : int(
-        #             self.track_bound_l_path_global_len
-        #             - self.track_bound_l_idx
-        #             + self.slice_length_full / 2
-        #         )
-        #     ] = self.track_bound_l_path_global.poses[
-        #         int(self.track_bound_l_idx - (self.slice_length_full / 2)) :
-        #     ]
-        #     self.sliced_track_bound_l.poses[
-        #         int(
-        #             self.track_bound_l_path_global_len
-        #             - self.track_bound_l_idx
-        #             + self.slice_length_full / 2
-        #         ) :
-        #     ] = self.track_bound_l_path_global.poses[
-        #         0 : int(
-        #             self.track_bound_l_idx
-        #             + (self.slice_length_full / 2)
-        #             - self.track_bound_l_path_global_len
-        #             - 1
-        #         )
-        #     ]
-        # else:
-        #     self.sliced_track_bound_l.poses = self.track_bound_l_path_global.poses[
-        #         int(self.track_bound_l_idx - (self.slice_length_full / 2)) : int(
-        #             self.track_bound_l_idx + (self.slice_length_full / 2)
-        #         )
-        #     ]
-        
-        if self.track_bound_r_idx + self.NUM_BOUNDARY_PT > len(self.track_bound_r_path_global.poses):
-            self.sliced_track_bound_r.poses[self.track_bound_r_idx:] = self.track_bound_r_path_global.poses[self.track_bound_r_idx:]
-            self.sliced_track_bound_r.poses[0:self.track_bound_r_idx] = self.track_bound_r_path_global.poses[:(self.track_bound_r_idx + self.NUM_BOUNDARY_PT) - len(self.track_bound_r_path_global.poses)]
-        else:
-            self.sliced_track_bound_r.poses = self.track_bound_r_path_global.poses[self.track_bound_r_idx:self.track_bound_r_idx + self.NUM_BOUNDARY_PT]
+    #     self.overlay_lines(test_odom_msg)
+    #     # past trajectory create
+    #     player_past = np.arange(60).reshape(20, 3, 1)
+    #     player_past.fill(0)
 
-        # if self.track_bound_r_idx < (self.slice_length_full / 2):
-        #     self.sliced_track_bound_r.poses[
-        #         0 : int(self.slice_length_full / 2 - self.track_bound_r_idx)
-        #     ] = self.track_bound_r_path_global.poses[
-        #         int(-(self.slice_length_full / 2 - self.track_bound_r_idx)) :
-        #     ]
-        #     self.sliced_track_bound_r.poses[
-        #         int(self.slice_length_full / 2 - self.track_bound_r_idx) :
-        #     ] = self.track_bound_r_path_global.poses[
-        #         0 : int(self.track_bound_r_idx + (self.slice_length_full / 2))
-        #     ]
-        # elif self.track_bound_r_idx > self.track_bound_r_path_global_len - (
-        #     self.slice_length_full / 2
-        # ):
-        #     self.sliced_track_bound_r.poses[
-        #         0 : int(
-        #             self.track_bound_r_path_global_len
-        #             - self.track_bound_r_idx
-        #             + self.slice_length_full / 2
-        #         )
-        #     ] = self.track_bound_r_path_global.poses[
-        #         int(self.track_bound_r_idx - (self.slice_length_full / 2)) :
-        #     ]
-        #     self.sliced_track_bound_r.poses[
-        #         int(
-        #             self.track_bound_r_path_global_len
-        #             - self.track_bound_r_idx
-        #             + self.slice_length_full / 2
-        #         ) :
-        #     ] = self.track_bound_r_path_global.poses[
-        #         0 : int(
-        #             self.track_bound_r_idx
-        #             + (self.slice_length_full / 2)
-        #             - self.track_bound_r_path_global_len
-        #             - 1
-        #         )
-        #     ]
-        # else:
-        #     self.sliced_track_bound_r.poses = self.track_bound_r_path_global.poses[
-        #         int(self.track_bound_r_idx - (self.slice_length_full / 2)) : int(
-        #             self.track_bound_r_idx + (self.slice_length_full / 2)
-        #         )
-        #     ]
-        
-        if self.racenline_idx + self.NUM_RACELINE_PT > len(self.race_line_path_global.poses):
-            self.sliced_raceline.poses[self.racenline_idx:] = self.race_line_path_global.poses[self.racenline_idx:]
-            self.sliced_raceline.poses[0:self.racenline_idx] = self.race_line_path_global.poses[:(self.racenline_idx + self.NUM_RACELINE_PT) - len(self.race_line_path_global.poses)]
-        else:
-            self.sliced_raceline.poses = self.race_line_path_global.poses[self.racenline_idx:self.racenline_idx + self.NUM_RACELINE_PT]
+    #     batch = {}
+    #     batch["player_past"] = (
+    #         torch.from_numpy(player_past)
+    #         .unsqueeze(dim=0)
+    #         .type(torch.FloatTensor)
+    #         .to(self.device)
+    #     )
+    #     batch["visual_features"] = (
+    #         torch.from_numpy(self.input_visual_feature)
+    #         .type(torch.FloatTensor)
+    #         .to(self.device)
+    #     )
 
-        # if self.racenline_idx < (self.slice_length_full / 2):
-        #     self.sliced_raceline.poses[
-        #         0 : int(self.slice_length_full / 2 - self.racenline_idx)
-        #     ] = self.race_line_path_global.poses[
-        #         int(-(self.slice_length_full / 2 - self.racenline_idx)) :
-        #     ]
-        #     self.sliced_raceline.poses[
-        #         int(self.slice_length_full / 2 - self.racenline_idx) :
-        #     ] = self.race_line_path_global.poses[
-        #         0 : int(self.racenline_idx + (self.slice_length_full / 2))
-        #     ]
-        # elif self.racenline_idx > self.race_line_path_global_len - (
-        #     self.slice_length_full / 2
-        # ):
-        #     self.sliced_raceline.poses[
-        #         0 : int(
-        #             self.race_line_path_global_len
-        #             - self.racenline_idx
-        #             + self.slice_length_full / 2
-        #         )
-        #     ] = self.race_line_path_global.poses[
-        #         int(self.racenline_idx - (self.slice_length_full / 2)) :
-        #     ]
-        #     self.sliced_raceline.poses[
-        #         int(
-        #             self.race_line_path_global_len
-        #             - self.racenline_idx
-        #             + self.slice_length_full / 2
-        #         ) :
-        #     ] = self.race_line_path_global.poses[
-        #         0 : int(
-        #             self.racenline_idx
-        #             + (self.slice_length_full / 2)
-        #             - self.race_line_path_global_len
-        #             - 1
-        #         )
-        #     ]
-        # else:
-        #     self.sliced_raceline.poses = self.race_line_path_global.poses[
-        #         int(self.racenline_idx - (self.slice_length_full / 2)) : int(
-        #             self.racenline_idx + (self.slice_length_full / 2)
-        #         )
-        #     ]
-    
+    #     z = self.model._params(
+    #         visual_features=batch["visual_features"], player_past=batch["player_past"]
+    #     ).repeat((self.arr.shape[0], 1))
+
+    #     traj, prb = self.model.trajectory_library_plan(
+    #         self.traj_lib, z, costmap=None, phi=1, costmap_only=False
+    #     )
+
+    #     traj_lib_np = self.traj_lib.detach().cpu().numpy().astype(np.float64)
+    #     prb_np = prb.detach().cpu().numpy().astype(np.float64)
+    #     traj_np = traj.detach().cpu().numpy().astype(np.float64)
+
+    #     vis_path = Path()
+    #     vis_path.header.frame_id = "odom"
+    #     for i in range(traj_np.shape[0]):
+    #         pt = PoseStamped()
+    #         pt.header.frame_id = "odom"
+    #         pt.pose.position.x = traj_np[i, 0]
+    #         pt.pose.position.y = traj_np[i, 1]
+    #         vis_path.poses.append(pt)
+    #     self.path_pub.publish(vis_path)
+
     def opponent_1_callback(self, msg):
 
         print(self.get_clock().now() - self.last_odom_update)
@@ -1057,11 +917,26 @@ class ImitativePlanningNode(Node):
         DOWNSAMPLED 10 TIMES (MATCHED WITH DATASET)
         """
         self.opponent_1_odom_buffer.append(msg.odometry.pose)
+        # self.opponent_1_odom_buffer_global_list.append(
+        #     [
+        #         msg.odometry.pose.position.x,
+        #         msg.odometry.pose.position.y,
+        #         msg.odometry.pose.position.z,
+        #     ]
+        # )
 
-        if len(self.opponent_1_odom_buffer) > self.NUM_OPPO_PAST_TRAJ_PT:
+        # self.opponent_1_odom_buffer_global_np = np.array(
+        #     self.opponent_1_odom_buffer_global_list
+        # )
+
+        if len(self.opponent_1_odom_buffer) > self.oppo_past_buffer_length:
             self.opponent_1_odom_buffer = self.opponent_1_odom_buffer[
-                -self.NUM_OPPO_PAST_TRAJ_PT :
+                -self.oppo_past_buffer_length :
             ]
+            # self.opponent_1_odom_buffer_global_list.pop(0)
+            # self.opponent_1_odom_buffer_global_np = np.array(
+            #     self.opponent_1_odom_buffer_global_list
+            # )
 
     def opponent_2_callback(self, msg):
         self.oppo_2_marker.pose = msg.odometry.pose
@@ -1070,24 +945,54 @@ class ImitativePlanningNode(Node):
         Append msg, assume that the data is updating at 100Hz strictly.
         """
         self.opponent_2_odom_buffer.append(msg.odometry.pose)
+        # self.opponent_2_odom_buffer_global_list.append(
+        #     [
+        #         msg.odometry.pose.position.x,
+        #         msg.odometry.pose.position.y,
+        #         msg.odometry.pose.position.z,
+        #     ]
+        # )
 
-        if len(self.opponent_2_odom_buffer) > self.NUM_OPPO_PAST_TRAJ_PT:
+        # self.opponent_2_odom_buffer_global_np = np.array(
+        #     self.opponent_2_odom_buffer_global_list
+        # )
+
+        if len(self.opponent_2_odom_buffer) > self.oppo_past_buffer_length:
             self.opponent_2_odom_buffer = self.opponent_2_odom_buffer[
-                -self.NUM_OPPO_PAST_TRAJ_PT :
+                -self.oppo_past_buffer_length :
             ]
+            # self.opponent_2_odom_buffer_global_list.pop(0)
+            # self.opponent_2_odom_buffer_global_np = np.array(
+            #     self.opponent_2_odom_buffer_global_list
+            # )
 
     def opponent_3_callback(self, msg):
         self.oppo_3_marker.pose = msg.odometry.pose
-        self.pub_oppo_3_marker.publish(self.oppo_3_marker)
-        """
-        Append msg, assume that the data is updating at 100Hz strictly.
-        """
-        self.opponent_3_odom_buffer.append(msg.odometry.pose)
-        
-        if len(self.opponent_3_odom_buffer) > self.NUM_OPPO_PAST_TRAJ_PT:
+        # self.pub_oppo_3_marker.publish(self.oppo_3_marker)
+        # """
+        # Append msg, assume that the data is updating at 100Hz strictly.
+        # """
+        # self.opponent_3_odom_buffer.append(msg.odometry.pose)
+        # self.opponent_3_odom_buffer_global_list.append(
+        #     [
+        #         msg.odometry.pose.position.x,
+        #         msg.odometry.pose.position.y,
+        #         msg.odometry.pose.position.z,
+        #     ]
+        # )
+
+        # self.opponent_3_odom_buffer_global_np = np.array(
+        #     self.opponent_3_odom_buffer_global_list
+        # )
+
+        if len(self.opponent_3_odom_buffer) > self.oppo_past_buffer_length:
             self.opponent_3_odom_buffer = self.opponent_3_odom_buffer[
-                -self.NUM_OPPO_PAST_TRAJ_PT :
+                -self.oppo_past_buffer_length :
             ]
+            # self.opponent_3_odom_buffer_global_list.pop(0)
+            # self.opponent_3_odom_buffer_global_np = np.array(
+            #     self.opponent_3_odom_buffer_global_list
+            # )
 
     def output_visualization(self, traj_cpu, prb_cpu_np):
         normed_prb = np.linalg.norm(prb_cpu_np)
@@ -1116,6 +1021,19 @@ class ImitativePlanningNode(Node):
         Append msg, assume that the data is updating at 100Hz strictly.
         """
         self.odom_buffer.append(self.cur_odom.pose.pose)
+        # self.odom_buffer_np = np.append(
+        #     self.odom_buffer_np,
+        #     np.array(
+        #         [
+        #             [
+        #                 self.cur_odom.pose.pose.position.x,
+        #                 self.cur_odom.pose.pose.position.y,
+        #                 self.cur_odom.pose.pose.position.z,
+        #             ]
+        #         ]
+        #     ),
+        #     axis=0,
+        # )
 
         if len(self.odom_buffer) > self.ego_past_buffer_length:
             self.odom_buffer = self.odom_buffer[-self.ego_past_buffer_length :]
@@ -1124,7 +1042,6 @@ class ImitativePlanningNode(Node):
         batch = {}
 
         if len(self.odom_buffer) >= self.ego_past_buffer_length:
-            cnt = 0
             """
             Gen input 1: Past trajectory (to body coordinate)
             """
@@ -1154,26 +1071,23 @@ class ImitativePlanningNode(Node):
                 pt_local.pose.position.z = 0.0
                 self.past_traj_path_body.poses.append(pt_local)
 
-                if cnt % self.EGO_TRAJ_DOWNSAMPLE ==0:
-                    player_past_list.append([body_x, body_y, 0.0])
-                    cnt = 0
-                else:
-                    cnt += 1
+                # player_past = np.append(
+                #     player_past, np.array([[body_x, body_y, 0.0]]), axis=0
+                # )
+                player_past_list.append([body_x, body_y, 0.0])
 
             player_past = np.array(player_past_list)
+
             self.player_past_pub.publish(self.past_traj_path_body)
 
             """
             Gen input 2: Visual feature (Gen self.input_visual_feature)
             """
             # Track geometry (First)
-            # self.overlay_lines(self.cur_odom)
-            self.get_geometry_info(self.cur_odom)
-            self.convert_geometry_info_to_body(self.ego_odom)
+            self.overlay_lines(self.cur_odom)
 
             # Opponents (Second)
-            # self.overlay_opponents(self.cur_odom)
-            # TODO: opponent pose to body
+            self.overlay_opponents(self.cur_odom)
 
             batch["player_past"] = (
                 torch.from_numpy(player_past)
