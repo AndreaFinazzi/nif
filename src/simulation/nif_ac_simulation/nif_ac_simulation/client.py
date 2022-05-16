@@ -371,7 +371,9 @@ class ACClientNode(rclpy.node.Node):
     def tf_broadcast(self, msg):
         tfs = TransformStamped()
         tfs.header = msg.header
-        tfs.child_frame_id = msg.child_frame_id
+        # tfs.child_frame_id = msg.child_frame_id
+        tfs.header.frame_id = "odom"
+        tfs.header.child_frame_id = "base_link"
         tfs.transform.translation.x = msg.pose.pose.position.x
         tfs.transform.translation.y = msg.pose.pose.position.y
         tfs.transform.translation.z = msg.pose.pose.position.z
