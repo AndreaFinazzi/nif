@@ -60,7 +60,68 @@ CostmapGeneratorV2::CostmapGeneratorV2()
       std::bind(&CostmapGeneratorV2::imitationOutputCallback, this,
                 std::placeholders::_1));
 
+  sub_imitation_samples_marker_array_ = this->create_subscription<visualization_msgs::msg::MarkerArray>(
+      "in_predicted_samples_marker_array",
+      nif::common::constants::QOS_SENSOR_DATA,
+      std::bind(&CostmapGeneratorV2::imitationOutputCallbackMarkerArray, this,
+                std::placeholders::_1));
+
   costmap_ = initGridmap();
+}
+
+void CostmapGeneratorV2::imitationOutputCallbackMarkerArray(const visualization_msgs::msg::MarkerArray::SharedPtr msg)
+{
+  if (!msg->markers.empty())
+  {
+    costmap_[IMITATION_DISTRIBUTION_LAYER_].setConstant(0.0);
+    double y_cell_size = std::ceil(grid_length_y_ * (1 / grid_resolution_));
+    double x_cell_size = std::ceil(grid_length_x_ * (1 / grid_resolution_));
+
+    // calculate out_grid_map position
+    const double origin_x_offset = grid_length_x_ - grid_position_x_;
+    const double origin_y_offset = grid_length_y_ - grid_position_y_;
+
+    // imitation_samples_pt_vec.clear();
+    std::vector<std::pair<double, double>> grid_vec;
+    std::vector<double> mu_vec;
+    std::vector<double> sig_vec;
+
+    for (auto marker : msg->markers)
+    {
+      std::pair<double, double> pointBuf;
+
+      // coordinate conversion for making index. Set bottom left to the origin of
+      // coordinate (0, 0) in gridmap area
+      double mapped_x =
+          (grid_length_x_ - origin_x_offset + marker.pose.position.x) / grid_resolution_;
+      double mapped_y =
+          (grid_length_y_ - origin_y_offset + marker.pose.position.y) / grid_resolution_;
+
+      int mapped_x_ind = std::floor(mapped_x);
+      int mapped_y_ind = std::floor(mapped_y);
+
+      pointBuf.first = mapped_x_ind;
+      pointBuf.second = mapped_y_ind;
+      grid_vec.push_back(pointBuf);
+      mu_vec.push_back(marker.scale.x);
+      sig_vec.push_back(marker.scale.y);
+    }
+
+    // costmap_[IMITATION_DISTRIBUTION_LAYER_] = createGaussianWorld(
+    //     &costmap_, IMITATION_DISTRIBUTION_LAYER_, this->potential_size_,
+    //     this->potential_size_, grid_vec);
+
+    costmap_[IMITATION_DISTRIBUTION_LAYER_] = createGaussianWorldV2(
+        &costmap_, IMITATION_DISTRIBUTION_LAYER_, mu_vec, sig_vec, grid_vec);
+
+    // publish
+    auto message = grid_map::GridMapRosConverter::toMessage(costmap_);
+    pub_occupancy_grid_->publish(std::move(message));
+  }
+  else
+  {
+    //
+  }
 }
 
 void CostmapGeneratorV2::imitationOutputCallback(const nav_msgs::msg::Path::SharedPtr msg)
@@ -484,6 +545,57 @@ grid_map::Matrix CostmapGeneratorV2::createGaussianWorld(grid_map::GridMap *map,
     gaussian_tmp.varY = inflation_y;
     gaussian_tmp.s = 10 / inflation_x;
     g.push_back(gaussian_tmp);
+  }
+
+  func.f_ = [g](double x, double y)
+  {
+    double value = 0.0;
+    for (int i = 0; i < g.size(); ++i)
+    {
+      const double x0 = g.at(i).x0;
+      const double y0 = g.at(i).y0;
+      const double varX = g.at(i).varX;
+      const double varY = g.at(i).varY;
+      const double s = g.at(i).s;
+      value += s * std::exp(-(x - x0) * (x - x0) / (2.0 * varX) - (y - y0) * (y - y0) / (2.0 * varY));
+    }
+    return value;
+  };
+
+  return fillGridMap(map, layer_name, func);
+
+  // return output;
+}
+
+// Calculate gaussian interpolation.
+grid_map::Matrix CostmapGeneratorV2::createGaussianWorldV2(grid_map::GridMap *map, const std::string layer_name,
+                                                           std::vector<double> inflation_x, std::vector<double> inflation_y,
+                                                           const std::vector<std::pair<double, double>> &pointArray)
+{
+  struct Gaussian
+  {
+    double x0, y0;
+    double varX, varY;
+    double s;
+  };
+
+  AnalyticalFunctions func;
+  std::vector<std::pair<double, double>> vars;
+  std::vector<std::pair<double, double>> means;
+  std::vector<double> scales;
+  std::vector<Gaussian> g;
+
+  int cnt = 0;
+  for (auto point : pointArray)
+  {
+    Gaussian gaussian_tmp;
+    gaussian_tmp.x0 = point.first;
+    gaussian_tmp.y0 = point.second;
+    gaussian_tmp.varX = inflation_x[cnt];
+    gaussian_tmp.varY = inflation_y[cnt];
+    gaussian_tmp.s = 10 / inflation_x[cnt];
+    g.push_back(gaussian_tmp);
+    cnt++;
   }
 
   func.f_ = [g](double x, double y)

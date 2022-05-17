@@ -33,6 +33,8 @@
 #include <nav_msgs/msg/occupancy_grid.hpp>
 #include <nav_msgs/msg/odometry.hpp>
 #include <nav_msgs/msg/path.hpp>
+#include <visualization_msgs/msg/marker.hpp>
+#include <visualization_msgs/msg/marker_array.hpp>
 #include <sensor_msgs/msg/laser_scan.hpp>
 #include <std_msgs/msg/header.hpp>
 #include <std_msgs/msg/int32.hpp>
@@ -113,6 +115,7 @@ namespace nif
         void fakeObstacleCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
 
         void imitationOutputCallback(const nav_msgs::msg::Path::SharedPtr msg);
+        void imitationOutputCallbackMarkerArray(const visualization_msgs::msg::MarkerArray::SharedPtr msg);
 
         void OdometryCallback(const nav_msgs::msg::Odometry::SharedPtr msg);
         void MessegefilteringCallback(
@@ -196,6 +199,7 @@ namespace nif
         rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_ground_filtered_points_;
 
         rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr sub_imitation_samples_;
+        rclcpp::Subscription<visualization_msgs::msg::MarkerArray>::SharedPtr sub_imitation_samples_marker_array_;
 
         rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr sub_odometry_;
         rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr sub_closest_geofence_idx_;
@@ -246,6 +250,9 @@ namespace nif
         void MakeInflationWithPoints();
         grid_map::Matrix createGaussianWorld(grid_map::GridMap *map, const std::string layer_name,
                                              double inflation_x, double inflation_y, const std::vector<std::pair<double, double>> &pointArray);
+        grid_map::Matrix createGaussianWorldV2(grid_map::GridMap *map, const std::string layer_name,
+                                               std::vector<double> inflation_x, std::vector<double> inflation_y,
+                                               const std::vector<std::pair<double, double>> &pointArray);
         grid_map::Matrix fillGridMap(grid_map::GridMap *map, const std::string layer_name,
                                      const AnalyticalFunctions &functions);
 
