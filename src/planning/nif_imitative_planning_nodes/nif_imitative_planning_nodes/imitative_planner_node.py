@@ -1002,6 +1002,9 @@ class ImitativePlanningNode(Node):
         self.last_odom_update = self.get_clock().now()
 
         self.oppo_1_marker.pose = msg.odometry.pose
+        self.oppo_1_marker.color.r = 1.0
+        self.oppo_1_marker.color.g = 0.0
+        self.oppo_1_marker.color.b = 0.729
         self.pub_oppo_1_marker.publish(self.oppo_1_marker)
         """
         Append msg, assume that the data is updating at 100Hz strictly.
@@ -1033,6 +1036,9 @@ class ImitativePlanningNode(Node):
 
     def opponent_2_callback(self, msg):
         self.oppo_2_marker.pose = msg.odometry.pose
+        self.oppo_2_marker.color.r = 1.0
+        self.oppo_2_marker.color.g = 0.0
+        self.oppo_2_marker.color.b = 0.729
         self.pub_oppo_2_marker.publish(self.oppo_2_marker)
         """
         Append msg, assume that the data is updating at 100Hz strictly.
@@ -1063,6 +1069,9 @@ class ImitativePlanningNode(Node):
 
     def opponent_3_callback(self, msg):
         self.oppo_3_marker.pose = msg.odometry.pose
+        self.oppo_3_marker.color.r = 1.0
+        self.oppo_3_marker.color.g = 0.0
+        self.oppo_3_marker.color.b = 0.729
         self.pub_oppo_3_marker.publish(self.oppo_3_marker)
         """
         Append msg, assume that the data is updating at 100Hz strictly.
@@ -1101,6 +1110,9 @@ class ImitativePlanningNode(Node):
         self.cnt = self.cnt % 10
 
         self.ego_marker.pose = msg.odometry.pose
+        self.ego_marker.color.r = 0.4
+        self.ego_marker.color.g = 0.65
+        self.ego_marker.color.b = 0.729
         self.pub_ego_marker.publish(self.ego_marker)
 
         self.cur_odom.header.frame_id = "odom"
