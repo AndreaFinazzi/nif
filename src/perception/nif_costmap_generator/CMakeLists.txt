@@ -30,10 +30,11 @@ ament_auto_find_build_dependencies()
 ament_auto_add_library(nif_costmap_generator SHARED
     src/costmap_generator.cpp
     src/points_to_costmap.cpp
+    src/imitation_output_to_distribution.cpp
     # src/lane_to_costmap.cpp
     # src/laserscan_to_costmap.cpp
     # src/bboxes_to_costmap.cpp
-    # src/visual_to_costmap.cpp 
+    # src/visual_to_costmap.cpp
 )
 target_link_libraries(nif_costmap_generator ${PCL_LIBRARIES})
 
@@ -43,6 +44,15 @@ target_link_libraries(${PROJECT_NAME}_exe
   nif_costmap_generator
   ${PCL_LIBRARIES}
 )
+
+# Imitation learning based planner
+ament_auto_add_executable(imitative_planner_visualizer_exe
+  src/costmap_generator_main.cpp)
+target_link_libraries(imitative_planner_visualizer_exe
+  nif_costmap_generator
+  ${PCL_LIBRARIES}
+)
+
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

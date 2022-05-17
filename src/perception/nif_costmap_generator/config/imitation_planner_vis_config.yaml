@@ -1,0 +1,19 @@
+nif_imitation_planner_vis_node:
+  ros__parameters:
+    lidar_frame : "center_of_gravity"
+    grid_min_value : 0.0
+    grid_max_value : 1.0
+    grid_resolution : 1.0
+    grid_length_x : 100.
+    grid_length_y : 50.
+    grid_position_x : 0.
+    grid_position_y : 0.
+    maximum_lidar_height_thres : 0.3
+    minimum_lidar_height_thres : -0.5
+    maximum_laserscan_distance_thres : 50.0
+    minimum_laserscan_distance_thres : 0.1
+    use_points : true
+    enable_potential : true
+    potential_size : 3.0
+
+
