@@ -70,6 +70,9 @@ class ImitativePlanningNode(Node):
         self.path_pub = self.create_publisher(
             Path, "imitative/out_path", rclpy.qos.qos_profile_sensor_data
         )
+        self.samples_pub = self.create_publisher(
+            MarkerArray, "imitative/samples", rclpy.qos.qos_profile_sensor_data
+        )
         self.track_bound_l_pub = self.create_publisher(
             Path,
             "imitative/input/track_bound_l_path",
@@ -1338,73 +1341,47 @@ class ImitativePlanningNode(Node):
                     self.num_samples, self.output_shape[0], self.output_shape[1]
                 )
 
-                if self.vis_density_function:
-                    _, log_prob, logabsdet, mu_t, sig_t = self.model._decoder._inverse(
-                        y=samples, z=z, return_rollouts=True
-                    )
+                _, log_prob, logabsdet, mu_t, sig_t = self.model._decoder._inverse(
+                    y=samples, z=z, return_rollouts=True
+                )
 
-                    r = torch.zeros(100, 30).numpy()
-                    # self.vis.image(r)
-
-                    def overlay_traj_to_map(traj, imitation_prior, bg):
-                        overlay_map = bg.copy()
-
-                        mean_imitation_prior = sum(imitation_prior) / len(
-                            imitation_prior
-                        )
-
-                        norm_imitation_prior = [
-                            float(i) / sum(imitation_prior) for i in imitation_prior
-                        ]
-
-                        # (Batch, lenth, pos_dim(x,y,z)):Traj
-                        for batch_idx in range(traj.shape[0]):
-                            for pose_idx in range(traj.shape[1]):
-                                overlay_map[
-                                    int(traj[batch_idx][pose_idx][0]),
-                                    15 - int(traj[batch_idx][pose_idx][1]),
-                                ] = (
-                                    imitation_prior[batch_idx] -
-                                    mean_imitation_prior
-                                ) * 100
-                        return overlay_map
-
-                    sample_cpu = samples.detach().cpu().numpy().astype(np.float64)
-                    log_prob_cpu = log_prob.detach().cpu().numpy().astype(np.float64)
-                    mu_t_cpu = np.array(mu_t)
-                    sig_t_cpu = np.array(sig_t)
-
-                    # output_datum = dict(
-                    #     output_trajs=sample_cpu,
-                    #     log_prob=log_prob_cpu,
-                    #     mu_t=mu_t_cpu,
-                    #     sig_t=sig_t_cpu,
-                    # )
-                    # filename = (
-                    #     "AC_output/" + str(self.get_clock().now().nanoseconds) + ".dill"
-                    # )
-                    # with open(filename, "wb") as f:
-                    #     dill.dump(output_datum, f)
-
-                    """
-                    Visdom visualization
-                    """
+                sample_cpu = samples.detach().cpu().numpy().astype(np.float64)
+                mu_t_cpu = np.array(mu_t)
+                sig_t_cpu = np.array(sig_t)
 
                 sample_cpu = samples.detach().cpu().numpy().astype(np.float64)
 
                 # Publish result
                 vis_flg = True
                 if vis_flg:
+                    samples_marker_array = MarkerArray()
+                    samples_marker_array.header.frame_id = "base_link"
+
                     vis_path = Path()
                     vis_path.header.frame_id = "base_link"
 
                     for i in range(sample_cpu.shape[0]):
                         for j in range(sample_cpu.shape[1]):
-                            pt = PoseStamped()
-                            pt.header.frame_id = "base_link"
-                            pt.pose.position.x = sample_cpu[i][j][0]
-                            pt.pose.position.y = sample_cpu[i][j][1]
-                            vis_path.poses.append(pt)
+                            pt_marker = Marker()
+                            pt_marker.lifetime = Duration(
+                                seconds=1, nanoseconds=0).to_msg()
+                            pt_marker.header.frame_id = "base_link"
+                            pt_marker.pose.position.x = sample_cpu[i][j][0]
+                            pt_marker.pose.position.y = sample_cpu[i][j][1]
+                            # Gaussian mu
+                            pt_marker.scale.x = mu_t_cpu[i][j]
+                            # Gaussian sigma
+                            pt_marker.scale.y = sig_t_cpu[i][j]
+                            samples_marker_array.markers.append(pt_marker)
+
+                            if(i == 0):
+                                pt = PoseStamped()
+                                pt.header.frame_id = "base_link"
+                                pt.pose.position.x = sample_cpu[i][j][0]
+                                pt.pose.position.y = sample_cpu[i][j][1]
+                                vis_path.poses.append(pt)
+
+                    self.samples_pub.publish(samples_marker_array)
                     self.path_pub.publish(vis_path)
 
         else:
