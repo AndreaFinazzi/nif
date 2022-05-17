@@ -20,6 +20,7 @@ import os
 import time
 import math
 from ament_index_python import get_package_share_directory
+from std_msgs.msg import Float64MultiArray
 
 home_dir = os.path.abspath(os.path.join(os.path.dirname(__file__),'.'))
 sys.path.append(home_dir)
@@ -54,7 +55,9 @@ class ImitativePlanningNode(Node):
         '''
         self.cnt = 0
         # timer = self.create_timer(0.05, self.timer_callback)
-        self.path_pub = self.create_publisher(Path, 'imitative/out_path', rclpy.qos.qos_profile_sensor_data)
+        self.traj_lib_pub = self.create_publisher(Path, 'imitative/traj_lib', rclpy.qos.qos_profile_sensor_data)
+        self.prob_arr_pub = self.create_publisher(Float64MultiArray, 'imitative/prob', rclpy.qos.qos_profile_sensor_data)
+        self.path_pub = self.create_publisher(Path, 'imitative/highest_imitation_prior', rclpy.qos.qos_profile_sensor_data)
         self.track_bound_l_pub = self.create_publisher(Path, 'imitative/input/track_bound_l_path', rclpy.qos.qos_profile_sensor_data)
         self.track_bound_r_pub = self.create_publisher(Path, 'imitative/input/track_bound_r_path', rclpy.qos.qos_profile_sensor_data)
         self.raceline_pub = self.create_publisher(Path, 'imitative/input/raceline_path', rclpy.qos.qos_profile_sensor_data)
@@ -241,7 +244,7 @@ class ImitativePlanningNode(Node):
         '''
         load model
         '''
-        self.model_path = "/home/usrg-racing/nif/build/nif_imitative_planning_nodes/nif_imitative_planning_nodes/ac_weight_files/model-96.pt"
+        self.model_path = "/home/usrg-racing/nif/build/nif_imitative_planning_nodes/nif_imitative_planning_nodes/ac_weight_files/model-496.pt"
         self.model = ImitativeModel(
             output_shape=self.output_shape,
             num_pos_dim=self.num_pos_dim,
@@ -257,11 +260,20 @@ class ImitativePlanningNode(Node):
         '''
         load trajectory lib
         '''
-        self.trajectory_lib_path = "/home/usrg-racing/nif/build/nif_imitative_planning_nodes/nif_imitative_planning_nodes/ac_trajectory_lib/0413.npy"
+        self.trajectory_lib_path = "/home/usrg-racing/nif/build/nif_imitative_planning_nodes/nif_imitative_planning_nodes/ac_trajectory_lib/solo.npy"
         self.arr = np.load(self.trajectory_lib_path)
-        print(self.arr.shape)
+        # Trajectory lip reshaping
+        reshaped_traj_lib = np.reshape(self.arr, (self.arr.shape[0], self.output_shape[0], self.output_shape[1]))
+        # print(reshaped_traj_lib)
+        # print(reshaped_traj_lib.shape)
+        # print(reshaped_traj_lib[:,:,0])
+        # print(reshaped_traj_lib[:,:,0].shape)
+        # print(reshaped_traj_lib[:,2])
+        # print(reshaped_traj_lib[:,2] * 50)
+        # reshaped_traj_lib[:,:,0] = reshaped_traj_lib[:,:,0] * 1
+        # reshaped_traj_lib[:,:,1] = reshaped_traj_lib[:,:,1] * 1
         self.traj_lib = (
-            torch.from_numpy(np.reshape(self.arr, (self.arr.shape[0], self.output_shape[0], self.output_shape[1])))
+            torch.from_numpy(reshaped_traj_lib)
             .type(torch.FloatTensor)
             .to(self.device)
         )
@@ -271,7 +283,7 @@ class ImitativePlanningNode(Node):
         '''
         SPEED
         '''
-        self.slice_length_full = 250
+        self.slice_length_full = 150
         
         ps_global = PoseStamped()
         ps_global.header.frame_id = "odom"
@@ -1088,8 +1100,14 @@ class ImitativePlanningNode(Node):
             batch["player_past"] = torch.from_numpy(player_past).unsqueeze(dim=0).type(torch.FloatTensor).to(self.device)
             batch["visual_features"] = torch.from_numpy(self.input_visual_feature).type(torch.FloatTensor).to(self.device)
 
+            num_samps = 1
             z = self.model._params(visual_features=batch["visual_features"], 
                                     player_past=batch["player_past"]).repeat((self.arr.shape[0], 1))
+            z = z.repeat((num_samps, 1))
+            samples = self.model._decoder(z).reshape(50, num_samps, 
+                                                    self.output_shape[0],
+                                                    self.output_shape[1])
+            
 
             traj, prb = self.model.trajectory_library_plan(self.traj_lib, z, costmap=None, phi=1, costmap_only=False)
 
@@ -1100,32 +1118,45 @@ class ImitativePlanningNode(Node):
             # GPU to CPU
             traj_cpu_np = traj.detach().cpu().numpy().astype(np.float64)
             prb_cpu_np = prb.detach().cpu().numpy().astype(np.float64)
+            predictions = samples.detach().cpu().numpy()
 
-            print(traj_cpu_np.shape)
-            print(prb_cpu_np.shape)
+            pb_arr = Float64MultiArray()
+            for i in range(prb_cpu_np.shape[0]):
+                pb_arr.data.append(prb_cpu_np[i])
+            self.prob_arr_pub.publish(pb_arr)
+
 
             toc = time.time()
-            # print("cuda to cpu : ", toc - tic)
-
-            # print(self.trajs_candidates.shape)
-            print("past traj : ", player_past)
             # Publish result
-            vis_path = Path()
-            vis_path.header.frame_id = "base_link"
+            # traj_lib_path = Path()
+            # traj_lib_path.header.frame_id = "base_link"
+            # for i in range(self.trajs_candidates.shape[0]):
+            #     for j in range(self.trajs_candidates.shape[1]):
+            #         pt = PoseStamped()
+            #         pt.header.frame_id = "base_link"
+            #         pt.pose.position.x = self.trajs_candidates[i][j][0]
+            #         pt.pose.position.y = self.trajs_candidates[i][j][1]
+            #         traj_lib_path.poses.append(pt)
+            # self.traj_lib_pub.publish(traj_lib_path)
+
+            # vis_path = Path()
+            # vis_path.header.frame_id = "base_link"
             # for i in range(traj_cpu_np.shape[0]):
             #     pt = PoseStamped()
             #     pt.header.frame_id = "base_link"
             #     pt.pose.position.x = traj_cpu_np[i,0]
             #     pt.pose.position.y = traj_cpu_np[i,1]
             #     vis_path.poses.append(pt)
+            # self.path_pub.publish(vis_path)
 
-            for i in range(self.trajs_candidates.shape[0]):
-                for j in range(self.trajs_candidates.shape[1]):
-                    pt = PoseStamped()
-                    pt.header.frame_id = "base_link"
-                    pt.pose.position.x = self.trajs_candidates[i][j][0]
-                    pt.pose.position.y = self.trajs_candidates[i][j][1]
-                    vis_path.poses.append(pt)
+            vis_path = Path()
+            vis_path.header.frame_id = "base_link"
+            for i in range(predictions[prb_cpu_np.argmax()].shape[1]):
+                pt = PoseStamped()
+                pt.header.frame_id = "base_link"
+                pt.pose.position.x = predictions[prb_cpu_np.argmax()][0][i][0].astype(float)
+                pt.pose.position.y = predictions[prb_cpu_np.argmax()][0][i][1].astype(float)
+                vis_path.poses.append(pt)
             self.path_pub.publish(vis_path)
 
         else:
