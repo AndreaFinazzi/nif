@@ -90,11 +90,11 @@ namespace nif
     namespace costmap
     {
 
-      class CostmapGenerator : public rclcpp::Node
+      class CostmapGeneratorV2 : public rclcpp::Node
       {
       public:
-        CostmapGenerator();
-        ~CostmapGenerator();
+        CostmapGeneratorV2();
+        ~CostmapGeneratorV2();
 
         void init();
         void run();
@@ -179,6 +179,8 @@ namespace nif
         pcl::PointCloud<pcl::PointXYZI>::Ptr m_inner_geofence_points;
         pcl::PointCloud<pcl::PointXYZI>::Ptr m_outer_geofence_points;
 
+        pcl::PointCloud<pcl::PointXYZI>::Ptr m_imitation_samples_pts;
+
         //   double expand_polygon_size_;
         //   int size_of_expansion_kernel_;
 
@@ -192,6 +194,8 @@ namespace nif
         rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_object_points_;
         rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_fake_obs_points_;
         rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_ground_filtered_points_;
+
+        rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr sub_imitation_samples_;
 
         rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr sub_odometry_;
         rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr sub_closest_geofence_idx_;
@@ -227,10 +231,9 @@ namespace nif
         const std::string INFLATION_COSTMAP_LAYER_;
         const std::string COMBINED_COSTMAP_LAYER_;
 
-        const std::string IMITATION_DISTRIBUTION_LAYER_ = "imitation_distribution_gaussian"
+        const std::string IMITATION_DISTRIBUTION_LAYER_ = "imitation_distribution_gaussian";
 
-            grid_map::GridMap
-            initGridmap();
+        grid_map::GridMap initGridmap();
         void publishRosMsg(grid_map::GridMap *map);
         //   void publishRoadBoundaryMsg(grid_map::GridMap *map);
 

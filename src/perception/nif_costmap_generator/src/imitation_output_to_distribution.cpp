@@ -13,7 +13,7 @@ using namespace nif::perception::costmap;
 using namespace nif::common::frame_id::localization;
 
 // Constructor
-CostmapGenerator::CostmapGenerator()
+CostmapGeneratorV2::CostmapGeneratorV2()
     : Node("nif_imitation_planner_vis_node"),
       SENSOR_POINTS_COSTMAP_LAYER_("sensor_points"),
       COMBINED_COSTMAP_LAYER_("costmap"),
@@ -54,38 +54,60 @@ CostmapGenerator::CostmapGenerator()
       "out_imitation_distribution_map", nif::common::constants::QOS_SENSOR_DATA);
 
   using namespace std::chrono_literals; // NOLINT
-  sub_wall_points_ = this->create_subscription<nav_msgs::msg::Path>(
+  sub_imitation_samples_ = this->create_subscription<nav_msgs::msg::Path>(
       "in_predicted_samples",
       nif::common::constants::QOS_SENSOR_DATA,
-      std::bind(&CostmapGenerator::imitationOutputCallback, this,
+      std::bind(&CostmapGeneratorV2::imitationOutputCallback, this,
                 std::placeholders::_1));
 
   costmap_ = initGridmap();
 }
 
-void CostmapGenerator::imitationOutputCallback(const nav_msgs::msg::Path::SharedPtr msg)
+void CostmapGeneratorV2::imitationOutputCallback(const nav_msgs::msg::Path::SharedPtr msg)
 {
   if (!msg->poses.empty())
   {
-    m_imitation_samples_pts.reset(new pcl::PointCloud<pcl::PointXYZI>());
-    costmap_[IMITATION_DISTRIBUTION_LAYER_].setConstant(0.0);
 
-    for (auto point : msgs->poses)
+    costmap_[IMITATION_DISTRIBUTION_LAYER_].setConstant(0.0);
+    // imitation_samples_pt_vec.clear();
+    std::vector<std::pair<double, double>> grid_vec;
+    for (auto pt : msg->poses)
     {
-      if (point.x != 0 && point.y != 0.0)
-        // TODO: path point to pcl point
-        // Put normalized imitation prior to the z field
-        m_imitation_samples_pts->points.push_back(point);
+
+      std::pair<double, double> pointBuf;
+
+      double y_cell_size = std::ceil(grid_length_y_ * (1 / grid_resolution_));
+      double x_cell_size = std::ceil(grid_length_x_ * (1 / grid_resolution_));
+
+      // calculate out_grid_map position
+      const double origin_x_offset = grid_length_x_ - grid_position_x_;
+      const double origin_y_offset = grid_length_y_ - grid_position_y_;
+      // coordinate conversion for making index. Set bottom left to the origin of
+      // coordinate (0, 0) in gridmap area
+      double mapped_x =
+          (grid_length_x_ - origin_x_offset + pt.pose.position.x) / grid_resolution_;
+      double mapped_y =
+          (grid_length_y_ - origin_y_offset + pt.pose.position.y) / grid_resolution_;
+
+      int mapped_x_ind = std::floor(mapped_x);
+      int mapped_y_ind = std::floor(mapped_y);
+
+      pointBuf.first = mapped_x_ind;
+      pointBuf.second = mapped_y_ind;
+      grid_vec.push_back(pointBuf);
     }
 
-    int idx = 0;
-    initGridmapParam(costmap_);
-    std::vector<std::vector<std::vector<double>>> grid_vec =
-        assignPoints2GridCell(costmap_, m_imitation_samples_pts);
+    // int idx = 0;
+    // std::vector<std::vector<std::vector<double>>> grid_vec =
+    //     points2costmap_.getGridIdxFromSensorPoints(costmap_, IMITATION_DISTRIBUTION_LAYER_, m_imitation_samples_pts);
 
     costmap_[IMITATION_DISTRIBUTION_LAYER_] = createGaussianWorld(
         &costmap_, IMITATION_DISTRIBUTION_LAYER_, this->potential_size_,
         this->potential_size_, grid_vec);
+
+    // publish
+    auto message = grid_map::GridMapRosConverter::toMessage(costmap_);
+    pub_occupancy_grid_->publish(std::move(message));
   }
   else
   {
@@ -93,9 +115,9 @@ void CostmapGenerator::imitationOutputCallback(const nav_msgs::msg::Path::Shared
   }
 }
 
-CostmapGenerator::~CostmapGenerator() {}
+CostmapGeneratorV2::~CostmapGeneratorV2() {}
 
-void CostmapGenerator::run()
+void CostmapGeneratorV2::run()
 {
 
   if ((bWallPoints || bObjectPoints || bFakeObstaclePoints ||
@@ -145,9 +167,7 @@ void CostmapGenerator::run()
     // *PointsWallAndObject += *m_in_wall_points;
     if (bObjectPoints)
       *PointsWallAndObject += *m_in_object_points;
-
-    // too noisy
-    // if (bGroundFilteredPoints)
+    pcl::PointXYZ point_xyz = {1, 2, 3};
     //   *PointsWallAndObject += *m_in_ground_filtered_points;
 
     if (bFakeObstaclePoints)
@@ -165,12 +185,12 @@ void CostmapGenerator::run()
   }
 }
 
-void CostmapGenerator::timer_callback()
+void CostmapGeneratorV2::timer_callback()
 {
   run();
 }
 
-void CostmapGenerator::wallPointsCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
+void CostmapGeneratorV2::wallPointsCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
 {
   if (!use_points_)
   {
@@ -183,7 +203,7 @@ void CostmapGenerator::wallPointsCallback(const sensor_msgs::msg::PointCloud2::S
   bWallPoints = true;
 }
 
-void CostmapGenerator::objectPointsCallback(
+void CostmapGeneratorV2::objectPointsCallback(
     const sensor_msgs::msg::PointCloud2::SharedPtr msg)
 {
 
@@ -192,7 +212,7 @@ void CostmapGenerator::objectPointsCallback(
   bObjectPoints = true;
 }
 
-void CostmapGenerator::groundFilteredCallback(
+void CostmapGeneratorV2::groundFilteredCallback(
     const sensor_msgs::msg::PointCloud2::SharedPtr msg)
 {
   // only for vehicle front-close area
@@ -209,7 +229,7 @@ void CostmapGenerator::groundFilteredCallback(
   bGroundFilteredPoints = true;
 }
 
-void CostmapGenerator::fakeObstacleCallback(
+void CostmapGeneratorV2::fakeObstacleCallback(
     const sensor_msgs::msg::PointCloud2::SharedPtr msg)
 {
 
@@ -222,7 +242,7 @@ void CostmapGenerator::fakeObstacleCallback(
   bFakeObstaclePoints = true;
 }
 
-void CostmapGenerator::OdometryCallback(
+void CostmapGeneratorV2::OdometryCallback(
     const nav_msgs::msg::Odometry::SharedPtr msg)
 {
   m_veh_x = msg->pose.pose.position.x;
@@ -237,7 +257,7 @@ void CostmapGenerator::OdometryCallback(
   // std::cout << "odometry received" << std::endl;
 }
 
-void CostmapGenerator::MessegefilteringCallback(
+void CostmapGeneratorV2::MessegefilteringCallback(
     const sensor_msgs::msg::PointCloud2::ConstSharedPtr &inner_msg,
     const sensor_msgs::msg::PointCloud2::ConstSharedPtr &outer_msg)
 {
@@ -280,13 +300,13 @@ void CostmapGenerator::MessegefilteringCallback(
   std::cout << "geofence received" << std::endl;
 }
 
-void CostmapGenerator::ClosestGeofenceIndexCallback(
+void CostmapGeneratorV2::ClosestGeofenceIndexCallback(
     const std_msgs::msg::Int32::SharedPtr msg)
 {
   m_closestGeofenceIndex = msg->data;
 }
 
-void CostmapGenerator::TransformPointsToGlobal(
+void CostmapGeneratorV2::TransformPointsToGlobal(
     const pcl::PointCloud<pcl::PointXYZI>::Ptr &CloudIn,
     pcl::PointCloud<pcl::PointXYZI>::Ptr &CloudOut,
     const double &veh_x_, const double &veh_y_, const double &veh_yaw_)
@@ -309,7 +329,7 @@ void CostmapGenerator::TransformPointsToGlobal(
   }
 }
 
-void CostmapGenerator::TransformPointsToBody(
+void CostmapGeneratorV2::TransformPointsToBody(
     const pcl::PointCloud<pcl::PointXYZI>::Ptr CloudIn,
     pcl::PointCloud<pcl::PointXYZI>::Ptr CloudOut, const double &veh_x_,
     const double &veh_y_, const double &veh_yaw_)
@@ -325,7 +345,7 @@ void CostmapGenerator::TransformPointsToBody(
   }
 }
 
-void CostmapGenerator::MakeInflationWithPoints()
+void CostmapGeneratorV2::MakeInflationWithPoints()
 {
   if (bWallPoints || bObjectPoints || bFakeObstaclePoints ||
       bGroundFilteredPoints)
@@ -354,7 +374,7 @@ void CostmapGenerator::MakeInflationWithPoints()
   }
 }
 
-grid_map::GridMap CostmapGenerator::initGridmap()
+grid_map::GridMap CostmapGeneratorV2::initGridmap()
 {
   grid_map::GridMap map;
 
@@ -367,7 +387,7 @@ grid_map::GridMap CostmapGenerator::initGridmap()
   return map;
 }
 
-grid_map::Matrix CostmapGenerator::generateSensorPointsCostmap(
+grid_map::Matrix CostmapGeneratorV2::generateSensorPointsCostmap(
     const pcl::PointCloud<pcl::PointXYZI>::Ptr &in_sensor_points)
 {
 
@@ -379,14 +399,14 @@ grid_map::Matrix CostmapGenerator::generateSensorPointsCostmap(
   return sensor_points_costmap;
 }
 
-// grid_map::Matrix CostmapGenerator::generateBBoxesCostmap(
+// grid_map::Matrix CostmapGeneratorV2::generateBBoxesCostmap(
 //     const jsk_recognition_msgs::BoundingBoxArrayConstPtr &in_boxes) {
 //   grid_map::Matrix bboxes_costmap = bboxes2costmap_.makeCostmapFromBBoxes(
 //       costmap_, expand_polygon_size_, size_of_expansion_kernel_, in_boxes);
 //   return bboxes_costmap;
 // }
 
-void CostmapGenerator::generateCombinedCostmap()
+void CostmapGeneratorV2::generateCombinedCostmap()
 {
   //   // assuming combined_costmap is calculated by element wise max operation
 
@@ -414,8 +434,8 @@ void CostmapGenerator::generateCombinedCostmap()
 }
 
 pcl::PointCloud<pcl::PointXYZI>::Ptr
-CostmapGenerator::downsample(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud,
-                             double resolution)
+CostmapGeneratorV2::downsample(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud,
+                               double resolution)
 {
   pcl::PointCloud<pcl::PointXYZI>::Ptr filtered(
       new pcl::PointCloud<pcl::PointXYZI>);
@@ -426,7 +446,7 @@ CostmapGenerator::downsample(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud,
   return filtered;
 }
 
-void CostmapGenerator::publishRosMsg(grid_map::GridMap *map)
+void CostmapGeneratorV2::publishRosMsg(grid_map::GridMap *map)
 {
   nav_msgs::msg::OccupancyGrid out_occupancy_grid;
   grid_map::GridMapRosConverter::toOccupancyGrid(
@@ -434,23 +454,13 @@ void CostmapGenerator::publishRosMsg(grid_map::GridMap *map)
       out_occupancy_grid);
   out_occupancy_grid.header = m_in_header;
   out_occupancy_grid.header.frame_id = nif::common::frame_id::localization::BASE_LINK;
-  pub_occupancy_grid_->publish(out_occupancy_grid);
+  // pub_occupancy_grid_->publish(&out_occupancy_grid);
 }
 
-// void CostmapGenerator::publishRoadBoundaryMsg(grid_map::GridMap *map) {
-//   nav_msgs::OccupancyGrid out_occupancy_grid;
-//   grid_map::GridMapRosConverter::toOccupancyGrid(
-//       *map, COMBINED_COSTMAP_LAYER_, grid_min_value_, grid_max_value_,
-//       out_occupancy_grid);
-//   out_occupancy_grid.header = m_in_header;
-//   out_occupancy_grid.header.frame_id = nif::common::frame_id::localization::BASE_LINK;
-//   pub_road_occupancy_grid_.publish(out_occupancy_grid);
-// }
-
 // Calculate gaussian interpolation.
-grid_map::Matrix CostmapGenerator::createGaussianWorld(grid_map::GridMap *map, const std::string layer_name,
-                                                       double inflation_x, double inflation_y,
-                                                       const std::vector<std::pair<double, double>> &pointArray)
+grid_map::Matrix CostmapGeneratorV2::createGaussianWorld(grid_map::GridMap *map, const std::string layer_name,
+                                                         double inflation_x, double inflation_y,
+                                                         const std::vector<std::pair<double, double>> &pointArray)
 {
   struct Gaussian
   {
@@ -472,7 +482,7 @@ grid_map::Matrix CostmapGenerator::createGaussianWorld(grid_map::GridMap *map, c
     gaussian_tmp.y0 = point.second;
     gaussian_tmp.varX = inflation_x;
     gaussian_tmp.varY = inflation_y;
-    gaussian_tmp.s = 1 / inflation_x;
+    gaussian_tmp.s = 10 / inflation_x;
     g.push_back(gaussian_tmp);
   }
 
@@ -496,8 +506,8 @@ grid_map::Matrix CostmapGenerator::createGaussianWorld(grid_map::GridMap *map, c
   // return output;
 }
 
-grid_map::Matrix CostmapGenerator::fillGridMap(grid_map::GridMap *map, const std::string layer_name,
-                                               const AnalyticalFunctions &functions)
+grid_map::Matrix CostmapGeneratorV2::fillGridMap(grid_map::GridMap *map, const std::string layer_name,
+                                                 const AnalyticalFunctions &functions)
 {
   grid_map::Matrix &data = (*map)[layer_name];
   double max = 0;
@@ -514,7 +524,7 @@ grid_map::Matrix CostmapGenerator::fillGridMap(grid_map::GridMap *map, const std
   return data;
 }
 
-void CostmapGenerator::SearchPointsOntrack(
+void CostmapGeneratorV2::SearchPointsOntrack(
     const std::vector<std::pair<double, double>> &inner_array_in,
     const std::vector<std::pair<double, double>> &outer_array_in,
     const int &closest_idx,
