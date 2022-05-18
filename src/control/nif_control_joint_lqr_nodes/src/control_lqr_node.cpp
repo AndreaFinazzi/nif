@@ -456,6 +456,16 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve()
       // Check whether path is global/local
       bool is_local_path = true;
 
+      nav_msgs::msg::Odometry ego_base;
+      ego_base.pose.pose.position.x = 0;
+      ego_base.pose.pose.position.y = 0;
+      ego_base.pose.pose.position.z = 0;
+      ego_base.pose.pose.orientation.x = 0;
+      ego_base.pose.pose.orientation.y = 0;
+      ego_base.pose.pose.orientation.z = 0;
+      ego_base.pose.pose.orientation.w = 1;
+
+      auto state = joint_lqr::utils::LQRState(ego_base);
       if (use_tire_velocity_)
         state(2, 0) = current_speed_ms_;
       if (is_local_path)
@@ -490,36 +500,28 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve()
       // Track on the trajectory
       double target_distance = 0.0;
       bool target_reached_end = false;
-      nav_msgs::msg::Odometry ego_base;
-      ego_base.pose.position.x = 0;
-      ego_base.pose.position.y = 0;
-      ego_base.pose.position.z = 0;
-      ego_base.pose.orientation.x = 0;
-      ego_base.pose.orientation.y = 0;
-      ego_base.pose.orientation.z = 0;
-      ego_base.pose.orientation.w = 1;
+
       joint_lqr::utils::track(
-          imitavive_planner_output_path->poses, ego_base, track_distance, // inputs
+          imitavive_planner_output_path.poses, ego_base, track_distance, // inputs
           lqr_tracking_idx_, target_distance,
           target_reached_end); // outputs
 
       // - target point should be ahead.
       // TODO: Haeding of imitative planner trajectory's ampled point should be fixed.
       double target_point_azimuth = joint_lqr::utils::pursuit_azimuth(
-          imitavive_planner_output_path->poses[lqr_tracking_idx_], ego_base);
+          imitavive_planner_output_path.poses[lqr_tracking_idx_], ego_base);
       valid_target_position = M_PI * 3 / 4. > std::abs(target_point_azimuth);
 
+      double l_desired_velocity = 100.0;
       if (valid_wpt_distance && valid_target_position)
       {
         valid_tracking_result = true;
         // Run LQR :)
         // Desired velocity check
 
-        l_desired_velocity = 100.0;
-
-        auto goal = joint_lqr::utils::LQRGoal(imitavive_planner_output_path->poses[lqr_tracking_idx_],
+        auto goal = joint_lqr::utils::LQRGoal(imitavive_planner_output_path.poses[lqr_tracking_idx_],
                                               l_desired_velocity);
-        auto goal_COG = joint_lqr::utils::LQRGoal(imitavive_planner_output_path->poses.poses[0],
+        auto goal_COG = joint_lqr::utils::LQRGoal(imitavive_planner_output_path.poses[0],
                                                   l_desired_velocity);
 
         error = joint_lqr_->computeError(state, goal);
