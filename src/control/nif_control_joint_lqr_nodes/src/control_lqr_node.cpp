@@ -4,7 +4,8 @@
 using nif::control::ControlLQRNode;
 
 ControlLQRNode::ControlLQRNode(const std::string &node_name)
-    : IControllerNode(node_name) {
+    : IControllerNode(node_name)
+{
   control_cmd = std::make_shared<nif::common::msgs::ControlCmd>();
 
   m_camber_manager_ptr = std::make_shared<CamberCompensator>(
@@ -47,6 +48,11 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
           "velocity_planner/des_vel", nif::common::constants::QOS_CONTROL_CMD,
           std::bind(&ControlLQRNode::directDesiredVelocityCallback, this,
                     std::placeholders::_1));
+
+  imitative_planner_output_sub = this->create_subscription<nav_msgs::msg::Path>(
+      "imitative_planner/output_path", nif::common::constants::QOS_CONTROL_CMD,
+      std::bind(&ControlLQRNode::imitativePlannerOutputCallback, this,
+                std::placeholders::_1));
 
   // Disable the ACC function
   //   acc_sub_ = this->create_subscription<std_msgs::msg::Float32>(
@@ -137,8 +143,11 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
   m_use_acc = false;
   use_camber_compensator_ = this->get_parameter("use_camber_compensator").as_bool();
 
+  // Use imitative planner flag
+  use_imitative_planner_output_ = this->get_parameter("use_imitative_planner_output").as_bool();
 
-  if (odometry_timeout_sec_ <= 0. || path_timeout_sec_ <= 0.) {
+  if (odometry_timeout_sec_ <= 0. || path_timeout_sec_ <= 0.)
+  {
     RCLCPP_ERROR(this->get_logger(),
                  "path and ego_odometry timeouts must be greater than zero. "
                  "Got odometry_timeout_sec_: %f; path_timeout_sec_: %f",
@@ -159,7 +168,8 @@ void ControlLQRNode::publishSteerAccelDiagnostics(
     geometry_msgs::msg::PoseStamped lqr_track_point,
     joint_lqr::lqr::JointLQR::ErrorMatrix lqr_err_cog,
     joint_lqr::lqr::JointLQR::ErrorMatrix lqr_err,
-    double desired_velocity_mps) {
+    double desired_velocity_mps)
+{
   std_msgs::msg::Bool command_valid_msg;
   command_valid_msg.data = lqr_command_valid;
   lqr_command_valid_pub_->publish(command_valid_msg);
@@ -207,283 +217,426 @@ void ControlLQRNode::publishSteerAccelDiagnostics(
   lqr_desired_velocity_mps_pub_->publish(des_vel_msg);
 }
 
-nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve() {
-  auto now = this->now();
-  nif::common::NodeStatusCode node_status = common::NODE_ERROR;
+nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve()
+{
+  if (!use_imitative_planner_output_)
+  {
+    auto now = this->now();
+    nif::common::NodeStatusCode node_status = common::NODE_ERROR;
 
-  //  Check whether we have updated data
-  bool valid_path =
-      this->hasReferenceTrajectory() &&
-      !this->getReferenceTrajectory()->trajectory_path.poses.empty() &&
-      this->getReferencePathLastPointDistance() > m_path_min_length_m &&
-      nif::common::utils::time::secs(
-          now - this->getReferenceTrajectoryUpdateTime()) < path_timeout_sec_;
+    //  Check whether we have updated data
+    bool valid_path =
+        this->hasReferenceTrajectory() &&
+        !this->getReferenceTrajectory()->trajectory_path.poses.empty() &&
+        this->getReferencePathLastPointDistance() > m_path_min_length_m &&
+        nif::common::utils::time::secs(
+            now - this->getReferenceTrajectoryUpdateTime()) < path_timeout_sec_;
 
-  bool valid_odom =
-      this->hasEgoOdometry() &&
-      nif::common::utils::time::secs(now - this->getEgoOdometryUpdateTime()) <
-          odometry_timeout_sec_;
+    bool valid_odom =
+        this->hasEgoOdometry() &&
+        nif::common::utils::time::secs(now - this->getEgoOdometryUpdateTime()) <
+            odometry_timeout_sec_;
 
-  // Check valid waypoint starting distance & valid target waypoint
-  // position(front)
-  // - starting wpt should be around ego.
-  bool valid_wpt_distance =
-      valid_path && valid_odom &&
-      pure_pursuit_max_max_dist_m_ >
-          joint_lqr::utils::pursuit_dist(
-              this->getReferenceTrajectory()->trajectory_path.poses[0],
-              this->getEgoOdometry());
+    // Check valid waypoint starting distance & valid target waypoint
+    // position(front)
+    // - starting wpt should be around ego.
+    bool valid_wpt_distance =
+        valid_path && valid_odom &&
+        pure_pursuit_max_max_dist_m_ >
+            joint_lqr::utils::pursuit_dist(
+                this->getReferenceTrajectory()->trajectory_path.poses[0],
+                this->getEgoOdometry());
 
-  // - initialize valid target position
-  bool valid_target_position = false;
+    // - initialize valid target position
+    bool valid_target_position = false;
+    bool valid_tracking_result = false;
 
-  bool valid_tracking_result = false;
+    double steering_angle_deg = 0.0;
+    double desired_accel = 0.0;
+    joint_lqr::lqr::JointLQR::ErrorMatrix error;
+    joint_lqr::lqr::JointLQR::ErrorMatrix error_COG; // error at center of gravity
 
-  double steering_angle_deg = 0.0;
-  double desired_accel = 0.0;
-  joint_lqr::lqr::JointLQR::ErrorMatrix error;
-  joint_lqr::lqr::JointLQR::ErrorMatrix error_COG; // error at center of gravity
+    // Perform Tracking if path is good
+    if (valid_path && valid_odom)
+    {
+      // Check whether path is global/local
+      bool is_local_path = this->getReferenceTrajectory()->header.frame_id ==
+                           this->getBodyFrameId();
 
-  // Perform Tracking if path is good
-  if (valid_path && valid_odom) {
-    // Check whether path is global/local
-    bool is_local_path = this->getReferenceTrajectory()->header.frame_id ==
-                         this->getBodyFrameId();
-
-    auto state = joint_lqr::utils::LQRState(this->getEgoOdometry());
-    if (use_tire_velocity_)
-      state(2, 0) = current_speed_ms_;
-    if (is_local_path) {
-      // x, y, yaw are zeros in local coordinate
-      state(0, 0) = 0.0;
-      state(1, 0) = 0.0;
-      state(4, 0) = 0.0;
-    }
-
-    // Compute the tracking distance (and ensure it is within a valid range)
-    double track_distance =
-        pure_pursuit_min_dist_m_ + pure_pursuit_k_vel_m_ms_ * state(2, 0);
-    if (track_distance > pure_pursuit_max_dist_m_) {
-      if (state(2, 0) < pure_pursuit_1st_vel_ms_) {
-        track_distance = pure_pursuit_max_dist_m_;
-      } else {
-        track_distance =
-            pure_pursuit_max_dist_m_ +
-            pure_pursuit_k_vel_m_ms_ * (state(2, 0) - pure_pursuit_1st_vel_ms_);
+      auto state = joint_lqr::utils::LQRState(this->getEgoOdometry());
+      if (use_tire_velocity_)
+        state(2, 0) = current_speed_ms_;
+      if (is_local_path)
+      {
+        // x, y, yaw are zeros in local coordinate
+        state(0, 0) = 0.0;
+        state(1, 0) = 0.0;
+        state(4, 0) = 0.0;
       }
-    }
-    if (track_distance < pure_pursuit_min_dist_m_)
-      track_distance = pure_pursuit_min_dist_m_;
-    if (track_distance > pure_pursuit_max_max_dist_m_)
-      track_distance = pure_pursuit_max_max_dist_m_;
 
-    // Track on the trajectory
-    double target_distance = 0.0;
-    bool target_reached_end = false;
-    joint_lqr::utils::track(
-        this->getReferenceTrajectory()->trajectory_path.poses,
-        this->getEgoOdometry(),
-        track_distance, // inputs
-        lqr_tracking_idx_, target_distance,
-        target_reached_end); // outputs
-
-    // - target point should be ahead.
-    double target_point_azimuth = joint_lqr::utils::pursuit_azimuth(
-        this->getReferenceTrajectory()
-            ->trajectory_path.poses[lqr_tracking_idx_],
-        this->getEgoOdometry());
-    valid_target_position = M_PI * 3 / 4. > std::abs(target_point_azimuth);
-
-    double l_desired_velocity = 0.0;
-    if (valid_wpt_distance && valid_target_position) {
-      valid_tracking_result = true;
-      // Run LQR :)
-      // Desired velocity check
-
-      // deprecated
-      //   if (this->hasDesiredVelocity() &&
-      //       (this->now() - this->getDesiredVelocityUpdateTime() <=
-      //        rclcpp::Duration(1, 0))) {
-      //     l_desired_velocity = this->getDesiredVelocity()->data;
-      //   }
-
-      // if (this->hasReferenceTrajectory() &&
-      //     (this->now() - this->getReferenceTrajectoryUpdateTime() <=
-      //      rclcpp::Duration(1, 0))) {
-        // TODO: Review this with Hyunki
-        // FIXME:
-        // l_desired_velocity = this->getReferenceTrajectory()
-        //                          ->trajectory_velocity[lqr_tracking_idx_];
-
-      //   ////////////////////////////////////
-      //   // Look-ahead time implementation //
-      //   ////////////////////////////////////
-      //   double test_lookahead_time = 0.8;
-      //   // step 1. Search the nearest time within the trajectory's timestamp
-      //   // array
-      //   auto closest_time_idx = nif::common::utils::closestIndex(
-      //       this->getReferenceTrajectory()->trajectory_timestamp_array,
-      //       test_lookahead_time);
-
-      //   // step 2. Safety feature
-      //   auto time_differ =
-      //       abs(this->getReferenceTrajectory()
-      //               ->trajectory_timestamp_array[closest_time_idx] -
-      //           test_lookahead_time);
-
-      //   if (time_differ < 2) {
-      //     l_desired_velocity = this->getReferenceTrajectory()
-      //                              ->trajectory_velocity[closest_time_idx];
-      //     if (l_desired_velocity < 1.5)
-      //       l_desired_velocity = 0.0;
-      //   } else {
-      //     l_desired_velocity = 0.0;
-      //   }
-      // }
-
-      // if (!m_use_mission_max_vel_) {
-      //   // if not using mission status maximum velocity,
-      //   // directly use des_vel from velocity planner
-      //   l_desired_velocity = direct_desired_velocity_;
-      // }
-
-      l_desired_velocity = direct_desired_velocity_;
-
-      auto goal = joint_lqr::utils::LQRGoal(
-          this->getReferenceTrajectory()
-              ->trajectory_path.poses[lqr_tracking_idx_],
-          l_desired_velocity);
-      auto goal_COG = joint_lqr::utils::LQRGoal(
-          this->getReferenceTrajectory()->trajectory_path.poses[0],
-          l_desired_velocity);
-      error = joint_lqr_->computeError(state, goal);
-      error_COG = joint_lqr_->computeError(state, goal_COG);
-      auto cmd = joint_lqr_->process(state, goal);
-      steering_angle_deg = cmd(0, 0) * nif::common::constants::RAD2DEG;
-      desired_accel = cmd(1, 0);
-
-      // Make sure steering angle is within range
-      if (steering_angle_deg > max_steering_angle_deg_)
-        steering_angle_deg = max_steering_angle_deg_;
-      if (steering_angle_deg < -max_steering_angle_deg_)
-        steering_angle_deg = -max_steering_angle_deg_;
-
-      // ----------------------------------------------------------------------------
-      /*
-      // APPLY CAMBER COMPENSATION
-      */
-      double camber_compensatation_deg = 0.0;
-      if (this->use_camber_compensator_) {
-
-        try {
-          m_camber_manager_ptr->setVehSpeed(this->current_speed_ms_);
-          double tmp_bank_ = 0.0;
-          m_camber_manager_ptr->setBankAngle(tmp_bank_);
-          camber_compensatation_deg =
-              m_camber_manager_ptr->getCamberCompensation();
-  
-        } catch (std::exception &e) {
-          RCLCPP_ERROR(this->get_logger(), "CAMBER COMPENSATION EXCEPTION. %s",
-                      e.what());
-          camber_compensatation_deg = 0.0;
+      // Compute the tracking distance (and ensure it is within a valid range)
+      double track_distance =
+          pure_pursuit_min_dist_m_ + pure_pursuit_k_vel_m_ms_ * state(2, 0);
+      if (track_distance > pure_pursuit_max_dist_m_)
+      {
+        if (state(2, 0) < pure_pursuit_1st_vel_ms_)
+        {
+          track_distance = pure_pursuit_max_dist_m_;
+        }
+        else
+        {
+          track_distance =
+              pure_pursuit_max_dist_m_ +
+              pure_pursuit_k_vel_m_ms_ * (state(2, 0) - pure_pursuit_1st_vel_ms_);
         }
       }
-      steering_angle_deg = steering_angle_deg + camber_compensatation_deg;
-      // ----------------------------------------------------------------------------
+      if (track_distance < pure_pursuit_min_dist_m_)
+        track_distance = pure_pursuit_min_dist_m_;
+      if (track_distance > pure_pursuit_max_max_dist_m_)
+        track_distance = pure_pursuit_max_max_dist_m_;
 
-      // Smooth and publish diagnostics
-      double period_double_s =
-          nif::common::utils::time::secs(this->getGclockPeriodDuration());
-      RCLCPP_DEBUG(this->get_logger(), "Smoothing with dt: [s] %f",
-                   period_double_s);
-      joint_lqr::utils::smoothSignal(steering_angle_deg, last_steering_command_,
-                                     steering_max_ddeg_dt_, period_double_s);
+      // Track on the trajectory
+      double target_distance = 0.0;
+      bool target_reached_end = false;
+      joint_lqr::utils::track(
+          this->getReferenceTrajectory()->trajectory_path.poses,
+          this->getEgoOdometry(),
+          track_distance, // inputs
+          lqr_tracking_idx_, target_distance,
+          target_reached_end); // outputs
 
-      if (desired_accel > 0) {
-        joint_lqr::utils::smoothSignal(desired_accel, last_accel_command_,
-                                       des_accel_max_da_dt_, period_double_s);
-      } else {
-        joint_lqr::utils::smoothSignal(desired_accel, last_accel_command_,
-                                       des_deccel_max_da_dt_, period_double_s);
+      // - target point should be ahead.
+      double target_point_azimuth = joint_lqr::utils::pursuit_azimuth(
+          this->getReferenceTrajectory()
+              ->trajectory_path.poses[lqr_tracking_idx_],
+          this->getEgoOdometry());
+      valid_target_position = M_PI * 3 / 4. > std::abs(target_point_azimuth);
+
+      double l_desired_velocity = 0.0;
+      if (valid_wpt_distance && valid_target_position)
+      {
+        valid_tracking_result = true;
+        // Run LQR :)
+        // Desired velocity check
+
+        l_desired_velocity = direct_desired_velocity_;
+
+        auto goal = joint_lqr::utils::LQRGoal(
+            this->getReferenceTrajectory()
+                ->trajectory_path.poses[lqr_tracking_idx_],
+            l_desired_velocity);
+        auto goal_COG = joint_lqr::utils::LQRGoal(
+            this->getReferenceTrajectory()->trajectory_path.poses[0],
+            l_desired_velocity);
+        error = joint_lqr_->computeError(state, goal);
+        error_COG = joint_lqr_->computeError(state, goal_COG);
+        auto cmd = joint_lqr_->process(state, goal);
+        steering_angle_deg = cmd(0, 0) * nif::common::constants::RAD2DEG;
+        desired_accel = cmd(1, 0);
+
+        // Make sure steering angle is within range
+        if (steering_angle_deg > max_steering_angle_deg_)
+          steering_angle_deg = max_steering_angle_deg_;
+        if (steering_angle_deg < -max_steering_angle_deg_)
+          steering_angle_deg = -max_steering_angle_deg_;
+
+        // ----------------------------------------------------------------------------
+        /*
+        // APPLY CAMBER COMPENSATION
+        */
+        double camber_compensatation_deg = 0.0;
+        if (this->use_camber_compensator_)
+        {
+
+          try
+          {
+            m_camber_manager_ptr->setVehSpeed(this->current_speed_ms_);
+            double tmp_bank_ = 0.0;
+            m_camber_manager_ptr->setBankAngle(tmp_bank_);
+            camber_compensatation_deg =
+                m_camber_manager_ptr->getCamberCompensation();
+          }
+          catch (std::exception &e)
+          {
+            RCLCPP_ERROR(this->get_logger(), "CAMBER COMPENSATION EXCEPTION. %s",
+                         e.what());
+            camber_compensatation_deg = 0.0;
+          }
+        }
+        steering_angle_deg = steering_angle_deg + camber_compensatation_deg;
+        // ----------------------------------------------------------------------------
+
+        // Smooth and publish diagnostics
+        double period_double_s =
+            nif::common::utils::time::secs(this->getGclockPeriodDuration());
+        RCLCPP_DEBUG(this->get_logger(), "Smoothing with dt: [s] %f",
+                     period_double_s);
+        joint_lqr::utils::smoothSignal(steering_angle_deg, last_steering_command_,
+                                       steering_max_ddeg_dt_, period_double_s);
+
+        if (desired_accel > 0)
+        {
+          joint_lqr::utils::smoothSignal(desired_accel, last_accel_command_,
+                                         des_accel_max_da_dt_, period_double_s);
+        }
+        else
+        {
+          joint_lqr::utils::smoothSignal(desired_accel, last_accel_command_,
+                                         des_deccel_max_da_dt_, period_double_s);
+        }
       }
+      // Publish diagnostic message
+      publishSteerAccelDiagnostics(valid_tracking_result, valid_path, valid_odom,
+                                   valid_wpt_distance, valid_target_position,
+                                   steering_angle_deg, desired_accel,
+                                   track_distance, lqr_tracking_idx_,
+                                   this->getReferenceTrajectory()
+                                       ->trajectory_path.poses[lqr_tracking_idx_],
+                                   error_COG, error, l_desired_velocity);
     }
-    // Publish diagnostic message
-    publishSteerAccelDiagnostics(valid_tracking_result, valid_path, valid_odom,
-                                 valid_wpt_distance, valid_target_position,
-                                 steering_angle_deg, desired_accel,
-                                 track_distance, lqr_tracking_idx_,
-                                 this->getReferenceTrajectory()
-                                     ->trajectory_path.poses[lqr_tracking_idx_],
-                                 error_COG, error, l_desired_velocity);
-  }
 
-  if (!this->hasSystemStatus() ||
-      (this->getSystemStatus().autonomy_status.lateral_autonomy_enabled ||
-       this->getSystemStatus().autonomy_status.longitudinal_autonomy_enabled) &&
-          !(valid_path && valid_odom && valid_wpt_distance &&
-            valid_target_position)) {
-    node_status = common::NODE_ERROR;
+    if (!this->hasSystemStatus() ||
+        (this->getSystemStatus().autonomy_status.lateral_autonomy_enabled ||
+         this->getSystemStatus().autonomy_status.longitudinal_autonomy_enabled) &&
+            !(valid_path && valid_odom && valid_wpt_distance &&
+              valid_target_position))
+    {
+      node_status = common::NODE_ERROR;
+      this->setNodeStatus(node_status);
+      return nullptr;
+    }
+
+    last_steering_command_ = steering_angle_deg;
+    last_accel_command_ = desired_accel;
+    // for steering command
+    this->control_cmd->steering_control_cmd.data =
+        invert_steering_ ? -last_steering_command_ : last_steering_command_;
+    // for acceleration command
+    if (m_use_acc)
+    {
+      this->control_cmd->desired_accel_cmd.data =
+          std::min(desired_accel, acc_accel_cmd_mpss);
+    }
+    else
+    {
+      this->control_cmd->desired_accel_cmd.data = desired_accel;
+    }
+
+    node_status = common::NODE_OK;
     this->setNodeStatus(node_status);
-    return nullptr;
+    return this->control_cmd;
   }
+  else // use_imitative_planner_output_
+  {
+    auto now = this->now();
+    nif::common::NodeStatusCode node_status = common::NODE_ERROR;
 
-  last_steering_command_ = steering_angle_deg;
-  last_accel_command_ = desired_accel;
-  // for steering command
-  this->control_cmd->steering_control_cmd.data =
-      invert_steering_ ? -last_steering_command_ : last_steering_command_;
-  // for acceleration command
+    //  Check whether we have updated data
+    bool valid_path = !imitavive_planner_output_path.poses.empty();
 
-  if (m_use_acc) {
-    this->control_cmd->desired_accel_cmd.data =
-        std::min(desired_accel, acc_accel_cmd_mpss);
-  } else {
-    this->control_cmd->desired_accel_cmd.data = desired_accel;
+    bool valid_odom =
+        this->hasEgoOdometry() &&
+        nif::common::utils::time::secs(now - this->getEgoOdometryUpdateTime()) <
+            odometry_timeout_sec_;
+
+    bool valid_wpt_distance = true;
+
+    // - initialize valid target position
+    bool valid_target_position = false;
+    bool valid_tracking_result = false;
+
+    double steering_angle_deg = 0.0;
+    double desired_accel = 0.0;
+    joint_lqr::lqr::JointLQR::ErrorMatrix error;
+    joint_lqr::lqr::JointLQR::ErrorMatrix error_COG; // error at center of gravity
+
+    // Perform Tracking if path is good
+    if (valid_path && valid_odom)
+    {
+      // Check whether path is global/local
+      bool is_local_path = true;
+
+      if (use_tire_velocity_)
+        state(2, 0) = current_speed_ms_;
+      if (is_local_path)
+      {
+        // x, y, yaw are zeros in local coordinate
+        state(0, 0) = 0.0;
+        state(1, 0) = 0.0;
+        state(4, 0) = 0.0;
+      }
+
+      // Compute the tracking distance (and ensure it is within a valid range)
+      double track_distance =
+          pure_pursuit_min_dist_m_ + pure_pursuit_k_vel_m_ms_ * state(2, 0);
+      if (track_distance > pure_pursuit_max_dist_m_)
+      {
+        if (state(2, 0) < pure_pursuit_1st_vel_ms_)
+        {
+          track_distance = pure_pursuit_max_dist_m_;
+        }
+        else
+        {
+          track_distance =
+              pure_pursuit_max_dist_m_ +
+              pure_pursuit_k_vel_m_ms_ * (state(2, 0) - pure_pursuit_1st_vel_ms_);
+        }
+      }
+      if (track_distance < pure_pursuit_min_dist_m_)
+        track_distance = pure_pursuit_min_dist_m_;
+      if (track_distance > pure_pursuit_max_max_dist_m_)
+        track_distance = pure_pursuit_max_max_dist_m_;
+
+      // Track on the trajectory
+      double target_distance = 0.0;
+      bool target_reached_end = false;
+      nav_msgs::msg::Odometry ego_base;
+      ego_base.pose.position.x = 0;
+      ego_base.pose.position.y = 0;
+      ego_base.pose.position.z = 0;
+      ego_base.pose.orientation.x = 0;
+      ego_base.pose.orientation.y = 0;
+      ego_base.pose.orientation.z = 0;
+      ego_base.pose.orientation.w = 1;
+      joint_lqr::utils::track(
+          imitavive_planner_output_path->poses, ego_base, track_distance, // inputs
+          lqr_tracking_idx_, target_distance,
+          target_reached_end); // outputs
+
+      // - target point should be ahead.
+      // TODO: Haeding of imitative planner trajectory's ampled point should be fixed.
+      double target_point_azimuth = joint_lqr::utils::pursuit_azimuth(
+          imitavive_planner_output_path->poses[lqr_tracking_idx_], ego_base);
+      valid_target_position = M_PI * 3 / 4. > std::abs(target_point_azimuth);
+
+      if (valid_wpt_distance && valid_target_position)
+      {
+        valid_tracking_result = true;
+        // Run LQR :)
+        // Desired velocity check
+
+        l_desired_velocity = 100.0;
+
+        auto goal = joint_lqr::utils::LQRGoal(imitavive_planner_output_path->poses[lqr_tracking_idx_],
+                                              l_desired_velocity);
+        auto goal_COG = joint_lqr::utils::LQRGoal(imitavive_planner_output_path->poses.poses[0],
+                                                  l_desired_velocity);
+
+        error = joint_lqr_->computeError(state, goal);
+        error_COG = joint_lqr_->computeError(state, goal_COG);
+        auto cmd = joint_lqr_->process(state, goal);
+        steering_angle_deg = cmd(0, 0) * nif::common::constants::RAD2DEG;
+        desired_accel = cmd(1, 0);
+
+        // Smooth and publish diagnostics
+        double period_double_s =
+            nif::common::utils::time::secs(this->getGclockPeriodDuration());
+        RCLCPP_DEBUG(this->get_logger(), "Smoothing with dt: [s] %f",
+                     period_double_s);
+        joint_lqr::utils::smoothSignal(steering_angle_deg, last_steering_command_,
+                                       steering_max_ddeg_dt_, period_double_s);
+      }
+      // Publish diagnostic message
+      publishSteerAccelDiagnostics(valid_tracking_result, valid_path, valid_odom,
+                                   valid_wpt_distance, valid_target_position,
+                                   steering_angle_deg, desired_accel,
+                                   track_distance, lqr_tracking_idx_,
+                                   this->getReferenceTrajectory()
+                                       ->trajectory_path.poses[lqr_tracking_idx_],
+                                   error_COG, error, l_desired_velocity);
+    }
+    if (!this->hasSystemStatus() ||
+        (this->getSystemStatus().autonomy_status.lateral_autonomy_enabled ||
+         this->getSystemStatus().autonomy_status.longitudinal_autonomy_enabled) &&
+            !(valid_path && valid_odom && valid_wpt_distance &&
+              valid_target_position))
+    {
+      node_status = common::NODE_ERROR;
+      this->setNodeStatus(node_status);
+      return nullptr;
+    }
+
+    last_steering_command_ = steering_angle_deg;
+    last_accel_command_ = desired_accel;
+    // for steering command
+    this->control_cmd->steering_control_cmd.data =
+        invert_steering_ ? -last_steering_command_ : last_steering_command_;
+    // for acceleration command
+    if (m_use_acc)
+    {
+      this->control_cmd->desired_accel_cmd.data =
+          std::min(desired_accel, acc_accel_cmd_mpss);
+    }
+    else
+    {
+      this->control_cmd->desired_accel_cmd.data = desired_accel;
+    }
+
+    node_status = common::NODE_OK;
+    this->setNodeStatus(node_status);
+    return this->control_cmd;
   }
-
-  node_status = common::NODE_OK;
-  this->setNodeStatus(node_status);
-  return this->control_cmd;
 }
 
 rcl_interfaces::msg::SetParametersResult
 nif::control::ControlLQRNode::parametersCallback(
-    const std::vector<rclcpp::Parameter> &vector) {
+    const std::vector<rclcpp::Parameter> &vector)
+{
   rcl_interfaces::msg::SetParametersResult result;
   result.successful = false;
   result.reason = "";
-  for (const auto &param : vector) {
-    if (param.get_name() == "pure_pursuit_max_max_dist_m") {
-      if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
-        if (param.as_double() >= 8.0 && param.as_double() <= 20.0) {
+  for (const auto &param : vector)
+  {
+    if (param.get_name() == "pure_pursuit_max_max_dist_m")
+    {
+      if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE)
+      {
+        if (param.as_double() >= 8.0 && param.as_double() <= 20.0)
+        {
           this->pure_pursuit_max_max_dist_m_ = param.as_double();
           result.successful = true;
         }
       }
-    } else if (param.get_name() == "pure_pursuit_max_dist_m") {
-      if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
-        if (param.as_double() >= 3.0 && param.as_double() <= 20.0) {
+    }
+    else if (param.get_name() == "pure_pursuit_max_dist_m")
+    {
+      if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE)
+      {
+        if (param.as_double() >= 3.0 && param.as_double() <= 20.0)
+        {
           this->pure_pursuit_max_dist_m_ = param.as_double();
           result.successful = true;
         }
       }
-    } else if (param.get_name() == "pure_pursuit_min_dist_m") {
-      if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
-        if (param.as_double() >= 3.0 && param.as_double() <= 20.0) {
+    }
+    else if (param.get_name() == "pure_pursuit_min_dist_m")
+    {
+      if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE)
+      {
+        if (param.as_double() >= 3.0 && param.as_double() <= 20.0)
+        {
           this->pure_pursuit_min_dist_m_ = param.as_double();
           result.successful = true;
         }
       }
-    } else if (param.get_name() == "pure_pursuit_1st_vel_ms") {
-      if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
-        if (param.as_double() >= 8.0 && param.as_double() <= 40.0) {
+    }
+    else if (param.get_name() == "pure_pursuit_1st_vel_ms")
+    {
+      if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE)
+      {
+        if (param.as_double() >= 8.0 && param.as_double() <= 40.0)
+        {
           this->pure_pursuit_1st_vel_ms_ = param.as_double();
           result.successful = true;
         }
       }
-    } else if (param.get_name() == "pure_pursuit_k_vel_m_ms") {
-      if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
-        if (param.as_double() >= 0.0 && param.as_double() <= 1.0) {
+    }
+    else if (param.get_name() == "pure_pursuit_k_vel_m_ms")
+    {
+      if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE)
+      {
+        if (param.as_double() >= 0.0 && param.as_double() <= 1.0)
+        {
           this->pure_pursuit_k_vel_m_ms_ = param.as_double();
           result.successful = true;
         }
