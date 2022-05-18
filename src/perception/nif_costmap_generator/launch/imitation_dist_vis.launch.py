@@ -29,8 +29,9 @@ def generate_launch_description():
         emulate_tty=True,
         parameters=[LaunchConfiguration("nif_costmap_param_file")],
         remappings=[
-            ("in_predicted_samples", "imitative/out_path"),
+            ("in_predicted_samples", "imitative/out_path/not_used"),
             ("out_imitation_distribution_map", "imitative/distribution"),
+            ("in_predicted_samples_marker_array", "imitative/samples"),
         ],
     )
 

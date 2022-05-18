@@ -103,8 +103,8 @@ void CostmapGeneratorV2::imitationOutputCallbackMarkerArray(const visualization_
       pointBuf.first = mapped_x_ind;
       pointBuf.second = mapped_y_ind;
       grid_vec.push_back(pointBuf);
-      mu_vec.push_back(marker.scale.x);
-      sig_vec.push_back(marker.scale.y);
+      mu_vec.push_back(abs(marker.scale.x));
+      sig_vec.push_back(abs(marker.scale.y));
     }
 
     // costmap_[IMITATION_DISTRIBUTION_LAYER_] = createGaussianWorld(
@@ -628,7 +628,14 @@ grid_map::Matrix CostmapGeneratorV2::fillGridMap(grid_map::GridMap *map, const s
     const grid_map::Index index(*iterator);
     grid_map::Position pos;
     map->getPosition(index, pos);
-    data(index(0), index(1)) = functions.f_(pos.x(), pos.y()) * grid_resolution_ / 10;
+
+    auto ff = functions.f_(pos.x(), pos.y()) * grid_resolution_ / 10;
+
+    // if (ff > 10)
+    // {
+    //   ff = 10;
+    // }
+    data(index(0), index(1)) = ff;
     if (max < data(index(0), index(1)))
       max = data(index(0), index(1));
   }
