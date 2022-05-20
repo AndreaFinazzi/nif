@@ -34,13 +34,13 @@
 #include <pcl/registration/icp.h>
 #include <pcl_conversions/pcl_conversions.h>
 
-
 struct AnalyticalFunctions
 {
   std::function<double(double, double)> f_;
 };
 
-class PointsToCostmap {
+class PointsToCostmap
+{
 public:
   PointsToCostmap();
   ~PointsToCostmap();
@@ -63,6 +63,10 @@ public:
   grid_map::Matrix makeCostmapFromSensorPointsPitchCompensated(
       const double maximum_height_thres, const double minimum_height_thres,
       const double grid_min_value, const double grid_max_value, double pitch,
+      const grid_map::GridMap &gridmap, const std::string &gridmap_layer_name,
+      const pcl::PointCloud<pcl::PointXYZI>::Ptr &in_sensor_points);
+
+  std::vector<std::vector<std::vector<double>>> getGridIdxFromSensorPoints(
       const grid_map::GridMap &gridmap, const std::string &gridmap_layer_name,
       const pcl::PointCloud<pcl::PointXYZI>::Ptr &in_sensor_points);
 
