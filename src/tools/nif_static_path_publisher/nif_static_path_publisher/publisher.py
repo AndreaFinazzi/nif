@@ -83,7 +83,7 @@ class PubNode(rclpy.node.Node):
         self.target_frame = "odom"
 
         # Timers, 1Hz
-        self.timer_recv = self.create_timer(1, self.timer_callback)
+        self.timer_recv = self.create_timer(0.01, self.timer_callback)
 
         # Publishers
         self.pub_path_candidates_1 = self.create_publisher(Path, '/path_candidates_1', rclpy.qos.qos_profile_sensor_data)

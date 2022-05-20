@@ -31,6 +31,7 @@ import os
 from visualization_msgs.msg import Marker, MarkerArray
 import matplotlib.pyplot as plt
 from rclpy.duration import Duration
+from rclpy.executors import MultiThreadedExecutor, SingleThreadedExecutor
 import visdom
 import dill
 
@@ -49,7 +50,7 @@ def get_share_file(package_name, file_name):
     return os.path.join(get_package_share_directory(package_name), file_name)
 
 
-track_db_path = get_share_file("nif_imitative_planning_nodes", "ac_track_db")
+track_db_path = get_share_file("nif_imitative_planning_nodes", "nif_imitative_planning_nodes/ac_track_db")
 
 
 class ImitativePlanningNode(Node):
@@ -59,7 +60,7 @@ class ImitativePlanningNode(Node):
         self.verbose = True
         self.dt = 0.01  # [sec]
         self.use_traj_lib = False
-        self.num_samples = 5
+        self.num_samples = 3
         self.vis_density_function = False
         self.vis = visdom.Visdom()
         # self.vis.text("Hello wolrd", env="main")
@@ -203,9 +204,9 @@ class ImitativePlanningNode(Node):
         """
         Load static information
         """
-        inner_bound_file_path = "/home/usrg-racing/nif/build/nif_imitative_planning_nodes/nif_imitative_planning_nodes/ac_track_db/LVMS/lvms_inner_line.csv"
-        outer_bound_file_path = "/home/usrg-racing/nif/build/nif_imitative_planning_nodes/nif_imitative_planning_nodes/ac_track_db/LVMS/lvms_outer_line.csv"
-        raceline_file_path = "/home/usrg-racing/nif/build/nif_imitative_planning_nodes/nif_imitative_planning_nodes/ac_track_db/LVMS/race_line_w_field.csv"
+        inner_bound_file_path = track_db_path + "/LVMS/lvms_inner_line.csv"
+        outer_bound_file_path = track_db_path + "/LVMS/lvms_outer_line.csv"
+        raceline_file_path = track_db_path + "/LVMS/race_line_w_field.csv"
         self.inner_bound_data = defaultdict(dict)
         self.outer_bound_data = defaultdict(dict)
         self.raceline_data = defaultdict(dict)
@@ -1394,11 +1395,17 @@ def main(args=None):
 
     planning_node = ImitativePlanningNode()
 
+    executor = MultiThreadedExecutor(num_threads=6)
+    executor.add_node(planning_node)
+
     try:
-        rclpy.spin(planning_node)
+        # rclpy.spin(planning_node)
+        executor.spin()
     finally:
+        # planning_node.destroy_node()
+        # rclpy.shutdown()
+        executor.shutdown()
         planning_node.destroy_node()
-        rclpy.shutdown()
 
 
 if __name__ == "__main__":
