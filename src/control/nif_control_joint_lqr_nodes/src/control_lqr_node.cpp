@@ -50,7 +50,7 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
                     std::placeholders::_1));
 
   imitative_planner_output_sub = this->create_subscription<nav_msgs::msg::Path>(
-      "imitative_planner/output_path", nif::common::constants::QOS_CONTROL_CMD,
+      "/imitative/out_path", nif::common::constants::QOS_SENSOR_DATA,
       std::bind(&ControlLQRNode::imitativePlannerOutputCallback, this,
                 std::placeholders::_1));
 
@@ -144,7 +144,8 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
   use_camber_compensator_ = this->get_parameter("use_camber_compensator").as_bool();
 
   // Use imitative planner flag
-  use_imitative_planner_output_ = this->get_parameter("use_imitative_planner_output").as_bool();
+  // use_imitative_planner_output_ = this->get_parameter("use_imitative_planner_output").as_bool();
+  use_imitative_planner_output_ = true;
 
   if (odometry_timeout_sec_ <= 0. || path_timeout_sec_ <= 0.)
   {
@@ -199,7 +200,7 @@ void ControlLQRNode::publishSteerAccelDiagnostics(
   lqr_tracking_idx_msg.data = lqr_tracking_idx;
   lqr_tracking_idx_pub_->publish(lqr_tracking_idx_msg);
 
-  lqr_track_point.header.frame_id = "odom";
+  lqr_track_point.header.frame_id = "base_link";
   lqr_tracking_point_pub_->publish(lqr_track_point);
   auto error_cog_array_msg =
       joint_lqr::utils::ROSError(lqr_err_cog); // Float32MultiArray
@@ -221,6 +222,7 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve()
 {
   if (!use_imitative_planner_output_)
   {
+    std::cout << "wrong" << std::endl;
     auto now = this->now();
     nif::common::NodeStatusCode node_status = common::NODE_ERROR;
 
@@ -428,6 +430,7 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve()
   }
   else // use_imitative_planner_output_
   {
+
     auto now = this->now();
     nif::common::NodeStatusCode node_status = common::NODE_ERROR;
 
@@ -453,6 +456,7 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve()
     // Perform Tracking if path is good
     if (valid_path && valid_odom)
     {
+      std::cout << "valid path true" << std::endl;
       // Check whether path is global/local
       bool is_local_path = true;
 
@@ -497,6 +501,9 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve()
       if (track_distance > pure_pursuit_max_max_dist_m_)
         track_distance = pure_pursuit_max_max_dist_m_;
 
+      // TODO: temporally just put the minimum look ahead dist
+      track_distance = pure_pursuit_min_dist_m_;
+
       // Track on the trajectory
       double target_distance = 0.0;
       bool target_reached_end = false;
@@ -515,6 +522,8 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve()
       double l_desired_velocity = 100.0;
       if (valid_wpt_distance && valid_target_position)
       {
+        std::cout << "valid waypoint true" << std::endl;
+
         valid_tracking_result = true;
         // Run LQR :)
         // Desired velocity check
@@ -539,14 +548,16 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve()
                                        steering_max_ddeg_dt_, period_double_s);
       }
       // Publish diagnostic message
+      std::cout << "lqr_tracking_idx_ : " << lqr_tracking_idx_ << std::endl;
       publishSteerAccelDiagnostics(valid_tracking_result, valid_path, valid_odom,
                                    valid_wpt_distance, valid_target_position,
                                    steering_angle_deg, desired_accel,
                                    track_distance, lqr_tracking_idx_,
-                                   this->getReferenceTrajectory()
-                                       ->trajectory_path.poses[lqr_tracking_idx_],
+                                   imitavive_planner_output_path.poses[lqr_tracking_idx_],
+                                  //  this->getReferenceTrajectory()->trajectory_path.poses[lqr_tracking_idx_],
                                    error_COG, error, l_desired_velocity);
     }
+    std::cout << "valid path false" << std::endl;
     if (!this->hasSystemStatus() ||
         (this->getSystemStatus().autonomy_status.lateral_autonomy_enabled ||
          this->getSystemStatus().autonomy_status.longitudinal_autonomy_enabled) &&
