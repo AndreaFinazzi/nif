@@ -29,6 +29,12 @@ data_files = [
 data_files.extend(
     [(d, [f]) for d, f in to_share(os.path.join(package_name,'ac_track_db'))]
 )
+data_files.extend(
+    [(d, [f]) for d, f in to_share(os.path.join(package_name,'ac_weight_files'))]
+)
+data_files.extend(
+    [(d, [f]) for d, f in to_share(os.path.join(package_name,'ac_trajectory_lib'))]
+)
 
 setup(
     name=package_name,

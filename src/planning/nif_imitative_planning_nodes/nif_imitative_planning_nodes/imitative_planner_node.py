@@ -51,6 +51,8 @@ def get_share_file(package_name, file_name):
 
 
 track_db_path = get_share_file("nif_imitative_planning_nodes", "nif_imitative_planning_nodes/ac_track_db")
+model_weight_db_path = get_share_file("nif_imitative_planning_nodes", "nif_imitative_planning_nodes/ac_weight_files")
+traj_lib_db_path = get_share_file("nif_imitative_planning_nodes", "nif_imitative_planning_nodes/ac_weight_files")
 
 
 class ImitativePlanningNode(Node):
@@ -439,7 +441,7 @@ class ImitativePlanningNode(Node):
         load model
         """
         # self.model_path = "/home/usrg-racing/nif/build/nif_imitative_planning_nodes/nif_imitative_planning_nodes/ac_weight_files/model-452.pt"
-        self.model_path = "/home/usrg-racing/nif/build/nif_imitative_planning_nodes/nif_imitative_planning_nodes/ac_weight_files/traj_based/weighted_mle_w_slim_model/model-490.pt"
+        self.model_path = model_weight_db_path + "/traj_based/weighted_mle_w_slim_model/model-490.pt"
         self.model = ImitativeModel(
             future_traj_shape=self.output_shape,
             num_pos_dim=self.num_pos_dim,
@@ -458,7 +460,7 @@ class ImitativePlanningNode(Node):
         load trajectory lib
         """
         if self.use_traj_lib == True:
-            self.trajectory_lib_path = "/home/usrg-racing/nif/build/nif_imitative_planning_nodes/nif_imitative_planning_nodes/ac_trajectory_lib/0413.npy"
+            self.trajectory_lib_path = traj_lib_db_path + "/0413.npy"
             self.arr = np.load(self.trajectory_lib_path)
             self.traj_lib = (
                 torch.from_numpy(
