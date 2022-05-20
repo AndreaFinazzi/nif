@@ -20,24 +20,21 @@ data_files = [
     ('share/' + package_name, ['package.xml']),
     (os.path.join('share', package_name, 'launch'), glob('launch/*.launch.py')),
 ]
+# data_files.extend(
+#     [(d, [f]) for d, f in to_share('oatomobile')]
+# )
+# data_files.extend(
+#     [(d, [f]) for d, f in to_share('core')]
+# )
 data_files.extend(
-    [(d, [f]) for d, f in to_share('oatomobile')]
-)
-data_files.extend(
-    [(d, [f]) for d, f in to_share('core')]
-)
-data_files.extend(
-    [(d, [f]) for d, f in to_share('ac_track_db')]
+    [(d, [f]) for d, f in to_share(os.path.join(package_name,'ac_track_db'))]
 )
 
 setup(
     name=package_name,
     version='0.0.0',
     packages=[package_name],
-    data_files=[
-        ('share/' + package_name, ['package.xml']),
-        (os.path.join('share', package_name, 'launch'), glob('launch/*.launch.py')),
-    ],
+    data_files=data_files,
     install_requires=['setuptools'],
     zip_safe=True,
     maintainer='cy',

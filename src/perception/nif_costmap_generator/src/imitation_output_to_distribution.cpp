@@ -100,11 +100,18 @@ void CostmapGeneratorV2::imitationOutputCallbackMarkerArray(const visualization_
       int mapped_x_ind = std::floor(mapped_x);
       int mapped_y_ind = std::floor(mapped_y);
 
-      pointBuf.first = mapped_x_ind;
-      pointBuf.second = mapped_y_ind;
-      grid_vec.push_back(pointBuf);
-      mu_vec.push_back(abs(marker.scale.x));
-      sig_vec.push_back(abs(marker.scale.y));
+      // pointBuf.first = mapped_x_ind;
+      // pointBuf.second = mapped_y_ind;
+
+      pointBuf.first = std::floor(marker.pose.position.x);
+      pointBuf.second = std::floor(marker.pose.position.y);
+
+      if(marker.pose.position.x > 1.0 ){
+        grid_vec.push_back(pointBuf);
+        mu_vec.push_back(abs(marker.scale.x));
+        sig_vec.push_back(abs(marker.scale.y));
+      }
+
     }
 
     // costmap_[IMITATION_DISTRIBUTION_LAYER_] = createGaussianWorld(
@@ -593,7 +600,7 @@ grid_map::Matrix CostmapGeneratorV2::createGaussianWorldV2(grid_map::GridMap *ma
     gaussian_tmp.y0 = point.second;
     gaussian_tmp.varX = inflation_x[cnt];
     gaussian_tmp.varY = inflation_y[cnt];
-    gaussian_tmp.s = 10 / inflation_x[cnt];
+    gaussian_tmp.s = 20 / inflation_x[cnt];
     g.push_back(gaussian_tmp);
     cnt++;
   }
