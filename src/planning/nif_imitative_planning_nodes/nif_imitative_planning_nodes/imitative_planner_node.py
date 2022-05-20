@@ -34,6 +34,8 @@ from rclpy.duration import Duration
 from rclpy.executors import MultiThreadedExecutor, SingleThreadedExecutor
 import visdom
 import dill
+from scipy.interpolate import CubicSpline
+
 
 home_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "."))
 sys.path.append(home_dir)
@@ -1110,6 +1112,25 @@ class ImitativePlanningNode(Node):
 
     def output_visualization(self, traj_cpu, prb_cpu_np):
         normed_prb = np.linalg.norm(prb_cpu_np)
+        
+    def get_quaternion_from_euler(self,roll, pitch, yaw):
+        """
+        Convert an Euler angle to a quaternion.
+        
+        Input
+            :param roll: The roll (rotation around x-axis) angle in radians.
+            :param pitch: The pitch (rotation around y-axis) angle in radians.
+            :param yaw: The yaw (rotation around z-axis) angle in radians.
+        
+        Output
+            :return qx, qy, qz, qw: The orientation in quaternion [x,y,z,w] format
+        """
+        qx = np.sin(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) - np.cos(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
+        qy = np.cos(roll/2) * np.sin(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.cos(pitch/2) * np.sin(yaw/2)
+        qz = np.cos(roll/2) * np.cos(pitch/2) * np.sin(yaw/2) - np.sin(roll/2) * np.sin(pitch/2) * np.cos(yaw/2)
+        qw = np.cos(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
+        
+        return [qx, qy, qz, qw]
 
     def ego_veh_status_callback(self, msg):
 
@@ -1329,15 +1350,8 @@ class ImitativePlanningNode(Node):
                 )
 
                 sample_cpu = samples.detach().cpu().numpy().astype(np.float64)
-
-                # print("mu type : ", type(mu_t))
-                # print("sig type : ", type(sig_t))
-                # print("mu type[0] : ", type(mu_t[0]))
-                # print("sig type[0] : ", type(sig_t[0]))
-                # print("mu type[0][0] : ", type(mu_t[0][0]))
-                # print("sig type[0][0] : ", type(sig_t[0][0]))
-
-                sample_cpu = samples.detach().cpu().numpy().astype(np.float64)
+                
+                cs = CubicSpline(sample_cpu[0][:][0], sample_cpu[0][:][1])
 
                 # Publish result
                 vis_flg = True
@@ -1364,6 +1378,7 @@ class ImitativePlanningNode(Node):
 
                             # print(mu_t[i][j].detach().cpu().numpy().astype(np.float64))
                             # print(sig_t[i][j].detach().cpu().numpy().astype(np.float64))
+                            
                             # Gaussian sigma x
                             pt_marker.scale.x = (
                                 sig_t[j][i].detach().cpu().numpy().astype(np.float64)[0]
@@ -1382,6 +1397,14 @@ class ImitativePlanningNode(Node):
                                 pt.header.frame_id = "base_link"
                                 pt.pose.position.x = sample_cpu[i][j][0]
                                 pt.pose.position.y = sample_cpu[i][j][1]
+                                euler_rad = np.arctan2(cs(pt.pose.position.x,1))
+                                quat = self.get_quaternion_from_euler(0.0,0.0,euler_rad)
+
+                                pt.pose.orientation.x = quat[0]
+                                pt.pose.orientation.y = quat[1]
+                                pt.pose.orientation.z = quat[2]
+                                pt.pose.orientation.w = quat[3]
+                                
                                 vis_path.poses.append(pt)
 
                     self.samples_pub.publish(samples_marker_array)
