@@ -108,7 +108,6 @@ class ACClientNode(rclpy.node.Node):
 
         self.ego_odom = Odometry()
         self.ego_odom.header.frame_id = R_FRAME_ODOM
-        self.ego_odom.child_frame_id = R_FRAME_BODY
 
         self.pt_report = PtReport()
         self.pt_report.engine_on_status = True
@@ -149,7 +148,7 @@ class ACClientNode(rclpy.node.Node):
     def marker_init(self):
 
         ego_marker = Marker()
-        ego_marker.header.frame_id = "base_link"
+        ego_marker.header.frame_id = R_FRAME_ODOM
         ego_marker.id = 0
         ego_marker.type = 10
         ego_marker.mesh_resource = "package://il15_description/visual/il15.dae"
@@ -205,50 +204,50 @@ class ACClientNode(rclpy.node.Node):
         car_count.data = state['carsCount']
         self.pub_car_count.publish(car_count)
         
-        self.update_ego_ground_truth(state)
+        # self.update_ego_ground_truth(state)
         self.update_oppo_markers(state)
 
 
-    def update_ego_ground_truth(self, state: dict):
-        pose_robotics = self.state_to_pose(state, 0)
-        self.ego_odom.pose.pose.position.x = pose_robotics[0]
-        self.ego_odom.pose.pose.position.y = pose_robotics[1]
-        self.ego_odom.pose.pose.position.z = pose_robotics[2]
-        self.ego_odom.pose.pose.orientation.x = pose_robotics[3] # q.x
-        self.ego_odom.pose.pose.orientation.y = pose_robotics[4] # q.y
-        self.ego_odom.pose.pose.orientation.z = pose_robotics[5] # q.z
-        self.ego_odom.pose.pose.orientation.w = pose_robotics[6] # q.w
+    # def update_ego_ground_truth(self, state: dict):
+        # pose_robotics = self.state_to_pose(state, 0)
+        # self.ego_odom.pose.pose.position.x = pose_robotics[0]
+        # self.ego_odom.pose.pose.position.y = pose_robotics[1]
+        # self.ego_odom.pose.pose.position.z = pose_robotics[2]
+        # self.ego_odom.pose.pose.orientation.x = pose_robotics[3] # q.x
+        # self.ego_odom.pose.pose.orientation.y = pose_robotics[4] # q.y
+        # self.ego_odom.pose.pose.orientation.z = pose_robotics[5] # q.z
+        # self.ego_odom.pose.pose.orientation.w = pose_robotics[6] # q.w
         
-        self.ego_odom.twist.twist.linear.x = state['csLinearSpeedMPS'][0]
-        vel_kph = self.ego_odom.twist.twist.linear.x * 3.6
+        # self.ego_odom.twist.twist.linear.x = state['csLinearSpeedMPS'][0]
+        # vel_kph = self.ego_odom.twist.twist.linear.x * 3.6
 
-        self.ego_odom.header.stamp = self.now.to_msg()
+        # self.ego_odom.header.stamp = self.now.to_msg()
 
-        self.pub_odom_ground_truth.publish(self.ego_odom)
-        self.tf_broadcast(self.ego_odom)
+        # self.pub_odom_ground_truth.publish(self.ego_odom)
+        # self.tf_broadcast(self.ego_odom)
         # self.tf_broadcast_roll_bias(self.ego_odom,yaw)
 
-        ### PT REPORT ###
-        self.pt_report.stamp = self.now.to_msg()
-        self.pt_report.engine_rpm = state['csRPM'][0]
-        self.pt_report.current_gear = state['csControlGear'][0] - 1
-        self.pt_report.vehicle_speed_kmph = vel_kph
+        # ### PT REPORT ###
+        # self.pt_report.stamp = self.now.to_msg()
+        # self.pt_report.engine_rpm = state['csRPM'][0]
+        # self.pt_report.current_gear = state['csControlGear'][0] - 1
+        # self.pt_report.vehicle_speed_kmph = vel_kph
         
-        self.pub_pt_report.publish(self.pt_report)
+        # self.pub_pt_report.publish(self.pt_report)
 
-        ### WHEEL SPEED REPORT ### 
-        wheel_speed_msg = WheelSpeedReport()
-        wheel_speed_msg.header = self.ego_odom.header
-        wheel_speed_msg.front_left = vel_kph
-        wheel_speed_msg.front_right = vel_kph
-        wheel_speed_msg.rear_left = vel_kph
-        wheel_speed_msg.rear_right = vel_kph
+        # ### WHEEL SPEED REPORT ### 
+        # wheel_speed_msg = WheelSpeedReport()
+        # wheel_speed_msg.header = self.ego_odom.header
+        # wheel_speed_msg.front_left = vel_kph
+        # wheel_speed_msg.front_right = vel_kph
+        # wheel_speed_msg.rear_left = vel_kph
+        # wheel_speed_msg.rear_right = vel_kph
 
-        self.pub_wheel_speed.publish(wheel_speed_msg)
+        # self.pub_wheel_speed.publish(wheel_speed_msg)
 
-        ### DUMMY MSGS ###
-        self.pub_dummy_raptor_diag.publish(DiagnosticReport())
-        self.pub_dummy_localization_status.publish(LocalizationStatus())
+        # ### DUMMY MSGS ###
+        # self.pub_dummy_raptor_diag.publish(DiagnosticReport())
+        # self.pub_dummy_localization_status.publish(LocalizationStatus())
         
     def update_oppo_markers(self, state):
         marker_array = MarkerArray()
@@ -362,16 +361,55 @@ class ACClientNode(rclpy.node.Node):
             if cid == 0:
                 # Assign the position of the ego vehicle to the marker
                 self.ego_marker.pose = car_status.odometry.pose
+                self.ego_marker.color.r = 0.4
+                self.ego_marker.color.g = 0.65
+                self.ego_marker.color.b = 0.729
                 self.pubs_car_marker[cid].publish(self.ego_marker)
+
+                self.ego_odom.pose.pose = self.ego_marker.pose
+                
+                self.ego_odom.twist.twist.linear.x = state['csLinearSpeedMPS'][0]
+                vel_kph = self.ego_odom.twist.twist.linear.x * 3.6
+
+                self.ego_odom.header.stamp = self.now.to_msg()
+
+                self.pub_odom_ground_truth.publish(self.ego_odom)
+                self.tf_broadcast(self.ego_odom)
+
+                ### PT REPORT ###
+                self.pt_report.stamp = self.now.to_msg()
+                self.pt_report.engine_rpm = state['csRPM'][0]
+                self.pt_report.current_gear = state['csControlGear'][0] - 1
+                self.pt_report.vehicle_speed_kmph = vel_kph
+                
+                self.pub_pt_report.publish(self.pt_report)
+
+                ### WHEEL SPEED REPORT ### 
+                wheel_speed_msg = WheelSpeedReport()
+                wheel_speed_msg.header = self.ego_odom.header
+                wheel_speed_msg.front_left = vel_kph
+                wheel_speed_msg.front_right = vel_kph
+                wheel_speed_msg.rear_left = vel_kph
+                wheel_speed_msg.rear_right = vel_kph
+
+                self.pub_wheel_speed.publish(wheel_speed_msg)
+
+                ### DUMMY MSGS ###
+                self.pub_dummy_raptor_diag.publish(DiagnosticReport())
+                self.pub_dummy_localization_status.publish(LocalizationStatus())
             else:
                 # Assign the position of the ego vehicle to the marker
                 self.oppo_marker.pose = car_status.odometry.pose
+                self.oppo_marker.color.r = 0.4
+                self.oppo_marker.color.g = 0.0
+                self.oppo_marker.color.b = 0.0
                 self.pubs_car_marker[cid].publish(self.oppo_marker)
 
     def tf_broadcast(self, msg):
         tfs = TransformStamped()
-        tfs.header = msg.header
-        tfs.child_frame_id = msg.child_frame_id
+        tfs.header.stamp = self.now.to_msg()
+        tfs.header.frame_id = "odom"
+        tfs.child_frame_id = "base_link"
         tfs.transform.translation.x = msg.pose.pose.position.x
         tfs.transform.translation.y = msg.pose.pose.position.y
         tfs.transform.translation.z = msg.pose.pose.position.z
@@ -385,7 +423,7 @@ class ACClientNode(rclpy.node.Node):
         q = Quaternion.from_euler(180.0, 0.0, ego_yaw * 57.2958, degrees=True)
 
         tfs = TransformStamped()
-        tfs.header = msg.header
+        tfs.header.stamp = self.now.to_msg()
         tfs.child_frame_id = msg.child_frame_id
         tfs.transform.translation.x = msg.pose.pose.position.x
         tfs.transform.translation.y = msg.pose.pose.position.y
