@@ -34,7 +34,7 @@ from rclpy.duration import Duration
 from rclpy.executors import MultiThreadedExecutor, SingleThreadedExecutor
 # import visdom
 import dill
-from scipy.interpolate import CubicSpline
+from scipy.interpolate import interp1d
 
 
 home_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "."))
@@ -67,7 +67,7 @@ class ImitativePlanningNode(Node):
         self.verbose = True
         self.dt = 0.01  # [sec]
         self.use_traj_lib = False
-        self.num_samples = 3
+        self.num_samples = 1
         self.vis_density_function = False
         self.cnt = 0
         """
@@ -1390,16 +1390,6 @@ class ImitativePlanningNode(Node):
             else:
                 tic = self.get_clock().now()
 
-                # z = self.model._params(
-                #     player_past=batch["player_past"],
-                #     left_bound=batch["left_bound"],
-                #     right_bound=batch["right_bound"],
-                #     race_line=batch["race_line"],
-                #     oppo1_body=batch["oppo1_body"],
-                #     oppo2_body=batch["oppo2_body"],
-                #     oppo3_body=batch["oppo3_body"],
-                # ).repeat((self.num_samples, 1))
-
                 z = self.model._params(
                     ego_past=batch["player_past"],
                     raceline=batch["race_line"],
@@ -1411,77 +1401,63 @@ class ImitativePlanningNode(Node):
 
                 toc = self.get_clock().now()
 
-                # print("infer time : ", toc - tic)
+                print("stage 1 : ", toc - tic)
 
-                samples = self.model._decoder(z).reshape(
-                    self.num_samples, self.output_shape[0], self.output_shape[1]
-                )
+                tic = self.get_clock().now()
 
-                _, log_prob, logabsdet, mu_t, sig_t = self.model._decoder._inverse(
-                    y=samples, z=z, return_rollouts=True
-                )
+                # Queries model.
+                plan = self.model(num_steps=3,
+                       epsilon=1.0,
+                       lr=1e-2,
+                       observation = z).detach().cpu().numpy()[0]  # [T, 2]
 
-                sample_cpu = samples.detach().cpu().numpy().astype(np.float64)
+                toc = self.get_clock().now()
 
-                # cs = CubicSpline(sample_cpu[0][::10][0], sample_cpu[0][::10][1])
+                print("stage 2 : ", toc - tic)
+
+                tic = self.get_clock().now()
+
+                player_future_length = 50
+                increments = player_future_length // plan.shape[0]
+                time_index = list(range(0, player_future_length, increments))  # [T]
+                plan_interp = interp1d(x=time_index, y=plan, axis=0)
+                xyz = plan_interp(np.arange(0, time_index[-1]))
+                # z = np.zeros(shape=(xy.shape[0], 1))
+                sample_cpu = xyz
+
+                toc = self.get_clock().now()
+
+                print("stage 3 : ", toc - tic)
+
+
+
+                # print("type : ", type(xy))
+                # print("xy : ", xy)
+                # print("-----")
+                # return
 
                 # Publish result
                 vis_flg = True
                 if vis_flg:
-                    samples_marker_array = MarkerArray()
 
                     vis_path = Path()
                     vis_path.header.frame_id = "base_link"
 
-                    # print(sample_cpu.shape[0], sample_cpu.shape[1])
-                    # print(len(mu_t), len(sig_t))
-                    # print(mu_t[0].shape, sig_t[0].shape)
-                    # print(mu_t[0][0].shape, sig_t[0][0].shape)
-
                     for i in range(sample_cpu.shape[0]):
-                        for j in range(sample_cpu.shape[1]):
-                            pt_marker = Marker()
-                            pt_marker.lifetime = Duration(
-                                seconds=1, nanoseconds=0
-                            ).to_msg()
-                            pt_marker.header.frame_id = "base_link"
-                            pt_marker.pose.position.x = sample_cpu[i][j][0]
-                            pt_marker.pose.position.y = sample_cpu[i][j][1]
+                        pt = PoseStamped()
+                        pt.header.frame_id = "base_link"
+                        pt.pose.position.x = sample_cpu[i][0]
+                        pt.pose.position.y = sample_cpu[i][1]
+                        # euler_rad = np.arctan2(cs(pt.pose.position.x,1))
+                        # quat = self.get_quaternion_from_euler(0.0,0.0,euler_rad)
 
-                            # print(mu_t[i][j].detach().cpu().numpy().astype(np.float64))
-                            # print(sig_t[i][j].detach().cpu().numpy().astype(np.float64))
+                        # pt.pose.orientation.x = quat[0]
+                        # pt.pose.orientation.y = quat[1]
+                        # pt.pose.orientation.z = quat[2]
+                        # pt.pose.orientation.w = quat[3]
 
-                            # Gaussian sigma x
-                            pt_marker.scale.x = (
-                                sig_t[j][i].detach().cpu().numpy().astype(
-                                    np.float64)[0]
-                                * 100
-                            )
-                            # Gaussian sigma y
-                            pt_marker.scale.y = (
-                                sig_t[j][i].detach().cpu().numpy().astype(
-                                    np.float64)[1]
-                                * 800
-                            )
+                        vis_path.poses.append(pt)
 
-                            samples_marker_array.markers.append(pt_marker)
-
-                            if i == 0:
-                                pt = PoseStamped()
-                                pt.header.frame_id = "base_link"
-                                pt.pose.position.x = sample_cpu[i][j][0]
-                                pt.pose.position.y = sample_cpu[i][j][1]
-                                # euler_rad = np.arctan2(cs(pt.pose.position.x,1))
-                                # quat = self.get_quaternion_from_euler(0.0,0.0,euler_rad)
-
-                                # pt.pose.orientation.x = quat[0]
-                                # pt.pose.orientation.y = quat[1]
-                                # pt.pose.orientation.z = quat[2]
-                                # pt.pose.orientation.w = quat[3]
-
-                                vis_path.poses.append(pt)
-
-                    self.samples_pub.publish(samples_marker_array)
                     self.path_pub.publish(vis_path)
 
         else:

@@ -695,6 +695,7 @@ class ImitativeModel_slim(nn.Module):
         lr: float = 1e-1,
         epsilon: float = 1.0,
         return_scores=False,
+        observation: torch.Tensor = None,
         **context: torch.Tensor,
     ) -> Union[torch.Tensor, Sequence[torch.Tensor]]:
         """Returns a local mode from the posterior.
@@ -709,7 +710,7 @@ class ImitativeModel_slim(nn.Module):
         Returns:
           A mode from the posterior, with shape `[D, 2]`.
         """
-        batch_size = context["player_future"].shape[0]
+        batch_size = 1
 
         # Sets initial sample to base distribution's mean.
         x = (
@@ -721,7 +722,9 @@ class ImitativeModel_slim(nn.Module):
         )
         x.requires_grad = True
         # The contextual parameters, caches for efficiency.
-        z = self._params(**context)
+        # z = self._params(**context)
+        # z = self._params(**context)
+        # z = observation
 
         # Initialises a gradient-based optimiser.
         optimizer = optim.Adam(params=[x], lr=lr)
@@ -734,9 +737,9 @@ class ImitativeModel_slim(nn.Module):
             # Resets optimizer's gradients.
             optimizer.zero_grad()
             # Operate on `y`-space.
-            y, _ = self._decoder._forward(x=x, z=z)
+            y, _ = self._decoder._forward(x=x, z=observation)
             # Calculates imitation prior.
-            _, log_prob, logabsdet = self._decoder._inverse(y=y, z=z)
+            _, log_prob, logabsdet = self._decoder._inverse(y=y, z=observation)
             imitation_prior = torch.mean(log_prob - logabsdet)  # pylint: disable=no-member q(x|phi)
             # Calculates goal likelihodd.
             goal_likelihood = 0.0
@@ -752,7 +755,7 @@ class ImitativeModel_slim(nn.Module):
             if loss < loss_best:
                 x_best = x.clone()
                 loss_best = loss.clone()
-        y, _ = self._decoder._forward(x=x_best, z=z)
+        y, _ = self._decoder._forward(x=x_best, z=observation)
         if return_scores:
             return y, loss_best
         return y
