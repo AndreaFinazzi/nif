@@ -7,7 +7,6 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE."""
 
 
-from oatomobile.baselines.torch.dim.model_ac_traj import ImitativeModel, ImitativeModel_slim
 from ament_index_python import get_package_share_directory
 import math
 import time
@@ -44,6 +43,7 @@ home_dir = os.path.abspath(os.path.join(
     os.path.dirname(__file__), "..", "ac_track_db"))
 sys.path.append(home_dir)
 
+from oatomobile.baselines.torch.dim.model_ac_traj import ImitativeModel, ImitativeModel_slim
 
 # from oatomobile.baselines.torch.dim.model_ac import ImitativeModel
 
@@ -1095,12 +1095,12 @@ class ImitativePlanningNode(Node):
                         oppo_global_pose.position.y,
                         0.0,
                     )
-                if np.sqrt(body_x * body_x + body_y * body_y) > 200:
-                    body_x = 0
-                    body_y = 0
-                self.opponent_2_past_traj_body_buffer.append(
-                    [body_x, body_y, 0])
-            cnt += 1
+                    if np.sqrt(body_x * body_x + body_y * body_y) > 200:
+                        body_x = 0
+                        body_y = 0
+                    self.opponent_2_past_traj_body_buffer.append(
+                        [body_x, body_y, 0])
+                cnt += 1
 
     def opponent_3_callback(self, msg):
         self.oppo_3_marker.pose = msg.odometry.pose
@@ -1316,6 +1316,17 @@ class ImitativePlanningNode(Node):
                 .to(self.device)
             )
 
+            # print(player_past.shape)
+            # print(np.array(self.boundary_left_body).shape)
+            # print(np.array(self.boundary_right_body).shape)
+            # print(np.array(self.raceline_body).shape)
+            # print(np.array(self.opponent_1_past_traj_body_buffer).shape)
+            # print(np.array(self.opponent_2_past_traj_body_buffer).shape)
+            # print(np.array(self.opponent_3_past_traj_body_buffer).shape)
+            # print("----------")
+
+
+
             toc = self.get_clock().now()
 
             # print("preparation time : ", toc - tic)
@@ -1326,14 +1337,23 @@ class ImitativePlanningNode(Node):
                 #     player_past=batch["player_past"],
                 # ).repeat((self.arr.shape[0], 1))
 
+                # z = self.model._params(
+                #     player_past=batch["player_past"],
+                #     left_bound=batch["left_bound"],
+                #     right_bound=batch["right_bound"],
+                #     race_line=batch["race_line"],
+                #     oppo1_body=batch["oppo1_body"],
+                #     oppo2_body=batch["oppo2_body"],
+                #     oppo3_body=batch["oppo3_body"],
+                # ).repeat((self.arr.shape[0], 1))
+
                 z = self.model._params(
-                    player_past=batch["player_past"],
-                    left_bound=batch["left_bound"],
-                    right_bound=batch["right_bound"],
-                    race_line=batch["race_line"],
-                    oppo1_body=batch["oppo1_body"],
-                    oppo2_body=batch["oppo2_body"],
-                    oppo3_body=batch["oppo3_body"],
+                    ego_past=batch["player_past"],
+                    raceline=batch["race_line"],
+                    environmental=torch.stack([batch["left_bound"], batch["right_bound"]], dim=1),
+                    oppo=torch.stack(
+                        [batch["oppo1_body"], batch["oppo2_body"], batch["oppo3_body"]], dim=1
+                    ),
                 ).repeat((self.arr.shape[0], 1))
 
                 traj, prb = self.model.trajectory_library_plan(
@@ -1360,14 +1380,23 @@ class ImitativePlanningNode(Node):
             else:
                 tic = self.get_clock().now()
 
+                # z = self.model._params(
+                #     player_past=batch["player_past"],
+                #     left_bound=batch["left_bound"],
+                #     right_bound=batch["right_bound"],
+                #     race_line=batch["race_line"],
+                #     oppo1_body=batch["oppo1_body"],
+                #     oppo2_body=batch["oppo2_body"],
+                #     oppo3_body=batch["oppo3_body"],
+                # ).repeat((self.num_samples, 1))
+
                 z = self.model._params(
-                    player_past=batch["player_past"],
-                    left_bound=batch["left_bound"],
-                    right_bound=batch["right_bound"],
-                    race_line=batch["race_line"],
-                    oppo1_body=batch["oppo1_body"],
-                    oppo2_body=batch["oppo2_body"],
-                    oppo3_body=batch["oppo3_body"],
+                    ego_past=batch["player_past"],
+                    raceline=batch["race_line"],
+                    environmental=torch.stack([batch["left_bound"], batch["right_bound"]], dim=1),
+                    oppo=torch.stack(
+                        [batch["oppo1_body"], batch["oppo2_body"], batch["oppo3_body"]], dim=1
+                    ),
                 ).repeat((self.num_samples, 1))
 
                 toc = self.get_clock().now()
