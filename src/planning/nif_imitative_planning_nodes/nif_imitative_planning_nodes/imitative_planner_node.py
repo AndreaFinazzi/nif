@@ -7,6 +7,7 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE."""
 
 
+from oatomobile.baselines.torch.dim.model_ac_traj import ImitativeModel, ImitativeModel_slim
 from ament_index_python import get_package_share_directory
 import math
 import time
@@ -39,10 +40,9 @@ from scipy.interpolate import CubicSpline
 
 home_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "."))
 sys.path.append(home_dir)
-home_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "ac_track_db"))
+home_dir = os.path.abspath(os.path.join(
+    os.path.dirname(__file__), "..", "ac_track_db"))
 sys.path.append(home_dir)
-
-from oatomobile.baselines.torch.dim.model_ac_traj import ImitativeModel
 
 
 # from oatomobile.baselines.torch.dim.model_ac import ImitativeModel
@@ -52,9 +52,12 @@ def get_share_file(package_name, file_name):
     return os.path.join(get_package_share_directory(package_name), file_name)
 
 
-track_db_path = get_share_file("nif_imitative_planning_nodes", "nif_imitative_planning_nodes/ac_track_db")
-model_weight_db_path = get_share_file("nif_imitative_planning_nodes", "nif_imitative_planning_nodes/ac_weight_files")
-traj_lib_db_path = get_share_file("nif_imitative_planning_nodes", "nif_imitative_planning_nodes/ac_weight_files")
+track_db_path = get_share_file(
+    "nif_imitative_planning_nodes", "nif_imitative_planning_nodes/ac_track_db")
+model_weight_db_path = get_share_file(
+    "nif_imitative_planning_nodes", "nif_imitative_planning_nodes/ac_weight_files")
+traj_lib_db_path = get_share_file(
+    "nif_imitative_planning_nodes", "nif_imitative_planning_nodes/ac_weight_files")
 
 
 class ImitativePlanningNode(Node):
@@ -95,16 +98,20 @@ class ImitativePlanningNode(Node):
         )
 
         self.pub_ego_marker = self.create_publisher(
-            Marker, "/ac/car_marker_" + str(0), rclpy.qos.qos_profile_sensor_data
+            Marker, "/ac/car_marker_" +
+            str(0), rclpy.qos.qos_profile_sensor_data
         )
         self.pub_oppo_1_marker = self.create_publisher(
-            Marker, "/ac/car_marker_" + str(1), rclpy.qos.qos_profile_sensor_data
+            Marker, "/ac/car_marker_" +
+            str(1), rclpy.qos.qos_profile_sensor_data
         )
         self.pub_oppo_2_marker = self.create_publisher(
-            Marker, "/ac/car_marker_" + str(2), rclpy.qos.qos_profile_sensor_data
+            Marker, "/ac/car_marker_" +
+            str(2), rclpy.qos.qos_profile_sensor_data
         )
         self.pub_oppo_3_marker = self.create_publisher(
-            Marker, "/ac/car_marker_" + str(3), rclpy.qos.qos_profile_sensor_data
+            Marker, "/ac/car_marker_" +
+            str(3), rclpy.qos.qos_profile_sensor_data
         )
 
         """
@@ -159,7 +166,8 @@ class ImitativePlanningNode(Node):
         self.ego_marker.pose.orientation.y = 0.0
         self.ego_marker.pose.orientation.z = 0.0
         self.ego_marker.pose.orientation.w = 1.0
-        self.ego_marker.lifetime = Duration(seconds=1, nanoseconds=20000000).to_msg()
+        self.ego_marker.lifetime = Duration(
+            seconds=1, nanoseconds=20000000).to_msg()
         self.ego_marker.scale.x = 1.0
         self.ego_marker.scale.y = 1.0
         self.ego_marker.scale.z = 1.0
@@ -303,7 +311,8 @@ class ImitativePlanningNode(Node):
             pt.pose.position.y = self.track_bound_l_global[i][1]
             pt.pose.position.z = 0.0
             self.track_bound_l_path_global.poses.append(pt)
-        self.track_bound_l_path_global_len = len(self.track_bound_l_path_global.poses)
+        self.track_bound_l_path_global_len = len(
+            self.track_bound_l_path_global.poses)
 
         self.track_bound_r_path_global.header.frame_id = "odom"
         for i in range(self.track_bound_l_global.shape[0]):
@@ -313,7 +322,8 @@ class ImitativePlanningNode(Node):
             pt.pose.position.y = self.track_bound_r_global[i][1]
             pt.pose.position.z = 0.0
             self.track_bound_r_path_global.poses.append(pt)
-        self.track_bound_r_path_global_len = len(self.track_bound_r_path_global.poses)
+        self.track_bound_r_path_global_len = len(
+            self.track_bound_r_path_global.poses)
 
         self.race_line_path_global.header.frame_id = "odom"
         for i in range(self.raceline_global.shape[0]):
@@ -328,7 +338,8 @@ class ImitativePlanningNode(Node):
         """
         inference configuration
         """
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device(
+            "cuda" if torch.cuda.is_available() else "cpu")
         if self.verbose:
             print("Device : ", self.device)
 
@@ -336,9 +347,11 @@ class ImitativePlanningNode(Node):
         self.ego_planning_traj_time = 1.0
         self.oppo_keep_past_traj_time = 1.0
 
-        self.ego_past_buffer_length = int(self.ego_keep_past_traj_time / self.dt)
+        self.ego_past_buffer_length = int(
+            self.ego_keep_past_traj_time / self.dt)
         self.ego_planning_length = int(self.ego_planning_traj_time / self.dt)
-        self.oppo_past_buffer_length = int(self.oppo_keep_past_traj_time / self.dt)
+        self.oppo_past_buffer_length = int(
+            self.oppo_keep_past_traj_time / self.dt)
 
         self.UNIT_GRID_DIST = 0.5
         self.num_pos_dim = 3
@@ -395,12 +408,14 @@ class ImitativePlanningNode(Node):
         self.sliced_track_bound_l_body = Path()
         self.sliced_track_bound_l_body.header.frame_id = "base_link"
         self.sliced_track_bound_l_body.header.stamp = self.get_clock().now().to_msg()
-        self.sliced_track_bound_l_body.poses = [ps_body] * self.slice_length_full
+        self.sliced_track_bound_l_body.poses = [
+            ps_body] * self.slice_length_full
 
         self.sliced_track_bound_r_body = Path()
         self.sliced_track_bound_r_body.header.frame_id = "base_link"
         self.sliced_track_bound_r_body.header.stamp = self.get_clock().now().to_msg()
-        self.sliced_track_bound_r_body.poses = [ps_body] * self.slice_length_full
+        self.sliced_track_bound_r_body.poses = [
+            ps_body] * self.slice_length_full
 
         self.sliced_race_line_body = Path()
         self.sliced_race_line_body.header.frame_id = "base_link"
@@ -441,8 +456,15 @@ class ImitativePlanningNode(Node):
         load model
         """
         # self.model_path = "/home/usrg-racing/nif/build/nif_imitative_planning_nodes/nif_imitative_planning_nodes/ac_weight_files/model-452.pt"
-        self.model_path = model_weight_db_path + "/traj_based/weighted_mle_w_slim_model/model-490.pt"
-        self.model = ImitativeModel(
+        self.model_path = model_weight_db_path + \
+            "/traj_based/slim_w_mobilenetV3/model-490.pt"
+        # self.model = ImitativeModel(
+        #     future_traj_shape=self.output_shape,
+        #     num_pos_dim=self.num_pos_dim,
+        #     past_traj_shape=self.input_shape,
+        # ).to(self.device)
+
+        self.model = ImitativeModel_slim(
             future_traj_shape=self.output_shape,
             num_pos_dim=self.num_pos_dim,
             past_traj_shape=self.input_shape,
@@ -466,7 +488,8 @@ class ImitativePlanningNode(Node):
                 torch.from_numpy(
                     np.reshape(
                         self.arr,
-                        (self.arr.shape[0], self.output_shape[0], self.output_shape[1]),
+                        (self.arr.shape[0], self.output_shape[0],
+                         self.output_shape[1]),
                     )
                 )
                 .type(torch.FloatTensor)
@@ -475,7 +498,8 @@ class ImitativePlanningNode(Node):
 
             self.trajs_candidates = np.reshape(
                 self.arr,
-                (self.arr.shape[0], self.output_shape[0], self.output_shape[1]),
+                (self.arr.shape[0], self.output_shape[0],
+                 self.output_shape[1]),
             )
 
     def goal_pt_to_body(
@@ -657,35 +681,35 @@ class ImitativePlanningNode(Node):
         """
         if self.track_bound_l_idx < (self.slice_length_full / 2):
             self.sliced_track_bound_l.poses[
-                0 : int(self.slice_length_full / 2 - self.track_bound_l_idx)
+                0: int(self.slice_length_full / 2 - self.track_bound_l_idx)
             ] = self.track_bound_l_path_global.poses[
-                int(-(self.slice_length_full / 2 - self.track_bound_l_idx)) :
+                int(-(self.slice_length_full / 2 - self.track_bound_l_idx)):
             ]
             self.sliced_track_bound_l.poses[
-                int(self.slice_length_full / 2 - self.track_bound_l_idx) :
+                int(self.slice_length_full / 2 - self.track_bound_l_idx):
             ] = self.track_bound_l_path_global.poses[
-                0 : int(self.track_bound_l_idx + (self.slice_length_full / 2))
+                0: int(self.track_bound_l_idx + (self.slice_length_full / 2))
             ]
         elif self.track_bound_l_idx > self.track_bound_l_path_global_len - (
             self.slice_length_full / 2
         ):
             self.sliced_track_bound_l.poses[
-                0 : int(
+                0: int(
                     self.track_bound_l_path_global_len
                     - self.track_bound_l_idx
                     + self.slice_length_full / 2
                 )
             ] = self.track_bound_l_path_global.poses[
-                int(self.track_bound_l_idx - (self.slice_length_full / 2)) :
+                int(self.track_bound_l_idx - (self.slice_length_full / 2)):
             ]
             self.sliced_track_bound_l.poses[
                 int(
                     self.track_bound_l_path_global_len
                     - self.track_bound_l_idx
                     + self.slice_length_full / 2
-                ) :
+                ):
             ] = self.track_bound_l_path_global.poses[
-                0 : int(
+                0: int(
                     self.track_bound_l_idx
                     + (self.slice_length_full / 2)
                     - self.track_bound_l_path_global_len
@@ -694,42 +718,42 @@ class ImitativePlanningNode(Node):
             ]
         else:
             self.sliced_track_bound_l.poses = self.track_bound_l_path_global.poses[
-                int(self.track_bound_l_idx - (self.slice_length_full / 2)) : int(
+                int(self.track_bound_l_idx - (self.slice_length_full / 2)): int(
                     self.track_bound_l_idx + (self.slice_length_full / 2)
                 )
             ]
 
         if self.track_bound_r_idx < (self.slice_length_full / 2):
             self.sliced_track_bound_r.poses[
-                0 : int(self.slice_length_full / 2 - self.track_bound_r_idx)
+                0: int(self.slice_length_full / 2 - self.track_bound_r_idx)
             ] = self.track_bound_r_path_global.poses[
-                int(-(self.slice_length_full / 2 - self.track_bound_r_idx)) :
+                int(-(self.slice_length_full / 2 - self.track_bound_r_idx)):
             ]
             self.sliced_track_bound_r.poses[
-                int(self.slice_length_full / 2 - self.track_bound_r_idx) :
+                int(self.slice_length_full / 2 - self.track_bound_r_idx):
             ] = self.track_bound_r_path_global.poses[
-                0 : int(self.track_bound_r_idx + (self.slice_length_full / 2))
+                0: int(self.track_bound_r_idx + (self.slice_length_full / 2))
             ]
         elif self.track_bound_r_idx > self.track_bound_r_path_global_len - (
             self.slice_length_full / 2
         ):
             self.sliced_track_bound_r.poses[
-                0 : int(
+                0: int(
                     self.track_bound_r_path_global_len
                     - self.track_bound_r_idx
                     + self.slice_length_full / 2
                 )
             ] = self.track_bound_r_path_global.poses[
-                int(self.track_bound_r_idx - (self.slice_length_full / 2)) :
+                int(self.track_bound_r_idx - (self.slice_length_full / 2)):
             ]
             self.sliced_track_bound_r.poses[
                 int(
                     self.track_bound_r_path_global_len
                     - self.track_bound_r_idx
                     + self.slice_length_full / 2
-                ) :
+                ):
             ] = self.track_bound_r_path_global.poses[
-                0 : int(
+                0: int(
                     self.track_bound_r_idx
                     + (self.slice_length_full / 2)
                     - self.track_bound_r_path_global_len
@@ -738,42 +762,42 @@ class ImitativePlanningNode(Node):
             ]
         else:
             self.sliced_track_bound_r.poses = self.track_bound_r_path_global.poses[
-                int(self.track_bound_r_idx - (self.slice_length_full / 2)) : int(
+                int(self.track_bound_r_idx - (self.slice_length_full / 2)): int(
                     self.track_bound_r_idx + (self.slice_length_full / 2)
                 )
             ]
 
         if self.racenline_idx < (self.slice_length_full / 2):
             self.sliced_raceline.poses[
-                0 : int(self.slice_length_full / 2 - self.racenline_idx)
+                0: int(self.slice_length_full / 2 - self.racenline_idx)
             ] = self.race_line_path_global.poses[
-                int(-(self.slice_length_full / 2 - self.racenline_idx)) :
+                int(-(self.slice_length_full / 2 - self.racenline_idx)):
             ]
             self.sliced_raceline.poses[
-                int(self.slice_length_full / 2 - self.racenline_idx) :
+                int(self.slice_length_full / 2 - self.racenline_idx):
             ] = self.race_line_path_global.poses[
-                0 : int(self.racenline_idx + (self.slice_length_full / 2))
+                0: int(self.racenline_idx + (self.slice_length_full / 2))
             ]
         elif self.racenline_idx > self.race_line_path_global_len - (
             self.slice_length_full / 2
         ):
             self.sliced_raceline.poses[
-                0 : int(
+                0: int(
                     self.race_line_path_global_len
                     - self.racenline_idx
                     + self.slice_length_full / 2
                 )
             ] = self.race_line_path_global.poses[
-                int(self.racenline_idx - (self.slice_length_full / 2)) :
+                int(self.racenline_idx - (self.slice_length_full / 2)):
             ]
             self.sliced_raceline.poses[
                 int(
                     self.race_line_path_global_len
                     - self.racenline_idx
                     + self.slice_length_full / 2
-                ) :
+                ):
             ] = self.race_line_path_global.poses[
-                0 : int(
+                0: int(
                     self.racenline_idx
                     + (self.slice_length_full / 2)
                     - self.race_line_path_global_len
@@ -782,7 +806,7 @@ class ImitativePlanningNode(Node):
             ]
         else:
             self.sliced_raceline.poses = self.race_line_path_global.poses[
-                int(self.racenline_idx - (self.slice_length_full / 2)) : int(
+                int(self.racenline_idx - (self.slice_length_full / 2)): int(
                     self.racenline_idx + (self.slice_length_full / 2)
                 )
             ]
@@ -859,7 +883,8 @@ class ImitativePlanningNode(Node):
                 ] = self.OVERLAY_BOUNDARY_VALUE
 
         for global_pose_idx_race in range(
-            min(len(self.sliced_raceline.poses), len(self.sliced_race_line_body.poses))
+            min(len(self.sliced_raceline.poses), len(
+                self.sliced_race_line_body.poses))
         ):
             global_pose = self.sliced_raceline.poses[global_pose_idx_race]
             body_x, body_y, _ = self.goal_pt_to_body(
@@ -922,17 +947,17 @@ class ImitativePlanningNode(Node):
             self.track_bound_l_path_global.poses
         ):
             self.sliced_track_bound_l.poses[
-                self.track_bound_l_idx :
-            ] = self.track_bound_l_path_global.poses[self.track_bound_l_idx :]
+                self.track_bound_l_idx:
+            ] = self.track_bound_l_path_global.poses[self.track_bound_l_idx:]
             self.sliced_track_bound_l.poses[
-                0 : self.track_bound_l_idx
+                0: self.track_bound_l_idx
             ] = self.track_bound_l_path_global.poses[
                 : (self.track_bound_l_idx + self.NUM_BOUNDARY_PT)
                 - len(self.track_bound_l_path_global.poses)
             ]
         else:
             self.sliced_track_bound_l.poses = self.track_bound_l_path_global.poses[
-                self.track_bound_l_idx : self.track_bound_l_idx + self.NUM_BOUNDARY_PT
+                self.track_bound_l_idx: self.track_bound_l_idx + self.NUM_BOUNDARY_PT
             ]
 
         self.boundary_left_body.clear()
@@ -951,17 +976,17 @@ class ImitativePlanningNode(Node):
             self.track_bound_r_path_global.poses
         ):
             self.sliced_track_bound_r.poses[
-                self.track_bound_r_idx :
-            ] = self.track_bound_r_path_global.poses[self.track_bound_r_idx :]
+                self.track_bound_r_idx:
+            ] = self.track_bound_r_path_global.poses[self.track_bound_r_idx:]
             self.sliced_track_bound_r.poses[
-                0 : self.track_bound_r_idx
+                0: self.track_bound_r_idx
             ] = self.track_bound_r_path_global.poses[
                 : (self.track_bound_r_idx + self.NUM_BOUNDARY_PT)
                 - len(self.track_bound_r_path_global.poses)
             ]
         else:
             self.sliced_track_bound_r.poses = self.track_bound_r_path_global.poses[
-                self.track_bound_r_idx : self.track_bound_r_idx + self.NUM_BOUNDARY_PT
+                self.track_bound_r_idx: self.track_bound_r_idx + self.NUM_BOUNDARY_PT
             ]
 
         self.boundary_right_body.clear()
@@ -980,17 +1005,17 @@ class ImitativePlanningNode(Node):
             self.race_line_path_global.poses
         ):
             self.sliced_raceline.poses[
-                self.racenline_idx :
-            ] = self.race_line_path_global.poses[self.racenline_idx :]
+                self.racenline_idx:
+            ] = self.race_line_path_global.poses[self.racenline_idx:]
             self.sliced_raceline.poses[
-                0 : self.racenline_idx
+                0: self.racenline_idx
             ] = self.race_line_path_global.poses[
                 : (self.racenline_idx + self.NUM_RACELINE_PT)
                 - len(self.race_line_path_global.poses)
             ]
         else:
             self.sliced_raceline.poses = self.race_line_path_global.poses[
-                self.racenline_idx : self.racenline_idx + self.NUM_RACELINE_PT
+                self.racenline_idx: self.racenline_idx + self.NUM_RACELINE_PT
             ]
 
         self.raceline_body.clear()
@@ -1022,7 +1047,7 @@ class ImitativePlanningNode(Node):
 
         if len(self.opponent_1_odom_buffer) > self.NUM_OPPO_PAST_TRAJ_PT:
             self.opponent_1_odom_buffer = self.opponent_1_odom_buffer[
-                -self.NUM_OPPO_PAST_TRAJ_PT :
+                -self.NUM_OPPO_PAST_TRAJ_PT:
             ]
             self.opponent_1_past_traj_body_buffer.clear()
             cnt = 0
@@ -1039,7 +1064,8 @@ class ImitativePlanningNode(Node):
                     if np.sqrt(body_x * body_x + body_y * body_y) > 200:
                         body_x = 0
                         body_y = 0
-                    self.opponent_1_past_traj_body_buffer.append([body_x, body_y, 0])
+                    self.opponent_1_past_traj_body_buffer.append(
+                        [body_x, body_y, 0])
                 cnt += 1
 
     def opponent_2_callback(self, msg):
@@ -1055,7 +1081,7 @@ class ImitativePlanningNode(Node):
 
         if len(self.opponent_2_odom_buffer) > self.NUM_OPPO_PAST_TRAJ_PT:
             self.opponent_2_odom_buffer = self.opponent_2_odom_buffer[
-                -self.NUM_OPPO_PAST_TRAJ_PT :
+                -self.NUM_OPPO_PAST_TRAJ_PT:
             ]
             self.opponent_2_past_traj_body_buffer.clear()
             cnt = 0
@@ -1072,7 +1098,8 @@ class ImitativePlanningNode(Node):
                 if np.sqrt(body_x * body_x + body_y * body_y) > 200:
                     body_x = 0
                     body_y = 0
-                self.opponent_2_past_traj_body_buffer.append([body_x, body_y, 0])
+                self.opponent_2_past_traj_body_buffer.append(
+                    [body_x, body_y, 0])
             cnt += 1
 
     def opponent_3_callback(self, msg):
@@ -1088,7 +1115,7 @@ class ImitativePlanningNode(Node):
 
         if len(self.opponent_3_odom_buffer) > self.NUM_OPPO_PAST_TRAJ_PT:
             self.opponent_3_odom_buffer = self.opponent_3_odom_buffer[
-                -self.NUM_OPPO_PAST_TRAJ_PT :
+                -self.NUM_OPPO_PAST_TRAJ_PT:
             ]
             self.opponent_3_past_traj_body_buffer.clear()
             cnt = 0
@@ -1105,29 +1132,34 @@ class ImitativePlanningNode(Node):
                     if np.sqrt(body_x * body_x + body_y * body_y) > 200:
                         body_x = 0
                         body_y = 0
-                    self.opponent_3_past_traj_body_buffer.append([body_x, body_y, 0])
+                    self.opponent_3_past_traj_body_buffer.append(
+                        [body_x, body_y, 0])
                 cnt += 1
 
     def output_visualization(self, traj_cpu, prb_cpu_np):
         normed_prb = np.linalg.norm(prb_cpu_np)
-        
-    def get_quaternion_from_euler(self,roll, pitch, yaw):
+
+    def get_quaternion_from_euler(self, roll, pitch, yaw):
         """
         Convert an Euler angle to a quaternion.
-        
+
         Input
             :param roll: The roll (rotation around x-axis) angle in radians.
             :param pitch: The pitch (rotation around y-axis) angle in radians.
             :param yaw: The yaw (rotation around z-axis) angle in radians.
-        
+
         Output
             :return qx, qy, qz, qw: The orientation in quaternion [x,y,z,w] format
         """
-        qx = np.sin(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) - np.cos(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
-        qy = np.cos(roll/2) * np.sin(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.cos(pitch/2) * np.sin(yaw/2)
-        qz = np.cos(roll/2) * np.cos(pitch/2) * np.sin(yaw/2) - np.sin(roll/2) * np.sin(pitch/2) * np.cos(yaw/2)
-        qw = np.cos(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
-        
+        qx = np.sin(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) - \
+            np.cos(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
+        qy = np.cos(roll/2) * np.sin(pitch/2) * np.cos(yaw/2) + \
+            np.sin(roll/2) * np.cos(pitch/2) * np.sin(yaw/2)
+        qz = np.cos(roll/2) * np.cos(pitch/2) * np.sin(yaw/2) - \
+            np.sin(roll/2) * np.sin(pitch/2) * np.cos(yaw/2)
+        qw = np.cos(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) + \
+            np.sin(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
+
         return [qx, qy, qz, qw]
 
     def ego_veh_status_callback(self, msg):
@@ -1162,7 +1194,7 @@ class ImitativePlanningNode(Node):
             self.NUM_EGO_PAST_TRAJ_PT / self.EGO_TRAJ_DOWNSAMPLE
         ):
             self.odom_buffer = self.odom_buffer[
-                -1 * int(self.NUM_EGO_PAST_TRAJ_PT / self.EGO_TRAJ_DOWNSAMPLE) :
+                -1 * int(self.NUM_EGO_PAST_TRAJ_PT / self.EGO_TRAJ_DOWNSAMPLE):
             ]
         #     self.odom_buffer_np = np.delete(self.odom_buffer_np, 0, axis=0)
 
@@ -1261,21 +1293,24 @@ class ImitativePlanningNode(Node):
             )
 
             batch["oppo1_body"] = (
-                torch.from_numpy(np.array(self.opponent_1_past_traj_body_buffer))
+                torch.from_numpy(
+                    np.array(self.opponent_1_past_traj_body_buffer))
                 .unsqueeze(dim=0)
                 .type(torch.FloatTensor)
                 .to(self.device)
             )
 
             batch["oppo2_body"] = (
-                torch.from_numpy(np.array(self.opponent_2_past_traj_body_buffer))
+                torch.from_numpy(
+                    np.array(self.opponent_2_past_traj_body_buffer))
                 .unsqueeze(dim=0)
                 .type(torch.FloatTensor)
                 .to(self.device)
             )
 
             batch["oppo3_body"] = (
-                torch.from_numpy(np.array(self.opponent_3_past_traj_body_buffer))
+                torch.from_numpy(
+                    np.array(self.opponent_3_past_traj_body_buffer))
                 .unsqueeze(dim=0)
                 .type(torch.FloatTensor)
                 .to(self.device)
@@ -1348,7 +1383,7 @@ class ImitativePlanningNode(Node):
                 )
 
                 sample_cpu = samples.detach().cpu().numpy().astype(np.float64)
-                
+
                 # cs = CubicSpline(sample_cpu[0][::10][0], sample_cpu[0][::10][1])
 
                 # Publish result
@@ -1376,15 +1411,17 @@ class ImitativePlanningNode(Node):
 
                             # print(mu_t[i][j].detach().cpu().numpy().astype(np.float64))
                             # print(sig_t[i][j].detach().cpu().numpy().astype(np.float64))
-                            
+
                             # Gaussian sigma x
                             pt_marker.scale.x = (
-                                sig_t[j][i].detach().cpu().numpy().astype(np.float64)[0]
+                                sig_t[j][i].detach().cpu().numpy().astype(
+                                    np.float64)[0]
                                 * 100
                             )
                             # Gaussian sigma y
                             pt_marker.scale.y = (
-                                sig_t[j][i].detach().cpu().numpy().astype(np.float64)[1]
+                                sig_t[j][i].detach().cpu().numpy().astype(
+                                    np.float64)[1]
                                 * 800
                             )
 
@@ -1402,7 +1439,7 @@ class ImitativePlanningNode(Node):
                                 # pt.pose.orientation.y = quat[1]
                                 # pt.pose.orientation.z = quat[2]
                                 # pt.pose.orientation.w = quat[3]
-                                
+
                                 vis_path.poses.append(pt)
 
                     self.samples_pub.publish(samples_marker_array)
