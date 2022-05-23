@@ -32,7 +32,7 @@ from visualization_msgs.msg import Marker, MarkerArray
 import matplotlib.pyplot as plt
 from rclpy.duration import Duration
 from rclpy.executors import MultiThreadedExecutor, SingleThreadedExecutor
-import visdom
+# import visdom
 import dill
 from scipy.interpolate import CubicSpline
 
@@ -66,8 +66,6 @@ class ImitativePlanningNode(Node):
         self.use_traj_lib = False
         self.num_samples = 3
         self.vis_density_function = False
-        self.vis = visdom.Visdom()
-        # self.vis.text("Hello wolrd", env="main")
         self.cnt = 0
         """
         Testing purpose
@@ -1285,7 +1283,7 @@ class ImitativePlanningNode(Node):
 
             toc = self.get_clock().now()
 
-            print("preparation time : ", toc - tic)
+            # print("preparation time : ", toc - tic)
 
             if self.use_traj_lib:
                 # z = self.model._params(
@@ -1339,7 +1337,7 @@ class ImitativePlanningNode(Node):
 
                 toc = self.get_clock().now()
 
-                print("infer time : ", toc - tic)
+                # print("infer time : ", toc - tic)
 
                 samples = self.model._decoder(z).reshape(
                     self.num_samples, self.output_shape[0], self.output_shape[1]
@@ -1351,7 +1349,7 @@ class ImitativePlanningNode(Node):
 
                 sample_cpu = samples.detach().cpu().numpy().astype(np.float64)
                 
-                cs = CubicSpline(sample_cpu[0][:][0], sample_cpu[0][:][1])
+                # cs = CubicSpline(sample_cpu[0][::10][0], sample_cpu[0][::10][1])
 
                 # Publish result
                 vis_flg = True
@@ -1397,13 +1395,13 @@ class ImitativePlanningNode(Node):
                                 pt.header.frame_id = "base_link"
                                 pt.pose.position.x = sample_cpu[i][j][0]
                                 pt.pose.position.y = sample_cpu[i][j][1]
-                                euler_rad = np.arctan2(cs(pt.pose.position.x,1))
-                                quat = self.get_quaternion_from_euler(0.0,0.0,euler_rad)
+                                # euler_rad = np.arctan2(cs(pt.pose.position.x,1))
+                                # quat = self.get_quaternion_from_euler(0.0,0.0,euler_rad)
 
-                                pt.pose.orientation.x = quat[0]
-                                pt.pose.orientation.y = quat[1]
-                                pt.pose.orientation.z = quat[2]
-                                pt.pose.orientation.w = quat[3]
+                                # pt.pose.orientation.x = quat[0]
+                                # pt.pose.orientation.y = quat[1]
+                                # pt.pose.orientation.z = quat[2]
+                                # pt.pose.orientation.w = quat[3]
                                 
                                 vis_path.poses.append(pt)
 
