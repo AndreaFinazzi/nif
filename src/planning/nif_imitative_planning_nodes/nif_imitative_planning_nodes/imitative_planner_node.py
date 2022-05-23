@@ -1325,7 +1325,17 @@ class ImitativePlanningNode(Node):
             # print(np.array(self.opponent_3_past_traj_body_buffer).shape)
             # print("----------")
 
-
+            # Temporal testing
+            # vis_path = Path()
+            # vis_path.header.frame_id = "base_link"
+            # for race_pt in self.raceline_body:
+            #     pt = PoseStamped()
+            #     pt.header.frame_id = "base_link"
+            #     pt.pose.position.x = race_pt[0]
+            #     pt.pose.position.y = race_pt[1]
+            #     vis_path.poses.append(pt)
+            # self.path_pub.publish(vis_path)
+            # return
 
             toc = self.get_clock().now()
 

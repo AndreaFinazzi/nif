@@ -11,55 +11,108 @@ model_params:
 # Velocity Brackets to generate [m/s]
 # feedback matrices from
 # Q: [ lateral_error, lateral_error_dot, yaw_error, yaw_error_dot, v_error ]
+# velocity_brackets:
+# - velocity: 10
+#   q_trace: [5.0, 1.0, 0.1, 0.0, 5.0]
+#   r_trace: [250., 30.]
+# - velocity: 20
+#   q_trace: [4.0, 1.0, 0.1, 0.0, 5.0]
+#   r_trace: [350., 30.]
+# - velocity: 25
+#   q_trace: [2.5, 0.5, 0.1, 0.0, 5.0]
+#   r_trace: [800., 30.]
+# - velocity: 30
+#   q_trace: [1.2, 0.2, 0.1, 0.0, 5.0]
+#   r_trace: [950., 30.]
+# - velocity: 35
+#   q_trace: [1.0, 0.1, 0.1, 0.0, 5.0]
+#   r_trace: [1100., 40.]
+# - velocity: 40
+#   q_trace: [1.0, 0.08, 0.1, 0.0, 5.0]
+#   r_trace: [1300., 50.]
+# - velocity: 45
+#   q_trace: [1.0, 0.06, 0.1, 0.0, 5.0]
+#   r_trace: [1500., 60.]
+# - velocity: 50
+#   q_trace: [1.0, 0.04, 0.1, 0.0, 5.0]
+#   r_trace: [1700., 80.]
+# - velocity: 55
+#   q_trace: [1.0, 0.02, 0.1, 0.0, 5.0]
+#   r_trace: [1900., 90.]
+# - velocity: 60
+#   q_trace: [1.0, 0.01, 0.1, 0.0, 5.0]
+#   r_trace: [2100., 100.]
+# - velocity: 65
+#   q_trace: [1.0, 0.01, 0.1, 0.0, 5.0]
+#   r_trace: [2400., 100.]
+# - velocity: 70
+#   q_trace: [1.0, 0.01, 0.1, 0.0, 5.0]
+#   r_trace: [2800., 100.]
+# - velocity: 75
+#   q_trace: [1.0, 0.01, 0.1, 0.0, 5.0]
+#   r_trace: [3300., 100.]
+# - velocity: 80
+#   q_trace: [1.0, 0.01, 0.1, 0.0, 5.0]
+#   r_trace: [3900., 100.]
+# - velocity: 85
+#   q_trace: [1.0, 0.01, 0.1, 0.0, 5.0]
+#   r_trace: [4600., 100.]
+# - velocity: 90
+#   q_trace: [1.0, 0.01, 0.1, 0.0, 5.0]
+#   r_trace: [5400., 100.]
+# - velocity: 95
+#   q_trace: [1.0, 0.01, 0.1, 0.0, 5.0]
+#   r_trace: [6300., 100.]
+
 velocity_brackets:
 - velocity: 10
   q_trace: [5.0, 1.0, 0.1, 0.0, 5.0]
-  r_trace: [250., 30.]
+  r_trace: [500., 60.]
 - velocity: 20
   q_trace: [4.0, 1.0, 0.1, 0.0, 5.0]
-  r_trace: [350., 30.]
+  r_trace: [500., 60.]
 - velocity: 25
   q_trace: [2.5, 0.5, 0.1, 0.0, 5.0]
-  r_trace: [800., 30.]
+  r_trace: [500., 60.]
 - velocity: 30
   q_trace: [1.2, 0.2, 0.1, 0.0, 5.0]
-  r_trace: [950., 30.]
+  r_trace: [500., 60.]
 - velocity: 35
   q_trace: [1.0, 0.1, 0.1, 0.0, 5.0]
-  r_trace: [1100., 40.]
+  r_trace: [500., 60.]
 - velocity: 40
   q_trace: [1.0, 0.08, 0.1, 0.0, 5.0]
-  r_trace: [1300., 50.]
+  r_trace: [500., 60.]
 - velocity: 45
   q_trace: [1.0, 0.06, 0.1, 0.0, 5.0]
-  r_trace: [1500., 60.]
+  r_trace: [500., 60.]
 - velocity: 50
   q_trace: [1.0, 0.04, 0.1, 0.0, 5.0]
-  r_trace: [1700., 80.]
+  r_trace: [500., 60.]
 - velocity: 55
   q_trace: [1.0, 0.02, 0.1, 0.0, 5.0]
-  r_trace: [1900., 90.]
+  r_trace: [500., 60.]
 - velocity: 60
   q_trace: [1.0, 0.01, 0.1, 0.0, 5.0]
-  r_trace: [2100., 100.]
+  r_trace: [500., 60.]
 - velocity: 65
   q_trace: [1.0, 0.01, 0.1, 0.0, 5.0]
-  r_trace: [2400., 100.]
+  r_trace: [500., 60.]
 - velocity: 70
   q_trace: [1.0, 0.01, 0.1, 0.0, 5.0]
-  r_trace: [2800., 100.]
+  r_trace: [500., 60.]
 - velocity: 75
   q_trace: [1.0, 0.01, 0.1, 0.0, 5.0]
-  r_trace: [3300., 100.]
+  r_trace: [500., 60.]
 - velocity: 80
   q_trace: [1.0, 0.01, 0.1, 0.0, 5.0]
-  r_trace: [3900., 100.]
+  r_trace: [500., 60.]
 - velocity: 85
   q_trace: [1.0, 0.01, 0.1, 0.0, 5.0]
-  r_trace: [4600., 100.]
+  r_trace: [500., 60.]
 - velocity: 90
   q_trace: [1.0, 0.01, 0.1, 0.0, 5.0]
-  r_trace: [5400., 100.]
+  r_trace: [500., 60.]
 - velocity: 95
   q_trace: [1.0, 0.01, 0.1, 0.0, 5.0]
-  r_trace: [6300., 100.]
+  r_trace: [500., 60.]

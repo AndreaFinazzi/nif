@@ -530,7 +530,8 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve()
         track_distance = pure_pursuit_max_max_dist_m_;
 
       // TODO: temporally just put the minimum look ahead dist
-      track_distance = pure_pursuit_min_dist_m_;
+      // track_distance = pure_pursuit_min_dist_m_ * 1.2;
+      track_distance = pure_pursuit_max_max_dist_m_* 1.1;
 
       // Track on the trajectory
       double target_distance = 0.0;
