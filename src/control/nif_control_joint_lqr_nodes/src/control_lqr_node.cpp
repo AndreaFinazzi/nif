@@ -456,7 +456,7 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve()
     // Perform Tracking if path is good
     if (valid_path && valid_odom)
     {
-      std::cout << "valid path true" << std::endl;
+      // std::cout << "valid path true" << std::endl;
       // Check whether path is global/local
       bool is_local_path = true;
 
@@ -522,7 +522,7 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve()
       double l_desired_velocity = 100.0;
       if (valid_wpt_distance && valid_target_position)
       {
-        std::cout << "valid waypoint true" << std::endl;
+        // std::cout << "valid waypoint true" << std::endl;
 
         valid_tracking_result = true;
         // Run LQR :)
@@ -548,7 +548,7 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve()
                                        steering_max_ddeg_dt_, period_double_s);
       }
       // Publish diagnostic message
-      std::cout << "lqr_tracking_idx_ : " << lqr_tracking_idx_ << std::endl;
+      // std::cout << "lqr_tracking_idx_ : " << lqr_tracking_idx_ << std::endl;
       publishSteerAccelDiagnostics(valid_tracking_result, valid_path, valid_odom,
                                    valid_wpt_distance, valid_target_position,
                                    steering_angle_deg, desired_accel,
@@ -557,7 +557,7 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve()
                                   //  this->getReferenceTrajectory()->trajectory_path.poses[lqr_tracking_idx_],
                                    error_COG, error, l_desired_velocity);
     }
-    std::cout << "valid path false" << std::endl;
+    // std::cout << "valid path false" << std::endl;
     if (!this->hasSystemStatus() ||
         (this->getSystemStatus().autonomy_status.lateral_autonomy_enabled ||
          this->getSystemStatus().autonomy_status.longitudinal_autonomy_enabled) &&
