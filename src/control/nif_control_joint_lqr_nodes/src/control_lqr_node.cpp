@@ -147,6 +147,8 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
   // use_imitative_planner_output_ = this->get_parameter("use_imitative_planner_output").as_bool();
   use_imitative_planner_output_ = true;
 
+  m_frenet_generator = std::make_shared<FrenetPathGenerator>();
+
   if (odometry_timeout_sec_ <= 0. || path_timeout_sec_ <= 0.)
   {
     RCLCPP_ERROR(this->get_logger(),
@@ -435,7 +437,7 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve()
     nif::common::NodeStatusCode node_status = common::NODE_ERROR;
 
     //  Check whether we have updated data
-    bool valid_path = !imitavive_planner_output_path.poses.empty();
+    bool valid_path = !imitavive_planner_output_path.poses.empty() && imitavive_planner_output_path.poses.size() > 4;
 
     bool valid_odom =
         this->hasEgoOdometry() &&
@@ -456,6 +458,27 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve()
     // Perform Tracking if path is good
     if (valid_path && valid_odom)
     {
+
+      // Need to spline and assign the orientation of each pt
+      std::vector<double> splined_x, splined_y, splined_yaw;
+      std::shared_ptr<CubicSpliner2D> cubic_spliner_2D_xy;
+      std::tie(splined_x, splined_y, splined_yaw, cubic_spliner_2D_xy) =
+          m_frenet_generator->applyCubicSpliner_2d_ros(imitavive_planner_output_path,
+                                                       1.0);
+
+      if (splined_x.empty())
+        return;
+
+      imitavive_planner_output_path.poses.clear();
+      for (int i = 0; i < splined_x.size(); i++)
+      {
+        geometry_msgs::msg::PoseStamped pt;
+        pt.pose.position.x = splined_x[i];
+        pt.pose.position.y = splined_y[i];
+        pt.pose.orientation = nif::common::utils::coordination::euler2quat(splined_yaw[i], 0.0, 0.0);
+        imitavive_planner_output_path.poses.push_back(pt);
+      }
+
       // std::cout << "valid path true" << std::endl;
       // Check whether path is global/local
       bool is_local_path = true;
@@ -554,7 +577,7 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve()
                                    steering_angle_deg, desired_accel,
                                    track_distance, lqr_tracking_idx_,
                                    imitavive_planner_output_path.poses[lqr_tracking_idx_],
-                                  //  this->getReferenceTrajectory()->trajectory_path.poses[lqr_tracking_idx_],
+                                   //  this->getReferenceTrajectory()->trajectory_path.poses[lqr_tracking_idx_],
                                    error_COG, error, l_desired_velocity);
     }
     // std::cout << "valid path false" << std::endl;

@@ -24,6 +24,7 @@
   <depend>tf2</depend>
   <depend>tf2_msgs</depend>
   <depend>nif_control_common</depend>
+  <depend>nif_utils</depend>
 
 
   <depend>libeigen3-dev</depend>
