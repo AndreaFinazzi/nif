@@ -37,7 +37,9 @@
     <exec_depend>nif_geofence_filter_nodes</exec_depend>
     <exec_depend>nif_multilayer_planning_nodes</exec_depend>
 
+    <!-- FOR IMITATIVE PLANNER -->
     <exec_depend>nif_imitative_planning_nodes</exec_depend>    
+    <exec_depend>nif_static_path_publisher</exec_depend>
 
     <exec_depend>nif_telemetry</exec_depend>
     <exec_depend>autoware_auto_msgs</exec_depend>

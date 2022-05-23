@@ -54,7 +54,7 @@
 # carNames = [ac.getCarName(cid) for cid in range(carsCount)],
 # csRaceFinished = [ac.getCarState(cid, acsys.CS.RaceFinished) for cid in range(carsCount)],
 
-
+from ament_index_python import get_package_share_directory
 from http import server
 import marshal
 from socket import *
@@ -74,7 +74,10 @@ from tf2_ros.transform_broadcaster import TransformBroadcaster
 from geometry_msgs.msg import PoseStamped, TransformStamped, Vector3, Quaternion
 from rclpy.qos import QoSProfile, QoSHistoryPolicy, QoSDurabilityPolicy, QoSReliabilityPolicy, QoSLivelinessPolicy
 import pandas as pd
+import os
 
+def get_share_file(package_name, file_name):
+    return os.path.join(get_package_share_directory(package_name), file_name)
 
 class PubNode(rclpy.node.Node):
     def __init__(self, node_name: str, ) -> None:
@@ -97,11 +100,13 @@ class PubNode(rclpy.node.Node):
         self.path_3 = Path()
         self.path_3.header.frame_id = self.target_frame
 
+        self.track_db_path = get_share_file(
+            "nif_imitative_planning_nodes", "nif_imitative_planning_nodes/ac_track_db")
 
         # Read files
-        self.path_1_file_path = "/home/usrg-racing/nif/build/nif_imitative_planning_nodes/nif_imitative_planning_nodes/ac_track_db/LVMS/lvms_inner_line.csv"
-        self.path_2_file_path = "/home/usrg-racing/nif/build/nif_imitative_planning_nodes/nif_imitative_planning_nodes/ac_track_db/LVMS/lvms_outer_line.csv"
-        self.path_3_file_path = "/home/usrg-racing/nif/build/nif_imitative_planning_nodes/nif_imitative_planning_nodes/ac_track_db/LVMS/race_line.csv"
+        self.path_1_file_path = self.track_db_path + "/LVMS/lvms_inner_line.csv"
+        self.path_2_file_path = self.track_db_path + "/LVMS/lvms_outer_line.csv"
+        self.path_3_file_path = self.track_db_path + "/LVMS/race_line_w_field.csv"
 
         self.file_list = [self.path_1_file_path, self.path_2_file_path, self.path_3_file_path]
 

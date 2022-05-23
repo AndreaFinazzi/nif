@@ -428,16 +428,25 @@ def generate_launch_description():
     sim_interface_launch = IncludeLaunchDescription(sim_launch_file)
 
 
-    nif_dynamic_planner_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            get_share_file("nif_dynamic_planning_nodes", 'launch/sim.launch.py')
-        )
-    )
-
+    '''
+    IMITATIVE PLANNER
+    '''
     nif_imitation_planner_node = Node(
                 package='nif_imitative_planning_nodes',
                 executable='imitative_planner.py',
                 output='screen',
+    )
+
+    track_boundaries_vis_node = Node(
+                package='nif_static_path_publisher',
+                executable='publisher.py',
+                output='screen',
+    )
+
+    imitation_distribution_vis_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            get_share_file("nif_costmap_generator", 'launch/imitation_dist_vis.launch.py')
+        )
     )
 
 
@@ -471,5 +480,7 @@ def generate_launch_description():
         nif_waypoint_manager_node,
         sim_interface_launch,
         # nif_dynamic_planner_launch
-        nif_imitation_planner_node
+        nif_imitation_planner_node,
+        track_boundaries_vis_node,
+        imitation_distribution_vis_launch
     ])
