@@ -1526,7 +1526,6 @@ void DynamicPlannerNode::timer_callback_rule() {
   auto allowable_maximum_vy =
       abs(tan(m_acceptable_slip_angle_rad)) *
       std::max(m_ego_odom.twist.twist.linear.x, MIN_SPEED_MPS);
-  allowable_maximum_vy = std::max(1.5, allowable_maximodom ------------
   // ---------------------------------------------------------------
   // if (!m_mylap_rof_callback_first_run) {
   //   if (this->now() - m_mylap_rof_last_update > rclcpp::Duration(2, 0)) {
@@ -1568,7 +1567,7 @@ void DynamicPlannerNode::timer_callback_rule() {
 
       m_defender_mode_first_callback = true;
       m_race_mode_first_callback = true;
-      m_keep_position_mode_first_callback = true;odom
+      m_keep_position_mode_first_callback = true;
       m_non_overtaking_mode_first_callback = true;
 
       m_cur_planned_traj.trajectory_path.poses.clear();
@@ -1581,7 +1580,7 @@ void DynamicPlannerNode::timer_callback_rule() {
       m_last_lat_planning_type = LATERAL_PLANNING_TYPE::KEEP;
       m_last_long_planning_type = LONGITUDINAL_PLANNING_TYPE::STRAIGHT;
       publishPlannedTrajectory(cur_traj, m_last_long_planning_type,
-                               m_last_lat_planning_typodom
+                               m_last_lat_planning_type,true);
 
       if (mission_status.mission_status_code ==
           nif::common::MissionStatus::MISSION_RACE) {
