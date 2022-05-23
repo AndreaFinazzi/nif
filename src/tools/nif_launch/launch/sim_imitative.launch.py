@@ -434,6 +434,12 @@ def generate_launch_description():
         )
     )
 
+    nif_imitation_planner_node = Node(
+                package='nif_imitative_planning_nodes',
+                executable='imitative_planner.py',
+                output='screen',
+    )
+
 
 ### NIF MULTILAYER PLANNER END #############################
 
@@ -464,5 +470,6 @@ def generate_launch_description():
         nif_mission_manager_launch,
         nif_waypoint_manager_node,
         sim_interface_launch,
-        nif_dynamic_planner_launch
+        # nif_dynamic_planner_launch
+        nif_imitation_planner_node
     ])

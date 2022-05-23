@@ -37,6 +37,8 @@
     <exec_depend>nif_geofence_filter_nodes</exec_depend>
     <exec_depend>nif_multilayer_planning_nodes</exec_depend>
 
+    <exec_depend>nif_imitative_planning_nodes</exec_depend>    
+
     <exec_depend>nif_telemetry</exec_depend>
     <exec_depend>autoware_auto_msgs</exec_depend>
     <exec_depend>ssc_interface</exec_depend>
