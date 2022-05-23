@@ -53,6 +53,9 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
       "/imitative/out_path", nif::common::constants::QOS_SENSOR_DATA,
       std::bind(&ControlLQRNode::imitativePlannerOutputCallback, this,
                 std::placeholders::_1));
+  splined_imitatvie_output_pub_ =
+      this->create_publisher<nav_msgs::msg::Path>(
+          "/imitative/out_path/splined", nif::common::constants::QOS_DEFAULT);
 
   // Disable the ACC function
   //   acc_sub_ = this->create_subscription<std_msgs::msg::Float32>(
@@ -147,7 +150,7 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
   // use_imitative_planner_output_ = this->get_parameter("use_imitative_planner_output").as_bool();
   use_imitative_planner_output_ = true;
 
-  m_frenet_generator = std::make_shared<FrenetPathGenerator>();
+  m_frenet_generator = std::make_shared<Frenet::FrenetPathGenerator>();
 
   if (odometry_timeout_sec_ <= 0. || path_timeout_sec_ <= 0.)
   {
@@ -467,7 +470,7 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve()
                                                        1.0);
 
       if (splined_x.empty())
-        return;
+        return nullptr;
 
       imitavive_planner_output_path.poses.clear();
       for (int i = 0; i < splined_x.size(); i++)
@@ -478,6 +481,8 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve()
         pt.pose.orientation = nif::common::utils::coordination::euler2quat(splined_yaw[i], 0.0, 0.0);
         imitavive_planner_output_path.poses.push_back(pt);
       }
+
+      splined_imitatvie_output_pub_->publish(imitavive_planner_output_path);
 
       // std::cout << "valid path true" << std::endl;
       // Check whether path is global/local

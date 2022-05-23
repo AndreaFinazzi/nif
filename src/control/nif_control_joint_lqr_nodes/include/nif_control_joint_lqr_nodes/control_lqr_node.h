@@ -26,6 +26,7 @@
 
 #include "nif_control_common/camber_compensator.hpp"
 
+
 namespace nif
 {
   namespace control
@@ -139,6 +140,8 @@ namespace nif
       // Input from the imitative planner
       rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr
           imitative_planner_output_sub;
+      rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr
+          splined_imitatvie_output_pub_;
 
       rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr steering_sub_;
       rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr throttle_sub_;
@@ -159,7 +162,7 @@ namespace nif
       std::shared_ptr<CamberCompensator> m_camber_manager_ptr;
 
       // spliner for imitative planner output
-      std::shared_ptr<FrenetPathGenerator> m_frenet_generator;
+      std::shared_ptr<Frenet::FrenetPathGenerator> m_frenet_generator;
 
       //! Current Vehicle State
       double current_speed_ms_;
