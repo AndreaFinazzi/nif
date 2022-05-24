@@ -65,13 +65,20 @@ class ImitativeModel(nn.Module):
         visual_inp = 24
         self._encoder = MobileNetV2(num_classes=visual_inp, in_channels=1)
 
-        self._encoder_player_past = MobileNetV2(num_classes=visual_inp, in_channels=1)
-        self._encoder_left_bound = MobileNetV2(num_classes=visual_inp, in_channels=1)
-        self._encoder_right_bound = MobileNetV2(num_classes=visual_inp, in_channels=1)
-        self._encoder_race_line = MobileNetV2(num_classes=visual_inp, in_channels=1)
-        self._encoder_oppo1_body = MobileNetV2(num_classes=visual_inp, in_channels=1)
-        self._encoder_oppo2_body = MobileNetV2(num_classes=visual_inp, in_channels=1)
-        self._encoder_oppo3_body = MobileNetV2(num_classes=visual_inp, in_channels=1)
+        self._encoder_player_past = MobileNetV2(
+            num_classes=visual_inp, in_channels=1)
+        self._encoder_left_bound = MobileNetV2(
+            num_classes=visual_inp, in_channels=1)
+        self._encoder_right_bound = MobileNetV2(
+            num_classes=visual_inp, in_channels=1)
+        self._encoder_race_line = MobileNetV2(
+            num_classes=visual_inp, in_channels=1)
+        self._encoder_oppo1_body = MobileNetV2(
+            num_classes=visual_inp, in_channels=1)
+        self._encoder_oppo2_body = MobileNetV2(
+            num_classes=visual_inp, in_channels=1)
+        self._encoder_oppo3_body = MobileNetV2(
+            num_classes=visual_inp, in_channels=1)
 
         print("INPUT EXPECTED TO BE SHAPE", past_traj_shape)
         print("OUTPUT EXPECTED TO BE SHAPE", future_traj_shape)
@@ -87,7 +94,8 @@ class ImitativeModel(nn.Module):
         )
 
         # The decoder recurrent network used for the sequence generation.
-        self._decoder = AutoregressiveFlow(output_shape=self.future_traj_shape, hidden_size=64)
+        self._decoder = AutoregressiveFlow(
+            output_shape=self.future_traj_shape, hidden_size=64)
 
     def to(self, *args, **kwargs):
         """Handles non-parameter tensors when moved to a new device."""
@@ -135,7 +143,8 @@ class ImitativeModel(nn.Module):
 
         # Stores the best values.
         x_best = x.clone()
-        loss_best = torch.ones(()).to(x.device) * 1000.0  # pylint: disable=no-member
+        loss_best = torch.ones(()).to(x.device) * \
+            1000.0  # pylint: disable=no-member
 
         for _ in range(num_steps):
             # Resets optimizer's gradients.
@@ -144,11 +153,13 @@ class ImitativeModel(nn.Module):
             y, _ = self._decoder._forward(x=x, z=z)
             # Calculates imitation prior.
             _, log_prob, logabsdet = self._decoder._inverse(y=y, z=z)
-            imitation_prior = torch.mean(log_prob - logabsdet)  # pylint: disable=no-member q(x|phi)
+            imitation_prior = torch.mean(
+                log_prob - logabsdet)  # pylint: disable=no-member q(x|phi)
             # Calculates goal likelihodd.
             goal_likelihood = 0.0
             if goal is not None:
-                goal_likelihood = self._goal_likelihood(y=y, goal=goal, epsilon=epsilon)
+                goal_likelihood = self._goal_likelihood(
+                    y=y, goal=goal, epsilon=epsilon)
                 assert imitation_prior.shape == goal_likelihood.shape
             loss = -(imitation_prior + goal_likelihood)
             # Backward pass.
@@ -238,7 +249,8 @@ class ImitativeModel(nn.Module):
 
         # MAKE POLYGON EDGES
         goal_polygon = goal_polygon.repeat((batch_size, 1, 1))
-        goal_polygon_closed = torch.cat([goal_polygon, goal_polygon[:, [0]]], dim=1)
+        goal_polygon_closed = torch.cat(
+            [goal_polygon, goal_polygon[:, [0]]], dim=1)
         end = goal_polygon_closed[..., 1:, :]
         start = goal_polygon_closed[..., :-1, :]
         segment_vector = end - start
@@ -252,14 +264,16 @@ class ImitativeModel(nn.Module):
 
         # Stores the best values.
         x_best = x.clone()
-        loss_best = torch.ones((batch_size)).to(x.device) * 1000.0  # pylint: disable=no-member
+        loss_best = torch.ones((batch_size)).to(
+            x.device) * 1000.0  # pylint: disable=no-member
 
         for _ in range(num_steps):
             # Resets optimizer's gradients.
             optimizer.zero_grad()
             # Operate on `y`-space.
             # y, _, mu_t, sig_t = self._decoder._forward(x=torch.stack(p), z=z, return_rollouts=True)
-            y, _, mu_t, sig_t = self._decoder._forward(x=x, z=z, return_rollouts=True)
+            y, _, mu_t, sig_t = self._decoder._forward(
+                x=x, z=z, return_rollouts=True)
 
             inclusion_mask = self.mpl_in_polygon(
                 mu_t[-1][:, :2].cpu().detach().numpy(),
@@ -269,14 +283,16 @@ class ImitativeModel(nn.Module):
 
             # Calculates imitation prior.
             _, log_prob, logabsdet = self._decoder._inverse(y=y, z=z)
-            imitation_prior = log_prob - logabsdet  # pylint: disable=no-member q(x|phi)
+            imitation_prior = log_prob - \
+                logabsdet  # pylint: disable=no-member q(x|phi)
 
             # Calculates goal likelihodd.
             goal_likelihood = torch.zeros((batch_size)).to(x.device)
             if goal_polygon is not None and not inclusion_mask.all():
 
                 goal_likelihood = self._region_goal(
-                    inclusion_mask=torch.BoolTensor(inclusion_mask).to(x.device),
+                    inclusion_mask=torch.BoolTensor(
+                        inclusion_mask).to(x.device),
                     y=y[:, -1],
                     segment=segment_vector,
                     mu_t=mu_t[-1],
@@ -292,7 +308,8 @@ class ImitativeModel(nn.Module):
             # Performs a gradient descent step.
             optimizer.step()
             # Book-keeping
-            x_best = torch.where(loss.view(-1, 1, 1) < loss_best.view(-1, 1, 1), x, x_best).clone()
+            x_best = torch.where(loss.view(-1, 1, 1) <
+                                 loss_best.view(-1, 1, 1), x, x_best).clone()
             loss_best = torch.where(loss < loss_best, loss, loss_best).clone()
 
         y, _ = self._decoder._forward(x=x_best, z=z)
@@ -318,22 +335,26 @@ class ImitativeModel(nn.Module):
 
         cov_mat = torch.diag_embed(sig_T)
         mu_T_tiled = mu_T.unsqueeze(dim=1).repeat((1, segment.shape[1], 1))
-        cov_mat_tiled = cov_mat.unsqueeze(dim=1).repeat((1, segment.shape[1], 1, 1))
+        cov_mat_tiled = cov_mat.unsqueeze(
+            dim=1).repeat((1, segment.shape[1], 1, 1))
 
-        q_T = D.MultivariateNormal(loc=mu_T_tiled, covariance_matrix=cov_mat_tiled)
+        q_T = D.MultivariateNormal(
+            loc=mu_T_tiled, covariance_matrix=cov_mat_tiled)
         log_qx = torch.max(
             q_T.log_prob(y[:, :2].unsqueeze(dim=1).repeat((1, segment.shape[1], 1))), dim=1
         )[0]
         prec_mat = torch.inverse(cov_mat)
 
-        unum = -torch.einsum("bmd,bde,bme->bm", segment, prec_mat, start - mu_T[:, None, :])
+        unum = -torch.einsum("bmd,bde,bme->bm", segment,
+                             prec_mat, start - mu_T[:, None, :])
         udenom = torch.einsum("bmd,bde,bme->bm", segment, prec_mat, segment)
         u_edges = self.safe_divide(unum, udenom)
         u_edges = torch.clamp(u_edges, 0, 1)
         xy_edges = start + torch.einsum("bm,bmd->bmd", u_edges, segment)
         log_q_T_outside = torch.max(q_T.log_prob(xy_edges), dim=1)[0]
         log_q_T_inside = torch.max(q_T.log_prob(mu_T_tiled), dim=1)[0]
-        log_prob_As = torch.where(inclusion_mask, log_q_T_inside, log_q_T_outside)
+        log_prob_As = torch.where(
+            inclusion_mask, log_q_T_inside, log_q_T_outside)
         log_prob = log_prob_As - log_qx
         if comp:
             return log_prob
@@ -395,13 +416,20 @@ class ImitativeModel(nn.Module):
           The contextual parameters of the conditional density estimator.
         """
 
-        player_past = self._encoder_player_past(context.get("player_past").unsqueeze(dim=1))
-        left_bound = self._encoder_left_bound(context.get("left_bound").unsqueeze(dim=1))
-        right_bound = self._encoder_right_bound(context.get("right_bound").unsqueeze(dim=1))
-        race_line = self._encoder_race_line(context.get("race_line").unsqueeze(dim=1))
-        oppo1_body = self._encoder_oppo1_body(context.get("oppo1_body").unsqueeze(dim=1))
-        oppo2_body = self._encoder_oppo2_body(context.get("oppo2_body").unsqueeze(dim=1))
-        oppo3_body = self._encoder_oppo3_body(context.get("oppo3_body").unsqueeze(dim=1))
+        player_past = self._encoder_player_past(
+            context.get("player_past").unsqueeze(dim=1))
+        left_bound = self._encoder_left_bound(
+            context.get("left_bound").unsqueeze(dim=1))
+        right_bound = self._encoder_right_bound(
+            context.get("right_bound").unsqueeze(dim=1))
+        race_line = self._encoder_race_line(
+            context.get("race_line").unsqueeze(dim=1))
+        oppo1_body = self._encoder_oppo1_body(
+            context.get("oppo1_body").unsqueeze(dim=1))
+        oppo2_body = self._encoder_oppo2_body(
+            context.get("oppo2_body").unsqueeze(dim=1))
+        oppo3_body = self._encoder_oppo3_body(
+            context.get("oppo3_body").unsqueeze(dim=1))
 
         visual_features = torch.cat(  # pylint: disable=no-member
             tensors=[
@@ -440,7 +468,8 @@ class ImitativeModel(nn.Module):
         # sample["lidar_features"] = sample.pop("top_view")[:,None,:,:]
         sample["lidar_features"] = sample.pop("top_view")
         sample["lidar_features"] = transforms.downsample_visual_features(
-            visual_features=sample["lidar_features"], future_traj_shape=(100, 100)
+            visual_features=sample["lidar_features"], future_traj_shape=(
+                100, 100)
         )
         return sample
 
@@ -490,13 +519,15 @@ class ImitativeModel(nn.Module):
                 goal_polygon[0].cpu().detach().numpy(),
                 flip=True,
             )
-            goal_polygon_closed = torch.cat([goal_polygon, goal_polygon[:, [0]]], dim=1)
+            goal_polygon_closed = torch.cat(
+                [goal_polygon, goal_polygon[:, [0]]], dim=1)
             end = goal_polygon_closed[..., 1:, :]
             start = goal_polygon_closed[..., :-1, :]
             segment_vector = end - start
             # print(segment_vector.device, mu_t[-1].device, centroids.device, sig_t[-1].device)
             goal_likelihood = self._region_goal(
-                inclusion_mask=torch.BoolTensor(inclusion_mask).to(mu_t[-1].device),
+                inclusion_mask=torch.BoolTensor(
+                    inclusion_mask).to(mu_t[-1].device),
                 y=centroids[:, -1],
                 segment=segment_vector,
                 mu_t=mu_t[-1],
@@ -528,7 +559,8 @@ class ImitativeModel(nn.Module):
         if costmap_only:
             loss -= imitation_prior
         elif triage is not None:
-            topk_val = torch.mean(torch.topk(costmap_values, k=25, dim=0)[0]).item()
+            topk_val = torch.mean(torch.topk(
+                costmap_values, k=25, dim=0)[0]).item()
             print("topk_val", topk_val)
             if topk_val > triage:
                 loss -= imitation_prior
@@ -604,18 +636,21 @@ class ImitativeModel(nn.Module):
         optimizer = optim.Adam(params=p, lr=lr)
         # Stores the best values.
         x_best = x.clone()
-        loss_best = torch.ones((batch_size)).to(x.device) * 1000.0  # pylint: disable=no-member
+        loss_best = torch.ones((batch_size)).to(
+            x.device) * 1000.0  # pylint: disable=no-member
         for _ in range(num_steps):
             # Resets optimizer's gradients.
             optimizer.zero_grad()
             y, _ = self._decoder._forward(x=torch.stack(p), z=z)
             # Calculates imitation prior.
             _, log_prob, logabsdet = self._decoder._inverse(y=y, z=z)
-            imitation_prior = log_prob - logabsdet  # pylint: disable=no-member q(x|phi)
+            imitation_prior = log_prob - \
+                logabsdet  # pylint: disable=no-member q(x|phi)
             # Calculates goal likelihodd.
             goal_likelihood = 0.0
             if goal is not None:
-                goal_likelihood = self._goal_likelihood(y=y, goal=goal, epsilon=epsilon, comp=1)
+                goal_likelihood = self._goal_likelihood(
+                    y=y, goal=goal, epsilon=epsilon, comp=1)
                 assert imitation_prior.shape == goal_likelihood.shape
             loss = -(imitation_prior + goal_likelihood)
             # Backward pass.
@@ -623,7 +658,8 @@ class ImitativeModel(nn.Module):
             # Performs a gradient descent step.
             optimizer.step()
             # Book-keeping
-            x_best = torch.where(loss.view(-1, 1, 1) < loss_best.view(-1, 1, 1), x, x_best).clone()
+            x_best = torch.where(loss.view(-1, 1, 1) <
+                                 loss_best.view(-1, 1, 1), x, x_best).clone()
             loss_best = torch.where(loss < loss_best, loss, loss_best).clone()
         y, _ = self._decoder._forward(x=x_best, z=z)
         return y
@@ -659,28 +695,43 @@ class ImitativeModel_slim(nn.Module):
         visual_inp = 24
         self._encoder = MobileNetV2(num_classes=visual_inp, in_channels=1)
 
-        self._encoder_player_past = MobileNetV3_small(num_classes=visual_inp, in_channels=1)
+        self._encoder_player_past = MobileNetV3_small(
+            num_classes=visual_inp, in_channels=1)
         self._encoder_static_environmental = MobileNetV3_small(
             num_classes=visual_inp, in_channels=2
         )
-        self._encoder_oppo = MobileNetV3_small(num_classes=visual_inp, in_channels=3)
-        self._encoder_raceline = MobileNetV3_small(num_classes=visual_inp, in_channels=1)
+        self._encoder_oppo = MobileNetV3_small(
+            num_classes=visual_inp, in_channels=3)
+        self._encoder_raceline = MobileNetV3_small(
+            num_classes=visual_inp, in_channels=1)
 
         print("INPUT EXPECTED TO BE SHAPE", past_traj_shape)
         print("OUTPUT EXPECTED TO BE SHAPE", future_traj_shape)
 
+        # self._merger = MLP(
+        #     # input_size=128, Add the future_traj_shape product
+        #     input_size=visual_inp * 4,
+        #     output_sizes=[64, 64, 64],
+        #     activation_fn=nn.ReLU,
+        #     # dropout_rate=None,
+        #     dropout_rate=0.1,
+        #     activate_final=True,
+        # )
+        # The decoder recurrent network used for the sequence generation.
+        # self._decoder = AutoregressiveFlow(output_shape=self.future_traj_shape, hidden_size=64)
+
+        # Matched with Autoregresseive(hidden_size 16)
         self._merger = MLP(
             # input_size=128, Add the future_traj_shape product
             input_size=visual_inp * 4,
-            output_sizes=[64, 64, 64],
+            output_sizes=[64, 64, 16],
             activation_fn=nn.ReLU,
             # dropout_rate=None,
             dropout_rate=0.1,
             activate_final=True,
         )
-
-        # The decoder recurrent network used for the sequence generation.
-        self._decoder = AutoregressiveFlow(output_shape=self.future_traj_shape, hidden_size=64)
+        self._decoder = AutoregressiveFlow(
+            output_shape=self.future_traj_shape, hidden_size=16)
 
     def to(self, *args, **kwargs):
         """Handles non-parameter tensors when moved to a new device."""
@@ -731,7 +782,8 @@ class ImitativeModel_slim(nn.Module):
 
         # Stores the best values.
         x_best = x.clone()
-        loss_best = torch.ones(()).to(x.device) * 1000.0  # pylint: disable=no-member
+        loss_best = torch.ones(()).to(x.device) * \
+            1000.0  # pylint: disable=no-member
 
         for _ in range(num_steps):
             # Resets optimizer's gradients.
@@ -740,11 +792,13 @@ class ImitativeModel_slim(nn.Module):
             y, _ = self._decoder._forward(x=x, z=observation)
             # Calculates imitation prior.
             _, log_prob, logabsdet = self._decoder._inverse(y=y, z=observation)
-            imitation_prior = torch.mean(log_prob - logabsdet)  # pylint: disable=no-member q(x|phi)
+            imitation_prior = torch.mean(
+                log_prob - logabsdet)  # pylint: disable=no-member q(x|phi)
             # Calculates goal likelihodd.
             goal_likelihood = 0.0
             if goal is not None:
-                goal_likelihood = self._goal_likelihood(y=y, goal=goal, epsilon=epsilon)
+                goal_likelihood = self._goal_likelihood(
+                    y=y, goal=goal, epsilon=epsilon)
                 assert imitation_prior.shape == goal_likelihood.shape
             loss = -(imitation_prior + goal_likelihood)
             # Backward pass.
@@ -834,7 +888,8 @@ class ImitativeModel_slim(nn.Module):
 
         # MAKE POLYGON EDGES
         goal_polygon = goal_polygon.repeat((batch_size, 1, 1))
-        goal_polygon_closed = torch.cat([goal_polygon, goal_polygon[:, [0]]], dim=1)
+        goal_polygon_closed = torch.cat(
+            [goal_polygon, goal_polygon[:, [0]]], dim=1)
         end = goal_polygon_closed[..., 1:, :]
         start = goal_polygon_closed[..., :-1, :]
         segment_vector = end - start
@@ -848,14 +903,16 @@ class ImitativeModel_slim(nn.Module):
 
         # Stores the best values.
         x_best = x.clone()
-        loss_best = torch.ones((batch_size)).to(x.device) * 1000.0  # pylint: disable=no-member
+        loss_best = torch.ones((batch_size)).to(
+            x.device) * 1000.0  # pylint: disable=no-member
 
         for _ in range(num_steps):
             # Resets optimizer's gradients.
             optimizer.zero_grad()
             # Operate on `y`-space.
             # y, _, mu_t, sig_t = self._decoder._forward(x=torch.stack(p), z=z, return_rollouts=True)
-            y, _, mu_t, sig_t = self._decoder._forward(x=x, z=z, return_rollouts=True)
+            y, _, mu_t, sig_t = self._decoder._forward(
+                x=x, z=z, return_rollouts=True)
 
             inclusion_mask = self.mpl_in_polygon(
                 mu_t[-1][:, :2].cpu().detach().numpy(),
@@ -865,14 +922,16 @@ class ImitativeModel_slim(nn.Module):
 
             # Calculates imitation prior.
             _, log_prob, logabsdet = self._decoder._inverse(y=y, z=z)
-            imitation_prior = log_prob - logabsdet  # pylint: disable=no-member q(x|phi)
+            imitation_prior = log_prob - \
+                logabsdet  # pylint: disable=no-member q(x|phi)
 
             # Calculates goal likelihodd.
             goal_likelihood = torch.zeros((batch_size)).to(x.device)
             if goal_polygon is not None and not inclusion_mask.all():
 
                 goal_likelihood = self._region_goal(
-                    inclusion_mask=torch.BoolTensor(inclusion_mask).to(x.device),
+                    inclusion_mask=torch.BoolTensor(
+                        inclusion_mask).to(x.device),
                     y=y[:, -1],
                     segment=segment_vector,
                     mu_t=mu_t[-1],
@@ -888,7 +947,8 @@ class ImitativeModel_slim(nn.Module):
             # Performs a gradient descent step.
             optimizer.step()
             # Book-keeping
-            x_best = torch.where(loss.view(-1, 1, 1) < loss_best.view(-1, 1, 1), x, x_best).clone()
+            x_best = torch.where(loss.view(-1, 1, 1) <
+                                 loss_best.view(-1, 1, 1), x, x_best).clone()
             loss_best = torch.where(loss < loss_best, loss, loss_best).clone()
 
         y, _ = self._decoder._forward(x=x_best, z=z)
@@ -914,22 +974,26 @@ class ImitativeModel_slim(nn.Module):
 
         cov_mat = torch.diag_embed(sig_T)
         mu_T_tiled = mu_T.unsqueeze(dim=1).repeat((1, segment.shape[1], 1))
-        cov_mat_tiled = cov_mat.unsqueeze(dim=1).repeat((1, segment.shape[1], 1, 1))
+        cov_mat_tiled = cov_mat.unsqueeze(
+            dim=1).repeat((1, segment.shape[1], 1, 1))
 
-        q_T = D.MultivariateNormal(loc=mu_T_tiled, covariance_matrix=cov_mat_tiled)
+        q_T = D.MultivariateNormal(
+            loc=mu_T_tiled, covariance_matrix=cov_mat_tiled)
         log_qx = torch.max(
             q_T.log_prob(y[:, :2].unsqueeze(dim=1).repeat((1, segment.shape[1], 1))), dim=1
         )[0]
         prec_mat = torch.inverse(cov_mat)
 
-        unum = -torch.einsum("bmd,bde,bme->bm", segment, prec_mat, start - mu_T[:, None, :])
+        unum = -torch.einsum("bmd,bde,bme->bm", segment,
+                             prec_mat, start - mu_T[:, None, :])
         udenom = torch.einsum("bmd,bde,bme->bm", segment, prec_mat, segment)
         u_edges = self.safe_divide(unum, udenom)
         u_edges = torch.clamp(u_edges, 0, 1)
         xy_edges = start + torch.einsum("bm,bmd->bmd", u_edges, segment)
         log_q_T_outside = torch.max(q_T.log_prob(xy_edges), dim=1)[0]
         log_q_T_inside = torch.max(q_T.log_prob(mu_T_tiled), dim=1)[0]
-        log_prob_As = torch.where(inclusion_mask, log_q_T_inside, log_q_T_outside)
+        log_prob_As = torch.where(
+            inclusion_mask, log_q_T_inside, log_q_T_outside)
         log_prob = log_prob_As - log_qx
         if comp:
             return log_prob
@@ -968,10 +1032,13 @@ class ImitativeModel_slim(nn.Module):
         # _encoder_static_environmental
         # _encoder_oppo
 
-        ego_past = self._encoder_player_past(context.get("ego_past").unsqueeze(dim=1))
-        environmental = self._encoder_static_environmental(context.get("environmental"))
+        ego_past = self._encoder_player_past(
+            context.get("ego_past").unsqueeze(dim=1))
+        environmental = self._encoder_static_environmental(
+            context.get("environmental"))
         dynamic_oppo = self._encoder_oppo(context.get("oppo"))
-        raceline = self._encoder_raceline(context.get("raceline").unsqueeze(dim=1))
+        raceline = self._encoder_raceline(
+            context.get("raceline").unsqueeze(dim=1))
 
         visual_features = torch.cat(  # pylint: disable=no-member
             tensors=[ego_past, raceline, environmental, dynamic_oppo], dim=-1
@@ -1001,7 +1068,8 @@ class ImitativeModel_slim(nn.Module):
         # sample["lidar_features"] = sample.pop("top_view")[:,None,:,:]
         sample["lidar_features"] = sample.pop("top_view")
         sample["lidar_features"] = transforms.downsample_visual_features(
-            visual_features=sample["lidar_features"], future_traj_shape=(100, 100)
+            visual_features=sample["lidar_features"], future_traj_shape=(
+                100, 100)
         )
         return sample
 
@@ -1051,13 +1119,15 @@ class ImitativeModel_slim(nn.Module):
                 goal_polygon[0].cpu().detach().numpy(),
                 flip=True,
             )
-            goal_polygon_closed = torch.cat([goal_polygon, goal_polygon[:, [0]]], dim=1)
+            goal_polygon_closed = torch.cat(
+                [goal_polygon, goal_polygon[:, [0]]], dim=1)
             end = goal_polygon_closed[..., 1:, :]
             start = goal_polygon_closed[..., :-1, :]
             segment_vector = end - start
             # print(segment_vector.device, mu_t[-1].device, centroids.device, sig_t[-1].device)
             goal_likelihood = self._region_goal(
-                inclusion_mask=torch.BoolTensor(inclusion_mask).to(mu_t[-1].device),
+                inclusion_mask=torch.BoolTensor(
+                    inclusion_mask).to(mu_t[-1].device),
                 y=centroids[:, -1],
                 segment=segment_vector,
                 mu_t=mu_t[-1],
@@ -1089,7 +1159,8 @@ class ImitativeModel_slim(nn.Module):
         if costmap_only:
             loss -= imitation_prior
         elif triage is not None:
-            topk_val = torch.mean(torch.topk(costmap_values, k=25, dim=0)[0]).item()
+            topk_val = torch.mean(torch.topk(
+                costmap_values, k=25, dim=0)[0]).item()
             print("topk_val", topk_val)
             if topk_val > triage:
                 loss -= imitation_prior
@@ -1165,18 +1236,21 @@ class ImitativeModel_slim(nn.Module):
         optimizer = optim.Adam(params=p, lr=lr)
         # Stores the best values.
         x_best = x.clone()
-        loss_best = torch.ones((batch_size)).to(x.device) * 1000.0  # pylint: disable=no-member
+        loss_best = torch.ones((batch_size)).to(
+            x.device) * 1000.0  # pylint: disable=no-member
         for _ in range(num_steps):
             # Resets optimizer's gradients.
             optimizer.zero_grad()
             y, _ = self._decoder._forward(x=torch.stack(p), z=z)
             # Calculates imitation prior.
             _, log_prob, logabsdet = self._decoder._inverse(y=y, z=z)
-            imitation_prior = log_prob - logabsdet  # pylint: disable=no-member q(x|phi)
+            imitation_prior = log_prob - \
+                logabsdet  # pylint: disable=no-member q(x|phi)
             # Calculates goal likelihodd.
             goal_likelihood = 0.0
             if goal is not None:
-                goal_likelihood = self._goal_likelihood(y=y, goal=goal, epsilon=epsilon, comp=1)
+                goal_likelihood = self._goal_likelihood(
+                    y=y, goal=goal, epsilon=epsilon, comp=1)
                 assert imitation_prior.shape == goal_likelihood.shape
             loss = -(imitation_prior + goal_likelihood)
             # Backward pass.
@@ -1184,7 +1258,8 @@ class ImitativeModel_slim(nn.Module):
             # Performs a gradient descent step.
             optimizer.step()
             # Book-keeping
-            x_best = torch.where(loss.view(-1, 1, 1) < loss_best.view(-1, 1, 1), x, x_best).clone()
+            x_best = torch.where(loss.view(-1, 1, 1) <
+                                 loss_best.view(-1, 1, 1), x, x_best).clone()
             loss_best = torch.where(loss < loss_best, loss, loss_best).clone()
         y, _ = self._decoder._forward(x=x_best, z=z)
         return y
@@ -1220,12 +1295,15 @@ class ImitativeModel_slim_bc(nn.Module):
         visual_inp = 24
         self._encoder = MobileNetV2(num_classes=visual_inp, in_channels=1)
 
-        self._encoder_player_past = MobileNetV3_small(num_classes=visual_inp, in_channels=1)
+        self._encoder_player_past = MobileNetV3_small(
+            num_classes=visual_inp, in_channels=1)
         self._encoder_static_environmental = MobileNetV3_small(
             num_classes=visual_inp, in_channels=2
         )
-        self._encoder_oppo = MobileNetV3_small(num_classes=visual_inp, in_channels=3)
-        self._encoder_raceline = MobileNetV3_small(num_classes=visual_inp, in_channels=1)
+        self._encoder_oppo = MobileNetV3_small(
+            num_classes=visual_inp, in_channels=3)
+        self._encoder_raceline = MobileNetV3_small(
+            num_classes=visual_inp, in_channels=1)
 
         print("INPUT EXPECTED TO BE SHAPE", past_traj_shape)
         print("OUTPUT EXPECTED TO BE SHAPE", future_traj_shape)
@@ -1241,7 +1319,8 @@ class ImitativeModel_slim_bc(nn.Module):
         )
 
         # The decoder recurrent network used for the sequence generation.
-        self._decoder = AutoregressiveFlow(output_shape=self.future_traj_shape, hidden_size=64)
+        self._decoder = AutoregressiveFlow(
+            output_shape=self.future_traj_shape, hidden_size=64)
 
     def to(self, *args, **kwargs):
         """Handles non-parameter tensors when moved to a new device."""
@@ -1289,7 +1368,8 @@ class ImitativeModel_slim_bc(nn.Module):
 
         # Stores the best values.
         x_best = x.clone()
-        loss_best = torch.ones(()).to(x.device) * 1000.0  # pylint: disable=no-member
+        loss_best = torch.ones(()).to(x.device) * \
+            1000.0  # pylint: disable=no-member
 
         for _ in range(num_steps):
             # Resets optimizer's gradients.
@@ -1298,11 +1378,13 @@ class ImitativeModel_slim_bc(nn.Module):
             y, _ = self._decoder._forward(x=x, z=z)
             # Calculates imitation prior.
             _, log_prob, logabsdet = self._decoder._inverse(y=y, z=z)
-            imitation_prior = torch.mean(log_prob - logabsdet)  # pylint: disable=no-member q(x|phi)
+            imitation_prior = torch.mean(
+                log_prob - logabsdet)  # pylint: disable=no-member q(x|phi)
             # Calculates goal likelihodd.
             goal_likelihood = 0.0
             if goal is not None:
-                goal_likelihood = self._goal_likelihood(y=y, goal=goal, epsilon=epsilon)
+                goal_likelihood = self._goal_likelihood(
+                    y=y, goal=goal, epsilon=epsilon)
                 assert imitation_prior.shape == goal_likelihood.shape
             loss = -(imitation_prior + goal_likelihood)
             # Backward pass.
@@ -1392,7 +1474,8 @@ class ImitativeModel_slim_bc(nn.Module):
 
         # MAKE POLYGON EDGES
         goal_polygon = goal_polygon.repeat((batch_size, 1, 1))
-        goal_polygon_closed = torch.cat([goal_polygon, goal_polygon[:, [0]]], dim=1)
+        goal_polygon_closed = torch.cat(
+            [goal_polygon, goal_polygon[:, [0]]], dim=1)
         end = goal_polygon_closed[..., 1:, :]
         start = goal_polygon_closed[..., :-1, :]
         segment_vector = end - start
@@ -1406,14 +1489,16 @@ class ImitativeModel_slim_bc(nn.Module):
 
         # Stores the best values.
         x_best = x.clone()
-        loss_best = torch.ones((batch_size)).to(x.device) * 1000.0  # pylint: disable=no-member
+        loss_best = torch.ones((batch_size)).to(
+            x.device) * 1000.0  # pylint: disable=no-member
 
         for _ in range(num_steps):
             # Resets optimizer's gradients.
             optimizer.zero_grad()
             # Operate on `y`-space.
             # y, _, mu_t, sig_t = self._decoder._forward(x=torch.stack(p), z=z, return_rollouts=True)
-            y, _, mu_t, sig_t = self._decoder._forward(x=x, z=z, return_rollouts=True)
+            y, _, mu_t, sig_t = self._decoder._forward(
+                x=x, z=z, return_rollouts=True)
 
             inclusion_mask = self.mpl_in_polygon(
                 mu_t[-1][:, :2].cpu().detach().numpy(),
@@ -1423,14 +1508,16 @@ class ImitativeModel_slim_bc(nn.Module):
 
             # Calculates imitation prior.
             _, log_prob, logabsdet = self._decoder._inverse(y=y, z=z)
-            imitation_prior = log_prob - logabsdet  # pylint: disable=no-member q(x|phi)
+            imitation_prior = log_prob - \
+                logabsdet  # pylint: disable=no-member q(x|phi)
 
             # Calculates goal likelihodd.
             goal_likelihood = torch.zeros((batch_size)).to(x.device)
             if goal_polygon is not None and not inclusion_mask.all():
 
                 goal_likelihood = self._region_goal(
-                    inclusion_mask=torch.BoolTensor(inclusion_mask).to(x.device),
+                    inclusion_mask=torch.BoolTensor(
+                        inclusion_mask).to(x.device),
                     y=y[:, -1],
                     segment=segment_vector,
                     mu_t=mu_t[-1],
@@ -1446,7 +1533,8 @@ class ImitativeModel_slim_bc(nn.Module):
             # Performs a gradient descent step.
             optimizer.step()
             # Book-keeping
-            x_best = torch.where(loss.view(-1, 1, 1) < loss_best.view(-1, 1, 1), x, x_best).clone()
+            x_best = torch.where(loss.view(-1, 1, 1) <
+                                 loss_best.view(-1, 1, 1), x, x_best).clone()
             loss_best = torch.where(loss < loss_best, loss, loss_best).clone()
 
         y, _ = self._decoder._forward(x=x_best, z=z)
@@ -1472,22 +1560,26 @@ class ImitativeModel_slim_bc(nn.Module):
 
         cov_mat = torch.diag_embed(sig_T)
         mu_T_tiled = mu_T.unsqueeze(dim=1).repeat((1, segment.shape[1], 1))
-        cov_mat_tiled = cov_mat.unsqueeze(dim=1).repeat((1, segment.shape[1], 1, 1))
+        cov_mat_tiled = cov_mat.unsqueeze(
+            dim=1).repeat((1, segment.shape[1], 1, 1))
 
-        q_T = D.MultivariateNormal(loc=mu_T_tiled, covariance_matrix=cov_mat_tiled)
+        q_T = D.MultivariateNormal(
+            loc=mu_T_tiled, covariance_matrix=cov_mat_tiled)
         log_qx = torch.max(
             q_T.log_prob(y[:, :2].unsqueeze(dim=1).repeat((1, segment.shape[1], 1))), dim=1
         )[0]
         prec_mat = torch.inverse(cov_mat)
 
-        unum = -torch.einsum("bmd,bde,bme->bm", segment, prec_mat, start - mu_T[:, None, :])
+        unum = -torch.einsum("bmd,bde,bme->bm", segment,
+                             prec_mat, start - mu_T[:, None, :])
         udenom = torch.einsum("bmd,bde,bme->bm", segment, prec_mat, segment)
         u_edges = self.safe_divide(unum, udenom)
         u_edges = torch.clamp(u_edges, 0, 1)
         xy_edges = start + torch.einsum("bm,bmd->bmd", u_edges, segment)
         log_q_T_outside = torch.max(q_T.log_prob(xy_edges), dim=1)[0]
         log_q_T_inside = torch.max(q_T.log_prob(mu_T_tiled), dim=1)[0]
-        log_prob_As = torch.where(inclusion_mask, log_q_T_inside, log_q_T_outside)
+        log_prob_As = torch.where(
+            inclusion_mask, log_q_T_inside, log_q_T_outside)
         log_prob = log_prob_As - log_qx
         if comp:
             return log_prob
@@ -1526,10 +1618,13 @@ class ImitativeModel_slim_bc(nn.Module):
         # _encoder_static_environmental
         # _encoder_oppo
 
-        ego_past = self._encoder_player_past(context.get("ego_past").unsqueeze(dim=1))
-        environmental = self._encoder_static_environmental(context.get("environmental"))
+        ego_past = self._encoder_player_past(
+            context.get("ego_past").unsqueeze(dim=1))
+        environmental = self._encoder_static_environmental(
+            context.get("environmental"))
         dynamic_oppo = self._encoder_oppo(context.get("oppo"))
-        raceline = self._encoder_raceline(context.get("raceline").unsqueeze(dim=1))
+        raceline = self._encoder_raceline(
+            context.get("raceline").unsqueeze(dim=1))
 
         visual_features = torch.cat(  # pylint: disable=no-member
             tensors=[ego_past, raceline, environmental, dynamic_oppo], dim=-1
@@ -1559,7 +1654,8 @@ class ImitativeModel_slim_bc(nn.Module):
         # sample["lidar_features"] = sample.pop("top_view")[:,None,:,:]
         sample["lidar_features"] = sample.pop("top_view")
         sample["lidar_features"] = transforms.downsample_visual_features(
-            visual_features=sample["lidar_features"], future_traj_shape=(100, 100)
+            visual_features=sample["lidar_features"], future_traj_shape=(
+                100, 100)
         )
         return sample
 
@@ -1609,13 +1705,15 @@ class ImitativeModel_slim_bc(nn.Module):
                 goal_polygon[0].cpu().detach().numpy(),
                 flip=True,
             )
-            goal_polygon_closed = torch.cat([goal_polygon, goal_polygon[:, [0]]], dim=1)
+            goal_polygon_closed = torch.cat(
+                [goal_polygon, goal_polygon[:, [0]]], dim=1)
             end = goal_polygon_closed[..., 1:, :]
             start = goal_polygon_closed[..., :-1, :]
             segment_vector = end - start
             # print(segment_vector.device, mu_t[-1].device, centroids.device, sig_t[-1].device)
             goal_likelihood = self._region_goal(
-                inclusion_mask=torch.BoolTensor(inclusion_mask).to(mu_t[-1].device),
+                inclusion_mask=torch.BoolTensor(
+                    inclusion_mask).to(mu_t[-1].device),
                 y=centroids[:, -1],
                 segment=segment_vector,
                 mu_t=mu_t[-1],
@@ -1647,7 +1745,8 @@ class ImitativeModel_slim_bc(nn.Module):
         if costmap_only:
             loss -= imitation_prior
         elif triage is not None:
-            topk_val = torch.mean(torch.topk(costmap_values, k=25, dim=0)[0]).item()
+            topk_val = torch.mean(torch.topk(
+                costmap_values, k=25, dim=0)[0]).item()
             print("topk_val", topk_val)
             if topk_val > triage:
                 loss -= imitation_prior
@@ -1723,18 +1822,21 @@ class ImitativeModel_slim_bc(nn.Module):
         optimizer = optim.Adam(params=p, lr=lr)
         # Stores the best values.
         x_best = x.clone()
-        loss_best = torch.ones((batch_size)).to(x.device) * 1000.0  # pylint: disable=no-member
+        loss_best = torch.ones((batch_size)).to(
+            x.device) * 1000.0  # pylint: disable=no-member
         for _ in range(num_steps):
             # Resets optimizer's gradients.
             optimizer.zero_grad()
             y, _ = self._decoder._forward(x=torch.stack(p), z=z)
             # Calculates imitation prior.
             _, log_prob, logabsdet = self._decoder._inverse(y=y, z=z)
-            imitation_prior = log_prob - logabsdet  # pylint: disable=no-member q(x|phi)
+            imitation_prior = log_prob - \
+                logabsdet  # pylint: disable=no-member q(x|phi)
             # Calculates goal likelihodd.
             goal_likelihood = 0.0
             if goal is not None:
-                goal_likelihood = self._goal_likelihood(y=y, goal=goal, epsilon=epsilon, comp=1)
+                goal_likelihood = self._goal_likelihood(
+                    y=y, goal=goal, epsilon=epsilon, comp=1)
                 assert imitation_prior.shape == goal_likelihood.shape
             loss = -(imitation_prior + goal_likelihood)
             # Backward pass.
@@ -1742,7 +1844,8 @@ class ImitativeModel_slim_bc(nn.Module):
             # Performs a gradient descent step.
             optimizer.step()
             # Book-keeping
-            x_best = torch.where(loss.view(-1, 1, 1) < loss_best.view(-1, 1, 1), x, x_best).clone()
+            x_best = torch.where(loss.view(-1, 1, 1) <
+                                 loss_best.view(-1, 1, 1), x, x_best).clone()
             loss_best = torch.where(loss < loss_best, loss, loss_best).clone()
         y, _ = self._decoder._forward(x=x_best, z=z)
         return y
@@ -1786,4 +1889,3 @@ class action_model(nn.Module):
         output = output.view(output.size(0), -1)
         output = self.linear_layers(output)
         return output
-
