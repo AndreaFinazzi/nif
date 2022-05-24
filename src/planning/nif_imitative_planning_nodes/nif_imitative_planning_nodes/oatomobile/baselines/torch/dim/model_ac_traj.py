@@ -710,30 +710,30 @@ class ImitativeModel_slim(nn.Module):
         print("INPUT EXPECTED TO BE SHAPE", past_traj_shape)
         print("OUTPUT EXPECTED TO BE SHAPE", future_traj_shape)
 
-        # self._merger = MLP(
-        #     # input_size=128, Add the future_traj_shape product
-        #     input_size=visual_inp * 4,
-        #     output_sizes=[64, 64, 64],
-        #     activation_fn=nn.ReLU,
-        #     # dropout_rate=None,
-        #     dropout_rate=0.1,
-        #     activate_final=True,
-        # )
-        # The decoder recurrent network used for the sequence generation.
-        # self._decoder = AutoregressiveFlow(output_shape=self.future_traj_shape, hidden_size=64)
-
-        # Matched with Autoregresseive(hidden_size 16)
         self._merger = MLP(
             # input_size=128, Add the future_traj_shape product
             input_size=visual_inp * 4,
-            output_sizes=[64, 64, 16],
+            output_sizes=[64, 64, 64],
             activation_fn=nn.ReLU,
             # dropout_rate=None,
             dropout_rate=0.1,
             activate_final=True,
         )
-        self._decoder = AutoregressiveFlow(
-            output_shape=self.future_traj_shape, hidden_size=16)
+        # The decoder recurrent network used for the sequence generation.
+        self._decoder = AutoregressiveFlow(output_shape=self.future_traj_shape, hidden_size=64)
+
+        # Matched with Autoregresseive(hidden_size 16)
+        # self._merger = MLP(
+        #     # input_size=128, Add the future_traj_shape product
+        #     input_size=visual_inp * 4,
+        #     output_sizes=[64, 64, 16],
+        #     activation_fn=nn.ReLU,
+        #     # dropout_rate=None,
+        #     dropout_rate=0.1,
+        #     activate_final=True,
+        # )
+        # self._decoder = AutoregressiveFlow(
+        #     output_shape=self.future_traj_shape, hidden_size=16)
 
     def to(self, *args, **kwargs):
         """Handles non-parameter tensors when moved to a new device."""
@@ -1245,6 +1245,7 @@ class ImitativeModel_slim(nn.Module):
         #    print('goal_likelihood:', goal_likelihood[:20])
 
         prob_idx = torch.argmax(loss, dim=0)
+
         # print(loss[prob_idx])
         return centroids[prob_idx], loss
 

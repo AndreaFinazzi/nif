@@ -61,7 +61,7 @@ model_weight_db_path = get_share_file(
     "nif_imitative_planning_nodes", "nif_imitative_planning_nodes/ac_weight_files"
 )
 traj_lib_db_path = get_share_file(
-    "nif_imitative_planning_nodes", "nif_imitative_planning_nodes/ac_weight_files"
+    "nif_imitative_planning_nodes", "nif_imitative_planning_nodes/ac_trajectory_lib"
 )
 
 
@@ -71,7 +71,7 @@ class ImitativePlanningNode(Node):
 
         self.verbose = True
         self.dt = 0.01  # [sec]
-        self.use_traj_lib = False
+        self.use_traj_lib = True
         self.num_samples = 1
         self.vis_density_function = False
         self.cnt = 0
@@ -550,14 +550,15 @@ class ImitativePlanningNode(Node):
         """
         # self.model_path = "/home/usrg-racing/nif/build/nif_imitative_planning_nodes/nif_imitative_planning_nodes/ac_weight_files/model-452.pt"
 
+        self.model_path = (
+            model_weight_db_path + "/traj_based/slim_w_mobilenetV3/model-490.pt" # hidden 64
+        )
+
         # self.model_path = (
-        #     model_weight_db_path + "/traj_based/slim_w_mobilenetV3/model-490.pt" # hidden 64
+        #     model_weight_db_path
+        #     + "/slim_w_mobilenetv3_16hiddenUnit_in_Autoregressive/model-130.pt"  # hidden 16
         # )
 
-        self.model_path = (
-            model_weight_db_path
-            + "/slim_w_mobilenetv3_16hiddenUnit_in_Autoregressive/model-130.pt"  # hidden 64
-        )
         # self.model = ImitativeModel(
         #     future_traj_shape=self.output_shape,
         #     num_pos_dim=self.num_pos_dim,
@@ -583,7 +584,7 @@ class ImitativePlanningNode(Node):
         load trajectory lib
         """
         if self.use_traj_lib == True:
-            self.trajectory_lib_path = traj_lib_db_path + "/0413.npy"
+            self.trajectory_lib_path = traj_lib_db_path + "/518.npy"
             self.arr = np.load(self.trajectory_lib_path)
             self.traj_lib = (
                 torch.from_numpy(
@@ -1465,20 +1466,6 @@ class ImitativePlanningNode(Node):
             # print("preparation time : ", toc - tic)
 
             if self.use_traj_lib:
-                # z = self.model._params(
-                #     visual_features=batch["visual_features"],
-                #     player_past=batch["player_past"],
-                # ).repeat((self.arr.shape[0], 1))
-
-                # z = self.model._params(
-                #     player_past=batch["player_past"],
-                #     left_bound=batch["left_bound"],
-                #     right_bound=batch["right_bound"],
-                #     race_line=batch["race_line"],
-                #     oppo1_body=batch["oppo1_body"],
-                #     oppo2_body=batch["oppo2_body"],
-                #     oppo3_body=batch["oppo3_body"],
-                # ).repeat((self.arr.shape[0], 1))
 
                 z = self.model._params(
                     ego_past=batch["player_past"],
@@ -1500,17 +1487,19 @@ class ImitativePlanningNode(Node):
                 traj_cpu_np = traj.detach().cpu().numpy().astype(np.float64)
                 prb_cpu_np = prb.detach().cpu().numpy().astype(np.float64)
 
+                # print(traj_cpu_np.shape) --> (50,3)
+
                 # Publish result
                 vis_path = Path()
                 vis_path.header.frame_id = "base_link"
 
-                for i in range(self.trajs_candidates.shape[0]):
-                    for j in range(self.trajs_candidates.shape[1]):
-                        pt = PoseStamped()
-                        pt.header.frame_id = "base_link"
-                        pt.pose.position.x = self.trajs_candidates[i][j][0]
-                        pt.pose.position.y = self.trajs_candidates[i][j][1]
-                        vis_path.poses.append(pt)
+                for i in range(traj_cpu_np.shape[0]):
+                    pt = PoseStamped()
+                    pt.header.frame_id = "base_link"
+                    pt.pose.position.x = traj_cpu_np[i][0]
+                    pt.pose.position.y = traj_cpu_np[i][1]
+                    vis_path.poses.append(pt)
+
                 self.path_pub.publish(vis_path)
 
             else:
@@ -1631,6 +1620,9 @@ class ImitativePlanningNode(Node):
 
                     self.path_pub.publish(vis_path)
                     return
+
+            
+
 
                 z = self.model._params(
                     ego_past=batch["player_past"],
