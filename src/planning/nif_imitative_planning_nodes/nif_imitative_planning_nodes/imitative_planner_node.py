@@ -454,7 +454,7 @@ class ImitativePlanningNode(Node):
         """
         Minimize online for loop 
         """
-        self.slice_length_full = 150
+        self.slice_length_full = 100
 
         ps_global = PoseStamped()
         ps_global.header.frame_id = "odom"
@@ -551,7 +551,8 @@ class ImitativePlanningNode(Node):
         # self.model_path = "/home/usrg-racing/nif/build/nif_imitative_planning_nodes/nif_imitative_planning_nodes/ac_weight_files/model-452.pt"
 
         self.model_path = (
-            model_weight_db_path + "/traj_based/slim_w_mobilenetV3/model-490.pt" # hidden 64
+            model_weight_db_path
+            + "/traj_based/slim_w_mobilenetV3/model-490.pt"  # hidden 64
         )
 
         # self.model_path = (
@@ -683,355 +684,355 @@ class ImitativePlanningNode(Node):
                 0.0,
             )
 
-    def overlay_opponents(self, ego_odom):
-        """
-        Overlaying
-        """
-        downsample = 10
-        for oppo_1_global_pose in self.opponent_1_odom_buffer[0::downsample]:
-            body_x, body_y, _ = self.goal_pt_to_body(
-                ego_odom.pose.pose.position.x,
-                ego_odom.pose.pose.position.y,
-                self.ego_yaw,
-                oppo_1_global_pose.position.x,
-                oppo_1_global_pose.position.y,
-                0.0,
-            )
-            grid_x_idx = int(
-                self.CENTER_X_GRID
-                - int(body_x / (self.UNIT_GRID_DIST / self.PRESET_X_GRID_SIZE))
-            )
-            grid_y_idx = int(
-                self.CENTER_Y_GRID
-                - int(body_y / (self.UNIT_GRID_DIST / self.PRESET_Y_GRID_SIZE))
-            )
-            if (
-                grid_x_idx > 0
-                and grid_x_idx < self.PRESET_X_GRID_SIZE
-                and grid_y_idx > 0
-                and grid_y_idx < self.PRESET_Y_GRID_SIZE
-            ):
-                self.input_visual_feature[
-                    0, 0, grid_x_idx, grid_y_idx
-                ] = self.OVERLAY_OPPONENT_VALUE
+    # def overlay_opponents(self, ego_odom):
+    #     """
+    #     Overlaying
+    #     """
+    #     downsample = 10
+    #     for oppo_1_global_pose in self.opponent_1_odom_buffer[0::downsample]:
+    #         body_x, body_y, _ = self.goal_pt_to_body(
+    #             ego_odom.pose.pose.position.x,
+    #             ego_odom.pose.pose.position.y,
+    #             self.ego_yaw,
+    #             oppo_1_global_pose.position.x,
+    #             oppo_1_global_pose.position.y,
+    #             0.0,
+    #         )
+    #         grid_x_idx = int(
+    #             self.CENTER_X_GRID
+    #             - int(body_x / (self.UNIT_GRID_DIST / self.PRESET_X_GRID_SIZE))
+    #         )
+    #         grid_y_idx = int(
+    #             self.CENTER_Y_GRID
+    #             - int(body_y / (self.UNIT_GRID_DIST / self.PRESET_Y_GRID_SIZE))
+    #         )
+    #         if (
+    #             grid_x_idx > 0
+    #             and grid_x_idx < self.PRESET_X_GRID_SIZE
+    #             and grid_y_idx > 0
+    #             and grid_y_idx < self.PRESET_Y_GRID_SIZE
+    #         ):
+    #             self.input_visual_feature[
+    #                 0, 0, grid_x_idx, grid_y_idx
+    #             ] = self.OVERLAY_OPPONENT_VALUE
 
-        for oppo_2_global_pose in self.opponent_2_odom_buffer[0::downsample]:
-            body_x, body_y, _ = self.goal_pt_to_body(
-                ego_odom.pose.pose.position.x,
-                ego_odom.pose.pose.position.y,
-                self.ego_yaw,
-                oppo_2_global_pose.position.x,
-                oppo_2_global_pose.position.y,
-                0.0,
-            )
-            grid_x_idx = int(
-                self.CENTER_X_GRID
-                - int(body_x / (self.UNIT_GRID_DIST / self.PRESET_X_GRID_SIZE))
-            )
-            grid_y_idx = int(
-                self.CENTER_Y_GRID
-                - int(body_y / (self.UNIT_GRID_DIST / self.PRESET_Y_GRID_SIZE))
-            )
-            if (
-                grid_x_idx > 0
-                and grid_x_idx < self.PRESET_X_GRID_SIZE
-                and grid_y_idx > 0
-                and grid_y_idx < self.PRESET_Y_GRID_SIZE
-            ):
-                self.input_visual_feature[
-                    0, 0, grid_x_idx, grid_y_idx
-                ] = self.OVERLAY_OPPONENT_VALUE
+    #     for oppo_2_global_pose in self.opponent_2_odom_buffer[0::downsample]:
+    #         body_x, body_y, _ = self.goal_pt_to_body(
+    #             ego_odom.pose.pose.position.x,
+    #             ego_odom.pose.pose.position.y,
+    #             self.ego_yaw,
+    #             oppo_2_global_pose.position.x,
+    #             oppo_2_global_pose.position.y,
+    #             0.0,
+    #         )
+    #         grid_x_idx = int(
+    #             self.CENTER_X_GRID
+    #             - int(body_x / (self.UNIT_GRID_DIST / self.PRESET_X_GRID_SIZE))
+    #         )
+    #         grid_y_idx = int(
+    #             self.CENTER_Y_GRID
+    #             - int(body_y / (self.UNIT_GRID_DIST / self.PRESET_Y_GRID_SIZE))
+    #         )
+    #         if (
+    #             grid_x_idx > 0
+    #             and grid_x_idx < self.PRESET_X_GRID_SIZE
+    #             and grid_y_idx > 0
+    #             and grid_y_idx < self.PRESET_Y_GRID_SIZE
+    #         ):
+    #             self.input_visual_feature[
+    #                 0, 0, grid_x_idx, grid_y_idx
+    #             ] = self.OVERLAY_OPPONENT_VALUE
 
-        for oppo_3_global_pose in self.opponent_3_odom_buffer[0::downsample]:
-            body_x, body_y, _ = self.goal_pt_to_body(
-                ego_odom.pose.pose.position.x,
-                ego_odom.pose.pose.position.y,
-                self.ego_yaw,
-                oppo_3_global_pose.position.x,
-                oppo_3_global_pose.position.y,
-                0.0,
-            )
-            grid_x_idx = int(
-                self.CENTER_X_GRID
-                - int(body_x / (self.UNIT_GRID_DIST / self.PRESET_X_GRID_SIZE))
-            )
-            grid_y_idx = int(
-                self.CENTER_Y_GRID
-                - int(body_y / (self.UNIT_GRID_DIST / self.PRESET_Y_GRID_SIZE))
-            )
-            if (
-                grid_x_idx > 0
-                and grid_x_idx < self.PRESET_X_GRID_SIZE
-                and grid_y_idx > 0
-                and grid_y_idx < self.PRESET_Y_GRID_SIZE
-            ):
-                self.input_visual_feature[
-                    0, 0, grid_x_idx, grid_y_idx
-                ] = self.OVERLAY_OPPONENT_VALUE
+    #     for oppo_3_global_pose in self.opponent_3_odom_buffer[0::downsample]:
+    #         body_x, body_y, _ = self.goal_pt_to_body(
+    #             ego_odom.pose.pose.position.x,
+    #             ego_odom.pose.pose.position.y,
+    #             self.ego_yaw,
+    #             oppo_3_global_pose.position.x,
+    #             oppo_3_global_pose.position.y,
+    #             0.0,
+    #         )
+    #         grid_x_idx = int(
+    #             self.CENTER_X_GRID
+    #             - int(body_x / (self.UNIT_GRID_DIST / self.PRESET_X_GRID_SIZE))
+    #         )
+    #         grid_y_idx = int(
+    #             self.CENTER_Y_GRID
+    #             - int(body_y / (self.UNIT_GRID_DIST / self.PRESET_Y_GRID_SIZE))
+    #         )
+    #         if (
+    #             grid_x_idx > 0
+    #             and grid_x_idx < self.PRESET_X_GRID_SIZE
+    #             and grid_y_idx > 0
+    #             and grid_y_idx < self.PRESET_Y_GRID_SIZE
+    #         ):
+    #             self.input_visual_feature[
+    #                 0, 0, grid_x_idx, grid_y_idx
+    #             ] = self.OVERLAY_OPPONENT_VALUE
 
-    def overlay_lines(self, ego_odom):
-        self.input_visual_feature.fill(0)
+    # def overlay_lines(self, ego_odom):
+    #     self.input_visual_feature.fill(0)
 
-        ego_pt = [
-            ego_odom.pose.pose.position.x,
-            ego_odom.pose.pose.position.y,
-            ego_odom.pose.pose.position.z,
-        ]
+    #     ego_pt = [
+    #         ego_odom.pose.pose.position.x,
+    #         ego_odom.pose.pose.position.y,
+    #         ego_odom.pose.pose.position.z,
+    #     ]
 
-        """
-        Find closest index
-        """
-        _, self.track_bound_l_idx = self.track_bound_l_tree.query(ego_pt)
-        _, self.track_bound_r_idx = self.track_bound_r_tree.query(ego_pt)
-        _, self.racenline_idx = self.raceline_tree.query(ego_pt)
+    #     """
+    #     Find closest index
+    #     """
+    #     _, self.track_bound_l_idx = self.track_bound_l_tree.query(ego_pt)
+    #     _, self.track_bound_r_idx = self.track_bound_r_tree.query(ego_pt)
+    #     _, self.racenline_idx = self.raceline_tree.query(ego_pt)
 
-        """
-        Slicing track geometry information
-        """
-        if self.track_bound_l_idx < (self.slice_length_full / 2):
-            self.sliced_track_bound_l.poses[
-                0 : int(self.slice_length_full / 2 - self.track_bound_l_idx)
-            ] = self.track_bound_l_path_global.poses[
-                int(-(self.slice_length_full / 2 - self.track_bound_l_idx)) :
-            ]
-            self.sliced_track_bound_l.poses[
-                int(self.slice_length_full / 2 - self.track_bound_l_idx) :
-            ] = self.track_bound_l_path_global.poses[
-                0 : int(self.track_bound_l_idx + (self.slice_length_full / 2))
-            ]
-        elif self.track_bound_l_idx > self.track_bound_l_path_global_len - (
-            self.slice_length_full / 2
-        ):
-            self.sliced_track_bound_l.poses[
-                0 : int(
-                    self.track_bound_l_path_global_len
-                    - self.track_bound_l_idx
-                    + self.slice_length_full / 2
-                )
-            ] = self.track_bound_l_path_global.poses[
-                int(self.track_bound_l_idx - (self.slice_length_full / 2)) :
-            ]
-            self.sliced_track_bound_l.poses[
-                int(
-                    self.track_bound_l_path_global_len
-                    - self.track_bound_l_idx
-                    + self.slice_length_full / 2
-                ) :
-            ] = self.track_bound_l_path_global.poses[
-                0 : int(
-                    self.track_bound_l_idx
-                    + (self.slice_length_full / 2)
-                    - self.track_bound_l_path_global_len
-                    - 1
-                )
-            ]
-        else:
-            self.sliced_track_bound_l.poses = self.track_bound_l_path_global.poses[
-                int(self.track_bound_l_idx - (self.slice_length_full / 2)) : int(
-                    self.track_bound_l_idx + (self.slice_length_full / 2)
-                )
-            ]
+    #     """
+    #     Slicing track geometry information
+    #     """
+    #     if self.track_bound_l_idx < (self.slice_length_full / 2):
+    #         self.sliced_track_bound_l.poses[
+    #             0 : int(self.slice_length_full / 2 - self.track_bound_l_idx)
+    #         ] = self.track_bound_l_path_global.poses[
+    #             int(-(self.slice_length_full / 2 - self.track_bound_l_idx)) :
+    #         ]
+    #         self.sliced_track_bound_l.poses[
+    #             int(self.slice_length_full / 2 - self.track_bound_l_idx) :
+    #         ] = self.track_bound_l_path_global.poses[
+    #             0 : int(self.track_bound_l_idx + (self.slice_length_full / 2))
+    #         ]
+    #     elif self.track_bound_l_idx > self.track_bound_l_path_global_len - (
+    #         self.slice_length_full / 2
+    #     ):
+    #         self.sliced_track_bound_l.poses[
+    #             0 : int(
+    #                 self.track_bound_l_path_global_len
+    #                 - self.track_bound_l_idx
+    #                 + self.slice_length_full / 2
+    #             )
+    #         ] = self.track_bound_l_path_global.poses[
+    #             int(self.track_bound_l_idx - (self.slice_length_full / 2)) :
+    #         ]
+    #         self.sliced_track_bound_l.poses[
+    #             int(
+    #                 self.track_bound_l_path_global_len
+    #                 - self.track_bound_l_idx
+    #                 + self.slice_length_full / 2
+    #             ) :
+    #         ] = self.track_bound_l_path_global.poses[
+    #             0 : int(
+    #                 self.track_bound_l_idx
+    #                 + (self.slice_length_full / 2)
+    #                 - self.track_bound_l_path_global_len
+    #                 - 1
+    #             )
+    #         ]
+    #     else:
+    #         self.sliced_track_bound_l.poses = self.track_bound_l_path_global.poses[
+    #             int(self.track_bound_l_idx - (self.slice_length_full / 2)) : int(
+    #                 self.track_bound_l_idx + (self.slice_length_full / 2)
+    #             )
+    #         ]
 
-        if self.track_bound_r_idx < (self.slice_length_full / 2):
-            self.sliced_track_bound_r.poses[
-                0 : int(self.slice_length_full / 2 - self.track_bound_r_idx)
-            ] = self.track_bound_r_path_global.poses[
-                int(-(self.slice_length_full / 2 - self.track_bound_r_idx)) :
-            ]
-            self.sliced_track_bound_r.poses[
-                int(self.slice_length_full / 2 - self.track_bound_r_idx) :
-            ] = self.track_bound_r_path_global.poses[
-                0 : int(self.track_bound_r_idx + (self.slice_length_full / 2))
-            ]
-        elif self.track_bound_r_idx > self.track_bound_r_path_global_len - (
-            self.slice_length_full / 2
-        ):
-            self.sliced_track_bound_r.poses[
-                0 : int(
-                    self.track_bound_r_path_global_len
-                    - self.track_bound_r_idx
-                    + self.slice_length_full / 2
-                )
-            ] = self.track_bound_r_path_global.poses[
-                int(self.track_bound_r_idx - (self.slice_length_full / 2)) :
-            ]
-            self.sliced_track_bound_r.poses[
-                int(
-                    self.track_bound_r_path_global_len
-                    - self.track_bound_r_idx
-                    + self.slice_length_full / 2
-                ) :
-            ] = self.track_bound_r_path_global.poses[
-                0 : int(
-                    self.track_bound_r_idx
-                    + (self.slice_length_full / 2)
-                    - self.track_bound_r_path_global_len
-                    - 1
-                )
-            ]
-        else:
-            self.sliced_track_bound_r.poses = self.track_bound_r_path_global.poses[
-                int(self.track_bound_r_idx - (self.slice_length_full / 2)) : int(
-                    self.track_bound_r_idx + (self.slice_length_full / 2)
-                )
-            ]
+    #     if self.track_bound_r_idx < (self.slice_length_full / 2):
+    #         self.sliced_track_bound_r.poses[
+    #             0 : int(self.slice_length_full / 2 - self.track_bound_r_idx)
+    #         ] = self.track_bound_r_path_global.poses[
+    #             int(-(self.slice_length_full / 2 - self.track_bound_r_idx)) :
+    #         ]
+    #         self.sliced_track_bound_r.poses[
+    #             int(self.slice_length_full / 2 - self.track_bound_r_idx) :
+    #         ] = self.track_bound_r_path_global.poses[
+    #             0 : int(self.track_bound_r_idx + (self.slice_length_full / 2))
+    #         ]
+    #     elif self.track_bound_r_idx > self.track_bound_r_path_global_len - (
+    #         self.slice_length_full / 2
+    #     ):
+    #         self.sliced_track_bound_r.poses[
+    #             0 : int(
+    #                 self.track_bound_r_path_global_len
+    #                 - self.track_bound_r_idx
+    #                 + self.slice_length_full / 2
+    #             )
+    #         ] = self.track_bound_r_path_global.poses[
+    #             int(self.track_bound_r_idx - (self.slice_length_full / 2)) :
+    #         ]
+    #         self.sliced_track_bound_r.poses[
+    #             int(
+    #                 self.track_bound_r_path_global_len
+    #                 - self.track_bound_r_idx
+    #                 + self.slice_length_full / 2
+    #             ) :
+    #         ] = self.track_bound_r_path_global.poses[
+    #             0 : int(
+    #                 self.track_bound_r_idx
+    #                 + (self.slice_length_full / 2)
+    #                 - self.track_bound_r_path_global_len
+    #                 - 1
+    #             )
+    #         ]
+    #     else:
+    #         self.sliced_track_bound_r.poses = self.track_bound_r_path_global.poses[
+    #             int(self.track_bound_r_idx - (self.slice_length_full / 2)) : int(
+    #                 self.track_bound_r_idx + (self.slice_length_full / 2)
+    #             )
+    #         ]
 
-        if self.racenline_idx < (self.slice_length_full / 2):
-            self.sliced_raceline.poses[
-                0 : int(self.slice_length_full / 2 - self.racenline_idx)
-            ] = self.race_line_path_global.poses[
-                int(-(self.slice_length_full / 2 - self.racenline_idx)) :
-            ]
-            self.sliced_raceline.poses[
-                int(self.slice_length_full / 2 - self.racenline_idx) :
-            ] = self.race_line_path_global.poses[
-                0 : int(self.racenline_idx + (self.slice_length_full / 2))
-            ]
-        elif self.racenline_idx > self.race_line_path_global_len - (
-            self.slice_length_full / 2
-        ):
-            self.sliced_raceline.poses[
-                0 : int(
-                    self.race_line_path_global_len
-                    - self.racenline_idx
-                    + self.slice_length_full / 2
-                )
-            ] = self.race_line_path_global.poses[
-                int(self.racenline_idx - (self.slice_length_full / 2)) :
-            ]
-            self.sliced_raceline.poses[
-                int(
-                    self.race_line_path_global_len
-                    - self.racenline_idx
-                    + self.slice_length_full / 2
-                ) :
-            ] = self.race_line_path_global.poses[
-                0 : int(
-                    self.racenline_idx
-                    + (self.slice_length_full / 2)
-                    - self.race_line_path_global_len
-                    - 1
-                )
-            ]
-        else:
-            self.sliced_raceline.poses = self.race_line_path_global.poses[
-                int(self.racenline_idx - (self.slice_length_full / 2)) : int(
-                    self.racenline_idx + (self.slice_length_full / 2)
-                )
-            ]
+    #     if self.racenline_idx < (self.slice_length_full / 2):
+    #         self.sliced_raceline.poses[
+    #             0 : int(self.slice_length_full / 2 - self.racenline_idx)
+    #         ] = self.race_line_path_global.poses[
+    #             int(-(self.slice_length_full / 2 - self.racenline_idx)) :
+    #         ]
+    #         self.sliced_raceline.poses[
+    #             int(self.slice_length_full / 2 - self.racenline_idx) :
+    #         ] = self.race_line_path_global.poses[
+    #             0 : int(self.racenline_idx + (self.slice_length_full / 2))
+    #         ]
+    #     elif self.racenline_idx > self.race_line_path_global_len - (
+    #         self.slice_length_full / 2
+    #     ):
+    #         self.sliced_raceline.poses[
+    #             0 : int(
+    #                 self.race_line_path_global_len
+    #                 - self.racenline_idx
+    #                 + self.slice_length_full / 2
+    #             )
+    #         ] = self.race_line_path_global.poses[
+    #             int(self.racenline_idx - (self.slice_length_full / 2)) :
+    #         ]
+    #         self.sliced_raceline.poses[
+    #             int(
+    #                 self.race_line_path_global_len
+    #                 - self.racenline_idx
+    #                 + self.slice_length_full / 2
+    #             ) :
+    #         ] = self.race_line_path_global.poses[
+    #             0 : int(
+    #                 self.racenline_idx
+    #                 + (self.slice_length_full / 2)
+    #                 - self.race_line_path_global_len
+    #                 - 1
+    #             )
+    #         ]
+    #     else:
+    #         self.sliced_raceline.poses = self.race_line_path_global.poses[
+    #             int(self.racenline_idx - (self.slice_length_full / 2)) : int(
+    #                 self.racenline_idx + (self.slice_length_full / 2)
+    #             )
+    #         ]
 
-        """
-        Overlaying
-        """
-        for global_pose_idx_l in range(
-            min(
-                len(self.sliced_track_bound_l.poses),
-                len(self.sliced_track_bound_l_body.poses),
-            )
-        ):
-            global_pose = self.sliced_track_bound_l.poses[global_pose_idx_l]
-            body_x, body_y, _ = self.goal_pt_to_body(
-                ego_odom.pose.pose.position.x,
-                ego_odom.pose.pose.position.y,
-                self.ego_yaw,
-                global_pose.pose.position.x,
-                global_pose.pose.position.y,
-                0.0,
-            )
+    #     """
+    #     Overlaying
+    #     """
+    #     for global_pose_idx_l in range(
+    #         min(
+    #             len(self.sliced_track_bound_l.poses),
+    #             len(self.sliced_track_bound_l_body.poses),
+    #         )
+    #     ):
+    #         global_pose = self.sliced_track_bound_l.poses[global_pose_idx_l]
+    #         body_x, body_y, _ = self.goal_pt_to_body(
+    #             ego_odom.pose.pose.position.x,
+    #             ego_odom.pose.pose.position.y,
+    #             self.ego_yaw,
+    #             global_pose.pose.position.x,
+    #             global_pose.pose.position.y,
+    #             0.0,
+    #         )
 
-            grid_x_idx = int(
-                self.CENTER_X_GRID
-                - int(body_x / (self.UNIT_GRID_DIST / self.PRESET_X_GRID_SIZE))
-            )
-            grid_y_idx = int(
-                self.CENTER_Y_GRID
-                - int(body_y / (self.UNIT_GRID_DIST / self.PRESET_Y_GRID_SIZE))
-            )
-            if (
-                grid_x_idx > 0
-                and grid_x_idx < self.PRESET_X_GRID_SIZE
-                and grid_y_idx > 0
-                and grid_y_idx < self.PRESET_Y_GRID_SIZE
-            ):
-                self.input_visual_feature[
-                    0, 0, grid_x_idx, grid_y_idx
-                ] = self.OVERLAY_BOUNDARY_VALUE
+    #         grid_x_idx = int(
+    #             self.CENTER_X_GRID
+    #             - int(body_x / (self.UNIT_GRID_DIST / self.PRESET_X_GRID_SIZE))
+    #         )
+    #         grid_y_idx = int(
+    #             self.CENTER_Y_GRID
+    #             - int(body_y / (self.UNIT_GRID_DIST / self.PRESET_Y_GRID_SIZE))
+    #         )
+    #         if (
+    #             grid_x_idx > 0
+    #             and grid_x_idx < self.PRESET_X_GRID_SIZE
+    #             and grid_y_idx > 0
+    #             and grid_y_idx < self.PRESET_Y_GRID_SIZE
+    #         ):
+    #             self.input_visual_feature[
+    #                 0, 0, grid_x_idx, grid_y_idx
+    #             ] = self.OVERLAY_BOUNDARY_VALUE
 
-        for global_pose_idx_r in range(
-            min(
-                len(self.sliced_track_bound_r.poses),
-                len(self.sliced_track_bound_r_body.poses),
-            )
-        ):
-            global_pose = self.sliced_track_bound_r.poses[global_pose_idx_r]
-            body_x, body_y, _ = self.goal_pt_to_body(
-                ego_odom.pose.pose.position.x,
-                ego_odom.pose.pose.position.y,
-                self.ego_yaw,
-                global_pose.pose.position.x,
-                global_pose.pose.position.y,
-                0.0,
-            )
+    #     for global_pose_idx_r in range(
+    #         min(
+    #             len(self.sliced_track_bound_r.poses),
+    #             len(self.sliced_track_bound_r_body.poses),
+    #         )
+    #     ):
+    #         global_pose = self.sliced_track_bound_r.poses[global_pose_idx_r]
+    #         body_x, body_y, _ = self.goal_pt_to_body(
+    #             ego_odom.pose.pose.position.x,
+    #             ego_odom.pose.pose.position.y,
+    #             self.ego_yaw,
+    #             global_pose.pose.position.x,
+    #             global_pose.pose.position.y,
+    #             0.0,
+    #         )
 
-            grid_x_idx = int(
-                self.CENTER_X_GRID
-                - int(body_x / (self.UNIT_GRID_DIST / self.PRESET_X_GRID_SIZE))
-            )
-            grid_y_idx = int(
-                self.CENTER_Y_GRID
-                - int(body_y / (self.UNIT_GRID_DIST / self.PRESET_Y_GRID_SIZE))
-            )
-            if (
-                grid_x_idx > 0
-                and grid_x_idx < self.PRESET_X_GRID_SIZE
-                and grid_y_idx > 0
-                and grid_y_idx < self.PRESET_Y_GRID_SIZE
-            ):
-                self.input_visual_feature[
-                    0, 0, grid_x_idx, grid_y_idx
-                ] = self.OVERLAY_BOUNDARY_VALUE
+    #         grid_x_idx = int(
+    #             self.CENTER_X_GRID
+    #             - int(body_x / (self.UNIT_GRID_DIST / self.PRESET_X_GRID_SIZE))
+    #         )
+    #         grid_y_idx = int(
+    #             self.CENTER_Y_GRID
+    #             - int(body_y / (self.UNIT_GRID_DIST / self.PRESET_Y_GRID_SIZE))
+    #         )
+    #         if (
+    #             grid_x_idx > 0
+    #             and grid_x_idx < self.PRESET_X_GRID_SIZE
+    #             and grid_y_idx > 0
+    #             and grid_y_idx < self.PRESET_Y_GRID_SIZE
+    #         ):
+    #             self.input_visual_feature[
+    #                 0, 0, grid_x_idx, grid_y_idx
+    #             ] = self.OVERLAY_BOUNDARY_VALUE
 
-        for global_pose_idx_race in range(
-            min(len(self.sliced_raceline.poses), len(self.sliced_race_line_body.poses))
-        ):
-            global_pose = self.sliced_raceline.poses[global_pose_idx_race]
-            body_x, body_y, _ = self.goal_pt_to_body(
-                ego_odom.pose.pose.position.x,
-                ego_odom.pose.pose.position.y,
-                self.ego_yaw,
-                global_pose.pose.position.x,
-                global_pose.pose.position.y,
-                0.0,
-            )
+    #     for global_pose_idx_race in range(
+    #         min(len(self.sliced_raceline.poses), len(self.sliced_race_line_body.poses))
+    #     ):
+    #         global_pose = self.sliced_raceline.poses[global_pose_idx_race]
+    #         body_x, body_y, _ = self.goal_pt_to_body(
+    #             ego_odom.pose.pose.position.x,
+    #             ego_odom.pose.pose.position.y,
+    #             self.ego_yaw,
+    #             global_pose.pose.position.x,
+    #             global_pose.pose.position.y,
+    #             0.0,
+    #         )
 
-            grid_x_idx = int(
-                self.CENTER_X_GRID
-                - int(body_x / (self.UNIT_GRID_DIST / self.PRESET_X_GRID_SIZE))
-            )
-            grid_y_idx = int(
-                self.CENTER_Y_GRID
-                - int(body_y / (self.UNIT_GRID_DIST / self.PRESET_Y_GRID_SIZE))
-            )
-            if (
-                grid_x_idx > 0
-                and grid_x_idx < self.PRESET_X_GRID_SIZE
-                and grid_y_idx > 0
-                and grid_y_idx < self.PRESET_Y_GRID_SIZE
-            ):
-                self.input_visual_feature[
-                    0, 0, grid_x_idx, grid_y_idx
-                ] = self.OVERLAY_RACELINE_VALUE
+    #         grid_x_idx = int(
+    #             self.CENTER_X_GRID
+    #             - int(body_x / (self.UNIT_GRID_DIST / self.PRESET_X_GRID_SIZE))
+    #         )
+    #         grid_y_idx = int(
+    #             self.CENTER_Y_GRID
+    #             - int(body_y / (self.UNIT_GRID_DIST / self.PRESET_Y_GRID_SIZE))
+    #         )
+    #         if (
+    #             grid_x_idx > 0
+    #             and grid_x_idx < self.PRESET_X_GRID_SIZE
+    #             and grid_y_idx > 0
+    #             and grid_y_idx < self.PRESET_Y_GRID_SIZE
+    #         ):
+    #             self.input_visual_feature[
+    #                 0, 0, grid_x_idx, grid_y_idx
+    #             ] = self.OVERLAY_RACELINE_VALUE
 
-        """
-        Publish
-        """
+    #     """
+    #     Publish
+    #     """
 
-        self.sliced_track_bound_l.header.stamp = self.get_clock().now().to_msg()
-        self.sliced_track_bound_r.header.stamp = self.get_clock().now().to_msg()
-        self.sliced_raceline.header.stamp = self.get_clock().now().to_msg()
-        self.raceline_pub.publish(self.sliced_raceline)
-        self.track_bound_l_pub.publish(self.sliced_track_bound_l)
-        self.track_bound_r_pub.publish(self.sliced_track_bound_r)
+    #     self.sliced_track_bound_l.header.stamp = self.get_clock().now().to_msg()
+    #     self.sliced_track_bound_r.header.stamp = self.get_clock().now().to_msg()
+    #     self.sliced_raceline.header.stamp = self.get_clock().now().to_msg()
+    #     self.raceline_pub.publish(self.sliced_raceline)
+    #     self.track_bound_l_pub.publish(self.sliced_track_bound_l)
+    #     self.track_bound_r_pub.publish(self.sliced_track_bound_r)
 
     def get_geometry_info(self, ego_odom):
         # get boundaries and race line
@@ -1056,13 +1057,17 @@ class ImitativePlanningNode(Node):
             self.track_bound_l_path_global.poses
         ):
             self.sliced_track_bound_l.poses[
-                self.track_bound_l_idx :
+                : len(self.track_bound_l_path_global.poses)
+                - (self.track_bound_l_idx + self.NUM_BOUNDARY_PT)
+                - 1
             ] = self.track_bound_l_path_global.poses[self.track_bound_l_idx :]
+
             self.sliced_track_bound_l.poses[
-                0 : self.track_bound_l_idx
+                len(self.track_bound_l_path_global.poses)
+                - (self.track_bound_l_idx + self.NUM_BOUNDARY_PT) :
             ] = self.track_bound_l_path_global.poses[
                 : (self.track_bound_l_idx + self.NUM_BOUNDARY_PT)
-                - len(self.track_bound_l_path_global.poses)
+                - len(self.track_bound_l_path_global.poses) 
             ]
         else:
             self.sliced_track_bound_l.poses = self.track_bound_l_path_global.poses[
@@ -1070,6 +1075,17 @@ class ImitativePlanningNode(Node):
             ]
 
         self.boundary_left_body.clear()
+
+        # if len(self.sliced_track_bound_l.poses) != self.NUM_BOUNDARY_PT:
+        #     print("Left")
+        #     print("cur idx = ", self.track_bound_l_idx)
+        #     print("len self.track_bound_l_path_global.poses = ", len(self.track_bound_l_path_global.poses))
+        #     print("len  = ", len(self.sliced_track_bound_l.poses))
+
+
+        # for i in range(
+        #     min([len(self.track_bound_l_path_global.poses), self.NUM_BOUNDARY_PT])
+        # ):
         for global_pose in self.sliced_track_bound_l.poses:
             body_x, body_y, _ = self.goal_pt_to_body(
                 ego_odom.pose.pose.position.x,
@@ -1088,16 +1104,23 @@ class ImitativePlanningNode(Node):
                     self.left_boundary_close_flg = False
 
             self.boundary_left_body.append([body_x, body_y, _])
+        self.boundary_left_body = self.boundary_left_body[:self.NUM_BOUNDARY_PT]
+        
 
         # Right boundary
         if self.track_bound_r_idx + self.NUM_BOUNDARY_PT > len(
             self.track_bound_r_path_global.poses
         ):
+
             self.sliced_track_bound_r.poses[
-                self.track_bound_r_idx :
+                : len(self.track_bound_r_path_global.poses)
+                - (self.track_bound_r_idx + self.NUM_BOUNDARY_PT)
+                - 1
             ] = self.track_bound_r_path_global.poses[self.track_bound_r_idx :]
+
             self.sliced_track_bound_r.poses[
-                0 : self.track_bound_r_idx
+                len(self.track_bound_r_path_global.poses)
+                - (self.track_bound_r_idx + self.NUM_BOUNDARY_PT) :
             ] = self.track_bound_r_path_global.poses[
                 : (self.track_bound_r_idx + self.NUM_BOUNDARY_PT)
                 - len(self.track_bound_r_path_global.poses)
@@ -1106,6 +1129,12 @@ class ImitativePlanningNode(Node):
             self.sliced_track_bound_r.poses = self.track_bound_r_path_global.poses[
                 self.track_bound_r_idx : self.track_bound_r_idx + self.NUM_BOUNDARY_PT
             ]
+
+        # if len(self.sliced_track_bound_r.poses) != self.NUM_BOUNDARY_PT:
+        #     print("Right")
+        #     print("cur idx = ", self.track_bound_r_idx)
+        #     print("len self.track_bound_l_path_global.poses = ", len(self.track_bound_r_path_global.poses))
+        #     print("len  = ", len(self.sliced_track_bound_r.poses))
 
         self.boundary_right_body.clear()
         for global_pose in self.sliced_track_bound_r.poses:
@@ -1125,16 +1154,23 @@ class ImitativePlanningNode(Node):
                 else:
                     self.right_boundary_close_flg = False
             self.boundary_right_body.append([body_x, body_y, _])
+        self.boundary_right_body = self.boundary_right_body[:self.NUM_BOUNDARY_PT]
+        
 
         # Raceline
         if self.racenline_idx + self.NUM_RACELINE_PT > len(
             self.race_line_path_global.poses
         ):
+
             self.sliced_raceline.poses[
-                self.racenline_idx :
+                : len(self.race_line_path_global.poses)
+                - (self.racenline_idx + self.NUM_RACELINE_PT)
+                - 1
             ] = self.race_line_path_global.poses[self.racenline_idx :]
+
             self.sliced_raceline.poses[
-                0 : self.racenline_idx
+                len(self.race_line_path_global.poses)
+                - (self.racenline_idx + self.NUM_RACELINE_PT) :
             ] = self.race_line_path_global.poses[
                 : (self.racenline_idx + self.NUM_RACELINE_PT)
                 - len(self.race_line_path_global.poses)
@@ -1143,6 +1179,12 @@ class ImitativePlanningNode(Node):
             self.sliced_raceline.poses = self.race_line_path_global.poses[
                 self.racenline_idx : self.racenline_idx + self.NUM_RACELINE_PT
             ]
+
+        # if len(self.sliced_raceline.poses) != self.NUM_RACELINE_PT:
+        #     print("Raceline")
+        #     print("cur idx = ", self.racenline_idx)
+        #     print("len self.track_bound_l_path_global.poses = ", len(self.race_line_path_global.poses))
+        #     print("len  = ", len(self.sliced_raceline.poses))
 
         self.raceline_body.clear()
         for global_pose in self.sliced_raceline.poses:
@@ -1155,6 +1197,8 @@ class ImitativePlanningNode(Node):
                 0.0,
             )
             self.raceline_body.append([body_x, body_y, _])
+        self.raceline_body = self.raceline_body[:self.NUM_RACELINE_PT]
+        
 
     def opponent_1_callback(self, msg):
 
@@ -1620,9 +1664,6 @@ class ImitativePlanningNode(Node):
 
                     self.path_pub.publish(vis_path)
                     return
-
-            
-
 
                 z = self.model._params(
                     ego_past=batch["player_past"],
