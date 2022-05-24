@@ -21,6 +21,8 @@ from typing import Tuple
 import numpy as np
 from typing import Union
 
+import time
+
 import torch
 import torch.distributions as D
 import torch.nn as nn
@@ -763,6 +765,8 @@ class ImitativeModel_slim(nn.Module):
         """
         batch_size = 1
 
+        tic = time.time()  
+
         # Sets initial sample to base distribution's mean.
         x = (
             self._decoder._base_dist.sample()
@@ -771,11 +775,20 @@ class ImitativeModel_slim(nn.Module):
             .repeat(batch_size, 1)
             .view(batch_size, *self.future_traj_shape)
         )
+
+        toc = time.time()  
+
+        print("in 1 : ", toc - tic)
+
         x.requires_grad = True
         # The contextual parameters, caches for efficiency.
         # z = self._params(**context)
         # z = self._params(**context)
         # z = observation
+
+        tic = time.time()  
+
+        print("in 2 : ", tic - toc)
 
         # Initialises a gradient-based optimiser.
         optimizer = optim.Adam(params=[x], lr=lr)
@@ -785,30 +798,67 @@ class ImitativeModel_slim(nn.Module):
         loss_best = torch.ones(()).to(x.device) * \
             1000.0  # pylint: disable=no-member
 
+        toc = time.time()  
+
+        print("in 3 : ", toc - tic)
+
+
         for _ in range(num_steps):
             # Resets optimizer's gradients.
             optimizer.zero_grad()
             # Operate on `y`-space.
+
+            tic = time.time()  
+
             y, _ = self._decoder._forward(x=x, z=observation)
+
+            toc = time.time()   
+
+            print("inin 1 : ", toc - tic)
+
             # Calculates imitation prior.
             _, log_prob, logabsdet = self._decoder._inverse(y=y, z=observation)
-            imitation_prior = torch.mean(
-                log_prob - logabsdet)  # pylint: disable=no-member q(x|phi)
+
+            tic = time.time()  
+            print("inin 2 : ", tic - toc)
+
+            imitation_prior = torch.mean(log_prob - logabsdet)  # pylint: disable=no-member q(x|phi)
+
+            toc = time.time()  
+            print("inin 3 : ", toc - tic)
+
+
             # Calculates goal likelihodd.
             goal_likelihood = 0.0
-            if goal is not None:
-                goal_likelihood = self._goal_likelihood(
-                    y=y, goal=goal, epsilon=epsilon)
-                assert imitation_prior.shape == goal_likelihood.shape
+            # if goal is not None:
+            #     goal_likelihood = self._goal_likelihood(y=y, goal=goal, epsilon=epsilon)
+            #     assert imitation_prior.shape == goal_likelihood.shape
             loss = -(imitation_prior + goal_likelihood)
             # Backward pass.
             loss.backward(retain_graph=True)
+
+            tic = time.time()  
+
+            print("inin 4 : ", tic - toc)
+
+
             # Performs a gradient descent step.
             optimizer.step()
+
+            toc = time.time()  
+            print("inin 5 : ", toc - tic)
+
+
+
             # Book-keeping
             if loss < loss_best:
                 x_best = x.clone()
                 loss_best = loss.clone()
+
+            tic = time.time()  
+            print("inin 6 : ", tic - toc)
+
+            
         y, _ = self._decoder._forward(x=x_best, z=observation)
         if return_scores:
             return y, loss_best
