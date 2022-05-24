@@ -434,7 +434,10 @@ def generate_launch_description():
     nif_imitation_planner_node = Node(
                 package='nif_imitative_planning_nodes',
                 executable='imitative_planner.py',
-                output='screen',
+                output={
+                    'stdout': 'screen',
+                    'stderr': 'screen',
+                },
     )
 
     track_boundaries_vis_node = Node(

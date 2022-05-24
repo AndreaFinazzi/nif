@@ -549,8 +549,14 @@ class ImitativePlanningNode(Node):
         load model
         """
         # self.model_path = "/home/usrg-racing/nif/build/nif_imitative_planning_nodes/nif_imitative_planning_nodes/ac_weight_files/model-452.pt"
+
+        # self.model_path = (
+        #     model_weight_db_path + "/traj_based/slim_w_mobilenetV3/model-490.pt" # hidden 64
+        # )
+
         self.model_path = (
-            model_weight_db_path + "/traj_based/slim_w_mobilenetV3/model-490.pt"
+            model_weight_db_path
+            + "/slim_w_mobilenetv3_16hiddenUnit_in_Autoregressive/model-130.pt"  # hidden 64
         )
         # self.model = ImitativeModel(
         #     future_traj_shape=self.output_shape,
@@ -1510,11 +1516,12 @@ class ImitativePlanningNode(Node):
             else:
                 tic = self.get_clock().now()
 
+                vis_path = Path()
+                vis_path.header.frame_id = "base_link"
+
                 if self.left_boundary_close_flg:
                     # veh is close to the boundary or out of the track.
                     # Version 1. Publish path to recover
-                    vis_path = Path()
-                    vis_path.header.frame_id = "base_link"
 
                     # TODO: assign path
                     _, self.left_centerline_idx = self.left_centerline_tree.query(
@@ -1571,8 +1578,6 @@ class ImitativePlanningNode(Node):
                 if self.right_boundary_close_flg:
                     # veh is close to the boundary or out of the track.
                     # Version 1. Publish path to recover
-                    vis_path = Path()
-                    vis_path.header.frame_id = "base_link"
 
                     # TODO: assign path
                     _, self.right_centerline_idx = self.right_centerline_tree.query(
@@ -1639,62 +1644,29 @@ class ImitativePlanningNode(Node):
                     ),
                 ).repeat((self.num_samples, 1))
 
-                toc = self.get_clock().now()
-
-                # print("stage 1 : ", toc - tic)
-
-                tic = self.get_clock().now()
-
                 # Queries model.
                 plan = (
-                    self.model(num_steps=3, epsilon=1.0, lr=1e-2, observation=z)
+                    self.model(num_steps=3, epsilon=1.0, lr=1e-3, observation=z)
                     .detach()
                     .cpu()
                     .numpy()[0]
                 )  # [T, 2]
 
-                toc = self.get_clock().now()
-
-                # print("stage 2 : ", toc - tic)
-
-                tic = self.get_clock().now()
-
                 player_future_length = 50
                 increments = player_future_length // plan.shape[0]
                 time_index = list(range(0, player_future_length, increments))  # [T]
                 plan_interp = interp1d(x=time_index, y=plan, axis=0)
-                xyz = plan_interp(np.arange(0, time_index[-1]))
-                # z = np.zeros(shape=(xy.shape[0], 1))
-                sample_cpu = xyz
-
-                toc = self.get_clock().now()
-
-                # print("stage 3 : ", toc - tic)
-
-                # print("type : ", type(xy))
-                # print("xy : ", xy)
-                # print("-----")
-                # return
+                sample_cpu = plan_interp(np.arange(0, time_index[-1]))
 
                 # Publish result
                 vis_flg = True
                 if vis_flg:
-
-                    vis_path = Path()
-                    vis_path.header.frame_id = "base_link"
 
                     for i in range(sample_cpu.shape[0]):
                         pt = PoseStamped()
                         pt.header.frame_id = "base_link"
                         pt.pose.position.x = sample_cpu[i][0]
                         pt.pose.position.y = sample_cpu[i][1]
-                        # euler_rad = np.arctan2(cs(pt.pose.position.x,1))
-                        # quat = self.get_quaternion_from_euler(0.0,0.0,euler_rad)
-
-                        # pt.pose.orientation.x = quat[0]
-                        # pt.pose.orientation.y = quat[1]
-                        # pt.pose.orientation.z = quat[2]
-                        # pt.pose.orientation.w = quat[3]
 
                         vis_path.poses.append(pt)
 
@@ -1710,16 +1682,14 @@ def main(args=None):
 
     planning_node = ImitativePlanningNode()
 
-    executor = MultiThreadedExecutor(num_threads=6)
-    executor.add_node(planning_node)
+    # executor = MultiThreadedExecutor(num_threads=6)
+    # executor.add_node(planning_node)
 
     try:
-        # rclpy.spin(planning_node)
-        executor.spin()
+        rclpy.spin(planning_node)
+        # executor.spin()
     finally:
-        # planning_node.destroy_node()
-        # rclpy.shutdown()
-        executor.shutdown()
+        # executor.shutdown()
         planning_node.destroy_node()
 
 

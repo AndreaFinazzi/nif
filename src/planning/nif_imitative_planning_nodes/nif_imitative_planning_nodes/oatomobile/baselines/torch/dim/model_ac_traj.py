@@ -776,6 +776,8 @@ class ImitativeModel_slim(nn.Module):
             .view(batch_size, *self.future_traj_shape)
         )
 
+        print("x : ", x)
+
         toc = time.time()  
 
         print("in 1 : ", toc - tic)
@@ -786,12 +788,16 @@ class ImitativeModel_slim(nn.Module):
         # z = self._params(**context)
         # z = observation
 
+        print("x after : ", x)
+
+
         tic = time.time()  
 
         print("in 2 : ", tic - toc)
 
         # Initialises a gradient-based optimiser.
-        optimizer = optim.Adam(params=[x], lr=lr)
+        # optimizer = optim.Adam(params=[x], lr=lr)
+        optimizer = optim.SGD(params=[x], lr=lr)
 
         # Stores the best values.
         x_best = x.clone()
@@ -834,6 +840,10 @@ class ImitativeModel_slim(nn.Module):
             #     goal_likelihood = self._goal_likelihood(y=y, goal=goal, epsilon=epsilon)
             #     assert imitation_prior.shape == goal_likelihood.shape
             loss = -(imitation_prior + goal_likelihood)
+
+            print("loss : ", loss)
+
+
             # Backward pass.
             loss.backward(retain_graph=True)
 
