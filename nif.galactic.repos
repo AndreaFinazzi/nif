@@ -59,3 +59,8 @@ repositories:
     type: git
     url: https://oauth2:$GL_TOKEN@gitlab.com/IACBaseSoftware/aptive_esr_ros.git
     version: vehicle-4
+
+  src/external/ros2bag_tools:
+    type: git
+    url: https://github.com/Kettenhoax/ros2bag_tools.git
+    version: master
