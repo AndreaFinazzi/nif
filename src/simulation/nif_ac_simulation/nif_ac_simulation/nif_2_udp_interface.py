@@ -98,7 +98,7 @@ class ACServerNode(rclpy.node.Node):
     def timer_callback(self):
         self.timer_cnt += 1
 
-        if self.timer_cnt % 100 == 0:
+        if self.timer_cnt % 50 == 0:
             # Prepare the dict
             udp_dict = {"steering":self.latest_steer_cmd,
                         "gas_pedal": self.latest_gas_cmd,

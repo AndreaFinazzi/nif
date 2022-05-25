@@ -48,12 +48,12 @@ repositories:
   src/external/camera_perception:
     type: git
     url: https:///$GH_TOKEN@github.com/PITT-MIT-IAC/Camera_Perception.git
-    version: kaist-main
+    version: c00e6e2455a7a6f34ad138c883ae632eedcfd656
 
   src/external/grid_map:
     type: git
     url: https://github.com/ANYbotics/grid_map.git
-    version: ros2
+    version: 7afca6c8314bd3016dc974541aecca3ed39ccab0
 
   src/external/aptiv_esr_ros2:
     type: git

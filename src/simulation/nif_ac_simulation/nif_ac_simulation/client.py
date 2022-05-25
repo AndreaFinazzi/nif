@@ -67,7 +67,7 @@ import pickle
 from matplotlib.transforms import Transform
 import numpy
 
-from sympy import Quaternion, true
+# from sympy import Quaternion, true
 from nifpy_common_nodes.base_node import BaseNode
 
 import rclpy
@@ -84,6 +84,7 @@ from rclpy.qos import QoSProfile, QoSHistoryPolicy, QoSDurabilityPolicy, QoSReli
 from squaternion import Quaternion
 
 from nif_multilayer_planning_nodes import utils
+from nif_ac_simulation.utils import AC2Robotics_coordinate
 
 HANDSHAKE_MSG       = "usrg.racing"
 ADDR_SERVER         = ("143.248.100.101", 4444)
@@ -101,12 +102,12 @@ class ACClientNode(rclpy.node.Node):
         super().__init__(node_name)
 
         self.udp_client = udp_client
-        self.is_first_call = true
+        self.is_first_call = True
         self.last_position = [0, 0, 0]
+        self.last_q_list = list()
 
         self.ego_odom = Odometry()
         self.ego_odom.header.frame_id = R_FRAME_ODOM
-        self.ego_odom.child_frame_id = R_FRAME_BODY
 
         self.pt_report = PtReport()
         self.pt_report.engine_on_status = True
@@ -134,11 +135,47 @@ class ACClientNode(rclpy.node.Node):
         self.pub_car_count = self.create_publisher(UInt8, '/ac/car_count', qos_car_count)
         self.pub_oppo_markers = self.create_publisher(MarkerArray, '/ac/vis/cars', rclpy.qos.qos_profile_sensor_data)
         self.pubs_car_status = []
+        
+        # For AV21 markers
+        self.pubs_car_marker = []
+        self.ego_marker,self.oppo_marker = self.marker_init()
 
         # TF Broadcaster
         self._tf_publisher = TransformBroadcaster(self)
 
         self.now = self.get_clock().now()
+        
+    def marker_init(self):
+
+        ego_marker = Marker()
+        ego_marker.header.frame_id = R_FRAME_ODOM
+        ego_marker.id = 0
+        ego_marker.type = 10
+        ego_marker.mesh_resource = "package://il15_description/visual/il15.dae"
+        ego_marker.action = ego_marker.ADD
+        ego_marker.pose.position.x = 0.0
+        ego_marker.pose.position.y = 0.0
+        ego_marker.pose.position.z = 0.0
+        ego_marker.pose.orientation.x = 0.0
+        ego_marker.pose.orientation.y = 0.0
+        ego_marker.pose.orientation.z = 0.0
+        ego_marker.pose.orientation.w = 1.0
+        ego_marker.lifetime = Duration(seconds=0, nanoseconds=20000000).to_msg()
+        ego_marker.scale.x = 1.0
+        ego_marker.scale.y = 1.0
+        ego_marker.scale.z = 1.0
+        ego_marker.color.a = 1.0
+        
+        oppo_marker = ego_marker
+        
+        ego_marker.color.r = 0.4
+        ego_marker.color.g = 0.65
+        ego_marker.color.b = 0.729
+        oppo_marker.color.r = 1.0
+        oppo_marker.color.g = 0.0
+        oppo_marker.color.b = 0.729
+
+        return ego_marker, oppo_marker
 
     def timer_recv_callback(self):
         try:
@@ -157,86 +194,61 @@ class ACClientNode(rclpy.node.Node):
             self.is_first_call = False
 
             for cid in range(state['carsCount']):
+                self.last_q_list.append(Quaternion())
                 self.pubs_car_status.append(self.create_publisher(
                     ACTelemetryCarStatus, '/ac/car_status_' + str(cid), rclpy.qos.qos_profile_sensor_data))
+                self.pubs_car_marker.append(self.create_publisher(
+                    Marker, '/ac/car_marker_' + str(cid), rclpy.qos.qos_profile_sensor_data))
 
         car_count = UInt8()
         car_count.data = state['carsCount']
         self.pub_car_count.publish(car_count)
         
-        self.update_ego_ground_truth(state)
+        # self.update_ego_ground_truth(state)
         self.update_oppo_markers(state)
 
 
-    def update_ego_ground_truth(self, state: dict):
-        self.ego_odom.pose.pose.position.x = state['csWorldPosition'][0][0]
-        self.ego_odom.pose.pose.position.y = state['csWorldPosition'][0][2]
-        self.ego_odom.pose.pose.position.z = 0.0 # state['csWorldPosition'][0][1]
-
-        # Orientation from velocity vector (doesn't count for slipangle yet)
-        # It's also a bad approximation due to 3Dimensionality...
-        a = [1, 0, 0] # Global x unit vector
-        b = state['csLinearVelocityVector'][0] # Ego velocity
-        # Derive b from position derivative
-        # b = [
-        #     (state['csWorldPosition'][0][0] - self.last_position[0]) / 0.01,
-        #     (state['csWorldPosition'][0][2] - self.last_position[2]) / 0.01,
-        #     (state['csWorldPosition'][0][1] - self.last_position[1]) / 0.01,
-        # ]
+    # def update_ego_ground_truth(self, state: dict):
+        # pose_robotics = self.state_to_pose(state, 0)
+        # self.ego_odom.pose.pose.position.x = pose_robotics[0]
+        # self.ego_odom.pose.pose.position.y = pose_robotics[1]
+        # self.ego_odom.pose.pose.position.z = pose_robotics[2]
+        # self.ego_odom.pose.pose.orientation.x = pose_robotics[3] # q.x
+        # self.ego_odom.pose.pose.orientation.y = pose_robotics[4] # q.y
+        # self.ego_odom.pose.pose.orientation.z = pose_robotics[5] # q.z
+        # self.ego_odom.pose.pose.orientation.w = pose_robotics[6] # q.w
         
-        self.last_position = state['csWorldPosition'][0]
+        # self.ego_odom.twist.twist.linear.x = state['csLinearSpeedMPS'][0]
+        # vel_kph = self.ego_odom.twist.twist.linear.x * 3.6
 
-        # if 0 not in b:
-            # yaw = math.acos((a[0] * b[0] + a[1] * b[1] + a[2] * b[2]) / (math.sqrt(a[0]**2 + a[1]**2 + a[2]**2) * math.sqrt(b[0]**2 + b[1]**2 + b[2]**2)))
-        # yaw = math.atan2(a[1] - b[1], a[0] - b[0])
-        yaw = math.atan2(b[2], (b[0]))
-        # else:
-            # yaw = 0.0
+        # self.ego_odom.header.stamp = self.now.to_msg()
 
-        q = Quaternion.from_euler(0.0, 0.0, yaw, degrees=False)
-        # quat = utils.quaternion_from_euler(0.0, 0.0, yaw)
-        quat = q.to_dict()
+        # self.pub_odom_ground_truth.publish(self.ego_odom)
+        # self.tf_broadcast(self.ego_odom)
+        # self.tf_broadcast_roll_bias(self.ego_odom,yaw)
 
-        # self.ego_odom.pose.pose.orientation.w = quat[0]
-        # self.ego_odom.pose.pose.orientation.x = 0.0
-        # self.ego_odom.pose.pose.orientation.y = 0.0
-        # self.ego_odom.pose.pose.orientation.z = quat[3]
-
-        self.ego_odom.pose.pose.orientation.x = q.x
-        self.ego_odom.pose.pose.orientation.y = q.y
-        self.ego_odom.pose.pose.orientation.z = q.z
-        self.ego_odom.pose.pose.orientation.w = q.w
-
-        self.ego_odom.twist.twist.linear.x = state['csLinearSpeedMPS'][0]
-        vel_kph = self.ego_odom.twist.twist.linear.x * 3.6
-
-        self.ego_odom.header.stamp = self.now.to_msg()
-
-        self.pub_odom_ground_truth.publish(self.ego_odom)
-        self.tf_broadcast(self.ego_odom)
-
-        ### PT REPORT ###
-        self.pt_report.stamp = self.now.to_msg()
-        self.pt_report.engine_rpm = state['csRPM'][0]
-        self.pt_report.current_gear = state['csControlGear'][0] - 1
-        self.pt_report.vehicle_speed_kmph = vel_kph
+        # ### PT REPORT ###
+        # self.pt_report.stamp = self.now.to_msg()
+        # self.pt_report.engine_rpm = state['csRPM'][0]
+        # self.pt_report.current_gear = state['csControlGear'][0] - 1
+        # self.pt_report.vehicle_speed_kmph = vel_kph
         
-        self.pub_pt_report.publish(self.pt_report)
+        # self.pub_pt_report.publish(self.pt_report)
 
-        ### WHEEL SPEED REPORT ### 
-        wheel_speed_msg = WheelSpeedReport()
-        wheel_speed_msg.header = self.ego_odom.header
-        wheel_speed_msg.front_left = vel_kph
-        wheel_speed_msg.front_right = vel_kph
-        wheel_speed_msg.rear_left = vel_kph
-        wheel_speed_msg.rear_right = vel_kph
+        # ### WHEEL SPEED REPORT ### 
+        # wheel_speed_msg = WheelSpeedReport()
+        # wheel_speed_msg.header = self.ego_odom.header
+        # wheel_speed_msg.front_left = vel_kph
+        # wheel_speed_msg.front_right = vel_kph
+        # wheel_speed_msg.rear_left = vel_kph
+        # wheel_speed_msg.rear_right = vel_kph
 
-        self.pub_wheel_speed.publish(wheel_speed_msg)
+        # self.pub_wheel_speed.publish(wheel_speed_msg)
 
-        ### DUMMY MSGS ###
-        self.pub_dummy_raptor_diag.publish(DiagnosticReport())
-        self.pub_dummy_localization_status.publish(LocalizationStatus())
-
+        # ### DUMMY MSGS ###
+        # self.pub_dummy_raptor_diag.publish(DiagnosticReport())
+        # self.pub_dummy_localization_status.publish(LocalizationStatus())
+        
     def update_oppo_markers(self, state):
         marker_array = MarkerArray()
         
@@ -268,7 +280,7 @@ class ACClientNode(rclpy.node.Node):
 
             # Create Car Status Message
             car_status = ACTelemetryCarStatus()
-            car_status.header.frame_id = "odom"
+            car_status.header.frame_id = R_FRAME_ODOM
             car_status.header.stamp = self.now.to_msg()
             
             car_status.cid = cid
@@ -289,6 +301,18 @@ class ACClientNode(rclpy.node.Node):
             car_status.twist_local.angular.x = state['csAngularVelocityVectorLocal'][cid][0]
             car_status.twist_local.angular.y = state['csAngularVelocityVectorLocal'][cid][1]
             car_status.twist_local.angular.z = state['csAngularVelocityVectorLocal'][cid][2]
+
+            ## Converted odometry (in 'robotics' global coordinates)
+            pose_robotics = self.state_to_pose(state, cid)
+            car_status.odometry.pose.position.x = pose_robotics[0]
+            car_status.odometry.pose.position.y = pose_robotics[1]
+            car_status.odometry.pose.position.z = pose_robotics[2]
+            car_status.odometry.pose.orientation.x = pose_robotics[3] # q.x
+            car_status.odometry.pose.orientation.y = pose_robotics[4] # q.y
+            car_status.odometry.pose.orientation.z = pose_robotics[5] # q.z
+            car_status.odometry.pose.orientation.w = pose_robotics[6] # q.w
+            car_status.odometry.header.stamp = self.now.to_msg() # q.w
+            car_status.odometry.header.frame_id = R_FRAME_ODOM
 
             car_status.wheel_angular_speed.append(state['csWheelAngularVelocityVector'][cid][0])
             car_status.wheel_angular_speed.append(state['csWheelAngularVelocityVector'][cid][1])
@@ -332,13 +356,60 @@ class ACClientNode(rclpy.node.Node):
             car_status.is_race_finished = bool(state['csRaceFinished'][cid])
             
             self.pubs_car_status[cid].publish(car_status)
+            
+            # Ego vehicle
+            if cid == 0:
+                # Assign the position of the ego vehicle to the marker
+                self.ego_marker.pose = car_status.odometry.pose
+                self.ego_marker.color.r = 0.4
+                self.ego_marker.color.g = 0.65
+                self.ego_marker.color.b = 0.729
+                self.pubs_car_marker[cid].publish(self.ego_marker)
 
-        # self.pub_oppo_markers.publish(marker_array)
+                self.ego_odom.pose.pose = self.ego_marker.pose
+                
+                self.ego_odom.twist.twist.linear.x = state['csLinearSpeedMPS'][0]
+                vel_kph = self.ego_odom.twist.twist.linear.x * 3.6
+
+                self.ego_odom.header.stamp = self.now.to_msg()
+
+                self.pub_odom_ground_truth.publish(self.ego_odom)
+                self.tf_broadcast(self.ego_odom)
+
+                ### PT REPORT ###
+                self.pt_report.stamp = self.now.to_msg()
+                self.pt_report.engine_rpm = state['csRPM'][0]
+                self.pt_report.current_gear = state['csControlGear'][0] - 1
+                self.pt_report.vehicle_speed_kmph = vel_kph
+                
+                self.pub_pt_report.publish(self.pt_report)
+
+                ### WHEEL SPEED REPORT ### 
+                wheel_speed_msg = WheelSpeedReport()
+                wheel_speed_msg.header = self.ego_odom.header
+                wheel_speed_msg.front_left = vel_kph
+                wheel_speed_msg.front_right = vel_kph
+                wheel_speed_msg.rear_left = vel_kph
+                wheel_speed_msg.rear_right = vel_kph
+
+                self.pub_wheel_speed.publish(wheel_speed_msg)
+
+                ### DUMMY MSGS ###
+                self.pub_dummy_raptor_diag.publish(DiagnosticReport())
+                self.pub_dummy_localization_status.publish(LocalizationStatus())
+            else:
+                # Assign the position of the ego vehicle to the marker
+                self.oppo_marker.pose = car_status.odometry.pose
+                self.oppo_marker.color.r = 0.4
+                self.oppo_marker.color.g = 0.0
+                self.oppo_marker.color.b = 0.0
+                self.pubs_car_marker[cid].publish(self.oppo_marker)
 
     def tf_broadcast(self, msg):
         tfs = TransformStamped()
-        tfs.header = msg.header
-        tfs.child_frame_id = msg.child_frame_id
+        tfs.header.stamp = self.now.to_msg()
+        tfs.header.frame_id = "odom"
+        tfs.child_frame_id = "base_link"
         tfs.transform.translation.x = msg.pose.pose.position.x
         tfs.transform.translation.y = msg.pose.pose.position.y
         tfs.transform.translation.z = msg.pose.pose.position.z
@@ -347,6 +418,86 @@ class ACClientNode(rclpy.node.Node):
         tfs.transform.rotation.z = msg.pose.pose.orientation.z
         tfs.transform.rotation.w = msg.pose.pose.orientation.w
         self._tf_publisher.sendTransform(tfs)
+
+    def tf_broadcast_roll_bias(self, msg, ego_yaw):
+        q = Quaternion.from_euler(180.0, 0.0, ego_yaw * 57.2958, degrees=True)
+
+        tfs = TransformStamped()
+        tfs.header.stamp = self.now.to_msg()
+        tfs.child_frame_id = msg.child_frame_id
+        tfs.transform.translation.x = msg.pose.pose.position.x
+        tfs.transform.translation.y = msg.pose.pose.position.y
+        tfs.transform.translation.z = msg.pose.pose.position.z
+        tfs.transform.rotation.x = q.x
+        tfs.transform.rotation.y = q.y
+        tfs.transform.rotation.z = q.z
+        tfs.transform.rotation.w = q.w
+        self._tf_publisher.sendTransform(tfs)
+
+    ## Returns list[x, y, z, qx, qy, qz, qw]
+    def state_to_pose(self, state, cid) -> list:
+        # Orientation from velocity vector (doesn't count for slipangle yet)
+        # It's also a bad approximation due to 3Dimensionality...
+        a = [1, 0, 0] # Global x unit vector
+        ego_vel_vec = state['csLinearVelocityVector'][cid] # Ego velocity
+        ego_vel_vec_mag = math.sqrt(pow(ego_vel_vec[0],2)+pow(ego_vel_vec[1],2)+pow(ego_vel_vec[2],2))
+        ego_vel_vec_norm = [
+            -1 * ego_vel_vec[0],
+            1 * ego_vel_vec[2], # vel_y = linera_vel_vector_z
+            -1 * ego_vel_vec[1], # vel_z = linera_vel_vector_y
+        ]
+        # Derive b from position derivative
+        # ego_vel_vec = [
+        #     (state['csWorldPosition'][0][0] - self.last_position[0]) / 0.01,
+        #     (state['csWorldPosition'][0][2] - self.last_position[2]) / 0.01,
+        #     (state['csWorldPosition'][0][1] - self.last_position[1]) / 0.01,
+        # ]
+
+        x_axis_rot = math.atan2(ego_vel_vec_norm[2], ego_vel_vec_norm[1])
+        y_axis_rot = math.atan2(ego_vel_vec_norm[0], ego_vel_vec_norm[2]) 
+        z_axis_rot = math.atan2(ego_vel_vec_norm[1], ego_vel_vec_norm[0]) + 3.14/2
+
+        if z_axis_rot > 3.14:
+           z_axis_rot -= 3.14 * 2 
+
+        pose_robotics = AC2Robotics_coordinate(
+            state['csWorldPosition'][cid][0],
+            state['csWorldPosition'][cid][1],
+            state['csWorldPosition'][cid][2],
+            x_axis_rot,
+            y_axis_rot,
+            z_axis_rot)
+        
+        self.last_position = state['csWorldPosition'][cid]
+
+        # if 0 not in b:
+            # yaw = math.acos((a[0] * b[0] + a[1] * b[1] + a[2] * b[2]) / (math.sqrt(a[0]**2 + a[1]**2 + a[2]**2) * math.sqrt(b[0]**2 + b[1]**2 + b[2]**2)))
+        # yaw = math.atan2(a[1] - b[1], a[0] - b[0])
+        # yaw = math.atan2(ego_vel_vec_norm[2], (ego_vel_vec_norm[0])) # y,x
+        # roll = math.atan2(ego_vel_vec_norm[0], (ego_vel_vec_norm[1])) - 3.14159/2# x,z 
+        # pitch = math.atan2(ego_vel_vec_norm[1], (ego_vel_vec_norm[2])) # z,y
+        # if roll < -3.14159:
+        #     roll += 2* 3.14159
+        # else:
+            # yaw = 0.0
+
+        # q = Quaternion.from_euler(pose_robotics[3], pose_robotics[4], pose_robotics[5], degrees=False) # DON'T USE (pitch and roll are wrong)
+        q = Quaternion.from_euler(0.0, 0.0, pose_robotics[5], degrees=False)
+        q = q.normalize
+        if (ego_vel_vec_mag < 2.0):
+            q = self.last_q_list[cid]
+
+        self.last_q_list[cid] = q
+
+        return [
+            pose_robotics[0], 
+            pose_robotics[1], 
+            pose_robotics[2], 
+            q.x,
+            q.y,
+            q.z,
+            q.w
+        ]
 
 def main(args=None):
     # Create a UDP socket at client side

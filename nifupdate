@@ -9,6 +9,8 @@ rm nif.$ROS_DISTRO.repos.tmp
 
 # Install python dependencies
 pip3 install -r central-requirements.txt
+# Install pytorch dependencies
+pip3 install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu113
 
 rosdep update
 rosdep install -ir -y --from-path src/ --rosdistro $ROS_DISTRO --os=ubuntu:focal

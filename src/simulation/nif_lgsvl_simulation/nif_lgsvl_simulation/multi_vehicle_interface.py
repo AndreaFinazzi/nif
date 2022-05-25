@@ -49,11 +49,15 @@ from nav_msgs.msg import Odometry
 from visualization_msgs.msg import Marker, MarkerArray
 from tf2_ros.transform_broadcaster import TransformBroadcaster
 from geometry_msgs.msg import Pose, PoseStamped, TransformStamped, Vector3, Quaternion
-from nif_msgs.msg import Perception3D, Perception3DArray
+from nif_msgs.msg import Perception3D, Perception3DArray, DynamicTrajectory
 
 
 HANDSHAKE_MSG       = "usrg.racing"
-ADDR_SERVER         = ("192.168.0.16", 4444)
+<<<<<<< Updated upstream
+ADDR_SERVER         = ("192.168.0.2", 4444)
+=======
+ADDR_SERVER         = ("192.168.0.11", 4444)
+>>>>>>> Stashed changes
 ADDR_CLIENT         = ("0.0.0.0", 4444)
 BUFFER_SIZE         = 4092
 CLIENT_TIMEOUT_S    = 1.0
@@ -78,6 +82,11 @@ class ACClientNode(rclpy.node.Node):
         self.pub_oppo_perception = self.create_publisher(Perception3DArray, '/lgsvl/oppo', rclpy.qos.qos_profile_sensor_data)
 
         self.sub_ego_odom = self.create_subscription(Odometry, '/sensor/odom_ground_truth', self.ego_odom_callback, rclpy.qos.qos_profile_sensor_data)
+<<<<<<< Updated upstream
+        self.sub_ego_planning = self.create_subscription(DynamicTrajectory, '/planning/dynamic/traj_global', self.DynamicTrajectory, rclpy.qos.qos_profile_sensor_data)
+=======
+        self.sub_ego_planning = self.create_subscription(Odometry, '/sensor/odom_ground_truth', self.ego_odom_callback, rclpy.qos.qos_profile_sensor_data)
+>>>>>>> Stashed changes
 
         # TF Broadcaster
         self._tf_publisher = TransformBroadcaster(self)
@@ -122,6 +131,10 @@ class ACClientNode(rclpy.node.Node):
         self._tf_publisher.sendTransform(tfs)
 
     def ego_odom_callback(self, msg : Odometry):
+        data_string = pickle.dumps(msg, -1)
+        udp_client.sendto(data_string, ADDR_SERVER)
+    
+    def ego_planning_callback(self, msg : DynamicTrajectory):
         data_string = pickle.dumps(msg, -1)
         udp_client.sendto(data_string, ADDR_SERVER)
         
