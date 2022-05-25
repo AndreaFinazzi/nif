@@ -531,7 +531,7 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve()
 
       // TODO: temporally just put the minimum look ahead dist
       // track_distance = pure_pursuit_min_dist_m_ * 1.2;
-      track_distance = pure_pursuit_max_max_dist_m_* 1.1;
+      track_distance = imitavive_planner_output_path.poses[-1].pose.position.x;
 
       // Track on the trajectory
       double target_distance = 0.0;
@@ -542,11 +542,14 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve()
           lqr_tracking_idx_, target_distance,
           target_reached_end); // outputs
 
+          lqr_tracking_idx_ = 40;
+
       // - target point should be ahead.
-      // TODO: Haeding of imitative planner trajectory's ampled point should be fixed.
       double target_point_azimuth = joint_lqr::utils::pursuit_azimuth(
           imitavive_planner_output_path.poses[lqr_tracking_idx_], ego_base);
       valid_target_position = M_PI * 3 / 4. > std::abs(target_point_azimuth);
+
+      
 
       double l_desired_velocity = 100.0;
       if (valid_wpt_distance && valid_target_position)

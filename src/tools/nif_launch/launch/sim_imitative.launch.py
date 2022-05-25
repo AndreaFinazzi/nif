@@ -452,6 +452,13 @@ def generate_launch_description():
         )
     )
 
+    nif_dynamic_planner_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            get_share_file("nif_dynamic_planning_nodes", 'launch/sim.launch.py')
+        )
+    )
+
+
 
 ### NIF MULTILAYER PLANNER END #############################
 
@@ -482,7 +489,7 @@ def generate_launch_description():
         nif_mission_manager_launch,
         nif_waypoint_manager_node,
         sim_interface_launch,
-        # nif_dynamic_planner_launch
+        nif_dynamic_planner_launch,
         nif_imitation_planner_node,
         track_boundaries_vis_node,
         imitation_distribution_vis_launch

@@ -1067,7 +1067,7 @@ class ImitativePlanningNode(Node):
                 - (self.track_bound_l_idx + self.NUM_BOUNDARY_PT) :
             ] = self.track_bound_l_path_global.poses[
                 : (self.track_bound_l_idx + self.NUM_BOUNDARY_PT)
-                - len(self.track_bound_l_path_global.poses) 
+                - len(self.track_bound_l_path_global.poses)
             ]
         else:
             self.sliced_track_bound_l.poses = self.track_bound_l_path_global.poses[
@@ -1081,7 +1081,6 @@ class ImitativePlanningNode(Node):
         #     print("cur idx = ", self.track_bound_l_idx)
         #     print("len self.track_bound_l_path_global.poses = ", len(self.track_bound_l_path_global.poses))
         #     print("len  = ", len(self.sliced_track_bound_l.poses))
-
 
         # for i in range(
         #     min([len(self.track_bound_l_path_global.poses), self.NUM_BOUNDARY_PT])
@@ -1104,8 +1103,7 @@ class ImitativePlanningNode(Node):
                     self.left_boundary_close_flg = False
 
             self.boundary_left_body.append([body_x, body_y, _])
-        self.boundary_left_body = self.boundary_left_body[:self.NUM_BOUNDARY_PT]
-        
+        self.boundary_left_body = self.boundary_left_body[: self.NUM_BOUNDARY_PT]
 
         # Right boundary
         if self.track_bound_r_idx + self.NUM_BOUNDARY_PT > len(
@@ -1154,8 +1152,7 @@ class ImitativePlanningNode(Node):
                 else:
                     self.right_boundary_close_flg = False
             self.boundary_right_body.append([body_x, body_y, _])
-        self.boundary_right_body = self.boundary_right_body[:self.NUM_BOUNDARY_PT]
-        
+        self.boundary_right_body = self.boundary_right_body[: self.NUM_BOUNDARY_PT]
 
         # Raceline
         if self.racenline_idx + self.NUM_RACELINE_PT > len(
@@ -1197,8 +1194,7 @@ class ImitativePlanningNode(Node):
                 0.0,
             )
             self.raceline_body.append([body_x, body_y, _])
-        self.raceline_body = self.raceline_body[:self.NUM_RACELINE_PT]
-        
+        self.raceline_body = self.raceline_body[: self.NUM_RACELINE_PT]
 
     def opponent_1_callback(self, msg):
 
@@ -1335,10 +1331,6 @@ class ImitativePlanningNode(Node):
 
     def ego_veh_status_callback(self, msg):
 
-        self.cnt += 1
-
-        self.cnt = self.cnt % 10
-
         self.ego_marker.pose = msg.odometry.pose
         self.ego_marker.color.r = 0.4
         self.ego_marker.color.g = 0.65
@@ -1361,19 +1353,14 @@ class ImitativePlanningNode(Node):
         """
         self.odom_buffer.append(self.cur_odom.pose.pose)
 
-        if len(self.odom_buffer) > (
-            self.NUM_EGO_PAST_TRAJ_PT / self.EGO_TRAJ_DOWNSAMPLE
-        ):
-            self.odom_buffer = self.odom_buffer[
-                -1 * int(self.NUM_EGO_PAST_TRAJ_PT / self.EGO_TRAJ_DOWNSAMPLE) :
-            ]
+        if len(self.odom_buffer) > (self.NUM_EGO_PAST_TRAJ_PT):
+            self.odom_buffer = self.odom_buffer[-1 * int(self.NUM_EGO_PAST_TRAJ_PT) :]
         #     self.odom_buffer_np = np.delete(self.odom_buffer_np, 0, axis=0)
 
         batch = {}
 
         if (
-            len(self.odom_buffer)
-            >= (self.NUM_EGO_PAST_TRAJ_PT / self.EGO_TRAJ_DOWNSAMPLE)
+            len(self.odom_buffer) >= (self.NUM_EGO_PAST_TRAJ_PT)
             and len(self.opponent_1_past_traj_body_buffer)
             >= (self.NUM_OPPO_PAST_TRAJ_PT / self.OPPO_TRAJ_DOWNSAMPLE)
             and len(self.opponent_2_past_traj_body_buffer)
@@ -1412,9 +1399,7 @@ class ImitativePlanningNode(Node):
                 if cnt % self.EGO_TRAJ_DOWNSAMPLE == 0:
                     player_past_list.append([body_x, body_y, 0.0])
                     self.past_traj_path_body.poses.append(pt_local)
-                    cnt = 0
-                else:
-                    cnt += 1
+                cnt += 1
 
             player_past = np.array(player_past_list)
             self.player_past_pub.publish(self.past_traj_path_body)
