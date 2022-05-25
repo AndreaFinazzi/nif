@@ -50,7 +50,7 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
                     std::placeholders::_1));
 
   imitative_planner_output_sub = this->create_subscription<nav_msgs::msg::Path>(
-      "/imitative/out_path", nif::common::constants::QOS_SENSOR_DATA,
+      "/planning/debug1", nif::common::constants::QOS_SENSOR_DATA,
       std::bind(&ControlLQRNode::imitativePlannerOutputCallback, this,
                 std::placeholders::_1));
   splined_imitatvie_output_pub_ =
@@ -148,6 +148,7 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
 
   // Use imitative planner flag
   // use_imitative_planner_output_ = this->get_parameter("use_imitative_planner_output").as_bool();
+  // use_imitative_planner_output_ = true;
   use_imitative_planner_output_ = true;
 
   m_frenet_generator = std::make_shared<Frenet::FrenetPathGenerator>();
@@ -227,7 +228,6 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve()
 {
   if (!use_imitative_planner_output_)
   {
-    std::cout << "wrong" << std::endl;
     auto now = this->now();
     nif::common::NodeStatusCode node_status = common::NODE_ERROR;
 
