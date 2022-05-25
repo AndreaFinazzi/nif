@@ -6,9 +6,9 @@ waypoint_manager_param:
 path_candidates_param:
   # racingline_path: 'maps/LVMS_SIM_AC/race_line.csv'
   # defenderline_path: 'maps/LVMS_SIM_AC/left_side_center.csv'
-  racingline_path: 'maps/LVMS_SIM_AC/center_line.csv'
-  defenderline_path: 'maps/LVMS_SIM_AC/center_line.csv'
-  staybehindline_path: 'maps/LVMS_SIM_AC/center_line.csv'
+  racingline_path: 'maps/LVMS_SIM_AC/race_line.csv'
+  defenderline_path: 'maps/LVMS_SIM_AC/race_line.csv'
+  staybehindline_path: 'maps/LVMS_SIM_AC/race_line.csv'
   # MUST : right --> left order
   # overtaking_candidate_path_alias_array: [
   #   'right_center',
@@ -16,6 +16,9 @@ path_candidates_param:
   #   'left_center',
   # ]
   overtaking_candidate_path_alias_array: [
+    'raceline',
+    'left_center',
+    'center',
     'right_center'
   ]
 
@@ -30,7 +33,10 @@ path_candidates_param:
   #   'maps/LVMS_SIM_AC/left_side_center.csv',
   # ]
   overtaking_candidate_path_array: [
-    'maps/LVMS_SIM_AC/center_line.csv'
+    'maps/LVMS_SIM_AC/race_line.csv',
+    'maps/LVMS_SIM_AC/left_center_line.csv',
+    'maps/LVMS_SIM_AC/center_line.csv',
+    'maps/LVMS_SIM_AC/right_center_line.csv',
   ]
 
 planning_params:
