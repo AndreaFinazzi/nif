@@ -236,6 +236,10 @@ DynamicPlannerNode::DynamicPlannerNode(const std::string &node_name_)
       "/keystrike", 10,
       std::bind(&DynamicPlannerNode::keystrikeCallback, this,
                 std::placeholders::_1));
+  m_highest_imitation_prior_path_idx_sub = this->create_subscription<std_msgs::msg::UInt8>(
+      "/imitative/highest_prior_idx", 10,
+      std::bind(&DynamicPlannerNode::highestImitationPriorIdxCallback, this,
+                std::placeholders::_1));
 
   m_ego_traj_body_pub =
       this->create_publisher<nif_msgs::msg::DynamicTrajectory>(
@@ -433,6 +437,7 @@ void DynamicPlannerNode::loadConfig(const std::string &planning_config_file_)
   // Imiation learning setup
   m_cur_planned_traj.trajectory_path = m_racingline_path;
   m_key.data = 0;
+  m_key_last_update = this->now();
 }
 
 void DynamicPlannerNode::myLapROFCallback(
@@ -532,6 +537,12 @@ void DynamicPlannerNode::detectionResultCallback(
 void DynamicPlannerNode::keystrikeCallback(const std_msgs::msg::UInt8::SharedPtr msg)
 {
   m_key = *msg;
+  m_key_last_update = this->now();
+}
+
+void DynamicPlannerNode::highestImitationPriorIdxCallback(const std_msgs::msg::UInt8::SharedPtr msg)
+{
+  m_highest_prior_idx = *msg;
 }
 
 void DynamicPlannerNode::sensorGTCallback(const nav_msgs::msg::Odometry::SharedPtr msg)
@@ -1726,6 +1737,8 @@ void DynamicPlannerNode::timer_callback_samples_for_imitative()
 
   int markder_id = 0;
 
+  m_stitching_path_candidates_body.clear();
+
   for (int overtaking_path_idx = 0; overtaking_path_idx < m_overtaking_candidates_path_vec.size(); overtaking_path_idx++)
   {
     auto progressNcte = calcProgressNCTE(
@@ -1763,6 +1776,11 @@ void DynamicPlannerNode::timer_callback_samples_for_imitative()
       markder_id++;
 
       int input_length_of_NN = 50;
+
+      nav_msgs::msg::Path stitch_path_body;
+      stitch_path_body.header.frame_id = "base_link";
+      stitch_path_body.header.stamp = this->now();
+
       for (int pt_idx = 0; pt_idx < input_length_of_NN; pt_idx++)
       {
         auto x_vec = frenet_path_generation_result[longi_sample_idx]->points_x();
@@ -1774,20 +1792,22 @@ void DynamicPlannerNode::timer_callback_samples_for_imitative()
           auto ps_body =
               common::utils::coordination::getPtGlobaltoBody(m_ego_odom, x_vec[pt_idx], y_vec[pt_idx]);
           switch_path_marker.points.push_back(ps_body.pose.position);
+          stitch_path_body.poses.push_back(ps_body);
         }
         else
         {
           auto ps_body =
               common::utils::coordination::getPtGlobaltoBody(m_ego_odom, x_vec[-1], y_vec[-1]);
           switch_path_marker.points.push_back(ps_body.pose.position);
+          stitch_path_body.poses.push_back(ps_body);
         }
       }
       // push_back
       switching_paths_markerlist.markers.push_back(switch_path_marker);
+      m_stitching_path_candidates_body.push_back(stitch_path_body);
     }
   }
   // publish
-  // std::cout << switching_paths_markerlist.markers.size() << std::endl;
   m_connected_paths_list_body_pub->publish(switching_paths_markerlist);
 }
 
@@ -1804,11 +1824,17 @@ void DynamicPlannerNode::timer_callback_imitative()
   vector<double> collision_free_frenet_progress_vec;
   vector<int> collision_free_frenet_index_vec;
 
-  // int cur_path_idx = 3;
-  int cur_path_idx = m_key.data;
-
-  // std::cout << "m_previous_imitative_path_idx == cur_path_idx" << (m_previous_imitative_path_idx == cur_path_idx) << std::endl;
-  // std::cout << "!m_cur_planned_traj.trajectory_path.poses.empty()" << (!m_cur_planned_traj.trajectory_path.poses.empty()) << std::endl;
+  int cur_path_idx = 0;
+  if (this->now() - m_key_last_update < rclcpp::Duration(2, 0))
+  {
+    // keep key command for 2 sec
+    cur_path_idx = m_key.data;
+  }
+  else
+  {
+    // Set highest path idx
+    cur_path_idx = m_highest_prior_idx.data;
+  }
 
   if (m_previous_imitative_path_idx == cur_path_idx && !m_cur_planned_traj.trajectory_path.poses.empty())
   {

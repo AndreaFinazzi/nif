@@ -118,6 +118,7 @@ namespace nif
 
             void sensorGTCallback(const nav_msgs::msg::Odometry::SharedPtr msg);
             void keystrikeCallback(const std_msgs::msg::UInt8::SharedPtr msg);
+            void highestImitationPriorIdxCallback(const std_msgs::msg::UInt8::SharedPtr msg);
 
             void predictionResultCallback(
                 const nif_msgs::msg::DynamicTrajectory::SharedPtr msg);
@@ -273,8 +274,6 @@ namespace nif
 
             rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr
                 m_ego_sensor_gt_sub;
-            rclcpp::Subscription<std_msgs::msg::UInt8>::SharedPtr
-                m_keystrike_sub;
 
             // Ego's planned output DynamicTrajectory
             rclcpp::Publisher<nif_msgs::msg::DynamicTrajectory>::SharedPtr
@@ -440,8 +439,6 @@ namespace nif
             nav_msgs::msg::Odometry m_ego_odom;
             nif_msgs::msg::SystemStatus m_ego_system_status;
 
-            std_msgs::msg::UInt8 m_key;
-
             bool m_use_sat = false;
 
             int m_reset_wpt_idx = RESET_PATH_TYPE::NONE;
@@ -453,6 +450,16 @@ namespace nif
             // IMITATIVE PLANNER SETUP
             int m_previous_imitative_path_idx = 0;
             bool m_first_timer = false;
+            std::vector<nav_msgs::msg::Path> m_stitching_path_candidates_body;
+
+            rclcpp::Subscription<std_msgs::msg::UInt8>::SharedPtr
+                m_keystrike_sub;
+            rclcpp::Subscription<std_msgs::msg::UInt8>::SharedPtr
+                m_highest_imitation_prior_path_idx_sub;
+
+            std_msgs::msg::UInt8 m_key;
+            rclcpp::Time m_key_last_update;
+            std_msgs::msg::UInt8 m_highest_prior_idx;
         };
 
     } // namespace planning
