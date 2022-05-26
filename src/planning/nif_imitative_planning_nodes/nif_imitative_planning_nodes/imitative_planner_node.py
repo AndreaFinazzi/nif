@@ -550,15 +550,15 @@ class ImitativePlanningNode(Node):
         """
         # self.model_path = "/home/usrg-racing/nif/build/nif_imitative_planning_nodes/nif_imitative_planning_nodes/ac_weight_files/model-452.pt"
 
-        self.model_path = (
-            model_weight_db_path
-            + "/traj_based/slim_w_mobilenetV3/model-490.pt"  # hidden 64
-        )
-
         # self.model_path = (
         #     model_weight_db_path
-        #     + "/slim_w_mobilenetv3_16hiddenUnit_in_Autoregressive/model-130.pt"  # hidden 16
+        #     + "/traj_based/slim_w_mobilenetV3/model-490.pt"  # hidden 64
         # )
+
+        self.model_path = (
+            model_weight_db_path
+            + "/recover_mu_zero/model-270.pt"  # hidden 16
+        )
 
         # self.model = ImitativeModel(
         #     future_traj_shape=self.output_shape,
@@ -585,7 +585,7 @@ class ImitativePlanningNode(Node):
         load trajectory lib
         """
         if self.use_traj_lib == True:
-            self.trajectory_lib_path = traj_lib_db_path + "/518.npy"
+            self.trajectory_lib_path = traj_lib_db_path + "/518_w_recovery_mu_zero.npy"
             self.arr = np.load(self.trajectory_lib_path)
             self.traj_lib = (
                 torch.from_numpy(
@@ -1493,7 +1493,7 @@ class ImitativePlanningNode(Node):
             toc = self.get_clock().now()
 
             # print("preparation time : ", toc - tic)
-
+            self.use_traj_lib = True
             if self.use_traj_lib:
 
                 z = self.model._params(
@@ -1537,118 +1537,118 @@ class ImitativePlanningNode(Node):
                 vis_path = Path()
                 vis_path.header.frame_id = "base_link"
 
-                if self.left_boundary_close_flg:
-                    # veh is close to the boundary or out of the track.
-                    # Version 1. Publish path to recover
+                # if self.left_boundary_close_flg:
+                #     # veh is close to the boundary or out of the track.
+                #     # Version 1. Publish path to recover
 
-                    # TODO: assign path
-                    _, self.left_centerline_idx = self.left_centerline_tree.query(
-                        [
-                            self.cur_odom.pose.pose.position.x,
-                            self.cur_odom.pose.pose.position.y,
-                            self.cur_odom.pose.pose.position.z,
-                        ]
-                    )
+                #     # TODO: assign path
+                #     _, self.left_centerline_idx = self.left_centerline_tree.query(
+                #         [
+                #             self.cur_odom.pose.pose.position.x,
+                #             self.cur_odom.pose.pose.position.y,
+                #             self.cur_odom.pose.pose.position.z,
+                #         ]
+                #     )
 
-                    if self.left_centerline_idx + self.NUM_BOUNDARY_PT > len(
-                        self.left_centerline_path_global.poses
-                    ):
-                        self.sliced_left_centerline.poses[
-                            self.left_centerline_idx :
-                        ] = self.left_centerline_path_global.poses[
-                            self.left_centerline_idx :
-                        ]
-                        self.sliced_left_centerline.poses[
-                            0 : self.left_centerline_idx
-                        ] = self.left_centerline_path_global.poses[
-                            : (self.left_centerline_idx + self.NUM_BOUNDARY_PT)
-                            - len(self.left_centerline_path_global.poses)
-                        ]
-                    else:
-                        self.sliced_left_centerline.poses = (
-                            self.left_centerline_path_global.poses[
-                                self.left_centerline_idx : self.left_centerline_idx
-                                + self.NUM_BOUNDARY_PT
-                            ]
-                        )
+                #     if self.left_centerline_idx + self.NUM_BOUNDARY_PT > len(
+                #         self.left_centerline_path_global.poses
+                #     ):
+                #         self.sliced_left_centerline.poses[
+                #             self.left_centerline_idx :
+                #         ] = self.left_centerline_path_global.poses[
+                #             self.left_centerline_idx :
+                #         ]
+                #         self.sliced_left_centerline.poses[
+                #             0 : self.left_centerline_idx
+                #         ] = self.left_centerline_path_global.poses[
+                #             : (self.left_centerline_idx + self.NUM_BOUNDARY_PT)
+                #             - len(self.left_centerline_path_global.poses)
+                #         ]
+                #     else:
+                #         self.sliced_left_centerline.poses = (
+                #             self.left_centerline_path_global.poses[
+                #                 self.left_centerline_idx : self.left_centerline_idx
+                #                 + self.NUM_BOUNDARY_PT
+                #             ]
+                #         )
 
-                    self.left_centerline_body.clear()
-                    for global_pose in self.sliced_left_centerline.poses:
-                        body_x, body_y, _ = self.goal_pt_to_body(
-                            self.cur_odom.pose.pose.position.x,
-                            self.cur_odom.pose.pose.position.y,
-                            self.ego_yaw,
-                            global_pose.pose.position.x,
-                            global_pose.pose.position.y,
-                            0.0,
-                        )
-                        self.left_centerline_body.append([body_x, body_y, _])
+                #     self.left_centerline_body.clear()
+                #     for global_pose in self.sliced_left_centerline.poses:
+                #         body_x, body_y, _ = self.goal_pt_to_body(
+                #             self.cur_odom.pose.pose.position.x,
+                #             self.cur_odom.pose.pose.position.y,
+                #             self.ego_yaw,
+                #             global_pose.pose.position.x,
+                #             global_pose.pose.position.y,
+                #             0.0,
+                #         )
+                #         self.left_centerline_body.append([body_x, body_y, _])
 
-                        pt = PoseStamped()
-                        pt.header.frame_id = "base_link"
-                        pt.pose.position.x = body_x
-                        pt.pose.position.y = body_y
-                        vis_path.poses.append(pt)
+                #         pt = PoseStamped()
+                #         pt.header.frame_id = "base_link"
+                #         pt.pose.position.x = body_x
+                #         pt.pose.position.y = body_y
+                #         vis_path.poses.append(pt)
 
-                    self.path_pub.publish(vis_path)
-                    return
+                #     self.path_pub.publish(vis_path)
+                #     return
 
-                if self.right_boundary_close_flg:
-                    # veh is close to the boundary or out of the track.
-                    # Version 1. Publish path to recover
+                # if self.right_boundary_close_flg:
+                #     # veh is close to the boundary or out of the track.
+                #     # Version 1. Publish path to recover
 
-                    # TODO: assign path
-                    _, self.right_centerline_idx = self.right_centerline_tree.query(
-                        [
-                            self.cur_odom.pose.pose.position.x,
-                            self.cur_odom.pose.pose.position.y,
-                            self.cur_odom.pose.pose.position.z,
-                        ]
-                    )
+                #     # TODO: assign path
+                #     _, self.right_centerline_idx = self.right_centerline_tree.query(
+                #         [
+                #             self.cur_odom.pose.pose.position.x,
+                #             self.cur_odom.pose.pose.position.y,
+                #             self.cur_odom.pose.pose.position.z,
+                #         ]
+                #     )
 
-                    if self.right_centerline_idx + self.NUM_BOUNDARY_PT > len(
-                        self.right_centerline_path_global.poses
-                    ):
-                        self.sliced_right_centerline.poses[
-                            self.right_centerline_idx :
-                        ] = self.right_centerline_path_global.poses[
-                            self.right_centerline_idx :
-                        ]
-                        self.sliced_right_centerline.poses[
-                            0 : self.right_centerline_idx
-                        ] = self.right_centerline_path_global.poses[
-                            : (self.right_centerline_idx + self.NUM_BOUNDARY_PT)
-                            - len(self.right_centerline_path_global.poses)
-                        ]
-                    else:
-                        self.sliced_right_centerline.poses = (
-                            self.right_centerline_path_global.poses[
-                                self.right_centerline_idx : self.right_centerline_idx
-                                + self.NUM_BOUNDARY_PT
-                            ]
-                        )
+                #     if self.right_centerline_idx + self.NUM_BOUNDARY_PT > len(
+                #         self.right_centerline_path_global.poses
+                #     ):
+                #         self.sliced_right_centerline.poses[
+                #             self.right_centerline_idx :
+                #         ] = self.right_centerline_path_global.poses[
+                #             self.right_centerline_idx :
+                #         ]
+                #         self.sliced_right_centerline.poses[
+                #             0 : self.right_centerline_idx
+                #         ] = self.right_centerline_path_global.poses[
+                #             : (self.right_centerline_idx + self.NUM_BOUNDARY_PT)
+                #             - len(self.right_centerline_path_global.poses)
+                #         ]
+                #     else:
+                #         self.sliced_right_centerline.poses = (
+                #             self.right_centerline_path_global.poses[
+                #                 self.right_centerline_idx : self.right_centerline_idx
+                #                 + self.NUM_BOUNDARY_PT
+                #             ]
+                #         )
 
-                    self.right_centerline_body.clear()
-                    for global_pose in self.sliced_right_centerline.poses:
-                        body_x, body_y, _ = self.goal_pt_to_body(
-                            self.cur_odom.pose.pose.position.x,
-                            self.cur_odom.pose.pose.position.y,
-                            self.ego_yaw,
-                            global_pose.pose.position.x,
-                            global_pose.pose.position.y,
-                            0.0,
-                        )
+                #     self.right_centerline_body.clear()
+                #     for global_pose in self.sliced_right_centerline.poses:
+                #         body_x, body_y, _ = self.goal_pt_to_body(
+                #             self.cur_odom.pose.pose.position.x,
+                #             self.cur_odom.pose.pose.position.y,
+                #             self.ego_yaw,
+                #             global_pose.pose.position.x,
+                #             global_pose.pose.position.y,
+                #             0.0,
+                #         )
 
-                        self.right_centerline_body.append([body_x, body_y, _])
+                #         self.right_centerline_body.append([body_x, body_y, _])
 
-                        pt = PoseStamped()
-                        pt.header.frame_id = "base_link"
-                        pt.pose.position.x = body_x
-                        pt.pose.position.y = body_y
-                        vis_path.poses.append(pt)
+                #         pt = PoseStamped()
+                #         pt.header.frame_id = "base_link"
+                #         pt.pose.position.x = body_x
+                #         pt.pose.position.y = body_y
+                #         vis_path.poses.append(pt)
 
-                    self.path_pub.publish(vis_path)
-                    return
+                #     self.path_pub.publish(vis_path)
+                #     return
 
                 z = self.model._params(
                     ego_past=batch["player_past"],

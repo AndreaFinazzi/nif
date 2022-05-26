@@ -710,30 +710,30 @@ class ImitativeModel_slim(nn.Module):
         print("INPUT EXPECTED TO BE SHAPE", past_traj_shape)
         print("OUTPUT EXPECTED TO BE SHAPE", future_traj_shape)
 
-        self._merger = MLP(
-            # input_size=128, Add the future_traj_shape product
-            input_size=visual_inp * 4,
-            output_sizes=[64, 64, 64],
-            activation_fn=nn.ReLU,
-            # dropout_rate=None,
-            dropout_rate=0.1,
-            activate_final=True,
-        )
-        # The decoder recurrent network used for the sequence generation.
-        self._decoder = AutoregressiveFlow(output_shape=self.future_traj_shape, hidden_size=64)
-
-        # Matched with Autoregresseive(hidden_size 16)
         # self._merger = MLP(
         #     # input_size=128, Add the future_traj_shape product
         #     input_size=visual_inp * 4,
-        #     output_sizes=[64, 64, 16],
+        #     output_sizes=[64, 64, 64],
         #     activation_fn=nn.ReLU,
         #     # dropout_rate=None,
         #     dropout_rate=0.1,
         #     activate_final=True,
         # )
-        # self._decoder = AutoregressiveFlow(
-        #     output_shape=self.future_traj_shape, hidden_size=16)
+        # # The decoder recurrent network used for the sequence generation.
+        # self._decoder = AutoregressiveFlow(output_shape=self.future_traj_shape, hidden_size=64)
+
+        # Matched with Autoregresseive(hidden_size 16)
+        self._merger = MLP(
+            # input_size=128, Add the future_traj_shape product
+            input_size=visual_inp * 4,
+            output_sizes=[64, 64, 16],
+            activation_fn=nn.ReLU,
+            # dropout_rate=None,
+            dropout_rate=0.1,
+            activate_final=True,
+        )
+        self._decoder = AutoregressiveFlow(
+            output_shape=self.future_traj_shape, hidden_size=16)
 
     def to(self, *args, **kwargs):
         """Handles non-parameter tensors when moved to a new device."""
@@ -776,11 +776,11 @@ class ImitativeModel_slim(nn.Module):
             .view(batch_size, *self.future_traj_shape)
         )
 
-        print("x : ", x)
+        # print("x : ", x)
 
         toc = time.time()  
 
-        print("in 1 : ", toc - tic)
+        # print("in 1 : ", toc - tic)
 
         x.requires_grad = True
         # The contextual parameters, caches for efficiency.
@@ -788,12 +788,12 @@ class ImitativeModel_slim(nn.Module):
         # z = self._params(**context)
         # z = observation
 
-        print("x after : ", x)
+        # print("x after : ", x)
 
 
         tic = time.time()  
 
-        print("in 2 : ", tic - toc)
+        # print("in 2 : ", tic - toc)
 
         # Initialises a gradient-based optimiser.
         # optimizer = optim.Adam(params=[x], lr=lr)
@@ -806,7 +806,7 @@ class ImitativeModel_slim(nn.Module):
 
         toc = time.time()  
 
-        print("in 3 : ", toc - tic)
+        # print("in 3 : ", toc - tic)
 
 
         for _ in range(num_steps):
@@ -820,18 +820,18 @@ class ImitativeModel_slim(nn.Module):
 
             toc = time.time()   
 
-            print("inin 1 : ", toc - tic)
+            # print("inin 1 : ", toc - tic)
 
             # Calculates imitation prior.
             _, log_prob, logabsdet = self._decoder._inverse(y=y, z=observation)
 
             tic = time.time()  
-            print("inin 2 : ", tic - toc)
+            # print("inin 2 : ", tic - toc)
 
             imitation_prior = torch.mean(log_prob - logabsdet)  # pylint: disable=no-member q(x|phi)
 
             toc = time.time()  
-            print("inin 3 : ", toc - tic)
+            # print("inin 3 : ", toc - tic)
 
 
             # Calculates goal likelihodd.
@@ -841,7 +841,7 @@ class ImitativeModel_slim(nn.Module):
             #     assert imitation_prior.shape == goal_likelihood.shape
             loss = -(imitation_prior + goal_likelihood)
 
-            print("loss : ", loss)
+            # print("loss : ", loss)
 
 
             # Backward pass.
@@ -849,14 +849,14 @@ class ImitativeModel_slim(nn.Module):
 
             tic = time.time()  
 
-            print("inin 4 : ", tic - toc)
+            # print("inin 4 : ", tic - toc)
 
 
             # Performs a gradient descent step.
             optimizer.step()
 
             toc = time.time()  
-            print("inin 5 : ", toc - tic)
+            # print("inin 5 : ", toc - tic)
 
 
 
@@ -866,7 +866,7 @@ class ImitativeModel_slim(nn.Module):
                 loss_best = loss.clone()
 
             tic = time.time()  
-            print("inin 6 : ", tic - toc)
+            # print("inin 6 : ", tic - toc)
 
             
         y, _ = self._decoder._forward(x=x_best, z=observation)
