@@ -132,6 +132,8 @@ namespace nif
             void timer_callback();
             void timer_callback_rule();
             void timer_callback_imitative();
+            void timer_callback_samples_for_imitative();
+
             void timer_callback_debug();
             double debug_ego_speed = 0;
             void publishTrajectory();
@@ -280,6 +282,8 @@ namespace nif
             rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr m_ego_traj_body_vis_pub;
             rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr m_ego_traj_global_vis_pub;
 
+            rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr m_connected_paths_list_body_pub;
+
             rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr
                 m_ego_traj_global_vis_debug_pub1;
             rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr
@@ -296,6 +300,7 @@ namespace nif
             // output timer
             rclcpp::TimerBase::SharedPtr m_planner_timer;
             rclcpp::TimerBase::SharedPtr m_planner_timer_imitative;
+            rclcpp::TimerBase::SharedPtr m_planner_timer_samples_for_imitative;
             bool m_timer_callback_first_run;
 
             nif_msgs::msg::Perception3D m_cur_det_global;

@@ -13,6 +13,8 @@
 #include "rcutils/error_handling.h"
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <stdlib.h>
+#include "visualization_msgs/msg/marker_array.h"
+#include "visualization_msgs/msg/marker.h"
 
 using namespace nif::planning;
 using namespace std;
@@ -247,6 +249,10 @@ DynamicPlannerNode::DynamicPlannerNode(const std::string &node_name_)
       "out_trajectory_vis_body", common::constants::QOS_PLANNING);
   m_ego_traj_global_vis_pub = this->create_publisher<nav_msgs::msg::Path>(
       "out_trajectory_vis_global", common::constants::QOS_PLANNING);
+
+  m_connected_paths_list_body_pub = this->create_publisher<visualization_msgs::msg::MarkerArray>(
+      "connecting_path_list", common::constants::QOS_PLANNING);
+
   m_debug_vis_pub = this->create_publisher<nav_msgs::msg::Path>(
       "planning/debug", common::constants::QOS_PLANNING);
 
@@ -272,6 +278,9 @@ DynamicPlannerNode::DynamicPlannerNode(const std::string &node_name_)
 
   m_planner_timer_imitative = this->create_wall_timer(
       20ms, std::bind(&DynamicPlannerNode::timer_callback_imitative, this)); // 50 hz
+
+  m_planner_timer_samples_for_imitative = this->create_wall_timer(
+      20ms, std::bind(&DynamicPlannerNode::timer_callback_samples_for_imitative, this)); // 50 hz
 
   RCLCPP_INFO(this->get_logger(), "[DYNAMICPLANNER] Initialization done.");
 
@@ -1707,6 +1716,78 @@ void DynamicPlannerNode::publishPlannedTrajectory(
 //   m_ego_traj_global_vis_debug_pub1->publish(m_racingline_path);
 //   m_ego_traj_global_debug_pub1->publish(race_traj);
 // }
+
+void DynamicPlannerNode::timer_callback_samples_for_imitative()
+{
+  // Planning to every candidates
+  vector<std::shared_ptr<FrenetPath>> collision_free_frenet_vec;
+  vector<double> collision_free_frenet_progress_vec;
+  vector<int> collision_free_frenet_index_vec;
+
+  visualization_msgs::msg::MarkerArray switching_paths_markerlist;
+
+  for (int overtaking_path_idx = 0; overtaking_path_idx < m_overtaking_candidates_path_vec.size(); overtaking_path_idx++)
+  {
+    auto progressNcte = calcProgressNCTE(
+        m_ego_odom.pose.pose,
+        m_overtaking_candidates_path_vec[overtaking_path_idx]);
+
+    std::vector<std::shared_ptr<FrenetPath>>
+        frenet_path_generation_result =
+            m_frenet_generator_ptr->calc_frenet_paths_multi_longi(
+                get<1>(progressNcte), // current_position_d
+                get<0>(progressNcte), // current_position_s
+                0.0,                  // current_velocity_d
+                60.0,                 // current_velocity_s
+                0.0,                  // current_acceleration_d
+                m_overtaking_candidates_spline_model_vec
+                    [overtaking_path_idx], // cubicSplineModel
+                1,
+                1 + 0.01,
+                0.02, 0.0, 0.0001, 0.1); // in body coordinate
+
+    if (frenet_path_generation_result.empty())
+    {
+      assert(false);
+    }
+
+    for (int longi_sample_idx = 0; longi_sample_idx < frenet_path_generation_result.size(); longi_sample_idx++)
+    {
+      visualization_msgs::msg::Marker switch_path_marker;
+      switch_path_marker.header.frame_id = "base_link";
+      switch_path_marker.type = visualization_msgs::msg::Marker::LINE_STRIP;
+      switch_path_marker.scale.x = 0.2;
+      switch_path_marker.color.r = 0.5;
+      switch_path_marker.color.a = 1.0;
+
+      int input_length_of_NN = 50;
+      for (int pt_idx = 0; pt_idx < input_length_of_NN; pt_idx++)
+      {
+        auto x_vec = frenet_path_generation_result[longi_sample_idx].points_x();
+        auto y_vec = frenet_path_generation_result[longi_sample_idx].points_y();
+        int num_of_pt = x_vec.size();
+
+        geometry_msgs::Point p;
+        if (pt_idx < num_of_pt)
+        {
+          p.x = x_vec[pt_idx];
+          p.y = y_vec[pt_idx];
+          switch_path_marker.points.push_back(p);
+        }
+        else
+        {
+          p.x = x_vec[-1];
+          p.y = y_vec[-1];
+          switch_path_marker.points.push_back(p);
+        }
+      }
+      // push_back
+      switching_paths_markerlist.markers.push_back(switch_path_marker);
+    }
+  }
+  // publish
+  m_connected_paths_list_body_pub.publish(switching_paths_markerlist);
+}
 
 void DynamicPlannerNode::timer_callback_imitative()
 {
