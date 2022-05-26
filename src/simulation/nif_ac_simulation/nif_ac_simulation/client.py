@@ -133,7 +133,7 @@ class ACClientNode(rclpy.node.Node):
             reliability=QoSReliabilityPolicy.RELIABLE,
             durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
         )
-        ## TODO: should become a service
+        # TODO: should become a service
         self.pub_odom_ground_truth = self.create_publisher(
             Odometry, "/sensor/odom_ground_truth", rclpy.qos.qos_profile_sensor_data
         )
@@ -186,7 +186,8 @@ class ACClientNode(rclpy.node.Node):
         ego_marker.pose.orientation.y = 0.0
         ego_marker.pose.orientation.z = 0.0
         ego_marker.pose.orientation.w = 1.0
-        ego_marker.lifetime = Duration(seconds=0, nanoseconds=20000000).to_msg()
+        ego_marker.lifetime = Duration(
+            seconds=0, nanoseconds=20000000).to_msg()
         ego_marker.scale.x = 1.0
         ego_marker.scale.y = 1.0
         ego_marker.scale.z = 1.0
@@ -286,7 +287,11 @@ class ACClientNode(rclpy.node.Node):
     def update_oppo_markers(self, state):
         marker_array = MarkerArray()
 
-        publish_target_vehicle_status_list = [] # ego is always in the "0"
+        ego_x = None
+        ego_y = None
+        dist = [-1] * state["carsCount"]
+        entire_vehicle_status_list = [
+            ACTelemetryCarStatus()] * state["carsCount"]  # ego is always in the "0"
 
         for (cid, csWorldPosition) in enumerate(state["csWorldPosition"]):
 
@@ -331,7 +336,7 @@ class ACClientNode(rclpy.node.Node):
                 cid
             ][2]
 
-            ## Converted odometry (in 'robotics' global coordinates)
+            # Converted odometry (in 'robotics' global coordinates)
             pose_robotics = self.state_to_pose(state, cid)
             car_status.odometry.pose.position.x = pose_robotics[0]
             car_status.odometry.pose.position.y = pose_robotics[1]
@@ -386,25 +391,37 @@ class ACClientNode(rclpy.node.Node):
 
             car_status.leaderboard_position = state["csLeaderboardPosition"][cid]
 
-            car_status.is_lap_invalidated = bool(state["isLapInvalidated"][cid])
+            car_status.is_lap_invalidated = bool(
+                state["isLapInvalidated"][cid])
             car_status.is_car_in_pitlane = bool(state["isCarInPitlane"][cid])
             car_status.is_car_in_pit = bool(state["isCarInPit"][cid])
             car_status.is_ai_controlled = bool(state["isAIcontrolled"][cid])
             car_status.is_race_finished = bool(state["csRaceFinished"][cid])
 
-            self.pubs_car_status[cid].publish(car_status)
+            if(cid == 0):
+                ego_x = car_status.odometry.pose.position.x
+                ego_y = car_status.odometry.pose.position.y
 
+            if(ego_x != None and ego_y != None):
+                dist[cid] = math.sqrt((ego_x - car_status.odometry.pose.position.x)*(ego_x - car_status.odometry.pose.position.x) + (
+                    ego_y - car_status.odometry.pose.position.y)*(ego_y - car_status.odometry.pose.position.y))
+
+            entire_vehicle_status_list[cid] = car_status
+
+        # Dist sorting
+        sorted_idx_list = [i[0]
+                           for i in sorted(enumerate(dist), key=lambda x:x[1])]
+
+        for sorted_idx in sorted_idx_list:
             # Ego vehicle
-            if cid == 0:
-                
-                publish_target_vehicle_status_list.append(car_status)
-
+            if sorted_idx == 0:
+                car_status = entire_vehicle_status_list[sorted_idx]
                 # Assign the position of the ego vehicle to the marker
                 self.ego_marker.pose = car_status.odometry.pose
                 self.ego_marker.color.r = 0.4
                 self.ego_marker.color.g = 0.65
                 self.ego_marker.color.b = 0.729
-                self.pubs_car_marker[cid].publish(self.ego_marker)
+                self.pubs_car_marker[sorted_idx].publish(self.ego_marker)
 
                 self.ego_odom.pose.pose = self.ego_marker.pose
 
@@ -437,16 +454,17 @@ class ACClientNode(rclpy.node.Node):
 
                 ### DUMMY MSGS ###
                 self.pub_dummy_raptor_diag.publish(DiagnosticReport())
-                self.pub_dummy_localization_status.publish(LocalizationStatus())
-
+                self.pub_dummy_localization_status.publish(
+                    LocalizationStatus())
 
             else:
+                car_status = entire_vehicle_status_list[sorted_idx]
                 # Assign the position of the ego vehicle to the marker
                 self.oppo_marker.pose = car_status.odometry.pose
                 self.oppo_marker.color.r = 0.4
                 self.oppo_marker.color.g = 0.0
                 self.oppo_marker.color.b = 0.0
-                self.pubs_car_marker[cid].publish(self.oppo_marker)
+                self.pubs_car_marker[sorted_idx].publish(self.oppo_marker)
 
     def tf_broadcast(self, msg):
         tfs = TransformStamped()
@@ -477,14 +495,15 @@ class ACClientNode(rclpy.node.Node):
         tfs.transform.rotation.w = q.w
         self._tf_publisher.sendTransform(tfs)
 
-    ## Returns list[x, y, z, qx, qy, qz, qw]
+    # Returns list[x, y, z, qx, qy, qz, qw]
     def state_to_pose(self, state, cid) -> list:
         # Orientation from velocity vector (doesn't count for slipangle yet)
         # It's also a bad approximation due to 3Dimensionality...
         a = [1, 0, 0]  # Global x unit vector
         ego_vel_vec = state["csLinearVelocityVector"][cid]  # Ego velocity
         ego_vel_vec_mag = math.sqrt(
-            pow(ego_vel_vec[0], 2) + pow(ego_vel_vec[1], 2) + pow(ego_vel_vec[2], 2)
+            pow(ego_vel_vec[0], 2) +
+            pow(ego_vel_vec[1], 2) + pow(ego_vel_vec[2], 2)
         )
         ego_vel_vec_norm = [
             -1 * ego_vel_vec[0],
@@ -500,7 +519,8 @@ class ACClientNode(rclpy.node.Node):
 
         x_axis_rot = math.atan2(ego_vel_vec_norm[2], ego_vel_vec_norm[1])
         y_axis_rot = math.atan2(ego_vel_vec_norm[0], ego_vel_vec_norm[2])
-        z_axis_rot = math.atan2(ego_vel_vec_norm[1], ego_vel_vec_norm[0]) + 3.14 / 2
+        z_axis_rot = math.atan2(
+            ego_vel_vec_norm[1], ego_vel_vec_norm[0]) + 3.14 / 2
 
         if z_axis_rot > 3.14:
             z_axis_rot -= 3.14 * 2
