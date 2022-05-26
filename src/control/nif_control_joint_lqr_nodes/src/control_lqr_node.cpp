@@ -446,7 +446,6 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve()
         nif::common::utils::time::secs(now - this->getEgoOdometryUpdateTime()) <
             odometry_timeout_sec_;
 
-
     bool valid_wpt_distance = true;
 
     // - initialize valid target position
@@ -458,11 +457,9 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve()
     joint_lqr::lqr::JointLQR::ErrorMatrix error;
     joint_lqr::lqr::JointLQR::ErrorMatrix error_COG; // error at center of gravity
 
-
     // Perform Tracking if path is good
     if (valid_path)
     {
-
 
       // // Need to spline and assign the orientation of each pt
       // std::vector<double> splined_x, splined_y, splined_yaw;
