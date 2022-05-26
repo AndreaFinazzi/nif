@@ -36,6 +36,9 @@
 #include <vector>
 #include <yaml-cpp/yaml.h>
 
+#include "visualization_msgs/msg/marker.hpp"
+#include "visualization_msgs/msg/marker_array.hpp"
+
 // pcl
 #include <pcl/kdtree/kdtree_flann.h>
 #include <pcl/point_cloud.h>
@@ -282,7 +285,8 @@ namespace nif
             rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr m_ego_traj_body_vis_pub;
             rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr m_ego_traj_global_vis_pub;
 
-            rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr m_connected_paths_list_body_pub;
+            rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr
+                m_connected_paths_list_body_pub;
 
             rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr
                 m_ego_traj_global_vis_debug_pub1;

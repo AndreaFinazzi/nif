@@ -13,8 +13,6 @@
 #include "rcutils/error_handling.h"
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <stdlib.h>
-#include "visualization_msgs/msg/marker_array.h"
-#include "visualization_msgs/msg/marker.h"
 
 using namespace nif::planning;
 using namespace std;
@@ -1726,6 +1724,8 @@ void DynamicPlannerNode::timer_callback_samples_for_imitative()
 
   visualization_msgs::msg::MarkerArray switching_paths_markerlist;
 
+  int markder_id = 0;
+
   for (int overtaking_path_idx = 0; overtaking_path_idx < m_overtaking_candidates_path_vec.size(); overtaking_path_idx++)
   {
     auto progressNcte = calcProgressNCTE(
@@ -1744,7 +1744,7 @@ void DynamicPlannerNode::timer_callback_samples_for_imitative()
                     [overtaking_path_idx], // cubicSplineModel
                 1,
                 1 + 0.01,
-                0.02, 0.0, 0.0001, 0.1); // in body coordinate
+                0.02, 0.0, 0.0001, 0.1); // still in global coordinate --> TODO: where we can opitimize
 
     if (frenet_path_generation_result.empty())
     {
@@ -1759,26 +1759,27 @@ void DynamicPlannerNode::timer_callback_samples_for_imitative()
       switch_path_marker.scale.x = 0.2;
       switch_path_marker.color.r = 0.5;
       switch_path_marker.color.a = 1.0;
+      switch_path_marker.id = markder_id;
+      markder_id++;
 
       int input_length_of_NN = 50;
       for (int pt_idx = 0; pt_idx < input_length_of_NN; pt_idx++)
       {
-        auto x_vec = frenet_path_generation_result[longi_sample_idx].points_x();
-        auto y_vec = frenet_path_generation_result[longi_sample_idx].points_y();
+        auto x_vec = frenet_path_generation_result[longi_sample_idx]->points_x();
+        auto y_vec = frenet_path_generation_result[longi_sample_idx]->points_y();
         int num_of_pt = x_vec.size();
 
-        geometry_msgs::Point p;
         if (pt_idx < num_of_pt)
         {
-          p.x = x_vec[pt_idx];
-          p.y = y_vec[pt_idx];
-          switch_path_marker.points.push_back(p);
+          auto ps_body =
+              common::utils::coordination::getPtGlobaltoBody(m_ego_odom, x_vec[pt_idx], y_vec[pt_idx]);
+          switch_path_marker.points.push_back(ps_body.pose.position);
         }
         else
         {
-          p.x = x_vec[-1];
-          p.y = y_vec[-1];
-          switch_path_marker.points.push_back(p);
+          auto ps_body =
+              common::utils::coordination::getPtGlobaltoBody(m_ego_odom, x_vec[-1], y_vec[-1]);
+          switch_path_marker.points.push_back(ps_body.pose.position);
         }
       }
       // push_back
@@ -1786,7 +1787,8 @@ void DynamicPlannerNode::timer_callback_samples_for_imitative()
     }
   }
   // publish
-  m_connected_paths_list_body_pub.publish(switching_paths_markerlist);
+  // std::cout << switching_paths_markerlist.markers.size() << std::endl;
+  m_connected_paths_list_body_pub->publish(switching_paths_markerlist);
 }
 
 void DynamicPlannerNode::timer_callback_imitative()

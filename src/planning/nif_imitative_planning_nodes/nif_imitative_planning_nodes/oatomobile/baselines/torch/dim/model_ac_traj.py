@@ -1249,6 +1249,126 @@ class ImitativeModel_slim(nn.Module):
         # print(loss[prob_idx])
         return centroids[prob_idx], loss
 
+    def trajectory_library_plan_with_idx(
+        self,
+        centroids,
+        context,
+        goal=None,
+        epsilon=1,
+        region_based=False,
+        rho=None,
+        phi=1,
+        costmap=None,
+        costmap_only=False,
+        triage=None,
+        past_goal=None,
+        chi=1,
+        stdev=1,
+        return_idx=True,
+    ):
+        """centroids: a batch of learned centroids from the trajectory library
+           context: the context vector used for inverse prob calculation
+
+           returns the centroid from the learned clusters that maximizes the inverse prob
+        """
+        # print('centroids.shape', centroids.shape)
+        # print('context.shape', context.shape)
+        # import pdb; pdb.set_trace()
+        _, log_prob, logabsdet, mu_t, sig_t = self._decoder._inverse(
+            y=centroids, z=context, return_rollouts=True
+        )
+        imitation_prior = log_prob - logabsdet
+        # Calculates goal likelihood.
+        goal_likelihood = 0
+        costmap_values = 0
+        gaussian_encouragement_score = 0
+        if past_goal is not None:
+            gaussian_encouragement_score = chi * self._goal_likelihood(
+                y=centroids, goal=past_goal, comp=1, epsilon=stdev
+            )
+        if costmap is not None:
+            costmap_values = phi * costmap
+        if region_based:
+            # print(goal.shape)
+            goal_polygon = goal.repeat((centroids.shape[0], 1, 1))
+            inclusion_mask = self.mpl_in_polygon(
+                mu_t[-1][:, :2].cpu().detach().numpy(),
+                goal_polygon[0].cpu().detach().numpy(),
+                flip=True,
+            )
+            goal_polygon_closed = torch.cat(
+                [goal_polygon, goal_polygon[:, [0]]], dim=1)
+            end = goal_polygon_closed[..., 1:, :]
+            start = goal_polygon_closed[..., :-1, :]
+            segment_vector = end - start
+            # print(segment_vector.device, mu_t[-1].device, centroids.device, sig_t[-1].device)
+            goal_likelihood = self._region_goal(
+                inclusion_mask=torch.BoolTensor(
+                    inclusion_mask).to(mu_t[-1].device),
+                y=centroids[:, -1],
+                segment=segment_vector,
+                mu_t=mu_t[-1],
+                sig_t=sig_t[-1],
+                start=start,
+                comp=1,
+            )
+        else:
+            if goal is not None:
+                goal_likelihood = self._goal_likelihood(
+                    y=centroids, goal=goal, comp=1, epsilon=epsilon
+                )
+                assert imitation_prior.shape == goal_likelihood.shape
+
+        if rho:
+            speeds = self.speed_heuristic(centroids)
+            loss = (
+                (imitation_prior + epsilon * goal_likelihood + rho * speeds)
+                - costmap_values
+                + gaussian_encouragement_score
+            )
+        else:
+            loss = (
+                (imitation_prior + epsilon * goal_likelihood)
+                - costmap_values
+                + gaussian_encouragement_score
+            )
+
+        if costmap_only:
+            loss -= imitation_prior
+        elif triage is not None:
+            topk_val = torch.mean(torch.topk(
+                costmap_values, k=25, dim=0)[0]).item()
+            print("topk_val", topk_val)
+            if topk_val > triage:
+                loss -= imitation_prior
+                # print('*' * 100)
+                # print('*' * 100)
+                # print('use costmap only')
+                # print('*' * 100)
+                # print('*' * 100)
+            else:
+                loss += costmap_values
+                # print('*' * 100)
+                # print('*' * 100)
+                # print('use imitation prior only')
+                # print('*' * 100)
+                # print('*' * 100)
+
+        # if type(costmap_values) is list:
+        #   print('costmap_values:', costmap_values[:20])
+
+        # print('imitation_priors:', imitation_prior[:20])
+        # if goal is not None:
+        #    print('goal_likelihood:', goal_likelihood[:20])
+
+        prob_idx = torch.argmax(loss, dim=0)
+
+        # print(loss[prob_idx])
+        if return_idx:
+            return centroids[prob_idx], loss, prob_idx
+        else:
+            return centroids[prob_idx], loss
+
     def speed_heuristic(self, trajectories):
         d = trajectories.device
         trajectories = trajectories.clone().detach().cpu().numpy()

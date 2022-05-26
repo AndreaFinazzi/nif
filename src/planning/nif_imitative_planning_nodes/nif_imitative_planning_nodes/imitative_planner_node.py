@@ -143,6 +143,17 @@ class ImitativePlanningNode(Node):
             rclpy.qos.qos_profile_sensor_data,
         )
 
+        self.frenet_path_candidates_subscription = self.create_subscription(
+            MarkerArray,
+            "/connecting_path_list",
+            self.frenet_path_candidates_callback,
+            rclpy.qos.qos_profile_sensor_data,
+        )
+
+        self.frenet_path_candidates_npy = None
+        self.frenet_path_candidates_tensor = None
+        self.dynamic_traj_lib_valid_flg = False
+
         self.opponent_1_odom_buffer = []
         self.opponent_2_odom_buffer = []
         self.opponent_3_odom_buffer = []
@@ -425,7 +436,6 @@ class ImitativePlanningNode(Node):
         self.oppo_past_buffer_length = int(self.oppo_keep_past_traj_time / self.dt)
 
         self.UNIT_GRID_DIST = 0.5
-        self.num_pos_dim = 3
 
         self.use_depth = True
         self.use_lidar = False
@@ -529,6 +539,7 @@ class ImitativePlanningNode(Node):
         self.NUM_EGO_PAST_TRAJ_PT = 50
         self.NUM_EGO_FUTURE_TRAJ_PT = 100
         self.EGO_TRAJ_DOWNSAMPLE = 2
+        self.NUM_POS_DIM = 3
 
         self.boundary_left_body = []
         self.boundary_right_body = []
@@ -538,11 +549,11 @@ class ImitativePlanningNode(Node):
 
         self.output_shape = [
             int(self.NUM_EGO_FUTURE_TRAJ_PT / self.EGO_TRAJ_DOWNSAMPLE),
-            self.num_pos_dim,
+            self.NUM_POS_DIM,
         ]
         self.input_shape = [
             int(self.NUM_EGO_PAST_TRAJ_PT / self.EGO_TRAJ_DOWNSAMPLE),
-            self.num_pos_dim,
+            self.NUM_POS_DIM,
         ]
 
         """
@@ -556,27 +567,23 @@ class ImitativePlanningNode(Node):
         # )
 
         self.model_path = (
-            model_weight_db_path
-            + "/recover_mu_zero/model-270.pt"  # hidden 16
+            model_weight_db_path + "/recover_mu_zero/model-270.pt"  # hidden 16
         )
 
         # self.model = ImitativeModel(
         #     future_traj_shape=self.output_shape,
-        #     num_pos_dim=self.num_pos_dim,
+        #     NUM_POS_DIM=self.NUM_POS_DIM,
         #     past_traj_shape=self.input_shape,
         # ).to(self.device)
 
         self.model = ImitativeModel_slim(
             future_traj_shape=self.output_shape,
-            num_pos_dim=self.num_pos_dim,
+            num_pos_dim=self.NUM_POS_DIM,
             past_traj_shape=self.input_shape,
         ).to(self.device)
 
         self.model.load_state_dict(
-            torch.load(
-                self.model_path,
-                map_location=self.device,
-            )
+            torch.load(self.model_path, map_location=self.device)
         )
 
         self.model.eval()
@@ -1196,6 +1203,38 @@ class ImitativePlanningNode(Node):
             self.raceline_body.append([body_x, body_y, _])
         self.raceline_body = self.raceline_body[: self.NUM_RACELINE_PT]
 
+    def frenet_path_candidates_callback(self, msg):
+        # message shaping for network inputing
+
+        self.frenet_path_candidates_npy = np.full(
+            (
+                len(msg.markers),
+                int(self.NUM_EGO_FUTURE_TRAJ_PT / self.EGO_TRAJ_DOWNSAMPLE),
+                self.NUM_POS_DIM,
+            ),
+            0,
+        )  # init with zero
+
+        for candidate_idx in range(len(msg.markers)):
+            for pt_idx in range(len(msg.markers[candidate_idx].points)):
+                self.frenet_path_candidates_npy[candidate_idx][pt_idx][0] = (
+                    msg.markers[candidate_idx].points[pt_idx].x
+                )
+                self.frenet_path_candidates_npy[candidate_idx][pt_idx][1] = (
+                    msg.markers[candidate_idx].points[pt_idx].y
+                )
+                self.frenet_path_candidates_npy[candidate_idx][pt_idx][2] = (
+                    msg.markers[candidate_idx].points[pt_idx].z
+                )
+
+        self.frenet_path_candidates_tensor = (
+            torch.from_numpy(self.frenet_path_candidates_npy)
+            .type(torch.FloatTensor)
+            .to(self.device)
+        )
+
+        self.dynamic_traj_lib_valid_flg = True
+
     def opponent_1_callback(self, msg):
 
         self.last_odom_update = self.get_clock().now()
@@ -1494,42 +1533,94 @@ class ImitativePlanningNode(Node):
 
             # print("preparation time : ", toc - tic)
             self.use_traj_lib = True
+            self.use_static_traj_lib = False
             if self.use_traj_lib:
+                if self.use_static_traj_lib:
+                    z = self.model._params(
+                        ego_past=batch["player_past"],
+                        raceline=batch["race_line"],
+                        environmental=torch.stack(
+                            [batch["left_bound"], batch["right_bound"]], dim=1
+                        ),
+                        oppo=torch.stack(
+                            [
+                                batch["oppo1_body"],
+                                batch["oppo2_body"],
+                                batch["oppo3_body"],
+                            ],
+                            dim=1,
+                        ),
+                    ).repeat((self.arr.shape[0], 1))
 
-                z = self.model._params(
-                    ego_past=batch["player_past"],
-                    raceline=batch["race_line"],
-                    environmental=torch.stack(
-                        [batch["left_bound"], batch["right_bound"]], dim=1
-                    ),
-                    oppo=torch.stack(
-                        [batch["oppo1_body"], batch["oppo2_body"], batch["oppo3_body"]],
-                        dim=1,
-                    ),
-                ).repeat((self.arr.shape[0], 1))
+                    traj, prb = self.model.trajectory_library_plan(
+                        self.traj_lib, z, costmap=None, phi=1, costmap_only=False
+                    )
 
-                traj, prb = self.model.trajectory_library_plan(
-                    self.traj_lib, z, costmap=None, phi=1, costmap_only=False
-                )
+                    # GPU to CPU
+                    traj_cpu_np = traj.detach().cpu().numpy().astype(np.float64)
+                    prb_cpu_np = prb.detach().cpu().numpy().astype(np.float64)
 
-                # GPU to CPU
-                traj_cpu_np = traj.detach().cpu().numpy().astype(np.float64)
-                prb_cpu_np = prb.detach().cpu().numpy().astype(np.float64)
+                    # print(traj_cpu_np.shape) --> (50,3)
 
-                # print(traj_cpu_np.shape) --> (50,3)
+                    # Publish result
+                    vis_path = Path()
+                    vis_path.header.frame_id = "base_link"
 
-                # Publish result
-                vis_path = Path()
-                vis_path.header.frame_id = "base_link"
+                    for i in range(traj_cpu_np.shape[0]):
+                        pt = PoseStamped()
+                        pt.header.frame_id = "base_link"
+                        pt.pose.position.x = traj_cpu_np[i][0]
+                        pt.pose.position.y = traj_cpu_np[i][1]
+                        vis_path.poses.append(pt)
 
-                for i in range(traj_cpu_np.shape[0]):
-                    pt = PoseStamped()
-                    pt.header.frame_id = "base_link"
-                    pt.pose.position.x = traj_cpu_np[i][0]
-                    pt.pose.position.y = traj_cpu_np[i][1]
-                    vis_path.poses.append(pt)
+                    self.path_pub.publish(vis_path)
 
-                self.path_pub.publish(vis_path)
+                else:
+                    if self.dynamic_traj_lib_valid_flg:
+                        # dynamic traj lib
+                        z = self.model._params(
+                            ego_past=batch["player_past"],
+                            raceline=batch["race_line"],
+                            environmental=torch.stack(
+                                [batch["left_bound"], batch["right_bound"]], dim=1
+                            ),
+                            oppo=torch.stack(
+                                [
+                                    batch["oppo1_body"],
+                                    batch["oppo2_body"],
+                                    batch["oppo3_body"],
+                                ],
+                                dim=1,
+                            ),
+                        ).repeat((self.frenet_path_candidates_npy.shape[0], 1))
+
+                        traj, prb, traj_idx = self.model.trajectory_library_plan_with_idx(
+                            self.frenet_path_candidates_tensor,
+                            z,
+                            costmap=None,
+                            phi=1,
+                            costmap_only=False,
+                        )
+
+                        traj_cpu_np = traj.detach().cpu().numpy().astype(np.float64)
+                        traj_idx_cpu = traj_idx.detach().cpu().numpy().astype(int)
+
+
+                        # Publish result
+                        vis_path = Path()
+                        vis_path.header.frame_id = "base_link"
+
+                        for i in range(traj_cpu_np.shape[0]):
+                            pt = PoseStamped()
+                            pt.header.frame_id = "base_link"
+                            pt.pose.position.x = traj_cpu_np[i][0]
+                            pt.pose.position.y = traj_cpu_np[i][1]
+                            vis_path.poses.append(pt)
+
+                        self.path_pub.publish(vis_path)
+
+                    else:
+                        print("Dynamic traj lib is not initialized yet.")
 
             else:
                 tic = self.get_clock().now()
