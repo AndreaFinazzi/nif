@@ -286,9 +286,31 @@ class ACClientNode(rclpy.node.Node):
     def update_oppo_markers(self, state):
         marker_array = MarkerArray()
 
-        publish_target_vehicle_status_list = [] # ego is always in the "0"
-
         for (cid, csWorldPosition) in enumerate(state["csWorldPosition"]):
+            # marker = Marker()
+            # marker.header.stamp = self.now.to_msg()
+            # marker.header.frame_id = R_FRAME_ODOM
+
+            # marker.pose.position.x = csWorldPosition[0]
+            # marker.pose.position.y = csWorldPosition[1]
+            # marker.pose.position.z = csWorldPosition[2]
+
+            # marker.scale.x = 10.0
+            # marker.scale.y = 1.0
+            # marker.scale.z = 1.0
+
+            # marker.color.r = 0.0
+            # marker.color.b = 1.0
+            # marker.color.g = 1.0
+            # marker.color.a = 1.0
+            # # marker.scale.x = 1.0 + tracked_objects.perception_list[tracked_obj_idx].obj_velocity_in_local.linear.x;
+            # # marker.scale.y = 1.0;
+            # # marker.scale.z = 1.0;
+
+            # marker.id = cid
+            # marker.lifetime = Duration(seconds=0, nanoseconds=20000000).to_msg()
+
+            # marker_array.markers.append(marker)
 
             # Create Car Status Message
             car_status = ACTelemetryCarStatus()
@@ -396,9 +418,6 @@ class ACClientNode(rclpy.node.Node):
 
             # Ego vehicle
             if cid == 0:
-                
-                publish_target_vehicle_status_list.append(car_status)
-
                 # Assign the position of the ego vehicle to the marker
                 self.ego_marker.pose = car_status.odometry.pose
                 self.ego_marker.color.r = 0.4
@@ -438,8 +457,6 @@ class ACClientNode(rclpy.node.Node):
                 ### DUMMY MSGS ###
                 self.pub_dummy_raptor_diag.publish(DiagnosticReport())
                 self.pub_dummy_localization_status.publish(LocalizationStatus())
-
-
             else:
                 # Assign the position of the ego vehicle to the marker
                 self.oppo_marker.pose = car_status.odometry.pose

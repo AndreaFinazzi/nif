@@ -6,11 +6,6 @@ The above copyright notice and this permission notice shall be included in all c
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE."""
 
-
-from oatomobile.baselines.torch.dim.model_ac_traj import (
-    ImitativeModel,
-    ImitativeModel_slim,
-)
 from ament_index_python import get_package_share_directory
 import math
 import time
@@ -38,15 +33,18 @@ from rclpy.duration import Duration
 from rclpy.executors import MultiThreadedExecutor, SingleThreadedExecutor
 from std_msgs.msg import UInt8
 
-# import visdom
 from scipy.interpolate import interp1d
-
 
 home_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "."))
 sys.path.append(home_dir)
 home_dir = os.path.abspath(os.path.join(
     os.path.dirname(__file__), "..", "ac_track_db"))
 sys.path.append(home_dir)
+
+from oatomobile.baselines.torch.dim.model_ac_traj import (
+    ImitativeModel,
+    ImitativeModel_slim,
+)
 
 
 # from oatomobile.baselines.torch.dim.model_ac import ImitativeModel
@@ -583,14 +581,14 @@ class ImitativePlanningNode(Node):
         """
         # self.model_path = "/home/usrg-racing/nif/build/nif_imitative_planning_nodes/nif_imitative_planning_nodes/ac_weight_files/model-452.pt"
 
-        # self.model_path = (
-        #     model_weight_db_path
-        #     + "/traj_based/slim_w_mobilenetV3/model-490.pt"  # hidden 64
-        # )
-
         self.model_path = (
-            model_weight_db_path + "/recover_mu_zero/model-270.pt"  # hidden 16
+            model_weight_db_path
+            + "/traj_based/slim_w_mobilenetV3/model-490.pt"  # hidden 64
         )
+
+        # self.model_path = (
+        #     model_weight_db_path + "/recover_mu_zero/model-270.pt"  # hidden 16
+        # )
 
         # self.model = ImitativeModel(
         #     future_traj_shape=self.output_shape,
@@ -1636,8 +1634,9 @@ class ImitativePlanningNode(Node):
                         traj_cpu_np = traj.detach().cpu().numpy().astype(np.float64)
                         traj_idx_cpu = traj_idx.detach().cpu().numpy().astype(int)
 
-                        self.highest_imitation_prior_path_idx_pub.publish(
-                            traj_idx_cpu)
+                        highest_imitation_path_idx_msg = UInt8()
+                        highest_imitation_path_idx_msg.data = traj_idx_cpu.item()
+                        self.highest_imitation_prior_path_idx_pub.publish(highest_imitation_path_idx_msg)
 
                         # Publish result
                         vis_path = Path()

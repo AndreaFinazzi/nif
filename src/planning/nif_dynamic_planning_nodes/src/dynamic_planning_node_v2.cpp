@@ -237,7 +237,7 @@ DynamicPlannerNode::DynamicPlannerNode(const std::string &node_name_)
       std::bind(&DynamicPlannerNode::keystrikeCallback, this,
                 std::placeholders::_1));
   m_highest_imitation_prior_path_idx_sub = this->create_subscription<std_msgs::msg::UInt8>(
-      "/imitative/highest_prior_idx", 10,
+      "/imitative/highest_prior_idx", common::constants::QOS_PLANNING,
       std::bind(&DynamicPlannerNode::highestImitationPriorIdxCallback, this,
                 std::placeholders::_1));
 
@@ -543,6 +543,7 @@ void DynamicPlannerNode::keystrikeCallback(const std_msgs::msg::UInt8::SharedPtr
 void DynamicPlannerNode::highestImitationPriorIdxCallback(const std_msgs::msg::UInt8::SharedPtr msg)
 {
   m_highest_prior_idx = *msg;
+  std::cout << "Dynamic planner : highestImitationPriorIdxCallback" << std::endl;
 }
 
 void DynamicPlannerNode::sensorGTCallback(const nav_msgs::msg::Odometry::SharedPtr msg)
@@ -1829,15 +1830,20 @@ void DynamicPlannerNode::timer_callback_imitative()
   {
     // keep key command for 2 sec
     cur_path_idx = m_key.data;
+    std::cout << "Dynamic planner : keyboard" << std::endl;
   }
   else
   {
     // Set highest path idx
     cur_path_idx = m_highest_prior_idx.data;
+    std::cout << "Dynamic planner : nn model" << std::endl;
+    std::cout << "Dynamic planner : output : " << m_highest_prior_idx.data << std::endl;
   }
 
   if (m_previous_imitative_path_idx == cur_path_idx && !m_cur_planned_traj.trajectory_path.poses.empty())
   {
+    std::cout << "Keep path" << std::endl;
+
     ///////////////////////////////////////////
     // Change the target path to the static wpt
     ///////////////////////////////////////////
@@ -1874,6 +1880,8 @@ void DynamicPlannerNode::timer_callback_imitative()
   }
   else
   {
+    std::cout << "Change path" << std::endl;
+
     // Generate the frenet candidates to all overtaking path candidates
     m_previous_imitative_path_idx = cur_path_idx;
 
