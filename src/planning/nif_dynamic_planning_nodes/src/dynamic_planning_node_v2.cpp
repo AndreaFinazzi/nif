@@ -253,6 +253,10 @@ DynamicPlannerNode::DynamicPlannerNode(const std::string &node_name_)
   m_ego_traj_global_vis_debug_pub1 =
       this->create_publisher<nav_msgs::msg::Path>(
           "planning/debug1", common::constants::QOS_PLANNING);
+  m_ego_traj_global_vis_debug_body_pub1 =
+      this->create_publisher<nav_msgs::msg::Path>(
+          "planning/debug1/body", common::constants::QOS_PLANNING);
+
   m_ego_traj_global_debug_pub1 =
       this->create_publisher<nif_msgs::msg::DynamicTrajectory>(
           "planning/traj/debug1", common::constants::QOS_PLANNING);
@@ -1745,6 +1749,19 @@ void DynamicPlannerNode::timer_callback_imitative()
 
     cur_path_seg.header.frame_id = "odom";
     m_ego_traj_global_vis_debug_pub1->publish(cur_path_seg);
+
+    nav_msgs::msg::Path out_body;
+    out_body.header.frame_id = "base_link";
+    for (int i = 0; i < cur_path_seg.poses.size(); i++)
+    {
+      geometry_msgs::msg::PoseStamped ps_body;
+
+      ps_body.header.frame_id = "base_link";
+      ps_body =
+          common::utils::coordination::getPtGlobaltoBody(m_ego_odom, cur_path_seg.poses[i]);
+      out_body.poses.push_back(ps_body);
+    }
+    m_ego_traj_global_vis_debug_body_pub1->publish(out_body);
   }
   else
   {
@@ -1796,6 +1813,19 @@ void DynamicPlannerNode::timer_callback_imitative()
 
     cur_path_seg.header.frame_id = "odom";
     m_ego_traj_global_vis_debug_pub1->publish(cur_path_seg);
+
+    nav_msgs::msg::Path out_body;
+    out_body.header.frame_id = "base_link";
+    for (int i = 0; i < cur_path_seg.poses.size(); i++)
+    {
+      geometry_msgs::msg::PoseStamped ps_body;
+
+      ps_body.header.frame_id = "base_link";
+      ps_body =
+          common::utils::coordination::getPtGlobaltoBody(m_ego_odom, cur_path_seg.poses[i]);
+      out_body.poses.push_back(ps_body);
+    }
+    m_ego_traj_global_vis_debug_body_pub1->publish(out_body);
   }
 }
 

@@ -282,6 +282,9 @@ namespace nif
 
             rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr
                 m_ego_traj_global_vis_debug_pub1;
+            rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr
+                m_ego_traj_global_vis_debug_body_pub1;
+
             rclcpp::Publisher<nif_msgs::msg::DynamicTrajectory>::SharedPtr
                 m_ego_traj_global_debug_pub1;
             rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr
