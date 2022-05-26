@@ -289,7 +289,7 @@ class ACClientNode(rclpy.node.Node):
 
         ego_x = None
         ego_y = None
-        dist = [-1] * state["carsCount"]
+        dist = [0] * state["carsCount"]
         entire_vehicle_status_list = [
             ACTelemetryCarStatus()] * state["carsCount"]  # ego is always in the "0"
 
@@ -407,21 +407,23 @@ class ACClientNode(rclpy.node.Node):
                     ego_y - car_status.odometry.pose.position.y)*(ego_y - car_status.odometry.pose.position.y))
 
             entire_vehicle_status_list[cid] = car_status
+            self.pubs_car_status[cid].publish(car_status)
+
 
         # Dist sorting
         sorted_idx_list = [i[0]
                            for i in sorted(enumerate(dist), key=lambda x:x[1])]
 
-        for sorted_idx in sorted_idx_list:
+        for count, sorted_idx in enumerate(sorted_idx_list):
             # Ego vehicle
-            if sorted_idx == 0:
+            if count == 0:
                 car_status = entire_vehicle_status_list[sorted_idx]
                 # Assign the position of the ego vehicle to the marker
                 self.ego_marker.pose = car_status.odometry.pose
                 self.ego_marker.color.r = 0.4
                 self.ego_marker.color.g = 0.65
                 self.ego_marker.color.b = 0.729
-                self.pubs_car_marker[sorted_idx].publish(self.ego_marker)
+                self.pubs_car_marker[count].publish(self.ego_marker)
 
                 self.ego_odom.pose.pose = self.ego_marker.pose
 
@@ -461,10 +463,15 @@ class ACClientNode(rclpy.node.Node):
                 car_status = entire_vehicle_status_list[sorted_idx]
                 # Assign the position of the ego vehicle to the marker
                 self.oppo_marker.pose = car_status.odometry.pose
-                self.oppo_marker.color.r = 0.4
-                self.oppo_marker.color.g = 0.0
-                self.oppo_marker.color.b = 0.0
-                self.pubs_car_marker[sorted_idx].publish(self.oppo_marker)
+                if count < 4:
+                    self.oppo_marker.color.r = 1.0
+                    self.oppo_marker.color.g = 0.0
+                    self.oppo_marker.color.b = 0.0
+                else:
+                    self.oppo_marker.color.r = 0.0
+                    self.oppo_marker.color.g = 1.0
+                    self.oppo_marker.color.b = 0.0
+                self.pubs_car_marker[count].publish(self.oppo_marker)
 
     def tf_broadcast(self, msg):
         tfs = TransformStamped()
