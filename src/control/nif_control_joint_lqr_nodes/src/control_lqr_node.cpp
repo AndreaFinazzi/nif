@@ -50,7 +50,7 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
                     std::placeholders::_1));
 
   imitative_planner_output_sub = this->create_subscription<nav_msgs::msg::Path>(
-      "/planning/debug1", nif::common::constants::QOS_SENSOR_DATA,
+      "/planning/debug1/body", nif::common::constants::QOS_SENSOR_DATA,
       std::bind(&ControlLQRNode::imitativePlannerOutputCallback, this,
                 std::placeholders::_1));
   splined_imitatvie_output_pub_ =
@@ -435,7 +435,6 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve()
   }
   else // use_imitative_planner_output_
   {
-
     auto now = this->now();
     nif::common::NodeStatusCode node_status = common::NODE_ERROR;
 
@@ -446,6 +445,7 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve()
         this->hasEgoOdometry() &&
         nif::common::utils::time::secs(now - this->getEgoOdometryUpdateTime()) <
             odometry_timeout_sec_;
+
 
     bool valid_wpt_distance = true;
 
@@ -458,31 +458,33 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve()
     joint_lqr::lqr::JointLQR::ErrorMatrix error;
     joint_lqr::lqr::JointLQR::ErrorMatrix error_COG; // error at center of gravity
 
+
     // Perform Tracking if path is good
-    if (valid_path && valid_odom)
+    if (valid_path)
     {
 
-      // Need to spline and assign the orientation of each pt
-      std::vector<double> splined_x, splined_y, splined_yaw;
-      std::shared_ptr<CubicSpliner2D> cubic_spliner_2D_xy;
-      std::tie(splined_x, splined_y, splined_yaw, cubic_spliner_2D_xy) =
-          m_frenet_generator->applyCubicSpliner_2d_ros(imitavive_planner_output_path,
-                                                       1.0);
 
-      if (splined_x.empty())
-        return nullptr;
+      // // Need to spline and assign the orientation of each pt
+      // std::vector<double> splined_x, splined_y, splined_yaw;
+      // std::shared_ptr<CubicSpliner2D> cubic_spliner_2D_xy;
+      // std::tie(splined_x, splined_y, splined_yaw, cubic_spliner_2D_xy) =
+      //     m_frenet_generator->applyCubicSpliner_2d_ros(imitavive_planner_output_path,
+      //                                                  1.0);
 
-      imitavive_planner_output_path.poses.clear();
-      for (int i = 0; i < splined_x.size(); i++)
-      {
-        geometry_msgs::msg::PoseStamped pt;
-        pt.pose.position.x = splined_x[i];
-        pt.pose.position.y = splined_y[i];
-        pt.pose.orientation = nif::common::utils::coordination::euler2quat(splined_yaw[i], 0.0, 0.0);
-        imitavive_planner_output_path.poses.push_back(pt);
-      }
+      // if (splined_x.empty())
+      //   return nullptr;
 
-      splined_imitatvie_output_pub_->publish(imitavive_planner_output_path);
+      // imitavive_planner_output_path.poses.clear();
+      // for (int i = 0; i < splined_x.size(); i++)
+      // {
+      //   geometry_msgs::msg::PoseStamped pt;
+      //   pt.pose.position.x = splined_x[i];
+      //   pt.pose.position.y = splined_y[i];
+      //   pt.pose.orientation = nif::common::utils::coordination::euler2quat(splined_yaw[i], 0.0, 0.0);
+      //   imitavive_planner_output_path.poses.push_back(pt);
+      // }
+
+      // splined_imitatvie_output_pub_->publish(imitavive_planner_output_path);
 
       // std::cout << "valid path true" << std::endl;
       // Check whether path is global/local
@@ -531,7 +533,7 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve()
 
       // TODO: temporally just put the minimum look ahead dist
       // track_distance = pure_pursuit_min_dist_m_ * 1.2;
-      track_distance = imitavive_planner_output_path.poses[-1].pose.position.x;
+      track_distance = 56;
 
       // Track on the trajectory
       double target_distance = 0.0;
@@ -542,14 +544,10 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve()
           lqr_tracking_idx_, target_distance,
           target_reached_end); // outputs
 
-          lqr_tracking_idx_ = 40;
-
       // - target point should be ahead.
       double target_point_azimuth = joint_lqr::utils::pursuit_azimuth(
           imitavive_planner_output_path.poses[lqr_tracking_idx_], ego_base);
       valid_target_position = M_PI * 3 / 4. > std::abs(target_point_azimuth);
-
-      
 
       double l_desired_velocity = 100.0;
       if (valid_wpt_distance && valid_target_position)
@@ -588,17 +586,6 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve()
                                    imitavive_planner_output_path.poses[lqr_tracking_idx_],
                                    //  this->getReferenceTrajectory()->trajectory_path.poses[lqr_tracking_idx_],
                                    error_COG, error, l_desired_velocity);
-    }
-    // std::cout << "valid path false" << std::endl;
-    if (!this->hasSystemStatus() ||
-        (this->getSystemStatus().autonomy_status.lateral_autonomy_enabled ||
-         this->getSystemStatus().autonomy_status.longitudinal_autonomy_enabled) &&
-            !(valid_path && valid_odom && valid_wpt_distance &&
-              valid_target_position))
-    {
-      node_status = common::NODE_ERROR;
-      this->setNodeStatus(node_status);
-      return nullptr;
     }
 
     last_steering_command_ = steering_angle_deg;
