@@ -581,14 +581,14 @@ class ImitativePlanningNode(Node):
         """
         # self.model_path = "/home/usrg-racing/nif/build/nif_imitative_planning_nodes/nif_imitative_planning_nodes/ac_weight_files/model-452.pt"
 
-        self.model_path = (
-            model_weight_db_path
-            + "/traj_based/slim_w_mobilenetV3/model-490.pt"  # hidden 64
-        )
-
         # self.model_path = (
-        #     model_weight_db_path + "/recover_mu_zero/model-270.pt"  # hidden 16
+        #     model_weight_db_path
+        #     + "/traj_based/slim_w_mobilenetV3/model-490.pt"  # hidden 64
         # )
+
+        self.model_path = (
+            model_weight_db_path + "/527/model-150.pt"  # hidden 16
+        )
 
         # self.model = ImitativeModel(
         #     future_traj_shape=self.output_shape,
