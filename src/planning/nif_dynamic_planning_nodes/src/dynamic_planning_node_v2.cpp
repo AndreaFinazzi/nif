@@ -1830,19 +1830,19 @@ void DynamicPlannerNode::timer_callback_imitative()
   {
     // keep key command for 2 sec
     cur_path_idx = m_key.data;
-    std::cout << "Dynamic planner : keyboard" << std::endl;
+    // std::cout << "Dynamic planner : keyboard" << std::endl;
   }
   else
   {
     // Set highest path idx
     cur_path_idx = m_highest_prior_idx.data;
-    std::cout << "Dynamic planner : nn model" << std::endl;
-    std::cout << "Dynamic planner : output : " << m_highest_prior_idx.data << std::endl;
+    // std::cout << "Dynamic planner : nn model" << std::endl;
+    // std::cout << "Dynamic planner : output : " << m_highest_prior_idx.data << std::endl;
   }
 
   if (m_previous_imitative_path_idx == cur_path_idx && !m_cur_planned_traj.trajectory_path.poses.empty())
   {
-    std::cout << "Keep path" << std::endl;
+    // std::cout << "Keep path" << std::endl;
 
     ///////////////////////////////////////////
     // Change the target path to the static wpt
@@ -1880,7 +1880,7 @@ void DynamicPlannerNode::timer_callback_imitative()
   }
   else
   {
-    std::cout << "Change path" << std::endl;
+    // std::cout << "Change path" << std::endl;
 
     // Generate the frenet candidates to all overtaking path candidates
     m_previous_imitative_path_idx = cur_path_idx;
@@ -1901,12 +1901,12 @@ void DynamicPlannerNode::timer_callback_imitative()
                 get<1>(progressNcte), // current_position_d
                 get<0>(progressNcte), // current_position_s
                 0.0,                  // current_velocity_d
-                60.0,                 // current_velocity_s
+                30.0,                 // current_velocity_s
                 0.0,                  // current_acceleration_d
                 m_overtaking_candidates_spline_model_vec
                     [cur_path_idx], // cubicSplineModel
-                1,
-                1 + 0.01,
+                2.5,
+                2.5 + 0.01,
                 0.02, 0.0, 0.0001, 0.1);
 
     if (frenet_path_generation_result.empty())
