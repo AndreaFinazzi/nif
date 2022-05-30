@@ -215,13 +215,9 @@ class ImitativePlanningNode(Node):
         self.opponent_2_odom_buffer_global_np = np.empty((0, 3))
         self.opponent_3_odom_buffer_global_np = np.empty((0, 3))
 
-        self.opponent_1_odom_buffer_global_list = []
-        self.opponent_2_odom_buffer_global_list = []
-        self.opponent_3_odom_buffer_global_list = []
-
-        self.opponent_1_odom_buffer_img_grid_np = np.empty((0, 2))
-        self.opponent_2_odom_buffer_img_grid_np = np.empty((0, 2))
-        self.opponent_3_odom_buffer_img_grid_np = np.empty((0, 2))
+        self.opponent_1_vel = 0.0
+        self.opponent_2_vel = 0.0
+        self.opponent_3_vel = 0.0
 
         self.cur_odom = Odometry()
         self.ego_yaw = None
@@ -966,6 +962,7 @@ class ImitativePlanningNode(Node):
         Append msg, assume that the data is updating at 100Hz strictly.
         """
         self.opponent_1_odom_buffer.append(msg.odometry.pose)
+        self.opponent_1_vel = msg.wheel_angular_speed[0]
 
         if len(self.opponent_1_odom_buffer) > self.NUM_OPPO_PAST_TRAJ_PT:
             self.opponent_1_odom_buffer = self.opponent_1_odom_buffer[
@@ -999,6 +996,7 @@ class ImitativePlanningNode(Node):
         Append msg, assume that the data is updating at 100Hz strictly.
         """
         self.opponent_2_odom_buffer.append(msg.odometry.pose)
+        self.opponent_2_vel = msg.wheel_angular_speed[0]
 
         if len(self.opponent_2_odom_buffer) > self.NUM_OPPO_PAST_TRAJ_PT:
             self.opponent_2_odom_buffer = self.opponent_2_odom_buffer[
@@ -1032,6 +1030,7 @@ class ImitativePlanningNode(Node):
         Append msg, assume that the data is updating at 100Hz strictly.
         """
         self.opponent_3_odom_buffer.append(msg.odometry.pose)
+        self.opponent_3_vel = msg.wheel_angular_speed[0]
 
         if len(self.opponent_3_odom_buffer) > self.NUM_OPPO_PAST_TRAJ_PT:
             self.opponent_3_odom_buffer = self.opponent_3_odom_buffer[
@@ -1250,6 +1249,7 @@ class ImitativePlanningNode(Node):
                             z,
                             costmap=None,
                             phi=1,
+                            rho=1.0,
                             costmap_only=False,
                         )
 

@@ -1343,18 +1343,8 @@ class ImitativeModel_slim(nn.Module):
             print("topk_val", topk_val)
             if topk_val > triage:
                 loss -= imitation_prior
-                # print('*' * 100)
-                # print('*' * 100)
-                # print('use costmap only')
-                # print('*' * 100)
-                # print('*' * 100)
             else:
                 loss += costmap_values
-                # print('*' * 100)
-                # print('*' * 100)
-                # print('use imitation prior only')
-                # print('*' * 100)
-                # print('*' * 100)
 
         # if type(costmap_values) is list:
         #   print('costmap_values:', costmap_values[:20])
@@ -1368,7 +1358,6 @@ class ImitativeModel_slim(nn.Module):
         # loss -= loss * t1
 
         prob_idx = torch.argmax(loss, dim=0)
-        # prob_idx = torch.argmin(loss, dim=0)
 
         # print("loss : ", loss)
         # print("t1 : ", t1)

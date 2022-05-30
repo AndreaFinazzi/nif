@@ -28,7 +28,7 @@ from nifpy_common_nodes.base_node import BaseNode
 
 import rclpy
 from rclpy.duration import Duration
-from std_msgs.msg import UInt8, Float32
+from std_msgs.msg import UInt8, Float32, Float32MultiArray
 from nav_msgs.msg import Odometry
 from visualization_msgs.msg import Marker, MarkerArray
 from nif_msgs.msg import ACTelemetryCarStatus
@@ -63,10 +63,10 @@ class ACServerNode(rclpy.node.Node):
             self.get_logger().info('Create AC server node : ROS2 --> UDP')
             self.get_logger().info('Sending commands every "%f"' % TIMER_PERIOD_RECV_S)
 
-        qos_car_count = QoSProfile(
+        qos_ = QoSProfile(
             depth=1,
             history=QoSHistoryPolicy.KEEP_LAST,
-            reliability=QoSReliabilityPolicy.RELIABLE,
+            reliability=QoSReliabilityPolicy.BEST_EFFORT,
             durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
         )
 
@@ -77,11 +77,17 @@ class ACServerNode(rclpy.node.Node):
         self.topic_name_target_gear = "/joystick/gear_cmd"
         self.topic_name_pt_report = "/raptor_dbw_interface/pt_report"
 
+        self.topic_name_imitative_planner_uncertainty = "/imitative/highest_prior_arry"
+
+
         self.sub_steer_cmd = self.create_subscription(Float32, self.topic_name_steer_cmd, self.steer_cmd_callback,10)
         self.sub_gas_cmd = self.create_subscription(Float32, self.topic_name_gas_cmd, self.gas_cmd_callback,10)
         self.sub_brake_cmd = self.create_subscription(Float32, self.topic_name_brake_cmd, self.brake_cmd_callback,10)
         self.sub_target_gear = self.create_subscription(UInt8, self.topic_name_target_gear, self.target_gear_callback,10)
         self.sub_pt_report = self.create_subscription(PtReport, self.topic_name_pt_report, self.pt_report_callback,10)
+
+
+        self.sub_pt_report = self.create_subscription(Float32MultiArray, self.topic_name_imitative_planner_uncertainty, self.imitative_planner_uncertainty_callback,qos_)
 
         self.latest_steer_cmd = 0.0
         self.latest_gas_cmd = 0.0
@@ -92,13 +98,24 @@ class ACServerNode(rclpy.node.Node):
         self.latest_current_gear = 1
 
         self.timer_cnt = 0
-        
+        self.avg = 0.0
         self.now = self.get_clock().now()
 
     def timer_callback(self):
         self.timer_cnt += 1
 
         if self.timer_cnt % 50 == 0:
+
+            if(self.avg < -5000000):
+                # Not very sure
+                self.latest_gas_cmd = 0.8
+            elif (self.avg < -10000000):
+                self.latest_gas_cmd = 0.8
+                self.latest_brake_cmd = 1.0
+            else:
+                self.latest_gas_cmd = 1.0
+            
+
             # Prepare the dict
             udp_dict = {"steering":self.latest_steer_cmd,
                         "gas_pedal": self.latest_gas_cmd,
@@ -130,14 +147,14 @@ class ACServerNode(rclpy.node.Node):
         if(self.verbose):
             self.get_logger().info('Recieved gas cmd')
         # update latest gas cmd
-        self.latest_gas_cmd = msg.data
+        # self.latest_gas_cmd = msg.data
         pass
 
     def brake_cmd_callback(self,msg):
         if(self.verbose):
             self.get_logger().info('Recieved brake cmd')
         # update latest brake cmd
-        self.latest_brake_cmd = msg.data
+        # self.latest_brake_cmd = msg.data
         pass
 
     def target_gear_callback(self,msg):
@@ -159,6 +176,15 @@ class ACServerNode(rclpy.node.Node):
             self.latest_gear_up_cmd = False
             self.latest_gear_down_cmd = True
         pass
+
+    def imitative_planner_uncertainty_callback(self, msg: Float32MultiArray):
+        self.avg = 0.0
+        sum = 0.0
+        for i in range(len(msg.data)):
+            sum += msg.data[i]
+        self.avg = float(sum / len(msg.data))
+
+        print(self.avg)
 
     def pt_report_callback(self,msg: PtReport):
         if(self.verbose):
