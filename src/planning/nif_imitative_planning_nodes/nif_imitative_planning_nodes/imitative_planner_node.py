@@ -1260,18 +1260,18 @@ class ImitativePlanningNode(Node):
                         highest_imitation_path_idx_msg = UInt8()
                         highest_imitation_path_idx_msg.data = traj_idx_cpu.item()
 
-                        highest_imitation_path_msg = Float32MultiArray()
-                        # highest_imitation_path_msg.data = loss_cpu_np.item()
+                        imitation_loss_array_msg = Float32MultiArray()
+                        # imitation_loss_array_msg.data = loss_cpu_np.item()
 
                         # print((loss_cpu_np))
                         # print((loss_cpu_np[0]))
                         for loss_ in loss_cpu_np:
-                            highest_imitation_path_msg.data.append(loss_)
+                            imitation_loss_array_msg.data.append(loss_)
 
                         self.highest_imitation_prior_path_idx_pub.publish(
                             highest_imitation_path_idx_msg
                         )
-                        self.highest_imitation_prior_pub.publish(highest_imitation_path_msg)
+                        self.highest_imitation_prior_pub.publish(imitation_loss_array_msg)
 
                         # Publish result
                         vis_path = Path()
