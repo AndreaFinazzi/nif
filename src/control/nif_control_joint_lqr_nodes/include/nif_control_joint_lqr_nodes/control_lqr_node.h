@@ -82,6 +82,11 @@ namespace nif
         imitavive_planner_output_path = *msg;
       }
 
+      void
+      imitativePlannerOdomCallback(const nav_msgs::msg::Odometry::SharedPtr msg){
+        imitavive_planner_ego_odom = *msg;
+      }
+
       void steeringCallback(const std_msgs::msg::Float32::SharedPtr msg)
       {
         override_steering_target_ = msg->data;
@@ -138,6 +143,8 @@ namespace nif
           direct_desired_velocity_sub;
 
       // Input from the imitative planner
+      rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr
+          ego_odom_sub;
       rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr
           imitative_planner_output_sub;
       rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr
@@ -175,6 +182,7 @@ namespace nif
 
       // Imitative pLanner output
       nav_msgs::msg::Path imitavive_planner_output_path;
+      nav_msgs::msg::Odometry imitavive_planner_ego_odom;
 
       //! Desired Velocity from Velocity Planner
       double desired_vx_;

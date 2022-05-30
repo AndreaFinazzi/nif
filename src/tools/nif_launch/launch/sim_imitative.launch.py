@@ -490,7 +490,7 @@ def generate_launch_description():
         nif_waypoint_manager_node,
         sim_interface_launch,
         nif_dynamic_planner_launch,
-        nif_imitation_planner_node,
+        # nif_imitation_planner_node,
         track_boundaries_vis_node,
         imitation_distribution_vis_launch
     ])

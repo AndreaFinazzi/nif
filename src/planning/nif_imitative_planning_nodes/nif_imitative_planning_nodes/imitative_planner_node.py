@@ -31,21 +31,22 @@ from visualization_msgs.msg import Marker, MarkerArray
 import matplotlib.pyplot as plt
 from rclpy.duration import Duration
 from rclpy.executors import MultiThreadedExecutor, SingleThreadedExecutor
-from std_msgs.msg import UInt8
+from std_msgs.msg import UInt8, Float32MultiArray
+import dill
 
 from scipy.interpolate import interp1d
 
 home_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "."))
 sys.path.append(home_dir)
-home_dir = os.path.abspath(os.path.join(
-    os.path.dirname(__file__), "..", "ac_track_db"))
+home_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "ac_track_db"))
 sys.path.append(home_dir)
 
 from oatomobile.baselines.torch.dim.model_ac_traj import (
     ImitativeModel,
     ImitativeModel_slim,
 )
-
+from threading import Thread
+import threading
 
 # from oatomobile.baselines.torch.dim.model_ac import ImitativeModel
 
@@ -82,6 +83,9 @@ class ImitativePlanningNode(Node):
         self.highest_imitation_prior_path_idx_pub = self.create_publisher(
             UInt8, "imitative/highest_prior_idx", rclpy.qos.qos_profile_sensor_data
         )
+        self.highest_imitation_prior_pub = self.create_publisher(
+            Float32MultiArray, "imitative/highest_prior_array", rclpy.qos.qos_profile_sensor_data
+        )
         self.path_pub = self.create_publisher(
             Path, "imitative/out_path", rclpy.qos.qos_profile_sensor_data
         )
@@ -106,20 +110,16 @@ class ImitativePlanningNode(Node):
         )
 
         self.pub_ego_marker = self.create_publisher(
-            Marker, "/ac/car_marker_" +
-            str(0), rclpy.qos.qos_profile_sensor_data
+            Marker, "/ac/car_marker_" + str(0), rclpy.qos.qos_profile_sensor_data
         )
         self.pub_oppo_1_marker = self.create_publisher(
-            Marker, "/ac/car_marker_" +
-            str(1), rclpy.qos.qos_profile_sensor_data
+            Marker, "/ac/car_marker_" + str(1), rclpy.qos.qos_profile_sensor_data
         )
         self.pub_oppo_2_marker = self.create_publisher(
-            Marker, "/ac/car_marker_" +
-            str(2), rclpy.qos.qos_profile_sensor_data
+            Marker, "/ac/car_marker_" + str(2), rclpy.qos.qos_profile_sensor_data
         )
         self.pub_oppo_3_marker = self.create_publisher(
-            Marker, "/ac/car_marker_" +
-            str(3), rclpy.qos.qos_profile_sensor_data
+            Marker, "/ac/car_marker_" + str(3), rclpy.qos.qos_profile_sensor_data
         )
 
         """
@@ -131,6 +131,7 @@ class ImitativePlanningNode(Node):
             self.ego_veh_status_callback,
             rclpy.qos.qos_profile_sensor_data,
         )
+
         self.opponent_1_subscription = self.create_subscription(
             ACTelemetryCarStatus,
             "/ac/car_status_1",
@@ -168,6 +169,7 @@ class ImitativePlanningNode(Node):
         self.opponent_1_past_traj_body_buffer = []
         self.opponent_2_past_traj_body_buffer = []
         self.opponent_3_past_traj_body_buffer = []
+        self.player_past = None
 
         """
         Marker init
@@ -185,8 +187,7 @@ class ImitativePlanningNode(Node):
         self.ego_marker.pose.orientation.y = 0.0
         self.ego_marker.pose.orientation.z = 0.0
         self.ego_marker.pose.orientation.w = 1.0
-        self.ego_marker.lifetime = Duration(
-            seconds=1, nanoseconds=20000000).to_msg()
+        self.ego_marker.lifetime = Duration(seconds=1, nanoseconds=20000000).to_msg()
         self.ego_marker.scale.x = 1.0
         self.ego_marker.scale.y = 1.0
         self.ego_marker.scale.z = 1.0
@@ -288,8 +289,7 @@ class ImitativePlanningNode(Node):
                 (
                     self.left_center_data[self.biased_line_field_name_x],
                     self.left_center_data[self.biased_line_field_name_y],
-                    [0] *
-                    len(self.left_center_data[self.biased_line_field_name_y]),
+                    [0] * len(self.left_center_data[self.biased_line_field_name_y]),
                 )
             )
         )
@@ -305,8 +305,7 @@ class ImitativePlanningNode(Node):
                 (
                     self.right_center_data[self.biased_line_field_name_x],
                     self.right_center_data[self.biased_line_field_name_y],
-                    [0] *
-                    len(self.right_center_data[self.biased_line_field_name_y]),
+                    [0] * len(self.right_center_data[self.biased_line_field_name_y]),
                 )
             )
         )
@@ -384,8 +383,7 @@ class ImitativePlanningNode(Node):
             pt.pose.position.y = self.track_bound_l_global[i][1]
             pt.pose.position.z = 0.0
             self.track_bound_l_path_global.poses.append(pt)
-        self.track_bound_l_path_global_len = len(
-            self.track_bound_l_path_global.poses)
+        self.track_bound_l_path_global_len = len(self.track_bound_l_path_global.poses)
 
         self.track_bound_r_path_global.header.frame_id = "odom"
         for i in range(self.track_bound_l_global.shape[0]):
@@ -395,8 +393,7 @@ class ImitativePlanningNode(Node):
             pt.pose.position.y = self.track_bound_r_global[i][1]
             pt.pose.position.z = 0.0
             self.track_bound_r_path_global.poses.append(pt)
-        self.track_bound_r_path_global_len = len(
-            self.track_bound_r_path_global.poses)
+        self.track_bound_r_path_global_len = len(self.track_bound_r_path_global.poses)
 
         self.race_line_path_global.header.frame_id = "odom"
         for i in range(self.raceline_global.shape[0]):
@@ -435,8 +432,7 @@ class ImitativePlanningNode(Node):
         """
         inference configuration
         """
-        self.device = torch.device(
-            "cuda" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         if self.verbose:
             print("Device : ", self.device)
 
@@ -444,11 +440,9 @@ class ImitativePlanningNode(Node):
         self.ego_planning_traj_time = 1.0
         self.oppo_keep_past_traj_time = 1.0
 
-        self.ego_past_buffer_length = int(
-            self.ego_keep_past_traj_time / self.dt)
+        self.ego_past_buffer_length = int(self.ego_keep_past_traj_time / self.dt)
         self.ego_planning_length = int(self.ego_planning_traj_time / self.dt)
-        self.oppo_past_buffer_length = int(
-            self.oppo_keep_past_traj_time / self.dt)
+        self.oppo_past_buffer_length = int(self.oppo_keep_past_traj_time / self.dt)
 
         self.UNIT_GRID_DIST = 0.5
 
@@ -504,28 +498,24 @@ class ImitativePlanningNode(Node):
         self.sliced_left_centerline = Path()
         self.sliced_left_centerline.header.frame_id = "odom"
         self.sliced_left_centerline.header.stamp = self.get_clock().now().to_msg()
-        self.sliced_left_centerline.poses = [
-            ps_global] * self.slice_length_full
+        self.sliced_left_centerline.poses = [ps_global] * self.slice_length_full
 
         self.sliced_right_centerline = Path()
         self.sliced_right_centerline.header.frame_id = "odom"
         self.sliced_right_centerline.header.stamp = self.get_clock().now().to_msg()
-        self.sliced_right_centerline.poses = [
-            ps_global] * self.slice_length_full
+        self.sliced_right_centerline.poses = [ps_global] * self.slice_length_full
 
         # ----------------------------------------
 
         self.sliced_track_bound_l_body = Path()
         self.sliced_track_bound_l_body.header.frame_id = "base_link"
         self.sliced_track_bound_l_body.header.stamp = self.get_clock().now().to_msg()
-        self.sliced_track_bound_l_body.poses = [
-            ps_body] * self.slice_length_full
+        self.sliced_track_bound_l_body.poses = [ps_body] * self.slice_length_full
 
         self.sliced_track_bound_r_body = Path()
         self.sliced_track_bound_r_body.header.frame_id = "base_link"
         self.sliced_track_bound_r_body.header.stamp = self.get_clock().now().to_msg()
-        self.sliced_track_bound_r_body.poses = [
-            ps_body] * self.slice_length_full
+        self.sliced_track_bound_r_body.poses = [ps_body] * self.slice_length_full
 
         self.sliced_race_line_body = Path()
         self.sliced_race_line_body.header.frame_id = "base_link"
@@ -540,8 +530,7 @@ class ImitativePlanningNode(Node):
         self.sliced_right_center_body = Path()
         self.sliced_right_center_body.header.frame_id = "base_link"
         self.sliced_right_center_body.header.stamp = self.get_clock().now().to_msg()
-        self.sliced_right_center_body.poses = [
-            ps_body] * self.slice_length_full
+        self.sliced_right_center_body.poses = [ps_body] * self.slice_length_full
 
         self.last = self.get_clock().now()
 
@@ -586,9 +575,7 @@ class ImitativePlanningNode(Node):
         #     + "/traj_based/slim_w_mobilenetV3/model-490.pt"  # hidden 64
         # )
 
-        self.model_path = (
-            model_weight_db_path + "/527/model-150.pt"  # hidden 16
-        )
+        self.model_path = model_weight_db_path + "/527/model-300.pt"  # hidden 16
 
         # self.model = ImitativeModel(
         #     future_traj_shape=self.output_shape,
@@ -612,14 +599,13 @@ class ImitativePlanningNode(Node):
         load trajectory lib
         """
         if self.use_traj_lib == True:
-            self.trajectory_lib_path = traj_lib_db_path + "/518_w_recovery_mu_zero.npy"
+            self.trajectory_lib_path = traj_lib_db_path + "/527.npy"
             self.arr = np.load(self.trajectory_lib_path)
             self.traj_lib = (
                 torch.from_numpy(
                     np.reshape(
                         self.arr,
-                        (self.arr.shape[0], self.output_shape[0],
-                         self.output_shape[1]),
+                        (self.arr.shape[0], self.output_shape[0], self.output_shape[1]),
                     )
                 )
                 .type(torch.FloatTensor)
@@ -628,8 +614,7 @@ class ImitativePlanningNode(Node):
 
             self.trajs_candidates = np.reshape(
                 self.arr,
-                (self.arr.shape[0], self.output_shape[0],
-                 self.output_shape[1]),
+                (self.arr.shape[0], self.output_shape[0], self.output_shape[1]),
             )
 
         """
@@ -640,6 +625,9 @@ class ImitativePlanningNode(Node):
         self.left_boundary_dist = 0.0
         self.right_boundary_dist = 0.0
         self.close_dist_thres = 1.0
+
+        # Additional threading for inference
+        self.imitative_planning_thread()
 
     def goal_pt_to_body(
         self,
@@ -713,356 +701,6 @@ class ImitativePlanningNode(Node):
                 0.0,
             )
 
-    # def overlay_opponents(self, ego_odom):
-    #     """
-    #     Overlaying
-    #     """
-    #     downsample = 10
-    #     for oppo_1_global_pose in self.opponent_1_odom_buffer[0::downsample]:
-    #         body_x, body_y, _ = self.goal_pt_to_body(
-    #             ego_odom.pose.pose.position.x,
-    #             ego_odom.pose.pose.position.y,
-    #             self.ego_yaw,
-    #             oppo_1_global_pose.position.x,
-    #             oppo_1_global_pose.position.y,
-    #             0.0,
-    #         )
-    #         grid_x_idx = int(
-    #             self.CENTER_X_GRID
-    #             - int(body_x / (self.UNIT_GRID_DIST / self.PRESET_X_GRID_SIZE))
-    #         )
-    #         grid_y_idx = int(
-    #             self.CENTER_Y_GRID
-    #             - int(body_y / (self.UNIT_GRID_DIST / self.PRESET_Y_GRID_SIZE))
-    #         )
-    #         if (
-    #             grid_x_idx > 0
-    #             and grid_x_idx < self.PRESET_X_GRID_SIZE
-    #             and grid_y_idx > 0
-    #             and grid_y_idx < self.PRESET_Y_GRID_SIZE
-    #         ):
-    #             self.input_visual_feature[
-    #                 0, 0, grid_x_idx, grid_y_idx
-    #             ] = self.OVERLAY_OPPONENT_VALUE
-
-    #     for oppo_2_global_pose in self.opponent_2_odom_buffer[0::downsample]:
-    #         body_x, body_y, _ = self.goal_pt_to_body(
-    #             ego_odom.pose.pose.position.x,
-    #             ego_odom.pose.pose.position.y,
-    #             self.ego_yaw,
-    #             oppo_2_global_pose.position.x,
-    #             oppo_2_global_pose.position.y,
-    #             0.0,
-    #         )
-    #         grid_x_idx = int(
-    #             self.CENTER_X_GRID
-    #             - int(body_x / (self.UNIT_GRID_DIST / self.PRESET_X_GRID_SIZE))
-    #         )
-    #         grid_y_idx = int(
-    #             self.CENTER_Y_GRID
-    #             - int(body_y / (self.UNIT_GRID_DIST / self.PRESET_Y_GRID_SIZE))
-    #         )
-    #         if (
-    #             grid_x_idx > 0
-    #             and grid_x_idx < self.PRESET_X_GRID_SIZE
-    #             and grid_y_idx > 0
-    #             and grid_y_idx < self.PRESET_Y_GRID_SIZE
-    #         ):
-    #             self.input_visual_feature[
-    #                 0, 0, grid_x_idx, grid_y_idx
-    #             ] = self.OVERLAY_OPPONENT_VALUE
-
-    #     for oppo_3_global_pose in self.opponent_3_odom_buffer[0::downsample]:
-    #         body_x, body_y, _ = self.goal_pt_to_body(
-    #             ego_odom.pose.pose.position.x,
-    #             ego_odom.pose.pose.position.y,
-    #             self.ego_yaw,
-    #             oppo_3_global_pose.position.x,
-    #             oppo_3_global_pose.position.y,
-    #             0.0,
-    #         )
-    #         grid_x_idx = int(
-    #             self.CENTER_X_GRID
-    #             - int(body_x / (self.UNIT_GRID_DIST / self.PRESET_X_GRID_SIZE))
-    #         )
-    #         grid_y_idx = int(
-    #             self.CENTER_Y_GRID
-    #             - int(body_y / (self.UNIT_GRID_DIST / self.PRESET_Y_GRID_SIZE))
-    #         )
-    #         if (
-    #             grid_x_idx > 0
-    #             and grid_x_idx < self.PRESET_X_GRID_SIZE
-    #             and grid_y_idx > 0
-    #             and grid_y_idx < self.PRESET_Y_GRID_SIZE
-    #         ):
-    #             self.input_visual_feature[
-    #                 0, 0, grid_x_idx, grid_y_idx
-    #             ] = self.OVERLAY_OPPONENT_VALUE
-
-    # def overlay_lines(self, ego_odom):
-    #     self.input_visual_feature.fill(0)
-
-    #     ego_pt = [
-    #         ego_odom.pose.pose.position.x,
-    #         ego_odom.pose.pose.position.y,
-    #         ego_odom.pose.pose.position.z,
-    #     ]
-
-    #     """
-    #     Find closest index
-    #     """
-    #     _, self.track_bound_l_idx = self.track_bound_l_tree.query(ego_pt)
-    #     _, self.track_bound_r_idx = self.track_bound_r_tree.query(ego_pt)
-    #     _, self.racenline_idx = self.raceline_tree.query(ego_pt)
-
-    #     """
-    #     Slicing track geometry information
-    #     """
-    #     if self.track_bound_l_idx < (self.slice_length_full / 2):
-    #         self.sliced_track_bound_l.poses[
-    #             0 : int(self.slice_length_full / 2 - self.track_bound_l_idx)
-    #         ] = self.track_bound_l_path_global.poses[
-    #             int(-(self.slice_length_full / 2 - self.track_bound_l_idx)) :
-    #         ]
-    #         self.sliced_track_bound_l.poses[
-    #             int(self.slice_length_full / 2 - self.track_bound_l_idx) :
-    #         ] = self.track_bound_l_path_global.poses[
-    #             0 : int(self.track_bound_l_idx + (self.slice_length_full / 2))
-    #         ]
-    #     elif self.track_bound_l_idx > self.track_bound_l_path_global_len - (
-    #         self.slice_length_full / 2
-    #     ):
-    #         self.sliced_track_bound_l.poses[
-    #             0 : int(
-    #                 self.track_bound_l_path_global_len
-    #                 - self.track_bound_l_idx
-    #                 + self.slice_length_full / 2
-    #             )
-    #         ] = self.track_bound_l_path_global.poses[
-    #             int(self.track_bound_l_idx - (self.slice_length_full / 2)) :
-    #         ]
-    #         self.sliced_track_bound_l.poses[
-    #             int(
-    #                 self.track_bound_l_path_global_len
-    #                 - self.track_bound_l_idx
-    #                 + self.slice_length_full / 2
-    #             ) :
-    #         ] = self.track_bound_l_path_global.poses[
-    #             0 : int(
-    #                 self.track_bound_l_idx
-    #                 + (self.slice_length_full / 2)
-    #                 - self.track_bound_l_path_global_len
-    #                 - 1
-    #             )
-    #         ]
-    #     else:
-    #         self.sliced_track_bound_l.poses = self.track_bound_l_path_global.poses[
-    #             int(self.track_bound_l_idx - (self.slice_length_full / 2)) : int(
-    #                 self.track_bound_l_idx + (self.slice_length_full / 2)
-    #             )
-    #         ]
-
-    #     if self.track_bound_r_idx < (self.slice_length_full / 2):
-    #         self.sliced_track_bound_r.poses[
-    #             0 : int(self.slice_length_full / 2 - self.track_bound_r_idx)
-    #         ] = self.track_bound_r_path_global.poses[
-    #             int(-(self.slice_length_full / 2 - self.track_bound_r_idx)) :
-    #         ]
-    #         self.sliced_track_bound_r.poses[
-    #             int(self.slice_length_full / 2 - self.track_bound_r_idx) :
-    #         ] = self.track_bound_r_path_global.poses[
-    #             0 : int(self.track_bound_r_idx + (self.slice_length_full / 2))
-    #         ]
-    #     elif self.track_bound_r_idx > self.track_bound_r_path_global_len - (
-    #         self.slice_length_full / 2
-    #     ):
-    #         self.sliced_track_bound_r.poses[
-    #             0 : int(
-    #                 self.track_bound_r_path_global_len
-    #                 - self.track_bound_r_idx
-    #                 + self.slice_length_full / 2
-    #             )
-    #         ] = self.track_bound_r_path_global.poses[
-    #             int(self.track_bound_r_idx - (self.slice_length_full / 2)) :
-    #         ]
-    #         self.sliced_track_bound_r.poses[
-    #             int(
-    #                 self.track_bound_r_path_global_len
-    #                 - self.track_bound_r_idx
-    #                 + self.slice_length_full / 2
-    #             ) :
-    #         ] = self.track_bound_r_path_global.poses[
-    #             0 : int(
-    #                 self.track_bound_r_idx
-    #                 + (self.slice_length_full / 2)
-    #                 - self.track_bound_r_path_global_len
-    #                 - 1
-    #             )
-    #         ]
-    #     else:
-    #         self.sliced_track_bound_r.poses = self.track_bound_r_path_global.poses[
-    #             int(self.track_bound_r_idx - (self.slice_length_full / 2)) : int(
-    #                 self.track_bound_r_idx + (self.slice_length_full / 2)
-    #             )
-    #         ]
-
-    #     if self.racenline_idx < (self.slice_length_full / 2):
-    #         self.sliced_raceline.poses[
-    #             0 : int(self.slice_length_full / 2 - self.racenline_idx)
-    #         ] = self.race_line_path_global.poses[
-    #             int(-(self.slice_length_full / 2 - self.racenline_idx)) :
-    #         ]
-    #         self.sliced_raceline.poses[
-    #             int(self.slice_length_full / 2 - self.racenline_idx) :
-    #         ] = self.race_line_path_global.poses[
-    #             0 : int(self.racenline_idx + (self.slice_length_full / 2))
-    #         ]
-    #     elif self.racenline_idx > self.race_line_path_global_len - (
-    #         self.slice_length_full / 2
-    #     ):
-    #         self.sliced_raceline.poses[
-    #             0 : int(
-    #                 self.race_line_path_global_len
-    #                 - self.racenline_idx
-    #                 + self.slice_length_full / 2
-    #             )
-    #         ] = self.race_line_path_global.poses[
-    #             int(self.racenline_idx - (self.slice_length_full / 2)) :
-    #         ]
-    #         self.sliced_raceline.poses[
-    #             int(
-    #                 self.race_line_path_global_len
-    #                 - self.racenline_idx
-    #                 + self.slice_length_full / 2
-    #             ) :
-    #         ] = self.race_line_path_global.poses[
-    #             0 : int(
-    #                 self.racenline_idx
-    #                 + (self.slice_length_full / 2)
-    #                 - self.race_line_path_global_len
-    #                 - 1
-    #             )
-    #         ]
-    #     else:
-    #         self.sliced_raceline.poses = self.race_line_path_global.poses[
-    #             int(self.racenline_idx - (self.slice_length_full / 2)) : int(
-    #                 self.racenline_idx + (self.slice_length_full / 2)
-    #             )
-    #         ]
-
-    #     """
-    #     Overlaying
-    #     """
-    #     for global_pose_idx_l in range(
-    #         min(
-    #             len(self.sliced_track_bound_l.poses),
-    #             len(self.sliced_track_bound_l_body.poses),
-    #         )
-    #     ):
-    #         global_pose = self.sliced_track_bound_l.poses[global_pose_idx_l]
-    #         body_x, body_y, _ = self.goal_pt_to_body(
-    #             ego_odom.pose.pose.position.x,
-    #             ego_odom.pose.pose.position.y,
-    #             self.ego_yaw,
-    #             global_pose.pose.position.x,
-    #             global_pose.pose.position.y,
-    #             0.0,
-    #         )
-
-    #         grid_x_idx = int(
-    #             self.CENTER_X_GRID
-    #             - int(body_x / (self.UNIT_GRID_DIST / self.PRESET_X_GRID_SIZE))
-    #         )
-    #         grid_y_idx = int(
-    #             self.CENTER_Y_GRID
-    #             - int(body_y / (self.UNIT_GRID_DIST / self.PRESET_Y_GRID_SIZE))
-    #         )
-    #         if (
-    #             grid_x_idx > 0
-    #             and grid_x_idx < self.PRESET_X_GRID_SIZE
-    #             and grid_y_idx > 0
-    #             and grid_y_idx < self.PRESET_Y_GRID_SIZE
-    #         ):
-    #             self.input_visual_feature[
-    #                 0, 0, grid_x_idx, grid_y_idx
-    #             ] = self.OVERLAY_BOUNDARY_VALUE
-
-    #     for global_pose_idx_r in range(
-    #         min(
-    #             len(self.sliced_track_bound_r.poses),
-    #             len(self.sliced_track_bound_r_body.poses),
-    #         )
-    #     ):
-    #         global_pose = self.sliced_track_bound_r.poses[global_pose_idx_r]
-    #         body_x, body_y, _ = self.goal_pt_to_body(
-    #             ego_odom.pose.pose.position.x,
-    #             ego_odom.pose.pose.position.y,
-    #             self.ego_yaw,
-    #             global_pose.pose.position.x,
-    #             global_pose.pose.position.y,
-    #             0.0,
-    #         )
-
-    #         grid_x_idx = int(
-    #             self.CENTER_X_GRID
-    #             - int(body_x / (self.UNIT_GRID_DIST / self.PRESET_X_GRID_SIZE))
-    #         )
-    #         grid_y_idx = int(
-    #             self.CENTER_Y_GRID
-    #             - int(body_y / (self.UNIT_GRID_DIST / self.PRESET_Y_GRID_SIZE))
-    #         )
-    #         if (
-    #             grid_x_idx > 0
-    #             and grid_x_idx < self.PRESET_X_GRID_SIZE
-    #             and grid_y_idx > 0
-    #             and grid_y_idx < self.PRESET_Y_GRID_SIZE
-    #         ):
-    #             self.input_visual_feature[
-    #                 0, 0, grid_x_idx, grid_y_idx
-    #             ] = self.OVERLAY_BOUNDARY_VALUE
-
-    #     for global_pose_idx_race in range(
-    #         min(len(self.sliced_raceline.poses), len(self.sliced_race_line_body.poses))
-    #     ):
-    #         global_pose = self.sliced_raceline.poses[global_pose_idx_race]
-    #         body_x, body_y, _ = self.goal_pt_to_body(
-    #             ego_odom.pose.pose.position.x,
-    #             ego_odom.pose.pose.position.y,
-    #             self.ego_yaw,
-    #             global_pose.pose.position.x,
-    #             global_pose.pose.position.y,
-    #             0.0,
-    #         )
-
-    #         grid_x_idx = int(
-    #             self.CENTER_X_GRID
-    #             - int(body_x / (self.UNIT_GRID_DIST / self.PRESET_X_GRID_SIZE))
-    #         )
-    #         grid_y_idx = int(
-    #             self.CENTER_Y_GRID
-    #             - int(body_y / (self.UNIT_GRID_DIST / self.PRESET_Y_GRID_SIZE))
-    #         )
-    #         if (
-    #             grid_x_idx > 0
-    #             and grid_x_idx < self.PRESET_X_GRID_SIZE
-    #             and grid_y_idx > 0
-    #             and grid_y_idx < self.PRESET_Y_GRID_SIZE
-    #         ):
-    #             self.input_visual_feature[
-    #                 0, 0, grid_x_idx, grid_y_idx
-    #             ] = self.OVERLAY_RACELINE_VALUE
-
-    #     """
-    #     Publish
-    #     """
-
-    #     self.sliced_track_bound_l.header.stamp = self.get_clock().now().to_msg()
-    #     self.sliced_track_bound_r.header.stamp = self.get_clock().now().to_msg()
-    #     self.sliced_raceline.header.stamp = self.get_clock().now().to_msg()
-    #     self.raceline_pub.publish(self.sliced_raceline)
-    #     self.track_bound_l_pub.publish(self.sliced_track_bound_l)
-    #     self.track_bound_r_pub.publish(self.sliced_track_bound_r)
-
     def get_geometry_info(self, ego_odom):
         # get boundaries and race line
         ego_pt = [
@@ -1089,18 +727,18 @@ class ImitativePlanningNode(Node):
                 : len(self.track_bound_l_path_global.poses)
                 - (self.track_bound_l_idx + self.NUM_BOUNDARY_PT)
                 - 1
-            ] = self.track_bound_l_path_global.poses[self.track_bound_l_idx:]
+            ] = self.track_bound_l_path_global.poses[self.track_bound_l_idx :]
 
             self.sliced_track_bound_l.poses[
                 len(self.track_bound_l_path_global.poses)
-                - (self.track_bound_l_idx + self.NUM_BOUNDARY_PT):
+                - (self.track_bound_l_idx + self.NUM_BOUNDARY_PT) :
             ] = self.track_bound_l_path_global.poses[
                 : (self.track_bound_l_idx + self.NUM_BOUNDARY_PT)
                 - len(self.track_bound_l_path_global.poses)
             ]
         else:
             self.sliced_track_bound_l.poses = self.track_bound_l_path_global.poses[
-                self.track_bound_l_idx: self.track_bound_l_idx + self.NUM_BOUNDARY_PT
+                self.track_bound_l_idx : self.track_bound_l_idx + self.NUM_BOUNDARY_PT
             ]
 
         self.boundary_left_body.clear()
@@ -1143,18 +781,18 @@ class ImitativePlanningNode(Node):
                 : len(self.track_bound_r_path_global.poses)
                 - (self.track_bound_r_idx + self.NUM_BOUNDARY_PT)
                 - 1
-            ] = self.track_bound_r_path_global.poses[self.track_bound_r_idx:]
+            ] = self.track_bound_r_path_global.poses[self.track_bound_r_idx :]
 
             self.sliced_track_bound_r.poses[
                 len(self.track_bound_r_path_global.poses)
-                - (self.track_bound_r_idx + self.NUM_BOUNDARY_PT):
+                - (self.track_bound_r_idx + self.NUM_BOUNDARY_PT) :
             ] = self.track_bound_r_path_global.poses[
                 : (self.track_bound_r_idx + self.NUM_BOUNDARY_PT)
                 - len(self.track_bound_r_path_global.poses)
             ]
         else:
             self.sliced_track_bound_r.poses = self.track_bound_r_path_global.poses[
-                self.track_bound_r_idx: self.track_bound_r_idx + self.NUM_BOUNDARY_PT
+                self.track_bound_r_idx : self.track_bound_r_idx + self.NUM_BOUNDARY_PT
             ]
 
         # if len(self.sliced_track_bound_r.poses) != self.NUM_BOUNDARY_PT:
@@ -1192,18 +830,18 @@ class ImitativePlanningNode(Node):
                 : len(self.race_line_path_global.poses)
                 - (self.racenline_idx + self.NUM_RACELINE_PT)
                 - 1
-            ] = self.race_line_path_global.poses[self.racenline_idx:]
+            ] = self.race_line_path_global.poses[self.racenline_idx :]
 
             self.sliced_raceline.poses[
                 len(self.race_line_path_global.poses)
-                - (self.racenline_idx + self.NUM_RACELINE_PT):
+                - (self.racenline_idx + self.NUM_RACELINE_PT) :
             ] = self.race_line_path_global.poses[
                 : (self.racenline_idx + self.NUM_RACELINE_PT)
                 - len(self.race_line_path_global.poses)
             ]
         else:
             self.sliced_raceline.poses = self.race_line_path_global.poses[
-                self.racenline_idx: self.racenline_idx + self.NUM_RACELINE_PT
+                self.racenline_idx : self.racenline_idx + self.NUM_RACELINE_PT
             ]
 
         # if len(self.sliced_raceline.poses) != self.NUM_RACELINE_PT:
@@ -1234,11 +872,12 @@ class ImitativePlanningNode(Node):
                 int(self.NUM_EGO_FUTURE_TRAJ_PT / self.EGO_TRAJ_DOWNSAMPLE),
                 self.NUM_POS_DIM,
             ),
-            0,
+            0.0,
         )  # init with zero
 
         for candidate_idx in range(len(msg.markers)):
             for pt_idx in range(len(msg.markers[candidate_idx].points)):
+
                 self.frenet_path_candidates_npy[candidate_idx][pt_idx][0] = (
                     msg.markers[candidate_idx].points[pt_idx].x
                 )
@@ -1257,9 +896,66 @@ class ImitativePlanningNode(Node):
 
         self.dynamic_traj_lib_valid_flg = True
 
-    def opponent_1_callback(self, msg):
+    def ego_veh_status_callback(self, msg):
 
-        self.last_odom_update = self.get_clock().now()
+        self.ego_marker.pose = msg.odometry.pose
+        self.ego_marker.color.r = 0.4
+        self.ego_marker.color.g = 0.65
+        self.ego_marker.color.b = 0.729
+        self.pub_ego_marker.publish(self.ego_marker)
+
+        self.cur_odom.header.frame_id = "odom"
+        self.cur_odom.header.stamp = msg.header.stamp
+        self.cur_odom.pose.pose = msg.odometry.pose
+
+        _, _, self.ego_yaw = self.euler_from_quaternion(
+            self.cur_odom.pose.pose.orientation.x,
+            self.cur_odom.pose.pose.orientation.y,
+            self.cur_odom.pose.pose.orientation.z,
+            self.cur_odom.pose.pose.orientation.w,
+        )
+
+        """
+        Append msg, assume that the data is updating at 100Hz strictly.
+        """
+        self.odom_buffer.append(self.cur_odom.pose.pose)
+
+        if len(self.odom_buffer) > (self.NUM_EGO_PAST_TRAJ_PT):
+            self.odom_buffer = self.odom_buffer[-self.NUM_EGO_PAST_TRAJ_PT :]
+
+            cnt = 0
+            """
+            Gen input 1: Past trajectory (to body coordinate)
+            """
+            player_past_list = []
+            self.past_traj_path_body.poses = []
+            self.past_traj_path_body.header.frame_id = "base_link"
+
+            for global_pose in self.odom_buffer:
+                if cnt % self.EGO_TRAJ_DOWNSAMPLE == 0:
+                    body_x, body_y, _ = self.goal_pt_to_body(
+                        self.cur_odom.pose.pose.position.x,
+                        self.cur_odom.pose.pose.position.y,
+                        self.ego_yaw,
+                        global_pose.position.x,
+                        global_pose.position.y,
+                        0.0,
+                    )
+                    pt_local = PoseStamped()
+                    pt_local.header.frame_id = "base_link"
+                    pt_local.header.stamp = self.get_clock().now().to_msg()
+                    pt_local.pose.position.x = body_x
+                    pt_local.pose.position.y = body_y
+                    pt_local.pose.position.z = 0.0
+
+                    player_past_list.append([body_x, body_y, 0.0])
+                    self.past_traj_path_body.poses.append(pt_local)
+                cnt += 1
+
+            self.player_past = np.array(player_past_list)
+            self.player_past_pub.publish(self.past_traj_path_body)
+
+    def opponent_1_callback(self, msg):
 
         self.oppo_1_marker.pose = msg.odometry.pose
         self.oppo_1_marker.color.r = 1.0
@@ -1268,13 +964,12 @@ class ImitativePlanningNode(Node):
         self.pub_oppo_1_marker.publish(self.oppo_1_marker)
         """
         Append msg, assume that the data is updating at 100Hz strictly.
-        DOWNSAMPLED 10 TIMES (MATCHED WITH DATASET)
         """
         self.opponent_1_odom_buffer.append(msg.odometry.pose)
 
         if len(self.opponent_1_odom_buffer) > self.NUM_OPPO_PAST_TRAJ_PT:
             self.opponent_1_odom_buffer = self.opponent_1_odom_buffer[
-                -self.NUM_OPPO_PAST_TRAJ_PT:
+                -self.NUM_OPPO_PAST_TRAJ_PT :
             ]
             self.opponent_1_past_traj_body_buffer.clear()
             cnt = 0
@@ -1291,8 +986,7 @@ class ImitativePlanningNode(Node):
                     if np.sqrt(body_x * body_x + body_y * body_y) > 200:
                         body_x = 0
                         body_y = 0
-                    self.opponent_1_past_traj_body_buffer.append(
-                        [body_x, body_y, 0])
+                    self.opponent_1_past_traj_body_buffer.append([body_x, body_y, 0])
                 cnt += 1
 
     def opponent_2_callback(self, msg):
@@ -1308,7 +1002,7 @@ class ImitativePlanningNode(Node):
 
         if len(self.opponent_2_odom_buffer) > self.NUM_OPPO_PAST_TRAJ_PT:
             self.opponent_2_odom_buffer = self.opponent_2_odom_buffer[
-                -self.NUM_OPPO_PAST_TRAJ_PT:
+                -self.NUM_OPPO_PAST_TRAJ_PT :
             ]
             self.opponent_2_past_traj_body_buffer.clear()
             cnt = 0
@@ -1325,8 +1019,7 @@ class ImitativePlanningNode(Node):
                     if np.sqrt(body_x * body_x + body_y * body_y) > 200:
                         body_x = 0
                         body_y = 0
-                    self.opponent_2_past_traj_body_buffer.append(
-                        [body_x, body_y, 0])
+                    self.opponent_2_past_traj_body_buffer.append([body_x, body_y, 0])
                 cnt += 1
 
     def opponent_3_callback(self, msg):
@@ -1342,7 +1035,7 @@ class ImitativePlanningNode(Node):
 
         if len(self.opponent_3_odom_buffer) > self.NUM_OPPO_PAST_TRAJ_PT:
             self.opponent_3_odom_buffer = self.opponent_3_odom_buffer[
-                -self.NUM_OPPO_PAST_TRAJ_PT:
+                -self.NUM_OPPO_PAST_TRAJ_PT :
             ]
             self.opponent_3_past_traj_body_buffer.clear()
             cnt = 0
@@ -1359,8 +1052,7 @@ class ImitativePlanningNode(Node):
                     if np.sqrt(body_x * body_x + body_y * body_y) > 200:
                         body_x = 0
                         body_y = 0
-                    self.opponent_3_past_traj_body_buffer.append(
-                        [body_x, body_y, 0])
+                    self.opponent_3_past_traj_body_buffer.append([body_x, body_y, 0])
                 cnt += 1
 
     def output_visualization(self, traj_cpu, prb_cpu_np):
@@ -1393,119 +1085,50 @@ class ImitativePlanningNode(Node):
 
         return [qx, qy, qz, qw]
 
-    def ego_veh_status_callback(self, msg):
-
-        self.ego_marker.pose = msg.odometry.pose
-        self.ego_marker.color.r = 0.4
-        self.ego_marker.color.g = 0.65
-        self.ego_marker.color.b = 0.729
-        self.pub_ego_marker.publish(self.ego_marker)
-
-        self.cur_odom.header.frame_id = "odom"
-        self.cur_odom.header.stamp = msg.header.stamp
-        self.cur_odom.pose.pose = msg.odometry.pose
-
-        _, _, self.ego_yaw = self.euler_from_quaternion(
-            self.cur_odom.pose.pose.orientation.x,
-            self.cur_odom.pose.pose.orientation.y,
-            self.cur_odom.pose.pose.orientation.z,
-            self.cur_odom.pose.pose.orientation.w,
-        )
-
-        """
-        Append msg, assume that the data is updating at 100Hz strictly.
-        """
-        self.odom_buffer.append(self.cur_odom.pose.pose)
-
-        if len(self.odom_buffer) > (self.NUM_EGO_PAST_TRAJ_PT):
-            self.odom_buffer = self.odom_buffer[-1 *
-                                                int(self.NUM_EGO_PAST_TRAJ_PT):]
-        #     self.odom_buffer_np = np.delete(self.odom_buffer_np, 0, axis=0)
+    def imitative_planning_thread(self):
 
         batch = {}
 
         if (
             len(self.odom_buffer) >= (self.NUM_EGO_PAST_TRAJ_PT)
-            and len(self.opponent_1_past_traj_body_buffer)
-            >= (self.NUM_OPPO_PAST_TRAJ_PT / self.OPPO_TRAJ_DOWNSAMPLE)
-            and len(self.opponent_2_past_traj_body_buffer)
-            >= (self.NUM_OPPO_PAST_TRAJ_PT / self.OPPO_TRAJ_DOWNSAMPLE)
-            and len(self.opponent_3_past_traj_body_buffer)
-            >= (self.NUM_OPPO_PAST_TRAJ_PT / self.OPPO_TRAJ_DOWNSAMPLE)
+            and self.player_past is not None
         ):
-            cnt = 0
-            """
-            Gen input 1: Past trajectory (to body coordinate)
-            """
-            # player_past = np.empty((0, 3), dtype=float)
-            player_past_list = []
-            self.past_traj_path_body.poses = []
-            self.past_traj_path_body.header.frame_id = "base_link"
 
-            cur_x = self.cur_odom.pose.pose.position.x
-            cur_y = self.cur_odom.pose.pose.position.y
-            cur_yaw = self.ego_yaw
-            for global_pose in self.odom_buffer:
-                body_x, body_y, _ = self.goal_pt_to_body(
-                    cur_x,
-                    cur_y,
-                    cur_yaw,
-                    global_pose.position.x,
-                    global_pose.position.y,
-                    0.0,
-                )
-                pt_local = PoseStamped()
-                pt_local.header.frame_id = "base_link"
-                pt_local.header.stamp = self.get_clock().now().to_msg()
-                pt_local.pose.position.x = body_x
-                pt_local.pose.position.y = body_y
-                pt_local.pose.position.z = 0.0
-
-                if cnt % self.EGO_TRAJ_DOWNSAMPLE == 0:
-                    player_past_list.append([body_x, body_y, 0.0])
-                    self.past_traj_path_body.poses.append(pt_local)
-                cnt += 1
-
-            player_past = np.array(player_past_list)
-            self.player_past_pub.publish(self.past_traj_path_body)
+            tic = self.get_clock().now()
 
             """
             Gen input 2: Visual feature (Gen self.input_visual_feature)
             """
             # Track geometry (First)
-            # self.overlay_lines(self.cur_odom)
             self.get_geometry_info(self.cur_odom)
 
-            # Opponents (Second)
-            # self.overlay_opponents(self.cur_odom)
+            toc = self.get_clock().now()
+            
+            # print("get_geometry_info : ", toc - tic)
 
             """
             INPUT modalities
             """
-
             tic = self.get_clock().now()
 
             batch["player_past"] = (
-                torch.from_numpy(player_past)
+                torch.from_numpy(self.player_past)
                 .unsqueeze(dim=0)
                 .type(torch.FloatTensor)
                 .to(self.device)
             )
-
             batch["left_bound"] = (
                 torch.from_numpy(np.array(self.boundary_left_body))
                 .unsqueeze(dim=0)
                 .type(torch.FloatTensor)
                 .to(self.device)
             )
-
             batch["right_bound"] = (
                 torch.from_numpy(np.array(self.boundary_right_body))
                 .unsqueeze(dim=0)
                 .type(torch.FloatTensor)
                 .to(self.device)
             )
-
             batch["race_line"] = (
                 torch.from_numpy(np.array(self.raceline_body))
                 .unsqueeze(dim=0)
@@ -1513,54 +1136,50 @@ class ImitativePlanningNode(Node):
                 .to(self.device)
             )
 
+            if len(self.opponent_1_past_traj_body_buffer) < int(
+                self.NUM_OPPO_PAST_TRAJ_PT / self.OPPO_TRAJ_DOWNSAMPLE
+            ):
+                self.opponent_1_past_traj_body_buffer = [[0] * 3] * int(
+                    self.NUM_OPPO_PAST_TRAJ_PT / self.OPPO_TRAJ_DOWNSAMPLE
+                )
+
+            if len(self.opponent_2_past_traj_body_buffer) < int(
+                self.NUM_OPPO_PAST_TRAJ_PT / self.OPPO_TRAJ_DOWNSAMPLE
+            ):
+                self.opponent_2_past_traj_body_buffer = [[0] * 3] * int(
+                    self.NUM_OPPO_PAST_TRAJ_PT / self.OPPO_TRAJ_DOWNSAMPLE
+                )
+
+            if len(self.opponent_3_past_traj_body_buffer) < int(
+                self.NUM_OPPO_PAST_TRAJ_PT / self.OPPO_TRAJ_DOWNSAMPLE
+            ):
+                self.opponent_3_past_traj_body_buffer = [[0] * 3] * int(
+                    self.NUM_OPPO_PAST_TRAJ_PT / self.OPPO_TRAJ_DOWNSAMPLE
+                )
+
             batch["oppo1_body"] = (
-                torch.from_numpy(
-                    np.array(self.opponent_1_past_traj_body_buffer))
+                torch.from_numpy(np.array(self.opponent_1_past_traj_body_buffer))
                 .unsqueeze(dim=0)
                 .type(torch.FloatTensor)
                 .to(self.device)
             )
-
             batch["oppo2_body"] = (
-                torch.from_numpy(
-                    np.array(self.opponent_2_past_traj_body_buffer))
+                torch.from_numpy(np.array(self.opponent_2_past_traj_body_buffer))
                 .unsqueeze(dim=0)
                 .type(torch.FloatTensor)
                 .to(self.device)
             )
-
             batch["oppo3_body"] = (
-                torch.from_numpy(
-                    np.array(self.opponent_3_past_traj_body_buffer))
+                torch.from_numpy(np.array(self.opponent_3_past_traj_body_buffer))
                 .unsqueeze(dim=0)
                 .type(torch.FloatTensor)
                 .to(self.device)
             )
-
-            # print(player_past.shape)
-            # print(np.array(self.boundary_left_body).shape)
-            # print(np.array(self.boundary_right_body).shape)
-            # print(np.array(self.raceline_body).shape)
-            # print(np.array(self.opponent_1_past_traj_body_buffer).shape)
-            # print(np.array(self.opponent_2_past_traj_body_buffer).shape)
-            # print(np.array(self.opponent_3_past_traj_body_buffer).shape)
-            # print("----------")
-
-            # Temporal testing
-            # vis_path = Path()
-            # vis_path.header.frame_id = "base_link"
-            # for race_pt in self.raceline_body:
-            #     pt = PoseStamped()
-            #     pt.header.frame_id = "base_link"
-            #     pt.pose.position.x = race_pt[0]
-            #     pt.pose.position.y = race_pt[1]
-            #     vis_path.poses.append(pt)
-            # self.path_pub.publish(vis_path)
-            # return
 
             toc = self.get_clock().now()
+            
+            # print("input model : ",toc - tic)
 
-            # print("preparation time : ", toc - tic)
             self.use_traj_lib = True
             self.use_static_traj_lib = False
             if self.use_traj_lib:
@@ -1606,6 +1225,8 @@ class ImitativePlanningNode(Node):
 
                 else:
                     if self.dynamic_traj_lib_valid_flg:
+                        tic = self.get_clock().now()
+            
                         # dynamic traj lib
                         z = self.model._params(
                             ego_past=batch["player_past"],
@@ -1621,6 +1242,7 @@ class ImitativePlanningNode(Node):
                                 ],
                                 dim=1,
                             ),
+                        # ).repeat((self.frenet_path_candidates_npy.shape[0], 1))
                         ).repeat((self.frenet_path_candidates_npy.shape[0], 1))
 
                         traj, prb, traj_idx = self.model.trajectory_library_plan_with_idx(
@@ -1633,10 +1255,23 @@ class ImitativePlanningNode(Node):
 
                         traj_cpu_np = traj.detach().cpu().numpy().astype(np.float64)
                         traj_idx_cpu = traj_idx.detach().cpu().numpy().astype(int)
+                        loss_cpu_np = prb.detach().cpu().numpy().astype(float)
 
                         highest_imitation_path_idx_msg = UInt8()
                         highest_imitation_path_idx_msg.data = traj_idx_cpu.item()
-                        self.highest_imitation_prior_path_idx_pub.publish(highest_imitation_path_idx_msg)
+
+                        highest_imitation_path_msg = Float32MultiArray()
+                        # highest_imitation_path_msg.data = loss_cpu_np.item()
+
+                        # print((loss_cpu_np))
+                        # print((loss_cpu_np[0]))
+                        for loss_ in loss_cpu_np:
+                            highest_imitation_path_msg.data.append(loss_)
+
+                        self.highest_imitation_prior_path_idx_pub.publish(
+                            highest_imitation_path_idx_msg
+                        )
+                        self.highest_imitation_prior_pub.publish(highest_imitation_path_msg)
 
                         # Publish result
                         vis_path = Path()
@@ -1650,128 +1285,13 @@ class ImitativePlanningNode(Node):
                             vis_path.poses.append(pt)
 
                         self.path_pub.publish(vis_path)
-
-                    else:
-                        print("Dynamic traj lib is not initialized yet.")
+                        toc = self.get_clock().now()
 
             else:
                 tic = self.get_clock().now()
 
                 vis_path = Path()
                 vis_path.header.frame_id = "base_link"
-
-                # if self.left_boundary_close_flg:
-                #     # veh is close to the boundary or out of the track.
-                #     # Version 1. Publish path to recover
-
-                #     # TODO: assign path
-                #     _, self.left_centerline_idx = self.left_centerline_tree.query(
-                #         [
-                #             self.cur_odom.pose.pose.position.x,
-                #             self.cur_odom.pose.pose.position.y,
-                #             self.cur_odom.pose.pose.position.z,
-                #         ]
-                #     )
-
-                #     if self.left_centerline_idx + self.NUM_BOUNDARY_PT > len(
-                #         self.left_centerline_path_global.poses
-                #     ):
-                #         self.sliced_left_centerline.poses[
-                #             self.left_centerline_idx :
-                #         ] = self.left_centerline_path_global.poses[
-                #             self.left_centerline_idx :
-                #         ]
-                #         self.sliced_left_centerline.poses[
-                #             0 : self.left_centerline_idx
-                #         ] = self.left_centerline_path_global.poses[
-                #             : (self.left_centerline_idx + self.NUM_BOUNDARY_PT)
-                #             - len(self.left_centerline_path_global.poses)
-                #         ]
-                #     else:
-                #         self.sliced_left_centerline.poses = (
-                #             self.left_centerline_path_global.poses[
-                #                 self.left_centerline_idx : self.left_centerline_idx
-                #                 + self.NUM_BOUNDARY_PT
-                #             ]
-                #         )
-
-                #     self.left_centerline_body.clear()
-                #     for global_pose in self.sliced_left_centerline.poses:
-                #         body_x, body_y, _ = self.goal_pt_to_body(
-                #             self.cur_odom.pose.pose.position.x,
-                #             self.cur_odom.pose.pose.position.y,
-                #             self.ego_yaw,
-                #             global_pose.pose.position.x,
-                #             global_pose.pose.position.y,
-                #             0.0,
-                #         )
-                #         self.left_centerline_body.append([body_x, body_y, _])
-
-                #         pt = PoseStamped()
-                #         pt.header.frame_id = "base_link"
-                #         pt.pose.position.x = body_x
-                #         pt.pose.position.y = body_y
-                #         vis_path.poses.append(pt)
-
-                #     self.path_pub.publish(vis_path)
-                #     return
-
-                # if self.right_boundary_close_flg:
-                #     # veh is close to the boundary or out of the track.
-                #     # Version 1. Publish path to recover
-
-                #     # TODO: assign path
-                #     _, self.right_centerline_idx = self.right_centerline_tree.query(
-                #         [
-                #             self.cur_odom.pose.pose.position.x,
-                #             self.cur_odom.pose.pose.position.y,
-                #             self.cur_odom.pose.pose.position.z,
-                #         ]
-                #     )
-
-                #     if self.right_centerline_idx + self.NUM_BOUNDARY_PT > len(
-                #         self.right_centerline_path_global.poses
-                #     ):
-                #         self.sliced_right_centerline.poses[
-                #             self.right_centerline_idx :
-                #         ] = self.right_centerline_path_global.poses[
-                #             self.right_centerline_idx :
-                #         ]
-                #         self.sliced_right_centerline.poses[
-                #             0 : self.right_centerline_idx
-                #         ] = self.right_centerline_path_global.poses[
-                #             : (self.right_centerline_idx + self.NUM_BOUNDARY_PT)
-                #             - len(self.right_centerline_path_global.poses)
-                #         ]
-                #     else:
-                #         self.sliced_right_centerline.poses = (
-                #             self.right_centerline_path_global.poses[
-                #                 self.right_centerline_idx : self.right_centerline_idx
-                #                 + self.NUM_BOUNDARY_PT
-                #             ]
-                #         )
-
-                #     self.right_centerline_body.clear()
-                #     for global_pose in self.sliced_right_centerline.poses:
-                #         body_x, body_y, _ = self.goal_pt_to_body(
-                #             self.cur_odom.pose.pose.position.x,
-                #             self.cur_odom.pose.pose.position.y,
-                #             self.ego_yaw,
-                #             global_pose.pose.position.x,
-                #             global_pose.pose.position.y,
-                #             0.0,
-                #         )
-
-                #         self.right_centerline_body.append([body_x, body_y, _])
-
-                #         pt = PoseStamped()
-                #         pt.header.frame_id = "base_link"
-                #         pt.pose.position.x = body_x
-                #         pt.pose.position.y = body_y
-                #         vis_path.poses.append(pt)
-
-                #     self.path_pub.publish(vis_path)
-                #     return
 
                 z = self.model._params(
                     ego_past=batch["player_past"],
@@ -1780,16 +1300,14 @@ class ImitativePlanningNode(Node):
                         [batch["left_bound"], batch["right_bound"]], dim=1
                     ),
                     oppo=torch.stack(
-                        [batch["oppo1_body"], batch["oppo2_body"],
-                            batch["oppo3_body"]],
+                        [batch["oppo1_body"], batch["oppo2_body"], batch["oppo3_body"]],
                         dim=1,
                     ),
                 ).repeat((self.num_samples, 1))
 
                 # Queries model.
                 plan = (
-                    self.model(num_steps=3, epsilon=1.0,
-                               lr=1e-3, observation=z)
+                    self.model(num_steps=3, epsilon=1.0, lr=1e-3, observation=z)
                     .detach()
                     .cpu()
                     .numpy()[0]
@@ -1797,8 +1315,7 @@ class ImitativePlanningNode(Node):
 
                 player_future_length = 50
                 increments = player_future_length // plan.shape[0]
-                time_index = list(
-                    range(0, player_future_length, increments))  # [T]
+                time_index = list(range(0, player_future_length, increments))  # [T]
                 plan_interp = interp1d(x=time_index, y=plan, axis=0)
                 sample_cpu = plan_interp(np.arange(0, time_index[-1]))
 
@@ -1815,10 +1332,7 @@ class ImitativePlanningNode(Node):
                         vis_path.poses.append(pt)
 
                     self.path_pub.publish(vis_path)
-
-        else:
-            # wait for the next callback
-            return -1
+        threading.Timer(0.03, self.imitative_planning_thread).start()
 
 
 def main(args=None):

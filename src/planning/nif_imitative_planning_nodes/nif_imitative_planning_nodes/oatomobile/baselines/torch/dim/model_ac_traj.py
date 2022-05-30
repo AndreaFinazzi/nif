@@ -29,6 +29,7 @@ import torch.nn as nn
 import matplotlib.path as mpltPath
 import torch.nn.functional as F
 import torch.optim as optim
+from torch.nn.functional import normalize
 from torch.autograd import Variable
 from oatomobile.torch import transforms
 from oatomobile.torch import types
@@ -1278,6 +1279,7 @@ class ImitativeModel_slim(nn.Module):
             y=centroids, z=context, return_rollouts=True
         )
         imitation_prior = log_prob - logabsdet
+
         # Calculates goal likelihood.
         goal_likelihood = 0
         costmap_values = 0
@@ -1361,9 +1363,16 @@ class ImitativeModel_slim(nn.Module):
         # if goal is not None:
         #    print('goal_likelihood:', goal_likelihood[:20])
 
-        prob_idx = torch.argmax(loss, dim=0)
+        t1 = normalize(torch.abs(torch.max(centroids[:,:,1], dim=1).values), p=1.0, dim = 0)
 
-        # print(loss[prob_idx])
+        # loss -= loss * t1
+
+        prob_idx = torch.argmax(loss, dim=0)
+        # prob_idx = torch.argmin(loss, dim=0)
+
+        # print("loss : ", loss)
+        # print("t1 : ", t1)
+
         if return_idx:
             return centroids[prob_idx], loss, prob_idx
         else:

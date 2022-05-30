@@ -4,9 +4,12 @@
     max_steering_angle_deg: 20.0
     steering_auto_override_deg: 4.0
     steering_units_multiplier: 1.0
-    pure_pursuit_min_dist_m: 8.0
-    pure_pursuit_max_dist_m: 16.0
-    pure_pursuit_max_max_dist_m: 30.0
+    # pure_pursuit_min_dist_m: 30.0
+    # pure_pursuit_max_dist_m: 58.0
+    pure_pursuit_min_dist_m: 16.0
+    pure_pursuit_max_dist_m: 48.0
+    # pure_pursuit_max_dist_m: 66.0
+    pure_pursuit_max_max_dist_m: 48.0
     pure_pursuit_1st_vel_ms: 20.0
     pure_pursuit_k_vel_m_ms: 0.75
     use_tire_velocity: true

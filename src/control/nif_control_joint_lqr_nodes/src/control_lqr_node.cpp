@@ -50,12 +50,13 @@ ControlLQRNode::ControlLQRNode(const std::string &node_name)
                     std::placeholders::_1));
 
   imitative_planner_output_sub = this->create_subscription<nav_msgs::msg::Path>(
-      "/planning/debug1/body", nif::common::constants::QOS_SENSOR_DATA,
+      "/planning/debug1", nif::common::constants::QOS_SENSOR_DATA,
       std::bind(&ControlLQRNode::imitativePlannerOutputCallback, this,
                 std::placeholders::_1));
-  splined_imitatvie_output_pub_ =
-      this->create_publisher<nav_msgs::msg::Path>(
-          "/imitative/out_path/splined", nif::common::constants::QOS_DEFAULT);
+  ego_odom_sub = this->create_subscription<nav_msgs::msg::Odometry>(
+      "/aw_localization/ekf/odom", nif::common::constants::QOS_SENSOR_DATA,
+      std::bind(&ControlLQRNode::imitativePlannerOdomCallback, this,
+                std::placeholders::_1));
 
   // Disable the ACC function
   //   acc_sub_ = this->create_subscription<std_msgs::msg::Float32>(
@@ -206,7 +207,7 @@ void ControlLQRNode::publishSteerAccelDiagnostics(
   lqr_tracking_idx_msg.data = lqr_tracking_idx;
   lqr_tracking_idx_pub_->publish(lqr_tracking_idx_msg);
 
-  lqr_track_point.header.frame_id = "base_link";
+  lqr_track_point.header.frame_id = "odom";
   lqr_tracking_point_pub_->publish(lqr_track_point);
   auto error_cog_array_msg =
       joint_lqr::utils::ROSError(lqr_err_cog); // Float32MultiArray
@@ -435,18 +436,162 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve()
   }
   else // use_imitative_planner_output_
   {
+    // // body case : not good control performance.
+    // auto now = this->now();
+    // nif::common::NodeStatusCode node_status = common::NODE_ERROR;
+
+    // //  Check whether we have updated data
+    // bool valid_path = !imitavive_planner_output_path.poses.empty() && imitavive_planner_output_path.poses.size() > 4;
+
+    // bool valid_odom =
+    //     this->hasEgoOdometry() &&
+    //     nif::common::utils::time::secs(now - this->getEgoOdometryUpdateTime()) <
+    //         odometry_timeout_sec_;
+
+    // bool valid_wpt_distance = true;
+
+    // // - initialize valid target position
+    // bool valid_target_position = false;
+    // bool valid_tracking_result = false;
+
+    // double steering_angle_deg = 0.0;
+    // double desired_accel = 0.0;
+    // joint_lqr::lqr::JointLQR::ErrorMatrix error;
+    // joint_lqr::lqr::JointLQR::ErrorMatrix error_COG; // error at center of gravity
+
+    // // Perform Tracking if path is good
+    // if (valid_path)
+    // {
+
+    //   bool is_local_path = true;
+
+    //   nav_msgs::msg::Odometry ego_base;
+    //   ego_base.pose.pose.position.x = 0;
+    //   ego_base.pose.pose.position.y = 0;
+    //   ego_base.pose.pose.position.z = 0;
+    //   ego_base.pose.pose.orientation.x = 0;
+    //   ego_base.pose.pose.orientation.y = 0;
+    //   ego_base.pose.pose.orientation.z = 0;
+    //   ego_base.pose.pose.orientation.w = 1;
+
+    //   auto state = joint_lqr::utils::LQRState(ego_base);
+    //   if (use_tire_velocity_)
+    //     state(2, 0) = current_speed_ms_;
+    //   if (is_local_path)
+    //   {
+    //     // x, y, yaw are zeros in local coordinate
+    //     state(0, 0) = 0.0;
+    //     state(1, 0) = 0.0;
+    //     state(4, 0) = 0.0;
+    //   }
+
+    //   // Compute the tracking distance (and ensure it is within a valid range)
+    //   double track_distance =
+    //       pure_pursuit_min_dist_m_ + pure_pursuit_k_vel_m_ms_ * state(2, 0);
+    //   if (track_distance > pure_pursuit_max_dist_m_)
+    //   {
+    //     if (state(2, 0) < pure_pursuit_1st_vel_ms_)
+    //     {
+    //       track_distance = pure_pursuit_max_dist_m_;
+    //     }
+    //     else
+    //     {
+    //       track_distance =
+    //           pure_pursuit_max_dist_m_ +
+    //           pure_pursuit_k_vel_m_ms_ * (state(2, 0) - pure_pursuit_1st_vel_ms_);
+    //     }
+    //   }
+    //   if (track_distance < pure_pursuit_min_dist_m_)
+    //     track_distance = pure_pursuit_min_dist_m_;
+    //   if (track_distance > pure_pursuit_max_max_dist_m_)
+    //     track_distance = pure_pursuit_max_max_dist_m_;
+
+    //   // TODO: temporally just put the minimum look ahead dist
+    //   // track_distance = pure_pursuit_min_dist_m_ * 1.2;
+    //   track_distance = 56;
+
+    //   // Track on the trajectory
+    //   double target_distance = 0.0;
+    //   bool target_reached_end = false;
+
+    //   joint_lqr::utils::track(
+    //       imitavive_planner_output_path.poses, ego_base, track_distance, // inputs
+    //       lqr_tracking_idx_, target_distance,
+    //       target_reached_end); // outputs
+
+    //   // - target point should be ahead.
+    //   double target_point_azimuth = joint_lqr::utils::pursuit_azimuth(
+    //       imitavive_planner_output_path.poses[lqr_tracking_idx_], ego_base);
+    //   valid_target_position = M_PI * 3 / 4. > std::abs(target_point_azimuth);
+
+    //   double l_desired_velocity = 100.0;
+    //   if (valid_wpt_distance && valid_target_position)
+    //   {
+    //     // std::cout << "valid waypoint true" << std::endl;
+
+    //     valid_tracking_result = true;
+    //     // Run LQR :)
+    //     // Desired velocity check
+
+    //     auto goal = joint_lqr::utils::LQRGoal(imitavive_planner_output_path.poses[lqr_tracking_idx_],
+    //                                           l_desired_velocity);
+    //     auto goal_COG = joint_lqr::utils::LQRGoal(imitavive_planner_output_path.poses[0],
+    //                                               l_desired_velocity);
+
+    //     error = joint_lqr_->computeError(state, goal);
+    //     error_COG = joint_lqr_->computeError(state, goal_COG);
+    //     auto cmd = joint_lqr_->process(state, goal);
+    //     steering_angle_deg = cmd(0, 0) * nif::common::constants::RAD2DEG;
+    //     desired_accel = cmd(1, 0);
+
+    //     // Smooth and publish diagnostics
+    //     double period_double_s =
+    //         nif::common::utils::time::secs(this->getGclockPeriodDuration());
+    //     RCLCPP_DEBUG(this->get_logger(), "Smoothing with dt: [s] %f",
+    //                  period_double_s);
+    //     joint_lqr::utils::smoothSignal(steering_angle_deg, last_steering_command_,
+    //                                    steering_max_ddeg_dt_, period_double_s);
+    //   }
+    //   // Publish diagnostic message
+    //   // std::cout << "lqr_tracking_idx_ : " << lqr_tracking_idx_ << std::endl;
+    //   publishSteerAccelDiagnostics(valid_tracking_result, valid_path, valid_odom,
+    //                                valid_wpt_distance, valid_target_position,
+    //                                steering_angle_deg, desired_accel,
+    //                                track_distance, lqr_tracking_idx_,
+    //                                imitavive_planner_output_path.poses[lqr_tracking_idx_],
+    //                                //  this->getReferenceTrajectory()->trajectory_path.poses[lqr_tracking_idx_],
+    //                                error_COG, error, l_desired_velocity);
+    // }
+
+    // last_steering_command_ = steering_angle_deg;
+    // last_accel_command_ = desired_accel;
+    // // for steering command
+    // this->control_cmd->steering_control_cmd.data =
+    //     invert_steering_ ? -last_steering_command_ : last_steering_command_;
+    // // for acceleration command
+    // if (m_use_acc)
+    // {
+    //   this->control_cmd->desired_accel_cmd.data =
+    //       std::min(desired_accel, acc_accel_cmd_mpss);
+    // }
+    // else
+    // {
+    //   this->control_cmd->desired_accel_cmd.data = desired_accel;
+    // }
+
+    // node_status = common::NODE_OK;
+    // this->setNodeStatus(node_status);
+    // return this->control_cmd;
+
+    // body case : not good control performance.
     auto now = this->now();
     nif::common::NodeStatusCode node_status = common::NODE_ERROR;
 
     //  Check whether we have updated data
     bool valid_path = !imitavive_planner_output_path.poses.empty() && imitavive_planner_output_path.poses.size() > 4;
 
-    bool valid_odom =
-        this->hasEgoOdometry() &&
-        nif::common::utils::time::secs(now - this->getEgoOdometryUpdateTime()) <
-            odometry_timeout_sec_;
+    bool valid_odom = true;
 
-    bool valid_wpt_distance = true;
 
     // - initialize valid target position
     bool valid_target_position = false;
@@ -461,42 +606,9 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve()
     if (valid_path)
     {
 
-      // // Need to spline and assign the orientation of each pt
-      // std::vector<double> splined_x, splined_y, splined_yaw;
-      // std::shared_ptr<CubicSpliner2D> cubic_spliner_2D_xy;
-      // std::tie(splined_x, splined_y, splined_yaw, cubic_spliner_2D_xy) =
-      //     m_frenet_generator->applyCubicSpliner_2d_ros(imitavive_planner_output_path,
-      //                                                  1.0);
+      bool is_local_path = false;
 
-      // if (splined_x.empty())
-      //   return nullptr;
-
-      // imitavive_planner_output_path.poses.clear();
-      // for (int i = 0; i < splined_x.size(); i++)
-      // {
-      //   geometry_msgs::msg::PoseStamped pt;
-      //   pt.pose.position.x = splined_x[i];
-      //   pt.pose.position.y = splined_y[i];
-      //   pt.pose.orientation = nif::common::utils::coordination::euler2quat(splined_yaw[i], 0.0, 0.0);
-      //   imitavive_planner_output_path.poses.push_back(pt);
-      // }
-
-      // splined_imitatvie_output_pub_->publish(imitavive_planner_output_path);
-
-      // std::cout << "valid path true" << std::endl;
-      // Check whether path is global/local
-      bool is_local_path = true;
-
-      nav_msgs::msg::Odometry ego_base;
-      ego_base.pose.pose.position.x = 0;
-      ego_base.pose.pose.position.y = 0;
-      ego_base.pose.pose.position.z = 0;
-      ego_base.pose.pose.orientation.x = 0;
-      ego_base.pose.pose.orientation.y = 0;
-      ego_base.pose.pose.orientation.z = 0;
-      ego_base.pose.pose.orientation.w = 1;
-
-      auto state = joint_lqr::utils::LQRState(ego_base);
+      auto state = joint_lqr::utils::LQRState(imitavive_planner_ego_odom);
       if (use_tire_velocity_)
         state(2, 0) = current_speed_ms_;
       if (is_local_path)
@@ -530,24 +642,32 @@ nif::common::msgs::ControlCmd::SharedPtr ControlLQRNode::solve()
 
       // TODO: temporally just put the minimum look ahead dist
       // track_distance = pure_pursuit_min_dist_m_ * 1.2;
-      track_distance = 56;
+
+      // if (current_speed_ms_ < 50 )
+      //   track_distance = 56;
+      // else{
+
+      // }
 
       // Track on the trajectory
       double target_distance = 0.0;
       bool target_reached_end = false;
 
       joint_lqr::utils::track(
-          imitavive_planner_output_path.poses, ego_base, track_distance, // inputs
+          imitavive_planner_output_path.poses, imitavive_planner_ego_odom, track_distance, // inputs
           lqr_tracking_idx_, target_distance,
           target_reached_end); // outputs
 
       // - target point should be ahead.
       double target_point_azimuth = joint_lqr::utils::pursuit_azimuth(
-          imitavive_planner_output_path.poses[lqr_tracking_idx_], ego_base);
+          imitavive_planner_output_path.poses[lqr_tracking_idx_], imitavive_planner_ego_odom);
       valid_target_position = M_PI * 3 / 4. > std::abs(target_point_azimuth);
+      valid_target_position = true;
+
+      bool valid_wpt_distance = true;
 
       double l_desired_velocity = 100.0;
-      if (valid_wpt_distance && valid_target_position)
+      if (valid_target_position)
       {
         // std::cout << "valid waypoint true" << std::endl;
 

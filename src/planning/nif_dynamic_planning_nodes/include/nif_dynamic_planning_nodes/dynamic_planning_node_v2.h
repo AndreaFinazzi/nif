@@ -29,6 +29,7 @@
 // #include "separating_axis_theorem/separating_axis_theorem.hpp"
 #include "deep_orange_msgs/msg/rest_of_field_report.hpp"
 #include "std_msgs/msg/float32.hpp"
+#include "std_msgs/msg/float32_multi_array.hpp"
 #include "velocity_profile/velocity_profiler.hpp"
 #include <cmath>
 #include <math.h>
@@ -119,6 +120,7 @@ namespace nif
             void sensorGTCallback(const nav_msgs::msg::Odometry::SharedPtr msg);
             void keystrikeCallback(const std_msgs::msg::UInt8::SharedPtr msg);
             void highestImitationPriorIdxCallback(const std_msgs::msg::UInt8::SharedPtr msg);
+            void imitationPriorListCallback(const std_msgs::msg::Float32MultiArray::SharedPtr msg);
 
             void predictionResultCallback(
                 const nif_msgs::msg::DynamicTrajectory::SharedPtr msg);
@@ -137,6 +139,8 @@ namespace nif
             void timer_callback_rule();
             void timer_callback_imitative();
             void timer_callback_samples_for_imitative();
+            void timer_callback_imitative_importance_sampling();
+
 
             void timer_callback_debug();
             double debug_ego_speed = 0;
@@ -304,6 +308,8 @@ namespace nif
             rclcpp::TimerBase::SharedPtr m_planner_timer;
             rclcpp::TimerBase::SharedPtr m_planner_timer_imitative;
             rclcpp::TimerBase::SharedPtr m_planner_timer_samples_for_imitative;
+            rclcpp::TimerBase::SharedPtr m_planner_imitative_importance_sampling;
+
             bool m_timer_callback_first_run;
 
             nif_msgs::msg::Perception3D m_cur_det_global;
@@ -456,10 +462,15 @@ namespace nif
                 m_keystrike_sub;
             rclcpp::Subscription<std_msgs::msg::UInt8>::SharedPtr
                 m_highest_imitation_prior_path_idx_sub;
+            rclcpp::Subscription<std_msgs::msg::Float32MultiArray>::SharedPtr
+                m_imitation_prior_list_sub;
 
             std_msgs::msg::UInt8 m_key;
             rclcpp::Time m_key_last_update;
             std_msgs::msg::UInt8 m_highest_prior_idx;
+            std_msgs::msg::Float32MultiArray m_imitaion_prior_list;
+            int cur_path_idx = 0;
+
         };
 
     } // namespace planning

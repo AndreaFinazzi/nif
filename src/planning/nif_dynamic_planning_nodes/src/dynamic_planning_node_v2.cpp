@@ -240,6 +240,10 @@ DynamicPlannerNode::DynamicPlannerNode(const std::string &node_name_)
       "/imitative/highest_prior_idx", common::constants::QOS_PLANNING,
       std::bind(&DynamicPlannerNode::highestImitationPriorIdxCallback, this,
                 std::placeholders::_1));
+  m_imitation_prior_list_sub = this->create_subscription<std_msgs::msg::UInt8>(
+      "/imitative/highest_prior_array", common::constants::QOS_PLANNING,
+      std::bind(&DynamicPlannerNode::imitationPriorListCallback, this,
+                std::placeholders::_1));
 
   m_ego_traj_body_pub =
       this->create_publisher<nif_msgs::msg::DynamicTrajectory>(
@@ -280,6 +284,9 @@ DynamicPlannerNode::DynamicPlannerNode(const std::string &node_name_)
 
   m_planner_timer_imitative = this->create_wall_timer(
       20ms, std::bind(&DynamicPlannerNode::timer_callback_imitative, this)); // 50 hz
+
+  // m_planner_imitative_importance_sampling = this->create_wall_timer(
+  //     20ms, std::bind(&DynamicPlannerNode::timer_callback_imitative_importance_sampling, this)); // 50 hz
 
   m_planner_timer_samples_for_imitative = this->create_wall_timer(
       20ms, std::bind(&DynamicPlannerNode::timer_callback_samples_for_imitative, this)); // 50 hz
@@ -543,7 +550,11 @@ void DynamicPlannerNode::keystrikeCallback(const std_msgs::msg::UInt8::SharedPtr
 void DynamicPlannerNode::highestImitationPriorIdxCallback(const std_msgs::msg::UInt8::SharedPtr msg)
 {
   m_highest_prior_idx = *msg;
-  std::cout << "Dynamic planner : highestImitationPriorIdxCallback" << std::endl;
+  // std::cout << "Dynamic planner : highestImitationPriorIdxCallback" << std::endl;
+}
+void DynamicPlannerNode::imitationPriorListCallback(const std_msgs::msg::Float32MultiArray::SharedPtr msg)
+{
+  m_imitaion_prior_list = *msg;
 }
 
 void DynamicPlannerNode::sensorGTCallback(const nav_msgs::msg::Odometry::SharedPtr msg)
@@ -1624,107 +1635,56 @@ void DynamicPlannerNode::publishPlannedTrajectory(
     m_ego_traj_global_vis_pub->publish(m_ego_planned_vis_path_global);
   }
 }
-// void DynamicPlannerNode::timer_callback_debug() {
-//   debug_ego_speed = debug_ego_speed + 0.1;
 
-//   if (debug_ego_speed > 67) {
-//     debug_ego_speed = 67;
-//   }
+// void DynamicPlannerNode::timer_callback_samples_for_imitative(){
+//   // Planning to every candidates
+//   vector<std::shared_ptr<FrenetPath>> collision_free_frenet_vec;
+//   vector<double> collision_free_frenet_progress_vec;
+//   vector<int> collision_free_frenet_index_vec;
 
-//   m_ego_odom.twist.twist.linear.x = debug_ego_speed;
+//   visualization_msgs::msg::MarkerArray switching_paths_markerlist;
 
-//   auto allowable_maximum_vy = abs(tan(m_acceptable_slip_angle_rad)) *
-//                               std::max(debug_ego_speed, MIN_SPEED_MPS);
-//   allowable_maximum_vy = std::max(1.5, allowable_maximum_vy); // mps
+//   int markder_id = 0;
 
-//   m_ego_odom.pose.pose.position.x = 69.016509;
-//   m_ego_odom.pose.pose.position.y = -409.4941123;
+//   m_stitching_path_candidates_body.clear();
 
-//   // 329.8444616,-88.6056703
-//   // 206.0902806, -602.6045846
-//   // 90.2037954,-452.4725963
-//   // 69.016509,-409.4941123
+//   for (int overtaking_path_idx = 0; overtaking_path_idx < m_overtaking_candidates_path_vec.size(); overtaking_path_idx++)
+//   {
+//     auto progressNcte = calcProgressNCTE(
+//         m_ego_odom.pose.pose,
+//         m_overtaking_candidates_path_vec[overtaking_path_idx]);
 
-//   if (m_cur_planned_traj.trajectory_path.poses.empty() || true) {
-//     m_race_mode_first_callback = false;
+//     std::vector<std::shared_ptr<FrenetPath>>
+//         frenet_path_generation_result =
+//             m_frenet_generator_ptr->calc_frenet_paths_multi_longi(
+//                 get<1>(progressNcte), // current_position_d
+//                 get<0>(progressNcte), // current_position_s
+//                 0.0,                  // current_velocity_d
+//                 60.0,                 // current_velocity_s
+//                 0.0,                  // current_acceleration_d
+//                 m_overtaking_candidates_spline_model_vec
+//                     [overtaking_path_idx], // cubicSplineModel
+//                 1.0,
+//                 1.0 + 0.01,
+//                 0.02, 0.0, 0.0001, 0.1); // still in global coordinate --> TODO: where we can opitimize
 
-//     m_cur_planned_traj.trajectory_global_progress.clear();
-//     m_cur_planned_traj.trajectory_velocity.clear();
-//     m_cur_planned_traj.trajectory_timestamp_array.clear();
-//     m_cur_planned_traj.trajectory_path.poses.clear();
-
-//     auto progreeNCTE_racingline =
-//         calcProgressNCTE(m_ego_odom.pose.pose, m_racingline_path);
-
-//     std::cout << "planning time : "
-//               << abs(get<1>(progreeNCTE_racingline) / allowable_maximum_vy)
-//               << std::endl;
-
-//     // Merging frenet segment generation
-//     // Generate single frenet path segment
-//     std::vector<std::shared_ptr<FrenetPath>> frenet_path_generation_result =
-//         m_frenet_generator_ptr->calc_frenet_paths_multi_longi(
-//             get<1>(progreeNCTE_racingline), // current_position_d
-//             get<0>(progreeNCTE_racingline), // current_position_s
-//             0.0,                            // current_velocity_d
-//             std::max(debug_ego_speed,
-//                      MIN_SPEED_MPS),          // current_velocity_s
-//             0.0,                              // current_acceleration_d
-//             get<4>(m_racingline_spline_data), // cubicSplineModel
-//             std::max(abs(get<1>(progreeNCTE_racingline) /
-//             allowable_maximum_vy),
-//                      5.0),
-//             std::max(abs(get<1>(progreeNCTE_racingline) /
-//             allowable_maximum_vy),
-//                      5.0) +
-//                 0.01,
-//             SAMPLING_TIME, 0.0, 0.0001, 0.1);
-
-//     if (frenet_path_generation_result.empty() ||
-//         frenet_path_generation_result[0]->points_x().empty()) {
-//       // Abnormal situation
-//       // publish empty & Estop trajectory
-//       RCLCPP_ERROR_ONCE(this->get_logger(),
-//                         "[RACE MODE] CRITICAL BUG HAS BEEN HIT.\n Frenet path
-//                         " "generation result or point vector is empty");
-//       m_last_lat_planning_type = LATERAL_PLANNING_TYPE::KEEP;
-//       m_last_long_planning_type = LONGITUDINAL_PLANNING_TYPE::ESTOP;
-//       nif_msgs::msg::DynamicTrajectory empty_traj;
-//       empty_traj.header.frame_id = nif::common::frame_id::localization::ODOM;
-//       publishPlannedTrajectory(empty_traj, m_last_long_planning_type,
-//                                m_last_lat_planning_type, true);
-//       return;
+//     if (frenet_path_generation_result.empty())
+//     {
+//       assert(false);
 //     }
 
-//     m_cur_planned_traj =
-//         stitchFrenetToPath(frenet_path_generation_result[0],
-//         m_racingline_path);
+//     m_cur_planned_traj = stitchFrenetToPath(
+//         frenet_path_generation_result[0], m_overtaking_candidates_path_vec[cur_path_idx]);
 
 //     m_reset_wpt_idx =
 //         getCurIdx(frenet_path_generation_result[0]->points_x().back(),
 //                   frenet_path_generation_result[0]->points_y().back(),
 //                   m_cur_planned_traj.trajectory_path);
 
-//     // Set the target path index to -1 which means the racing line
-//     m_last_update_target_path_alias = "raceline";
-//     m_reset_target_path_idx = RESET_PATH_TYPE::RACE_LINE;
+//     auto cur_path_seg = getCertainLenOfPathSeg(
+//         m_ego_odom.pose.pose.position.x, m_ego_odom.pose.pose.position.y,
+//         m_cur_planned_traj.trajectory_path, 100);
 //   }
-
-//   auto raceline_path_seg = getCertainLenOfPathSeg(
-//       m_ego_odom.pose.pose.position.x, m_ego_odom.pose.pose.position.y,
-//       m_cur_planned_traj.trajectory_path, 100);
-
-//   auto race_traj = m_velocity_profiler_obj.velProfileWCollisionChecking(
-//       m_ego_odom, raceline_path_seg, m_cur_oppo_pred_result,
-//       m_config_overlap_checking_dist_bound,
-//       m_config_overlap_checking_time_bound, false, 1.0); // @DEBUG
-
-//   raceline_path_seg.header.frame_id = "odom";
-//   race_traj.trajectory_path.header.frame_id = "odom";
-//   m_debug_vis_pub->publish(race_traj.trajectory_path);
-//   m_racingline_path.header.frame_id = "odom";
-//   m_ego_traj_global_vis_debug_pub1->publish(m_racingline_path);
-//   m_ego_traj_global_debug_pub1->publish(race_traj);
 // }
 
 void DynamicPlannerNode::timer_callback_samples_for_imitative()
@@ -1756,14 +1716,25 @@ void DynamicPlannerNode::timer_callback_samples_for_imitative()
                 0.0,                  // current_acceleration_d
                 m_overtaking_candidates_spline_model_vec
                     [overtaking_path_idx], // cubicSplineModel
-                1,
-                1 + 0.01,
+                1.0,
+                1.0 + 0.01,
                 0.02, 0.0, 0.0001, 0.1); // still in global coordinate --> TODO: where we can opitimize
 
     if (frenet_path_generation_result.empty())
     {
       assert(false);
     }
+
+    auto traj = stitchFrenetToPath(
+        frenet_path_generation_result[0], m_overtaking_candidates_path_vec[overtaking_path_idx]);
+
+    auto cur_path_seg = getCertainLenOfPathSeg(
+        m_ego_odom.pose.pose.position.x, m_ego_odom.pose.pose.position.y,
+        traj.trajectory_path, 100);
+
+    // auto cur_path_seg = getCertainLenOfPathSeg(
+    //     m_ego_odom.pose.pose.position.x, m_ego_odom.pose.pose.position.y,
+    //     m_overtaking_candidates_path_vec[overtaking_path_idx], 100);
 
     for (int longi_sample_idx = 0; longi_sample_idx < frenet_path_generation_result.size(); longi_sample_idx++)
     {
@@ -1782,12 +1753,12 @@ void DynamicPlannerNode::timer_callback_samples_for_imitative()
       stitch_path_body.header.frame_id = "base_link";
       stitch_path_body.header.stamp = this->now();
 
+      auto x_vec = frenet_path_generation_result[longi_sample_idx]->points_x();
+      auto y_vec = frenet_path_generation_result[longi_sample_idx]->points_y();
+      int num_of_pt = x_vec.size();
+
       for (int pt_idx = 0; pt_idx < input_length_of_NN; pt_idx++)
       {
-        auto x_vec = frenet_path_generation_result[longi_sample_idx]->points_x();
-        auto y_vec = frenet_path_generation_result[longi_sample_idx]->points_y();
-        int num_of_pt = x_vec.size();
-
         if (pt_idx < num_of_pt)
         {
           auto ps_body =
@@ -1812,6 +1783,20 @@ void DynamicPlannerNode::timer_callback_samples_for_imitative()
   m_connected_paths_list_body_pub->publish(switching_paths_markerlist);
 }
 
+// void DynamicPlannerNode::timer_callback_imitative_importance_sampling(){
+//   if (m_first_timer == false)
+//   {
+//     m_cur_planned_traj.trajectory_path = m_racingline_path;
+//     m_first_timer = true;
+//     return;
+//   }
+
+//   // Planning to every candidates
+//   vector<std::shared_ptr<FrenetPath>> collision_free_frenet_vec;
+//   vector<double> collision_free_frenet_progress_vec;
+//   vector<int> collision_free_frenet_index_vec;
+// }
+
 void DynamicPlannerNode::timer_callback_imitative()
 {
   if (m_first_timer == false)
@@ -1825,25 +1810,28 @@ void DynamicPlannerNode::timer_callback_imitative()
   vector<double> collision_free_frenet_progress_vec;
   vector<int> collision_free_frenet_index_vec;
 
-  int cur_path_idx = 0;
   if (this->now() - m_key_last_update < rclcpp::Duration(2, 0))
   {
     // keep key command for 2 sec
     cur_path_idx = m_key.data;
-    // std::cout << "Dynamic planner : keyboard" << std::endl;
+    std::cout << "key" << std::endl;
   }
   else
   {
     // Set highest path idx
     cur_path_idx = m_highest_prior_idx.data;
-    // std::cout << "Dynamic planner : nn model" << std::endl;
-    // std::cout << "Dynamic planner : output : " << m_highest_prior_idx.data << std::endl;
+
+    // if m_highest_prior_idx.data != 0:
+    //   if(abs(m_previous_imitative_path_idx - cur_path_idx) > 1):
+    //     if m_previous_imitative_path_idx - cur_path_idx >0:
+    //       cur_path_idx = m_previous_imitative_path_idx - 1
+    //     else:
+    //       cur_path_idx = m_previous_imitative_path_idx + 1
+
   }
 
-  if (m_previous_imitative_path_idx == cur_path_idx && !m_cur_planned_traj.trajectory_path.poses.empty())
+  if (m_previous_imitative_path_idx == cur_path_idx)
   {
-    // std::cout << "Keep path" << std::endl;
-
     ///////////////////////////////////////////
     // Change the target path to the static wpt
     ///////////////////////////////////////////
@@ -1851,7 +1839,6 @@ void DynamicPlannerNode::timer_callback_imitative()
         m_ego_odom.pose.pose.position.x, m_ego_odom.pose.pose.position.y,
         m_cur_planned_traj.trajectory_path);
 
-    // checkSwitchToStaticWPT(cur_idx_on_previous_path);
     if (cur_idx_on_previous_path >= m_reset_wpt_idx)
     {
       m_cur_planned_traj.trajectory_path = m_overtaking_candidates_path_vec[cur_path_idx];
@@ -1860,7 +1847,7 @@ void DynamicPlannerNode::timer_callback_imitative()
 
     auto cur_path_seg = getCertainLenOfPathSeg(
         m_ego_odom.pose.pose.position.x, m_ego_odom.pose.pose.position.y,
-        m_cur_planned_traj.trajectory_path, 100);
+        m_cur_planned_traj.trajectory_path, 150);
 
     cur_path_seg.header.frame_id = "odom";
     m_ego_traj_global_vis_debug_pub1->publish(cur_path_seg);
@@ -1880,16 +1867,8 @@ void DynamicPlannerNode::timer_callback_imitative()
   }
   else
   {
-    // std::cout << "Change path" << std::endl;
-
     // Generate the frenet candidates to all overtaking path candidates
     m_previous_imitative_path_idx = cur_path_idx;
-
-    if (m_overtaking_candidates_path_vec[cur_path_idx]
-            .poses.empty())
-    {
-      assert(false);
-    }
 
     auto progressNcte = calcProgressNCTE(
         m_ego_odom.pose.pose,
@@ -1917,8 +1896,6 @@ void DynamicPlannerNode::timer_callback_imitative()
     m_cur_planned_traj = stitchFrenetToPath(
         frenet_path_generation_result[0], m_overtaking_candidates_path_vec[cur_path_idx]);
 
-    m_last_update_target_path_alias = "defender";
-
     m_reset_wpt_idx =
         getCurIdx(frenet_path_generation_result[0]->points_x().back(),
                   frenet_path_generation_result[0]->points_y().back(),
@@ -1926,7 +1903,7 @@ void DynamicPlannerNode::timer_callback_imitative()
 
     auto cur_path_seg = getCertainLenOfPathSeg(
         m_ego_odom.pose.pose.position.x, m_ego_odom.pose.pose.position.y,
-        m_cur_planned_traj.trajectory_path, 100);
+        m_cur_planned_traj.trajectory_path, 150);
 
     cur_path_seg.header.frame_id = "odom";
     m_ego_traj_global_vis_debug_pub1->publish(cur_path_seg);
