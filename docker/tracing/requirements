@@ -1,0 +1,5 @@
+bokeh
+ipykernel>=6.0
+ipython>=8.3.0
+fire
+selenium>=4.2.0

@@ -1,0 +1,138 @@
+{
+  "target_path": {
+    "start_node_name": "",
+    "end_node_name": ""
+  },
+  "nodes": [
+    {
+      "name": "/clock_recorder",
+      "callback_dependency": {
+        "": ""
+      },
+      "callbacks": [
+        {
+          "type": "timer_callback",
+          "period": 1000000000,
+          "symbol": "ClockRecorder::ClockRecorder()::{lambda()#1}"
+        },
+        {
+          "type": "subscribe_callback",
+          "topic_name": "/clock",
+          "symbol": "void (rclcpp::TimeSource::?)(std::shared_ptr<rosgraph_msgs::msg::Clock>)"
+        }
+      ]
+    },
+    {
+      "name": "/clock_publisher",
+      "publish": {
+        "/clock": ""
+      },
+      "callbacks": [
+        {
+          "type": "timer_callback",
+          "period": 100000000,
+          "symbol": "ClockPublisher::ClockPublisher()::{lambda()#1}"
+        }
+      ]
+    },
+    {
+      "name": "/sensor_dummy_node",
+      "callback_dependency": {
+        "": ""
+      },
+      "publish": {
+        "/topic1": "",
+        "/topic2": ""
+      },
+      "callbacks": [
+        {
+          "type": "timer_callback",
+          "period": 90909090,
+          "symbol": "SensorDummy::SensorDummy()::{lambda()#1}"
+        },
+        {
+          "type": "timer_callback",
+          "period": 142857142,
+          "symbol": "SensorDummy::SensorDummy()::{lambda()#2}"
+        }
+      ]
+    },
+    {
+      "name": "/no_dependency_node",
+      "publish": {
+        "/topic3": ""
+      },
+      "callbacks": [
+        {
+          "type": "subscribe_callback",
+          "topic_name": "/topic1",
+          "symbol": "NoDependencyNode::NoDependencyNode()::{lambda(std::unique_ptr<sensor_msgs::msg::Image>)#1}"
+        }
+      ]
+    },
+    {
+      "name": "/timer_dependency_node",
+      "callback_dependency": {
+          "TimerDependencyNode::TimerDependencyNode()::{lambda(std::unique_ptr<sensor_msgs::msg::Image>)#1}" : "TimerDependencyNode::TimerDependencyNode()::{lambda()#2}"
+      },
+      "publish": {
+        "/topic6": ""
+      },
+      "callbacks": [
+        {
+          "type": "timer_callback",
+          "period": 333333333,
+          "symbol": "TimerDependencyNode::TimerDependencyNode()::{lambda()#2}"
+        },
+        {
+          "type": "subscribe_callback",
+          "topic_name": "/topic4",
+          "symbol": "TimerDependencyNode::TimerDependencyNode()::{lambda(std::unique_ptr<sensor_msgs::msg::Image>)#1}"
+        }
+      ]
+    },
+    {
+      "name": "/sub_dependency_node",
+      "callback_dependency": {
+        "SubDependencyNode::SubDependencyNode()::{lambda(std::unique_ptr<sensor_msgs::msg::Image>)#1}": "SubDependencyNode::SubDependencyNode()::{lambda(std::unique_ptr<sensor_msgs::msg::Image>)#2}"
+      },
+      "publish": {
+        "/topic5": "",
+        "/topic4": ""
+      },
+      "callbacks": [
+        {
+          "type": "subscribe_callback",
+          "topic_name": "/topic3",
+          "symbol": "SubDependencyNode::SubDependencyNode()::{lambda(std::unique_ptr<sensor_msgs::msg::Image>)#1}"
+        },
+        {
+          "type": "subscribe_callback",
+          "topic_name": "/topic2",
+          "symbol": "SubDependencyNode::SubDependencyNode()::{lambda(std::unique_ptr<sensor_msgs::msg::Image>)#2}"
+        }
+      ]
+    },
+    {
+      "name": "/actuator_dummy_node",
+      "callback_dependency": {
+        "": ""
+      },
+      "callbacks": [
+        {
+          "type": "subscribe_callback",
+          "topic_name": "/topic5",
+          "symbol": "ActuatorDummy::ActuatorDummy()::{lambda(std::unique_ptr<sensor_msgs::msg::Image>)#1}"
+        },
+        {
+          "type": "subscribe_callback",
+          "topic_name": "/topic6",
+          "symbol": "ActuatorDummy::ActuatorDummy()::{lambda(std::unique_ptr<sensor_msgs::msg::Image>)#2}"
+        }
+      ]
+    }
+  ],
+  "path_name_alias": {
+    "": ""
+  }
+}

@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+
+# Usage: 
+# ./niftracing-analisys # Opens Jupyter Notebook
+# ./niftracing-analisys /path/to/trace/directory output/path
+
+IN_PATH=$1
+OUT_PATH=$2
+JUPYTER=false
+
+while [[ $# -gt 0 ]]; do
+  key="$1"
+
+  case $key in
+    -j|--jupyter)
+      JUPYTER=true
+      shift # past argument
+      # shift # past value
+      ;;
+    *)    # unknown option
+      POSITIONAL+=("$1") # save it in an array for later
+      shift # past argument
+      ;;
+  esac
+done
+
+set -- "${POSITIONAL[@]}" # restore positional parameters
+
+
+if [[ $IN_PATH && $OUT_PATH ]];
+then
+    echo "Reading from: $IN_PATH"
+    echo "Writing into: $OUT_PATH"
+    
+    mkdir -p $OUT_PATH
+    ros2 trace-analysis process $IN_PATH > $OUT_PATH/tracelog.txt
+    babeltrace $IN_PATH | grep callback_start > $OUT_PATH/callback_start.txt
+    babeltrace $IN_PATH | grep callback_end > $OUT_PATH/callback_end.txt
+fi
+
+if $JUPYTER ;
+then
+    # Write the path of tracelog into "/path/to/trace/directory"
+    cd /opt/autoware_perf/tracetools_analysis/tracetools_analysis/analysis/galactic && jupyter notebook
+fi

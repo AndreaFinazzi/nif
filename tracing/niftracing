@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Script to enable autoware_perf tracing tools (based on ros2_tracing)
+# It is intended to be ran on the nif:tracing docker image, which includes autoware_perf packages in /opt/autoware_perf
+# Refer to https://github.com/azu-lab/ROS2-E2E-Evaluation/tree/main/autoware_perf_galactic for details.
+
+. /opt/autoware_perf/install/setup.bash
+
+sudo usermod -aG tracing $USER
+ros2 trace

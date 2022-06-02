@@ -1,0 +1,26 @@
+# ROS2 Tracing packages
+lttng-tools 
+liblttng-ust-dev
+python3-babeltrace 
+python3-lttng
+lttng-modules-dkms
+
+jupyter-notebook
+
+ros-$ROS_DISTRO-ros2trace
+ros-$ROS_DISTRO-ros2trace-analysis
+ros-$ROS_DISTRO-tracetools
+ros-$ROS_DISTRO-tracetools-analysis
+ros-$ROS_DISTRO-tracetools-launch
+ros-$ROS_DISTRO-tracetools-read
+ros-$ROS_DISTRO-tracetools-test
+ros-$ROS_DISTRO-tracetools-trace
+ros-$ROS_DISTRO-osrf-testing-tools-cpp 
+
+firefox-geckodriver
+
+# lttng dependencies
+uuid-dev
+libpopt-dev
+liburcu-dev
+libxml2-dev

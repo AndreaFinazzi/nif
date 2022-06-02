@@ -1,0 +1,15 @@
+end_to_end_1 (ms): # テスト対象
+  mean:
+    desired: 40
+    acceptable: 70
+  peak:
+    desired: 70
+    acceptable: 90
+
+/topic1_0 (ms): # テスト対象
+  mean:
+    desired: 40
+    acceptable: 70
+  peak:
+    desired: 70
+    acceptable: 90

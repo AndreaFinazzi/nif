@@ -72,3 +72,12 @@ ros-$ROS_DISTRO-ament-clang-format
 
 # Other deps
 ros-$ROS_DISTRO-diagnostic-updater
+
+# ROS2 Tracing packages
+lttng-tools 
+liblttng-ust-dev
+python3-babeltrace 
+python3-lttng
+lttng-modules-dkms
+
+jupyter-notebook
