@@ -72,3 +72,6 @@ ros-$ROS_DISTRO-ament-clang-format
 
 # Other deps
 ros-$ROS_DISTRO-diagnostic-updater
+
+# practice
+htop
