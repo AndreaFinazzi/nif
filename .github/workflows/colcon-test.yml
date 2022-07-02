@@ -102,7 +102,7 @@ jobs:
           cache-to: type=inline
 
       # build repository in created image.
-      -
+      # -
         # name: nif build
         # run: |
         #   ./nif/getade.sh
