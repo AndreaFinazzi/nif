@@ -101,7 +101,7 @@ jobs:
           cache-from: type=registry,ref=${{ steps.meta.outputs.tags }}
           cache-to: type=inline
 
-      build repository in created image.
+      # build repository in created image.
       -
         name: nif build
         run: |
