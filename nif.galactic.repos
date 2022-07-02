@@ -59,3 +59,13 @@ repositories:
     type: git
     url: https://oauth2:$GL_TOKEN@gitlab.com/IACBaseSoftware/aptive_esr_ros.git
     version: vehicle-4
+
+  src/external/velodyne:
+    type: git
+    url: https://github.com/ros-drivers/velodyne.git
+    version: galactic-devel
+
+  src/external/ublox:
+    type: git
+    url: https://github.com/KumarRobotics/ublox.git
+    version: galactic-devel
