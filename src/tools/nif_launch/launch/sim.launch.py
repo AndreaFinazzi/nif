@@ -4,7 +4,7 @@
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -260,7 +260,11 @@ def generate_launch_description():
         parameters=[{
             ## Should be True on real car
             'engine_based_throttle_enabled' : False, 
+<<<<<<< HEAD
             'gear.track': "LVMS_SIM_AC",
+=======
+            'gear.track': "LVMS",
+>>>>>>> master
             'lateral_error_deadband_m': 5.0,
         }]
     )
@@ -458,7 +462,6 @@ def generate_launch_description():
         nif_wall_node_launch_bg,
         nif_velocity_planning_node,
         robot_description_launch,
-        # nif_velocity_planning_node,
         nif_joint_lqr_control_node,
         nif_accel_control_node,
         nif_mission_manager_launch,

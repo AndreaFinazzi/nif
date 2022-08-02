@@ -89,6 +89,9 @@ void IDMACCNode::egoTrajectoryCallback(
     out.data = 0.0;
     m_acc_cmd_publisher->publish(out);
   } else {
+
+    nif::common::NodeStatusCode node_status = nif::common::NODE_OK;
+    this->setNodeStatus(node_status);
     if (m_prediction_result.trajectory_path.poses.empty()) {
       std_msgs::msg::Float32 out;
       out.data = nif::common::constants::numeric::INF;

@@ -53,11 +53,9 @@ from nif_msgs.msg import Perception3D, Perception3DArray, DynamicTrajectory
 
 
 HANDSHAKE_MSG       = "usrg.racing"
-<<<<<<< Updated upstream
-ADDR_SERVER         = ("192.168.0.2", 4444)
-=======
+
 ADDR_SERVER         = ("192.168.0.11", 4444)
->>>>>>> Stashed changes
+
 ADDR_CLIENT         = ("0.0.0.0", 4444)
 BUFFER_SIZE         = 4092
 CLIENT_TIMEOUT_S    = 1.0
@@ -82,11 +80,9 @@ class ACClientNode(rclpy.node.Node):
         self.pub_oppo_perception = self.create_publisher(Perception3DArray, '/lgsvl/oppo', rclpy.qos.qos_profile_sensor_data)
 
         self.sub_ego_odom = self.create_subscription(Odometry, '/sensor/odom_ground_truth', self.ego_odom_callback, rclpy.qos.qos_profile_sensor_data)
-<<<<<<< Updated upstream
-        self.sub_ego_planning = self.create_subscription(DynamicTrajectory, '/planning/dynamic/traj_global', self.DynamicTrajectory, rclpy.qos.qos_profile_sensor_data)
-=======
+
         self.sub_ego_planning = self.create_subscription(Odometry, '/sensor/odom_ground_truth', self.ego_odom_callback, rclpy.qos.qos_profile_sensor_data)
->>>>>>> Stashed changes
+
 
         # TF Broadcaster
         self._tf_publisher = TransformBroadcaster(self)

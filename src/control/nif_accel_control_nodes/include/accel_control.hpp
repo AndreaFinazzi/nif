@@ -217,7 +217,6 @@ private:
     bool pt_report_ok =
         this->has_pt_report_ &&
         now - this->pt_report_recv_time_ <= rclcpp::Duration(1, 0);
-
     return joy_ok && velocity_ok && des_acceleration_ok && pt_report_ok;
   }
 
