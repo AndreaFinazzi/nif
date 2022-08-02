@@ -4,7 +4,7 @@
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -29,7 +29,27 @@ LOR = 1
 IMS_SIM = 2
 LVMS = 3
 LVMS_SIM = 4
-track = LVMS_SIM
+LVMS_SIM_AC = 5
+track = None
+
+# get which track we are at
+track_id = os.environ.get('TRACK').strip()
+
+if track_id == "IMS" or track_id == "ims":
+    track = IMS
+elif track_id == "LOR" or track_id == "lor":
+    track = LOR
+elif track_id == "IMS_SIM" or track_id == "ims_sim":
+    track = IMS_SIM
+elif track_id == "LVMS" or track_id == "lvms":
+    track = LVMS
+elif track_id == "LVMS_SIM" or track_id == "lvms_sim":
+    track = LVMS_SIM
+elif track_id == "LVMS_SIM_AC" or track_id == "lvms_sim_ac":
+    track = LVMS_SIM_AC
+else:
+    raise RuntimeError("ERROR: Invalid track {}".format(track_id))
+
 
 def get_share_file(package_name, file_name):
     return os.path.join(get_package_share_directory(package_name), file_name)
@@ -192,27 +212,6 @@ def generate_launch_description():
         ]
     )
 
-    # nif_velocity_planning_node = Node(
-    #     package='nif_velocity_planning_node',
-    #     executable='nif_velocity_planning_node_exe',
-    #     output='screen',
-    #     remappings=[
-    #         ('out_desired_velocity', 'velocity_planner/des_vel'),
-    #         ('in_reference_path', 'planning/dynamic/vis/traj_global'),
-    #         # ('in_reference_path', 'planning/path_global'),
-    #         ('in_ego_odometry', '/sensor/odom_ground_truth'),
-    #         ('in_wheel_speed_report', 'raptor_dbw_interface/wheel_speed_report'),
-    #         ('in_imu_data', 'novatel_bottom/rawimux'),
-    #         ('in_steering_report', 'raptor_dbw_interface/steering_report'),
-    #         ('in_control_error', 'control_joint_lqr/lqr_error')
-    #     ],
-    #     parameters=[{
-    #             'odometry_timeout_sec' : 0.5,
-    #             'path_timeout_sec' : 1.0,
-    #             'lateral_tire_model_factor' : 1.0,
-    #         }]
-    # )
-
     lqr_joint_config_file = get_share_file(
         package_name='nif_control_joint_lqr_nodes', file_name='config/lqr/lqr_params.sim.yaml'
     )
@@ -261,9 +260,31 @@ def generate_launch_description():
         parameters=[{
             ## Should be True on real car
             'engine_based_throttle_enabled' : False, 
-            'gear.track': "IMS",
-            'lateral_error_deadband_m': 1.0,
+            'gear.track': "LVMS",
+            'lateral_error_deadband_m': 5.0,
         }]
+    )
+
+    nif_velocity_planning_node = Node(
+        package='nif_velocity_planning_node',
+        executable='nif_velocity_planning_node_exe',
+        output='screen',
+        remappings=[
+            ('out_desired_velocity', 'velocity_planner/des_vel'),
+            # ('in_reference_path', 'planning/dynamic/vis/traj_global'),
+            # ('in_reference_path', 'planning/path_global'),
+            ('in_ego_odometry', '/sensor/odom_ground_truth'),
+            ('in_wheel_speed_report', 'raptor_dbw_interface/wheel_speed_report'),
+            ('in_imu_data', 'novatel_bottom/rawimux'),
+            ('in_steering_report', 'raptor_dbw_interface/steering_report'),
+            ('in_control_error', 'control_joint_lqr/lqr_error')
+        ],
+        parameters=[{
+                'odometry_timeout_sec' : 0.5,
+                'path_timeout_sec' : 1.0,
+                'lateral_tire_model_factor' : 1.0,
+                'max_lateral_accel': 20.0
+            }]
     )
 
 # NIF LQR + CSL END ###############################################
@@ -279,6 +300,8 @@ def generate_launch_description():
     elif track == LVMS:
         global_params_file = 'params.sim.global.yaml'
     elif track == LVMS_SIM:
+        global_params_file = 'params_LVMS_SIM.global.yaml'
+    elif track == LVMS_SIM_AC:
         global_params_file = 'params_LVMS_SIM.global.yaml'
     else:
         raise RuntimeError("ERROR: invalid track provided: {}".format(track))
@@ -310,10 +333,9 @@ def generate_launch_description():
         executable='nif_system_status_manager_nodes_exe',
         remappings=[
             ('in_joystick_cmd', '/joystick/command'),
-            ('in_novatel_bestpos', '/novatel_bottom/bestpos'),
-            ('in_novatel_insstdev', '/novatel_bottom/insstdev'),
             ('in_localization_status', '/aw_localization/ekf/status'),
             ('in_mission_status', '/system/mission'),
+            ('in_ll_diagnostic_report', '/raptor_dbw_interface/diag_report'),
             ('out_system_status', '/system/status'),
         ],
         parameters=[{
@@ -330,39 +352,12 @@ def generate_launch_description():
 
 ### NIF WAYPOINT MANAGER #############################
 
-    wpt_config_file_lor = (
-        os.path.join(
-            get_package_share_directory("nif_waypoint_manager_nodes"),
-            "config",
-            "mission",
-            "lor.yaml",
-        ),
-    )
-
-    wpt_config_file_ims = (
-        os.path.join(
-            get_package_share_directory("nif_waypoint_manager_nodes"),
-            "config",
-            "mission",
-            "ims.yaml", 
-        ),
-    )
-
     wpt_config_file_svl = (
         os.path.join(
             get_package_share_directory("nif_waypoint_manager_nodes"),
             "config",
             "mission",
             "lgsvl.yaml",   
-        ),
-    )
-
-    wpt_config_file_lvms = (
-        os.path.join(
-            get_package_share_directory("nif_waypoint_manager_nodes"),
-            "config",
-            "mission",
-            "lvms.yaml",   
         ),
     )
 
@@ -375,18 +370,22 @@ def generate_launch_description():
         ),
     )
 
+    wpt_config_file_lvms_sim_ac = (
+        os.path.join(
+            get_package_share_directory("nif_waypoint_manager_nodes"),
+            "config",
+            "mission",
+            "lvms_sim_ac.yaml",   
+        ),
+    )
     config_file = None
 
-    if track == LOR:
-        config_file = wpt_config_file_lor
-    elif track == IMS:
-        config_file = wpt_config_file_ims
-    elif track == IMS_SIM:
+    if track == IMS_SIM:
         config_file = wpt_config_file_svl
-    elif track == LVMS:
-        config_file = wpt_config_file_lvms
     elif track == LVMS_SIM:
         config_file = wpt_config_file_lvms_sim
+    elif track == LVMS_SIM_AC:
+        config_file = wpt_config_file_lvms_sim_ac
     else:
         raise RuntimeError("ERROR: invalid track provided: {}".format(track))
 
@@ -418,11 +417,16 @@ def generate_launch_description():
         )
     )
 
-    lgsvl_simulation_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
+    if track == LVMS_SIM_AC:
+        sim_launch_file = PythonLaunchDescriptionSource(
+            get_share_file("nif_ac_simulation", 'launch/default.launch.py')
+        )
+    else:
+        sim_launch_file = PythonLaunchDescriptionSource(
             get_share_file("nif_lgsvl_simulation", 'launch/default.launch.py')
         )
-    )
+    sim_interface_launch = IncludeLaunchDescription(sim_launch_file)
+
 
     nif_dynamic_planner_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -439,6 +443,7 @@ def generate_launch_description():
         nif_csl_param,
         nif_wpt_param,
         nif_joint_lqr_param,
+        # nif_adaptive_cruise_control_param,
 
         # ssc_interface,
         # socketcan_receiver_launch,
@@ -451,12 +456,12 @@ def generate_launch_description():
         nif_csl_node,
         # nif_aw_localization_launch,
         nif_wall_node_launch_bg,
+        nif_velocity_planning_node,
         robot_description_launch,
-        # nif_velocity_planning_node,
         nif_joint_lqr_control_node,
         nif_accel_control_node,
         nif_mission_manager_launch,
         nif_waypoint_manager_node,
-        lgsvl_simulation_launch,
+        sim_interface_launch,
         nif_dynamic_planner_launch
     ])
