@@ -116,8 +116,8 @@ def generate_launch_description():
             }
         ],
         remappings=[
-            # ('in_perception_list', '/tracking/objects'),
-            ('in_perception_list', '/ghost/perception'),
+            ('in_perception_list', '/tracking/objects'),
+            # ('in_perception_list', '/ghost/perception'),
             ('in_ego_odom', '/sensor/odom_ground_truth'),
             ('defender_vel', '/null'),
             ('out_predictionn', '/oppo/prediction'),

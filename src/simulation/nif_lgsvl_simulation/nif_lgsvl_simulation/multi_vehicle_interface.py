@@ -77,11 +77,11 @@ class ACClientNode(rclpy.node.Node):
 
         # Publishers
         self.pub_oppo_markers = self.create_publisher(Marker, '/lgsvl/oppo/vis', rclpy.qos.qos_profile_sensor_data)
-        self.pub_oppo_perception = self.create_publisher(Perception3DArray, '/lgsvl/oppo', rclpy.qos.qos_profile_sensor_data)
+        self.pub_oppo_perception = self.create_publisher(Perception3DArray, '/lgsvl/oppo/perception', rclpy.qos.qos_profile_sensor_data)
 
         self.sub_ego_odom = self.create_subscription(Odometry, '/sensor/odom_ground_truth', self.ego_odom_callback, rclpy.qos.qos_profile_sensor_data)
 
-        self.sub_ego_planning = self.create_subscription(Odometry, '/sensor/odom_ground_truth', self.ego_odom_callback, rclpy.qos.qos_profile_sensor_data)
+        # self.sub_ego_planning = self.create_subscription(Odometry, '/sensor/odom_ground_truth', self.ego_odom_callback, rclpy.qos.qos_profile_sensor_data)
 
 
         # TF Broadcaster

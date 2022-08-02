@@ -37,7 +37,7 @@ def generate_launch_description():
         ],
         remappings=[
             ('in_ego_odom', '/sensor/odom_ground_truth'),
-            ('in_perception', '/ghost/perception'),
+            ('in_perception', '/lgsvl/oppo/perception'),
             ('out_detected_object', '/tracking/objects'),
             ('output_vis', 'tracking/vis/markers'),
         ]

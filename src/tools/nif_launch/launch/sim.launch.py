@@ -260,11 +260,7 @@ def generate_launch_description():
         parameters=[{
             ## Should be True on real car
             'engine_based_throttle_enabled' : False, 
-<<<<<<< HEAD
-            'gear.track': "LVMS_SIM_AC",
-=======
             'gear.track': "LVMS",
->>>>>>> master
             'lateral_error_deadband_m': 5.0,
         }]
     )
