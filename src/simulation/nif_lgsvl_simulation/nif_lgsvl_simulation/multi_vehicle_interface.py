@@ -54,9 +54,9 @@ from nif_msgs.msg import Perception3D, Perception3DArray, DynamicTrajectory
 
 HANDSHAKE_MSG       = "usrg.racing"
 
-ADDR_SERVER         = ("192.168.0.11", 4444)
+ADDR_SERVER         = ("192.168.0.11", 38001)
 
-ADDR_CLIENT         = ("0.0.0.0", 4444)
+ADDR_CLIENT         = ("192.168.0.2", 38000)
 BUFFER_SIZE         = 4092
 CLIENT_TIMEOUT_S    = 1.0
 
@@ -166,7 +166,7 @@ class ACClientNode(rclpy.node.Node):
 def main(args=None):
     # Create a UDP socket at client side
     udp_client.bind(ADDR_CLIENT)
-
+    
     udp_client.settimeout(1.0)
     # Send to server using created UDP socket
     # UDPClientSocket.sendto(bytesToSend, ADDR_SERVER)
