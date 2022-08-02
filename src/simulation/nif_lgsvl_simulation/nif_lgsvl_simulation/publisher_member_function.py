@@ -5,16 +5,15 @@
 @brief  publisher node for lgsvl simulation with topic names matched to the real car
 '''
 
-from threading import local
 import rclpy
 import math
 from rclpy.node import Node
 from lgsvl_msgs.msg import VehicleControlData, VehicleOdometry
 from std_msgs.msg import Float32, Int8
 from raptor_dbw_msgs.msg import SteeringReport, AcceleratorPedalReport, Brake2Report
-from deep_orange_msgs.msg import DiagnosticReport
+
 from nifpy_common_nodes.base_node import BaseNode
-from nif_msgs.msg import LocalizationStatus
+
 class LGSVLPublisherNode(BaseNode):
     def __init__(self):
         super().__init__('lgsvl_publisher')
@@ -41,8 +40,6 @@ class LGSVLPublisherNode(BaseNode):
         self.steering_report_pub = self.create_publisher(SteeringReport, self.namespace + '/raptor_dbw_interface/steering_report', rclpy.qos.qos_profile_sensor_data)
         self.accel_pedal_report_pub = self.create_publisher(AcceleratorPedalReport, self.namespace + '/raptor_dbw_interface/accelerator_pedal_report', rclpy.qos.qos_profile_sensor_data)
         self.brake2_report_pub = self.create_publisher(Brake2Report, self.namespace + '/raptor_dbw_interface/brake_2_report', rclpy.qos.qos_profile_sensor_data)
-        self.loacalization_status_pub = self.create_publisher(LocalizationStatus, self.namespace + '/aw_localization/ekf/status', 10)
-        self.raptor_diagnostic_pub = self.create_publisher(DiagnosticReport, self.namespace + '/raptor_dbw_interface/diag_report', 10)
 
         self.timer_period = 0.02  # seconds
         self.timer = self.create_timer(self.timer_period, self.callback)
@@ -92,23 +89,6 @@ class LGSVLPublisherNode(BaseNode):
         brake2_report_msg.front_brake_pressure = self.braking_pct * 3447379
         self.brake2_report_pub.publish(brake2_report_msg)
 
-        localization_status_msg = LocalizationStatus()
-        localization_status_msg.stamp = self.get_clock().now().to_msg()
-        localization_status_msg.top_initialized = True
-        localization_status_msg.bottom_initialized = True
-        localization_status_msg.localization_status_code = 71 # Best
-        self.loacalization_status_pub.publish(localization_status_msg)
-
-        raptor_diagnostic_msg = DiagnosticReport()
-        raptor_diagnostic_msg.stamp = self.get_clock().now().to_msg()
-        raptor_diagnostic_msg.est1_oos_front_brk = False
-        raptor_diagnostic_msg.est2_oos_rear_brk = False
-        raptor_diagnostic_msg.est3_low_eng_speed = False
-        raptor_diagnostic_msg.est4_sd_comms_loss = False
-        raptor_diagnostic_msg.est5_motec_comms_loss = False
-        raptor_diagnostic_msg.est6_sd_ebrake = False
-        self.raptor_diagnostic_pub.publish(raptor_diagnostic_msg)
-        
         self.rolling_counter = self.rolling_counter + 1
 
     # Subscribe accelerator pedal % -> publish accelerator pedal %

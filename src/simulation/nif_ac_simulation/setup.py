@@ -2,7 +2,7 @@ from setuptools import setup
 import os
 from glob import glob
 
-package_name = 'nif_lgsvl_simulation'
+package_name = 'nif_ac_simulation'
 
 setup(
     name=package_name,
@@ -23,10 +23,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'controller.py = nif_lgsvl_simulation.controller:main',
-            'publisher_member_function.py = nif_lgsvl_simulation.publisher_member_function:main',
-            'subscriber_member_function.py = nif_lgsvl_simulation.subscriber_member_function:main',
-            'multi_vehicle_interface.py = nif_lgsvl_simulation.multi_vehicle_interface:main'
+            'client.py = nif_ac_simulation.client:main',
+            'nif_2_udp_interface.py = nif_ac_simulation.nif_2_udp_interface:main'
         ],
     },
 )
