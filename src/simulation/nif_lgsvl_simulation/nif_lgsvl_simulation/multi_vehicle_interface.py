@@ -51,12 +51,11 @@ from tf2_ros.transform_broadcaster import TransformBroadcaster
 from geometry_msgs.msg import Pose, PoseStamped, TransformStamped, Vector3, Quaternion
 from nif_msgs.msg import Perception3D, Perception3DArray, DynamicTrajectory
 
-
 HANDSHAKE_MSG       = "usrg.racing"
 
-ADDR_SERVER         = ("192.168.0.11", 38001)
+ADDR_SERVER         = ("192.168.0.11", 50000)
 
-ADDR_CLIENT         = ("192.168.0.2", 38000)
+ADDR_CLIENT         = ("192.168.0.2", 50001)
 BUFFER_SIZE         = 4092
 CLIENT_TIMEOUT_S    = 1.0
 
@@ -64,7 +63,7 @@ R_FRAME_ODOM = "odom"
 R_FRAME_BODY = "base_link"
 
 udp_client = socket(family=AF_INET, type=SOCK_DGRAM)
-
+m_ego_odom = Odometry()
 class ACClientNode(rclpy.node.Node):
     def __init__(self, node_name: str) -> None:
         super().__init__(node_name)
@@ -128,6 +127,7 @@ class ACClientNode(rclpy.node.Node):
 
     def ego_odom_callback(self, msg : Odometry):
         data_string = pickle.dumps(msg, -1)
+        m_ego_odom = msg
         udp_client.sendto(data_string, ADDR_SERVER)
     
     def ego_planning_callback(self, msg : DynamicTrajectory):
@@ -137,6 +137,7 @@ class ACClientNode(rclpy.node.Node):
     def timer_callback(self):
         try:
             data, addr = udp_client.recvfrom(BUFFER_SIZE)
+            print("Addr : ", addr)
             data_loaded = pickle.loads(data) #data loaded.
             
             perception_msg = self.oppo_odom_to_perception_msg(data_loaded)
@@ -155,6 +156,8 @@ class ACClientNode(rclpy.node.Node):
         perception_item = Perception3D()
         perception_item.header = oppo_odom.header
         perception_item.id = 1
+
+
         perception_item.detection_result_3d.center = oppo_odom.pose.pose
         perception_item.obj_velocity_in_global = oppo_odom.twist.twist
 
@@ -175,8 +178,9 @@ def main(args=None):
     node = ACClientNode("lgsvl_multi_node")
     rclpy.spin(node)
 
-    rclpy.shutdown()
     udp_client.close()
+    rclpy.shutdown()
+    
 
 if __name__ == '__main__':
     main()

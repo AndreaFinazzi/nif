@@ -75,7 +75,7 @@ def generate_launch_description():
 
     return LaunchDescription([
 
-        # nif_geofence_filter_radar_launch,
+        nif_geofence_filter_radar_launch,
         nif_tracker_launch,
         nif_prediction_launch
 ])
