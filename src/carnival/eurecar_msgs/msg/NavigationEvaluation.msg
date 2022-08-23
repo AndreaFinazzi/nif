@@ -1,0 +1,13 @@
+std_msgs/Float32 transverse_distance
+std_msgs/Int32 scan_matching_count
+
+geometry_msgs/PoseStamped predicted
+geometry_msgs/PoseStamped corrected
+std_msgs/Bool is_corrected
+std_msgs/Bool is_predicted
+
+std_msgs/Float32 computation_time
+std_msgs/Float32 scan_matching_score_array
+std_msgs/Float32 prediction_correction_error_array
+
+

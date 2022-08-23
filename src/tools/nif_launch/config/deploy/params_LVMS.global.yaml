@@ -48,3 +48,7 @@
       ecef_ref_lat: 36.268252  #LVMS
       ecef_ref_lon: -115.015914 #LVMS
       ecef_ref_hgt: 0.0        #LVMS
+
+      #ecef_ref_lat: 36.3660857   #KAIST
+      #ecef_ref_lon: 127.3636824 #KAIST
+      #ecef_ref_hgt: 0.0        #KAIST

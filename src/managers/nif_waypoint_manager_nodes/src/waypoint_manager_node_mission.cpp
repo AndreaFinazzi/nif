@@ -92,6 +92,7 @@ void nif::managers::WaypointManagerMissionNode::graphCallback(
 {
   m_graph_path_in_global = *graph_path_msg;
   this->wpt_manager->setCollisionAvoidanceGraphPath(m_graph_path_in_global);
+  // std::cout << "sibal" << std::endl;
 }
 
 void nif::managers::WaypointManagerMissionNode::occupancyCallback(

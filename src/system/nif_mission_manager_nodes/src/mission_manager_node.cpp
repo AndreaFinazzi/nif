@@ -197,7 +197,7 @@ MissionStatus::_mission_status_code_type MissionManagerNode::getMissionStatusCod
             }
             break;
 
-        case RCFlagSummary::TRACK_FLAG_ORANGE:
+        case RCFlagSummary::TRACK_FLAG_ORANGE:  //fire the engine
             if (is_system_startup && this->missionIs(MissionStatus::MISSION_DEFAULT))
             {
                 return MissionStatus::MISSION_PIT_INIT;
@@ -563,7 +563,7 @@ MissionStatus::_mission_status_code_type MissionManagerNode::validateMissionTran
     auto next_mission_desc = this->missions_description.find(next_mission);
     if (next_mission_desc != this->missions_description.end())
     {
-        if (next_mission_desc->second.isValid(
+        if (next_mission_desc->second.isValid(  //first iterator, second value
             this->mission_status_msg.mission_status_code,
             next_mission,
             this->getEgoOdometry(),

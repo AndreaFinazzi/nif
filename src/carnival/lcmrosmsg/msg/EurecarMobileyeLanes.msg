@@ -1,0 +1,10 @@
+std_msgs/Header header
+
+bool is_valid_m_lane_left
+bool is_valid_m_lane_right
+EurecarMobileyeLaneInstance m_lane_left
+EurecarMobileyeLaneInstance m_lane_right
+int32 num_of_m_next_lane_left
+int32 num_of_m_next_lane_right
+EurecarMobileyeLaneInstance[] m_next_lane_left
+EurecarMobileyeLaneInstance[] m_next_lane_right

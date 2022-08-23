@@ -1,0 +1,8 @@
+std_msgs/Header header
+
+std_msgs/String lateral_control_mode_name
+std_msgs/String longitudinal_control_mode_name
+std_msgs/Float32 steering_angle_cmd
+std_msgs/Float32 steering_angle_velocity_cmd
+std_msgs/Float32 speed_cmd
+std_msgs/Float32 acceleration

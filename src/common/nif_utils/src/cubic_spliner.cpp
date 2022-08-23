@@ -92,9 +92,14 @@ double CubicSpliner::calculate_zeroth_derivative(double time) {
   int index = find_index(time);
   double dx = time - points_x_[index];
 
+  // std::cout<<"dx"<<std::endl;
+  // std::cout<<dx<<std::endl;
   double zeroth_derivative = coefficient_a_[index] +
       coefficient_b_[index] * dx + coefficient_c_[index] * pow(dx, 2) +
       coefficient_d_[index] * pow(dx, 3);
+
+  // std::cout<<"zeroth_derivative"<<std::endl;
+  // std::cout<<zeroth_derivative<<std::endl;
 
   return zeroth_derivative;
 }

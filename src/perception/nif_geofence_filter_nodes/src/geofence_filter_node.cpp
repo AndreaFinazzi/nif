@@ -37,7 +37,8 @@ GeofenceFilterNode::GeofenceFilterNode(const std::string &node_name_)
 
     this->distance_filter_active = this->get_parameter("distance_filter_active").as_bool();
     this->distance_filter_threshold_m = this->get_parameter("distance_filter_threshold_m").as_double();
-    this->distance_filter_threshold_m_squared = pow(this->distance_filter_threshold_m, 2);
+    //this->distance_filter_threshold_m_squared = pow(this->distance_filter_threshold_m, 2);
+    this->distance_filter_threshold_m_squared = this->distance_filter_threshold_m;
 
     this->boundaries_filter_active = this->get_parameter("boundaries_filter_active").as_bool();
 
@@ -72,6 +73,14 @@ GeofenceFilterNode::GeofenceFilterNode(const std::string &node_name_)
     pub_filtered_radar_perception_list = this->create_publisher<nif::common::msgs::PerceptionResultList>(
         "out_filtered_radar_perception_list", nif::common::constants::QOS_SENSOR_DATA);
 
+    pub_inner_boundary = this->create_publisher<nav_msgs::msg::Path>(
+        "/vis/inner_boundary", nif::common::constants::QOS_DEFAULT);
+    pub_outer_boundary = this->create_publisher<nav_msgs::msg::Path>(
+        "/vis/outer_boundary", nif::common::constants::QOS_DEFAULT);
+
+    timer_ = this->create_wall_timer(
+      20ms, std::bind(&GeofenceFilterNode::timer_callback, this));
+
     int spline_interval = 1;
 
     // Load waypoints
@@ -82,6 +91,13 @@ GeofenceFilterNode::GeofenceFilterNode(const std::string &node_name_)
                         this->getGlobalFrameId(),
                         spline_interval);
 
+    this->wpt_manager_inner_vis = std::make_unique<WaypointManagerMinimal>(
+                        inner_line_path_vector,
+                        this->getBodyFrameId(),
+                        this->getGlobalFrameId(),
+                        spline_interval);
+    this->wpt_manager_inner_vis ->setSizeOfMapTrack(500);
+
     std::vector<std::string> outer_line_path_vector { file_path_outer_line }; // Pass single path
     this->wpt_manager_outer = std::make_unique<WaypointManagerMinimal>(
                         outer_line_path_vector,
@@ -89,10 +105,32 @@ GeofenceFilterNode::GeofenceFilterNode(const std::string &node_name_)
                         this->getGlobalFrameId(),
                         spline_interval);
 
+    this->wpt_manager_outer_vis = std::make_unique<WaypointManagerMinimal>(
+                        outer_line_path_vector,
+                        this->getBodyFrameId(),
+                        this->getGlobalFrameId(),
+                        spline_interval);
+    this->wpt_manager_outer_vis->setSizeOfMapTrack(500);
+
     this->parameters_callback_handle = this->add_on_set_parameters_callback(
         std::bind(&GeofenceFilterNode::parametersCallback, this, std::placeholders::_1));
 
     this->alternative_orig_frame.position.x = 1000.0;
+}
+
+void GeofenceFilterNode::timer_callback(){
+  // added for boundary visualization-----------------------
+  this->wpt_manager_inner_vis->setCurrentOdometry(this->getEgoOdometry());
+  this->wpt_manager_outer_vis->setCurrentOdometry(this->getEgoOdometry());
+  auto inner = this->wpt_manager_inner_vis -> getDesiredMapTrackInGlobal();
+  inner.header.frame_id = this->getGlobalFrameId();
+  auto outer = this->wpt_manager_outer_vis -> getDesiredMapTrackInGlobal();
+  outer.header.frame_id = this->getGlobalFrameId();
+  //this->pub_inner_boundary->publish(inner);
+  //this->pub_outer_boundary->publish(outer);
+  RCLCPP_INFO(rclcpp::get_logger(nif::common::constants::LOG_MAIN_LOGGER_NAME),
+                "boundary published");
+  //--------------------------------------------------------
 }
 
 void GeofenceFilterNode::perceptionArrayCallback(
@@ -106,7 +144,7 @@ void GeofenceFilterNode::perceptionArrayCallback(
       msg_out.perception_list.push_back(object);
 
   }
-  
+    
   this->pub_filtered_perception_array->publish(msg_out);
 }
 
@@ -176,9 +214,13 @@ bool GeofenceFilterNode::poseInBodyIsValid(
     this->getEgoOdometry(),
     point_in_body
   ).pose;
-
+  
   this->wpt_manager_inner->setCurrentOdometry(object_pose_in_global);
   this->wpt_manager_outer->setCurrentOdometry(object_pose_in_global);
+
+
+
+
 
   auto current_idx_inner_in_global = this->wpt_manager_inner->getCurrentIdx(
     object_pose_in_global);

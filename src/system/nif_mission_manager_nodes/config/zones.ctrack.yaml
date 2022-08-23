@@ -1,0 +1,279 @@
+# Zones list for a specific track.
+zones:
+  - id: 0
+    type: 0
+    dynamics:  
+      long_acceleration_max: 12.0
+      long_acceleration_min: -12.0
+    polygon:
+      - x: 692.9 # x_0
+        y: 414.7 # y_0
+      - x: 702.2 # x_1
+        y: 424.5 # y_1
+      - x: 715.10 # x_2
+        y: 405.40 # y_2
+      - x: 721.70 # x_3
+        y: 389.90 # y_3
+      - x: 708.8  # x_4
+        y: 389.9 # y_4
+      - x: 704.0 # x_5
+        y: 401.0 # y_5  
+
+  - id: 1
+    type: 20
+    dynamics:  
+      long_acceleration_max: 8.0
+      long_acceleration_min: -4.0
+    polygon:
+      - x: 708.8 # x_0
+        y: 389.9 # y_0
+      - x: 721.70  # x_1
+        y: 389.90  # y_1
+      - x: 715.00 # x_2
+        y: 337.50 # y_2
+      - x: 686.9 # x_3
+        y: 315.70 # y_3
+      - x: 630.10 # x_4
+        y: 315.00 # y_4
+      - x: 631.4 # x_5
+        y: 325.93 # y_5
+      - x: 684.3 # x_6
+        y: 329.30 # y_6
+
+  - id: 2
+    type: 20
+    dynamics:  
+      long_acceleration_max: 8.0
+      long_acceleration_min: -4.0
+    polygon:
+      - x: 631.4 # x_0
+        y: 325.93 # y_0
+      - x: 630.10 # x_1
+        y: 315.00 # y_1
+      - x: 573.00 # x_2
+        y: 336.00 # y_2
+      - x: 523.00 # x_3
+        y: 369.00 # y_3
+      - x: 492.00 # x_4
+        y: 382.00 # y_4
+      - x: 498.00 # x_5
+        y: 393.00 # y_5
+      - x: 523.00 # x_6
+        y: 380.00 # y_6
+      - x: 574.00 # x_7
+        y: 349.00 # y_7
+  - id: 3
+    type: 30
+    dynamics:  
+      long_acceleration_max: 10.0
+      long_acceleration_min: -6.0
+    polygon:
+      - x: 498.00 # x_0
+        y: 393.00 # y_0
+      - x: 492.00 # x_1
+        y: 382.00 # y_1
+      - x: 461.00 # x_2
+        y: 385.00 # y_2
+      - x: 429.00 # x_3
+        y: 382.00 # y_3
+      - x: 426.00 # x_4
+        y: 397.00 # y_4
+      - x: 460.00 # x_5
+        y: 405.00 # y_5
+
+  - id: 4
+    type: 0
+    dynamics:  
+      long_acceleration_max: 12.0
+      long_acceleration_min: -12.0
+    polygon:
+      - x: 426.00 # x_0
+        y: 397.00 # y_0
+      - x: 429.00 # x_1
+        y: 382.00 # y_1
+      - x: 368.00 # x_2
+        y: 364.00 # y_2
+      - x: 301.00 # x_3
+        y: 350.00 # y_3
+      - x: 303.00 # x_4
+        y: 368.00 # y_4
+
+  - id: 5
+    type: 0
+    dynamics:  
+      long_acceleration_max: 12.0
+      long_acceleration_min: -12.0
+    polygon:
+      - x: 303.00 # x_0
+        y: 368.00 # y_0
+      - x: 301.00 # x_1
+        y: 350.00 # y_1
+      - x: 237.00 # x_2
+        y: 356.00 # y_2
+      - x: 185.00 # x_3
+        y: 377.00 # y_3
+      - x: 189.00 # x_4
+        y: 390.00 # y_4
+
+  - id: 6 
+    type: 20
+    dynamics:  
+      long_acceleration_max: 8.0
+      long_acceleration_min: -4.0
+    polygon:
+      - x: 189.00 # x_0
+        y: 390.00 # y_0
+      - x: 185.00 # x_1
+        y: 377.00 # y_1
+      - x: 151.00 # x_2
+        y: 396.00 # y_2
+      - x: 161.00 # x_3
+        y: 407.00 # y_3
+      # - x: 730.00 # x_4
+        # y: -830.00 # y_4
+
+  - id: 7
+    type: 20
+    dynamics:  
+      long_acceleration_max: 8.0
+      long_acceleration_min: -4.0
+    polygon:
+      - x: 161.00 # x_0
+        y: 407.00 # y_0
+      - x: 151.00 # x_1
+        y: 396.00 # y_1
+      - x: 141.00 # x_2
+        y: 422.00 # y_2
+      - x: 147.00 # x_3
+        y: 440.00 # y_3
+      - x: 156.00 # x_4
+        y: 430.00 # y_4
+      - x: 154.00 # x_5
+        y: 421.00 # y_5
+      
+
+  - id: 8
+    type: 30
+    dynamics:  
+      long_acceleration_max: 10.0
+      long_acceleration_min: -6.0
+    polygon:
+      - x: 156.00 # x_0
+        y: 430.00 # y_0
+      - x: 147.00 # x_1
+        y: 440.00 # y_1
+      - x: 187.00 # x_2
+        y: 470.00 # y_2
+      - x: 193.0  # x_3
+        y: 450.0  # y_3
+
+  - id: 9
+    type: 0
+    dynamics:  
+      long_acceleration_max: 12.0
+      long_acceleration_min: -12.0
+    polygon:
+      - x: 193.0  # x_0
+        y: 450.0  # y_0
+      - x: 187.00 # x_1
+        y: 470.00 # y_1
+      - x: 395.0  # x_2
+        y: 590.0  # y_2
+      - x: 463.0  # x_2
+        y: 615.0  # y_2
+      - x: 472.0  # x_3
+        y: 592.0  # y_3
+      - x: 283.00 # x_4
+        y: 476.00 # y_4
+
+  - id: 10
+    type: 0
+    dynamics:  
+      long_acceleration_max: 12.0
+      long_acceleration_min: -12.0
+    polygon:
+      - x: 193.0  # x_0
+        y: 450.0  # y_0
+      - x: 187.00 # x_1
+        y: 470.00 # y_1
+      - x: 395.0  # x_2
+        y: 590.0  # y_2
+      - x: 463.0  # x_3
+        y: 615.0  # y_3
+      - x: 472.0  # x_4
+        y: 592.0  # y_4
+      - x: 283.00 # x_5
+        y: 476.00 # y_5
+
+  - id: 11
+    type: 0
+    dynamics:  
+      long_acceleration_max: 12.0
+      long_acceleration_min: -12.0
+    polygon:
+      - x: 472.00 # x_0
+        y: 592.00 # y_0
+      - x: 463.0  # x_1
+        y: 615.0  # y_1
+      - x: 536.0  # x_2
+        y: 597.0  # y_2
+      - x: 527.0  # x_3
+        y: 578.0  # y_3
+
+  - id: 12
+    type: 0
+    dynamics:  
+      long_acceleration_max: 12.0
+      long_acceleration_min: -12.0
+    polygon:
+      - x: 527.00 # x_0
+        y: 578.00 # y_0
+      - x: 536.0  # x_1
+        y: 597.0  # y_1
+      - x: 702.2 # x_2
+        y: 424.5 # y_2
+      - x: 692.9 # x_0
+        y: 414.7 # y_0
+
+
+
+  
+
+  # - id: 65000
+  #   type: 65000
+  #   dynamics:  
+  #     long_acceleration_max: 6.0
+  #     long_acceleration_min: -12.0
+  #   polygon:
+  #     - x: 400.0  # x_0
+  #       y: -125.0  # y_0
+  #     - x: 550.0  # x_1
+  #       y: -200.0  # y_1
+  #     - x: 725.0  # x_2
+  #       y: -400.0  # y_2
+  #     - x: 810.0  # x_3
+  #       y: -625.0  # y_3
+  #     - x: 750.0  # x_4
+  #       y: -625.0  # y_4
+  #     - x: 300.0  # x_5
+  #       y: -125.0  # y_5
+
+  # - id: 0
+  #   type: 0
+  #   dynamics:  
+  #     long_acceleration_max: 12.0
+  #     long_acceleration_min: -12.0
+  #   polygon:
+  #     - x: 223.8 # x_0
+  #       y: 470.6 # y_0
+  #     - x: 226.90 # x_1
+  #       y: 456.4 # y_1
+  #     - x: 298.00 # x_2
+  #       y: 482.00 # y_2
+  #     # - x: 640.00 # x_3
+  #     #   y: -295.00 # y_3
+  #     - x: 288.0  # x_4
+  #       y: 493.0 # y_4
+  #     # - x: 400.0 # x_5
+  #     #   y: -125.0 # y_5
+

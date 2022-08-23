@@ -1,0 +1,17 @@
+std_msgs/Header header
+
+std_msgs/Float64 gway_cluster_odometer
+std_msgs/Float64 lateral_accel_speed
+std_msgs/Float64 longitudinal_accel_speed
+std_msgs/Float64 brake_cylinder_pressure
+std_msgs/Float64 yaw_rate_sensor
+std_msgs/Float64 wheel_velocity_fl
+std_msgs/Float64 wheel_velocity_fr
+std_msgs/Float64 wheel_velocity_rl
+std_msgs/Float64 wheel_velocity_rr
+std_msgs/Float64 steering_angle
+std_msgs/Float64 steering_torque
+std_msgs/Float64 steering_status
+std_msgs/Bool brake_active
+std_msgs/Float64 accel_pedal_position
+std_msgs/Float64 gear_sel_disp

@@ -139,7 +139,7 @@ private:
   bool isDataOk() {
     auto now = this->now();
 
-    bool rc_ok = this->has_rc_flag_summary && (now - this->rc_flag_summary_update_time) <= timeout_rc_flag_summary;
+    bool rc_ok = this->has_rc_flag_summary;
     bool velocity_ok = this->has_current_velocity && (now - this->current_velocity_update_time) <= this->timeout_current_velocity;
     bool odometry_ok = this->hasEgoOdometry() && (now - this->getEgoOdometryUpdateTime()) <= rclcpp::Duration(1, 0); // TODO make global parameter
     

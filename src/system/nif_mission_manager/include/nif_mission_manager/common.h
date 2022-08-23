@@ -243,7 +243,7 @@ namespace system {
 
 
     using MissionsDescription = std::unordered_map<
-            MissionStatus::_mission_status_code_type, MissionNode>;
+            MissionStatus::_mission_status_code_type, MissionNode>;  //_mission_status_code_type is key 
             
     using TrackZonesDescription = std::unordered_map<
             track_zone_id_t, TrackZone>;

@@ -48,8 +48,8 @@ def generate_launch_description():
         missions_file = 'transitions.ims_sim.yaml'
         zones_file = 'zones.ims_sim.yaml'
     elif track == LVMS:
-        missions_file = 'transitions.lvms.yaml'
-        zones_file = 'zones.lvms.yaml'
+        missions_file = 'transitions.ctrack.yaml'
+        zones_file = 'zones.ctrack_final.yaml'
     elif track == LVMS_SIM:
         missions_file = 'transitions.lvms_sim.yaml'
         zones_file = 'zones.lvms_sim.yaml'
@@ -77,14 +77,14 @@ def generate_launch_description():
 
             "missions_file_path": mm_missions_default_file,
             "velocity.zero": 0.0,
-            "velocity.max": 50.0,
-            "velocity.keep_position": 50.0,
-            "velocity.constant": 36.0,
-            "velocity.avoidance": 15.0,
+            "velocity.max": 25.0,
+            "velocity.keep_position": 10.0,
+            "velocity.constant": 10.0,
+            "velocity.avoidance": 10.0,
             "velocity.warmup": 15.0,
-            "velocity.pit_in": 15.0,
-            "velocity.pit_out": 15.0,
-            "velocity.slow_drive": 25.0,
+            "velocity.pit_in": 3.0,
+            "velocity.pit_out": 5.0,
+            "velocity.slow_drive": 8.0,
             # RC interface params
             "listen_to_override": False,
             "listen_to_nominal": True,

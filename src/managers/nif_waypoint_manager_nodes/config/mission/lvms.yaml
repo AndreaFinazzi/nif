@@ -1,7 +1,7 @@
 /**:
   ros__parameters:
     race_wpt_path: 'maps/LVMS/left_side_center.csv'
-    pit_wpt_path: 'maps/LVMS/pit_lane.csv'
+    pit_wpt_path: 'maps/LVMS/Kaist_Parking_Lot5.csv'
     warmup_wpt_path: 'maps/LVMS/centerline.csv'
     spline_interval: 1.0 # in [m]
-    maptrack_size: 200 # in index level
+    maptrack_size: 80000 # in index level

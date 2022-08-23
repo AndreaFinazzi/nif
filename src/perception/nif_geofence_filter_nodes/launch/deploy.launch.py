@@ -77,7 +77,7 @@ def generate_launch_description():
 
                     # Filters out the tracks under a certain distance from the track geofences
                     'distance_filter_active': True,
-                    'distance_filter_threshold_m': 1.,
+                    'distance_filter_threshold_m': 4.,
 
                     # Filters out the tracks outside the track boundaries
                     'boundaries_filter_active': True,

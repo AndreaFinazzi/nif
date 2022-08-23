@@ -11,6 +11,12 @@
 using namespace nif::common::frame_id::localization;
 
 // Constructor
+
+unsigned long MAP_WIDTH =
+    400; //(front_upper_distance + rear_upper_distance) / resolution
+unsigned long MAP_HEIGHT =
+    150; // (right_upper_distance + left_upper_distance) / resolution
+
 PointsClustering::PointsClustering()
     : Node("lidar_clustering_node")
 {
@@ -60,6 +66,9 @@ PointsClustering::PointsClustering()
   this->get_parameter("resolution", resolution_);
   this->get_parameter("count_threshold", count_threshold_);
 
+  MAP_WIDTH = (front_upper_distance_ + rear_upper_distance_) / resolution_;
+  MAP_HEIGHT = (right_upper_distance_ + left_upper_distance_) / resolution_;
+
 
   pubClusterPoints = this->create_publisher<sensor_msgs::msg::PointCloud2>(
       "out_clustered_points", nif::common::constants::QOS_SENSOR_DATA);
@@ -72,12 +81,13 @@ PointsClustering::PointsClustering()
           "out_clustered_array", nif::common::constants::QOS_SENSOR_DATA);
   pubClusteredCenterPoints = this->create_publisher<sensor_msgs::msg::PointCloud2>(
       "out_clustered_center_points", nif::common::constants::QOS_SENSOR_DATA);
-  pubPerceptionList = this->create_publisher<nif::common::msgs::PerceptionResultList>(
-      "out_perception_list", nif::common::constants::QOS_SENSOR_DATA);
+  pubPerceptionList = this->create_publisher<nif::common::msgs::PerceptionResultList>( // nif.galatic.repos 파일에 있음
+      "out_perception_list", nif::common::constants::QOS_SENSOR_DATA); // Output
   pubInverseMappedPoints =
       this->create_publisher<sensor_msgs::msg::PointCloud2>(
           "out_inverse_mapped_points",
           nif::common::constants::QOS_SENSOR_DATA);
+  pubInverseMappedPoints_hash = this->create_publisher<sensor_msgs::msg::PointCloud2>("hash_out_inverse_mapped_points", nif::common::constants::QOS_SENSOR_DATA);
 
 
   subInputPoints = this->create_subscription<sensor_msgs::msg::PointCloud2>(
@@ -128,10 +138,10 @@ void PointsClustering::timer_callback() {
   if (!this->m_use_inverse_map) {
     //simple height map filter
     m_simpleHeightmapPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
-    
+
     { // filter front points
     std::lock_guard<std::mutex> sensor_lock(sensor_mtx_f);
-    if(has_front_points && m_inPoints && !m_inPoints->points.empty()) {
+    if(has_front_points && m_inPoints && !m_inPoints->points.empty()) { //reset이 동작하지 않았을 때 -> m_inPoints == NULL
 
       for (auto point : m_inPoints->points)
       {
@@ -212,17 +222,23 @@ void PointsClustering::timer_callback() {
       }
     }
 
-    float min_x = -(front_upper_distance_ + rear_upper_distance_) / 2;
+    float min_x = -(front_upper_distance_ + rear_upper_distance_) / 2; //why minus?
     float min_y = -(left_upper_distance_ + right_upper_distance_) / 2;
 
 
     pcl::PointCloud<pcl::PointXYZI>::Ptr egoShapeFilteredPoints(
         new pcl::PointCloud<pcl::PointXYZI>);
 
-    EgoShape(concatPoints, egoShapeFilteredPoints, 
+    /*EgoShape(concatPoints, egoShapeFilteredPoints, 
       left_lower_distance_, right_lower_distance_, front_lower_distance_, rear_lower_distance_,
       left_upper_distance_, right_upper_distance_, front_upper_distance_, rear_upper_distance_, 
       height_lower_distance_, height_upper_distance_);
+    */
+    EgoShape(concatPoints, egoShapeFilteredPoints, 
+      left_lower_distance_, right_lower_distance_, front_lower_distance_, rear_lower_distance_,
+      left_upper_distance_, right_upper_distance_, front_upper_distance_, rear_upper_distance_, 
+      height_lower_distance_, height_upper_distance_, resolution_, min_x, min_y);
+
 
     /* REGISTER POINTS TO GRID 
     1. Register points on the 2-d grid map for ground-filtering
@@ -230,7 +246,9 @@ void PointsClustering::timer_callback() {
       - input : ego-shape & voxelized points, grid resolution, origin point of grid
       - output : 2-D grid map
     */
-    RegisterPointToGrid(egoShapeFilteredPoints, resolution_, min_x, min_y);
+   
+    //rclcpp::Time time_1 = rclcpp::Clock().now();
+    //RegisterPointToGrid(egoShapeFilteredPoints, resolution_, min_x, min_y);
 
     /* INVERSE MAP
     1. Find the ground filtered points
@@ -238,17 +256,41 @@ void PointsClustering::timer_callback() {
       - input : ego-shape & voxelized points, grid resolution, origin point of grid
       - output : Inverse mapped filtered points (Both, Left, Right)
     */
-    m_inverseMapPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
-    InverseMap( egoShapeFilteredPoints, m_inverseMapPoints, 
-                min_x, min_y, resolution_);
+    //m_inverseMapPoints.reset(new pcl::PointCloud<pcl::PointXYZI>());
+    //InverseMap( egoShapeFilteredPoints, m_inverseMapPoints, min_x, min_y, resolution_);
+    //rclcpp::Time time_2 = rclcpp::Clock().now();
 
+    //float diff = time_2.seconds() - time_1.seconds();
+    
+    //std::cout<<"Hz = " << (double)1/diff<<"  \n";  
+
+    rclcpp::Time time_1_hash = rclcpp::Clock().now();
+    m_inverseMapPoints_hash.reset(new pcl::PointCloud<pcl::PointXYZI>());
+    InverseMap_hash(m_inverseMapPoints_hash);
+
+    rclcpp::Time time_2_hash = rclcpp::Clock().now();
+
+    float diff2 = time_2_hash.seconds() - time_1_hash.seconds();
+    std::cout<<"Hz_hash = " << (double)1/diff2<<"  \n";  
+
+    
+
+    //m_inverseMapPoints에 voting값이 threshold보다 큰 것이 들어있음
+/*
     sensor_msgs::msg::PointCloud2 cloud_inverse_msg;
     pcl::toROSMsg(*m_inverseMapPoints, cloud_inverse_msg);
     cloud_inverse_msg.header.frame_id = BASE_LINK;
     cloud_inverse_msg.header.stamp = this->now();
     pubInverseMappedPoints->publish(cloud_inverse_msg);
+*/
+    sensor_msgs::msg::PointCloud2 cloud_inverse_msg_hash;
+    pcl::toROSMsg(*m_inverseMapPoints_hash, cloud_inverse_msg_hash);
+    cloud_inverse_msg_hash.header.frame_id = BASE_LINK;
+    cloud_inverse_msg_hash.header.stamp = this->now();
+    pubInverseMappedPoints_hash->publish(cloud_inverse_msg_hash);
 
-    target_pcl = m_inverseMapPoints;
+
+    target_pcl = m_inverseMapPoints_hash;
   }
 
   pcl::PointCloud<pcl::PointXYZI>::Ptr registeredPoints(
@@ -261,7 +303,7 @@ void PointsClustering::timer_callback() {
 
   visualization_msgs::msg::MarkerArray clustered_array;
   clusterAndColorGpu(target_pcl, registeredPoints,
-                    clustered_array, m_max_cluster_distance);
+                    clustered_array, m_max_cluster_distance); //m_max_cluster_distance는 config.yaml에 있음
 
   int i = 0;
   perception_msg.perception_list.resize(clustered_array.markers.size());
@@ -302,7 +344,7 @@ void PointsClustering::timer_callback() {
   pubClusteredArray->publish(clustered_array);
 
   perception_msg.header = cloud_cluster_center_msg.header;
-  pubPerceptionList->publish(perception_msg);
+  pubPerceptionList->publish(perception_msg); //Output
 }
 
 void PointsClustering::PointsCallback(
@@ -597,7 +639,7 @@ void PointsClustering::createGaussianWorld(
   // return output;
 }
 
-
+/*
 void PointsClustering::RegisterPointToGrid(
     const pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud_ptr, 
     double in_resolution, float min_x, float min_y) {
@@ -638,7 +680,7 @@ void PointsClustering::RegisterPointToGrid(
     // points_map_buf.push_back(point_buf.z);
     count_map[y][x] = count_map[y][x] + 1.f; // count hit
     // points_map[y][x] = points_map_buf;
-    // map[y][x] = map[y][x] + point_buf.z + 0.5; // accumulate height
+    // map[y][x] = map[y][x] + point_buf.z + 0.5; // accumulate heighRegisterPointToGridt
     // double sum_of_elems =
     //     std::accumulate(points_map_buf.begin(), points_map_buf.end(),
     //                     decltype(points_map_buf)::value_type(0));
@@ -683,9 +725,27 @@ void PointsClustering::InverseMap(
   }
 }
 
-void PointsClustering::EgoShape(
-    const pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud_ptr,
-    pcl::PointCloud<pcl::PointXYZI>::Ptr out_cloud_ptr,
+*/
+void PointsClustering::InverseMap_hash(pcl::PointCloud<pcl::PointXYZI>::Ptr cloudOut) 
+{
+  
+  pcl::PointXYZI point;
+  for(auto elem : Inverse_Map)
+  {
+      PointXYZI_t k = elem.first;
+
+      point.x = k.x;
+      point.y = k.y;
+      point.z = k.z;
+      
+      cloudOut->points.push_back(point);
+      
+  }
+
+}
+
+
+void PointsClustering::EgoShape(const pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud_ptr, pcl::PointCloud<pcl::PointXYZI>::Ptr out_cloud_ptr,
     double in_left_lower_threshold, 
     double in_right_lower_threshold,
     double in_front_lower_threshold,
@@ -695,9 +755,15 @@ void PointsClustering::EgoShape(
     double in_front_upper_threshold,
     double in_rear_upper_threshold, // upper limit
     double in_height_lower_threshold, 
-    double in_height_upper_threshold) {
-  
+    double in_height_upper_threshold,
+    double in_resolution, float min_x, float min_y) {
   pcl::PointIndices::Ptr out_indices_list(new pcl::PointIndices);
+
+ // for (int i = 0; i < MAP_HEIGHT + 1; i++) this->count_map[i].fill(0.0);
+  //for(int i=0;i<MAP_HEIGHT+1;i++) Grid_Map[i].clear();
+  Inverse_Map.clear(); 
+  Grid_Map.clear();
+  check.clear();
   for (unsigned int i = 0; i < in_cloud_ptr->points.size(); i++) {
     auto& x = in_cloud_ptr->points[i].x;
     auto& y = in_cloud_ptr->points[i].y;
@@ -711,36 +777,71 @@ void PointsClustering::EgoShape(
     }
 
     // outer front/rear boundaries
-    if (x > in_front_upper_threshold ||
+    else if (x > in_front_upper_threshold ||
         x < -in_rear_upper_threshold) {
       out_indices_list->indices.push_back(i);
       continue;
     }
 
-    if (z < (in_height_lower_threshold)) {
+    else if (z < (in_height_lower_threshold)) {
       out_indices_list->indices.push_back(i);
       continue;
     }
-    if (z > (in_height_upper_threshold)) {
+    else if (z > (in_height_upper_threshold)) {
       out_indices_list->indices.push_back(i);
       continue;
     }
 
-    if ( y < in_left_lower_threshold  && y > -1.0 * in_right_lower_threshold &&
+    else if ( y < in_left_lower_threshold  && y > -1.0 * in_right_lower_threshold &&
          x < in_front_lower_threshold && x > -1.0 * in_rear_lower_threshold )
       {
         out_indices_list->indices.push_back(i);
         continue;
       }
-      
-  }
+    else 
+    {
+      int kx = std::floor((x - min_x) / in_resolution);
+      int ky = std::floor((y - min_y) / in_resolution);
 
+      if (kx > MAP_WIDTH || kx < 0 || ky > MAP_HEIGHT || ky < 0) {
+        // std::cout << x << ", " << y << std::endl;
+        continue;
+      }
+      //count_map[ky][kx] = count_map[ky][kx] + 1.f; // count hit
+      //hash[ky*MAP_HEIGHT + kx] = hash[ky*MAP_HEIGHT+kx] + 1;
+      //Inverse_Map[PointXYZI_t(x,y,z)] = Inverse_Map[PointXYZI_t(x,y,z)] + 1;
+      
+      //Grid_Map[PairXY_t(kx, ky)] = Grid_Map[PairXY_t(kx, ky)] + 1;
+      
+      if(Grid_Map[PairXY_t(kx,ky)].size() > count_threshold_ && check[PairXY_t(kx,ky)]==true)
+      {
+        Inverse_Map.insert(std::make_pair(PointXYZI_t(x,y,z), 1));
+      }
+      
+      else if (Grid_Map[PairXY_t(kx,ky)].size() > count_threshold_) 
+      {
+        for(int i=0;i<Grid_Map[PairXY_t(kx,ky)].size();i++)
+        {
+            Inverse_Map.insert(std::make_pair(Grid_Map[PairXY_t(kx,ky)][i], 1));
+        }
+        check[PairXY_t(kx,ky)]=true;
+      }
+      else 
+      {
+          //Grid_Map[PairXY_t(kx, ky)] = Grid_Map[PairXY_t(kx, ky)] + 1;
+          Grid_Map[PairXY_t(kx,ky)].push_back(PointXYZI_t(x,y,z));
+      }
+      
+
+    }
+  }
   pcl::ExtractIndices<pcl::PointXYZI> extract;
   extract.setInputCloud(in_cloud_ptr);
   extract.setIndices(out_indices_list);
   extract.setNegative(
       true); // true removes the indices, false leaves only the indices
   extract.filter(*out_cloud_ptr);
+  
 }
 
 rcl_interfaces::msg::SetParametersResult

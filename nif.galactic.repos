@@ -69,3 +69,8 @@ repositories:
     type: git
     url: https://github.com/KumarRobotics/ublox.git
     version: galactic-devel
+
+  src/external/ackermann_msgs:
+    type: git
+    url: https://github.com/ros-drivers/ackermann_msgs.git
+    version: ros2

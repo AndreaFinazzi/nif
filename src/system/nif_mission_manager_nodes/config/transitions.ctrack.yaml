@@ -1,0 +1,195 @@
+# Misison codes are specified in nif_msgs/msg/MissionStatus.msg
+# Velocities are expressed in meter per seconds [m/s]
+# Listed conditions must have an 'active' flag. If false, the condition is ignored.
+# fallback_mission_code is used in case of rejection
+missions:
+  - mission_code: 0 # MISSION_RACE
+    active: true
+    fallback:
+      active: true
+      mission_code: 128 # MISSION_SLOW_DRIVE
+    activation_area:
+      active: true
+      polygons:
+      - 
+        - x: 582.0 # x_4
+          y: -306.0 # y_4
+
+        - x: 784.0 # x_6
+          y: -360.0 # y_6
+
+        - x: 671.0 # x_5
+          y: -256.0 # y_5
+
+        - x: 152.0 # x_4
+          y: -384.0 # y_4
+
+        - x: 126.00 # x_7
+          y: -440.00 # y_7
+
+        - x: 416.00 # x_7
+          y: -597.00 # y_7
+
+        - x: 471.00 # x_6
+          y: -617.00 # y_6
+
+        - x: 538.00 # x_5
+          y: -594.00 # y_5  
+
+        - x: 521.00 # x_4
+          y: -571.00 # y_4
+
+        - x: 455.00 # x_3
+          y: -581.00 # y_3
+
+        - x: 265.00 # x_2
+          y: -460.00 # y_2
+
+        - x: 166.0  # x_1
+          y: -418.0 # y_1
+
+        - x: 294.00 # x_2
+          y: -376.0 # y_2
+
+        - x: 470.0  # x_1
+          y: -417.0  # y_1
+
+        - x: 608.0 # x_1
+          y: -337.0 # y_1
+
+    activation_velocity:
+      active: true
+      range_mps:
+        - 1.0 # min km/h
+        - 25.0 # max km/h
+
+    allowed_transitions:
+      active: true
+      from:
+        - 0   # MISSION_RACE
+        - 70  # MISSION_PIT_OUT
+        - 128 # MISSION_SLOW_DRIVE
+        
+#############################################################################
+  - mission_code: 60 # MISSION_PIT_IN
+    active: true
+    fallback:
+      active: true
+      mission_code: 128 # MISSION_SLOW_DRIVE
+    activation_area:
+      active: true
+      polygons:
+        - - x: 521.00 # x_0
+            y: -571.00 # y_0      
+          - x: 626.00 # x_1
+            y: -476.00 # y_1
+          - x: 646.00 # x_2
+            y: -498.00 # y_2
+          - x: 538.00 # x_3
+            y: -594.00 # y_3
+    activation_velocity:
+      active: true
+      range_mps:
+        - 1.0 # min km/h  --> Change to kph
+        - 12.0 # max km/h
+    allowed_transitions:
+      active: true
+      from:
+        - 0   # MISSION_RACE
+        - 60  # MISSION_PIT_IN
+        - 128 # MISSION_SLOW_DRIVE
+        - 65535 # MISSION_DEFAULT
+        
+    timeout:
+      active: false # ignored
+      duration_ms: 1000
+
+
+##############################################################      
+  - mission_code: 70 # MISSION_PIT_OUT
+    active: true
+    # fallback: # CAN'T BE ACTIVE, IT CLOSES THE LOOP
+    #   active: true
+    #   mission_code: 60 # MISSION_PIT_IN
+
+    allowed_transitions:
+      active: true
+      from:
+        - 0     # MISSION_RACE
+        - 70    # MISSION_PIT_OUT        
+        - 65535 # MISSION_DEFAULT
+
+###############################################################
+  # - mission_code: 75 # MISSION_PIT_TO_TRACK
+  #   active: true
+  #   fallback:
+  #     active: true
+  #     mission_code: 70 # MISSION_PIT_OUT
+  #   activation_area:
+  #     active: true
+  #     polygons:
+  #       - - x: 699.0 # x_0
+  #           y: -455.0 # y_0
+  #         - x: 673.0 # x_1
+  #           y: -426.0 # y_1
+  #         - x: 693.0 # x_2
+  #           y: -340.0 # y_2
+  #         - x: 608.0 # x_3
+  #           y: -337.0 # y_3
+  #         - x: 582.0 # x_4
+  #           y: -306.0 # y_4
+  #         - x: 671.0 # x_5
+  #           y: -256.0 # y_5
+  #         - x: 784.0 # x_6
+  #           y: -360.0 # y_6
+  #   allowed_transitions:
+  #     active: true # ignore
+  #     from:
+  #       - 70 # MISSION_PIT_OUT
+  #       - 75 # MISSION_PIT_TO_TRACK
+  #       - 65000 # MISSION_PIT_INIT
+        
+#########################################################
+
+  - mission_code: 128 # MISSION_SLOW_DRIVE
+    active: true
+    allowed_transitions:
+      active: true # ignore
+      from:
+        - 0   # MISSION_RACE
+        - 70  # MISSION_PIT_OUT
+        - 128 # MISSION_SLOW_DRIVE
+        - 65535 # MISSION_DEFAULT
+        
+
+
+  - mission_code: 65535 # MISSION_DEFAULT
+    active: true
+    fallback:
+      active: true
+      mission_code: 60 # MISSION_PIT_IN
+    activation_area:
+      active: true
+      polygons:
+        - - x: 646.00 # x_0
+            y: -498.00 # y_0
+          - x: 626.00 # x_1
+            y: -476.00 # y_1
+          - x: 673.0 # x_2
+            y: -426.0 # y_2
+          - x: 699.0 # x_0
+            y: -455.0 # y_0
+    activation_velocity:
+      active: true
+      range_mps:
+        - 0.0 # min m/s
+        - 3.0 # max m/s
+    allowed_transitions:
+      active: true # ignore
+      from:
+
+        - 0   # MISSION_RACE
+        - 60   # MISSION_PIT_IN
+        - 70  # MISSION_PIT_OUT
+        - 128 # MISSION_SLOW_DRIVE
+        - 65535 # MISSION_DEFAULT

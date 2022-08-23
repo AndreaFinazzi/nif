@@ -72,14 +72,14 @@ def generate_launch_description():
             get_package_share_directory("nif_waypoint_manager_nodes"),
             "maps",
             "LVMS",
-            "trackboundary_left.csv"
+            "pit_lane.csv"
         )
 
     ref_line_file_lvms_sim = os.path.join(
             get_package_share_directory("nif_waypoint_manager_nodes"),
             "maps",
             "LVMS_SIM",
-            "trackboundary_left.csv"
+            "race_line.csv"
         )
 
 

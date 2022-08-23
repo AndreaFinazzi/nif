@@ -1,0 +1,20 @@
+std_msgs/Header header
+
+float64 obstacle_id
+float64 obstacle_pos_x
+float64 obstacle_pos_y
+float64 obstacle_rel_vel_x
+float64 obstacle_type
+float64 obstacle_status
+float64 blinker_info
+float64 cut_in_and_out
+float64 obstacle_length
+float64 obstacle_width
+float64 obstacle_age
+float64 obstacle_lane
+float64 cipv_flag
+float64 obstacle_angle_rate
+float64 obstacle_scale_change
+float64 object_accel_x
+float64 obstacle_angle
+float64 timestamp

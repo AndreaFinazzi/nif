@@ -1,0 +1,13 @@
+std_msgs/Header header
+
+float64 timestamp_a
+float64 lane_type
+float64 lane_quality 
+float64 model_degree
+float64 width_left_marking
+float64 position_parameter_c0
+float64 curvature_parameter_c2 
+float64 curvature_derivative_parameter_c3 
+float64 timestamp_b
+float64 heading_angle_parameter_c1
+float64 view_range

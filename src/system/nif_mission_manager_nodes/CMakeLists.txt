@@ -20,7 +20,7 @@ ament_auto_find_build_dependencies()
 
 # Library
 ament_auto_add_library(${PROJECT_NAME} SHARED
-        src/mission_manager_node.cpp)
+        src/mission_manager_node_ctrack.cpp)
 
 ament_auto_add_executable(${PROJECT_NAME}_exe
         src/mission_manager_main.cpp)

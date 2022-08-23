@@ -19,6 +19,7 @@ WaypointManagerMissionV2::WaypointManagerMissionV2(
       m_spline_interval(spline_interval_)
 {
 
+  // std::cout<<"sibal++++++++++++++++++++++++++++++++++++++="<<std::endl;
   m_map_track_path_global.header.frame_id = m_global_frame_id_str;
   m_map_track_path_body.header.frame_id = m_body_frame_id_str;
   m_collision_avoidance_path_body.header.frame_id = m_body_frame_id_str;

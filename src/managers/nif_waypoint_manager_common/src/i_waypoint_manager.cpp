@@ -20,6 +20,7 @@ IWaypointManager::IWaypointManager(const vector<string> &wpt_file_path_list_,
         "wpt_file_path_list_ is empty. WaypointManager cannot be initialized.");
   }
 
+  // std::cout<<"sibal2++++++++++++++++++++++++++++++++++++++="<<std::endl;
   m_wpt_list.clear();
 
   bool wpt_3d_flg = false;
@@ -31,6 +32,7 @@ IWaypointManager::IWaypointManager(const vector<string> &wpt_file_path_list_,
     c_wpt obj(wpt_file_idx, "", m_global_frame_id, wpt_3d_flg, spline_flg,
               m_spline_interval);
     m_wpt_list.push_back(obj);
+    // std::cout<<"sibal3++++++++++++++++++++++++++++++++++++++="<<std::endl;
   }
 
   if (m_wpt_list.size() > 0) {

@@ -16,6 +16,7 @@
 #include "nif_waypoint_manager_minimal/waypoint_manager_minimal.h"
 #include "delphi_esr_msgs/msg/esr_track.hpp"
 #include "visualization_msgs/msg/marker.hpp"
+#include "nav_msgs/msg/path.hpp"
 
 namespace nif {
 namespace perception {
@@ -29,7 +30,7 @@ public:
     ~GeofenceFilterNode() {}
 
 private:
-
+    void timer_callback();
     void perceptionArrayCallback(
         const nif_msgs::msg::Perception3DArray::SharedPtr msg);
     void radarTrackCallback(
@@ -56,9 +57,15 @@ private:
     rclcpp::Publisher<delphi_esr_msgs::msg::EsrTrack>::SharedPtr pub_filtered_radar_track;
     rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr pub_filtered_radar_track_vis;
     rclcpp::Publisher<nif::common::msgs::PerceptionResultList>::SharedPtr pub_filtered_radar_perception_list;
-
+    
+    rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_inner_boundary;
+    rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_outer_boundary;
+    
     std::unique_ptr<WaypointManagerMinimal> wpt_manager_inner;
     std::unique_ptr<WaypointManagerMinimal> wpt_manager_outer;
+
+    std::unique_ptr<WaypointManagerMinimal> wpt_manager_inner_vis;
+    std::unique_ptr<WaypointManagerMinimal> wpt_manager_outer_vis;
 
     bool distance_filter_active; 
     double distance_filter_threshold_m; 
@@ -79,6 +86,8 @@ private:
 
     // Used to solve cross-product in singular cases
     geometry_msgs::msg::Pose alternative_orig_frame;
+
+    rclcpp::TimerBase::SharedPtr timer_;
 
 };  
 } // namespace perception

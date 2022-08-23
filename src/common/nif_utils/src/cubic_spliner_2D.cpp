@@ -44,6 +44,9 @@ std::tuple<double, double> CubicSpliner2D::calculate_position(double point_s) {
   double point_x = cubic_spliner_sx_->calculate_zeroth_derivative(point_s);
   double point_y = cubic_spliner_sy_->calculate_zeroth_derivative(point_s);
 
+  // std::cout<<"point_x"<<std::endl;
+  // std::cout<<point_x<<std::endl;
+
   return std::make_tuple(point_x, point_y);
 }
 

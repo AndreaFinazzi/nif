@@ -5,6 +5,7 @@ c_wpt::c_wpt(string wpt_file_path_, string wpt_alias_ = "",
              bool spline_flg_ = false, double spline_interval_ = 0.5)
 {
   //  init
+  // std::cout<<"sibal4++++++++++++++++++++++++++++++++++++++="<<std::endl;
   m_wpt_raw_x.clear();
   m_wpt_splined_x.clear();
   m_wpt_raw_y.clear();
@@ -25,6 +26,7 @@ c_wpt::c_wpt(string wpt_file_path_, string wpt_alias_ = "",
   if (m_3d_wpt_flg)
   {
     m_wpt_xyz = load3DWPTFile(m_wpt_file_path);
+    
     m_wpt_size = m_wpt_xyz.size();
     for (int wpt_idx = 0; wpt_idx < m_wpt_xyz.size(); wpt_idx++)
     {
@@ -42,6 +44,7 @@ c_wpt::c_wpt(string wpt_file_path_, string wpt_alias_ = "",
     }
     if (m_spline_flg)
     {
+      
       shared_ptr<CubicSpliner2D> cubic_spliner_2D =
           std::make_shared<CubicSpliner2D>(m_wpt_raw_x, m_wpt_raw_y);
       shared_ptr<CubicSpliner> cubic_spliner_sz_ =
@@ -64,12 +67,20 @@ c_wpt::c_wpt(string wpt_file_path_, string wpt_alias_ = "",
         std::tuple<double, double> position =
             cubic_spliner_2D->calculate_position(point_s);
 
+        // std::cout<<"sibal"<<std::endl;
         double point_x = std::get<0>(position);
         double point_y = std::get<1>(position);
         double point_z =
             cubic_spliner_sz_->calculate_zeroth_derivative(point_s);
         double yaw = cubic_spliner_2D->calculate_yaw(point_s);
         double curvature = cubic_spliner_2D->calculate_curvature(point_s);
+
+
+        // std::cout<<point_x<<std::endl;
+        // std::cout<<point_y<<std::endl;
+        // std::cout<<point_z<<std::endl;
+        // std::cout<<yaw<<std::endl;
+        // std::cout<<curvature<<std::endl;
 
         if (std::isnan(point_x) || std::isnan(point_y) || std::isnan(point_z) ||
             std::isnan(yaw) || std::isnan(curvature))
@@ -103,10 +114,15 @@ c_wpt::c_wpt(string wpt_file_path_, string wpt_alias_ = "",
   }
   else
   {
+    // std::cout<<"sibal5++++++++++++++++++++++++++++++++++++++="<<std::endl;
     m_wpt_xy = load2DWPTFile(m_wpt_file_path);
     m_wpt_size = m_wpt_xy.size();
+    // std::cout<<"m_wpt_size"<<std::endl;
+    // std::cout<<m_wpt_size<<std::endl;
+
     for (int wpt_idx = 0; wpt_idx < m_wpt_xy.size(); wpt_idx++)
     {
+      // std::cout<<"sibal6++++++++++++++++++++++++++++++++++++++="<<std::endl;
       m_wpt_raw_x.push_back(get<0>(m_wpt_xy[wpt_idx]));
       m_wpt_raw_y.push_back(get<1>(m_wpt_xy[wpt_idx]));
 
@@ -120,6 +136,8 @@ c_wpt::c_wpt(string wpt_file_path_, string wpt_alias_ = "",
     }
     if (m_spline_flg)
     {
+     
+
       shared_ptr<CubicSpliner2D> cubic_spliner_2D =
           make_shared<CubicSpliner2D>(m_wpt_raw_x, m_wpt_raw_y);
       double point_s = 0.0;
@@ -136,13 +154,27 @@ c_wpt::c_wpt(string wpt_file_path_, string wpt_alias_ = "",
 
       while (point_s < point_s_end)
       {
+        // std::cout<<"point_s"<<std::endl;
+        // std::cout<<point_s<<std::endl;
         std::tuple<double, double> position =
             cubic_spliner_2D->calculate_position(point_s);
 
+        // std::cout<<"point_x"<<std::endl;
         double point_x = std::get<0>(position);
         double point_y = std::get<1>(position);
         double yaw = cubic_spliner_2D->calculate_yaw(point_s);
         double curvature = cubic_spliner_2D->calculate_curvature(point_s);
+
+        // std::cout<<"point_x"<<std::endl;
+        // std::cout<<point_x<<std::endl;
+        // std::cout<<"point_y"<<std::endl;
+        // std::cout<<point_y<<std::endl;
+        
+        // std::cout<<"yaw"<<std::endl;
+        // std::cout<<yaw<<std::endl;
+
+        // std::cout<<"curvature"<<std::endl;
+        // std::cout<<curvature<<std::endl;
 
         if (std::isnan(point_x) || std::isnan(point_y) || std::isnan(yaw) ||
             std::isnan(curvature))
